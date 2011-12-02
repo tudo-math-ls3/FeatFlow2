@@ -142,6 +142,7 @@
 !# 38.) afcstab_copyD2H_CoeffsAtEdge
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
+!#
 !# </purpose>
 !##############################################################################
 module afcstabbase
@@ -641,7 +642,7 @@ module afcstabbase
 
   ! Absolute tolerance for stabilisation
 #ifndef AFCSTAB_EPSABS
-  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-8
+  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-10
 #endif
 
   ! Relative tolerance for stabilisation
@@ -3941,7 +3942,8 @@ contains
   
 !<subroutine>
 
-  subroutine afcstab_buildBoundsLPT1D(rafcstab, rmatrixCx, rmatrixM, dscale)
+  subroutine afcstab_buildBoundsLPT1D(rafcstab, rmatrixCx, rmatrixM,&
+      DdofCoords, dscale)
 
 !<description>
     ! This subroutine computes the solution bounds for
@@ -3955,6 +3957,9 @@ contains
     ! Diagonal scaling matrix
     type(t_matrixScalar), intent(in) :: rmatrixM
 
+    ! Global coordinates of the degrees of freedom
+    real(DP), dimension(:), intent(in) :: DdofCoords
+
     ! Global scaling factor
     real(DP), intent(in) :: dscale
 !</input>
@@ -3965,11 +3970,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! pointer to the triangulation
-    type(t_triangulation), pointer :: p_rtriangulation
-
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx
@@ -3983,23 +3984,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
       call sys_halt()
     end if
-
-    ! Set pointer to triangulation; note that for more general
-    ! discretisations the coordinates of the degrees of freedom must
-    ! be computed and cannot be adopted from the vertex coordinates
-    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
-
-    ! Check if this is a 1D triangulation
-    if (p_rtriangulation%ndim .ne. NDIM1D) then
-      call output_line('Only 1D triangulations are supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
-      call sys_halt()
-    end if
     
-    ! Get vertex coordinates
-    call storage_getbase_double2D(&
-        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
@@ -4028,7 +4013,7 @@ contains
     
     ! Check if scaling matrix rmatrixM is diagonal and
     ! has the same data type as the source matrix
-    if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
+    if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)  .or.&
         (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
         (rmatrixM%NEQ .ne. rmatrixCx%NEQ)) then
       call output_line('Coefficient matrices are not compatible!',&
@@ -4052,7 +4037,7 @@ contains
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
-            p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
+            p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
@@ -4060,7 +4045,7 @@ contains
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
-            p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
+            p_FdataCx, p_FdataM, DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
         call output_line('Unsupported data type!',&
@@ -4080,7 +4065,7 @@ contains
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
-            p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
+            p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
@@ -4088,7 +4073,7 @@ contains
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
-            p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
+            p_FdataCx, p_FdataM, DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
         call output_line('Unsupported data type!',&
@@ -4111,12 +4096,12 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Dble(IedgeList, Kld,&
-        DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
-      real(DP), dimension(:), intent(in) :: DdataCx, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdataCx,DdataM
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
@@ -4135,7 +4120,7 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        diff = DdofCoords(i) - DdofCoords(j)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4169,12 +4154,12 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
-        DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
@@ -4193,7 +4178,7 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        diff = DdofCoords(i) - DdofCoords(j)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4235,12 +4220,12 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Sngl(IedgeList, Kld,&
-        FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
@@ -4259,7 +4244,7 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        diff = DdofCoords(i) - DdofCoords(j)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4293,12 +4278,12 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
-        FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
@@ -4317,7 +4302,7 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        diff = DdofCoords(i) - DdofCoords(j)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4361,7 +4346,7 @@ contains
 !<subroutine>
 
   subroutine afcstab_buildBoundsLPT2D(rafcstab, rmatrixCx, rmatrixCy,&
-      rmatrixM, dscale)
+      rmatrixM, DdofCoords, dscale)
 
 !<description>
     ! This subroutine computes the solution bounds for
@@ -4375,6 +4360,9 @@ contains
     ! Diagonal scaling matrix
     type(t_matrixScalar), intent(in) :: rmatrixM
 
+    ! Global coordinates of the degrees of freedom
+    real(DP), dimension(:), intent(in) :: DdofCoords
+
     ! Global scaling factor
     real(DP), intent(in) :: dscale
 !</input>
@@ -4385,11 +4373,7 @@ contains
 !</inputoutput>
 !</subroutine>
   
-    ! pointer to the triangulation
-    type(t_triangulation), pointer :: p_rtriangulation
-
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy
@@ -4403,22 +4387,6 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
       call sys_halt()
     end if
-
-    ! Set pointer to triangulation; note that for more general
-    ! discretisations the coordinates of the degrees of freedom must
-    ! be computed and cannot be adopted from the vertex coordinates
-    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
-
-    ! Check if this is a 2D triangulation
-    if (p_rtriangulation%ndim .ne. NDIM2D) then
-      call output_line('Only 3D triangulations are supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
-      call sys_halt()
-    end if
-    
-    ! Get vertex coordinates
-    call storage_getbase_double2D(&
-        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -4476,7 +4444,7 @@ contains
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
-            p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
+            p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
@@ -4486,7 +4454,7 @@ contains
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
-            p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
+            p_FdataCx, p_FdataCy, p_FdataM, DdofCoords,&
             dscale, p_FboundsAtEdge)
 
       case default
@@ -4508,7 +4476,7 @@ contains
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
-            p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
+            p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
@@ -4518,7 +4486,7 @@ contains
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
-            p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
+            p_FdataCx, p_FdataCy, p_FdataM, DdofCoords,&
             dscale, p_FboundsAtEdge)
 
       case default
@@ -4542,24 +4510,23 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Dble(IedgeList, Kld,&
-        DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataCy, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM2D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -4567,7 +4534,8 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
+        diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4575,8 +4543,8 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i)+1, Kld(i+1)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY)
         end do
         
         ! Store result into first entry
@@ -4588,8 +4556,8 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j)+1, Kld(j+1)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY)
         end do
         
         ! Store result into first entry
@@ -4603,24 +4571,23 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
-        DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataCy, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM2D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -4628,7 +4595,8 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
+        diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4636,13 +4604,13 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i), Kdiagonal(i)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY)
         end do
         
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY)
         end do
         
         ! Store result into first entry
@@ -4654,13 +4622,13 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j), Kdiagonal(j)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY)
         end do
         
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY)
         end do
         
         ! Store result into first entry
@@ -4674,24 +4642,23 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Sngl(IedgeList, Kld,&
-        FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataCy, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM2D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -4699,7 +4666,8 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
+        diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4707,8 +4675,8 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i)+1, Kld(i+1)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*diffY)
         end do
         
         ! Store result into first entry
@@ -4720,8 +4688,8 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j)+1, Kld(j+1)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY)
         end do
         
         ! Store result into first entry
@@ -4735,24 +4703,23 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
-        FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataCy, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM2D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -4760,7 +4727,8 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
+        diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -4768,13 +4736,13 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i), Kdiagonal(i)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*diffY)
         end do
         
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*diffY)
         end do
         
         ! Store result into first entry
@@ -4786,13 +4754,13 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j), Kdiagonal(j)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY)
         end do
         
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY)
         end do
         
         ! Store result into first entry
@@ -4808,7 +4776,7 @@ contains
 !<subroutine>
 
   subroutine afcstab_buildBoundsLPT3D(rafcstab, rmatrixCx, rmatrixCy,&
-      rmatrixCz, rmatrixM, dscale)
+      rmatrixCz, rmatrixM, DdofCoords, dscale)
 
 !<description>
     ! This subroutine computes the solution bounds for
@@ -4822,6 +4790,9 @@ contains
     ! Diagonal scaling matrix
     type(t_matrixScalar), intent(in) :: rmatrixM
 
+    ! Global coordinates of the degrees of freedom
+    real(DP), dimension(:), intent(in) :: DdofCoords
+
     ! Global scaling factor
     real(DP), intent(in) :: dscale
 !</input>
@@ -4832,11 +4803,7 @@ contains
 !</inputoutput>
 !</subroutine>
   
-    ! pointer to the triangulation
-    type(t_triangulation), pointer :: p_rtriangulation
-
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy, p_DdataCz
@@ -4850,23 +4817,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
       call sys_halt()
     end if
-
-    ! Set pointer to triangulation; note that for more general
-    ! discretisations the coordinates of the degrees of freedom must
-    ! be computed and cannot be adopted from the vertex coordinates
-    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
-
-    ! Check if this is a 3D triangulation
-    if (p_rtriangulation%ndim .ne. NDIM3D) then
-      call output_line('Only 3D triangulations are supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
-      call sys_halt()
-    end if
     
-    ! Get vertex coordinates
-    call storage_getbase_double2D(&
-        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
@@ -4926,7 +4877,7 @@ contains
         
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
-            p_DvertexCoords, dscale, p_DboundsAtEdge)
+            DdofCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
@@ -4937,7 +4888,7 @@ contains
 
         call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
-            p_DvertexCoords, dscale, p_FboundsAtEdge)
+            DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
         call output_line('Unsupported data type!',&
@@ -4960,7 +4911,7 @@ contains
         
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
-            p_DvertexCoords, dscale, p_DboundsAtEdge)
+            DdofCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
@@ -4971,7 +4922,7 @@ contains
 
         call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
-            p_DvertexCoords, dscale, p_FboundsAtEdge)
+            DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
         call output_line('Unsupported data type!',&
@@ -4994,24 +4945,23 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Dble(IedgeList, Kld,&
-        DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataCy, DdataCz, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM3D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY,diffZ
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,diffZ,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -5019,7 +4969,9 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
+        diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
+        diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -5027,9 +4979,9 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i)+1, Kld(i+1)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2)+&
-                            DdataCz(ik)*Diff(3))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY+&
+                            DdataCz(ik)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5041,9 +4993,9 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j)+1, Kld(j+1)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2)+&
-                            DdataCz(jk)*Diff(3))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY+&
+                            DdataCz(jk)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5057,24 +5009,23 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
-        DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+        DdataCx, DdataCy, DdataCz, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM3D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY,diffZ
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,diffZ,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -5082,7 +5033,9 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
+        diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
+        diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -5090,15 +5043,15 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i), Kdiagonal(i)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2)+&
-                            DdataCz(ik)*Diff(3))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY+&
+                            DdataCz(ik)*diffZ)
         end do
         
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
-          daux = daux + abs(DdataCx(ik)*Diff(1)+&
-                            DdataCy(ik)*Diff(2)+&
-                            DdataCz(ik)*Diff(3))
+          daux = daux + abs(DdataCx(ik)*diffX+&
+                            DdataCy(ik)*diffY+&
+                            DdataCz(ik)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5110,15 +5063,15 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j), Kdiagonal(j)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2)+&
-                            DdataCz(jk)*Diff(3))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY+&
+                            DdataCz(jk)*diffZ)
         end do
         
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
-          daux = daux + abs(DdataCx(jk)*Diff(1)+&
-                            DdataCy(jk)*Diff(2)+&
-                            DdataCz(jk)*Diff(3))
+          daux = daux + abs(DdataCx(jk)*diffX+&
+                            DdataCy(jk)*diffY+&
+                            DdataCz(jk)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5132,24 +5085,23 @@ contains
     ! All matrices are stored in matrix format 7.
 
     subroutine doBoundsMat7Sngl(IedgeList, Kld,&
-        FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataCy, FdataCz, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM3D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY,diffZ
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,diffZ,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -5157,7 +5109,9 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
+        diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
+        diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -5165,9 +5119,9 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i)+1, Kld(i+1)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2)+&
-                            FdataCz(ik)*Diff(3))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*DiffY+&
+                            FdataCz(ik)*DiffZ)
         end do
         
         ! Store result into first entry
@@ -5179,9 +5133,9 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j)+1, Kld(j+1)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2)+&
-                            FdataCz(jk)*Diff(3))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY+&
+                            FdataCz(jk)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5195,24 +5149,23 @@ contains
     ! All matrices are stored in matrix format 9.
 
     subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
-        FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+        FdataCx, FdataCy, FdataCz, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: DdofCoords
       real(DP), intent(in) :: dscale
 
       real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
 
       ! local variables
-      real(DP), dimension(NDIM3D) :: Diff
-      real(DP) :: daux
+      real(DP) :: daux,diffX,diffY,diffZ
       integer :: iedge,i,j,ik,jk
 
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
-      !$omp private(daux,diff,i,ik,j,jk)
+      !$omp private(daux,diffX,diffY,diffZ,i,ik,j,jk)
       edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
@@ -5220,7 +5173,9 @@ contains
         j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
-        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
+        diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
+        diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
         
         ! Clear temporal variable
         daux = 0.0_DP
@@ -5228,15 +5183,15 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{ik}*(x_i-x_j)| $
         do ik = Kld(i), Kdiagonal(i)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2)+&
-                            FdataCz(ik)*Diff(3))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*diffY+&
+                            FdataCz(ik)*diffZ)
         end do
         
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
-          daux = daux + abs(FdataCx(ik)*Diff(1)+&
-                            FdataCy(ik)*Diff(2)+&
-                            FdataCz(ik)*Diff(3))
+          daux = daux + abs(FdataCx(ik)*diffX+&
+                            FdataCy(ik)*diffY+&
+                            FdataCz(ik)*diffZ)
         end do
         
         ! Store result into first entry
@@ -5248,15 +5203,15 @@ contains
         ! Loop over all off-diagonal entries of current row and sum
         ! the absolute values $ |c_{jk}*(x_j-x_i)| $
         do jk = Kld(j), Kdiagonal(j)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2)+&
-                            FdataCz(jk)*Diff(3))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY+&
+                            FdataCz(jk)*diffZ)
         end do
         
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
-          daux = daux + abs(FdataCx(jk)*Diff(1)+&
-                            FdataCy(jk)*Diff(2)+&
-                            FdataCz(jk)*Diff(3))
+          daux = daux + abs(FdataCx(jk)*diffX+&
+                            FdataCy(jk)*diffY+&
+                            FdataCz(jk)*diffZ)
         end do
         
         ! Store result into first entry

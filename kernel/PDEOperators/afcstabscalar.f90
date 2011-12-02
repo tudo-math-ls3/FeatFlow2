@@ -96,6 +96,12 @@
 !# 13.) afcsc_initPerfConfig
 !#       -> Initialises the global performance configuration
 !#
+!#
+!# The following auxiliary routines are available:
+!#
+!# 1.) minmodDble / minmodSngl
+!#     -> Computes minmod(a,b)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1184,34 +1190,25 @@ contains
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
-      real(DP) :: diff
       integer :: ieq
       
-      !$omp parallel sections default(shared) private(ieq,diff)
+      !$omp parallel sections default(shared) private(ieq)
       
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dqp(ieq)-Dx(ieq)
-        if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
-          Drp(ieq) = ML(ieq)*diff/(dscale*Dpp(ieq))
-        else
-          Drp(ieq) = 1.0_DP
-        end if
+        Drp(ieq) = (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
+                   (Dpp(ieq)+AFCSTAB_EPSABS) * (ML(ieq)/dscale)
       end do
       !$omp end parallel do
 
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dqm(ieq)-Dx(ieq)
-        if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
-          Drm(ieq) = ML(ieq)*diff/(dscale*Dpm(ieq))
-        else
-          Drm(ieq) = 1.0_DP
-        end if
+        Drm(ieq) = (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
+                   (Dpm(ieq)-AFCSTAB_EPSABS) * (ML(ieq)/dscale)
       end do
       !$omp end parallel do
 
@@ -1235,34 +1232,25 @@ contains
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
-      real(DP) :: diff
       integer :: ieq
       
-      !$omp parallel sections default(shared) private(ieq,diff)
+      !$omp parallel sections default(shared) private(ieq)
       
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dqp(ieq)-Dx(ieq)
-        if (dscale*Dpp(ieq) .gt. ML(ieq)*diff) then
-          Drp(ieq) = ML(ieq)*diff/(dscale*Dpp(ieq))
-        else
-          Drp(ieq) = 1.0_DP
-        end if
+        Drp(ieq) = min(1.0_DP, (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
+                               (Dpp(ieq)+AFCSTAB_EPSABS) * (ML(ieq)/dscale))
       end do
       !$omp end parallel do
 
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dqm(ieq)-Dx(ieq)
-        if (dscale*Dpm(ieq) .lt. ML(ieq)*diff) then
-          Drm(ieq) = ML(ieq)*diff/(dscale*Dpm(ieq))
-        else
-          Drm(ieq) = 1.0_DP
-        end if
+        Drm(ieq) = min(1.0_DP, (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
+                               (Dpm(ieq)-AFCSTAB_EPSABS) * (ML(ieq)/dscale))
       end do
       !$omp end parallel do
 
@@ -3654,34 +3642,25 @@ contains
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
-      real(DP) :: diff
       integer :: ieq
       
-      !$omp parallel sections default(shared) private(ieq,diff)
+      !$omp parallel sections default(shared) private(ieq)
       
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dq(ieq)*(Dqp(ieq)-Dx(ieq))
-        if (Dpp(ieq) .gt. diff) then
-          Drp(ieq) = diff/Dpp(ieq)
-        else
-          Drp(ieq) = 1.0_DP
-        end if
+        Drp(ieq) = min(1.0_DP, (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
+                               (Dpp(ieq)+AFCSTAB_EPSABS) * Dq(ieq))
       end do
       !$omp end parallel do
 
       !$omp section
 
-      !$omp parallel do default(shared) private(ieq,diff)
+      !$omp parallel do default(shared) private(ieq)
       do ieq = 1, NEQ
-        diff = Dq(ieq)*(Dqm(ieq)-Dx(ieq))
-        if (Dpm(ieq) .lt. diff) then
-          Drm(ieq) = diff/Dpm(ieq)
-        else
-          Drm(ieq) = 1.0_DP
-        end if
+        Drm(ieq) = min(1.0_DP, (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
+                               (Dpm(ieq)-AFCSTAB_EPSABS) * Dq(ieq))
       end do
       !$omp end parallel do
 
@@ -5452,18 +5431,9 @@ contains
             ! Determine fluxes
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
-            
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-            
-            ! Store raw antidiffusive fluxes
-            Dflux(iedge) = f_ij
+          
+            ! Store raw antidiffusive flux f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
 
@@ -5484,17 +5454,8 @@ contains
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
             
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-
-            ! Update raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge) + f_ij
+            ! Update raw antidiffusive flux by f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = Dflux(iedge) + minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
         end if
@@ -5518,17 +5479,8 @@ contains
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
             
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-
-            ! Store raw antidiffusive flux
-            Dflux(iedge) = -f_ij
+            ! Store raw antidiffusive flux f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = -minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
         else
@@ -5548,17 +5500,8 @@ contains
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
             
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-
-            ! Update raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge) - f_ij
+            ! Update raw antidiffusive flux by f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = Dflux(iedge) - minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
         end if
@@ -5582,17 +5525,8 @@ contains
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
             
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-
-            ! Store raw antidiffusive flux
-            Dflux(iedge) = dscale * f_ij
+            ! Store raw antidiffusive flux f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = dscale*minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
         else
@@ -5612,17 +5546,8 @@ contains
             f_ij = d_ij * (Dx(i)-Dx(j))
             g_ij = l_ji * (Dx(i)-Dx(j))
             
-            if (l_ji .lt. d_ij) then
-              ! f_ij := minmod(f_ij,g_ij)
-              if (f_ij*g_ij .le. 0.0_DP) then
-                f_ij = 0.0_DP
-              elseif (abs(g_ij) .lt. abs(f_ij)) then
-                f_ij = g_ij
-              end if
-            end if
-
-            ! Update raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge) + dscale*f_ij
+            ! Update raw antidiffusive flux by f_ij := minmod(f_ij,g_ij)
+            Dflux(iedge) = Dflux(iedge) + dscale*minmodDble(f_ij, g_ij)
           end do
           !$omp end parallel do
         end if
@@ -11864,5 +11789,67 @@ contains
     end subroutine assembleJacobianMat79_Symm
 
   end subroutine afcsc_buildJacobianSymmScalar
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function minmodDble(da,db)
+
+!<description>
+    ! This function computes minmod(a,b) following the implementation
+    ! suggested by N. Robidoux, M. Gong, J. Cupitt, A. Turcott, and
+    ! K. Martinez in "CPU, SMP and GPU Implementations of Nohalo Level
+    ! 1, a Fast Co-Convex Antialiasing Image Resampler", ACM 2009
+!</description>
+
+!<input>
+    real(DP), intent(in) :: da,db
+!</input>
+
+!<result>
+    real(DP) :: minmodDble
+!</result>
+
+    ! local variables
+    real(DP) :: dsa,dsb
+
+    dsa = sign(1._DP,da)
+    dsb = sign(1._DP,db)
+
+    minmodDble = 0.5_DP * (dsa+dsb) * min(da*dsa, db*dsb)
+
+  end function minmodDble
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function minmodSngl(fa,fb)
+
+!<description>
+    ! This function computes minmod(a,b) following the implementation
+    ! suggested by N. Robidoux, M. Gong, J. Cupitt, A. Turcott, and
+    ! K. Martinez in "CPU, SMP and GPU Implementations of Nohalo Level
+    ! 1, a Fast Co-Convex Antialiasing Image Resampler", ACM 2009
+!</description>
+
+!<input>
+    real(SP), intent(in) :: fa,fb
+!</input>
+
+!<result>
+    real(SP) :: minmodSngl
+!</result>
+
+    ! local variables
+    real(SP) :: fsa,fsb
+
+    fsa = sign(1._SP,fa)
+    fsb = sign(1._SP,fb)
+
+    minmodSngl = 0.5_SP * (fsa+fsb) * min(fa*fsa, fb*fsb)
+
+  end function minmodSngl
 
 end module afcstabscalar

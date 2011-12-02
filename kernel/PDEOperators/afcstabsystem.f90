@@ -49,6 +49,12 @@
 !# 6.) afcsys_initPerfConfig
 !#       -> Initialises the global performance configuration
 !#
+!#
+!# The following auxiliary routines are available:
+!#
+!# 1.) minmodDble / minmodSngl
+!#     -> Computes minmod(a,b)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -9031,5 +9037,67 @@ contains
     end subroutine doFailsafeLimitDble
 
   end subroutine afcsys_failsafeFCTScalar
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function minmodDble(da,db)
+
+!<description>
+    ! This function computes minmod(a,b) following the implementation
+    ! suggested by N. Robidoux, M. Gong, J. Cupitt, A. Turcott, and
+    ! K. Martinez in "CPU, SMP and GPU Implementations of Nohalo Level
+    ! 1, a Fast Co-Convex Antialiasing Image Resampler", ACM 2009
+!</description>
+
+!<input>
+    real(DP), intent(in) :: da,db
+!</input>
+
+!<result>
+    real(DP) :: minmodDble
+!</result>
+
+    ! local variables
+    real(DP) :: dsa,dsb
+
+    dsa = sign(1._DP,da)
+    dsb = sign(1._DP,db)
+
+    minmodDble = 0.5_DP * (dsa+dsb) * min(da*dsa, db*dsb)
+
+  end function minmodDble
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function minmodSngl(fa,fb)
+
+!<description>
+    ! This function computes minmod(a,b) following the implementation
+    ! suggested by N. Robidoux, M. Gong, J. Cupitt, A. Turcott, and
+    ! K. Martinez in "CPU, SMP and GPU Implementations of Nohalo Level
+    ! 1, a Fast Co-Convex Antialiasing Image Resampler", ACM 2009
+!</description>
+
+!<input>
+    real(SP), intent(in) :: fa,fb
+!</input>
+
+!<result>
+    real(SP) :: minmodSngl
+!</result>
+
+    ! local variables
+    real(SP) :: fsa,fsb
+
+    fsa = sign(1._SP,fa)
+    fsb = sign(1._SP,fb)
+
+    minmodSngl = 0.5_SP * (fsa+fsb) * min(fa*fsa, fb*fsb)
+
+  end function minmodSngl
 
 end module afcstabsystem

@@ -197,10 +197,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
     !
     ! Otherwise, the standard operator is assembled without stabilisation.
 !</description>
@@ -2926,10 +2926,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
     !
     ! Note that this routine serves as a wrapper for block vectors and
     ! matrices. If there is only one block, then the corresponding
@@ -3029,10 +3029,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
     !
     ! Note that this routine serves as a wrapper for block matrices. If
     ! there is only one block, then the corresponding scalar routine
@@ -3140,10 +3140,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, l_ij/)
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
@@ -3250,10 +3250,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
 !</description>
 
 !<input>
@@ -4615,10 +4615,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
@@ -4704,10 +4704,10 @@ contains
     ! coefficient is stored according to the following convention:
     !
     ! For upwind-biased stabilisation
-    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:3, IJ) = (/d_ij, l_ij, l_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij/)
 !</description>
 
 !<input>
