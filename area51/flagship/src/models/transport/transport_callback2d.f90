@@ -63,20 +63,36 @@
 !#        for linear convection in 2D (dual formulation)
 !#
 !# 7.) transp_coeffVecBdrConvP2d_sim
-!#      -> Calculates the coefficients for the linear form
-!#         in 2D (primal formulation)
+!#     -> Calculates the coefficients required by the evaluation of the
+!#        linear form in 2D (primal formulation)
 !#
 !# 8.) transp_coeffMatBdrConvP2d_sim
-!#     -> Calculates the coefficients for the bilinear form
-!#        in 2D (primal formulation)
+!#     -> Calculates the coefficients required by the evaluation of the
+!#        bilinear form in 2D (primal formulation)
 !#
 !# 9.) transp_coeffVecBdrConvD2d_sim
-!#      -> Calculates the coefficients for the linear form
-!#         in 2D (dual formulation)
+!#      -> Calculates the coefficients required by the evaluation of the
+!#         linear form in 2D (dual formulation)
 !#
 !# 10.) transp_coeffMatBdrConvD2d_sim
-!#     -> Calculates the coefficients for the bilinear form
-!#        in 2D (dual formulation)
+!#     -> Calculates the coefficients required by the evaluation of the
+!#        bilinear form in 2D (dual formulation)
+!#
+!# 11.) transp_calcVecBdrConvP2d_sim
+!#      -> Calculates the group finite element coefficients for the
+!#         linear form in 2D (primal formulation)
+!#
+!# 12.) transp_calcMatBdrConvP2d_sim
+!#      -> Calculates the group finite element coefficients for the
+!#         bilinear form in 2D (primal formulation)
+!#
+!# 13.) transp_calcVecBdrConvD2d_sim
+!#      -> Calculates the group finite element coefficients for the
+!#         linear form in 2D (dual formulation)
+!#
+!# 14.) transp_calcMatBdrConvD2d_sim
+!#      -> Calculates the group finite element coefficients for the
+!#         bilinear form in 2D (dual formulation)
 !#
 !# ****************************************************************************
 !#
@@ -189,39 +205,47 @@ module transport_callback2d
 
   private
 
+  ! generic routines
   public :: transp_refFuncBdrInt2d_sim
   public :: transp_errorBdrInt2d_sim
   public :: transp_weightFuncBdrInt2d_sim
   public :: transp_calcBilfBdrCond2d
   public :: transp_calcLinfBdrCond2d
 
+  ! linear velocity in 2D - primal formulation
   public :: transp_calcMatDiagConvP2d_sim
   public :: transp_calcMatGalConvP2d_sim
   public :: transp_calcMatUpwConvP2d_sim
   public :: transp_coeffMatBdrConvP2d_sim
   public :: transp_coeffVecBdrConvP2d_sim
-
   public :: transp_calcMatBdrConvP2d_sim
   public :: transp_calcVecBdrConvP2d_sim
 
+  ! linear velocity in 2D - dual formulation
   public :: transp_calcMatDiagConvD2d_sim
   public :: transp_calcMatGalConvD2d_sim
   public :: transp_calcMatUpwConvD2d_sim
   public :: transp_coeffMatBdrConvD2d_sim
   public :: transp_coeffVecBdrConvD2d_sim
+  public :: transp_calcMatBdrConvD2d_sim
+  public :: transp_calcVecBdrConvD2d_sim
 
+
+  ! Burgers` equation in space-time - primal formulation
   public :: transp_calcMatDiagSTBurgP2d_sim
   public :: transp_calcMatGalSTBurgP2d_sim
   public :: transp_calcMatUpwSTBurgP2d_sim
   public :: transp_coeffMatBdrSTBurgP2d_sim
   public :: transp_coeffVecBdrSTBurgP2d_sim
   
+  ! Buckley-Leverett equation in space time - primal formulation
   public :: transp_calcMatDiagSTBLevP2d_sim
   public :: transp_calcMatGalSTBLevP2d_sim
   public :: transp_calcMatUpwSTBLevP2d_sim
   public :: transp_coeffMatBdrSTBLevP2d_sim
   public :: transp_coeffVecBdrSTBLevP2d_sim
 
+  ! Burgers` equation in 2D - primal formulation
   public :: transp_calcMatDiagBurgP2d_sim
   public :: transp_calcMatGalBurgP2d_sim
   public :: transp_calcMatUpwBurgP2d_sim
@@ -676,8 +700,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcBilfBdrCond2d(rproblemLevel, rboundaryCondition,&
-      rsolution, dtime, dscale, ssectionName, fcoeff_buildMatrixScBdr2D_sim,&
-      rmatrix, rcollection, cconstrType)
+      rsolution, ssectionName, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
+      bclear, rmatrix, rcollection, cconstrType)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -701,14 +725,18 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! simulation time
     real(DP), intent(in) :: dtime
 
     ! scaling factor
     real(DP), intent(in) :: dscale
 
-    ! section name in parameter list and collection structure
-    character(LEN=*), intent(in) :: ssectionName
+    ! Whether to clear the matrix before calculating the entries.
+    ! If .FALSE., the new matrix entries are added to the existing entries.
+    logical, intent(in) :: bclear
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
@@ -734,8 +762,8 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer :: ivelocitytype, velocityfield, ccubTypeBdr
-    integer :: ibdc, isegment
+    integer :: ibdc, isegment, ccubTypeBdr
+    integer :: ivelocitytype, velocityfield
 
     ! Evaluate bilinear form for boundary integral and
     ! return if there are no weak boundary conditions
@@ -785,6 +813,8 @@ contains
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
 
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rmatrix)
 
     ! Set pointers
     call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx,&
@@ -862,8 +892,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcLinfBdrCond2d(rproblemLevel, rboundaryCondition,&
-      rsolution, dtime, dscale, ssectionName, fcoeff_buildVectorScBdr2D_sim,&
-      rvector, rcollection)
+      rsolution, ssectionName, dtime, dscale, fcoeff_buildVectorScBdr2D_sim,&
+      bclear, rvector, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -893,6 +923,10 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
+    ! Whether to clear the vector before calculating the entries.
+    ! If .FALSE., the new vector entries are added to the existing entries.
+    logical, intent(in) :: bclear
+
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
@@ -916,9 +950,9 @@ contains
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
-    integer :: ivelocitytype, velocityfield, ccubTypeBdr
-    integer :: ibdc, isegment
-
+    integer :: ibdc, isegment, ccubTypeBdr
+    integer :: ivelocitytype, velocityfield
+    
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
     if (.not.rboundaryCondition%bWeakBdrCond) return
@@ -968,7 +1002,9 @@ contains
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
     
-    
+    ! Clear vector?
+    if (bclear) call lsysbl_clearVector(rvector)
+
     ! Set pointers
     call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx,&
         p_IbdrCondCpIdx)
@@ -4169,6 +4205,9 @@ do iedge = 1, nedges
     ! Given the solution data DdataAtNode and auxiliary coefficients
     ! DcoeffsAtNode this subroutine computes the local matrix entries
     ! DmatrixAtNode for the node $i$.
+    !
+    ! This routine handles the primal problem for the
+    ! convection-diffusion equation.
 !</description>
 
 !<input>
@@ -4274,7 +4313,7 @@ do iedge = 1, nedges
         
       else
         ! Clear coefficients for zero velocity
-        DmatrixAtNode(:,inode) = 0.0_DP
+        DmatrixAtNode = 0.0_DP
       end if
 
 
@@ -4316,7 +4355,7 @@ do iedge = 1, nedges
 
         ! Loop over all noodes at the boundary
         do inode =  1, nnodes
-          
+
           ! Get global node number
           i = InodeList(1,inode)
           
@@ -4334,7 +4373,7 @@ do iedge = 1, nedges
 
       else
         ! Clear coefficients for zero velocity
-        DmatrixAtNode(:,inode) = 0.0_DP
+        DmatrixAtNode = 0.0_DP
       end if
       
     case default
@@ -4357,6 +4396,9 @@ do iedge = 1, nedges
     ! Given the solution data DdataAtNode and auxiliary coefficients
     ! DcoeffsAtNode this subroutine computes the local vector entries
     ! DvectorAtNode for the node $i$.
+    !
+    ! This routine handles the primal problem for the
+    ! convection-diffusion equation.
 !</description>
 
 !<input>
@@ -4410,7 +4452,7 @@ do iedge = 1, nedges
     real(DP) :: dtime,dnv,dval
     integer :: inode,ibdrtype,isegment,i
 
-    #ifndef TRANSP_USE_IBP
+#ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
         OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvP2d_sim')
@@ -4476,7 +4518,28 @@ do iedge = 1, nedges
       ! $$ d\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form (if any).
-      
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Loop over all noodes at the boundary
+      do inode =  1,  nnodes
+        
+        ! Get global node number
+        i = InodeList(1,inode)
+        
+        ! Set values for function parser
+        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+
+        ! Multiply by scaling coefficient
+        DvectorAtNode(inode) = dscale * dval
+      end do
+
       
     case (BDRC_DIRICHLET)
       !-------------------------------------------------------------------------
@@ -4487,8 +4550,29 @@ do iedge = 1, nedges
       ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
       !
       ! The diffusive part is included into the bilinear form.
-      
 
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      ! Loop over all noodes at the boundary
+      do inode = 1, nnodes
+        
+        ! Get global node number
+        i = InodeList(1,inode)
+        
+        ! Set values for function parser
+        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+
+        ! Impose Dirichlet value via penalty method
+        DvectorAtNode(inode) = dscale * dval * BDRC_DIRICHLET_PENALTY
+      end do
+
+      
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
@@ -4499,7 +4583,39 @@ do iedge = 1, nedges
       ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
       !
       ! and do not include any boundary integral into the bilinear form at all.
+      
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      if (associated(p_rvelocity)) then
         
+        ! Loop over all noodes at the boundary
+        do inode =  1,  nnodes
+          
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Compute normal velocity in nodes i
+          dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
+              DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Set value at Robin boundary
+          DvectorAtNode(inode) = -dscale*dnv*dval
+        end do
+        
+      else
+        ! Clear coefficients for zero velocity
+        DvectorAtNode = 0.0_DP
+      end if
+      
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
@@ -4519,7 +4635,7 @@ do iedge = 1, nedges
 
       if (associated(p_rvelocity)) then
         
-        ! Loop over all noodes at the boundary
+        ! Loop over all nodes at the boundary
         do inode =  1,  nnodes
           
           ! Get global node number
@@ -4545,10 +4661,10 @@ do iedge = 1, nedges
             DvectorAtNode(inode) = 0.0_DP
           end if
         end do
-
+        
       else
         ! Clear coefficients for zero velocity
-        DvectorAtNode(inode) = 0.0_DP
+        DvectorAtNode = 0.0_DP
       end if
       
 
@@ -4564,9 +4680,505 @@ do iedge = 1, nedges
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
       
+      print *, "Periodic boundary conditions are not implemented yet!"
+      stop
+
     end select
 
   end subroutine transp_calcVecBdrConvP2d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcMatBdrConvD2d_sim(DdataAtNode, DcoeffsAtNode,&
+      InodeList, dscale, nnodes, DmatrixAtNode, rcollection)
+
+!<description>
+    ! Given the solution data DdataAtNode and auxiliary coefficients
+    ! DcoeffsAtNode this subroutine computes the local matrix entries
+    ! DmatrixAtNode for the node $i$.
+    !
+    ! This routine handles the dual problem for the
+    ! convection-diffusion equation.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nnodes)
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    !   DIMENSION(ndim,nnodes)
+    ! with ndim the number of spatial dimensions
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+    
+    ! Numbers of nodes and matrix entries for all nodes under consideration
+    !   DIMENSION(2,nnodes)
+    integer, dimension(:,:), intent(in) :: InodeList
+    
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+    
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: coordinates of the degrees of freedom
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    !   DIMENSION(ncoeffs,nnodes)
+    ! with ncoeffs the number of matrix coefficients at the node
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
+!</output>
+
+!</subroutine>
+
+    ! local variable
+    type(t_vectorBlock), pointer :: p_rvelocity,p_rdofCoords
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DdofCoords
+    real(DP) :: dtime,dnv
+    integer :: inode,ibdrtype,isegment,i
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcMatBdrConvP2d_sim')
+    call sys_halt()
+#endif
+
+    ! This subroutine assumes that the first two quick access vectors
+    ! points to the coordinates of the degrees of freedom and to the
+    ! velocity field (if any)
+    p_rdofCoords => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
+    
+    ! Set pointers
+    call lsyssc_getbase_double(p_rdofCoords%RvectorBlock(1), p_DdofCoords)
+    if (associated(p_rvelocity)) then
+      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+    end if
+    
+    ! The first quick access double values hold the simulation time
+    dtime  = rcollection%DquickAccess(1)
+
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
+    ibdrtype = rcollection%IquickAccess(1)
+    isegment = rcollection%IquickAccess(2)
+
+    ! What type of boundary conditions are we?
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
+
+    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
+      !-------------------------------------------------------------------------
+      ! (In-)Homogeneous Neumann boundary conditions:
+      ! Assemble the convective part of the boundary integral (if any)
+
+      if (associated(p_rvelocity)) then
+
+        ! Loop over all noodes at the boundary
+        do inode =  1, nnodes
+          
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Compute normal velocity in node
+          dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
+                DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+
+          ! Scale normal velocity by scaling parameter
+          DmatrixAtNode(1,inode) = dscale * dnv
+        end do
+        
+      else
+        ! Clear coefficients for zero velocity
+        DmatrixAtNode = 0.0_DP
+      end if
+
+
+    case (BDRC_DIRICHLET)
+      !-------------------------------------------------------------------------
+      ! Dirichlet boundary conditions:
+      ! Impose penalty parameter
+
+      ! Loop over all noodes at the boundary
+      do inode =  1, nnodes
+
+        ! Impose Dirichlet boundary conditions via penalty method
+        DmatrixAtNode(1,inode) = dscale * BDRC_DIRICHLET_PENALTY
+      end do
+
+
+    case (BDRC_ROBIN)
+      !-------------------------------------------------------------------------
+      ! Robin boundary conditions:
+      ! Do nothing since the boundary values are build into the linear form
+
+      DmatrixAtNode = 0.0_DP
+
+      ! This routine should not be called at all for homogeneous Neumann boundary
+      ! conditions since it corresponds to an expensive assembly of "zero".
+      call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_calcMatBdrConvP2d_sim')
+
+
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s at the outlet)
+      ! Assemble the convective part of the boundary integral at the outflow
+      !
+      ! The convective part of the boundary integral at the outflow is
+      ! likewise assembled for periodic and antiperiodic boundary conditions
+      
+      if (associated(p_rvelocity)) then
+
+        ! Loop over all noodes at the boundary
+        do inode =  1, nnodes
+
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Compute normal velocity in nodes i
+          dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
+                DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+
+          ! Check if node i is at the dual outflow boundary
+          if (dnv .lt. -SYS_EPSREAL_DP) then
+            DmatrixAtNode(1,inode) = dscale*dnv
+          else
+            DmatrixAtNode(1,inode) = 0.0_DP
+          end if
+        end do
+
+      else
+        ! Clear coefficients for zero velocity
+        DmatrixAtNode = 0.0_DP
+      end if
+      
+    case default
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcMatBdrConvD2d_sim')
+      call sys_halt()
+      
+    end select
+
+  end subroutine transp_calcMatBdrConvD2d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcVecBdrConvD2d_sim(DdataAtNode, DcoeffsAtNode,&
+      InodeList, dscale, nnodes, DvectorAtNode, rcollection)
+
+!<description>
+    ! Given the solution data DdataAtNode and auxiliary coefficients
+    ! DcoeffsAtNode this subroutine computes the local vector entries
+    ! DvectorAtNode for the node $i$.
+    !
+    ! This routine handles the dual problem for the
+    ! convection-diffusion equation.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nnodes)
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    !   DIMENSION(ndim,nnodes)
+    ! with ndim the number of spatial dimensions
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+    
+    ! Numbers of nodes and matrix entries for all nodes under consideration
+    !   DIMENSION(2,nnodes)
+    integer, dimension(:,:), intent(in) :: InodeList
+    
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+    
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    ! This subroutine assumes the following data:
+    !   rvectorQuickAccess1: coordinates of the degrees of freedom
+    !   rvectorQuickAccess2: velocity field
+    !   DquickAccess(1):     simulation time
+    !   IquickAccess(1):     boundary type
+    !   IquickAccess(2):     segment number
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the vector for all nodes under consideration
+    !   DIMENSION(nnodes)
+    real(DP), dimension(:), intent(out) :: DvectorAtNode
+!</output>
+
+!</subroutine>
+
+    ! local variable
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rvelocity,p_rdofCoords
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:), pointer :: p_DdofCoords
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime,dnv,dval
+    integer :: inode,ibdrtype,isegment,i
+
+#ifndef TRANSP_USE_IBP
+    call output_line('Application must be compiled with flag &
+        &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'transp_calcVecBdrConvD2d_sim')
+    call sys_halt()
+#endif
+
+    ! This subroutine assumes that the first two quick access vectors
+    ! points to the coordinates of the degrees of freedom and to the
+    ! velocity field (if any)
+    p_rdofCoords => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
+    
+    ! Set pointers
+    call lsyssc_getbase_double(p_rdofCoords%RvectorBlock(1), p_DdofCoords)
+    if (associated(p_rvelocity)) then
+      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+    end if
+        
+    ! The first quick access double values hold the simulation time
+    dtime  = rcollection%DquickAccess(1)
+    
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
+    ibdrtype = rcollection%IquickAccess(1)
+    isegment = rcollection%IquickAccess(2)
+
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
+    ! What type of boundary conditions are we?
+    select case(iand(ibdrtype, BDRC_TYPEMASK))
+      
+    case (BDRC_HOMNEUMANN)
+      !-------------------------------------------------------------------------
+      ! Homogeneous Neumann boundary conditions:
+      !
+      ! The diffusive part in the linear form vanishes since
+      !
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      !
+      ! The convective part is included into the bilinear form.
+      !
+      ! Hence, this routine should not be called for homogeneous
+      ! Neumann boundary conditions since it corresponds to an
+      ! expensive assembly of a "zero" boundary integral.
+      DvectorAtNode = 0.0_DP
+      
+      call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_calcVecBdrConvP2d_sim')
+      
+      
+    case (BDRC_INHOMNEUMANN)
+      !-------------------------------------------------------------------------
+      ! Inhomogeneous Neumann boundary conditions:
+      !
+      ! Evaluate coefficient for the diffusive part of the linear form
+      !
+      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      !
+      ! The convective part is included into the bilinear form (if any).
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Loop over all nodes at the boundary
+      do inode =  1,  nnodes
+        
+        ! Get global node number
+        i = InodeList(1,inode)
+        
+        ! Set values for function parser
+        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+
+        ! Multiply by scaling coefficient
+        DvectorAtNode(inode) = dscale * dval
+      end do
+
+      
+    case (BDRC_DIRICHLET)
+      !-------------------------------------------------------------------------
+      ! Dirichlet boundary conditions:
+      !
+      ! Evaluate coefficient for the convective part of the linear form
+      !
+      ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      !
+      ! The diffusive part is included into the bilinear form.
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      ! Loop over all nodes at the boundary
+      do inode = 1, nnodes
+        
+        ! Get global node number
+        i = InodeList(1,inode)
+        
+        ! Set values for function parser
+        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+
+        ! Impose Dirichlet value via penalty method
+        DvectorAtNode(inode) = -dscale * dval * BDRC_DIRICHLET_PENALTY
+      end do
+
+      
+    case (BDRC_ROBIN)
+      !-------------------------------------------------------------------------
+      ! Robin boundary conditions:
+      !
+      ! Evaluate coefficients for both the convective and the diffusive
+      ! part of the linear form
+      !
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n} = ({\bf v}g)\cdot{\bf n} $$
+      !
+      ! and do not include any boundary integral into the bilinear form at all.
+      
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      if (associated(p_rvelocity)) then
+        
+        ! Loop over all nodes at the boundary
+        do inode =  1,  nnodes
+          
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Compute normal velocity in nodes i
+          dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
+                DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Set value at Robin boundary
+          DvectorAtNode(inode) = dscale*dnv*dval
+        end do
+        
+      else
+        ! Clear coefficients for zero velocity
+        DvectorAtNode = 0.0_DP
+      end if
+      
+      
+    case(BDRC_FLUX)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n} = ({\bf v}g)\cdot{\bf n} $$
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      if (associated(p_rvelocity)) then
+        
+        ! Loop over all nodes at the boundary
+        do inode =  1,  nnodes
+          
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Compute normal velocity in nodes i
+          dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
+                DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+
+          ! Check if node i is at the dual outflow boundary
+          if (dnv .gt. SYS_EPSREAL_DP) then
+            
+            ! Set values for function parser
+            Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+            Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+            
+            ! Set value at dual outflow boundary
+            DvectorAtNode(inode) = dscale*dnv*dval
+          else
+            DvectorAtNode(inode) = 0.0_DP
+          end if
+        end do
+        
+      else
+        ! Clear coefficients for zero velocity
+        DvectorAtNode = 0.0_DP
+      end if
+      
+
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
+      !
+      ! Evaluate coefficient for both the convective and diffusive
+      ! part for the linear form at the inflow boundary part.
+      !
+      ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
+      !
+      ! The boundary integral at the outflow boundary is included
+      ! into the bilinear form.
+      
+      print *, "Periodic boundary conditions are not implemented yet!"
+      stop
+
+    end select
+
+  end subroutine transp_calcVecBdrConvD2d_sim
 
   !*****************************************************************************
   

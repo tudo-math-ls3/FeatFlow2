@@ -183,8 +183,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcBilfBdrCond1d(rproblemLevel, rboundaryCondition,&
-      rsolution, dtime, dscale, ssectionName, fcoeff_buildMatrixScBdr1D_sim,&
-      rmatrix, rcollection, cconstrType)
+      rsolution, ssectionName, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
+      bclear, rmatrix, rcollection, cconstrType)
     
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -208,14 +208,18 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! simulation time
     real(DP), intent(in) :: dtime
 
     ! scaling factor
     real(DP), intent(in) :: dscale
 
-    ! section name in parameter list and collection structure
-    character(LEN=*), intent(in) :: ssectionName
+    ! Whether to clear the matrix before calculating the entries.
+    ! If .FALSE., the new matrix entries are added to the existing entries.
+    logical, intent(in) :: bclear
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
@@ -286,6 +290,8 @@ contains
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
 
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rmatrix)
     
     ! Set pointers
     call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
@@ -344,8 +350,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcLinfBdrCond1d(rproblemLevel, rboundaryCondition,&
-      rsolution, dtime, dscale, ssectionName, fcoeff_buildVectorScBdr1D_sim,&
-      rvector, rcollection)
+      rsolution, ssectionName, dtime, dscale, fcoeff_buildVectorScBdr1D_sim,&
+      bclear, rvector, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -369,14 +375,18 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in), target :: rsolution
 
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
     ! simulation time
     real(DP), intent(in) :: dtime
 
     ! scaling factor
     real(DP), intent(in) :: dscale
-
-    ! section name in parameter list and collection structure
-    character(LEN=*), intent(in) :: ssectionName
+    
+    ! Whether to clear the vector before calculating the entries.
+    ! If .FALSE., the new vector entries are added to the existing entries.
+    logical, intent(in) :: bclear
 
     ! callback routine for nonconstant coefficient vectors.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorScBdr1D.inc'
@@ -443,6 +453,8 @@ contains
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
     
+    ! Clear vector?
+    if (bclear) call lsysbl_clearVector(rvector)
     
     ! Set pointers
     call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
