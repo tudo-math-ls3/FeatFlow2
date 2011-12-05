@@ -483,6 +483,9 @@ nsumcubRefLinForm = %{Hydro.nsumcubRefLinForm}
 
 #-------------------------------------------------------------------------------
 
+# section name of the mass stabilization
+mass = Mass
+
 # section name of the convection stabilization
 convection = Convection
 
@@ -500,6 +503,17 @@ icoordsystem = %{Hydro.icoordsystem}
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
 igeometricsourcetype = %{Hydro.igeometricsourcetype}
+
+
+################################################################################
+[Mass]
+################################################################################
+
+# type of spatial stabilization:
+#  0 = no stabilization
+# 40 = nonlinear FEM-LPT for mass contribution
+# 50 = linearised FEM-LPT for mass contribution
+istabilisation = 0
 
 
 ################################################################################

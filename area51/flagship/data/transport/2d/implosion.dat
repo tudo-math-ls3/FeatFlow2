@@ -157,6 +157,9 @@ ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
+# section name of the mass stabilization
+mass = Mass
+
 # section name of the convection stabilization
 convection = Convection
 
@@ -192,6 +195,17 @@ icoordsystem = 0
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
 igeometricsourcetype = 2
+
+
+################################################################################
+[Mass]
+################################################################################
+
+# type of spatial stabilization:
+#  0 = no stabilization
+# 40 = nonlinear FEM-LPT for mass contribution
+# 50 = linearised FEM-LPT for mass contribution
+istabilisation = 0
 
 
 ################################################################################

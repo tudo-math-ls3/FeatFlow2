@@ -187,11 +187,11 @@ errorestimator = ErrorEstimator
 ################################################################################
 
 # type of spatial stabilization:
-# type of spatial stabilisation:
 #  0 = no stabilization
 # 40 = nonlinear FEM-LPT for mass contribution
 # 50 = linearised FEM-LPT for mass contribution
-istabilisation = 40
+istabilisation = 0
+
 
 ################################################################################
 [Convection]
