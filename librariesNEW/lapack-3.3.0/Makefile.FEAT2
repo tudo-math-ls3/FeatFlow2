@@ -33,7 +33,7 @@ LAPACKLIB = $(OBJDIR)/liblapack.a
 
 
 SRCLIST=SRC/ilaenv.f SRC/ieeeck.f SRC/iparmq.f \
-	SRC/dgbtrs.f SRC/dgbtrf.f SRC/ SRC/dgels.f \
+	SRC/dgbtrs.f SRC/dgbtrf.f SRC/ SRC/dgels.f SRC/dgelsy.f SRC/dgelss.f SRC/dgelsd.f \
 	SRC/dtrtrs.f SRC/dgttrf.f SRC/dgttrs.f SRC/dgbtf2.f SRC/dlaset.f \
 	SRC/dormlq.f SRC/dlabad.f SRC/dlascl.f SRC/dlange.f SRC/dgelqf.f SRC/dormqr.f \
 	SRC/dorml2.f SRC/dgeqrf.f SRC/dlarft.f SRC/dlarfb.f SRC/dgeqr2.f SRC/dgelq2.f \
