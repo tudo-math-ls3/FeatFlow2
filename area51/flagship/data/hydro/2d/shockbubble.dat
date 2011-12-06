@@ -71,7 +71,7 @@ isystemcoupling = 0
 isystemPrecond = 2
 
 # variables for flux correction
-# (i)  for synchronized flux correction list 
+# (i)  for synchronised flux correction list 
 #      all variables in alphabetical(!) order, e.g.
 #
 # slimitingvariable = density,pressure,velocity
@@ -145,7 +145,7 @@ isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
-# section name of the inviscid stabilization
+# section name of the inviscid stabilisation
 inviscid = Inviscid
 
 # section name of the time-stepping algorithm
@@ -168,8 +168,8 @@ errorestimator = ErrorEstimator
 [Inviscid]
 ################################################################################
 
-# type of spatial stabilization:
-#  0 = no stabilization (Galerkin)
+# type of spatial stabilisation:
+#  0 = no stabilisation (Galerkin)
 #  1 = discrete upwinding
 # 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
 # 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
@@ -460,8 +460,8 @@ dperturbationStrategy = 1
 # otherwise, user-defined fixed value
 dforcingStrategy = 1
 
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
+# check sufficient decrease condition in globalisation
+# 0 = apply Newton increment without globalisation
 # 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = 0
 

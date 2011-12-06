@@ -40,13 +40,13 @@ DualBdrGFEM = 5
 
 #-------------------------------------------------------------------------------
 
-# Position of the stabilization for the convective term
+# Position of the stabilisation for the convective term
 ConvectionAFC = 1
 
-# Position of the stabilization for the diffusive term
+# Position of the stabilisation for the diffusive term
 DiffusionAFC = 2
 
-# Position of the stabilization for the mass term
+# Position of the stabilisation for the mass term
 MassAFC = 3
 
 #-------------------------------------------------------------------------------

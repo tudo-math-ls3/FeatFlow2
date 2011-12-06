@@ -147,13 +147,13 @@ ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
-# section name of the mass stabilization
+# section name of the mass stabilisation
 mass = Mass
 
-# section name of the convection stabilization
+# section name of the convection stabilisation
 convection = Convection
 
-# section name of the diffusion stabilization
+# section name of the diffusion stabilisation
 diffusion = Diffusion
 
 # section name of the time-stepping algorithm
@@ -176,8 +176,8 @@ errorestimator = ErrorEstimator
 [Mass]
 ################################################################################
 
-# type of spatial stabilization:
-#  0 = no stabilization
+# type of spatial stabilisation:
+#  0 = no stabilisation
 # 40 = nonlinear FEM-LPT for mass contribution
 # 50 = linearised FEM-LPT for mass contribution
 istabilisation = 0
@@ -187,8 +187,8 @@ istabilisation = 0
 [Convection]
 ################################################################################
 
-# type of spatial stabilization:
-#  0 = no stabilization (Galerkin)
+# type of spatial stabilisation:
+#  0 = no stabilisation (Galerkin)
 #  1 = discrete upwinding
 # 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
 # 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
@@ -211,8 +211,8 @@ iprelimiting = 0
 [Diffusion]
 ################################################################################
 
-# type of spatial stabilization
-#  0 = no stabilization (Galerkin)
+# type of spatial stabilisation
+#  0 = no stabilisation (Galerkin)
 #  2 = discrete maximum principle preservation
 # 32 = nonlinear symmetric limiting
 # 42 = nonlinear symmetric FEM-LPT
@@ -485,8 +485,8 @@ dperturbationStrategy = 2
 # otherwise, user-defined fixed value
 dforcingStrategy = 1
 
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
+# check sufficient decrease condition in globalisation
+# 0 = apply Newton increment without globalisation
 # 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = 0
 

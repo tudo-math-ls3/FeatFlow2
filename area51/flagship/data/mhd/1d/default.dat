@@ -36,13 +36,13 @@ PrimalBdrGFEM = 4
 DualBdrGFEM = 5
 
 #-------------------------------------------------------------------------------
-# Position of the stabilization for the inviscid term
+# Position of the stabilisation for the inviscid term
 InviscidAFC = 1
 
-# Position of the stabilization for the iviscous term
+# Position of the stabilisation for the iviscous term
 ViscousAFC = 2
 
-# Position of the stabilization for the mass term
+# Position of the stabilisation for the mass term
 MassAFC = 3
 
 #-------------------------------------------------------------------------------

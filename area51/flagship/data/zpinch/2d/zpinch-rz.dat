@@ -70,9 +70,9 @@ igeometricsourcetype = 2
 # 2 = group formulation with lumped mass matrix
 ilorentzforcetype = 2
 
-# type of synchronization used for flux correction
-# 0 = no synchronization
-# 1 = minimum synchronization
+# type of synchronisation used for flux correction
+# 0 = no synchronisation
+# 1 = minimum synchronisation
 # 2 = Hydrodynamic model first, transport model second
 # 3 = Transport model first, hydrodynamic model second
 # 4 = Hydrodynamic model only
@@ -180,7 +180,7 @@ isystemPrecond = 3
 #-------------------------------------------------------------------------------
 
 # variables for flux correction
-# (i)  for synchronized flux correction list 
+# (i)  for synchronised flux correction list 
 #      all variables in alphabetical(!) order, e.g.
 #
 # slimitingvariable = density,pressure,velocity
@@ -237,15 +237,15 @@ iexactsolutiontype = 0
 # section name of exact solution
 sexactsolutionname = 
 
-# variables for constrained initialization
+# variables for constrained initialisation
 ssolutionconstrainvariable(2) =
   density
   pressure
   
-# number of failsafe steps in constrained initialization
+# number of failsafe steps in constrained initialisation
 nsolutionfailsafe = 0
 
-# variables for failsafe constrained initialization
+# variables for failsafe constrained initialisation
 ssolutionfailsafevariable(2) =
   density
   energy
@@ -281,7 +281,7 @@ nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
-# section name of the inviscid stabilization
+# section name of the inviscid stabilisation
 inviscid = Inviscid
 
 #-------------------------------------------------------------------------------
@@ -304,8 +304,8 @@ igeometricsourcetype = %{Zpinch.igeometricsourcetype}
 [Inviscid]
 ################################################################################
 
-# type of spatial stabilization:
-#  0 = no stabilization (Galerkin)
+# type of spatial stabilisation:
+#  0 = no stabilisation (Galerkin)
 #  1 = discrete upwinding
 # 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
 # 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
@@ -483,10 +483,10 @@ nsumcubRefLinForm = %{Hydro.nsumcubRefLinForm}
 
 #-------------------------------------------------------------------------------
 
-# section name of the mass stabilization
+# section name of the mass stabilisation
 mass = Mass
 
-# section name of the convection stabilization
+# section name of the convection stabilisation
 convection = Convection
 
 #-------------------------------------------------------------------------------
@@ -509,8 +509,8 @@ igeometricsourcetype = %{Hydro.igeometricsourcetype}
 [Mass]
 ################################################################################
 
-# type of spatial stabilization:
-#  0 = no stabilization
+# type of spatial stabilisation:
+#  0 = no stabilisation
 # 40 = nonlinear FEM-LPT for mass contribution
 # 50 = linearised FEM-LPT for mass contribution
 istabilisation = 0
@@ -520,8 +520,8 @@ istabilisation = 0
 [Convection]
 ################################################################################
 
-# type of spatial stabilization: 
-#  0 = no stabilization (Galerkin)
+# type of spatial stabilisation: 
+#  0 = no stabilisation (Galerkin)
 #  1 = discrete upwinding
 # 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
 # 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
@@ -827,8 +827,8 @@ dperturbationStrategy = 1
 # otherwise, user-defined fixed value
 dforcingStrategy = 1
 
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
+# check sufficient decrease condition in globalisation
+# 0 = apply Newton increment without globalisation
 # 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = 1
 
@@ -905,8 +905,8 @@ dperturbationStrategy = %{NonlinearSolverHydro.dperturbationStrategy}
 # otherwise, user-defined fixed value
 dforcingStrategy = %{NonlinearSolverHydro.dforcingStrategy}
 
-# check sufficient decrease condition in globalization
-# 0 = apply Newton increment without globalization
+# check sufficient decrease condition in globalisation
+# 0 = apply Newton increment without globalisation
 # 1 = check sufficient decrease condition and perform backtracking if required
 icheckSufficientDecrease = %{NonlinearSolverHydro.icheckSufficientDecrease}
 

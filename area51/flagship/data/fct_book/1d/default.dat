@@ -15,10 +15,10 @@ sperfconfigfile = "../../perfconfig/default.pcfg"
 # Position of the discretisation in the array of discretisations
 Discretisation = 1
 
-# Position of the stabilization for the inviscid term
+# Position of the stabilisation for the inviscid term
 InviscidAFC = 1
 
-# Position of the stabilization for the iviscous term
+# Position of the stabilisation for the iviscous term
 ViscousAFC = 2
 
 # Position of the group finite element block for the inviscid term

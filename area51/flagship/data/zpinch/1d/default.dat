@@ -35,13 +35,13 @@ PrimalBdrGFEM = 4
 DualBdrGFEM = 5
 
 #-------------------------------------------------------------------------------
-# Position of the stabilization for the inviscid term
+# Position of the stabilisation for the inviscid term
 InviscidAFC = 1
 
-# Position of the stabilization for the viscous term
+# Position of the stabilisation for the viscous term
 ViscousAFC = 0
 
-# Position of the stabilization for the mass term
+# Position of the stabilisation for the mass term
 MassAFC = 0
 
 #------------------------------------------------------------------------------
@@ -99,13 +99,13 @@ DualBdrGFEM = 7
 
 #-------------------------------------------------------------------------------
 
-# Position of the stabilization for the convective term
+# Position of the stabilisation for the convective term
 ConvectionAFC = 2
 
-# Position of the stabilization for the diffusive term
+# Position of the stabilisation for the diffusive term
 DiffusionAFC = 0
 
-# Position of the stabilization for the mass term
+# Position of the stabilisation for the mass term
 MassAFC = 0
 
 #------------------------------------------------------------------------------
