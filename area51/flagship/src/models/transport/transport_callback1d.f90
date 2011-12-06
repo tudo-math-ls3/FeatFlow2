@@ -542,7 +542,7 @@ contains
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
 
-  end subroutine transp_calcLinfBdrCond1d  
+  end subroutine transp_calcLinfBdrCond1d
 
   !*****************************************************************************
   

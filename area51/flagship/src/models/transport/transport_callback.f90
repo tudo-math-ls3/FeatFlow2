@@ -3773,7 +3773,7 @@ contains
     real(DP), intent(in) :: dtime
 
     ! scaling parameter
-    real(DP), intent(in) :: dscale  
+    real(DP), intent(in) :: dscale
 
     ! Whether to clear the vector before calculating the entries.
     ! If .FALSE., the new vector entries are added to the existing entries.
