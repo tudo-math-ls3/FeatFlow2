@@ -553,13 +553,24 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq,ijpos,ivar,jvar
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq,ijpos,ivar,jvar
       
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
+
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       if (bclear) call gfem_clearArray(rarray)
+
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
@@ -579,14 +590,14 @@ contains
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -897,13 +908,24 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,iidx,ijpos,ivar,jvar
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,iidx,ijpos,ivar,jvar
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       if (bclear) call gfem_clearArray(rarray)
+
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx,2)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
@@ -922,14 +944,14 @@ contains
       
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -1631,13 +1653,24 @@ contains
       
       ! local variables
       real(DP), dimension(MVAR) :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
       
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
+
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       if (bclear) call lalg_clearVector(Ddata)
+
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
@@ -1651,14 +1684,14 @@ contains
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -1876,13 +1909,24 @@ contains
       
       ! local variables
       real(DP), dimension(MVAR) :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,iidx
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,iidx
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       if (bclear) call lalg_clearVector(Ddata)
+
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx,2)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
@@ -1895,14 +1939,14 @@ contains
       
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -3996,7 +4040,10 @@ contains
       integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -4004,26 +4051,34 @@ contains
       
       if (bclear) call lalg_clearVector(Ddata)
 
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
-      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
-      allocate(IdofsAtNode(2,p_rperfconfig%NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -4135,7 +4190,10 @@ contains
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
       
       ! local variables
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,i,ia,idx,ieq
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -4143,25 +4201,33 @@ contains
       
       if (bclear) call lalg_clearVector(Ddata)
 
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx,2)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
-      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NASIM))
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -4432,7 +4498,10 @@ contains
       integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -4440,26 +4509,34 @@ contains
       
       if (bclear) call lalg_clearVector(Ddata)
 
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
-      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
-      allocate(IdofsAtNode(2,p_rperfconfig%NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -4571,7 +4648,10 @@ contains
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
       
       ! local variables
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,i,ia,idx,ieq
+
+      ! OpenMP-Extension
+      !$ integer, external :: omp_get_max_threads
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -4579,25 +4659,34 @@ contains
       
       if (bclear) call lalg_clearVector(Ddata)
 
+      ! OpenMP-Extension: Compute number of equations processed by
+      ! each thread. This is a little bit tricky since we cannot
+      ! determine the number of nonzero matrix entries to be processed
+      ! simultaneously a priori. Therefore, we split the amount of
+      ! work into as many equally sized tasks as we have threads.
+      NEQSIM = size(InodeListIdx,2)-1
+      !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
+
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
-      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NASIM))
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
