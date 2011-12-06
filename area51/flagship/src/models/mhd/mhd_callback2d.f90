@@ -1174,7 +1174,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
         Diff = RCONST(0.0)
@@ -4498,7 +4498,7 @@ contains
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'ccubTypeBdr', ccubTypeBdr)
 
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
     
     ! Prepare quick access arrays of temporal collection structure
@@ -4551,7 +4551,7 @@ contains
         rcollectionTmp%IquickAccess(2) = isegment
         rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
         
-        ! Initialize the linear form
+        ! Initialise the linear form
         rform%itermCount = 1
         rform%Idescriptors(1) = DER_FUNC
         

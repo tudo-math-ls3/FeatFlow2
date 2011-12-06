@@ -595,7 +595,7 @@ contains
       rproblemLevel, rsolution, rcollection)
 
 !<description>
-    ! This subroutine initializes the velocity field from the solution
+    ! This subroutine initialises the velocity field from the solution
     ! of the compressible hydrodynamic model. The result is stored separately
     ! for each problem level.
 !</description>
@@ -2392,7 +2392,7 @@ contains
     end if
 
 
-!!$      ! Initialize dummy timestep
+!!$      ! Initialise dummy timestep
 !!$      rtimestepAux%dStep = 1.0_DP
 !!$      rtimestepAux%theta = 0.0_DP
 !!$
@@ -2460,7 +2460,7 @@ contains
       ! Allocate character array that stores all failsafe variable names
       allocate(SfailsafeVariables(nvariable))
       
-      ! Initialize character array with failsafe variable names
+      ! Initialise character array with failsafe variable names
       do ivariable = 1, nvariable
         call parlst_getvalue_string(p_rparlist,&
             ssectionNameHydro, 'sfailsafevariable',&

@@ -9,16 +9,16 @@
 !# The following routines are available:
 !#
 !# 1.) flagship_readParserFromFile
-!#     -> Reads expressions from file and initialize the function parser
+!#     -> Reads expressions from file and initialise the function parser
 !#
 !# 2.) flagship_initUCDexport
-!#     -> Initializes the UCD exporter for file output
+!#     -> Initialises the UCD exporter for file output
 !#
 !# 3.) flagship_updateSolverMatrix
 !#     -> Updates the matrix in the solver structure
 !#
 !# 4.) flagship_initPerfConfig
-!#     -> Initializes performance configurations from file
+!#     -> Initialises performance configurations from file
 !# </purpose>
 !##############################################################################
 
@@ -126,7 +126,7 @@ contains
                                          cvariables, rparser)
 
 !<description>
-    ! This subroutine initializes a vector profile from the parameters
+    ! This subroutine initialises a vector profile from the parameters
     ! specified in the parameter file by calling a function parser w.r.t.
     ! the specified variable names
 !</description>
@@ -253,7 +253,7 @@ contains
                                     rexport, ifilenumber, rtriangulation)
 
 !<description>
-    ! This subroutine initializes the UCD exporter structure. If the
+    ! This subroutine initialises the UCD exporter structure. If the
     ! optional parameter ifilenumber is given, the outputfile is named
     ! 'sfilename'.<ifilenumber>.'ext' where 'ext' is the file
     ! extension that corresponds to the UCD format.
@@ -690,12 +690,12 @@ contains
   subroutine flagship_initPerfConfig(sfilename, rperfconfig, ssectionName)
 
 !<description>
-    ! This subroutine initializes a performance configuration by the
+    ! This subroutine initialises a performance configuration by the
     ! values stored in an INI-file. If the optional parameters
     ! rperfconfig and ssectionName are not present, then the global
     ! performance configurations of the kernerl modules are
-    ! initialized. Otherwise, the given performance configuration
-    ! rperfconfig is initialized by the values given in section
+    ! initialised. Otherwise, the given performance configuration
+    ! rperfconfig is initialised by the values given in section
     ! ssectionName.
 !</description>
 
@@ -717,7 +717,7 @@ contains
 
     if (present(rperfconfig)) then
       
-      ! Initialize the given performance configuration
+      ! Initialise the given performance configuration
       if (present(ssectionName)) then
         call pcfg_readPerfConfig(sfilename, ssectionName, rperfconfig)
       else
@@ -726,7 +726,7 @@ contains
 
     else
 
-      ! Initialize all global performance configurations
+      ! Initialise all global performance configurations
       call pcfg_readPerfConfig(sfilename, 'LSYSSC', rperfconfigTmp)
       call lsyssc_initPerfConfig(rperfConfigTmp)
 

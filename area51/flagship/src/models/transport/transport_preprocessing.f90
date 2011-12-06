@@ -10,33 +10,33 @@
 !# The following routines are available:
 !#
 !# 1.) transp_initSolvers
-!#     -> Initializes the solve structures from the parameter list.
+!#     -> Initialises the solve structures from the parameter list.
 !#
 !# 2.) transp_initProblemDescriptor
-!#     -> Initializes the abstract problem descriptor based on the
+!#     -> Initialises the abstract problem descriptor based on the
 !#        parameter settings given by the parameter list.
 !#
 !# 3.) transp_initProblemLevel
-!#     -> Initializes the individual problem level based on the
+!#     -> Initialises the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
 !#        initialisation routine transp_initAllProblemLevels.
 !#
 !# 4.) transp_initAllProblemLevels
-!#     -> Initializes ALL problem levels attached to the global
+!#     -> Initialises ALL problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list.
 !#
 !# 5.) transp_initSolution
-!#     -> Initializes the solution vector based on the parameter
+!#     -> Initialises the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
 !# 6.) transp_initRHS
-!#     -> Initializes the right-hand side vector based on the
+!#     -> Initialises the right-hand side vector based on the
 !#        parameter settings given by the application descriptor
 !#
 !# 7.) transp_initTargetFunc
-!#     -> Initializes the target functional for the dual problem
+!#     -> Initialises the target functional for the dual problem
 !# </purpose>
 !##############################################################################
 
@@ -100,7 +100,7 @@ contains
       rtimestep, rsolver)
 
 !<description>
-    ! This subroutine initializes the time-stepping structure
+    ! This subroutine initialises the time-stepping structure
     ! and the top-level solver structure using the
     ! parameter settings defined in the parameter list
 !</description>
@@ -136,10 +136,10 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName, 'timestep', stimestepName)
     call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
 
-    ! Initialize time-stepping
+    ! Initialise time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep)
 
-    ! Initialize solver structure
+    ! Initialise solver structure
     call solver_createSolver(rparlist, ssolverName, rsolver)
     if (rsolver%csolverType .eq. SV_FMG) then
       nlmin = rsolver%p_solverMultigrid%nlmin
@@ -160,7 +160,7 @@ contains
       nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem descriptor
+    ! This subroutine initialises the abstract problem descriptor
     ! using the parameters settings defined in the parameter list
 !</description>
 
@@ -308,7 +308,7 @@ contains
       rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
-    ! This subroutine initielizes the individual problem level. It
+    ! This subroutine initielises the individual problem level. It
     ! generates the discretisation, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
 !</description>
@@ -438,7 +438,7 @@ contains
     !---------------------------------------------------------------------------
     if (discretisation > 0) then
 
-      ! Initialize the discretisation structure
+      ! Initialise the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
@@ -577,7 +577,7 @@ contains
       !-------------------------------------------------------------------------
       ! Calculate coordinates of the global DOF`s
       if (dofCoords > 0) then
-        ! Check if block vector has been initialized
+        ! Check if block vector has been initialised
         if (rproblemLevel%RvectorBlock(dofCoords)%nblocks .eq. 0) then
           call lsysbl_createVectorBlock(p_rdiscretisation,&
               p_rdiscretisation%ndimension,&
@@ -745,10 +745,10 @@ contains
       ! Create group finite element structures and AFC-stabilisations
       !-------------------------------------------------------------------------
       
-      ! Initialize/resize template group finite elment structure and
+      ! Initialise/resize template group finite elment structure and
       ! generate the edge structure derived from the template matrix
       if (templateGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(templateGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
         
@@ -757,7 +757,7 @@ contains
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based assembly
+          ! Initialise first group finite element set for edge-based assembly
           call gfem_initGroupFEMSet(p_rgroupFEMSet,&
               rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
         else
@@ -779,11 +779,11 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/resize group finite element structure as duplicate of
+      ! Initialise/resize group finite element structure as duplicate of
       ! the template group finite element structure and fill it with the
       ! precomputed matrix coefficients for the convective term
       if (convectionGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(convectionGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
         
@@ -792,7 +792,7 @@ contains
             rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based
+          ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
@@ -854,11 +854,11 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/resize group finite element structure as duplicate of
+      ! Initialise/resize group finite element structure as duplicate of
       ! the template group finite element structure and fill it with the
       ! precomputed matrix coefficients for the diffusice term
       if (diffusionGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(diffusionGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(diffusionGFEM), 1)
         
@@ -867,7 +867,7 @@ contains
             rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based
+          ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
@@ -917,7 +917,7 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/Resize stabilisation structure for the mass matrix by
+      ! Initialise/Resize stabilisation structure for the mass matrix by
       ! duplicating parts of the template group finite element set
       if (massAFC > 0) then
         if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
@@ -968,7 +968,7 @@ contains
       
       if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal)) then
         
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
             bdrc_getNumberOfRegions(rbdrCondPrimal))
@@ -996,7 +996,7 @@ contains
             p_rgroupFEMSet =>&
                 rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%RgroupFEMBlock(isegment)
             
-            ! Initialize group finite element
+            ! Initialise group finite element
             call initGroupFEMSetBoundary(rboundaryRegion,&
                 rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
             
@@ -1021,7 +1021,7 @@ contains
       
       if ((dualBdrGFEM > 0) .and. present(rbdrCondDual)) then
         
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(dualBdrGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
             bdrc_getNumberOfRegions(rbdrCondDual))
@@ -1049,7 +1049,7 @@ contains
             p_rgroupFEMSet =>&
                 rproblemLevel%RgroupFEMBlock(dualBdrGFEM)%RgroupFEMBlock(isegment)
             
-            ! Initialize group finite element
+            ! Initialise group finite element
             call initGroupFEMSetBoundary(rboundaryRegion,&
                 rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
             
@@ -1086,7 +1086,7 @@ contains
   contains
 
     !**************************************************************
-    ! Initialize the matrix structure by duplicating the template matrix
+    ! Initialise the matrix structure by duplicating the template matrix
 
     subroutine initMatrixStructure(rmatrixTemplate, rmatrix)
 
@@ -1104,7 +1104,7 @@ contains
     end subroutine initMatrixStructure
     
     !**************************************************************
-    ! Initialize the diffusion matrix in 1D
+    ! Initialise the diffusion matrix in 1D
 
     subroutine initDiffusionMatrix1D(rfparser, rmatrix)
 
@@ -1143,7 +1143,7 @@ contains
     end subroutine initDiffusionMatrix1D
 
     !**************************************************************
-    ! Initialize the diffusion matrix in 2D
+    ! Initialise the diffusion matrix in 2D
 
     subroutine initDiffusionMatrix2D(rfparser, rmatrix)
 
@@ -1192,7 +1192,7 @@ contains
         rform%BconstantCoeff(1:4) = .true.
         rform%Dcoefficients(1:4)  = -rform%Dcoefficients(1:4)
 
-        ! Initialize the bilinear form
+        ! Initialise the bilinear form
         rform%itermCount = 4
         rform%Idescriptors(1,1) = DER_DERIV2D_X
         rform%Idescriptors(2,1) = DER_DERIV2D_X
@@ -1216,7 +1216,7 @@ contains
     end subroutine initDiffusionMatrix2D
 
     !**************************************************************
-    ! Initialize the diffusion matrix in 3D
+    ! Initialise the diffusion matrix in 3D
 
     subroutine initDiffusionMatrix3D(rfparser, rmatrix)
 
@@ -1265,7 +1265,7 @@ contains
         rform%BconstantCoeff(1:9) = .true.
         rform%Dcoefficients(1:9)  = -rform%Dcoefficients(1:9)
 
-        ! Initialize the bilinear form
+        ! Initialise the bilinear form
         rform%itermCount = 9
         rform%Idescriptors(1,1) = DER_DERIV3D_X
         rform%Idescriptors(2,1) = DER_DERIV3D_X
@@ -1304,7 +1304,7 @@ contains
     end subroutine initDiffusionMatrix3D
 
     !**************************************************************
-    ! Initialize the group finite element set for evaluating the
+    ! Initialise the group finite element set for evaluating the
     ! bilinear and linear forms on the boundary node-by-node.
 
     subroutine initGroupFEMSetBoundary(rregion, rmatrix, nmatrices, rgroupFEMSet)
@@ -1318,7 +1318,7 @@ contains
       type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
       
       if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize finite element set for node-based assembly
+        ! Initialise finite element set for node-based assembly
         call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
             0, 0, 0, GFEM_NODEBASED, rregionTrial=rregion)
         
@@ -1349,7 +1349,7 @@ contains
       rproblem, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
-    ! This subroutine initializes the all problem levels attached to
+    ! This subroutine initialises the all problem levels attached to
     ! the global problem structure. It generates the discretisation,
     ! the template matrix and the coefficient matrices as duplicates
     ! of the template matrix.
@@ -1386,7 +1386,7 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
-      ! Initialize individual problem level
+      ! Initialise individual problem level
       call transp_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
@@ -1404,7 +1404,7 @@ contains
     rproblemLevel, dtime, rvector, rcollection)
 
 !<description>
-    ! This subroutine initializes the solution vector
+    ! This subroutine initialises the solution vector
 !</description>
 
 !<input>
@@ -1454,7 +1454,7 @@ contains
     case (SOLUTION_ZERO)
 
       !-------------------------------------------------------------------------
-      ! Initialize solution by zeros
+      ! Initialise solution by zeros
       !-------------------------------------------------------------------------
 
       call lsysbl_clearVector(rvector)
@@ -1463,7 +1463,7 @@ contains
     case (SOLUTION_GRAYMAP)
       
       !-------------------------------------------------------------------------
-      ! Initialize the nodal values by the data of a graymap image
+      ! Initialise the nodal values by the data of a graymap image
       !-------------------------------------------------------------------------
 
       ! Get global configuration from parameter list
@@ -1478,10 +1478,10 @@ contains
         call lsyssc_getbase_double(&
             rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
               
-        ! Initialize solution from portable graymap image
+        ! Initialise solution from portable graymap image
         call ppsol_readPGM(0, ssolutionName, rpgm)
         
-        ! Initialize the solution by the image data
+        ! Initialise the solution by the image data
         call ppsol_initArrayPGMDble(rpgm, p_DdofCoords, p_Ddata)
         
         ! Release portable graymap image
@@ -1496,7 +1496,7 @@ contains
     case (SOLUTION_ANALYTIC_POINTVALUE)
 
       !-------------------------------------------------------------------------
-      ! Initialize the nodal values by the data of an analytical expression
+      ! Initialise the nodal values by the data of an analytical expression
       !-------------------------------------------------------------------------
       
       ! Get global configuration from parameter list
@@ -1531,7 +1531,7 @@ contains
           SOLUTION_ANALYTIC_L2_LUMPED)
 
       !-------------------------------------------------------------------------
-      ! Initialize the FE-function by the L2-projection of the analytical data
+      ! Initialise the FE-function by the L2-projection of the analytical data
       !-------------------------------------------------------------------------
 
       ! Get global configuration from parameter list
@@ -1570,7 +1570,7 @@ contains
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
-      ! Initialize temporal collection structure
+      ! Initialise temporal collection structure
       call collct_init(rcollectionTmp)
       
       ! Prepare quick access arrays of the temporal collection structure
@@ -1696,7 +1696,7 @@ contains
       dtime, rvector, rcollection)
 
 !<description>
-    ! This subroutine initializes the right-hand side vector for the
+    ! This subroutine initialises the right-hand side vector for the
     ! primal problem based on the data from the parameter list
 !</description>
 
@@ -1738,7 +1738,7 @@ contains
     ! How should the right-hand side be initialised?
     select case(irhstype)
     case (RHS_ZERO)
-      ! Initialize right-hand side by zeros
+      ! Initialise right-hand side by zeros
       call lsysbl_clearVector(rvector)
 
 
@@ -1751,7 +1751,7 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Initialize temporal collection structure
+      ! Initialise temporal collection structure
       call collct_init(rcollectionTmp)
 
       ! Prepare quick access arrays of the temporal collection structure
@@ -1840,7 +1840,7 @@ contains
     case (TFUNC_ZERO,&
           TFUNC_SURFINTG)
 
-      ! Initialize target functional by zeros. The contribution of
+      ! Initialise target functional by zeros. The contribution of
       ! the surfae integral comes in be weakly impose boundary conditions
       call lsysbl_clearVector(rvector)
 
@@ -1855,7 +1855,7 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
       
-      ! Initialize temporal collection structure
+      ! Initialise temporal collection structure
       call collct_init(rcollectionTmp)
       
       ! Prepare quick access arrays of the temporal collection structure

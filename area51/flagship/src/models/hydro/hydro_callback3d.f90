@@ -902,7 +902,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -927,7 +927,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -1263,7 +1263,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -1288,7 +1288,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -1475,7 +1475,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
         ! Compute densities
@@ -1794,7 +1794,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -1819,7 +1819,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2008,7 +2008,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = abs(a)
         
         ! Compute densities
@@ -2410,7 +2410,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -2435,7 +2435,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2787,7 +2787,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -2812,7 +2812,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -3167,7 +3167,7 @@ contains
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
+    ! in parallel without the need to synchronise memory access
     do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
@@ -3192,7 +3192,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchronizeStream(istream)
+    call coproc_synchroniseStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -5123,7 +5123,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
 
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
 
         ! Compute densities
@@ -7167,7 +7167,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
 
         ! Compute velocities

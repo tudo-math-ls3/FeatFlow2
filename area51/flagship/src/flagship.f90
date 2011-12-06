@@ -52,11 +52,11 @@ program flagship
 
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-  ! Initialize CUDA subsystem
+  ! Initialise CUDA subsystem
   call coproc_init()
 #endif
 
-  ! Initialize Feat2 subsystem
+  ! Initialise Feat2 subsystem
   call system_init()
 
   ! Set system halt mode
@@ -66,7 +66,7 @@ program flagship
   sys_haltmode = SYS_HALT_STOP
 #endif
 
-  ! Initialize the output system
+  ! Initialise the output system
   ! Use $LOGDIR/$LOGFILE if set, otherwise hardcoded setting based on current time
   call date_and_time(sdate, stime)
   call getenv('LOGDIR',cbuffer); slogdir = adjustl(cbuffer)
@@ -80,13 +80,13 @@ program flagship
     call output_init(trim(slogdir) // '/' // trim(slogfile))
   end if
 
-  ! Initialize storage subsystem
+  ! Initialise storage subsystem
   call storage_init(500, 100)
 
-  ! Initialize function parser
+  ! Initialise function parser
   call fparser_init()
 
-  ! Initialize signal handler for SIGINT and SIGQUIT
+  ! Initialise signal handler for SIGINT and SIGQUIT
   call fsignal(SIGINT, signal_SIGINT)
   call fsignal(SIGQUIT, signal_SIGQUIT)
 
@@ -118,7 +118,7 @@ program flagship
     call sys_halt()
   end if
 
-  ! Initialize parameter list from file
+  ! Initialise parameter list from file
   call get_command_argument(command_argument_count(), cbuffer)
   sparameterfile = adjustl(cbuffer)
   call parlst_init(rparlist)
@@ -134,7 +134,7 @@ program flagship
   call parlst_info(rparlist)
   call output_separator(OU_SEP_MINUS)
 
-  ! Initialize global performace configurations
+  ! Initialise global performace configurations
   call parlst_getvalue_string(rparlist, '', 'sperfconfigfile', sperfconfigfile)
   call flagship_initPerfConfig(sperfconfigfile)
 

@@ -199,10 +199,10 @@ contains
       ! Compute the global and element-wise error
       if (ierrorVariable .eq. 1) then
 
-        ! Initialize the global error
+        ! Initialise the global error
         derror = derrorTmp
 
-        ! Initialize the element-wise error
+        ! Initialise the element-wise error
         call lsyssc_copyVector(rvectorTmp, rerror)
       else
 

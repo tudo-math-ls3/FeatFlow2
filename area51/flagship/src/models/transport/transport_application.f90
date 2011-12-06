@@ -282,7 +282,7 @@ contains
     ! unless the used updates some parameter values interactively.
     call transp_parseCmdlArguments(rparlist)
 
-    ! Initialize global collection structure
+    ! Initialise global collection structure
     call collct_init(rcollection)
 
     ! Create a separate section for the scalar transport model
@@ -339,10 +339,10 @@ contains
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
         ssectionName=ssectionName)
 
-    ! Initialize the solver structures
+    ! Initialise the solver structures
     call transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
-    ! Initialize the boundary conditions for the primal problem
+    ! Initialise the boundary conditions for the primal problem
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', ndimension)
     call parlst_getvalue_string(rparlist,&
@@ -351,7 +351,7 @@ contains
         sindatfileName, '['//trim(sbdrcondName)//']',&
         ndimension, transp_parseBoundaryCondition)
 
-    ! Initialize the boundary conditions for the dual problem
+    ! Initialise the boundary conditions for the dual problem
     call parlst_getvalue_string(rparlist, ssectionName,&
         'sdualbdrcondname', sbdrcondName, '')
     if (sbdrcondName .ne. '') then
@@ -360,14 +360,14 @@ contains
           ndimension, transp_parseBoundaryCondition)
     end if
     
-    ! Initialize the abstract problem structure
+    ! Initialise the abstract problem structure
     call transp_initProblemDescriptor(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver),&
         rproblemDescriptor)
     call problem_initProblem(rproblemDescriptor, rproblem)
 
-    ! Initialize all individual problem levels with primal and dual
+    ! Initialise all individual problem levels with primal and dual
     ! boundary conditions (if available)
     if (sbdrcondName .ne. '') then
       call transp_initAllProblemLevels(rparlist,&
@@ -668,13 +668,13 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation,&
         rsolution, .false., ST_DOUBLE)
 
-    ! Initialize the solution vector and impose boundary conditions
+    ! Initialise the solution vector and impose boundary conditions
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
     call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
         rtimestep%dinitialTime)
 
-    ! Initialize timer for intermediate UCD exporter
+    ! Initialise timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'output', soutputName)
@@ -683,7 +683,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure and perform pre-adaptation
+    ! Initialise the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -700,7 +700,7 @@ contains
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -757,7 +757,7 @@ contains
             call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                 rtimestep%dinitialTime)
 
-            ! Re-initialize all constant coefficient matrices
+            ! Re-initialise all constant coefficient matrices
             call transp_initProblemLevel(rparlist, ssectionName,&
                 p_rproblemLevel, rcollection, rbdrCond)
           end do
@@ -785,7 +785,7 @@ contains
     call problem_setSpec(rproblem, TRANSP_TROPER_INIT+&
                                    TRANSP_PRECOND_INIT,'ior')
 
-    ! Initialize right-hand side vector
+    ! Initialise right-hand side vector
     if (irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
       call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
@@ -976,7 +976,7 @@ contains
         ! Start time measurement for generation of constant coefficient matrices
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-        ! Re-initialize all constant coefficient matrices
+        ! Re-initialise all constant coefficient matrices
         call transp_initProblemLevel(rparlist, ssectionName,&
             p_rproblemLevel, rcollection, rbdrCond)
 
@@ -999,7 +999,7 @@ contains
               p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
         end if
 
-        ! Re-initialize the right-hand side vector
+        ! Re-initialise the right-hand side vector
         if (irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
@@ -1222,14 +1222,14 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution,&
         .false., ST_DOUBLE)
 
-    ! Initialize the solution vector and impose boundary conditions
+    ! Initialise the solution vector and impose boundary conditions
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
     call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
         rtimestep%dinitialTime)
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure
+    ! Initialise the h-adaptation structure
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -1241,7 +1241,7 @@ contains
 
       if (nadapt > 0) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -1393,7 +1393,7 @@ contains
       ! Start time measurement for generation of constant coefficient matrices
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-      ! Re-initialize all constant coefficient matrices
+      ! Re-initialise all constant coefficient matrices
       call transp_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCond)
 
@@ -1542,7 +1542,7 @@ contains
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Initialise the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal,&
         .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
@@ -1550,7 +1550,7 @@ contains
     call bdrf_filterVectorExplicit(rbdrCondPrimal, rsolutionPrimal, 0.0_DP)
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure
+    ! Initialise the h-adaptation structure
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -1562,7 +1562,7 @@ contains
 
       if (nadapt > 0) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -1653,7 +1653,7 @@ contains
       ! Start time measurement for error estimation
       call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
-      ! Initialize target functional
+      ! Initialise target functional
       call lsysbl_createVectorBlock(rsolutionPrimal, rtargetFunc)
       call transp_initTargetFunc(rparlist, ssectionName,&
           p_rproblemLevel, 0.0_DP, rtargetFunc, rcollection)
@@ -1718,7 +1718,7 @@ contains
       ! Check if right-hand side vector exists
       if (irhstype > 0) then
 
-        ! Initialize right-hand side vector
+        ! Initialise right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
@@ -1795,7 +1795,7 @@ contains
       ! Start time measurement for generation of constant coefficient matrices
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-      ! Re-initialize all constant coefficient matrices
+      ! Re-initialise all constant coefficient matrices
       call transp_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
@@ -1943,14 +1943,14 @@ contains
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Initialise the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         0.0_DP, rsolution, rcollection)
     call bdrf_filterVectorExplicit(rbdrCond, rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure
+    ! Initialise the h-adaptation structure
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -1962,7 +1962,7 @@ contains
 
       if (nadapt > 0) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -2114,7 +2114,7 @@ contains
       ! Start time measurement for generation of constant coefficient matrices
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-      ! Re-initialize all constant coefficient matrices
+      ! Re-initialise all constant coefficient matrices
       call transp_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCond)
 
@@ -2270,7 +2270,7 @@ contains
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Initialise the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal,&
         .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
@@ -2278,7 +2278,7 @@ contains
     call bdrf_filterVectorExplicit(rbdrCondPrimal, rsolutionPrimal, 0.0_DP)
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure
+    ! Initialise the h-adaptation structure
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -2290,7 +2290,7 @@ contains
 
       if (nadapt > 0) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -2382,7 +2382,7 @@ contains
       ! Start time measurement for error estimation
       call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
-      ! Initialize target functional
+      ! Initialise target functional
       call lsysbl_createVectorBlock(rsolutionPrimal, rtargetFunc)
       call transp_initTargetFunc(rparlist, ssectionName,&
           p_rproblemLevel, 0.0_DP, rtargetFunc, rcollection)
@@ -2453,7 +2453,7 @@ contains
       ! Check if right-hand side vector exists
       if (irhstype > 0) then
 
-        ! Initialize right-hand side vector
+        ! Initialise right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
             0.0_DP, rrhs, rcollection)
@@ -2529,7 +2529,7 @@ contains
       ! Start time measurement for generation of constant coefficient matrices
       call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-      ! Re-initialize all constant coefficient matrices
+      ! Re-initialise all constant coefficient matrices
       call transp_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 

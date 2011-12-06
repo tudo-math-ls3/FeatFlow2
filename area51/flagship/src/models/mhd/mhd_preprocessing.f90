@@ -10,25 +10,25 @@
 !# The following routines are available:
 !#
 !# 1.) mhd_initSolvers
-!#     -> Initializes the solve structures from the parameter list.
+!#     -> Initialises the solve structures from the parameter list.
 !#
 !# 2.) mhd_initProblemDescriptor
-!#     -> Initializes the abstract problem descriptor based on the
+!#     -> Initialises the abstract problem descriptor based on the
 !#        parameter settings given by the parameter list.
 !#
 !# 3.) mhd_initProblemLevel
-!#     -> Initializes the individual problem level based on the
+!#     -> Initialises the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
 !#        initialisation routine mhd_initAllProblemLevels.
 !#
 !# 4.) mhd_initAllProblemLevels
-!#     -> Initializes ALL problem levels attached to the global
+!#     -> Initialises ALL problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list.
 !#
 !# 5.) mhd_initSolution
-!#     -> Initializes the solution vector based on the parameter
+!#     -> Initialises the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
 !# </purpose>
@@ -95,7 +95,7 @@ contains
       rtimestep, rsolver)
 
 !<description>
-    ! This subroutine initializes the time-stepping structure and
+    ! This subroutine initialises the time-stepping structure and
     ! the top-level solver structure from the parameter list
 !</description>
 
@@ -132,10 +132,10 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'solver',   ssolverName)
 
-    ! Initialize time-stepping
+    ! Initialise time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep)
 
-    ! Initialize solver structure
+    ! Initialise solver structure
     call solver_createSolver(rparlist, ssolverName, rsolver)
     if (rsolver%csolverType .eq. SV_FMG) then
       nlmin = rsolver%p_solverMultigrid%nlmin
@@ -156,7 +156,7 @@ contains
       nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem descriptor
+    ! This subroutine initialises the abstract problem descriptor
     ! using the parameters settings defined in the parameter list
 !</description>
 
@@ -317,7 +317,7 @@ contains
       rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
-    ! This subroutine initielizes the individual problem level. It
+    ! This subroutine initielises the individual problem level. It
     ! generates the discretisation, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
 !</description>
@@ -466,7 +466,7 @@ contains
     !---------------------------------------------------------------------------
     if (discretisation > 0) then
 
-      ! Initialize the discretisation structure
+      ! Initialise the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         select case(isystemFormat)
@@ -627,7 +627,7 @@ contains
       !-------------------------------------------------------------------------
       ! Calculate coordinates of the global DOF`s
       if (dofCoords > 0) then
-        ! Check if block vector has been initialized
+        ! Check if block vector has been initialised
         if (rproblemLevel%RvectorBlock(dofCoords)%nblocks .eq. 0) then
           call lsysbl_createVectorBlock(p_rdiscretisation,&
               p_rdiscretisation%ndimension,&
@@ -939,10 +939,10 @@ contains
       ! Create group finite element structures and AFC-stabilisations
       !-------------------------------------------------------------------------
       
-      ! Initialize/resize template group finite elment structure and
+      ! Initialise/resize template group finite elment structure and
       ! generate the edge structure derived from the template matrix
       if (templateGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(templateGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
         
@@ -951,7 +951,7 @@ contains
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based assembly
+          ! Initialise first group finite element set for edge-based assembly
           call gfem_initGroupFEMSet(p_rgroupFEMSet,&
               rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
         else
@@ -973,11 +973,11 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/resize group finite element structure as duplicate of
+      ! Initialise/resize group finite element structure as duplicate of
       ! the template group finite element structure and fill it with the
       ! precomputed matrix coefficients for the inviscid term
       if (inviscidGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(inviscidGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
         
@@ -986,7 +986,7 @@ contains
             rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based
+          ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
@@ -1084,11 +1084,11 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/resize group finite element structure as duplicate of
+      ! Initialise/resize group finite element structure as duplicate of
       ! the template group finite element structure and fill it with the
       ! precomputed matrix coefficients for the viscous term
       if (viscousGFEM > 0) then
-        ! Check if structure has been initialized
+        ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(viscousGFEM)%nblocks .eq. 0)&
             call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(viscousGFEM), 1)
         
@@ -1097,7 +1097,7 @@ contains
             rproblemLevel%RgroupFEMBlock(viscousGFEM)%RgroupFEMBlock(1)
         
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-          ! Initialize first group finite element set for edge-based
+          ! Initialise first group finite element set for edge-based
           ! assembly as aduplicate of the template structure
           call gfem_duplicateGroupFEMSet(&
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
@@ -1199,7 +1199,7 @@ contains
       end if
       
       !-------------------------------------------------------------------------
-      ! Initialize/Resize stabilisation structure for the mass matrix by
+      ! Initialise/Resize stabilisation structure for the mass matrix by
       ! duplicating parts of the template group finite element set
       if (massAFC > 0) then
         if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
@@ -1251,7 +1251,7 @@ contains
   contains
     
     !**************************************************************
-    ! Initialize the matrix structure by duplicating the template matrix
+    ! Initialise the matrix structure by duplicating the template matrix
     
     subroutine initMatrixStructure(rmatrixTemplate, rmatrix)
 
@@ -1269,7 +1269,7 @@ contains
     end subroutine initMatrixStructure
 
     !**************************************************************
-    ! Initialize the group finite element set for evaluating the
+    ! Initialise the group finite element set for evaluating the
     ! bilinear and linear forms on the boundary node-by-node.
 
     subroutine initGroupFEMSetBoundary(rregion, rmatrix, nmatrices, rgroupFEMSet)
@@ -1283,7 +1283,7 @@ contains
       type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
       
       if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize finite element set for node-based assembly
+        ! Initialise finite element set for node-based assembly
         call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
             0, 0, 0, GFEM_NODEBASED, rregionTest=rregion,&
             brestrictToBoundary=.true.)
@@ -1311,7 +1311,7 @@ contains
       rproblem, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
-    ! This subroutine initializes the all problem levels attached to
+    ! This subroutine initialises the all problem levels attached to
     ! the global problem structure. It generates the discretisation,
     ! the template matrix and the coefficient matrices as duplicates
     ! of the template matrix.
@@ -1348,7 +1348,7 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
-      ! Initialize individual problem level
+      ! Initialise individual problem level
       call mhd_initProblemLevel(rparlist, ssectionName,&
           p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
@@ -1366,7 +1366,7 @@ contains
       rproblemLevel, dtime, rvector, rcollection)
 
 !<description>
-    ! This subroutine initializes the solution vector
+    ! This subroutine initialises the solution vector
 !</description>
 
 !<input>
@@ -1423,7 +1423,7 @@ contains
     case (SOLUTION_ZERO)
       
       !-------------------------------------------------------------------------
-      ! Initialize solution by zeros
+      ! Initialise solution by zeros
       !-------------------------------------------------------------------------
       
       call lsysbl_clearVector(rvector)
@@ -1432,7 +1432,7 @@ contains
     case (SOLUTION_GRAYMAP)
       
       !-------------------------------------------------------------------------
-      ! Initialize the nodal values by the data of a graymap image
+      ! Initialise the nodal values by the data of a graymap image
       !-------------------------------------------------------------------------
 
       call output_line('Initialisation if solution by graymap image is not yet supported!',&
@@ -1443,10 +1443,10 @@ contains
     case (SOLUTION_ANALYTIC_POINTVALUE)
 
       !-------------------------------------------------------------------------
-      ! Initialize the nodal values by the data of an analytical expression
+      ! Initialise the nodal values by the data of an analytical expression
       !-------------------------------------------------------------------------
 
-      ! Initialize total number of expressions
+      ! Initialise total number of expressions
       nexpression = 0
 
       ! Compute total number of expressions
@@ -1471,7 +1471,7 @@ contains
         p_rfparser => collct_getvalue_pars(rcollection,&
             'rfparser', ssectionName=ssectionName)
         
-        ! Initialize variable values
+        ! Initialise variable values
         Dvalue           = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         nexpression      = 0
@@ -1532,10 +1532,10 @@ contains
           SOLUTION_ANALYTIC_L2_LUMPED)
 
       !-------------------------------------------------------------------------
-      ! Initialize the FE-function by the L2-projection of the analytical data
+      ! Initialise the FE-function by the L2-projection of the analytical data
       !-------------------------------------------------------------------------
 
-      ! Initialize total number of expressions
+      ! Initialise total number of expressions
       nexpression = 0
 
       ! Compute total number of expressions
@@ -1583,7 +1583,7 @@ contains
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
-      ! Initialize temporal collection structure
+      ! Initialise temporal collection structure
       call collct_init(rcollectionTmp)
       
       ! Prepare quick access arrays of the temporal collection structure
@@ -1603,7 +1603,7 @@ contains
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
       
-      ! Initialize number of expressions
+      ! Initialise number of expressions
       nexpression = 0
 
       ! Loop over all blocks of the global solution vector
@@ -1749,7 +1749,7 @@ contains
           ! Allocate character array that stores all failsafe variable names
           allocate(SsolutionFailsafeVariables(nvariable))
           
-          ! Initialize character array with failsafe variable names
+          ! Initialise character array with failsafe variable names
           do ivariable = 1, nvariable
             call parlst_getvalue_string(rparlist,&
                 ssectionName, 'ssolutionfailsafevariable',&

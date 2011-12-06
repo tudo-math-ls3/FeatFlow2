@@ -209,7 +209,7 @@ contains
     ! unless the used updates some parameter values interactively.
     call hydro_parseCmdlArguments(rparlist)
 
-    ! Initialize global collection structure
+    ! Initialise global collection structure
     call collct_init(rcollection)
 
     ! Create a separate section for the hydrodynamic model
@@ -266,10 +266,10 @@ contains
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
         ssectionName=ssectionName)
     
-    ! Initialize the solver structures
+    ! Initialise the solver structures
     call hydro_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
-    ! Initialize the boundary conditions for the primal problem
+    ! Initialise the boundary conditions for the primal problem
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', ndimension)
     call parlst_getvalue_string(rparlist,&
@@ -278,7 +278,7 @@ contains
         sindatfileName, '['//trim(sbdrcondName)//']',&
         ndimension, hydro_parseBoundaryCondition)
 
-    ! Initialize the boundary conditions for the dual problem
+    ! Initialise the boundary conditions for the dual problem
     call parlst_getvalue_string(rparlist, ssectionName,&
         'sdualbdrcondname', sbdrcondName, '')
     if (sbdrcondName .ne. '') then
@@ -287,14 +287,14 @@ contains
           ndimension, hydro_parseBoundaryCondition)
     end if
 
-    ! Initialize the abstract problem structure
+    ! Initialise the abstract problem structure
     call hydro_initProblemDescriptor(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver),&
         rproblemDescriptor)
     call problem_initProblem(rproblemDescriptor, rproblem)
 
-    ! Initialize all individual problem levels with primal and dual
+    ! Initialise all individual problem levels with primal and dual
     ! boundary conditions (if available)
     if (sbdrcondName .ne. '') then
       call hydro_initAllProblemLevels(rparlist,&
@@ -518,7 +518,7 @@ contains
       call lsysbl_resizeVectorBlock(rsolution, rsolution%NEQ, .false., .false.)
     end if
 
-    ! Initialize the solution vector and impose boundary conditions
+    ! Initialise the solution vector and impose boundary conditions
     call hydro_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
 
@@ -536,7 +536,7 @@ contains
           rtimestep%dinitialTime, hydro_calcBoundaryvalues3d)
     end select
 
-    ! Initialize timer for intermediate UCD exporter
+    ! Initialise timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'output', soutputName)
@@ -545,7 +545,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure and perform pre-adaptation
+    ! Initialise the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -562,7 +562,7 @@ contains
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
@@ -608,7 +608,7 @@ contains
             call grph_generateMatrix(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
-            ! Re-initialize all constant coefficient matrices
+            ! Re-initialise all constant coefficient matrices
             call hydro_initProblemLevel(rparlist,&
                 ssectionName, p_rproblemLevel, rcollection)
 
@@ -831,7 +831,7 @@ contains
         ! coefficient matrices
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-        ! Re-initialize all constant coefficient matrices
+        ! Re-initialise all constant coefficient matrices
         call hydro_initProblemLevel(rparlist, ssectionName,&
             p_rproblemLevel, rcollection)
 

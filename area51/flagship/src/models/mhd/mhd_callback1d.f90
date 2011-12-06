@@ -4355,7 +4355,7 @@ contains
       call sys_halt()
     end if
 
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Prepare quick access arrays of temporal collection structure
@@ -4392,7 +4392,7 @@ contains
       rcollectionTmp%IquickAccess(2) = ibct
       rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
       
-      ! Initialize the linear form
+      ! Initialise the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
       

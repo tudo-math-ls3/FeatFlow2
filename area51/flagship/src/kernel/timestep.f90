@@ -179,7 +179,7 @@ contains
     if (present(nproblemsCoupled)) npc = nproblemsCoupled
 
 
-    ! The INTENT(out) already initializes rtimestep with the most
+    ! The INTENT(out) already initialises rtimestep with the most
     ! important information.
     rtimestep%sName = trim(adjustl(ssectionName))
 
@@ -342,7 +342,7 @@ contains
 !</subroutine>
 
 
-    ! The INTENT(out) already initializes rtimestep with the most
+    ! The INTENT(out) already initialises rtimestep with the most
     ! important information. The rest comes now
     rtimestep = rtimestepTemplate
 
@@ -1546,7 +1546,7 @@ contains
           call output_lbrk()
         end if
 
-        ! Initialize the constant right-hand side vector
+        ! Initialise the constant right-hand side vector
         if (present(rsource)) then
           if (rsource%NEQ .gt. 0) then
             call lsysbl_copyVector(rsource, p_rconstB)

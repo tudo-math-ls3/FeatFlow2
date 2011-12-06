@@ -100,7 +100,7 @@ contains
       ! Get number of vertices at element
       nve = tria_getNVE(p_IverticesAtElement, iel)
 
-      ! Initialize gradient value
+      ! Initialise gradient value
       dgradient = 0.0_DP
 
       ! Check element for shocks and contact discontinuities

@@ -293,7 +293,7 @@ contains
         rboundaryCondition%h_IsegCount, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rboundaryCondition%h_IsegCount, p_IsegCount)
 
-    ! Initialize the number of components
+    ! Initialise the number of components
     nncomp = 0
 
     ! Loop over all boundary components
@@ -368,7 +368,7 @@ contains
     call storage_getbase_logical(rboundaryCondition%h_BisSegClosed,&
         p_BisSegClosed)
 
-    ! Initialize parser for mathematical expressions
+    ! Initialise parser for mathematical expressions
     call fparser_create(rboundaryCondition%rfparser,&
         nncomp*rboundaryCondition%nmaxExpressions)
 
@@ -698,7 +698,7 @@ contains
       integer :: ivbd,ivbdPeriodic,ibct,ibctPeriodic,isegment
 
 
-      ! Initialize row counter
+      ! Initialise row counter
       nrows = 0
 
       ! Loop over all boundary components
@@ -778,7 +778,7 @@ contains
       integer :: ibct,ibctPeriodic,isegment,isegmentPeriodic
 
 
-      ! Initialize row counter
+      ! Initialise row counter
       nrows = 0
 
       ! Loop over all boundary components

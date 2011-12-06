@@ -11,7 +11,7 @@
 !# The following routines are available:
 !#
 !# 1.) problem_initProblem
-!#     -> Initializes a new problem structure
+!#     -> Initialises a new problem structure
 !#
 !# 2.) problem_createProblem
 !#     -> Creates a new problem structure
@@ -277,7 +277,7 @@ contains
   subroutine problem_initProblem(rproblemDescriptor, rproblem)
 
 !<description>
-    ! This subroutine initializes an abstract problem structure
+    ! This subroutine initialises an abstract problem structure
 !</description>
 
 !<input>
@@ -296,10 +296,10 @@ contains
     integer :: ilev
     logical :: bnoExtendedRaw
 
-    ! Initialize global problem structure
+    ! Initialise global problem structure
     call problem_createProblem(rproblem)
 
-    ! Initialize coarse level
+    ! Initialise coarse level
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
 
@@ -388,7 +388,7 @@ contains
     do ilev = rproblemDescriptor%nlmin+1,&
               rproblemDescriptor%nlmax
 
-      ! Initialize current level
+      ! Initialise current level
       nullify(rproblemLevel); allocate(rproblemLevel)
       call problem_createLevel(rproblemLevel, ilev)
 

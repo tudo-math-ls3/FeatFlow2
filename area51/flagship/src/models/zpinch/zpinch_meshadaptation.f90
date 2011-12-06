@@ -99,7 +99,7 @@ contains
     ! Check if adaptation structure has been prepared
     if (rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
 
-      ! Initialize adaptation structure from triangulation
+      ! Initialise adaptation structure from triangulation
       call hadapt_initFromTriangulation(rhadapt, rtriangulationSrc)
 
     else

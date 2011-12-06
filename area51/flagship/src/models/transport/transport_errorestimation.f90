@@ -309,7 +309,7 @@ contains
         p_rfparser => collct_getvalue_pars(rcollection,&
             'rfparser', ssectionName=ssectionName)
 
-        ! Initialize temporal collection structure
+        ! Initialise temporal collection structure
         call collct_init(rcollectionTmp)
         
         ! Prepare quick access arrays of the temporal collection structure
@@ -373,7 +373,7 @@ contains
         p_rfparser => collct_getvalue_pars(rcollection,&
             'rfparser', ssectionName=ssectionName)
         
-        ! Initialize temporal collection structure
+        ! Initialise temporal collection structure
         call collct_init(rcollectionTmp)
 
         ! Prepare quick access arrays of the temporal collection structure
@@ -464,7 +464,7 @@ contains
         p_rfparser => collct_getvalue_pars(rcollection,&
             'rfparser', ssectionName=ssectionName)
         
-        ! Initialize temporal collection structure
+        ! Initialise temporal collection structure
         call collct_init(rcollectionTmp)
 
         ! Prepare quick access arrays of the temporal collection structure
@@ -866,7 +866,7 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Initialize temporal collection structure
+      ! Initialise temporal collection structure
       call collct_init(rcollectionTmp)
 
       ! Prepare quick access arrays of the temporal collection structure
@@ -982,10 +982,10 @@ contains
 
       call output_line('Maximum error: '//trim(sys_sdEP(derror/dvalue,15,6)))
 
-      ! Normalize error by largest value
+      ! Normalise error by largest value
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
 
-      ! Initialize mean value
+      ! Initialise mean value
       dvalue = 0.0_DP
 
       ! Loop over all contributions
@@ -1015,7 +1015,7 @@ contains
       ! Set pointer
       call lsyssc_getbase_double(rerror, p_Ddata)
 
-      ! Initialize mean value
+      ! Initialise mean value
       dvalue = 0.0_DP
 
       ! Loop over all  contributions
@@ -1029,7 +1029,7 @@ contains
       call output_line('RMS value: '//trim(sys_sdEP(derror/dvalue,15,6)))
       call output_lbrk()
 
-      ! Normalize grid indicator by RMS
+      ! Normalise grid indicator by RMS
       call lsyssc_scaleVector(rerror, 1.0_DP/dvalue)
 
 

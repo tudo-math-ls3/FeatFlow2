@@ -1193,7 +1193,7 @@ contains
     case default
 
       !-------------------------------------------------------------------------
-      ! Initialize the constant right-hand side by zeros
+      ! Initialise the constant right-hand side by zeros
       !
       !   $$ rhs = 0 $$
       !
@@ -1302,7 +1302,7 @@ contains
         ssectionName, 'imasstype', imasstype)
 
     !-------------------------------------------------------------------------
-    ! Initialize the residual by the constant right-hand side
+    ! Initialise the residual by the constant right-hand side
     !
     !   $$ res := rhs $$
     !-------------------------------------------------------------------------
@@ -1945,7 +1945,7 @@ contains
           ! Allocate character array that stores all failsafe variable names
           allocate(SfailsafeVariables(nvariable))
           
-          ! Initialize character array with failsafe variable names
+          ! Initialise character array with failsafe variable names
           do ivariable = 1, nvariable
             call parlst_getvalue_string(p_rparlist,&
                 ssectionName, 'sfailsafevariable',&
@@ -3664,7 +3664,7 @@ contains
 
       else
 
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         

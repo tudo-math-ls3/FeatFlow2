@@ -359,7 +359,7 @@ struct calc_Dissipation<DISSIPATION_ROE>
     
     if (anorm > 1e-14) {
       
-      // Normalize the skew-symmetric coefficient
+      // Normalise the skew-symmetric coefficient
       a[0] = a[0]/anorm;
       a[1] = a[1]/anorm;
       

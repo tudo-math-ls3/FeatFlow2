@@ -59,7 +59,7 @@
 !#        on a single grid level
 !#
 !# 4.) nlsol_backtracking
-!#     -> Perform backtracking to globalize inexact Newton iteration
+!#     -> Perform backtracking to globalise inexact Newton iteration
 !#
 !# 5.) nlsol_calcForcingTerm
 !#     -> Compute the forcing term for inexact Newton iteration
@@ -1086,7 +1086,7 @@ contains
       return
     end if
 
-    ! Initialize check for stagnation
+    ! Initialise check for stagnation
     if (p_rsolver%depsStag > 0.0_DP)&
         bstagnate = nlsol_checkStagnation(p_rsolver, 0)
 
@@ -1669,7 +1669,7 @@ contains
     !           The default value is 0.1.
     real(DP), parameter :: eta_min = 0.1_DP
 
-    ! ETA_0 - parameter used to initialize ETA in the first iteration. The default
+    ! ETA_0 - parameter used to initialise ETA in the first iteration. The default
     !         value is 0.5. If a used-supplied fixed ETA should be used, then
     !         this value is neglected
     real(DP), parameter :: eta_0 = 0.5_DP
@@ -1679,7 +1679,7 @@ contains
     real(DP) :: temp1,temp2
 
 
-    ! Initialize quantities and return in the first iteration
+    ! Initialise quantities and return in the first iteration
     if (iiterations .eq. 1) then
       select case(int(dForcingStrategy))
       case (1, 2, 3, 4)

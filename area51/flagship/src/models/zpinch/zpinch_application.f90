@@ -215,7 +215,7 @@ contains
     call zpinch_parseCmdlArguments(rparlist)
 
 
-    ! Initialize global collection structure
+    ! Initialise global collection structure
     call collct_init(rcollection)
 
     ! Create separate sections for the z-pinch problem, the
@@ -371,45 +371,45 @@ contains
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.,&
         ssectionName=ssectionNameTransport)
 
-    ! Initialize the solver structures
+    ! Initialise the solver structures
     call zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Get the spatial dimension from the parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
         'ndimension', ndimension)
     
-    ! Initialize the boundary condition for the hydrodynamic model
+    ! Initialise the boundary condition for the hydrodynamic model
     call parlst_getvalue_string(rparlist, ssectionNameHydro,&
         'sprimalbdrcondname', sbdrcondName)
     call parlst_getvalue_string(rparlist, ssectionNameHydro,&
         'indatfile', sindatfileName)
     
     ! The boundary condition for the primal problem is required for
-    ! all solution strategies so initialize it from the parameter file
+    ! all solution strategies so initialise it from the parameter file
     call bdrc_readBoundaryCondition(p_rbdrCondHydro,&
         sindatfileName, '['//trim(sbdrcondName)//']',&
         ndimension, hydro_parseBoundaryCondition)
     
-    ! Initialize the boundary condition for the transport model
+    ! Initialise the boundary condition for the transport model
     call parlst_getvalue_string(rparlist, ssectionNameTransport,&
         'sprimalbdrcondname', sbdrcondName)
     call parlst_getvalue_string(rparlist, ssectionNameTransport,&
         'indatfile', sindatfileName)
     
     ! The boundary condition for the primal problem is required for
-    ! all solution strategies so initialize it from the parameter file
+    ! all solution strategies so initialise it from the parameter file
     call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
         sindatfileName, '['//trim(sbdrcondName)//']',&
         ndimension, transp_parseBoundaryCondition)
     
-    ! Initialize the abstract problem structure
+    ! Initialise the abstract problem structure
     call zpinch_initProblemDescriptor(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver),&
         rproblemDescriptor)
     call problem_initProblem(rproblemDescriptor, rproblem)
 
-    ! Initialize the individual problem levels
+    ! Initialise the individual problem levels
     call hydro_initAllProblemLevels(rparlist,&
         ssectionNameHydro, rproblem, rcollection, p_rbdrCondHydro)
     call transp_initAllProblemLevels(rparlist,&
@@ -673,7 +673,7 @@ contains
           p_rsolutionHydro%NEQ, .false., .false.)
     end if
 
-    ! Initialize the solution vector
+    ! Initialise the solution vector
     call hydro_initSolution(rparlist, ssectionNameHydro,&
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionHydro,&
         rcollection)
@@ -712,7 +712,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation,&
         p_rsolutionTransport, .false., ST_DOUBLE)
 
-    ! Initialize the solution vector and impose boundary conditions
+    ! Initialise the solution vector and impose boundary conditions
     call transp_initSolution(rparlist, ssectionNameTransport,&
         p_rproblemLevel, rtimestep%dinitialTime,&
         p_rsolutionTransport, rcollection)
@@ -730,7 +730,7 @@ contains
         ssectionNameTransport, 'mode', 'primal')
 
 
-    ! Initialize timer for intermediate UCD exporter
+    ! Initialise timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'output', soutputName)
@@ -739,7 +739,7 @@ contains
     
     
     !---------------------------------------------------------------------------
-    ! Initialize the h-adaptation structure and perform pre-adaptation
+    ! Initialise the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_string(rparlist,&
@@ -755,7 +755,7 @@ contains
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
-        ! Initialize adaptation structure from parameter list
+        ! Initialise adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt,&
             rparlist, sadaptivityName)
 
@@ -805,7 +805,7 @@ contains
             call grph_generateMatrix(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
-            ! Re-initialize all constant coefficient matrices
+            ! Re-initialise all constant coefficient matrices
             call hydro_initProblemLevel(rparlist,&
                 ssectionNameHydro, p_rproblemLevel, rcollection)
             call transp_initProblemLevel(rparlist,&
@@ -1113,7 +1113,7 @@ contains
         ! coefficient matrices
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
-        ! Re-initialize all constant coefficient matrices
+        ! Re-initialise all constant coefficient matrices
         call hydro_initProblemLevel(rparlist, ssectionNameHydro,&
             p_rproblemLevel, rcollection)
         call transp_initProblemLevel(rparlist, ssectionNameTransport,&

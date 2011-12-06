@@ -134,7 +134,7 @@ contains
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'nrefineucd', nrefineUCD, 0)
 
-    ! Initialize the UCD exporter
+    ! Initialise the UCD exporter
     select case(ilineariseUCD)
     case (UCDEXPORT_STD)
       call flagship_initUCDexport(rproblemLevel, sucdsolution,&

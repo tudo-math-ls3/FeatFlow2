@@ -1361,7 +1361,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
         Diff = RCONST(0.0)
@@ -1627,7 +1627,7 @@ contains
 
       if (anorm .gt. SYS_EPSREAL_DP) then
         
-        ! Normalize the skew-symmetric coefficient
+        ! Normalise the skew-symmetric coefficient
         a = a/anorm
         
         DiffX = RCONST(0.0); DiffY = RCONST(0.0); DiffZ = RCONST(0.0)

@@ -761,7 +761,7 @@ contains
     ! the primal and the dual problem. If no diffusion is present,
     ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
-    ! then we may also initialize some stabilisation structure.
+    ! then we may also initialise some stabilisation structure.
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.
@@ -2751,7 +2751,7 @@ contains
     case default
 
       !-------------------------------------------------------------------------
-      ! Initialize the constant right-hand side by zeros
+      ! Initialise the constant right-hand side by zeros
       !
       !   $$ rhs = 0 $$
       !
@@ -2889,7 +2889,7 @@ contains
         ssectionName, 'mode', smode)
 
     !---------------------------------------------------------------------------
-    ! Initialize the residual by the constant right-hand side
+    ! Initialise the residual by the constant right-hand side
     !
     !   $$ res := rhs $$
     !---------------------------------------------------------------------------
@@ -4276,7 +4276,7 @@ contains
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
 
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Attach user-defined collection structure to temporal collection
@@ -6112,7 +6112,7 @@ contains
     ! the primal and the dual problem. If no diffusion is present,
     ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
-    ! then we may also initialize some stabilisation structure.
+    ! then we may also initialise some stabilisation structure.
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.

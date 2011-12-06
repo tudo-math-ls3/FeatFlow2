@@ -113,7 +113,7 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionNameHydro, 'isystemformat', isystemformat)
     
-    ! Initialize the UCD exporter
+    ! Initialise the UCD exporter
     call flagship_initUCDexport(rproblemLevel, sucdsolution,&
         iformatUCD, rexport, ifilenumber)
 

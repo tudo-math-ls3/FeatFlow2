@@ -256,7 +256,7 @@ contains
         'rparlist', ssectionName=ssectionName)
     
     
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
     
     ! Prepare quick access arrays of temporal collection structure
@@ -318,7 +318,7 @@ contains
             BDRC_FLUX, BDRC_DIRICHLET,&
             BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           
-        ! Initialize the bilinear form
+        ! Initialise the bilinear form
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
         rform%Idescriptors(2,1) = DER_FUNC
@@ -419,7 +419,7 @@ contains
         'rparlist', ssectionName=ssectionName)
     
 
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Prepare quick access arrays of temporal collection structure
@@ -488,7 +488,7 @@ contains
             BDRC_FLUX, BDRC_DIRICHLET,&
             BDRC_PERIODIC, BDRC_ANTIPERIODIC)
         
-        ! Initialize the linear form
+        ! Initialise the linear form
         rform%itermCount = 1
         rform%Idescriptors(1) = DER_FUNC
         
@@ -934,7 +934,7 @@ contains
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -967,7 +967,7 @@ contains
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -1008,7 +1008,7 @@ contains
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -1075,7 +1075,7 @@ contains
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -1372,7 +1372,7 @@ contains
       !
       ! The convective part is included into the bilinear form (if any)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -1405,7 +1405,7 @@ contains
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -1446,7 +1446,7 @@ contains
             p_rvelocity%RvectorBlock(1), Dpoints, &
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -1513,7 +1513,7 @@ contains
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -2756,7 +2756,7 @@ contains
       !
       ! The convective part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -2789,7 +2789,7 @@ contains
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -2822,7 +2822,7 @@ contains
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -2880,7 +2880,7 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -3621,7 +3621,7 @@ contains
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -3656,7 +3656,7 @@ contains
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -3691,7 +3691,7 @@ contains
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -3752,7 +3752,7 @@ contains
           p_rsolution%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 

@@ -1555,7 +1555,7 @@ contains
         end do
         P_Dh(i+1,i) = lsysbl_vectorNorm(p_rv(i+1), rsolver%iresNorm)
 
-        ! Re-orthogonalize
+        ! Re-orthogonalise
         do k = 1, i
           dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
           p_Dh(k,i) = p_Dh(k,i)+dtmp

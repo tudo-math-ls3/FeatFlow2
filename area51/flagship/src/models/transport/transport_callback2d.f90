@@ -363,7 +363,7 @@ contains
     icompVelX = rcollection%IquickAccess(3)
     icompVelY = rcollection%IquickAccess(4)
 
-    ! Initialize values
+    ! Initialise values
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
 
@@ -543,7 +543,7 @@ contains
     ! value holds the simulation time
     dtime = rcollection%DquickAccess(1)
 
-    ! Initialize values
+    ! Initialise values
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
 
@@ -663,7 +663,7 @@ contains
     integer :: ipoint, iel, icomp
 
 
-    ! Initialize values
+    ! Initialise values
     Dvalue = 0.0_DP
 
     ! This subroutine assumes that the first and second quick access
@@ -778,7 +778,7 @@ contains
         ssectionName, 'ccubTypeBdr', ccubTypeBdr)
 
     
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Prepare quick access arrays of temporal collection structure
@@ -852,7 +852,7 @@ contains
           ! into the bilinear form. Therefore, no information about
           ! the mirror boundary is required in this step.
           
-          ! Initialize the bilinear form
+          ! Initialise the bilinear form
           rform%itermCount = 1
           rform%Idescriptors(1,1) = DER_FUNC
           rform%Idescriptors(2,1) = DER_FUNC
@@ -966,7 +966,7 @@ contains
         ssectionName, 'ccubTypeBdr', ccubTypeBdr)
     
     
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Prepare quick access arrays of temporal collection structure
@@ -1044,7 +1044,7 @@ contains
               BDRC_FLUX, BDRC_DIRICHLET,&
               BDRC_PERIODIC, BDRC_ANTIPERIODIC)
 
-          ! Initialize the linear form
+          ! Initialise the linear form
           rform%itermCount = 1
           rform%Idescriptors(1) = DER_FUNC
           
@@ -1896,7 +1896,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -1934,7 +1934,7 @@ do iedge = 1, nedges
       allocate(Dcoords(NDIM2D,npoints,1), DcoeffAtDOF(npoints))
 #endif
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -2068,7 +2068,7 @@ do iedge = 1, nedges
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -2200,7 +2200,7 @@ do iedge = 1, nedges
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
    
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
@@ -2712,7 +2712,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -2750,7 +2750,7 @@ do iedge = 1, nedges
       allocate(Dcoords(NDIM2D,npoints,1), DcoeffAtDOF(npoints))
 #endif
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -2882,7 +2882,7 @@ do iedge = 1, nedges
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
         
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
         
@@ -3014,7 +3014,7 @@ do iedge = 1, nedges
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
    
-        ! Initialize values
+        ! Initialise values
         Dvalue = 0.0_DP
         Dvalue(NDIM3D+1) = dtime
 
@@ -4519,7 +4519,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -4551,7 +4551,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -4584,7 +4584,7 @@ do iedge = 1, nedges
       !
       ! and do not include any boundary integral into the bilinear form at all.
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -4629,7 +4629,7 @@ do iedge = 1, nedges
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5012,7 +5012,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5044,7 +5044,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -5077,7 +5077,7 @@ do iedge = 1, nedges
       !
       ! and do not include any boundary integral into the bilinear form at all.
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -5122,7 +5122,7 @@ do iedge = 1, nedges
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5567,7 +5567,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5600,7 +5600,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5638,7 +5638,7 @@ do iedge = 1, nedges
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -5691,7 +5691,7 @@ do iedge = 1, nedges
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -6383,7 +6383,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form (if any).
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -6418,7 +6418,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -6458,7 +6458,7 @@ do iedge = 1, nedges
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -6515,7 +6515,7 @@ do iedge = 1, nedges
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -7216,7 +7216,7 @@ do iedge = 1, nedges
       !
       ! The convective part is included into the bilinear form.
 
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
@@ -7254,7 +7254,7 @@ do iedge = 1, nedges
       allocate(Dcoords(NDIM2D,npoints,1), DcoeffAtDOF(npoints))
 #endif
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -7362,7 +7362,7 @@ do iedge = 1, nedges
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       
@@ -7479,7 +7479,7 @@ do iedge = 1, nedges
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
 #endif
       
-      ! Initialize values
+      ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
       

@@ -112,10 +112,10 @@
 !# The following auxiliary routines are available:
 !#
 !# 1.) solver_initUMFPACK
-!#     -> Initialize the UMFPACK preconditioner
+!#     -> Initialise the UMFPACK preconditioner
 !#
 !# 2.) solver_initILU
-!#     -> Initialize the ILU-preconditioner
+!#     -> Initialise the ILU-preconditioner
 !#
 !# </purpose>
 !##############################################################################
@@ -146,6 +146,7 @@ module solveraux
   public :: t_solverILU
   public :: t_solverDefcor
   public :: t_solverNewton
+  public :: t_solverAndersonMixing
 
   public :: solver_createSolver
   public :: solver_releaseSolver
@@ -870,6 +871,30 @@ module solveraux
 
 !</typeblock>
 
+  ! *****************************************************************************
+
+!<typeblock>
+
+  ! This data structure contains all local data for the Anderson mixing algorithm
+
+  type t_solverAndersonMixing
+
+    ! INPUT: number of previous solutions to store?
+    integer :: nmaxLeastsquaresSteps = 0
+
+    ! Next position, where to store the solution
+    integer :: iposition = 1
+
+    ! Solution vectors from previous steps
+    type(t_vectorBlock), dimension(:), allocatable :: RsolutionVectors
+
+    ! Correction vectors from previous steps
+    type(t_vectorBlock), dimension(:), allocatable :: RcorrectionVectors
+
+  end type t_solverAndersonMixing
+
+!</typeblock>
+
 !</types>
 
 contains
@@ -911,7 +936,7 @@ contains
     ! Get solver type from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, "csolvertype", csolverType)
 
-    ! The INTENT(out) already initializes rsolver with the most
+    ! The INTENT(out) already initialises rsolver with the most
     ! important information. In the first part mandatory and optional
     ! parameters which apply to some type of solvers are read from
     ! the parameter list and applied to the solver.
@@ -1204,7 +1229,7 @@ contains
       select case (rsolver%isolver)
       case (LINSOL_SOLVER_UMFPACK4)
         allocate(rsolver%p_solverUMFPACK)
-        ! Initialize control structure
+        ! Initialise control structure
         call UMF4DEF(rsolver%p_solverUMFPACK%Dcontrol)
 
       case (LINSOL_SOLVER_JACOBI)
@@ -1537,7 +1562,7 @@ contains
     ! local variables
     integer :: i
 
-    ! The INTENT(out) already initializes rsolver with the most
+    ! The INTENT(out) already initialises rsolver with the most
     ! important information. The rest comes now
     rsolver = rsolverTemplate
 
@@ -1657,7 +1682,7 @@ contains
       ! local variables
       integer :: i,ilbound,iubound
 
-      ! The INTENT(out) already initializes rsolver with the most important
+      ! The INTENT(out) already initialises rsolver with the most important
       ! information. The rest comes now
       rsolver = rsolverTemplate
 
@@ -1695,7 +1720,7 @@ contains
       type(t_solverUMFPACK), intent(in) :: rsolverTemplate
       type(t_solverUMFPACK), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(out) initializes the solver
+      ! Do nothing, the INTENT(out) initialises the solver
 
     end subroutine create_solverUMFPACK
 
@@ -1706,7 +1731,7 @@ contains
       type(t_solverJacobi), intent(in) :: rsolverTemplate
       type(t_solverJacobi), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(out) initializes the solver
+      ! Do nothing, the INTENT(out) initialises the solver
 
     end subroutine create_solverJacobi
 
@@ -1717,7 +1742,7 @@ contains
       type(t_solverSSOR), intent(in) :: rsolverTemplate
       type(t_solverSSOR), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(out) initializes the solver
+      ! Do nothing, the INTENT(out) initialises the solver
 
     end subroutine create_solverSSOR
 
@@ -1792,7 +1817,7 @@ contains
       type(t_solverILU), intent(in) :: rsolverTemplate
       type(t_solverILU), intent(out) :: rsolver
 
-      ! The INTENT(out) initializes the solver already.
+      ! The INTENT(out) initialises the solver already.
       ! The rest is done now.
       rsolver%ifill   = rsolverTemplate%ifill
       rsolver%domega  = rsolverTemplate%domega
@@ -1806,7 +1831,7 @@ contains
       type(t_solverDefcor), intent(in) :: rsolverTemplate
       type(t_solverDefcor), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(out) initializes the solver
+      ! Do nothing, the INTENT(out) initialises the solver
 
     end subroutine create_solverDefcor
 
@@ -1817,7 +1842,7 @@ contains
       type(t_solverNewton), intent(in) :: rsolverTemplate
       type(t_solverNewton), intent(out) :: rsolver
 
-      ! The INTENT(out) initializes the solver already. The rest is done now.
+      ! The INTENT(out) initialises the solver already. The rest is done now.
       rsolver%icheckSufficientDecrease = rsolverTemplate%icheckSufficientDecrease
       rsolver%nmaxBacktrackingSteps    = rsolverTemplate%nmaxBacktrackingSteps
       rsolver%iupdateFrequency         = rsolverTemplate%iupdateFrequency
@@ -3463,7 +3488,7 @@ contains
     ! local variables
     integer :: isub
 
-    ! Initialize subsolver number
+    ! Initialise subsolver number
     isub = 1
     if (present(isubsolver)) isub = isubsolver
 
@@ -4791,7 +4816,7 @@ contains
           end if
 
 
-          ! Ok, now the subarrays definitively exist. Let us try to initialize the
+          ! Ok, now the subarrays definitively exist. Let us try to initialise the
           ! temporal vectors from the attached matrices (if any).
           ! We need the following layout:
           !   raux(NLMIN), raux(NLMIN),   rresc(NLMIN),   rresf(NLMIN+1),
@@ -5116,7 +5141,7 @@ contains
         end if
 
         ! Ok, now the subarray of smoothers definitively exists and has the correct dimension.
-        ! Initialize the smoothers on all levels, whereby each individual smoother is
+        ! Initialise the smoothers on all levels, whereby each individual smoother is
         ! treated as a standard solver
         do i = lbound(rsolver%p_smoother,1), &
                ubound(rsolver%p_smoother,1)
@@ -5251,24 +5276,24 @@ contains
       ! Check if content needs update
       if (iand(rsolver%isolverSpec, SV_SSPEC_CONTENTNEEDSUPDATE) .ne. 0) then
 
-        ! Initialize UMFPACK solver
+        ! Initialise UMFPACK solver
         if (associated(rsolver%p_solverUMFPACK)) then
           call solver_initUMFPACK(rsolver%p_solverUMFPACK)
         end if
 
-        ! Initialize ILU factorisation
+        ! Initialise ILU factorisation
         if (associated(rsolver%p_solverILU)) then
           call solver_initILU(rsolver%p_solverILU)
         end if
 
-        ! Initialize preconditioner of BiCGSTAB solver
+        ! Initialise preconditioner of BiCGSTAB solver
         if (associated(rsolver%p_solverBiCGSTAB)) then
           if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
             call solver_updateContent(rsolver%p_solverBiCGSTAB%p_precond)
           end if
         end if
 
-        ! Initialize preconditioner of GMRES solver
+        ! Initialise preconditioner of GMRES solver
         if (associated(rsolver%p_solverGMRES)) then
           if (associated(rsolver%p_solverGMRES%p_precond)) then
             call solver_updateContent(rsolver%p_solverGMRES%p_precond)
@@ -5906,7 +5931,7 @@ contains
   recursive subroutine solver_initILU(rsolver)
 
 !<description>
-    ! This subroutine initializes the ILU solver.
+    ! This subroutine initialises the ILU solver.
     ! The subroutine requires the matrix to be set before.
     ! Otherwise, it will terminate with an error.
 !</description>
@@ -5960,7 +5985,7 @@ contains
         call lsysbl_createMatFromScalar(rsolver%rmatrix%RmatrixBlock(i,i),&
                                         rsolver%p_rsolverBlockILU(i)%rmatrix)
 
-        ! Initialize ILU solver for submatrix
+        ! Initialise ILU solver for submatrix
         call solver_initILU(rsolver%p_rsolverBlockILU(i))
       end do
 
@@ -6006,8 +6031,8 @@ contains
 
 
     !**************************************************************
-    ! Initialize (M)ILU(s) solver for scalar matrices.
-    ! This subroutine initializes the (shifted, modified) ILU
+    ! Initialise (M)ILU(s) solver for scalar matrices.
+    ! This subroutine initialises the (shifted, modified) ILU
     ! decomposition or the ILU(s) decomposition with fill-in.
     subroutine do_scalarILU(rsolver, rmatrix)
 
@@ -6770,7 +6795,7 @@ contains
   subroutine solver_initUMFPACK(rsolver)
 
 !<description>
-    ! This subroutine initializes the UMFPACK subsystem
+    ! This subroutine initialises the UMFPACK subsystem
 !</description>
 
 !<inputoutput>
@@ -6886,7 +6911,7 @@ contains
       if ((rmatrixSrc%nblocksPerCol .eq. 1) .and.&
           (rmatrixSrc%nblocksPerRow .eq. 1)) then
 
-        ! Initialize working matrix
+        ! Initialise working matrix
         select case(rmatrixSrc%RmatrixBlock(1,1)%cmatrixFormat)
 
         case (LSYSSC_MATRIX9)

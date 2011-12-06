@@ -4584,7 +4584,7 @@ contains
         end if
       end if
 
-      ! Initialize solution difference and pressure
+      ! Initialise solution difference and pressure
       vdiff = (vn_b-vn)/RCONST(2.0)
       pold  = pstar
 
@@ -4945,7 +4945,7 @@ contains
       call sys_halt()
     end if
 
-    ! Initialize temporal collection structure
+    ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
 
     ! Prepare quick access arrays of temporal collection structure
@@ -4982,7 +4982,7 @@ contains
       rcollectionTmp%IquickAccess(2) = ibct
       rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
       
-      ! Initialize the linear form
+      ! Initialise the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
       
@@ -5158,7 +5158,7 @@ contains
         ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
@@ -5281,7 +5281,7 @@ contains
         !
         ! Prescribe the state vector in conservative variables
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
@@ -5355,7 +5355,7 @@ contains
         !
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
@@ -5421,7 +5421,7 @@ contains
         !
         ! Prescribe the pressure at the outlet
 
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
@@ -5520,7 +5520,7 @@ contains
         ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
@@ -5643,7 +5643,7 @@ contains
         !
         ! Prescribe the state vector in conservative variables
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         
@@ -5717,7 +5717,7 @@ contains
         !
         ! Prescribe the density, pressure and tangential velocity at the inlet
         
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
 
@@ -5782,7 +5782,7 @@ contains
         !
         ! Prescribe the pressure at the outlet
 
-        ! Initialize values for function parser
+        ! Initialise values for function parser
         Dvalue = RCONST(0.0)
         Dvalue(NDIM3D+1) = dtime
         

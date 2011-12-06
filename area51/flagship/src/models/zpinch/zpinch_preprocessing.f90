@@ -11,10 +11,10 @@
 !# The following routines are available:
 !#
 !# 1.) zpinch_initSolvers
-!#     -> Initializes the solve structures from the parameter list.
+!#     -> Initialises the solve structures from the parameter list.
 !#
 !# 2.) zpinch_initProblemDescriptor
-!#     -> Initializes the abstract problem descriptor based on the
+!#     -> Initialises the abstract problem descriptor based on the
 !#        parameter settings given by the parameter list.
 !#
 !# </purpose>
@@ -51,7 +51,7 @@ contains
   subroutine zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
 !<description>
-    ! This subroutine initializes the time-stepping structure and
+    ! This subroutine initialises the time-stepping structure and
     ! the top-level solver structure from the parameter list
 !</description>
 
@@ -83,7 +83,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'timestep', stimestepName)
 
-    ! Initialize time-stepping
+    ! Initialise time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep, 2)
 
 
@@ -91,7 +91,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'solver', ssolverName)
 
-    ! Initialize solver structures
+    ! Initialise solver structures
     call solver_createSolver(rparlist, ssolverName, rsolver)
     call solver_adjustHierarchy(rsolver)
     call solver_updateStructure(rsolver)
@@ -106,7 +106,7 @@ contains
       nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem descriptor
+    ! This subroutine initialises the abstract problem descriptor
     ! using the parameters settings defined in the parameter list
 !</description>
 
