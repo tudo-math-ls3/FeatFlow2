@@ -206,6 +206,17 @@ iprelimiting = 0
 # 3 = Paraview (VTK)
 iformatUCD = 1
 
+# type of UCD output
+# 0 = standard
+# 1 = linearisation with discontinuous P1 finite elements
+# 2 = linearisation with continuous P1 finite elements
+ilineariseucd = 0
+
+# number of refinement steps
+nrefineucd = 0
+
+
+
 # time interval for UCD output
 dstepUCD = 0.0
 
