@@ -4456,11 +4456,11 @@ contains
     ! group. Otherwise, the edges will be reordered below.
     p_IedgeListIdx    = rgroupFEMSet%NEDGE+1
     p_IedgeListIdx(1) = 1
-    
+
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)    
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
     ! vertices of the edges in the group are all distinct
-#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)
     call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
     if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
       call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
