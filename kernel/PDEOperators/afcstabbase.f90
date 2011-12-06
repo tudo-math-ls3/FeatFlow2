@@ -1632,6 +1632,9 @@ contains
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
 
+    ! Regenerate edge list
+    call afcstab_genEdgeList(rmatrix, rafcstab)
+
   end subroutine afcstab_resizeStabIndScalar
 
   !*****************************************************************************
@@ -1681,6 +1684,9 @@ contains
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
     
+    ! Regenerate edge list
+    call afcstab_genEdgeList(rmatrixBlock%RmatrixBlock(1,1), rafcstab)
+
   end subroutine afcstab_resizeStabIndBlock
   
   !*****************************************************************************
@@ -1709,6 +1715,27 @@ contains
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, rgroupFEMSet%NEQ, rgroupFEMSet%NEDGE)
+
+    ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+    if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIST) .ne. 0) then
+      ! The edge list is shared with the group finite element
+      ! set. Therefore, update the storage handles which may have
+      ! changed due a possible resize of rgroupFEMSet. If the edge
+      ! list is not shared, then it has been resized by the above call
+      ! to subroutine afcstab_resizeStabDirect
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx     = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList        = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag   = ior(rafcstab%iduplicationFlag,&
+                                          AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabIndGFEM')
+        call sys_halt()
+      end if
+    end if
     
   end subroutine afcstab_resizeStabIndGFEM
 
@@ -2735,6 +2762,8 @@ contains
       nullify(p_IedgeListIdx)
       return
     end if
+
+    print *, rafcstab%h_IedgeListIdx
     
     ! Get the array
     call storage_getbase_int(rafcstab%h_IedgeListIdx,&
@@ -3047,8 +3076,10 @@ contains
 !</subroutine>
 
     ! local variables
-    !$ integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)
+    integer, dimension(:,:), pointer :: p_IedgeList
+#endif
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -3086,17 +3117,19 @@ contains
     p_IedgeListIdx    = rafcstab%NEDGE+1
     p_IedgeListIdx(1) = 1
 
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)    
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
     ! nodes of the edges in the group are all distinct
-    !$ call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    !$ if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
-    !$  call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$      rafcstab%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
-    !$ else
-    !$  call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$      rafcstab%h_IedgeListIdx)
-    !$ end if
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
+      call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
+          rafcstab%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
+    else
+      call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
+          rafcstab%h_IedgeListIdx)
+    end if
+#endif
     
     ! Set state of stabiliation
     rafcstab%istabilisationSpec =&
