@@ -651,14 +651,14 @@ contains
     if (.not. present(IvtLocal) .and. .not. present(IedgeLocal)) &
         bcheckall = .true.
     
-    ! Get the parameter value array from the triangulation    
+    ! Get the parameter value array from the triangulation
     call storage_getbase_int (rtriangulation%h_IelementsAtBoundary, &
                               p_IelementsAtBoundary)
 
     ! What spatial dimension are we?
     select case(rtriangulation%ndim)
     case (NDIM1D)
-      ! Get the parameter value array from the triangulation    
+      ! Get the parameter value array from the triangulation
       if (present(IvtLocal) .or. bcheckall) then
         call storage_getbase_int (rtriangulation%h_IverticesAtBoundary, &
                                   p_IverticesAtBoundary)
@@ -699,7 +699,7 @@ contains
         ! Remember the vertex
         if (present(IvtLocal)) then
           
-          ivt = p_IverticesAtBoundary(i)          
+          ivt = p_IverticesAtBoundary(i)
           
           ! Search the local number of the vertex that we found
           do iidx = 1,ubound(p_IverticesAtElement,1)
@@ -715,14 +715,14 @@ contains
           ! Oops, the triangulation is destroyed!
           call output_line ('Local vertex number not found!', &
               OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
-          call sys_halt()            
+          call sys_halt()
         end if
 
       end do elementloop1d
       
 
     case (NDIM2D)
-      ! Get the parameter value array from the triangulation    
+      ! Get the parameter value array from the triangulation
       if (present(IvtLocal) .or. bcheckall) then
         call storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
                                      p_DvertexParameterValue)
@@ -736,7 +736,7 @@ contains
         nullify(p_IverticesAtElement)
       end if
       
-      ! Get the parameter value array from the triangulation    
+      ! Get the parameter value array from the triangulation
       if (present(IedgeLocal) .or. bcheckall) then
         call storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
                                      p_DedgeParameterValue)
@@ -792,7 +792,7 @@ contains
           ! Remember the vertex and/or edge
           if (bvertexInside .and. present(IvtLocal)) then
             
-            ivt = p_IverticesAtBoundary(i)          
+            ivt = p_IverticesAtBoundary(i)
             
             ! Search the local number of the vertex that we found
             do iidx = 1,ubound(p_IverticesAtElement,1)
@@ -941,7 +941,7 @@ contains
           p_rtriangulation%h_IelementsAtBoundary, p_IelementsAtBoundary)
       call storage_getbase_int2d(&
           p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call storage_getbase_int(&      
+      call storage_getbase_int(&
           p_rtriangulation%h_InodalProperty, p_InodalProperty)
 
       ! Set total number of DOFs at the boundary
@@ -1016,7 +1016,7 @@ contains
           end if
           
           ! Right point at the boundary?
-          ipoint = p_IverticesAtElement(2,ielement) 
+          ipoint = p_IverticesAtElement(2,ielement)
           if (p_InodalProperty(ipoint) .ne. 0) then
             ! Set the DOF number < 0 to indicate that this DOF is on the boundary
             Idofs(2,ielidx) = -abs(Idofs(2,ielidx))

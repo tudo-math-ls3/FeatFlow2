@@ -3115,7 +3115,7 @@ contains
     p_IedgeListIdx    = rafcstab%NEDGE+1
     p_IedgeListIdx(1) = 1
 
-#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)    
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
     ! nodes of the edges in the group are all distinct

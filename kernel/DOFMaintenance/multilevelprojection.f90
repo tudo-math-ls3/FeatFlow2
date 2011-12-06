@@ -2603,14 +2603,14 @@ contains
         call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
                              p_IneighboursAtElementFine)
         call mlprj_interpUniformDGQ1_double (p_DuCoarse,p_DuFine, &
-             p_IneighboursAtElementFine, p_rtriaCoarse%NEL)   
+             p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
              
       case (EL_DG_Q2_2D)
         ! DG_Q2 interpolation
         call storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
                              p_IneighboursAtElementFine)
         call mlprj_interpUniformDGQ2_double (p_DuCoarse,p_DuFine, &
-             p_IneighboursAtElementFine, p_rtriaCoarse%NEL) 
+             p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
                        
       case default
         call output_line ('Unknown element!', &
@@ -10571,7 +10571,7 @@ contains
   
 !</subroutine>
   
-  ! local variables  
+  ! local variables
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
   real(DP) :: duh, ddx, ddy
@@ -10761,7 +10761,7 @@ contains
   
 !</subroutine>
   
-  ! local variables  
+  ! local variables
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
   real(DP) :: duh, ddx, ddy, ddxx, ddxy, ddyy
@@ -10969,7 +10969,7 @@ contains
       dh4 = DuFine(6*(IELH4-1)+2)+DuFine(6*(IELH4-1)+4)+DuFine(6*(IELH4-1)+6)
       DuCoarse(6*(iel-1)+3)= 0.5_dp*( dh1+dh2-dh3-dh4 )
       
-      DuCoarse(6*(iel-1)+4) = DuFine(6*(IELH1-1)+4)+DuFine(6*(IELH2-1)+5)+DuFine(6*(IELH3-1)+4)+DuFine(6*(IELH4-1)+5) 
+      DuCoarse(6*(iel-1)+4) = DuFine(6*(IELH1-1)+4)+DuFine(6*(IELH2-1)+5)+DuFine(6*(IELH3-1)+4)+DuFine(6*(IELH4-1)+5)
       
       DuCoarse(6*(iel-1)+5) = DuFine(6*(IELH1-1)+5)+DuFine(6*(IELH2-1)+4)+DuFine(6*(IELH3-1)+5)+DuFine(6*(IELH4-1)+4)
       
@@ -11011,7 +11011,7 @@ contains
   
 !</subroutine>
   
-  ! local variables  
+  ! local variables
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
   real(DP) :: da, db, dc, dd
@@ -11226,7 +11226,7 @@ contains
   
 !</subroutine>
   
-  ! local variables  
+  ! local variables
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
   real(DP) :: da, db, dc, dd, de, df, dg, dh, di

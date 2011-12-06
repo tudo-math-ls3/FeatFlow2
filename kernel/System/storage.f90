@@ -910,19 +910,19 @@ module storage
 
   interface
     ! Define iso_c_binding Fortran: c_allocate -> C: storageHostAlloc
-    integer(C_INT) function c_allocate(buffer, size) bind(C,name="storage_malloc") 
+    integer(C_INT) function c_allocate(buffer, size) bind(C,name="storage_malloc")
       __external_use__(iso_c_binding)
-      implicit none 
-      type (C_PTR) :: buffer 
+      implicit none
+      type (C_PTR) :: buffer
       integer (C_SIZE_T), value :: size
     end function c_allocate
   end interface
   
   interface
     ! Define iso_c_binding Fortran: c_deallocate -> C: storageFreeHost
-    integer(C_INT) function c_deallocate(buffer) bind(C,name="storage_free") 
+    integer(C_INT) function c_deallocate(buffer) bind(C,name="storage_free")
       __external_use__(iso_c_binding)
-      implicit none 
+      implicit none
       type (C_PTR) :: buffer
     end function c_deallocate
   end interface
@@ -931,19 +931,19 @@ module storage
 
   interface
     ! Define iso_c_binding Fortran: c_allocate -> C: coproc_newMemoryOnHost
-    integer(C_INT) function c_allocate(buffer, size) bind(C,name="coproc_malloc") 
+    integer(C_INT) function c_allocate(buffer, size) bind(C,name="coproc_malloc")
       __external_use__(iso_c_binding)
-      implicit none 
-      type (C_PTR) :: buffer 
+      implicit none
+      type (C_PTR) :: buffer
       integer (C_SIZE_T), value :: size
     end function c_allocate
   end interface
   
   interface
     ! Define iso_c_binding Fortran: c_deallocate -> C: coproc_FreeMemoryOnHost
-    integer(C_INT) function c_deallocate(buffer) bind(C,name="coproc_free") 
+    integer(C_INT) function c_deallocate(buffer) bind(C,name="coproc_free")
       __external_use__(iso_c_binding)
-      implicit none 
+      implicit none
       type (C_PTR) :: buffer
     end function c_deallocate
   end interface
@@ -1984,7 +1984,7 @@ contains
       call sys_halt()
     end select
 
-#else 
+#else
    
     ! Allocate memory according to isize:
     select case (ctype)
@@ -2286,7 +2286,7 @@ contains
     case (ST_DOUBLE)
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_DOUBLE_BYTES
       ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
-      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Ddouble2D, Isize)     
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Ddouble2D, Isize)
     case (ST_QUAD)
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_QUAD_BYTES
       ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
@@ -2841,7 +2841,7 @@ contains
 #ifdef USE_C_PTR_STORAGE
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new3Dfixed')
-#endif    
+#endif
 
     ! Allocate memory according to Isize:
     select case (ctype)
@@ -3098,7 +3098,7 @@ contains
                           lbound(p_rnode%p_Fsingle3D),&
                           ubound(p_rnode%p_Fsingle3D),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
-      case (ST_DOUBLE)       
+      case (ST_DOUBLE)
         call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Ddouble3D),&
                           ubound(p_rnode%p_Ddouble3D),&
@@ -14794,7 +14794,7 @@ contains
       ! Do we really have to change anything?
       if (isize .eq. isizeOld) return
 
-#ifdef USE_C_PTR_STORAGE    
+#ifdef USE_C_PTR_STORAGE
       if (ilbound .eq. 1) then
         ! Allocate new memory and initialise it - if it is larger than the old
         ! memory block.
