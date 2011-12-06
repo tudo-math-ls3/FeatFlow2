@@ -14,6 +14,9 @@ export LC_ALL
 # Enable auto-tuning using genetic algorithms.
 # APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
 
+# Enable use of coproc_malloc/coproc_free
+#APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+
 # Specify header files which should be copied to the object directory
 HEADER_FILES_TO_COPY="src/flagship.h src/models/hydro/hydro.h src/models/hydro/hydro_callback.h src/models/mhd/mhd.h src/models/mhd/mhd_callback.h src/kernel/thermodynamics.h src/kernel/magnetohydrodynamics.h"
 
