@@ -5999,7 +5999,7 @@ contains
   ! Resize the vector block structure rx. Isize is an array
   ! of integers containing the length of the individual blocks.
   !
-  ! Remark: If the vector structure rx is not initialized, then
+  ! Remark: If the vector structure rx is not initialised, then
   ! it cannot be resized and the routine stops with an error.
   ! If it exists already, then the total memory on the heap is
   ! reallocated if "SUM(Isize) > SIZE(rx)", that is, the new
@@ -6016,7 +6016,7 @@ contains
   ! can be copied upon resize this is not possible for block vectors.
   ! Theoretically, this would be possible. However, some subvectors may
   ! have increased whereas other may have decreased, so that an additional
-  ! vector is mandatory to reorganize the global array. This is not efficient.
+  ! vector is mandatory to reorganise the global array. This is not efficient.
 !</description>
 
 !<input>
@@ -6059,7 +6059,7 @@ contains
       call sys_halt()
     end if
     
-    ! Check, if vector has been initialized before
+    ! Check, if vector has been initialised before
     if (rx%NEQ .eq. 0 .or. rx%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('A vector can only be resized if it has been created correctly!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
@@ -6204,7 +6204,7 @@ contains
   ! Resize the vector block structure rx. Isize is an integer value
   ! which denotes the new length of all blocks of the global block vector.
   !
-  ! Remark: If the vector structure rx is not initialized, then
+  ! Remark: If the vector structure rx is not initialised, then
   ! it cannot be resized and the routine stops with an error.
   ! If it exists already, then the total memory on the heap is
   ! reallocated if "(rx%nblocks*isize) > SIZE(rx)", that is,
@@ -6221,7 +6221,7 @@ contains
   ! can be copied upon resize this is not possible for block vectors.
   ! Theoretically, this would be possible. However, some subvectors may
   ! have increased whereas other may have decreased, so that an additional
-  ! vector is mandatory to reorganize the global array. This is not efficient.
+  ! vector is mandatory to reorganise the global array. This is not efficient.
 !</description>
 
 !<input>
@@ -6350,8 +6350,8 @@ contains
 
 !<description>
   ! Resize the vector block structure rx so that is resembles that of
-  ! the template vector. If rx has not been initialized, than it is
-  ! initialized adopting the same memory layout as the template vector.
+  ! the template vector. If rx has not been initialised, than it is
+  ! initialised adopting the same memory layout as the template vector.
   !
   ! Remark: If the vector exists already, then the total memory on
   ! the heap is reallocated if "SIZE(rTemplate) > SIZE(rx)", that is,
@@ -6401,7 +6401,7 @@ contains
     integer :: iNEQMAX
     integer :: i
 
-    ! Check if vector is initialized
+    ! Check if vector is initialised
     if (rx%NEQ .eq. 0 .or. rx%h_Ddata .eq. ST_NOHANDLE) then
       call lsysbl_createVectorBlock(rTemplate, rx, bclear, NEQMAX)
       
@@ -6444,8 +6444,8 @@ contains
 
 !<description>
     ! Resize the vector block structure rx so that it is compatible with
-    ! the template matrix. If rx has not been initialized, than it is
-    ! initialized adopting the same memory layout as the template matrix.
+    ! the template matrix. If rx has not been initialised, than it is
+    ! initialised adopting the same memory layout as the template matrix.
     !
     ! Remark: If the vector exists already, then the total memory on
     ! the heap is reallocated if "rtemplateMat%NCOLS > SIZE(rx)", that is,

@@ -1500,7 +1500,7 @@ contains
 
   eps=1e-10
 
-  ! initialize by 0
+  ! initialise by 0
 	idresult = 0
   Dintersec=0
 

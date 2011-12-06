@@ -4911,10 +4911,10 @@ contains
     ! The dirichlet value of the dof
     real(DP), intent(in) :: dvalue
     
-    ! If the dirichlet entry structure is already initialized, then this
+    ! If the dirichlet entry structure is already initialised, then this
     ! corresponds to the total number of currently allocated dofs in the
     ! dirichlet entry structure.
-    ! If the structure is uninitialized, then ndofs specifies the initial
+    ! If the structure is uninitialised, then ndofs specifies the initial
     ! size which is to be used for the arrays.
     integer, intent(inout) :: ndofs
     

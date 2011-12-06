@@ -1127,7 +1127,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -1204,7 +1204,7 @@ contains
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -1305,7 +1305,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -1376,7 +1376,7 @@ contains
       allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -1935,7 +1935,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -1989,7 +1989,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2684,7 +2684,7 @@ contains
       !$omp end sections
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2760,7 +2760,7 @@ contains
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2861,7 +2861,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2932,7 +2932,7 @@ contains
       allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3492,7 +3492,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3546,7 +3546,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3757,7 +3757,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3857,7 +3857,7 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3971,7 +3971,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4077,7 +4077,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4165,7 +4165,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4279,7 +4279,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4385,7 +4385,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4479,7 +4479,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4567,7 +4567,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4959,7 +4959,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5059,7 +5059,7 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5173,7 +5173,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5279,7 +5279,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5367,7 +5367,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5481,7 +5481,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5587,7 +5587,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5681,7 +5681,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5769,7 +5769,7 @@ contains
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -8274,7 +8274,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
    
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -8336,7 +8336,7 @@ contains
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
+        ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups
@@ -8368,7 +8368,7 @@ contains
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
+        ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups
@@ -8863,7 +8863,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
    
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -8925,7 +8925,7 @@ contains
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
+        ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups
@@ -8957,7 +8957,7 @@ contains
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
+        ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups

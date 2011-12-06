@@ -9847,7 +9847,7 @@ contains
   ! The outer normal vector will be calculated using the 3D cross product,
   ! so in the image above it is pointing right between your eyes... ^_^
 
-    ! Normalize the mean velocity to get a ray vector
+    ! Normalise the mean velocity to get a ray vector
     dt = sqrt(Du(1)**2 + Du(2)**2 + Du(3)**2)
     Dray = Du / dt
 
@@ -9890,7 +9890,7 @@ contains
       Dnormal(2,i) = Dtan1(3,i)*Dtan2(1,i) - Dtan1(1,i)*Dtan2(3,i)
       Dnormal(3,i) = Dtan1(1,i)*Dtan2(2,i) - Dtan1(2,i)*Dtan2(1,i)
 
-      ! And normalize it
+      ! And normalise it
       dt = 1.0_DP / sqrt(Dnormal(1,i)**2 + Dnormal(2,i)**2 + Dnormal(3,i)**2)
       Dnormal(:,i) = Dnormal(:,i) * dt
     end do
@@ -9906,7 +9906,7 @@ contains
     ! midpoints, normal vectors and a ray vector.
     ! The next step is to choose a "source face", i.e. the face at whose
     ! midpoint our ray should start. As both the ray vector and the normal
-    ! vectors are normalized, the scalar product of them is in range [-1,1].
+    ! vectors are normalised, the scalar product of them is in range [-1,1].
     !
     ! So, let r be the ray vector and n_1,...,n_6 be the six normal vectors.
     ! Our "source face" will be the face whose normal vector points
@@ -9936,7 +9936,7 @@ contains
     !
     ! where:
     ! m is the face midpoint of the "source face"
-    ! r is the normalized ray vector
+    ! r is the normalised ray vector
     ! f_i is the i-th face of the approximating hexahedron
     !
     ! The ray scaling factor for a given face i is calculated as:
@@ -9946,7 +9946,7 @@ contains
     !        ( n_i, m_i - m )
     !
     ! where:
-    ! r is the normalized ray vector
+    ! r is the normalised ray vector
     ! m is the face midpoint of the "source face"
     ! m_i is the midpoint of the i-th face
     ! n_i is the normal vector of the i-th face

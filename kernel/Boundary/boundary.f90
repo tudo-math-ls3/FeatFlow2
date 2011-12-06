@@ -3058,7 +3058,7 @@ contains
       call sys_halt()
     end select
 
-    ! Normalize the vector
+    ! Normalise the vector
     dnorm = sqrt(dnx0*dnx0+dny0*dny0)
     dnx = dnx0/dnorm
     dny = dny0/dnorm
@@ -3138,7 +3138,7 @@ contains
         dnx = DsamplePoints(2,2) - DsamplePoints(2,1)
         dny = DsamplePoints(1,1) - DsamplePoints(1,2)
         
-        ! ... and normalize the vector to unity
+        ! ... and normalise the vector to unity
         dscale = sqrt(dnx**2+dny**2)
         dnx = dnx/dscale
         dny = dny/dscale
@@ -3300,7 +3300,7 @@ contains
           Dnx(ipoint) = DsamplePoints(2,2) - DsamplePoints(2,1)
           Dny(ipoint) = DsamplePoints(1,1) - DsamplePoints(1,2)
           
-          ! ... and normalize the vector to unity
+          ! ... and normalise the vector to unity
           dscale = sqrt(Dnx(ipoint)**2+Dny(ipoint)**2)
           Dnx(ipoint) = Dnx(ipoint)/dscale
           Dny(ipoint) = Dny(ipoint)/dscale
@@ -3475,7 +3475,7 @@ contains
             Dnx(ipoint,iel) = DsamplePoints(2,2,iel) - DsamplePoints(2,1,iel)
             Dny(ipoint,iel) = DsamplePoints(1,1,iel) - DsamplePoints(1,2,iel)
             
-            ! ... and normalize the vector to unity
+            ! ... and normalise the vector to unity
             dscale = sqrt(Dnx(ipoint,iel)**2+Dny(ipoint,iel)**2)
             Dnx(ipoint,iel) = Dnx(ipoint,iel)/dscale
             Dny(ipoint,iel) = Dny(ipoint,iel)/dscale

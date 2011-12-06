@@ -539,7 +539,7 @@ contains
       call sys_halt()
     end if
 
-    ! Initialize marker structure for NEL0 elements
+    ! Initialise marker structure for NEL0 elements
     if (rhadapt%h_Imarker .ne. ST_NOHANDLE) call storage_free(rhadapt%h_Imarker)
     call storage_new('hadapt_markRefinement2D', 'Imarker', rhadapt%NEL0,&
                      ST_INT, rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
@@ -1848,7 +1848,7 @@ contains
   subroutine hadapt_markRedgreenRefinement2D(rhadapt, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine initializes the adaptive data structure for red-green
+    ! This subroutine initialises the adaptive data structure for red-green
     ! refinement. Starting from the marker array the neighbors of elements
     ! which are marked for refinement are recursively marked for refinement
     ! until the resulting mesh satiesfies global conformity.
@@ -3119,7 +3119,7 @@ contains
     
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     
-    ! Initialize number of elements by current number
+    ! Initialise number of elements by current number
     nel = rhadapt%NEL0
     
     ! Loop over all elements and check marker
@@ -5214,7 +5214,7 @@ contains
       ! Are we at the boundary?
       if (jel .eq. 0) cycle adjacent
 
-      ! Initialize indicator
+      ! Initialise indicator
       bfound = .false.
 
       ! Find position of element IEL0 in adjacent element JEL

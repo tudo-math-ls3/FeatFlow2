@@ -2025,7 +2025,7 @@ contains
                  (13*isubelement+1)/2-5*nsubelements) = dweight
         end do
 
-        ! Initialize the inner cubature points
+        ! Initialise the inner cubature points
         nsubelements = cub_getRefElements(ccubType) ** nreflevels
         dweight = 1.0_DP/real(nsubelements,dp)
 
@@ -2208,7 +2208,7 @@ contains
   subroutine cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
 
 !<description>
-  ! This routine initializes the coordinates and weight fields according
+  ! This routine initialises the coordinates and weight fields according
   ! to the selected cubature formula. The integration domain is <tex>$[-1,1]^n$</tex>.
   ! In the case of one-dimensional integration, only cub_dxi(i,1) is used.
   ! The coordinates of the cubature points on triangles are given in

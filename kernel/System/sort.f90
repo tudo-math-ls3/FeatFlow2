@@ -86,7 +86,7 @@ module sort
 
 !<constantblock description="General configuration parameters for sorting algorithms">
 
-  ! cutoff value for hybridized sorting
+  ! cutoff value for hybridised sorting
   ! insert best value for your computer here or
   ! leave the original guesstimated value
   integer, parameter, public :: SORT_CUTOFF     = 35

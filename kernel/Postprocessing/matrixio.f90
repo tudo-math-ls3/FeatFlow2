@@ -945,7 +945,7 @@ contains
 
 !<description>
     ! Writes a block matrix in CSR format to a file so that its sparsity structure
-    ! can be visualized in MATLAB by means of the spy command.
+    ! can be visualised in MATLAB by means of the spy command.
     ! If the matrix contains entries, the entries are written to the file
     ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
     !
@@ -1002,7 +1002,7 @@ contains
 
 !<description>
     ! Writes a scalar matrix in CSR format to a file so that its sparsity structure
-    ! can be visualized in MATLAB by means of the spy command.
+    ! can be visualised in MATLAB by means of the spy command.
     ! If the matrix contains entries, the entries are written to the file
     ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
     !

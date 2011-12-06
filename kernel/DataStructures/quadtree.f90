@@ -356,7 +356,7 @@ contains
     call storage_getbase_double2D(rquadtree%h_Dbbox, rquadtree%p_Dbbox)
     call storage_getbase_int2D(rquadtree%h_Knode,    rquadtree%p_Knode)
 
-    ! Initialize first quad
+    ! Initialise first quad
     rquadtree%nnode = 1
     rquadtree%p_Knode(QTREE_STATUS,1) = QTREE_EMPTY
     rquadtree%p_Knode(QTREE_PARENT,1) = QTREE_EMPTY
@@ -1050,7 +1050,7 @@ contains
 !</result>
 !</function>
     
-    ! Initialize
+    ! Initialise
     inode = 1; ipos = 1; ivt = 1
 
     ! Search for item
@@ -1176,7 +1176,7 @@ contains
 
 !<description>
     ! This subroutine writes the content of the quadtree to a file
-    ! which can be visualized by means of Matlab
+    ! which can be visualised by means of Matlab
 !</description>
 
 !<input>
@@ -1513,7 +1513,7 @@ contains
     ! Check if quadtree contains data
     if (rquadtree%NVT .eq. 0) then
 
-      ! Initialize first quad
+      ! Initialise first quad
       rquadtree%nnode = 1
       rquadtree%p_Knode(QTREE_STATUS, 1) = QTREE_EMPTY
       rquadtree%p_Knode(QTREE_PARENT, 1) = QTREE_EMPTY

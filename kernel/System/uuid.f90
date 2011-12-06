@@ -9,7 +9,7 @@
 !# Citation from "http://en.wikipedia.org/wiki/UUID":
 !#
 !#    A Universally Unique Identifier (UUID) is an identifier standard used
-!#    in software construction, standardized by the Open Software Foundation
+!#    in software construction, standardised by the Open Software Foundation
 !#    (OSF) as part of the Distributed Computing Environment (DCE). The intent
 !#    of UUIDs is to enable distributed systems to uniquely identify information
 !#    without significant central coordination. Thus, anyone can create a UUID
@@ -53,7 +53,7 @@
 !#    the computer that is generating the UUID, and with the number of
 !#    100-nanosecond intervals since the adoption of the Gregorian
 !#    calendar. In practice, the actual algorithm is more complicated.
-!#    This scheme has been criticized in that it is not sufficiently
+!#    This scheme has been criticised in that it is not sufficiently
 !#    'opaque'; it reveals both the identity of the computer that
 !#    generated the UUID and the time at which it did so.
 !#

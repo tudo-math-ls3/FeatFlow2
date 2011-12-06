@@ -117,7 +117,7 @@ contains
 !</inputoutput>
 
 !</subroutine>
-      ! check if the structure is initialized
+      ! check if the structure is initialised
       if(rMILUdecomp%h_lu .ne. ST_NOHANDLE) then
         call storage_free(rMILUdecomp%h_lu)
         call storage_free(rMILUdecomp%h_jlu)
@@ -823,7 +823,7 @@ contains
 
 !     ------------------------------------------------------------
 !     colptrs is used to hold the indices of entries in LU of
-!     row k.  It is initialized to zero here, and then reset after
+!     row k.  It is initialised to zero here, and then reset after
 !     each row`s work.
 !     ------------------------------------------------------------
       do k =  1, n
@@ -1218,10 +1218,10 @@ contains
   !  rowll(n):
   !  	The integer*4 vector rowll is used to keep a linked list of
   !  	the nonzeros in the current row, allowing fill-in to be
-  !   	introduced sensibly.  rowll is initialized with the
+  !   	introduced sensibly.  rowll is initialised with the
   !  	original nonzeros of the current row, and then sorted
   !  	using a shell sort.  A pointer called head
-  !  	(what ingenuity) is  initialized.  Note that at any
+  !  	(what ingenuity) is  initialised.  Note that at any
   !  	point rowll may contain garbage left over from previous
   !  	rows, which the linked list structure skips over.
   !  	For row 4 of the matrix above, first rowll is set to

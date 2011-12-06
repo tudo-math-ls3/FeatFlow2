@@ -369,7 +369,7 @@ contains
       rarraylist%cordering=cordering
     end if
 
-    ! Initialize list
+    ! Initialise list
     rarraylist%NTABLE   = 0
     rarraylist%NNTABLE  = nntable
     rarraylist%NNTABLE0 = nntable
@@ -410,7 +410,7 @@ contains
       call sys_halt()
     end select
     
-    ! Initialize list structures
+    ! Initialise list structures
     rarraylist%p_Knext(ARRLST_FREE)    = 1
   end subroutine arrlst_createArrayListDefault
   
@@ -449,7 +449,7 @@ contains
     if (itable > rarraylist%NNTABLE) call arrlst_resizeArrayListTbl(&
         rarraylist,ceiling(itable*rarraylist%dfactor))
     
-    ! Initialize structures
+    ! Initialise structures
     rarraylist%p_Ktable(ARRLST_HEAD:ARRLST_NA,rarraylist%NTABLE+1:itable) = ARRLST_NULL
 
     ! Set new table size

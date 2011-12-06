@@ -972,7 +972,7 @@ module triangulation
     integer                  :: nverticesPerEdge = 0
     
     ! Total number of vertices on edges; normally = 0.
-    ! Total number of vertices on all edges, realized in p_DfreeVertexCoordinates.
+    ! Total number of vertices on all edges, realised in p_DfreeVertexCoordinates.
     ! E.g. if midpoints on edges exist, there is NVEDT=NMT.
     integer                  :: nVerticesOnAllEdges = 0
     
@@ -984,13 +984,13 @@ module triangulation
     integer                  :: nverticesInEachElement = 0
 
     ! Total number of vertices in elements; normally = 0.
-    ! Total number of vertices on all elements, realized in p_DfreeVertexCoordinates.
+    ! Total number of vertices on all elements, realised in p_DfreeVertexCoordinates.
     ! E.g. if element-midpoints exist in DCORMG, there is NIEVT=NEL.
     integer                  :: nverticesInAllElements = 0
     
     ! Number of additional vertices; normally = 0.
     ! Can be set <> 0 if there are any additional vertices
-    ! realized in p_DfreeVertexCoordinates, that do not belong to a regular
+    ! realised in p_DfreeVertexCoordinates, that do not belong to a regular
     ! distribution of vertices in corners, on edges or on elements.
     integer                  :: nadditionalVertices = 0
   
@@ -1088,7 +1088,7 @@ module triangulation
     ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
     ! its function inside of the geometry.
     ! Generally said, the range of the p_InodalProperty-array
-    ! characterizes the type of the node (=vertex/edge):
+    ! characterises the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
     !           boundary. KNPR(.) defines the number of the boundary
@@ -1372,7 +1372,7 @@ module triangulation
     ! coordinates that are not corner vertices. This includes regular distributed
     ! vertices on edges (either midpoints or points at 1/3 and 2/3 of the edge,
     ! or...), on elements (either midpoints or the 4 Gauss-points, or...)
-    ! as well as additional vertices the user wants to be realized, that
+    ! as well as additional vertices the user wants to be realised, that
     ! do not belong to any of the previous two groups.
     !
     ! The numbers of regularly distributed vertices on edges/elements can
@@ -4316,7 +4316,7 @@ contains
         ! Store the vertex number at midpoint of the face
         p_ImidpointAtFace(iae) = ivtoffset
 
-        ! Initialize vertex coordinates
+        ! Initialise vertex coordinates
         p_DcoordDest(:,ivtoffset) = 0.0_DP
         
         ! Loop over all four corner vertices and
@@ -12873,7 +12873,7 @@ contains
     call storage_getbase_int(rtriangulation%h_IedgesAtVertexIdx, &
         p_IedgesAtVertexIdx)
     
-    ! initialize the p_IedgesAtVertexIdx array
+    ! initialise the p_IedgesAtVertexIdx array
     p_IedgesAtVertexIdx(1) = 1
     p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = 0
     
@@ -13253,7 +13253,7 @@ contains
     ! by counting the number of non-zero elements in p_InodalProperty
     rtriangulation%NVBD = 0
     
-    ! initialize with zero
+    ! initialise with zero
     ivbd = 0
     ibct = 0
     
@@ -14076,7 +14076,7 @@ contains
         rtriangulation%h_IfacesAtElement, p_IfacesAtElement)
     call lalg_clearVector(p_IfacesAtElement)
     
-    ! initialize the global face number
+    ! initialise the global face number
     ifaceGlobal = 0
 
     ! loop over all elements
@@ -15059,7 +15059,7 @@ contains
         rtriangulation%h_IboundaryCpFacesIdx, p_IboundaryCpFacesIdx)
     
     ! the first index is one; the remaining indices are
-    ! initialized with zeros and updated step-by-step
+    ! initialised with zeros and updated step-by-step
     call lalg_clearVectorInt(p_IboundaryCpFacesIdx)
     p_IboundaryCpFacesIdx(1) = 1
     
@@ -15880,7 +15880,7 @@ contains
     call storage_getbase_int2D(&
         rtriangulation%h_IverticesAtFace, p_IverticesAtFace)
     
-    ! initialize the global face number
+    ! initialise the global face number
     ifaceGlobal = 0
     
     ! loop over all elements

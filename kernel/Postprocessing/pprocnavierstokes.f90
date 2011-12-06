@@ -2696,7 +2696,7 @@ contains
 
     end do ! icurrentelement
 
-    ! At last, normalize the streamfunction such that vertex 1
+    ! At last, normalise the streamfunction such that vertex 1
     ! has value 0.0. Remember that we assigned a value of 0.0
     ! to the first vertex of element 1, which is usually not
     ! vertex 1 of the triangulation!
@@ -2787,7 +2787,7 @@ contains
           ! imid is now the midpoint number following ivt and thus
           ! the number of the DOF in the FE function.
           ! Calculate the normal vector of the current edge into
-          ! N=(dn1,dn2) - not normalized.
+          ! N=(dn1,dn2) - not normalised.
           !
           !     x-------x inextvertex
           !     |       |

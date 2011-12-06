@@ -631,7 +631,7 @@ contains
       call sys_halt()
     end if
     
-    ! Initialize string
+    ! Initialise string
     strUpper = ''
     
     do i=1,len(str)
@@ -716,7 +716,7 @@ contains
       call sys_halt()
     end if
     
-    ! Initialize string
+    ! Initialise string
     strLower = ''
     
     do i=1,len(str)

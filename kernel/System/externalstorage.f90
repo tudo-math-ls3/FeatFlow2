@@ -496,7 +496,7 @@ contains
   subroutine exstor_init(ihandleCount, ihandlesDelta, rheap)
 
 !<description>
-  ! This routine initializes the storage management for external storage.
+  ! This routine initialises the storage management for external storage.
   ! ihandleCount is the initial number of handles maintained by the
   ! storage routines. If there are not enough free handles, the number
   ! of handles are increased by ihandlesDelta (which is initially set

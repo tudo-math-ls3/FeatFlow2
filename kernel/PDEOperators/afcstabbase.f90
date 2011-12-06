@@ -10,7 +10,7 @@
 !# The following routines are available:
 !#
 !# 1.) afcstab_initFromParameterlist
-!#     -> Creates a stabilisation structure and initialize
+!#     -> Creates a stabilisation structure and initialise
 !#        it from the values of a given parameter list
 !#
 !# 2.) afcstab_releaseStabilisation
@@ -459,7 +459,7 @@ module afcstabbase
 
 !<constantblock description="Bitfield identifiers for TVD-algorithm">
 
-  ! Initialize the edgewise correction factors by unity
+  ! Initialise the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_INITALPHA    = 2_I32**0
   
   ! Compute the raw-antidiffusive fluxes
@@ -511,7 +511,7 @@ module afcstabbase
 
 !<constantblock description="Bitfield identifiers for FCT-algorithm">
 
-  ! Initialize the edgewise correction factors by unity
+  ! Initialise the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITALPHA    = 2_I32**0
 
   ! Prelimit the raw antidiffusive fluxes
@@ -569,7 +569,7 @@ module afcstabbase
 
 !<constantblock description="Bitfield identifiers for LPT-algorithm">
 
-  ! Initialize the edgewise correction factors by unity
+  ! Initialise the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_LPTALGO_INITALPHA    = 2_I32**0
 
   ! Compute the sums of antidiffusive increments
@@ -607,7 +607,7 @@ module afcstabbase
 
 !<constantblock description="Bitfield identifiers for failsafe algorithm">
 
-  ! Initialize the edgewise correction factors by unity
+  ! Initialise the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_INITBETA = 2_I32**0
 
   ! Compute the distances to a local extremum
@@ -868,7 +868,7 @@ contains
   subroutine afcstab_initFromParameterlist(rparlist, ssectionName, rafcstab)
 
 !<description>
-    ! This subroutine creates a stabilisation structure and initializes
+    ! This subroutine creates a stabilisation structure and initialises
     ! its values from a given parameter list
 !</description>
 
@@ -3060,7 +3060,7 @@ contains
 
 !<description>
     ! This subroutine generates the list of edges which are
-    ! characterized by their two endpoints (i,j) and the absolute
+    ! characterised by their two endpoints (i,j) and the absolute
     ! position of matrix entries ij and ji.
 !</description>
 

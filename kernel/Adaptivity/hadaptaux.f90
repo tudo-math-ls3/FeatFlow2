@@ -110,7 +110,7 @@ module hadaptaux
   ! Adaptation is undefined
   integer(I32), parameter, public :: HADAPT_UNDEFINED        = 2**0
   
-  ! Parameters of adaptivity structure are initialized
+  ! Parameters of adaptivity structure are initialised
   integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
 
   ! Btree/quadtree/octree for vertex coordinates is generated
@@ -435,7 +435,7 @@ module hadaptaux
     ! p_InodalProperty(i) defines for each vertex i=(1..NVT)
     ! and each edge i=(NVT+1..NVT+NMT) its function inside of the
     ! geometry. Generally said, the range of the p_InodalProperty-array
-    ! characterizes the type of the node (=vertex/edge):
+    ! characterises the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
     !           boundary. KNPR(.) defines the number of the boundary
@@ -1251,7 +1251,7 @@ contains
 
 !<description>
     ! This subroutine sets the boundary structure to the
-    ! adaptivity structure and initializes internal data
+    ! adaptivity structure and initialises internal data
 !</description>
 
 !<input>

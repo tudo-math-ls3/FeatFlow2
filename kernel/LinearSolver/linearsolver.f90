@@ -526,7 +526,7 @@
 !#           -> Conjugate Gradient preconditioner
 !#
 !#      11.) linsol_initGMRES
-!#           -> (flexible) Generalized Minimal-Residual preconditioner
+!#           -> (flexible) Generalised Minimal-Residual preconditioner
 !#           -> see [Y. Saad; A flexible inner outer preconditioned GMRES algorithm;
 !#                   SIAM J. Sci. Comput. 1993, Vol. 14, No. 2, pp. 461-469]
 !#                  [http://www-users.cs.umn.edu/~saad/]
@@ -3919,11 +3919,11 @@ contains
     !          (dres .le. 1E99_DP))) dres = 0.0_DP
     if (dres .lt. 1E-99_DP) dres = 0.0_DP
 
-    ! Initialize starting residuum
+    ! Initialise starting residuum
     rsolverNode%dinitialDefect = dres
     rsolverNode%dlastDefect = 0.0_DP
 
-    ! initialize the queue of the last residuals with RES
+    ! initialise the queue of the last residuals with RES
     Dresqueue = dres
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -6372,7 +6372,7 @@ contains
     ! to this solver.
     allocate(rsolverNode%p_rsubnodeUMFPACK4)
     
-    ! Initialize the UMFPACK4 control structure:
+    ! Initialise the UMFPACK4 control structure:
     call UMF4DEF(rsolverNode%p_rsubnodeUMFPACK4%Dcontrol)
   
   end subroutine
@@ -8516,7 +8516,7 @@ contains
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
       
-    ! Initialize used vectors with zero
+    ! Initialise used vectors with zero
     call lsysbl_clearVector(p_DR)
     call lsysbl_clearVector(p_DP)
     call lsysbl_clearVector(p_DD)
@@ -8541,11 +8541,11 @@ contains
     if (.not.((dres .ge. 1E-99_DP) .and. &
               (dres .le. 1E99_DP))) dres = 0.0_DP
 
-    ! Initialize starting residuum
+    ! Initialise starting residuum
     rsolverNode%dinitialDefect = dres
     rsolverNode%dlastDefect = 0.0_DP
 
-    ! initialize the queue of the last residuals with RES
+    ! initialise the queue of the last residuals with RES
     Dresqueue = dres
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -9413,7 +9413,7 @@ contains
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
       
-    ! Initialize used vectors with zero
+    ! Initialise used vectors with zero
     call lsysbl_clearVector(p_DP)
     call lsysbl_clearVector(p_DPA)
     
@@ -9442,11 +9442,11 @@ contains
     if (.not.((dres .ge. 1E-99_DP) .and. &
               (dres .le. 1E99_DP))) dres = 0.0_DP
 
-    ! Initialize starting residuum
+    ! Initialise starting residuum
     rsolverNode%dinitialDefect = dres
     rsolverNode%dlastDefect = 0.0_DP
 
-    ! initialize the queue of the last residuals with RES
+    ! initialise the queue of the last residuals with RES
     Dresqueue = dres
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -10465,11 +10465,11 @@ contains
     if (.not.((dfr .ge. 1E-99_DP) .and. &
               (dfr .le. 1E99_DP))) dfr = 0.0_DP
 
-    ! Initialize starting residuum
+    ! Initialise starting residuum
     rsolverNode%dinitialDefect = dfr
     rsolverNode%dlastDefect = 0.0_DP
 
-    ! initialize the queue of the last residuals with RES
+    ! initialise the queue of the last residuals with RES
     Dresqueue = dfr
 
     ! Check if out initial defect is zero. This may happen if the filtering
@@ -13383,11 +13383,11 @@ contains
       if (.not.((dres .ge. 1E-99_DP) .and. &
                 (dres .le. 1E99_DP))) dres = 0.0_DP
 
-      ! Initialize starting residuum
+      ! Initialise starting residuum
       rsolverNode%dinitialDefect = dres
       rsolverNode%dlastDefect = 0.0_DP
 
-      ! initialize the queue of the last residuals with RES
+      ! initialise the queue of the last residuals with RES
       Dresqueue = dres
 
       ! Check if out initial defect is zero. This may happen if the filtering
@@ -13473,7 +13473,7 @@ contains
         
           rsolverNode%icurrentIteration = ite
           
-          ! Initialize cycle counters for all levels.
+          ! Initialise cycle counters for all levels.
           p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
           do while(associated(p_rcurrentLevel%p_rnextLevel))
             p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
@@ -15482,11 +15482,11 @@ contains
       if (.not.((dres .ge. 1E-99_DP) .and. &
                 (dres .le. 1E99_DP))) dres = 0.0_DP
 
-      ! Initialize starting residuum
+      ! Initialise starting residuum
       rsolverNode%dinitialDefect = dres
       rsolverNode%dlastDefect = 0.0_DP
 
-      ! initialize the queue of the last residuals with RES
+      ! initialise the queue of the last residuals with RES
       Dresqueue = dres
 
       ! Check if out initial defect is zero. This may happen if the filtering
@@ -15574,7 +15574,7 @@ contains
         
           rsolverNode%icurrentIteration = ite
           
-          ! Initialize cycle counters for all levels.
+          ! Initialise cycle counters for all levels.
           do i=1,nlmax
             p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
             p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles

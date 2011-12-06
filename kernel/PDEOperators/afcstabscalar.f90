@@ -1084,7 +1084,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -1147,7 +1147,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -1385,7 +1385,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -1439,7 +1439,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2065,7 +2065,7 @@ contains
       !$omp end sections
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2139,7 +2139,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2205,7 +2205,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2263,7 +2263,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2322,7 +2322,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2423,7 +2423,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2690,7 +2690,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2755,7 +2755,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -2978,7 +2978,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3023,7 +3023,7 @@ contains
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -3475,7 +3475,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -3544,7 +3544,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -3600,7 +3600,7 @@ contains
       !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
@@ -3799,7 +3799,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3851,7 +3851,7 @@ contains
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5702,7 +5702,7 @@ contains
       call lalg_clearVector(Dq)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       !$omp parallel default(shared) private(iedge,i,j,ij,ji)
       do igroup = 1, size(IedgeListIdx)-1
         
@@ -5749,7 +5749,7 @@ contains
       call lalg_clearVector(Dq)
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       !$omp parallel default(shared) private(iedge,i,j)
       do igroup = 1, size(IedgeListIdx)-1
         
@@ -6448,13 +6448,13 @@ contains
       do k = 1, NEQ
 
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -7120,13 +7120,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -9114,13 +9114,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -9263,13 +9263,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -9408,13 +9408,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -10241,13 +10241,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -10398,13 +10398,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -10555,13 +10555,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges
@@ -11406,13 +11406,13 @@ contains
       do k = 1, NEQ
         
         ! Assemble nodal coefficients P and Q for node k and all vertices
-        ! surrounding node k. Note that it suffices to initialize only
+        ! surrounding node k. Note that it suffices to initialise only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
         Dpploc(:,0) = 0; Dpmloc(:,0) = 0
         Dqploc(:,0) = 0; Dqmloc(:,0) = 0
         
-        ! Initialize local counter
+        ! Initialise local counter
         iloc = 0
 
         ! Loop over all subdiagonal edges

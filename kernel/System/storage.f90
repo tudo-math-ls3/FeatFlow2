@@ -963,7 +963,7 @@ contains
 
 !<description>
 
-  ! This routine initializes the storage management.
+  ! This routine initialises the storage management.
   ! ihandleCount is the initial number of handles maintained by the
   ! storage routines. If there are not enough free handles, the number
   ! of handles are increased by ihandlesDelta (which is initially set
@@ -17705,8 +17705,8 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         end select
 
-        ! Synchronize stream
-        call coproc_synchronizeStream(istreamTmp)
+        ! Synchronise stream
+        call coproc_synchroniseStream(istreamTmp)
       
         ! Release temporal memory block ...
         call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)

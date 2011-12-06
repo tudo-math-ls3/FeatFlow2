@@ -624,7 +624,7 @@ contains
     integer, dimension(2) :: I_dim
     logical :: bedgeMids, belemMids, brefined
     
-    ! Initialize vertice / cell counts
+    ! Initialise vertice / cell counts
     rrefine%nvertices = 0
     rrefine%ncells = 0
     

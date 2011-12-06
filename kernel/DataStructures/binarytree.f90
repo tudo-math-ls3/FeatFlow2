@@ -373,7 +373,7 @@ contains
     ! Set tree format
     rtree%ctreeFormat=ctreeFormat
 
-    ! Initialize tree
+    ! Initialise tree
     rtree%isizeInt  = isizeInt
     rtree%isizeDble = isizeDble
     rtree%isizeSngl = isizeSngl
@@ -440,7 +440,7 @@ contains
       call storage_getbase_int2D(rtree%h_IData, rtree%p_IData)
     end if
 
-    ! Initialize tree structure
+    ! Initialise tree structure
     rtree%p_Kchild(TFREE,TROOT) = 1
   end subroutine btree_createTree
 

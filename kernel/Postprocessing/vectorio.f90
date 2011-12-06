@@ -1315,7 +1315,7 @@ contains
 
 !<description>
 
-    ! Writes a scalar vector to a file so that it can be visualized in
+    ! Writes a scalar vector to a file so that it can be visualised in
     ! MATLAB by means of the SPY command.
     !
     ! To load a vector written out by this routine, one has simply to
@@ -1478,7 +1478,7 @@ contains
 
 !<description>
 
-    ! Writes a block vector to a file so that it can be visualized in
+    ! Writes a block vector to a file so that it can be visualised in
     ! MATLAB by means of the SPY command.
     !
     ! To load a vector written out by this routine, one has simply to

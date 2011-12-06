@@ -20,7 +20,7 @@
 !#     The original Fortran90 source code is available from:
 !#     http://itsextern.its.uni-karlsruhe.de/~schmehl/functionparser.html
 !#
-!#     However the "Fortran 90 function parser V1.1" only recognizes the
+!#     However the "Fortran 90 function parser V1.1" only recognises the
 !#     (single argument) Fortran 90 intrinsic functions abs, exp, log10,
 !#     log, sqrt, sinh, cosh, tanh, sin, cos, tan, asin, acos, atan.
 !#
@@ -30,7 +30,7 @@
 !#
 !# (b) This FParser module is an extension of the `Fortran 90 function parser
 !#     V1.1` which implements most of the features available in the `function
-!#     parser library for C++ V2.8` written by Warp. The optimizer included
+!#     parser library for C++ V2.8` written by Warp. The optimiser included
 !#     in the C++ library and the recursive evaluation of functions by means
 !#     of eval(...) is not implemented in this version.
 !#
@@ -54,7 +54,7 @@
 !#
 !# Step 1 - Initialization \\
 !# ----------------------- \\
-!# The parser module has to be initialized for the simultaneous evaluation of
+!# The parser module has to be initialised for the simultaneous evaluation of
 !# n functions by calling the module subroutine initp one time in your Fortran
 !# code:
 !#
@@ -113,7 +113,7 @@
 !# actual length for the parser. Parsing for variables is case sensitive.
 !#
 !# The syntax of the function string is similar to the Fortran convention.
-!# Mathematical Operators recognized are +, -, *, /, %, ** or alternatively
+!# Mathematical Operators recognised are +, -, *, /, %, ** or alternatively
 !# ^, whereas symbols for brackets must be (), [] or {}. Note that the
 !# parser does not check if, e.g. ( is closed by ) or ]. At the moment,
 !# different brackets may be used only to improve readability of the function
@@ -133,7 +133,7 @@
 !#  A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
 !# </verb>
 !#
-!# The function string can contain integer or real constants. To be recognized
+!# The function string can contain integer or real constants. To be recognised
 !# as explicit constants these must conform to the format
 !#
 !# <verb>
@@ -220,7 +220,7 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) fparser_init
-!#     -> Initialize the sub-system for function parsers
+!#     -> Initialise the sub-system for function parsers
 !#
 !# 2.) fparser_done
 !#     -> Release the sub-system for function parsers
@@ -741,7 +741,7 @@ contains
   subroutine fparser_init()
 
 !<description>
-    ! Initialize function parser
+    ! Initialise function parser
 !</description>
 
 !</subroutine>
@@ -749,14 +749,14 @@ contains
     ! local variables
     integer :: i
 
-    ! Initialize predefined constants
+    ! Initialise predefined constants
     do i = lbound(PredefinedConsts, 1),&
            ubound(PredefinedConsts, 1)
       call fparser_defineConstant(PredefinedConsts(i),&
                                   PredefinedConstvals(i))
     end do
 
-    ! Initialize predefined expressions
+    ! Initialise predefined expressions
     do i = lbound(PredefinedExpressions, 1),&
            ubound(PredefinedExpressions, 1)
       call fparser_defineExpression(PredefinedExpressions(i),&
@@ -1091,7 +1091,7 @@ contains
   subroutine fparser_create (rfparser, nncomp)
 
 !<description>
-    ! Initialize function parser for nncomp functions.
+    ! Initialise function parser for nncomp functions.
 !</description>
 
 !<input>
@@ -1350,8 +1350,8 @@ contains
     character(LEN=*), intent(in) :: scompName
 
     ! Orientation of the stored values
-    ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
-    ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    ! idim =1 : DvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : DvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
     integer, intent(in) :: idim
 
     ! Variable values (must have the same dimension as Dresult)
@@ -1563,8 +1563,8 @@ contains
     integer, intent(in) :: icomp
 
     ! Orientation of the stored values
-    ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
-    ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    ! idim =1 : DvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : DvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
     integer, intent(in) :: idim
 
     ! Variable values (must have the same dimension as Dresult)
@@ -1665,12 +1665,12 @@ contains
         !$omp end parallel
       end if
       
-    else   ! The compiled function cannot be vectorized
+    else   ! The compiled function cannot be vectorised
 
       ! Allocate temporal memory
       allocate(Dstack(rfparser%Rcomp(icomp)%iStackSize+1,1))
 
-      ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
+      ! The compiled bytecode cannot be vectorised. Hence, evaluate the function
       ! separately for each set of variables. Here, the organization of the array
       ! DvalBlock(:,:) is important. Moreover, if the optional parameter DvalScalar is
       ! given, then we have to combine those variables from DvalBlock and DvalScalar.
@@ -2561,7 +2561,7 @@ contains
     real(DP), dimension(:), pointer :: Dimmed
     integer :: ind,isize
     
-    ! (Re-)initialize the bytecode structure (if required)
+    ! (Re-)initialise the bytecode structure (if required)
     if (associated(rcomp%IbyteCode)) deallocate (rcomp%IbyteCode)
     if (associated(rcomp%Dimmed))    deallocate (rcomp%Dimmed)
     rcomp%ibytecodeSize = 0
@@ -2653,7 +2653,7 @@ contains
     rcomp%ibytecodeSize = rcomp%ibytecodeSize + 1
     rcomp%IbyteCode(rcomp%ibytecodeSize) = ibyte
 
-    ! Try to optimize the compiled bytecode. Check the bytecode instruction and
+    ! Try to optimise the compiled bytecode. Check the bytecode instruction and
     ! compute some values on-the-fly of this is possible
     select case(ibyte)
       !------------------------------------------------------------
@@ -3884,7 +3884,7 @@ contains
         ! Check for IF-THEN-ELSE
         if (n .eq. cIf) then
           ind2 = CompileIf(rcomp, sfunctionString, ind2+1, Svariables)
-          ! IF-THEN-ELSE cannot be vectorized, note that!
+          ! IF-THEN-ELSE cannot be vectorised, note that!
           rcomp%bisVectorizable = .false.
           return
         end if
@@ -4544,8 +4544,8 @@ contains
     integer, intent(in) :: iblockSize
 
     ! Orientation of the stored values
-    ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
-    ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    ! idim =1 : DvalueBlock is organised as (x1:xN),(y1:yN),...
+    ! idim =2 : DvalueBlock is organised as (x1,y1),(x2,y2),...,(xN,yN)
     integer, intent(in) :: idim
 
     ! Vector of scalar variable values
@@ -4742,10 +4742,10 @@ contains
 
 
       case (cIf)
-        ! IF-THEN-ELSE cannot be vectorized which should be noted during
+        ! IF-THEN-ELSE cannot be vectorised which should be noted during
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
-        call output_line('IF-THEN-ELSE cannot be vectorized!',&
+        call output_line('IF-THEN-ELSE cannot be vectorised!',&
             OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlock')
         call sys_halt()
         

@@ -548,7 +548,7 @@ contains
       ! Loop over all elements in triangulation
       do iel = 1, NEL
         
-        ! Initialize number of contributions
+        ! Initialise number of contributions
         ncontributions = 0
 
         ! Loop over all vertices of the element

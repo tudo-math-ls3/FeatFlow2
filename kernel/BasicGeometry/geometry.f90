@@ -753,7 +753,7 @@ module geometry
   type t_particleCollection
   
     ! number of particles in the particle collection
-    ! this number is initialized with 0
+    ! this number is initialised with 0
     integer :: nparticles = 0
   
     ! condition to avtivate adaptive time step
@@ -779,7 +779,7 @@ module geometry
   type t_particleCollection3D
   
     ! number of particles in the particle collection
-    ! this number is initialized with 0
+    ! this number is initialised with 0
     integer :: nparticles = 0
   
     ! pointer to the particle structures
@@ -795,13 +795,13 @@ module geometry
   ! In a particulate flow simulation the user may want to
   ! define a group of particles for use in the simulation.
   ! The particles have different parameters like starting position,
-  ! density etc... When a particleCollection structure is initialized
+  ! density etc... When a particleCollection structure is initialised
   ! the user needs to provide the initialzation routine with this
   ! information. So he can set up a t_particleDescriptor to define
   ! the particles he wants to have them.
   type t_particleDescriptor
   
-    ! this routines initializes a Particle collection
+    ! this routines initialises a Particle collection
     ! according to the parameters given in pparameters
     ! pparameters is a double array of size [4,iparticles]
     ! The structure of this array is as follows:
@@ -819,7 +819,7 @@ module geometry
     ! the number of particles that will take part in the simulation
     integer :: iparticles = 0
     
-    ! the shape id of the particle, initialized as a circle by default
+    ! the shape id of the particle, initialised as a circle by default
     integer :: ishape = GEOM_CIRCLE
     
     ! in case the geometry is loaded from file
@@ -834,7 +834,7 @@ module geometry
   ! The 3d version of a particle descriptor, see above for a description
   type t_particleDescriptor3D
   
-    ! this routines initializes a Particle collection
+    ! this routines initialises a Particle collection
     ! according to the parameters given in pparameters
     ! pparameters is a double array of size [4,iparticles]
     ! The structure of this array is as follows:
@@ -855,7 +855,7 @@ module geometry
     ! the number of particles that will take part in the simulation
     integer :: iparticles = 0
     
-    ! the shape id of the particle, initialized as a circle by default
+    ! the shape id of the particle, initialised as a circle by default
     integer :: ishape = GEOM_SPHERE
     
   end type
@@ -1925,7 +1925,7 @@ end subroutine
       Dproj(2) = rgeomObject%rcoord2D%Dorigin(2)
 
     else
-      ! Normalize the vector and scale it by the radius
+      ! Normalise the vector and scale it by the radius
       Dproj(1) = (Dproj(1) * drad) / dlen
       Dproj(2) = (Dproj(2) * drad) / dlen
 
@@ -6473,7 +6473,7 @@ end subroutine
 !<subroutine>
   subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy,s3dm)
 !<description>
-  ! this routines initializes a t_particle structure
+  ! this routines initialises a t_particle structure
   ! according to the parameters iid,dx,dy,drad,drho
   ! The parameter iid should be one of the constants:
   ! GEOM_CIRCLE GEOM_ELLIPSE GEOM_SQUARE GEOM_RECT GEOM_POLYGON
@@ -6557,7 +6557,7 @@ end subroutine
 !<subroutine>
   subroutine geom_initParticle3D(rParticle,iid,drad,drho,dx,dy,dz)
 !<description>
-  ! this routines initializes a t_particle structure
+  ! this routines initialises a t_particle structure
   ! according to the parameters iid,dx,dy,dz,drad,drho
   ! The parameter iid should be one of the constants:
   ! So far ONLY GEOM_SPHERE is fully supported!!!
@@ -6615,7 +6615,7 @@ end subroutine
   subroutine geom_initParticleCollct(rparticleCollection,rparticleDescriptor)
   
 !<description>
-  ! this routines initializes a Particle collection
+  ! this routines initialises a Particle collection
   ! according to the parameters given in rparticleDescriptor
 !</description>
   
@@ -6639,13 +6639,13 @@ end subroutine
   ! allocate memory for the number of particles that we want to use
   allocate(rparticleCollection%p_rParticles(rparticleCollection%nparticles))
     
-  ! loop to initialize the particles
+  ! loop to initialise the particles
   do i1=1,rparticleCollection%nparticles
     dx    = rparticleDescriptor%pparameters(1,i1)
     dy    = rparticleDescriptor%pparameters(2,i1)
     drad  = rparticleDescriptor%pparameters(3,i1)
     drho  = rparticleDescriptor%pparameters(4,i1)
-    ! call the routine to initialize the particle
+    ! call the routine to initialise the particle
     call geom_initParticle(rparticleCollection%p_rParticles(i1),rparticleDescriptor%ishape,&
                            drad,drho,dx,dy,trim(rparticleDescriptor%sfilename))
   end do
@@ -6658,7 +6658,7 @@ end subroutine
   subroutine geom_initParticleCollct3D(rparticleCollection3D,rparticleDescriptor3D)
   
 !<description>
-  ! this routines initializes a Particle collection
+  ! this routines initialises a Particle collection
   ! according to the parameters given in rparticleDescriptor
 !</description>
   
@@ -6682,14 +6682,14 @@ end subroutine
   ! allocate memory for the number of particles that we want to use
   allocate(rparticleCollection3D%p_rParticles(rparticleCollection3D%nparticles))
     
-  ! loop to initialize the particles
+  ! loop to initialise the particles
   do i1=1,rparticleCollection3D%nparticles
     dx    = rparticleDescriptor3D%pparameters(1,i1)
     dy    = rparticleDescriptor3D%pparameters(2,i1)
     dz    = rparticleDescriptor3D%pparameters(3,i1)
     drad  = rparticleDescriptor3D%pparameters(4,i1)
     drho  = rparticleDescriptor3D%pparameters(5,i1)
-   ! call the routine to initialize the particle
+   ! call the routine to initialise the particle
     call geom_initParticle3D(rparticleCollection3D%p_rParticles(i1),rparticleDescriptor3D%ishape,&
                              drad,drho,dx,dy,dz)
   end do

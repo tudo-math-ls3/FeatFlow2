@@ -2430,7 +2430,7 @@ contains
       end if
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -2669,7 +2669,7 @@ contains
       end if
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3545,7 +3545,7 @@ contains
       allocate(Dcoefficients(MVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -3691,7 +3691,7 @@ contains
       allocate(Dcoefficients(MVAR,3,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -4873,7 +4873,7 @@ contains
       allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
@@ -5126,7 +5126,7 @@ contains
       allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
+      ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups

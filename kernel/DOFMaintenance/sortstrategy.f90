@@ -864,8 +864,8 @@ contains
     ! ulate permutation vectors Itr1 and Itr2; these describe how a
     ! vector must be sorted/sorted back.
 
-    ! Itr1 must be initialized with 0 on call of this subroutine!
-    ! Itr2 should be initialized with 0 on call of this subroutine,
+    ! Itr1 must be initialised with 0 on call of this subroutine!
+    ! Itr2 should be initialised with 0 on call of this subroutine,
     ! as only the entries != 0 are calculated!
 
     ! Matrix storage technique 7 version!
@@ -926,7 +926,7 @@ contains
 !    Itr1(1)=1
 !    Itr2(1)=1
     ! Old FEAT-code, commented out.
-    ! The current code uses the fact, that Itr1 is initialized with 0 on
+    ! The current code uses the fact, that Itr1 is initialised with 0 on
     ! call to this routine. In in the processing a 0 is found in Itr1, a
     ! new matrix block is found. This is especially the case in the
     ! beginning of the algorithm, as no matrix block has been found yet and

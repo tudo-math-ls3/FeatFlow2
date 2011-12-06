@@ -389,7 +389,7 @@ contains
       rlist%cordering=cordering
     end if
 
-    ! Initialize list
+    ! Initialise list
     rlist%isizeInt  = isizeInt
     rlist%isizeSngl = isizeSngl
     rlist%isizeDble = isizeDble
@@ -437,7 +437,7 @@ contains
       call sys_halt()
     end select
     
-    ! Initialize list structure
+    ! Initialise list structure
     rlist%Knext(LFREE) = 1
     rlist%Knext(LHEAD) = LNULL
     rlist%Knext(LTAIL) = LNULL
@@ -2632,7 +2632,7 @@ contains
 !</input>
 !</subroutine>
 
-    ! Initialize list structure
+    ! Initialise list structure
     rlist%item         = LHEAD
     rlist%na           = 0
     rlist%Knext(LFREE) = 1

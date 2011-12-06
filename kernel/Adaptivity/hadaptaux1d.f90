@@ -147,7 +147,7 @@ contains
       call sys_halt()
     end if
 
-    ! Initialize marker structure for NEL0 elements
+    ! Initialise marker structure for NEL0 elements
     if (rhadapt%h_Imarker .ne. ST_NOHANDLE) call storage_free(rhadapt%h_Imarker)
     call storage_new('hadapt_markRefinement1D', 'Imarker', rhadapt%NEL0,&
                      ST_INT, rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
@@ -392,7 +392,7 @@ contains
 
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     
-    ! Initialize number of elements by current number
+    ! Initialise number of elements by current number
     nel = rhadapt%NEL0
     
     ! Loop over all elements and check marker

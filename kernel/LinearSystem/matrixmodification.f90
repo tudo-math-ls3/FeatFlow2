@@ -631,7 +631,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       
-      ! Initialize current position
+      ! Initialise current position
       na = rmatrix%NA
 
       ! Loop over all equations of the matrix but in reverse order (!!!)
@@ -799,7 +799,7 @@ contains
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 
-      ! Initialize current position
+      ! Initialise current position
       na = rmatrix%NA
 
       ! Loop over all equations of the matrix but in reverse order (!!!)

@@ -4460,7 +4460,7 @@ contains
   real(dp) :: rhsx,rhsy,rhsz,eps
   real(DP) :: dparx_old,dpary_old,dparz_old,c1,c2,c3
   integer  :: i
-  ! initialize
+  ! initialise
   dparx=0.0_dp
   dpary=0.0_dp
   dparz=0.0_dp

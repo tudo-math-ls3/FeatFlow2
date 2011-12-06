@@ -326,7 +326,7 @@ contains
     ! This subroutine performs the direct inversion of a NxN system.
     !
     ! If the parameter ipar=0, then only factorization of matrix A is performed.
-    ! For ipar=1, the vector x is calculated using the factorized matrix A.
+    ! For ipar=1, the vector x is calculated using the factorised matrix A.
     ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
     ! more expensive LAPACK routine.
@@ -1347,7 +1347,7 @@ contains
     ! This subroutine performs the direct inversion of a NxN system.
     !
     ! If the parameter ipar=0, then only factorization of matrix A is performed.
-    ! For ipar=1, the vector x is calculated using the factorized matrix A.
+    ! For ipar=1, the vector x is calculated using the factorised matrix A.
     ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
     ! more expensive LAPACK routine.
@@ -1761,7 +1761,7 @@ contains
 !</input>
     
 !<inputoutput>
-    ! Matrix that should be factorized on input.
+    ! Matrix that should be factorised on input.
     ! Matrix U on output.
     real(DP), dimension(mdim,ndim), intent(inout) :: Da
 !</inputoutput>

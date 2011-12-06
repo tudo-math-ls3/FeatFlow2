@@ -23,10 +23,10 @@
 !# The following routines are available:
 !#
 !#  1.) hadapt_initFromParameterlist
-!#      -> Initializes adaptivity structure from parameterlist
+!#      -> Initialises adaptivity structure from parameterlist
 !#
 !#  2.) hadapt_initFromTriangulation
-!#      -> Initializes adaptivity structure from triangulation structure
+!#      -> Initialises adaptivity structure from triangulation structure
 !#
 !#  3.) hadapt_generateRawMesh
 !#      ->  Generates the raw mesh from the adaptivity structure
@@ -107,7 +107,7 @@ contains
   subroutine hadapt_initFromParameterlist(rhadapt, rparlist, ssectionName)
 
 !<description>
-    ! This subroutine initializes the adaptivity structure
+    ! This subroutine initialises the adaptivity structure
     ! with the values supplied by the parameter list
 !</description>
 
@@ -135,7 +135,7 @@ contains
     call parlst_getvalue_double(rparlist, ssectionName , "dcoarseningTolerance",&
                                 rhadapt%dcoarseningTolerance)
 
-    ! Initialize data
+    ! Initialise data
     rhadapt%iSpec = HADAPT_HAS_PARAMETERS
 
   end subroutine hadapt_initFromParameterlist
@@ -147,7 +147,7 @@ contains
   subroutine hadapt_initFromTriangulation(rhadapt, rtriangulation)
 
 !<description>
-    ! This subroutine initializes all required components of the adaptativit
+    ! This subroutine initialises all required components of the adaptativit
     ! structure from the triangulation structure rtriangulation.
 !</description>
 
@@ -162,7 +162,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Initialize duplication flag
+    ! Initialise duplication flag
     rhadapt%iduplicationFlag = 0
 
     ! Set coordinates
@@ -213,7 +213,7 @@ contains
     ! Generate "elements-meeting-at-vertex" structure
     call hadapt_genElementsAtVertex(rhadapt)
     
-    ! Create generation array and initialize all nodes with "age" 0
+    ! Create generation array and initialise all nodes with "age" 0
     call storage_new('hadapt_initFromTriangulation','p_IvertexAge',&
                      rhadapt%NVT, ST_INT, rhadapt%h_IvertexAge, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rhadapt%h_IvertexAge, rhadapt%p_IvertexAge)
@@ -970,7 +970,7 @@ contains
     end select
 
 
-    ! Initialize initial dimensions
+    ! Initialise initial dimensions
     call storage_getsize(rhadapt%h_IverticesAtElement, Isize)
     rhadapt%NELMAX = Isize(2)
     call storage_getsize(rhadapt%h_IneighboursAtElement, Isize)

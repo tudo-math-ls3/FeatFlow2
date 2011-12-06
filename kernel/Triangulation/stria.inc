@@ -55,7 +55,7 @@
 !  It is a pure coincidence if grid vertices/edges correspond to
 !  any quantities of Finite Element spaces!
 !
-! The following arrays and quantities characterize a grid:
+! The following arrays and quantities characterise a grid:
 !
 ! Constants:
 ! ----------
@@ -164,7 +164,7 @@
 !   Standard nodal property. KNPR(1,.) defines for each vertex
 !   (1..NVT) and each edge (NVT+1..NVT+NMT) its function inside of the
 !   geometry. Generally said, the range of the KNPR-array
-!   characterizes the type of the node:
+!   characterises the type of the node:
 !   = 0    : The vertex/edge is an inner node
 !   > 0    : For vertices: The vertex is a boundary node on the real
 !              boundary. KNPR(.) defines the number of the boundary
@@ -186,7 +186,7 @@
 !   type of the node INODE, while KXNPR(2,INODE) contains a numerical
 !   information tag depending on the bitfield.
 !   KXNPR(1,INODE) is build as follows:
-!   Bit0..Bit7: The first 8 bit give a value of 0..255 to characterize
+!   Bit0..Bit7: The first 8 bit give a value of 0..255 to characterise
 !               the type of the node numerically. This is normally
 !               not used (and thus set to 0), but can be defined
 !               if a special node characterization is necessary.
@@ -298,7 +298,7 @@
 !             NVPED saves the number of vertices on each edge;
 !             e.g. 1 if midpoints on edges exist in DCORMG.
 !   NVEDT   - Total number of vertices on edges; normally = 0.
-!             Total number of vertices on all edges, realized in DCORMG.
+!             Total number of vertices on all edges, realised in DCORMG.
 !             E.g. if midpoints on edges exist, there is NVEDT=NMT.
 !   NVEDT   - Number of inner-element vertices; normally = 0.
 !             If a regular distribution of vertices in the inner of
@@ -306,12 +306,12 @@
 !             in the inner of each element; e.g. 1 if element-midpoints
 !             exist in DCORMG.
 !   NIEVT   - Total number of vertices on edges; normally = 0.
-!             Total number of vertices on all edges, realized in DCORMG.
+!             Total number of vertices on all edges, realised in DCORMG.
 !             E.g. if element-midpoints exist in DCORMG, there is
 !             NIEVT=NEL.
 !   NANT    - Number of additional nodes; normally = 0.
 !             Can be set <> 0 if there are any additional vertices
-!             realized in DCORMG, that do not belong to a regular
+!             realised in DCORMG, that do not belong to a regular
 !             distribution of vertices in corners, on edges or on
 !             elements.
 !   NFBVT   - Number of fictitious boundary vertices; normally = 0
@@ -368,7 +368,7 @@
 !  are not corner vertices. This includes regular distributed vertices
 !  on edges (either midpoints or points at 1/3 and 2/3 of the edge,
 !  or...), on elements (either midpoints or the 4 Gauss-points, or...)
-!  as well as additional vertices the user wants to be realized, that
+!  as well as additional vertices the user wants to be realised, that
 !  do not belong to any of the previous two groups.
 !
 !  There is a numbering introduced to number all the nodes in DCORMG
@@ -394,7 +394,7 @@
 !    represent all edge-midpoits
 !  - NVT+NMT+1..NVT+NMT+NEL
 !    represent all element midpoints
-!  Note that in this case the coordinates are not realized in DCORMG!
+!  Note that in this case the coordinates are not realised in DCORMG!
 !  The vertices are only virtual, i.e. it is possible to access their
 !  coordinates with NDE2XY, but that is all!
 !

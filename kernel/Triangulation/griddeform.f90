@@ -559,7 +559,7 @@ contains
   ! set the multigrid level for the deformation PDE
   rgriddefInfo%iminDefLevel = NLMAX
   
-  ! Here we initialize the structure with the standard values according to
+  ! Here we initialise the structure with the standard values according to
   ! the desired grid deformation method.
   select case(rgriddefInfo%cdefStyle)
   
@@ -597,18 +597,18 @@ contains
         ! set standard value for number of ODE correction steps
         p_ilevelODECorr(iaux) = 0
         
-        ! initialize the blending parameter
+        ! initialise the blending parameter
         rgriddefInfo%dblendPar = 1.0_dp
         
         if(present(iadaptSteps))then
-          ! initialize the number of adaptation steps
+          ! initialise the number of adaptation steps
           rgriddefInfo%nadaptionSteps = iadaptSteps
           
           ! set Adaptive control
           ! the number of steps on all levels is user defined
           p_calcAdapSteps(:) = GRIDDEF_USER
         else
-          ! initialize the number of adaptation steps
+          ! initialise the number of adaptation steps
           rgriddefInfo%nadaptionSteps = 1
           
           ! the number of steps on all levels is
@@ -1825,7 +1825,7 @@ contains
 !<subroutine>
   subroutine griddef_normaliseFctsNum(rgriddefInfo,dScale1,dScale2,iLevel)
   !<description>
-    ! We normalize the functions f and g so that
+    ! We normalise the functions f and g so that
     ! <tex>$$ dScale1 * \int_\Omega f = dScale2 * \int_\Omega g = |\Omega|  $$</tex>
     !
   !</description>
@@ -5064,7 +5064,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   ! set the multigrid level for the deformation PDE
   rgriddefInfo%iminDefLevel = NLMAX
   
-  ! Here we initialize the structure with the standard values according to
+  ! Here we initialise the structure with the standard values according to
   ! the desired grid deformation method.
   select case(rgriddefInfo%cdefStyle)
   
@@ -5102,18 +5102,18 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
         ! set standard value for number of ODE correction steps
         p_ilevelODECorr(iaux) = 0
         
-        ! initialize the blending parameter
+        ! initialise the blending parameter
         rgriddefInfo%dblendPar = 1.0_dp
         
         if(present(iadaptSteps))then
-          ! initialize the number of adaptation steps
+          ! initialise the number of adaptation steps
           rgriddefInfo%nadaptionSteps = iadaptSteps
           
           ! set Adaptive control
           ! the number of steps on all levels is user defined
           p_calcAdapSteps(:) = GRIDDEF_USER
         else
-          ! initialize the number of adaptation steps
+          ! initialise the number of adaptation steps
           rgriddefInfo%nadaptionSteps = 1
           
           ! the number of steps on all levels is
