@@ -26520,7 +26520,7 @@ contains
     ! Handle for the edge list
     integer, intent(inout) :: h_IedgeList
 
-    ! On input: if nedge > 0 then this value is adpted as the number
+    ! On input: if nedge > 0 then this value is adopted as the number
     !           of edges precomputed externally; otherwise the
     !           number of edges is computed internally and returned
     ! On output: the number of edges
