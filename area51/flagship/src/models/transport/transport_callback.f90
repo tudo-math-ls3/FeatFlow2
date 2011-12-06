@@ -3480,10 +3480,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcBilfBdrCond1D(rproblemLevel,&
-              rboundaryCondition, rsolution, ssectionName,&
-              dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
-              bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+          if (primalBdrGFEM > 0) then
+            call transp_calcOperatorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcMatBdrConvP1d_sim,&
+                bclear, rmatrix, rcollection)
+          else
+            call transp_calcBilfBdrCond1D(rproblemLevel,&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
+                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+          end if
 
         case (NDIM2D)
           ! linear velocity in 2D
@@ -3502,10 +3510,18 @@ contains
           
         case (NDIM3D)
           ! linear velocity in 3D
+          if (primalBdrGFEM > 0) then
+            call transp_calcOperatorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcMatBdrConvP3d_sim,&
+                bclear, rmatrix, rcollection)
+          else
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffMatBdrConvP3d_sim,&
 !!$              bclear, rmatrix, , rcollection, BILF_MATC_LUMPED)
+          end if
         end select
 
         !-----------------------------------------------------------------------
@@ -3617,10 +3633,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcBilfBdrCond1D(rproblemLevel,&
-              rboundaryCondition, rsolution, ssectionName,&
-              dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
-              bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+          if (dualBdrGFEM > 0) then
+            call transp_calcOperatorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcMatBdrConvD1d_sim,&
+                bclear, rmatrix, rcollection)
+          else
+            call transp_calcBilfBdrCond1D(rproblemLevel,&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
+                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+          end if
 
         case (NDIM2D)
           ! linear velocity in 2D
@@ -3639,10 +3663,18 @@ contains
 
         case (NDIM3D)
           ! linear velocity in 3D
+          if (dualBdrGFEM > 0) then
+            call transp_calcOperatorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcMatBdrConvD3d_sim,&
+                bclear, rmatrix, rcollection)
+          else
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffMatBdrConvD3d_sim,&
 !!$              bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+          end if
         end select
 
         !-----------------------------------------------------------------------
@@ -3844,10 +3876,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcLinfBdrCond1D(rproblemLevel,&
-              rboundaryCondition, rsolution, ssectionName,&
-              dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
-              bclear, rvector, rcollection)
+          if (primalBdrGFEM > 0) then
+            call transp_calcVectorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcVecBdrConvP1d_sim,&
+                bclear, rvector, rcollection)
+          else
+            call transp_calcLinfBdrCond1D(rproblemLevel,&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_coeffVecBdrConvP1d_sim,&
+                bclear, rvector, rcollection)
+          end if
 
         case (NDIM2D)
           ! linear velocity in 2D
@@ -3866,10 +3906,18 @@ contains
           
         case (NDIM3D)
           ! linear velocity in 3D
+          if (primalBdrGFEM > 0) then
+            call transp_calcVectorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcVecBdrConvP3d_sim,&
+                bclear, rvector, rcollection)
+          else
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffVecBdrConvP3d_sim,&
 !!$              bclear, rvector, rcollection)
+          end if
         end select
 
         !-----------------------------------------------------------------------
@@ -3981,10 +4029,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           ! linear velocity in 1D
-          call transp_calcLinfBdrCond1D(rproblemLevel,&
-              rboundaryCondition, rsolution, ssectionName,&
-              dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
-            bclear, rvector, rcollection)
+          if (dualBdrGFEM > 0) then
+            call transp_calcVectorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcVecBdrConvD1d_sim,&
+                bclear, rvector, rcollection)
+          else
+            call transp_calcLinfBdrCond1D(rproblemLevel,&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_coeffVecBdrConvD1d_sim,&
+                bclear, rvector, rcollection)
+          end if
 
         case (NDIM2D)
           ! linear velocity in 2D
@@ -4003,10 +4059,18 @@ contains
 
         case (NDIM3D)
           ! linear velocity in 3D
+          if (dualBdrGFEM > 0) then
+            call transp_calcVectorBdrCondition(rproblemLevel,&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
+                rboundaryCondition, rsolution, ssectionName,&
+                dtime, dscale, transp_calcVecBdrConvD3d_sim,&
+                bclear, rvector, rcollection)
+          else
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffVecBdrConvD3d_sim,&
 !!$              bclear, rvector, rcollection)
+          end if
         end select
 
         !-----------------------------------------------------------------------

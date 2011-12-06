@@ -229,8 +229,7 @@ module transport_callback2d
   public :: transp_coeffVecBdrConvD2d_sim
   public :: transp_calcMatBdrConvD2d_sim
   public :: transp_calcVecBdrConvD2d_sim
-
-
+  
   ! Burgers` equation in space-time - primal formulation
   public :: transp_calcMatDiagSTBurgP2d_sim
   public :: transp_calcMatGalSTBurgP2d_sim
@@ -238,7 +237,7 @@ module transport_callback2d
   public :: transp_coeffMatBdrSTBurgP2d_sim
   public :: transp_coeffVecBdrSTBurgP2d_sim
   
-  ! Buckley-Leverett equation in space time - primal formulation
+  ! Buckley-Leverett equation in space-time - primal formulation
   public :: transp_calcMatDiagSTBLevP2d_sim
   public :: transp_calcMatGalSTBLevP2d_sim
   public :: transp_calcMatUpwSTBLevP2d_sim
@@ -392,12 +391,12 @@ contains
         
         ! Compute the expression from the data stored in Dcoefficients
         !
-        !    u * (v x n)
+        !    u*(v x n)
         !
         ! in each cubature point on each elements
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,1) *&
-                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,2) +&
-                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,3))
+                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,2) +&
+                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,3))
       end do
     end do
 
@@ -567,15 +566,15 @@ contains
         
         ! Compute the expression from the data stored in Dcoefficients
         !
-        !    u * (v x n) - u_h * (v_h x n)
+        !    u*(v x n) - u_h*(v_h x n)
         !
         ! in each cubature point on each elements
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,3) *&
-                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,4) +&
-                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,5))-&
+                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,4) +&
+                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,5))-&
                               Dvalues(ipoint,iel) *&
-                              (Dnx(ipoint,iel) * Dcoefficients(ipoint,iel,1) +&
-                               Dny(ipoint,iel) * Dcoefficients(ipoint,iel,2))
+                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,1) +&
+                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,2))
       end do
     end do
 
@@ -1914,7 +1913,7 @@ do iedge = 1, nedges
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
         end do
       end do
 
@@ -1972,10 +1971,10 @@ do iedge = 1, nedges
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Impose Dirichlet value via penalty method
-          DcoeffAtDOF(ipoint) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          DcoeffAtDOF(ipoint) = dscale*dval*BDRC_DIRICHLET_PENALTY
 #else
           ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = dscale*dval*BDRC_DIRICHLET_PENALTY
 #endif
         end do ! ipoint
         
@@ -2090,15 +2089,15 @@ do iedge = 1, nedges
             call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = -dscale * dnv * dval
+            DcoeffAtDOF(ipoint) = -dscale*dnv*dval
 #else
             ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv * dval
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv*dval
 #endif
           end do ! ipoint
 
@@ -2212,8 +2211,8 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
                         
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
             
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
@@ -2229,9 +2228,9 @@ do iedge = 1, nedges
               call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale * dnv * dval
+              DcoeffAtDOF(ipoint) = -dscale*dnv*dval
 #else
-              Dcoefficients(1,ipoint,iel) = -dscale * dnv * dval
+              Dcoefficients(1,ipoint,iel) = -dscale*dnv*dval
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -2390,15 +2389,15 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
                         
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale * dnv * Daux(ipoint,iel,3)
+              DcoeffAtDOF(ipoint) = -dscale*dnv*Daux(ipoint,iel,3)
 #else
-              Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,3)
+              Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,3)
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -2730,7 +2729,7 @@ do iedge = 1, nedges
               Dvalue, Dcoefficients(1,ipoint,iel))
           
           ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
         end do
       end do
 
@@ -2786,10 +2785,10 @@ do iedge = 1, nedges
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Impose Dirichlet value via penalty method
-          DcoeffAtDOF(ipoint) = -dscale * dval * BDRC_DIRICHLET_PENALTY
+          DcoeffAtDOF(ipoint) = -dscale*dval*BDRC_DIRICHLET_PENALTY
 #else
           ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale * dval * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = -dscale*dval*BDRC_DIRICHLET_PENALTY
 #endif
         end do
 
@@ -2904,15 +2903,15 @@ do iedge = 1, nedges
             call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = dscale * dnv * dval
+            DcoeffAtDOF(ipoint) = dscale*dnv*dval
 #else
             ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = dscale * dnv * dval
+            Dcoefficients(1,ipoint,iel) = dscale*dnv*dval
 #endif
           end do ! ipoint
 
@@ -3026,8 +3025,8 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
             
             ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
@@ -3043,9 +3042,9 @@ do iedge = 1, nedges
               call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
               
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale * dnv * dval
+              DcoeffAtDOF(ipoint) = dscale*dnv*dval
 #else
-              Dcoefficients(1,ipoint,iel) = dscale * dnv * dval
+              Dcoefficients(1,ipoint,iel) = dscale*dnv*dval
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -3204,15 +3203,15 @@ do iedge = 1, nedges
           do ipoint = 1, npointsPerElement
                         
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
             ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale * dnv * Daux(ipoint,iel,3)
+              DcoeffAtDOF(ipoint) = dscale*dnv*Daux(ipoint,iel,3)
 #else
-              Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+              Dcoefficients(1,ipoint,iel) = dscale*dnv*Daux(ipoint,iel,3)
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -3543,15 +3542,15 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Scale normal velocity by scaling parameter
-            DcoeffAtDOF(ipoint) = -dscale * dnv
+            DcoeffAtDOF(ipoint) = -dscale*dnv
 #else
             ! Scale normal velocity by scaling parameter
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv
 #endif
           end do ! ipoint
 
@@ -3597,7 +3596,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
         end do
       end do
       
@@ -3682,15 +3681,15 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
             ! Check if we are at the primal outflow boundary
             if (dnv .gt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale * dnv
+              DcoeffAtDOF(ipoint) = -dscale*dnv
 #else
-              Dcoefficients(1,ipoint,iel) = -dscale * dnv
+              Dcoefficients(1,ipoint,iel) = -dscale*dnv
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -3994,15 +3993,15 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Scale normal velocity by scaling parameter
-            DcoeffAtDOF(ipoint) = dscale * dnv
+            DcoeffAtDOF(ipoint) = dscale*dnv
 #else
             ! Scale normal velocity by scaling parameter
-            Dcoefficients(1,ipoint,iel) = dscale * dnv
+            Dcoefficients(1,ipoint,iel) = dscale*dnv
 #endif
           end do ! ipoint
 
@@ -4048,7 +4047,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY
         end do
       end do
 
@@ -4133,15 +4132,15 @@ do iedge = 1, nedges
           do ipoint = 1, npoints
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel) * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
 
             ! Check if we are at the dual outflow boundary
             if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale * dnv
+              DcoeffAtDOF(ipoint) = dscale*dnv
 #else
-              Dcoefficients(1,ipoint,iel) = dscale * dnv
+              Dcoefficients(1,ipoint,iel) = dscale*dnv
 #endif
             else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -4207,7 +4206,7 @@ do iedge = 1, nedges
     ! DmatrixAtNode for the node $i$.
     !
     ! This routine handles the primal problem for the
-    ! convection-diffusion equation.
+    ! convection-diffusion equation in 2D.
 !</description>
 
 !<input>
@@ -4255,7 +4254,8 @@ do iedge = 1, nedges
 
     ! local variable
     type(t_vectorBlock), pointer :: p_rvelocity,p_rdofCoords
-    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DdofCoords
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:), pointer :: p_DdofCoords
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
@@ -4308,7 +4308,7 @@ do iedge = 1, nedges
                 DcoeffsAtNode(2,inode)*p_DvelocityY(i)
 
           ! Scale normal velocity by scaling parameter
-          DmatrixAtNode(1,inode) = -dscale * dnv
+          DmatrixAtNode(1,inode) = -dscale*dnv
         end do
         
       else
@@ -4326,7 +4326,12 @@ do iedge = 1, nedges
       do inode =  1, nnodes
 
         ! Impose Dirichlet boundary conditions via penalty method
-        DmatrixAtNode(1,inode) = -dscale * BDRC_DIRICHLET_PENALTY
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          DmatrixAtNode(1,inode) = -dscale*BDRC_DIRICHLET_PENALTY
+        else
+          DmatrixAtNode(1,inode) = 0.0_DP
+        end if
       end do
 
 
@@ -4398,7 +4403,7 @@ do iedge = 1, nedges
     ! DvectorAtNode for the node $i$.
     !
     ! This routine handles the primal problem for the
-    ! convection-diffusion equation.
+    ! convection-diffusion equation in 2D.
 !</description>
 
 !<input>
@@ -4503,6 +4508,7 @@ do iedge = 1, nedges
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
       ! expensive assembly of a "zero" boundary integral.
+      
       DvectorAtNode = 0.0_DP
       
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -4526,18 +4532,23 @@ do iedge = 1, nedges
       ! Loop over all noodes at the boundary
       do inode =  1,  nnodes
         
-        ! Get global node number
-        i = InodeList(1,inode)
-        
-        ! Set values for function parser
-        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
-
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-        ! Multiply by scaling coefficient
-        DvectorAtNode(inode) = dscale * dval
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Multiply by scaling coefficient
+          DvectorAtNode(inode) = dscale*dval
+        else
+          DvectorAtNode(inode) = 0.0_DP
+        end if
       end do
 
       
@@ -4557,19 +4568,24 @@ do iedge = 1, nedges
       
       ! Loop over all noodes at the boundary
       do inode = 1, nnodes
-        
-        ! Get global node number
-        i = InodeList(1,inode)
-        
-        ! Set values for function parser
-        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
 
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-        ! Impose Dirichlet value via penalty method
-        DvectorAtNode(inode) = dscale * dval * BDRC_DIRICHLET_PENALTY
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Impose Dirichlet value via penalty method
+          DvectorAtNode(inode) = dscale*dval*BDRC_DIRICHLET_PENALTY
+        else
+          DvectorAtNode(inode) = 0.0_DP
+        end if
       end do
 
       
@@ -4598,17 +4614,21 @@ do iedge = 1, nedges
           
           ! Compute normal velocity in nodes i
           dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
-              DcoeffsAtNode(2,inode)*p_DvelocityY(i)
+                DcoeffsAtNode(2,inode)*p_DvelocityY(i)
           
-          ! Set values for function parser
-          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
-          
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-          
-          ! Set value at Robin boundary
-          DvectorAtNode(inode) = -dscale*dnv*dval
+          if (abs(dnv) .gt. SYS_EPSREAL_DP) then
+            ! Set values for function parser
+            Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+            Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+            
+            ! Set value at Robin boundary
+            DvectorAtNode(inode) = -dscale*dnv*dval
+          else
+            DvectorAtNode(inode) = 0.0_DP
+          end if
         end do
         
       else
@@ -4700,7 +4720,7 @@ do iedge = 1, nedges
     ! DmatrixAtNode for the node $i$.
     !
     ! This routine handles the dual problem for the
-    ! convection-diffusion equation.
+    ! convection-diffusion equation in 2D.
 !</description>
 
 !<input>
@@ -4748,7 +4768,8 @@ do iedge = 1, nedges
 
     ! local variable
     type(t_vectorBlock), pointer :: p_rvelocity,p_rdofCoords
-    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY,p_DdofCoords
+    real(DP), dimension(:), pointer :: p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:), pointer :: p_DdofCoords
     real(DP) :: dtime,dnv
     integer :: inode,ibdrtype,isegment,i
 
@@ -4801,7 +4822,7 @@ do iedge = 1, nedges
                 DcoeffsAtNode(2,inode)*p_DvelocityY(i)
 
           ! Scale normal velocity by scaling parameter
-          DmatrixAtNode(1,inode) = dscale * dnv
+          DmatrixAtNode(1,inode) = dscale*dnv
         end do
         
       else
@@ -4819,7 +4840,12 @@ do iedge = 1, nedges
       do inode =  1, nnodes
 
         ! Impose Dirichlet boundary conditions via penalty method
-        DmatrixAtNode(1,inode) = dscale * BDRC_DIRICHLET_PENALTY
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          DmatrixAtNode(1,inode) = dscale*BDRC_DIRICHLET_PENALTY
+        else
+          DmatrixAtNode(1,inode) = 0.0_DP
+        end if
       end do
 
 
@@ -4891,7 +4917,7 @@ do iedge = 1, nedges
     ! DvectorAtNode for the node $i$.
     !
     ! This routine handles the dual problem for the
-    ! convection-diffusion equation.
+    ! convection-diffusion equation in 2D.
 !</description>
 
 !<input>
@@ -4996,6 +5022,7 @@ do iedge = 1, nedges
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
       ! expensive assembly of a "zero" boundary integral.
+
       DvectorAtNode = 0.0_DP
       
       call output_line('Redundant assembly of vanishing boundary term!',&
@@ -5019,18 +5046,23 @@ do iedge = 1, nedges
       ! Loop over all nodes at the boundary
       do inode =  1,  nnodes
         
-        ! Get global node number
-        i = InodeList(1,inode)
-        
-        ! Set values for function parser
-        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
-
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-        ! Multiply by scaling coefficient
-        DvectorAtNode(inode) = dscale * dval
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Multiply by scaling coefficient
+          DvectorAtNode(inode) = dscale*dval
+        else
+          DvectorAtNode(inode) = 0.0_DP
+        end if
       end do
 
       
@@ -5051,18 +5083,23 @@ do iedge = 1, nedges
       ! Loop over all nodes at the boundary
       do inode = 1, nnodes
         
-        ! Get global node number
-        i = InodeList(1,inode)
-        
-        ! Set values for function parser
-        Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-        Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
-
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-        ! Impose Dirichlet value via penalty method
-        DvectorAtNode(inode) = -dscale * dval * BDRC_DIRICHLET_PENALTY
+        if (abs(DcoeffsAtNode(1,inode))+&
+            abs(DcoeffsAtNode(2,inode)) .gt. SYS_EPSREAL_DP) then
+          ! Get global node number
+          i = InodeList(1,inode)
+          
+          ! Set values for function parser
+          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          
+          ! Impose Dirichlet value via penalty method
+          DvectorAtNode(inode) = -dscale*dval*BDRC_DIRICHLET_PENALTY
+        else
+          DvectorAtNode(inode) = 0.0_DP
+        end if
       end do
 
       
@@ -5093,15 +5130,19 @@ do iedge = 1, nedges
           dnv = DcoeffsAtNode(1,inode)*p_DvelocityX(i)+&
                 DcoeffsAtNode(2,inode)*p_DvelocityY(i)
           
-          ! Set values for function parser
-          Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
-          Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
-          
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-          
-          ! Set value at Robin boundary
-          DvectorAtNode(inode) = dscale*dnv*dval
+          if (abs(dnv) .gt. SYS_EPSREAL_DP) then
+            ! Set values for function parser
+            Dvalue(1) = p_DdofCoords((i-1)*NDIM2D+1)
+            Dvalue(2) = p_DdofCoords((i-1)*NDIM2D+2)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+            
+            ! Set value at Robin boundary
+            DvectorAtNode(inode) = dscale*dnv*dval
+          else
+            DvectorAtNode(inode) = 0.0_DP
+          end if
         end do
         
       else
@@ -5585,7 +5626,7 @@ do iedge = 1, nedges
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
         end do
       end do
 
@@ -5614,7 +5655,7 @@ do iedge = 1, nedges
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
 
           ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = dscale*dval*BDRC_DIRICHLET_PENALTY
         end do
       end do
 
@@ -5656,8 +5697,8 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,1))
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
+          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
       end do
 
@@ -5710,13 +5751,13 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,2))
 
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,2) + Dny(ipoint,iel)
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+            dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,2) + Dny(ipoint,iel)
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
           end if
@@ -5885,10 +5926,10 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv
         end do
       end do
       
@@ -5904,7 +5945,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
         end do
       end do
       
@@ -5946,11 +5987,11 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * 0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
           end if
@@ -6401,7 +6442,7 @@ do iedge = 1, nedges
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
         end do
       end do
 
@@ -6432,7 +6473,7 @@ do iedge = 1, nedges
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
 
           ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = dscale*dval*BDRC_DIRICHLET_PENALTY
         end do
       end do
 
@@ -6477,9 +6518,9 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,1))
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
                 0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,1)
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
       end do
 
@@ -6534,15 +6575,15 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,2))
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
                 0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2 +&
+            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2 +&
                   0.5*(1-Daux(ipoint,iel,2))**2) + Dny(ipoint,iel)
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv * Daux(ipoint,iel,2)
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
           end if
@@ -6711,11 +6752,11 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
                 0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv
         end do
       end do
       
@@ -6731,7 +6772,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
         end do
       end do
       
@@ -6773,12 +6814,12 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
                 0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
           end if
@@ -7234,7 +7275,7 @@ do iedge = 1, nedges
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
         end do
       end do
 
@@ -7290,10 +7331,10 @@ do iedge = 1, nedges
           
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Impose Dirichlet value via penalty method
-          DcoeffAtDOF(ipoint) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          DcoeffAtDOF(ipoint) = dscale*dval*BDRC_DIRICHLET_PENALTY
 #else
           ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale * dval * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = dscale*dval*BDRC_DIRICHLET_PENALTY
 #endif
         end do
         
@@ -7385,14 +7426,14 @@ do iedge = 1, nedges
               Dvalue, dval)
           
           ! Compute the normal velocity
-          dnv = 0.5_DP * (Dnx(ipoint,iel)+Dny(ipoint,iel)) * dval
+          dnv = 0.5_DP*(Dnx(ipoint,iel)+Dny(ipoint,iel))*dval
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Store the Robin boundary condition at the DOF on the boundary
-          DcoeffAtDOF(ipoint) = -dscale * dnv * dval
+          DcoeffAtDOF(ipoint) = -dscale*dnv*dval
 #else
           ! Store the Robin boundary condition at the cubature point on the boundary
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv * dval
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv*dval
 #endif
         end do
         
@@ -7501,16 +7542,16 @@ do iedge = 1, nedges
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
           
           ! Compute the normal velocity
-          dnv = 0.5_DP * (Dnx(ipoint,iel) + Dny(ipoint,iel)) * Daux(ipoint,iel,1)
+          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel,1)
           
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            DcoeffAtDOF(ipoint) = -dscale * 0.5_DP*(Dnx(ipoint,iel) +&
-                                                    Dny(ipoint,iel)) * dval * dval
+            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
+                                                    Dny(ipoint,iel))*dval*dval
 #else
-            Dcoefficients(1,ipoint,iel) = -dscale * 0.5_DP*(Dnx(ipoint,iel) +&
-                                                            Dny(ipoint,iel)) * dval * dval
+            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
+                                                            Dny(ipoint,iel))*dval*dval
 #endif
           else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7654,16 +7695,16 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP * (Dnx(ipoint,iel) + Dny(ipoint,iel)) * Daux(ipoint,iel,1)
+          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel,1)
           
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            DcoeffAtDOF(ipoint) = -dscale * 0.5_DP * (Dnx(ipoint,iel) +&
-                                  Dny(ipoint,iel)) * Daux(ipoint,iel,2)**2
+            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
+                                  Dny(ipoint,iel))*Daux(ipoint,iel,2)**2
 #else
-            Dcoefficients(1,ipoint,iel) = -dscale * 0.5_DP * (Dnx(ipoint,iel) +&
-                                          Dny(ipoint,iel)) * Daux(ipoint,iel,2)**2
+            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
+                                          Dny(ipoint,iel))*Daux(ipoint,iel,2)**2
 #endif
           else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7985,14 +8026,14 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP * (Dnx(ipoint,iel) + Dny(ipoint,iel)) * Daux(ipoint,iel)
+          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel)
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Scale normal velocity by scaling parameter
-          DcoeffAtDOF(ipoint) = -dscale * dnv
+          DcoeffAtDOF(ipoint) = -dscale*dnv
 #else
           ! Scale normal velocity by scaling parameter
-          Dcoefficients(1,ipoint,iel) = -dscale * dnv
+          Dcoefficients(1,ipoint,iel) = -dscale*dnv
 #endif
         end do
 
@@ -8031,7 +8072,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale * BDRC_DIRICHLET_PENALTY
+          Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
         end do
       end do
 
@@ -8108,14 +8149,14 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP * (Dnx(ipoint,iel) + Dny(ipoint,iel)) * Daux(ipoint,iel)
+          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            DcoeffAtDOF(ipoint) = -dscale * dnv
+            DcoeffAtDOF(ipoint) = -dscale*dnv
 #else
-            Dcoefficients(1,ipoint,iel) = -dscale * dnv
+            Dcoefficients(1,ipoint,iel) = -dscale*dnv
 #endif
           else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
