@@ -2762,8 +2762,6 @@ contains
       nullify(p_IedgeListIdx)
       return
     end if
-
-    print *, rafcstab%h_IedgeListIdx
     
     ! Get the array
     call storage_getbase_int(rafcstab%h_IedgeListIdx,&
