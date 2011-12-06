@@ -3561,7 +3561,7 @@ contains
 
       ! Check if group finite element formulation is applicable
       call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'primalbdrGFEM', primalBdrGFEM, 0)
+          ssectionName, 'dualbdrGFEM', dualBdrGFEM, 0)
 
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
@@ -3626,7 +3626,7 @@ contains
           ! linear velocity in 2D
           if (dualBdrGFEM > 0) then
             call transp_calcOperatorBdrCondition(rproblemLevel,&
-                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_calcMatBdrConvD2d_sim,&
                 bclear, rmatrix, rcollection)
@@ -3988,9 +3988,9 @@ contains
 
         case (NDIM2D)
           ! linear velocity in 2D
-          if (primalBdrGFEM > 0) then
+          if (dualBdrGFEM > 0) then
             call transp_calcVectorBdrCondition(rproblemLevel,&
-                rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_calcVecBdrConvD2d_sim,&
                 bclear, rvector, rcollection)
