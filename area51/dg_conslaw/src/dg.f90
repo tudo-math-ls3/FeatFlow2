@@ -8,7 +8,7 @@
 !#
 !#          u_t + div f(u) = 0
 !#
-!# for a scalar function u with the discontinuous galerkin method.
+!# discontinuous Galerkin method.
 !#
 !# </purpose>
 !##############################################################################
@@ -18,6 +18,7 @@ program dg
   use dg2d_method0_simple
   use dg2d_systems
   use dg2d_multigridscalar
+  use dg2d_multigridsystem
 
   implicit none
 
@@ -59,11 +60,18 @@ program dg
 !  call output_line ('----------------------------------------------------------')
 !  call dg2d_sys
   
-  ! Call the problem to solve. Linear scalar equation, multigrid solver:
+!  ! Call the problem to solve. Linear scalar equation, multigrid solver:
+!  call output_lbrk ()
+!  call output_line ('Linear scalar equation, multigrid solver')
+!  call output_line ('----------------------------------------')
+!  call dg2d_mgsc
+  
+    ! Call the problem to solve. Linear scalar equation, multigrid solver:
   call output_lbrk ()
-  call output_line ('Linear scalar equation, multigrid solver')
-  call output_line ('----------------------------------------')
-  call dg2d_mgsc
+  call output_line ('Calculating hyperbolic system conservation problem')
+  call output_line ('with implicit DG discretisation and multigrid solver')
+  call output_line ('----------------------------------------------------')
+  call dg2d_mgsys
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
