@@ -1,11 +1,17 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> dg2d_method0_simple </name>
+!# <name> dg2d_multigridscalar </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstration program how to solve a simple Poisson
-!# problem with constant coefficients on a simple domain.
+!# This module solves the transport equation
+!# 
+!#   q_t + \nabla \cdot f(q) = 0
+!#   q given on inflow boundary
+!#    
+!# using an implicit dg discretisation with
+!# multigrid solver.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -99,6 +105,9 @@ module dg2d_multigridscalar
     ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
+    
+    ! Parameter list
+    type(t_parlist) :: rparlist
 
   end type
 
@@ -109,23 +118,55 @@ module dg2d_multigridscalar
 
 contains
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine dgmgs_initParlist (rproblem)
+  
+!<description>
+  ! This routine reads in the parameter file.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout) :: rproblem
+!</inputoutput>
+
+  ! Command line and name of the paramater file
+  character(LEN=SYS_STRLEN) :: cbuffer
+  character(LEN=SYS_STRLEN) :: sparameterfileName
+
+
+    ! Get command line arguments and extract name of parameter file
+    if (command_argument_count() .eq. 0) then
+       call output_lbrk()
+       call output_line('Using standart parameterfile: ./dat/1.dat')
+       call output_lbrk()
+       sparameterfileName = './dat/1.dat'
+    else
+       call get_command_argument(command_argument_count(), cbuffer)
+       sparameterfileName = adjustl(cbuffer)
+    end if
+    
+    ! Read parameter file
+    call parlst_init(rproblem%rparlist)
+    call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
+
+  end subroutine
+
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine dgmgs_initParamTriang (rproblem,rparlist)
+  subroutine dgmgs_initParamTriang (rproblem)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
   ! the triangulation is refined as described by the parameter ilv.
 !</description>
-
-!<input>
-  ! Parameter list
-  type(t_parlist), intent(in) :: rparlist
-!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -144,10 +185,10 @@ contains
   character(LEN=SYS_STRLEN) :: sstring
   
   ! We want to solve our problem on level... Default=1
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMIN', ilvmin)
+    call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'NLMIN', ilvmin)
   
   ! We want to solve our problem on level... Default=1
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', ilvmax)
+    call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'NLMAX', ilvmax)
   
     ! Initialise the level in the problem structure
     rproblem%ilvmin = ilvmin
@@ -156,12 +197,12 @@ contains
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+    call parlst_getvalue_string (rproblem%rparlist, 'TRIANGULATION', &
          'prmname', sstring)
     call boundary_read_prm(rproblem%rboundary, trim(sstring))
         
     ! Now read in the basic triangulation.
-    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+    call parlst_getvalue_string (rproblem%rparlist, 'TRIANGULATION', &
          'triname', sstring)
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
          trim(sstring),rproblem%rboundary)
@@ -190,24 +231,18 @@ contains
     end do
 
   end subroutine
-  
-  
+
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine dgmgs_initDiscretisation (rproblem,rparlist)
+  subroutine dgmgs_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
   ! problem and saves it to the problem structure.
 !</description>
-
-!<input>
-  ! Parameter list
-  type(t_parlist), intent(in) :: rparlist
-!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -227,7 +262,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
     ! Type of finite element to use
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 0)
+    call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType, 0)
     
     select case (ielementType)
     case (0)
@@ -276,7 +311,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmgs_initMatVec (rproblem,rparlist)
+  subroutine dgmgs_initMatVec (rproblem)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -284,11 +319,6 @@ contains
   ! in the problem structure.
   ! Sets up a solution vector for the linear system.
 !</description>
-
-!<input>
-  ! Parameter list
-  type(t_parlist), intent(in) :: rparlist
-!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -355,7 +385,7 @@ contains
        !rcollection%p_rvectorQuickAccess1 => rsolBlock
        
        ! Type of finite element to use
-       call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType)
+       call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
        
        if (ielementtype.ne.0) then
           call bilf_buildMatrixScalar2 (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
@@ -421,7 +451,7 @@ contains
     call lsysbl_scaleVector (p_rrhs,-1.0_DP)
 
     ! Type of finite element to use
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType)
+    call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
 
     ! Then add the cell terms
     if (ielementtype.ne.0) then
@@ -534,7 +564,7 @@ contains
         
         ! Set up UMFPACK coarse grid solver.
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)
-        
+
       else
         ! Setting up Jacobi smoother for multigrid would be:
         ! CALL linsol_initJacobi (p_rsmoother)
@@ -666,7 +696,10 @@ contains
 !      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
 !
 !       nullify(p_rpreconditioner)
-!       call linsol_initBiCGStab (p_rsolverNode1,p_rpreconditioner)
+!       call linsol_initUMFPACK4 (p_rsolverNode1)
+!       
+!       p_rsolverNode1%ioutputLevel = 2
+!       p_rsolverNode1%nmaxIterations = 5000
 !       
 !       allocate(Rmatrices(1))
 !    
@@ -695,7 +728,7 @@ contains
 !
 !    call linsol_solveAdaptively (p_rsolverNode1,rvectorCoarse,rrhsCoarse,rtempCoarse)
 !    
-!    sofile = './gmv/coarse' 
+!    sofile = './gmv/testrestr' 
 !    
 !    ! Output solution to vtk file
 !    call dg2vtk(rvectorCoarse%Rvectorblock(1),3,sofile,-1)
@@ -995,7 +1028,27 @@ contains
     
   end subroutine
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine dgmgs_doneParlist (rproblem)
   
+!<description>
+  ! Releases the parameter list.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+  call parlst_done (rproblem%rparlist)
+
+!</subroutine>
+
+      
+  end subroutine
 
 
 
@@ -1023,11 +1076,6 @@ contains
     !</subroutine>
 
     ! Definitions of variables.
-    !
-    ! We need a couple of variables for this problem. Let us see...
-    !
-    ! An object for saving the domain:
-    type(t_boundary) :: rboundary
 
     ! Number of Variables
     ! Shallow water : 3 (h, hu, hv)
@@ -1035,141 +1083,8 @@ contains
     ! Euler: 4 (rho, rho u, rho v, rho E)
     integer, parameter :: nvar2d = 1
 
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-
-    ! Path to the mesh
-    character(len=SYS_STRLEN) :: spredir
-
-    ! An object specifying the discretisation.
-    ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation
-
-    ! A bilinear and linear form describing the analytic problem to solve
-    type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC, rlinformSource, rlinform
-
-    ! A scalar matrix and vector. The vector accepts the RHS of the problem
-    ! in scalar form.
-    type(t_matrixScalar) :: rmatrixMC, rmatrixiMC, rmatrixA
-    type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold,rdef
-
-    ! A block matrix and a couple of block vectors. These will be filled
-    ! with data for the linear solver.
-    type(t_matrixBlock) :: rmatrixBlock, rmatrixiBlock, rmatrixABlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock,rsourceTermBlock
-    type(t_vectorBlock), target :: rk0, rk1, rk2, rk3, rdefBlock, rimf1, rimf2
-
-
-    ! A set of variables describing the discrete boundary conditions.
-    type(t_boundaryRegion) :: rboundaryRegion
-    type(t_discreteBC), target :: rdiscreteBC
-
-    ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
-
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
-    ! A filter chain that describes how to filter the matrix/vector
-    ! before/during the solution process. The filters usually implement
-    ! boundary conditions.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-
-!    ! NLMAX receives the level where we want to solve.
-!    integer :: NLMAX
-
-    ! Error indicator during initialisation of the solver
-    integer :: ierror
-
-    ! Error of FE function to reference function
-    real(DP) :: derror
-
-    integer :: ilimiting
-
-    ! Output block for UCD output to GMV file
-    type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir
-    real(DP), dimension(:), pointer :: p_Ddata
-
-    ! Command line and name of the paramater file
-    character(LEN=SYS_STRLEN) :: cbuffer
-    character(LEN=SYS_STRLEN) :: sparameterfileName
-
-    ! Strings describing initial condition and inlet condition for the function parser
-    character(len=SYS_STRLEN) :: sstring, sic, sinlet
-
-    real(DP) :: ttime, dt, ttfinal
-
-    real(DP), dimension(2) :: vel
-
-    real(dp) :: dL2updnorm
-
-    integer :: ielementType
-
-    type(t_collection) :: rcollection
-
-    ! Parameter list
-    type(t_parlist) :: rparlist
-
-    character(LEN=*), dimension(2), parameter ::&
-         cvariables = (/ (/'x'/), (/'y'/) /)
-
-    ! How many extra points for output
-    integer :: iextraPoints
-
-    integer :: ivar
-
     ! For time measurement
     real(dp) :: dtime1, dtime2
-
-    type(t_additionalTriaData) :: raddTriaData
-
-    integer :: ilimiter
-
-    real(dp) :: ddefnorm
-
-    integer :: idef
-
-    ! The profiler to measure the time
-    type(t_profiler) :: rprofiler
-
-    integer :: itimestepping
-
-    integer :: iwithoutlimiting
-
-    real(dp) :: dCFL, dgravconst
-
-    ! Name of output file
-    character (LEN=SYS_STRLEN) :: sofile
-
-    integer :: imakeVideo, ifilenumber, ioutputtype
-
-    real(dp) :: dvideotimestep, dvideotime
-
-    integer, dimension(6) :: IdofGlob
-
-    integer :: iel, NEL
-
-    integer :: irhstype
-
-    real(dp) :: dtheta
-
-    integer :: iinsertSourceTerm = 0
-
-    integer :: ilimitEveryStep = 1
-
-    real(dp) , dimension(:), pointer :: p_DiMCdata, p_DMCdata
-
-    integer :: i, j
-    
-    integer :: inumSolverCalls = 0, iiterations =0
-    
-        ! NLMIN receives the minimal level where to discretise for supporting
-    ! the solution process.
-    ! NLMAX receives the level where we want to solve.
-    integer :: NLMIN,NLMAX
     
     ! A problem structure for our problem
     type(t_problem), pointer :: p_rproblem
@@ -1178,33 +1093,21 @@ contains
     
     ! Start time measurement
     call cpu_time(dtime1)
-    
-    ! Get command line arguments and extract name of parameter file
-    if (command_argument_count() .eq. 0) then
-       call output_lbrk()
-       call output_line('Using standart parameterfile: ./dat/1.dat')
-       call output_lbrk()
-       sparameterfileName = './dat/1.dat'
-    else
-       call get_command_argument(command_argument_count(), cbuffer)
-       sparameterfileName = adjustl(cbuffer)
-    end if
-    
-    ! Read parameter file
-    call parlst_init(rparlist)
-    call parlst_readFromFile(rparlist,sparameterfileName)
 
     ! Allocate the problem structure
     allocate(p_rproblem)
+    
+    ! Initialise triangulation and parametrisation
+    call dgmgs_initParlist (p_rproblem)
    
     ! Initialise triangulation and parametrisation
-    call dgmgs_initParamTriang (p_rproblem,rparlist)
+    call dgmgs_initParamTriang (p_rproblem)
     
     ! Initialise discretisation
-    call dgmgs_initDiscretisation (p_rproblem,rparlist)
+    call dgmgs_initDiscretisation (p_rproblem)
     
     ! Calculate matrix and vectors
-    call dgmgs_initMatVec (p_rproblem,rparlist)
+    call dgmgs_initMatVec (p_rproblem)
     
     ! Solve
     call cpu_time(dtime1)
@@ -1219,6 +1122,10 @@ contains
     call dgmgs_doneMatVec (p_rproblem)
     call dgmgs_doneDiscretisation (p_rproblem)
     call dgmgs_doneParamTriang (p_rproblem)
+    call dgmgs_doneParList (p_rproblem)
+    
+    ! Deallocate the problem structure
+    deallocate(p_rproblem)
 
   end subroutine
 
