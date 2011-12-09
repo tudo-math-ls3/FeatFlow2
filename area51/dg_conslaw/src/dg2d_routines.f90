@@ -1277,7 +1277,7 @@ contains
     integer, intent(in) :: extraNodesPerEdge
 
     ! Name of output file
-    character (LEN=SYS_STRLEN), intent(in) :: sofile
+    character (LEN=*), intent(in) :: sofile
 
     ! Filenumber
     integer, intent(in) :: ifilenumber
