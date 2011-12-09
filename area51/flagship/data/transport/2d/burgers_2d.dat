@@ -246,8 +246,6 @@ ilineariseucd = 0
 # number of refinement steps
 nrefineucd = 0
 
-
-
 # time interval for UCD output
 dstepUCD = 0.1
 
