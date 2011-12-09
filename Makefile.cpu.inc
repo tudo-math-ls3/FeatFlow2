@@ -176,7 +176,7 @@ ALLLIB        = amd blas lapack splib umfpack
 # libraries to be built (e.g. 'blas' if there is no system-wide blas;
 # on a typical system set this to 'metis umfpack' only)
 # (Non-alphabetic order. Order should be like in linker step)
-BUILDLIB      = umfpack amd splib lapack
+BUILDLIB      = umfpack amd splib
 
 # directories to look in for library archives
 LIBDIR        = -L$(OBJDIR)
