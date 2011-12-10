@@ -38,8 +38,8 @@
 !# 3.) lin_convertQuad2Tri
 !#     -> Convert all quadrilaterals into two triangles
 !#
-!# 4.) lin_calcDofCoords = dof_calcDofCoordsSc /
-!#                         dof_calcDofCoordsBl
+!# 4.) lin_calcDofCoords = lin_calcDofCoordsSc /
+!#                         lin_calcDofCoordsBl
 !#     -> Calculate the coordinates of the degrees of freedom
 !#
 !# 5.) lin_calcDofCoordsBlock
