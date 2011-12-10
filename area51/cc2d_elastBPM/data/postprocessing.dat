@@ -1,0 +1,276 @@
+# ------------------------------------------------------------------------
+# Postprocessing
+#
+# The parameters in this file specify the postprocessing of the solutions
+# that come from the stationary or nonstationary solver.
+# ------------------------------------------------------------------------
+
+###################
+[CC-POSTPROCESSING]
+###################
+
+# Whether to apply postprocessing to a time interpolated solution or not.
+# This is used for error analysis as well as drag/lift calculation but
+# not for UCD/film output.
+# =0: Apply postprocessing to the raw solution vector.
+# =1 (standard): Apply postprocessing to a time-interpolated solution
+#   with velocity and pressure matching the same point in time.
+#   Necessary for higher order time stepping schemes like Crank-Nicolson.
+
+ipostprocTimeInterpSolution = 1
+
+# ------------------------------------------------------------------------
+# UCD output (GMV, AVS, Paraview...)
+
+# Type of output file to generate from solutions.
+# 0=disabled
+# 1=GMV
+# 2=AVS
+# 3=Paraview (VTK)
+# 4=Matlab
+# 5=binary GMV
+
+ioutputUCD = 1
+
+# Level where to write UCD output. Standard=0 = maximum level.
+# =1,2,3,...  : Write on level ilevelUCD.
+# =0,-1,-2,...: Write on level NLMAX - |ilevelUCD|
+# Standard is =0 which writes the solution at the maximum level.
+# For a value <> 0, the solution is projected down to the desired
+# level and written out there (saves disc space).
+
+ilevelUCD = 0
+
+# Filename for UCD output.
+# In a nonstationary simulation, a number '.0001','.0002',... is appended
+# to this.
+sfilenameUCD = '%{spostdirectory}/u.gmv'
+
+# ------------------------------------------------------------------------
+# Nonstationary UCD output parameters
+
+# Start time for UCD output.
+
+dminTimeUCD = -1.0E100
+
+# End time for UCD output.
+
+dmaxTimeUCD = 1.0E100
+
+# Time difference for UCD output.
+# =0.0: generate UCD output for every timestep in the range 
+#       dminTimeUCD..dmaxTimeUCD
+
+dtimeDifferenceUCD = 0.0
+
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceUCD.
+# =0: Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Standard. Interpolate the solution linearly to get an equidistant 
+#     timestepping for the UCD export. (May lead to slight time interpolation
+#     errors due to linear time interpolation.)
+# If dtimeDifferenceUCD=0, the solutions are written out as they come.
+
+iinterpolateSolutionUCD = 1
+
+# Start number for file suffix when writing UCD files (1='.0001',...).
+# Whether this is used or not depends on the type of output
+# (e.g. GMV uses this)
+
+istartSuffixUCD = 0
+
+# ------------------------------------------------------------------------
+# Film output.
+# In a nonstationary simulation, this writes the raw solution vectors 
+# to a sequence of files. For stationary simulations, this has no effect.
+
+# Type of output file to generate from solutions.
+# 0=disabled (standard)
+# 1=formatted film output
+# 2=unformatted film output
+
+ioutputFilm = 0
+
+# Level where to write Film output. Standard = 0 = maximum level.
+# =1,2,3,...  : Write on level ilevelFilm.
+# =0,-1,-2,...: Write on level NLMAX - |ilevelFilm|
+# Standard is =0 which writes the solution at the maximum level.
+# For a value <> 0, the solution is projected down to the desired
+# level and written out there (saves disc space).
+
+ilevelFilm = 0
+
+# Basic filename for Film output. A number '.0001','.0002',... is appended
+# to this.
+sfilenameFilm = '%{ssolutiondirectory}/solution'
+
+# Start time for Film output.
+
+dminTimeFilm = -1.0E100
+
+# End time for Film output.
+
+dmaxTimeFilm = 1.0E100
+
+# Time difference for Film output.
+# =0.0: generate Film output for every timestep in the range 
+#       dminTimeFilm..dmaxTimeFilm
+
+dtimeDifferenceFilm = 0.0
+
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceFilm.
+# =0: Standard. Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Interpolate the solution linearly to get an equidistant timestepping
+#     for the film export. (May lead to slight time interpolation errors
+#     due to linear time interpolation.)
+# If dtimeDifferenceFilm=0, the solutions are written out as they come.
+
+iinterpolateSolutionFilm = 0
+
+# Start number for file suffix when writing Film files (1='.0001',...).
+
+istartSuffixFilm = 0
+
+# ------------------------------------------------------------------------
+# Error analysis
+
+# Calculate L2-error to reference solution.
+# =0: Don't calculate
+# =1: Calculate the error
+
+ierrorAnalysisL2 = 1
+
+# Calculate H1-error to reference solution.
+# =0: Don't calculate
+# =1: Calculate the error
+
+ierrorAnalysisH1 = 1
+
+# Calculate the kinetic energy.
+# =0: Don't calculate
+# =1: Calculate the energy
+
+icalcKineticEnergy = 0
+
+# Whether to write the L2/H1-error and/or kinetic energy to a file
+
+iwriteErrorAnalysisL2 = 1
+iwriteErrorAnalysisH1 = 1
+iwriteKineticEnergy = 1
+
+# Filename for the L2/H1-error/kinetic energy if iwriteerrorAnalysisXXXX = 1
+
+sfilenameErrorAnalysisL2 = '%{ssolutiondirectory}/error_L2'
+sfilenameErrorAnalysisH1 = '%{ssolutiondirectory}/error_H12'
+sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
+
+# ------------------------------------------------------------------------
+# Body forces
+
+# Calculate the body forces
+# =0: Don't calculate
+# =1: Calculate with standard FEAT-1 method. Constant viscosity.
+# =2: Calculate with extended method, supporting mixed meshes,
+#     general elements and nonlinear viscosity (standard)
+# =3: Calculate using volume forces, standard FEAT-1 method. 
+#     Constant viscosity.
+# =4: Calculate using volume forces with extended method, supporting mixed
+#     meshes, general elements and nonlinear viscosity.
+
+icalcBodyForces = 0
+
+# Specifies the tensor structure to use for the computation.
+# =-1: automatic
+# = 0: simple gradient tensor
+# = 1: full gradient tensor
+# = 2: deformation tensor
+
+ibodyForcesFormulation = -1
+
+# Number of the boundary component where to calculate the body forces.
+# For flow around cylinder, this is =2 e.g.
+
+ibodyForcesBdComponent = 2
+
+# 1st coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 1/RE is assumed.
+
+# dbdForcesCoeff1 = 0.001
+
+# 2nd coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 0.004 is assumed (corresonds to flow 
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
+
+# dbdForcesCoeff2 = 0.004
+
+# Whether to write the body forces to a file
+
+iwriteBodyForces = 0
+
+# Filename for the body forces
+
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
+
+# ------------------------------------------------------------------------
+# Point values
+
+# Calculate the value of different quantities in a number of points
+# y evaluating the solution. The number in braces "(n)" defines the number
+# of points to evaluate. Afterwards follows a list of points in the
+# format
+#   "x y type der"
+# with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
+# der=derivative quantifier. Here:
+#   type=1: x-velocity, =2: y-velocity, =3: pressure
+#   der =0: function value, =1: x-derivative, =2: y-derivative
+#
+# Example: Don't evaluate anything:
+#   cevaluatePointValues(0) =
+#
+# Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
+#   cevaluatePointValues(2) =
+#     0.15 0.2 3 0
+#     0.25 0.2 3 0
+
+cevaluatePointValues(0) =
+
+# Whether to write the point values to a file
+
+iwritePointValues = 0
+
+# Filename for the point values
+
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+
+# ------------------------------------------------------------------------
+# Flux values
+
+# Calculate the flux through one or multilple lines.
+# The number in braces "(n)" defines the number of lines where to
+# evaluate the flux. Afterwards follows a list of points in the
+# format
+#   "x-start y-start x-end y-end"
+# that defines the starting and ending point of the line.
+#
+# Example: Don't evaluate anything:
+#   cevaluateFluxValues(0) =
+#
+# Example: Evaluate the flux through the line (0.5,0.5)->(0.5,0.0)
+#   cevaluateFluxValues(1) =
+#     0.5 0.5 0.5 0.0
+
+cevaluateFluxValues(0) =
+
+# Whether to write the point values to a file
+
+iwriteFluxValues = 0
+
+# Filename for the point values
+
+sfilenameFluxValues = '%{ssolutiondirectory}/flux'
