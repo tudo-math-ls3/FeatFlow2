@@ -187,6 +187,9 @@
 !#      -> Copies the coefficients at edges from the device memory
 !#         to the host  memory.
 !#
+!# 20.) gfem_infoNodeList
+!#      -> Outputs the node list (if available)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -261,6 +264,8 @@ module groupfembase
   public :: gfem_copyD2H_CoeffsAtNode
   public :: gfem_copyH2D_CoeffsAtEdge
   public :: gfem_copyD2H_CoeffsAtEdge
+
+  public :: gfem_infoNodeList
   
 !<constants>
 !<constantblock description="Global format flag for group FEM assembly">
@@ -4065,7 +4070,7 @@ contains
                                             GFEM_SHARE_NODELIST)
 
       case default
-        call output_line('Unsupported matrix type generated!',&
+        call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
         call sys_halt()
       end select
@@ -4327,7 +4332,7 @@ contains
                                     GFEM_HAS_NODELIST)
    
       case default
-        call output_line('Unsupported matrix type generated!',&
+        call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
         call sys_halt()
       end select
@@ -5724,6 +5729,68 @@ contains
 
   end subroutine gfem_copyD2H_CoeffsAtDiag
 
-  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_infoNodeList(rgroupFEMSet)
+
+!<description>
+    ! This subroutine outputs the node list (if available)
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
+    integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
+    integer :: ieq,idx,iidx
+
+    ! Check if the node list is available
+    if ((rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE) .and.&
+        (rgroupFEMSet%h_InodeList    .ne. ST_NOHANDLE)) then
+      
+      call output_line ('GroupFEMSet: Nodelist')
+      call output_line ('---------------------')
+      
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
+        
+        ! Set pointers
+        call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
+        call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+
+        do ieq = 1, size(p_InodeListIdx1D)-1
+          call output_line ('Contributions to node: '//trim(sys_siL(ieq,8)))
+          do idx = p_InodeListIdx1D(ieq), p_InodeListIdx1D(ieq+1)-1
+            call output_line ('... from node: '//trim(sys_siL(p_InodeList1D(idx),8)))
+          end do
+        end do
+        
+      else
+
+        ! Set pointers
+        call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
+        call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+
+        do idx = 1, size(p_InodeListIdx2D,2)-1
+          ieq = p_InodeListIdx2D(2,idx)
+          call output_line ('Contributions to node: '//trim(sys_siL(ieq,8)))
+          do iidx = p_InodeListIdx2D(1,idx), p_InodeListIdx2D(1,idx+1)-1
+            call output_line ('... from node: '//trim(sys_siL(p_InodeList2D(1,iidx),8)))
+          end do
+        end do
+        
+      end if
+
+    else
+      call output_line('Group finite element structure does not provide node list!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'gfem_infoNodeList')
+    end if
+    
+  end subroutine gfem_infoNodeList
 
 end module groupfembase
