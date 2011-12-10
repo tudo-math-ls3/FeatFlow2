@@ -553,7 +553,7 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq,ijpos,ivar,jvar
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idiag,idx,ieq,ijpos,ivar,jvar
       
       ! OpenMP-Extension
       !$ integer, external :: omp_get_max_threads
@@ -574,7 +574,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
-      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq,ivar,jvar,ijpos)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idiag,idx,ieq,ivar,jvar,ijpos)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -676,14 +676,17 @@ contains
                 
                 ! Update temporal data
                 Dtemp = Dtemp + Dcoefficients(:,1,idx)
+
+                ! Get absolute position of diagonal entry
+                if (InodeList(ia) .eq. ieq) idiag=ia
               end do
               
               ! Update the diagonal entry of the global operator
-              ia = InodeListIdx(ieq)
               do ivar = 1, NVAR
                 do jvar = 1, NVAR
                   ijpos = NVAR*(ivar-1)+jvar
-                  rarray(jvar,ivar)%p_Ddata(ia) = rarray(jvar,ivar)%p_Ddata(ia)+Dtemp(ijpos)
+                  rarray(jvar,ivar)%p_Ddata(idiag) =&
+                      rarray(jvar,ivar)%p_Ddata(idiag)+Dtemp(ijpos)
                 end do
               end do
             end do
@@ -707,12 +710,15 @@ contains
                 
                 ! Update temporal data
                 Dtemp = Dtemp + Dcoefficients(:,1,idx)
+
+                ! Get absolute position of diagonal entry
+                if (InodeList(ia) .eq. ieq) idiag=ia
               end do
               
               ! Update the diagonal entry of the global operator
-              ia = InodeListIdx(ieq)
               do ivar = 1, NVAR
-                rarray(ivar,ivar)%p_Ddata(ia) = rarray(ivar,ivar)%p_Ddata(ia)+Dtemp(ivar)
+                rarray(ivar,ivar)%p_Ddata(idiag) =&
+                    rarray(ivar,ivar)%p_Ddata(idiag)+Dtemp(ivar)
               end do
             end do
             
@@ -1653,7 +1659,7 @@ contains
       
       ! local variables
       real(DP), dimension(MVAR) :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idiag,idx,ieq
       
       ! OpenMP-Extension
       !$ integer, external :: omp_get_max_threads
@@ -1674,7 +1680,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
-      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idiag,idx,ieq)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -1767,10 +1773,13 @@ contains
               
               ! Update temporal data
               Dtemp = Dtemp + Dcoefficients(:,1,idx)
+
+              ! Get absolute position of diagonal entry
+              if (InodeList(ia) .eq. ieq) idiag=ia
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(:,InodeListIdx(ieq)) = Ddata(:,InodeListIdx(ieq))+Dtemp
+            Ddata(:,idiag) = Ddata(:,idiag)+Dtemp
           end do
           
           ! Proceed with next nonzero entries in current set

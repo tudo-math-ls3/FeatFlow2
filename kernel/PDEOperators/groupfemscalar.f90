@@ -2536,7 +2536,7 @@ contains
       
       ! local variables
       real(DP) :: dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idiag,idx,ieq
 
       ! OpenMP-Extension
       !$ integer, external :: omp_get_max_threads
@@ -2557,7 +2557,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,dtemp,IdofsAtNode,&
-      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idiag,idx,ieq)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -2650,10 +2650,13 @@ contains
               
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(1,idx)
+
+              ! Get absolute position of diagonal entry
+              if (InodeList(ia) .eq. ieq) idiag=ia
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(InodeListIdx(ieq)) = Ddata(InodeListIdx(ieq))+dtemp
+            Ddata(idiag) = Ddata(idiag)+dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -2663,7 +2666,7 @@ contains
         end do
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
