@@ -3962,7 +3962,7 @@ contains
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST) .eq.&
         GFEM_SHARE_NODELIST) then
       call output_line('Node list is not owned by structure and '//&
-          'therefore cannot be generated',&
+          'therefore cannot be generated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
       call sys_halt()
     end if
@@ -4043,7 +4043,8 @@ contains
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
         
-      case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,&
+            LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
 
         ! Remove nodal structure from the group finite element set
         if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST)) then
@@ -4063,26 +4064,10 @@ contains
         rgroupFEMSet%iduplicationFlag = ior(rgroupFEMSet%iduplicationFlag,&
                                             GFEM_SHARE_NODELIST)
 
-      case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-
-        ! Remove nodal structure from the group finite element set
-        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST)) then
-          call storage_free(rgroupFEMSet%h_InodeListIdx)
-          call storage_free(rgroupFEMSet%h_InodeList)
-        end if
-        
-        ! Set handles to matrix handles
-        rgroupFEMSet%h_InodeListIdx = rmatrix%h_Kld
-        rgroupFEMSet%h_InodeList    = rmatrix%h_Kcol
-        
-        ! Set state of structure
-        rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODELIST)
-
-        ! Reset ownership
-        rgroupFEMSet%iduplicationFlag = ior(rgroupFEMSet%iduplicationFlag,&
-                                            GFEM_SHARE_NODELIST)
-
+      case default
+        call output_line('Unsupported matrix type generated!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+        call sys_halt()
       end select
       
     else   ! use list of DOFs for restriction
@@ -4341,6 +4326,10 @@ contains
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
    
+      case default
+        call output_line('Unsupported matrix type generated!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+        call sys_halt()
       end select
       
     end if
