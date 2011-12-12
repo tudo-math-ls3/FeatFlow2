@@ -40,6 +40,7 @@ module feevaluation
   use basicgeometry
   use boundary
   use boundaryaux
+  use collection
   use derivatives
   use dofmapping
   use domainintegration
@@ -105,20 +106,28 @@ module feevaluation
   ! with different calling conventions and different complexities.
   interface fevl_evaluate_sim
     module procedure fevl_evaluate_sim1
-    module procedure fevl_evaluate_sim2
+    module procedure fevl_evaluate_sim2 ! DEPRECATED
     module procedure fevl_evaluate_sim3
     module procedure fevl_evaluate_sim4
     module procedure fevl_evaluate_sim5
+    module procedure fevl_evaluate_generic_sim1
+    module procedure fevl_evaluate_generic_sim3
+    module procedure fevl_evaluate_generic_sim4
+    module procedure fevl_evaluate_generic_sim5
   end interface
   
   public :: fevl_evaluate
   public :: fevl_evaluate_sim
   public :: fevl_evaluate_sim1
-  public :: fevl_evaluate_sim2
+  public :: fevl_evaluate_sim2 ! DEPRECATED
   public :: fevl_evaluate_sim3
   public :: fevl_evaluate_sim4
   public :: fevl_evaluate_sim5
-
+  public :: fevl_evaluate_generic_sim1
+  public :: fevl_evaluate_generic_sim3
+  public :: fevl_evaluate_generic_sim4
+  public :: fevl_evaluate_generic_sim5
+  
   ! There are multiple functions fevl_evaluateBdr1d which do the same --
   ! with different calling conventions and different complexities.
   interface fevl_evaluateBdr1d
@@ -2713,6 +2722,518 @@ contains
     call sys_halt()
   end if
   
+  ! Release memory, finish
+  deallocate(DbasTrial)
+  
+  if (rdomainIntSubset%celement .ne. celement) then
+    deallocate (p_IdofsTrial)
+  end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_generic_sim1 (iderType, Dvalues, rspatialDiscr,&
+      ffunctionCoefficient, Dpoints, Ielements, DpointsRef, rcollection, rperfconfig)
+                                      
+!<description>
+  ! This is a rather general finite element evaluation routine. It
+  ! allows to evaluate a general (scalar) FE function in a set of
+  ! points Dpoints on a set of elements Ielements. The values of the
+  ! FE function are written into Dvalues.
+!</description>
+
+!<input>
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+
+  ! Spatial discretisation underlying the FE function
+  type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
+
+  ! Callback function used to evaluate the FE function
+  include 'intf_fecoefficient_sim.inc'
+  
+  ! A list of points where to evaluate. All points must be inside
+  ! of element ielement.
+  ! DIMENSION(1..ndim,1..npoints,1..nelements)
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  
+  ! A list of elements containing the points in Dpoints.
+  ! All elements in this list must be of the same type!!!
+  integer, dimension(:), intent(in) :: Ielements
+  
+  ! OPTIONAL: Coordinates of the points on the reference element.
+  ! If not specified, the coordinates are automatically calculated.
+  ! DIMENSION(1..ndim,1..npoints,1..nelements)
+  real(DP), dimension(:,:,:), intent(in), target, optional :: DpointsRef
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(1..npoints,1..nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    logical :: bnonpar
+    integer :: indof,nve,iel,ipoint
+    integer(I32) :: celement
+    integer, dimension(:), pointer :: p_IelementDistr
+    logical, dimension(EL_MAXNDER) :: Bder
+    
+    real(DP), dimension(:,:,:), pointer :: p_DpointsRef
+    
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! Transformation
+    integer(I32) :: ctrafoType
+    
+    ! Values of basis functions and DOF`s
+    real(DP), dimension(:,:,:,:), allocatable :: Dbas
+    integer, dimension(:,:), allocatable :: Idofs
+
+    ! Element evaluation set that collects element specific information
+    ! during the evaluation
+    type(t_evalElementSet)  :: revalElementSet
+    integer(I32) :: cevaluationTag
+    
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    ! Ok, slow but general.
+    
+    ! Get triangulation information
+    p_rtriangulation => rspatialDiscr%p_rtriangulation
+    
+    p_RelementDistribution => rspatialDiscr%RelementDistr
+
+    ! For uniform discretisations, we get the element type in advance...
+    if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      
+      ! Element type
+      celement = p_RelementDistribution(1)%celement
+
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+      
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+      
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+      
+      ! Element nonparametric?
+      bnonpar = elem_isNonparametric(celement)
+      
+      nullify(p_IelementDistr)
+    else
+      call storage_getbase_int (rspatialDiscr%h_IelementDistr, p_IelementDistr)
+    end if
+      
+    ! What to evaluate?
+    Bder = .false.
+    Bder(iderType) = .true.
+    
+    ! Get the type of the element ielement
+    if (associated(p_IelementDistr)) then
+      ! As all elements have the same type, we get the element
+      ! characteristics by checking the first element.
+      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
+
+      ! Get the number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+      
+      ! Number of vertices on the element
+      nve = elem_igetNVE(celement)
+      
+      ! Type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+      
+      ! Element nonparametric?
+      bnonpar = elem_isNonparametric(celement)
+      
+    end if
+      
+    ! Calculate the global DOF`s on that element into IdofsTest.
+    allocate(Idofs(indof,size(Ielements)))
+    call dof_locGlobMapping_mult(rspatialDiscr, Ielements, Idofs)
+    
+    ! Initialisation of the element set.
+    call elprep_init(revalElementSet)
+        
+    ! Get the coordinates of the corners of the elements
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        EL_EVLTAG_COORDS, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=DpointsRef,DpointsReal=Dpoints,rperfconfig=rperfconfig)
+
+    ! Get the coordinates of all points on the reference element
+    if (present(DpointsRef)) then
+      p_DpointsRef => DpointsRef
+    else
+      allocate(p_DpointsRef(ubound(Dpoints,1),ubound(Dpoints,2),&
+               ubound(Dpoints,3)))
+      ! Calculate the transformation of the point to the reference element
+      do iel = 1,size(Ielements)
+        do ipoint = 1,ubound(Dpoints,2)
+          call trafo_calcRefCoords (ctrafoType,revalElementSet%p_Dcoords(:,:,iel),&
+              Dpoints(:,ipoint,iel),p_DpointsRef(:,ipoint,iel))
+        end do
+      end do
+    end if
+
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag.
+    cevaluationTag = elem_getEvaluationTag(celement)
+    
+    ! Do not create coordinates on the reference/real element; we do this manually!
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REALPOINTS))
+
+    ! Do not calculate element shape information, we have that already.
+    cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_COORDS))
+                    
+    ! Calculate all information that is necessary to evaluate the finite element
+    ! on all cells of our subset. This includes the coordinates of the points
+    ! on the cells.
+
+    ! Prepare the element set for the evaluation
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        cevaluationTag, p_rtriangulation, Ielements, ctrafoType,&
+        DpointsRef=p_DpointsRef,DpointsReal=Dpoints,rperfconfig=rperfconfig)
+    
+    ! Calculate the values of the basis functions in the given points.
+    allocate(Dbas(indof,&
+             elem_getMaxDerivative(celement),&
+             ubound(Dpoints,2), size(Ielements)))
+    call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
+             
+    ! Calculate the desired values by the callback function.
+    call ffunctionCoefficient(iderType, size(Ielements), ubound(Dpoints,2), indof,&
+                              Idofs, Dpoints, Dbas, Dvalues, rcollection)
+     
+    ! Release allocated memory
+    ! Remove the reference to DpointsRef again
+    deallocate(Dbas)
+
+    call elprep_releaseElementSet(revalElementSet)
+    deallocate(Idofs)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_generic_sim3 (revalElementSet, ffunctionCoefficient,&
+      celement, IdofsTrial, iderType, Dvalues, rcollection)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution
+  ! simultaneously in multiple points on multiple elements in a
+  ! discretisation.
+  ! revalElementScalar must specify all information about where and how
+  ! to evaluate; e.g. the coordinates of the evaluation points are
+  ! to be found here. The routine will then evaluate the element celement
+  ! in these points.
+  !
+  ! This routine is specialised to evaluate in multiple elements. For this
+  ! purpose, the caller must make sure, that the same finite element type
+  ! is used on all elements where to evaluate!
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
+!</description>
+
+!<input>
+  ! Element evaluation set that contains all information necessary
+  ! for the evaluation (coordinates of the points, transformation,...)
+  type(t_evalElementSet), intent(in) :: revalElementSet
+
+  ! Callback function used to evaluate the FE function
+  include 'intf_fecoefficient_sim.inc'
+  
+  ! The FE function must be discretised with the same trial functions on all
+  ! elements where it should be evaluated here. celement defines the type
+  ! of FE trial function that was used for the discretisation on those
+  ! elements that we are concerning here.
+  integer(I32), intent(in) :: celement
+
+  ! An array accepting the DOF`s on all elements in the trial space
+  ! of the FE function.
+  ! DIMENSION(\#local DOF`s in trial space,nelements)
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(npoints,nelements).
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+  integer :: indofTrial,npoints,nelements
+  
+  
+  npoints = revalElementSet%npointsPerElement
+  nelements = revalElementSet%nelements
+  
+  ! What to evaluate?
+  Bder = .false.
+  Bder(iderType) = .true.
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
+  
+  ! Evaluate the basis functions
+  call elem_generic_sim2 (celement, revalElementSet, Bder, DbasTrial)
+
+  ! Calculate the desired values by the callback function.
+  call ffunctionCoefficient(iderType, nelements, npoints, indofTrial,&
+                            IdofsTrial, revalElementSet%p_DpointsRef,&
+                            DbasTrial, Dvalues, rcollection)
+
+  ! Release memory, finish
+  deallocate(DbasTrial)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_generic_sim4 (rspatialDiscr, ffunctionCoefficient, &
+                                         rdomainIntSubset, iderType, Dvalues, &
+                                         iterm, rcollection)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution
+  ! simultaneously in multiple points on multiple elements in a
+  ! discretisation.
+  ! rdomainIntSubset must specify all information about where and how
+  ! to evaluate; e.g. the coordinates of the evaluation points are
+  ! to be found here.
+  !
+  ! This routine is specialised to evaluate in multiple elements. For this
+  ! purpose, the caller must make sure, that the same finite element type
+  ! is used on all elements where to evaluate!
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
+  !
+  ! The interface of this routine is designed to be called in callback
+  ! functions during linearform and bilinearform evaluation.
+  ! The target array Dvalues provides a shape which is compatible
+  ! to the callback interface. The variable iterm specifies the
+  ! subarray in Dvalues where values are written to; i.e.
+  ! the result of the evaluation is written to Dvalues(iterm,:,:).
+!</description>
+
+!<input>
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being evaluated.
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Spatial discretisation underlying the FE function
+  type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
+
+  ! Callback function used to evaluate the FE function
+  include 'intf_fecoefficient_sim.inc'
+  
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+  
+  ! Number of the subarray in Dvalues where the result is written to.
+  ! The routine writes the resulting values to Dvalues(iterm,:,:).
+  integer, intent(in) :: iterm
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(#possible terms,npoints,nelements).
+  real(DP), dimension(:,:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+  integer :: indofTrial,npoints,nelements
+  integer(I32) :: celement
+  integer, dimension(:,:), pointer :: p_IdofsTrial
+
+
+  npoints = rdomainIntSubset%npointsPerElement
+  nelements = rdomainIntSubset%nelements
+  
+  ! What to evaluate?
+  Bder = .false.
+  Bder(iderType) = .true.
+  
+  ! Get the currently active element
+  celement = rspatialDiscr%RelementDistr(rdomainIntSubset%ielementDistribution)%celement
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
+  
+  ! Evaluate the basis functions
+  call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+  
+  ! Get the pointer to the trial DOF`s.
+  ! If the IdofsTrial in the domain subset fits to our current element,
+  ! take that. Otherwise, we have to compute the actual DOF`s.
+  if (rdomainIntSubset%celement .eq. celement) then
+    p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
+  else
+    allocate (p_IdofsTrial(indofTrial,nelements))
+    call dof_locGlobMapping_mult(rspatialDiscr, rdomainIntSubset%p_Ielements, p_IdofsTrial)
+  end if
+
+  ! Calculate the desired values by the callback function.
+  call ffunctionCoefficient(iderType, nelements, npoints, indofTrial,&
+                            p_IdofsTrial, rdomainIntSubset%p_DcubPtsReal,&
+                            DbasTrial, Dvalues(iterm,:,:), rcollection)
+
+  ! Release memory, finish
+  deallocate(DbasTrial)
+  
+  if (rdomainIntSubset%celement .ne. celement) then
+    deallocate (p_IdofsTrial)
+  end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fevl_evaluate_generic_sim5 (rspatialDiscr, ffunctionCoefficient, &
+                                         rdomainIntSubset, iderType, Dvalues, &
+                                         rcollection)
+                                      
+!<description>
+  ! This routine allows to evaluate a finite element solution
+  ! simultaneously in multiple points on multiple elements in a
+  ! discretisation.
+  ! rdomainIntSubset must specify all information about where and how
+  ! to evaluate; e.g. the coordinates of the evaluation points are
+  ! to be found here.
+  !
+  ! This routine is specialised to evaluate in multiple elements. For this
+  ! purpose, the caller must make sure, that the same finite element type
+  ! is used on all elements where to evaluate!
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
+!</description>
+
+!<input>
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being evaluated.
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Spatial discretisation underlying the FE function
+  type(t_spatialdiscretisation), intent(in) :: rspatialDiscr
+
+  ! Callback function used to evaluate the FE function
+  include 'intf_fecoefficient_sim.inc'
+  
+  ! Type of function value to evaluate. One of the DER_xxxx constants,
+  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
+  integer, intent(in) :: iderType
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(npoints,nelements).
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  logical, dimension(EL_MAXNDER) :: Bder
+  real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+  integer :: indofTrial,npoints,nelements
+  integer(I32) :: celement
+  integer, dimension(:,:), pointer :: p_IdofsTrial
+  
+  
+  npoints = rdomainIntSubset%npointsPerElement
+  nelements = rdomainIntSubset%nelements
+  
+  ! What to evaluate?
+  Bder = .false.
+  Bder(iderType) = .true.
+  
+  ! Get the currently active element
+  celement = rspatialDiscr%RelementDistr(rdomainIntSubset%ielementDistribution)%celement
+  
+  ! Allocate memory for the basis function values
+  indofTrial = elem_igetNDofLoc(celement)
+  allocate(DbasTrial(indofTrial,elem_getMaxDerivative(celement),npoints,nelements))
+  
+  ! Evaluate the basis functions
+  call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+  
+  ! Get the pointer to the trial DOF`s.
+  ! If the IdofsTrial in the domain subset fits to our current element,
+  ! take that. Otherwise, we have to compute the actual DOF`s.
+  if (rdomainIntSubset%celement .eq. celement) then
+    p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
+  else
+    allocate (p_IdofsTrial(indofTrial,nelements))
+    call dof_locGlobMapping_mult(rspatialDiscr, rdomainIntSubset%p_Ielements, p_IdofsTrial)
+  end if
+
+  ! Calculate the desired values by the callback function.
+  call ffunctionCoefficient(iderType, nelements, npoints, indofTrial,&
+                            p_IdofsTrial, rdomainIntSubset%p_DcubPtsReal,&
+                            DbasTrial, Dvalues, rcollection)
+
   ! Release memory, finish
   deallocate(DbasTrial)
   
