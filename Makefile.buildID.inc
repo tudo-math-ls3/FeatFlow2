@@ -75,23 +75,26 @@ REALID:=$(strip $(REALID))-cf90-dxml
 endif
 
 ifeq ($(strip $(REALID)), ia64-itanium2-linux)
-REALID:=$(strip $(REALID))-intel-mkl
+# REALID:=$(strip $(REALID))-intel-mkl
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), ia64-itanium2x2-linux)
-REALID:=$(strip $(REALID))-intel-mkl
+# REALID:=$(strip $(REALID))-intel-mkl
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), ibm-powerpc_power4-aix)
-REALID:=$(strip $(REALID))-xlf-goto
+# REALID:=$(strip $(REALID))-xlf-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-athlon64-linux)
-REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-athlonxp-linux)
-REALID:=$(strip $(REALID))-g95-goto
+REALID:=$(strip $(REALID))-g95-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-coreduo-darwin)
@@ -99,34 +102,42 @@ REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-coreduo-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
+
 ifeq ($(strip $(REALID)), pc-coresolo-linux)
 REALID:=$(strip $(REALID))-g95-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-coresolo-darwin)
-REALID:=$(strip $(REALID))-gcc-goto
+# REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-nehalem-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-opteron-linux)
-REALID:=$(strip $(REALID))-g95-goto
+# REALID:=$(strip $(REALID))-g95-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-opteron4100-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-opteron6100-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-opteronx2-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-penryn-darwin)
@@ -138,23 +149,27 @@ REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-pentium4-linux)
-REALID:=$(strip $(REALID))-gcc-goto
+# REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-pentium4m-linux)
-REALID:=$(strip $(REALID))-gcc-goto
+# REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-pentiumm-linux)
-REALID:=$(strip $(REALID))-gcc-goto
+# REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc-turionx2-linux)
-REALID:=$(strip $(REALID))-g95-goto
+REALID:=$(strip $(REALID))-g95-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-athlon64x2-linux)
-REALID:=$(strip $(REALID))-gcc-goto
+# REALID:=$(strip $(REALID))-gcc-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-coreduo-darwin)
@@ -162,30 +177,37 @@ REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-coreduo-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-nehalem-darwin)
 REALID:=$(strip $(REALID))-gcc-blas
 endif
+
 ifeq ($(strip $(REALID)), pc64-nehalem-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-opteron-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-opteron4100-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-opteron6100-linux)
-REALID:=$(strip $(REALID))-intel-goto2
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-opteronx2-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-penryn-darwin)
@@ -193,23 +215,28 @@ REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-penryn-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), pc64-pentium4-linux)
-REALID:=$(strip $(REALID))-intel-goto
+# REALID:=$(strip $(REALID))-intel-goto
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), sun4u-sparcv8-sunos)
-REALID:=$(strip $(REALID))-sunstudio-perf
+# REALID:=$(strip $(REALID))-sunstudio-perf
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), sun4u-sparcv9-sunos)
-REALID:=$(strip $(REALID))-sunstudio-perf
+# REALID:=$(strip $(REALID))-sunstudio-perf
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), sun4v-sparcv9-sunos)
-REALID:=$(strip $(REALID))-sunstudio-perf
+# REALID:=$(strip $(REALID))-sunstudio-perf
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), sx6-none-superux)
