@@ -7786,6 +7786,18 @@ contains
          ! Calculate numerical derivative of LLF flux
          DdLLF = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
 
+
+!          ! At the boundary use 2nd order approx of rotated Roe HLL Flux
+!          if (IelementList(iedge)==0) then
+!            DDRoe = DRotated_RHLL_2nd(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+!          end if
+
+!          ! At the boundary use 2nd order approx of rotated Roe HLL Flux
+!          if (IelementList(iedge)==0) then
+!            DDRoe = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+!          end if
+         
+
 !          ! Calculate derivative of lambda
 !          Ddlambda = Euler_buildDlambda(DQi, DQa, normal(1,iedge), normal(2,iedge))
           

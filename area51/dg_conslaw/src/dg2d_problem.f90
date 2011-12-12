@@ -1806,7 +1806,7 @@ contains
     ps = rhoi*(SL-ui)*(SS-ui)+pi
 
 
-    FX = 0.5_dp*(   Euler_buildFlux(Qi,1)+Euler_buildFlux(Qa,1) -ui*Qi+(/ 0.0_dp,ps-pi,0.0_dp,ps*SS-pi*ui /) -ua*Qa+(/ 0.0_dp,ps-pa,0.0_dp,ps*SS-pa*ua /) )
+    FX = 0.5_dp*(Euler_buildFlux(Qi,1)+Euler_buildFlux(Qa,1) -ui*Qi+(/ 0.0_dp,ps-pi,0.0_dp,ps*SS-pi*ui /) -ua*Qa+(/ 0.0_dp,ps-pa,0.0_dp,ps*SS-pa*ua /) )
 
 
 
@@ -2666,5 +2666,52 @@ function Euler_buildlambda(Qll, Qrr, a, b) result(dlambda)
 !    end do
     
   end function DLLF
+  
+  
+  
+    function DRotated_RHLL_2nd(uL, uR, nx, ny, h)
+    real(dp) :: uL(4), uR(4)             !  Input: conservative variables rho*[1, u, v, E]
+    real(dp) :: nx, ny                   !  Input: face normal vector, [nx, ny]
+    real(dp) :: h                        !  Input: infinitesimal constant
+    real(dp), dimension(4,8) :: DRotated_RHLL_2nd     ! Output: Approximate differential of Roe flux function
+    
+    real(dp), dimension(4) :: F, U
+    integer :: i
+    
+!    F = Rotated_RHLL(uL, uR, nx, ny)
+!    
+!    ! First order approx
+!    do i = 1,4
+!      U = uL
+!      U(i) = U(i) + h
+!      DRotated_RHLL_2nd(:,i) = (Rotated_RHLL(U, uR, nx, ny) - F)/h
+!    end do
+!    
+!    do i = 1,4
+!      U = uR
+!      U(i) = U(i) + h
+!      DRotated_RHLL_2nd(:,i+4) = (Rotated_RHLL(uL, U, nx, ny) - F)/h
+!    end do
+
+    ! Second order approx
+    do i = 1,4
+      U = uL
+      U(i) = U(i) + h
+      DRotated_RHLL_2nd(:,i) = Rotated_RHLL(U, uR, nx, ny)
+      U = uL
+      U(i) = U(i) - h
+      DRotated_RHLL_2nd(:,i) = 0.5_dp*(DRotated_RHLL_2nd(:,i)-Rotated_RHLL(U, uR, nx, ny))/h
+    end do
+    
+    do i = 1,4
+      U = uR
+      U(i) = U(i) + h
+      DRotated_RHLL_2nd(:,i+4) = Rotated_RHLL(uL, U, nx, ny)
+      U = uR
+      U(i) = U(i) - h
+      DRotated_RHLL_2nd(:,i+4) = 0.5_dp*(DRotated_RHLL_2nd(:,i+4)-Rotated_RHLL(uL, U, nx, ny))/h
+    end do
+    
+  end function
 
 end module dg2d_problem

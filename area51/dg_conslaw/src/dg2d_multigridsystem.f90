@@ -569,6 +569,15 @@ contains
   ilvmax = rproblem%ilvmax
   nvar2d = rproblem%nvar2d
   
+  ! Create structure of RHS and temp vector
+  call lsysbl_createVecBlockByDiscr (rproblem%RlevelInfo(ilvmax)%p_rdiscretisation, rproblem%rrhs)
+  call lsysbl_createVecBlockByDiscr (rproblem%RlevelInfo(ilvmax)%p_rdiscretisation, rtempBlock)
+  
+  ! Create structure of solution vector on all levels
+  do ilevel = ilvmax, ilvmin, -1
+    call lsysbl_createVecBlockByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation, rproblem%RlevelInfo(ilevel)%rvector)
+  end do
+  
   
     
   !!! Create a Multigrid-solver !!!
@@ -589,28 +598,6 @@ contains
   end do
   
   
-  
-  !!! Project the initial solution to all levels !!!
-  do ilevel = ilvmax, ilvmin, -1
-    
-    ! First copy initial solution or project the solution to lower level
-    if (ilevel == ilvmax) then
-      ! We're on the highest level - just copy the initial data
-      call lsysbl_copyVector(rproblem%rvector,rproblem%RlevelInfo(ilevel)%rvector)
-    else
-      ! We're on a lower level and have to project the solution from the higher level
-      call lsysbl_createVecBlockByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation, rproblem%RlevelInfo(ilevel)%rvector)
-      call lsyssc_createVecByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation%RspatialDiscr(1),rvectorTemp1)
-      call mlprj_performInterpolation (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-ilvmin+2)%p_rprojection,&
-                                       rproblem%RlevelInfo(ilevel)%rvector, &
-                                       rproblem%RlevelInfo(ilevel+1)%rvector, &
-                                       rvectorTemp1)
-      call lsyssc_releaseVector(rvectorTemp1)
-    end if
-  end do
-  
-  
-  
   !!! Build mass matrices on all levels !!!
   
   ! Allocate the matrices
@@ -622,6 +609,7 @@ contains
   rform%Idescriptors(2,1) = DER_FUNC
   rform%ballCoeffConstant = .true.
   rform%BconstantCoeff = .true.
+  rform%Dcoefficients(1) = 1.0
   
   do ilevel = ilvmin, ilvmax
     ! Create matrix structure
@@ -636,503 +624,133 @@ contains
   
   
   
-  !!! Build the RHS on the finest level !!!
-  ! Create structure of RHS vector (by copying the solution vector into it)
-  call lsysbl_createVecBlockByDiscr (rproblem%RlevelInfo(ilvmax)%p_rdiscretisation, rproblem%rrhs)
-
-  ! Set up the corresponding linear form (f,Phi_j):
-  rlinformedge%itermCount = 1
-  rlinformedge%Idescriptors(1) = DER_FUNC2D
-   
-  ! Now use the dg-function for the edge terms
-  call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
-       rproblem%rrhs,rproblem%rvector,&
-       rproblem%RlevelInfo(ilvmax)%raddTriaData,&
-       Euler_flux_dg_buildVectorBlEdge2D_sim_Newton,&
-       rproblem%rcollection)
-
-  call lsysbl_scaleVector (rproblem%rrhs,-1.0_DP)
-
-
-  ! Then add the cell term
-  if(rproblem%ielementType .ne. EL_DG_T0_2D) then
-     ! Set up linear form
-     rlinformcell%itermCount = 2
-     rlinformcell%Idescriptors(1) = DER_DERIV_X
-     rlinformcell%Idescriptors(2) = DER_DERIV_Y
-     rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%rvector
-     ! Call the linearformroutine
-     call linf_buildVectorBlock2 (rlinformcell, .false., rproblem%rrhs,&
-                                  Euler_flux_sys_block,rproblem%rcollection)
-  end if
+  !!! Start timestepping loop !!!
+  mgsys_timestepping: do
   
-  
-
-  
-  !!! Now build the nonlinear matrices on all levels !!!
-  do ilevel = ilvmin, ilvmax
-    
-    ! Create structure of the block matrix by copying MC to all blocks
-    call lsysbl_createEmptyMatrix (rproblem%RlevelInfo(ilevel)%rmatrix,nvar2d,nvar2d)
-    do i = 1, nvar2d
-       do j = 1, nvar2d
-          call lsyssc_copyMatrix (rmatrixMC(ilevel),rproblem%RlevelInfo(ilevel)%rmatrix%RmatrixBlock(i,j))
-       end do
-    end do
-    call lsysbl_updateMatStrucInfo (rproblem%RlevelInfo(ilevel)%rmatrix)
-    call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
-    
-    
-    ! Calculate the matrix for the cell terms
-    ! Set up the bilinear form
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_FUNC
-    rform%Idescriptors(2,2) = DER_DERIV_Y
-    rform%ballCoeffConstant = .false.
-    rform%BconstantCoeff = .false.
-    rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%RlevelInfo(ilevel)%rvector
-    if (rproblem%ielementtype.ne.EL_DG_T0_2D) then
-       call bilf_buildMatrixBlock2 (rform, .true., rproblem%RlevelInfo(ilevel)%rmatrix,&
-                                    fcoeff_buildMatrixBl_sim_iEuler,rproblem%rcollection)
-    else
-       call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
-    end if
-
-    call lsysbl_scaleMatrix (rproblem%RlevelInfo(ilevel)%rmatrix,-1.0_DP)
-
-
-    ! Calculate the matrix for the edge terms
-    ! Set up the bilinear form
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    rform%Idescriptors(1,2) = DER_FUNC
-    rform%Idescriptors(2,2) = DER_FUNC
-    rform%ballCoeffConstant = .false.
-    rform%BconstantCoeff = .false.
-    rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%RlevelInfo(ilevel)%rvector
-    rproblem%rcollection%Dquickaccess(1) = rproblem%dtstep
-    call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false.,&
-                                         rproblem%RlevelInfo(ilevel)%rmatrix,&
-                                         rproblem%RlevelInfo(ilevel)%rvector,&
-                                         rproblem%RlevelInfo(ilevel)%raddTriaData,&
-                                         flux_dg_buildMatrixBlEdge2D_sim_iEuler_Newton_ss,&
-                                         rproblem%rcollection)
-    
-    ! Add the mass matrix on the main diagonal
-    do i = 1, rproblem%nvar2d
-      call lsyssc_matrixLinearComb (rmatrixMC(ilevel),rproblem%RlevelInfo(ilevel)%rmatrix%RmatrixBlock(i,i),&
-                                    1.0_dp/rproblem%dtstep,1.0_dp,&
-                                    .false.,.false.,.true.,.false.)
+    !!! Project the initial solution to all levels !!!
+    do ilevel = ilvmax, ilvmin, -1
+      
+      ! First copy initial solution or project the solution to lower level
+      if (ilevel == ilvmax) then
+        ! We're on the highest level - just copy the initial data
+        call lsysbl_copyVector(rproblem%rvector,rproblem%RlevelInfo(ilevel)%rvector)
+      else
+        ! We're on a lower level and have to project the solution from the higher level
+        call lsyssc_createVecByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation%RspatialDiscr(1),rvectorTemp1)
+        call mlprj_performInterpolation (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-ilvmin+2)%p_rprojection,&
+                                         rproblem%RlevelInfo(ilevel)%rvector, &
+                                         rproblem%RlevelInfo(ilevel+1)%rvector, &
+                                         rvectorTemp1)
+        call lsyssc_releaseVector(rvectorTemp1)
+      end if
     end do
     
-  end do
-  
-  
-  
-  !!! Create (rest of) multigrid solver and solve !!!
-  ! Get our right hand side / solution / matrix on the finest
-  ! level from the problem structure.
-  p_rrhs    => rproblem%rrhs
-  p_rvector => rproblem%rvector
-  p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
-  
-  ! Create a temporary vector we need that for some preparation.
-  call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
-  
-  ! Then set up smoothers / coarse grid solver:
-  do i=ilvmin,ilvmax
-    
-    ! On the coarsest grid, set up a coarse grid solver and no smoother
-    ! On finer grids, set up a smoother but no coarse grid solver.
-    nullify(p_rpreconditioner)
-    nullify(p_rsmoother)
-    nullify(p_rcoarseGridSolver)
-    
-    if (i .eq. ilvmin) then
-      ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
-      ! would be:
-      ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-      ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
-      
-      ! Set up UMFPACK coarse grid solver.
-      call linsol_initUMFPACK4 (p_rcoarseGridSolver)
-
-    else
-      ! Setting up Jacobi smoother for multigrid would be:
-      ! CALL linsol_initJacobi (p_rsmoother)
-      
-      ! Setting up VANCA smoother for multigrid would be:
-      ! CALL linsol_initVANCA (p_rsmoother)
-
-      ! Set up an ILU smoother for multigrid with damping parameter 0.7,
-      ! 4 smoothing steps:
-      !call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-      !call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
-      
-      
-        nullify(p_rpreconditioner)
-!        call linsol_initJacobi (p_rpreconditioner)
-!        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-      
-!        call linsol_initJacobi (p_rsmoother)
-!        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
-        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
-        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
-      
-    end if
-  
-    ! And add this multi-grid level. We will use the same smoother
-    ! for pre- and post-smoothing.
-    call linsol_getMultigrid2Level (p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
-    p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-    p_rlevelInfo%p_rpresmoother => p_rsmoother
-    p_rlevelInfo%p_rpostsmoother => p_rsmoother
-  end do
-  
-  ! Set the output level of the solver to 2 for some output
-  p_rsolverNode%ioutputLevel = 2
-
-  ! Attach the system matrices to the solver.
-  !
-  ! We copy our matrices to a big matrix array and transfer that
-  ! to the setMatrices routines. This intitialises then the matrices
-  ! on all levels according to that array. Note that this does not
-  ! allocate new memory, we create only 'links' to existing matrices
-  ! into Rmatrices(:)!
-  allocate(Rmatrices(ilvmin:ilvmax))
-  do i=ilvmin,ilvmax
-    call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
-                                 Rmatrices(i),LSYSSC_DUP_SHARE,&
-                                 LSYSSC_DUP_SHARE)
-  end do
-  
-  call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
-  
-  ! We can release Rmatrices immediately -- as long as we do not
-  ! release rproblem%RlevelInfo(i)%rmatrix!
-  do i=ilvmin,ilvmax
-    call lsysbl_releaseMatrix (Rmatrices(i))
-  end do
-  deallocate(Rmatrices)
-  
-  ! Initialise structure/data of the solver. This allows the
-  ! solver to allocate memory / perform some precalculation
-  ! to the problem.
-  call linsol_initStructure (p_rsolverNode,ierror)
-  if (ierror .ne. LINSOL_ERR_NOERROR) stop
-  call linsol_initData (p_rsolverNode,ierror)
-  if (ierror .ne. LINSOL_ERR_NOERROR) stop
-  
-  ! Finally solve the system. As we want to solve Ax=b with
-  ! b being the real RHS and x being the real solution vector,
-  ! we use linsol_solveAdaptively. If b is a defect
-  ! RHS and x a defect update to be added to a solution vector,
-  ! we would have to use linsol_precondDefect instead.
-  call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
-  
-  
-  
-  ! Calculate defect and solve for solution update NOW
-  
-  
-  
-  
-  !!! Free memory !!!
-
-  ! Release the (solution) vectors on all levels
-  do ilevel = ilvmin, ilvmax
-    call lsysbl_releaseVector(rproblem%RlevelInfo(ilevel)%rvector)
-  end do
-  
-  ! Release RHS vector
-  call lsysbl_releaseVector (rproblem%rrhs)
-  
-  ! Release the solver node and all subnodes attached to it (if at all):
-  call linsol_releaseSolver (p_rsolverNode)
-  
-  ! Deallocate mass matrices
-  do ilevel = ilvmin, ilvmax
-    call lsyssc_releaseMatrix(rmatrixMC(ilevel))
-  end do
-  deallocate(rmatrixMC)
-  
-  
-  end subroutine
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine dgmgs_initMatVec (rproblem)
-  
-!<description>
-  ! Calculates the system matrix and RHS vector of the linear system
-  ! by discretising the problem with the default discretisation structure
-  ! in the problem structure.
-  ! Sets up a solution vector for the linear system.
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout), target :: rproblem
-!</inputoutput>
-
-  ! local variables
-  integer :: i, ielementtype
-  
-    ! A bilinear and linear form describing the analytic problem to solve
-    type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinform, rlinformedge, rlinformconv
-    
-    ! A pointer to the system matrix and the RHS/solution vectors.
-    type(t_matrixBlock), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
-    type(t_vectorScalar) :: rvectorSolTemp
-
-    ! A pointer to the discretisation structure with the data.
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-  
-      
-    do i=rproblem%ilvmin,rproblem%ilvmax,-1
-      ! Ask the problem structure to give us the discretisation structure
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-            
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
-      ! Initialise the block matrix with default values based on
-      ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
-
-      ! Now as the discretisation is set up, we can start to generate
-      ! the structure of the system matrix which is to solve.
-      ! We create that directly in the block (1,1) of the block matrix
-      ! using the discretisation structure of the first block.
-      call bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-                p_rmatrix%RmatrixBlock(1,1),&
-                p_rdiscretisation%RspatialDiscr(1),&
-                BILF_MATC_EDGEBASED)
-                
-       ! Build mass matrix
-       rform%itermCount = 1
-       rform%Idescriptors(1,1) = DER_FUNC
-       rform%Idescriptors(2,1) = DER_FUNC
-       rform%ballCoeffConstant = .true.
-       rform%BconstantCoeff = .true.
-       rform%Dcoefficients(1)  = 1.0
-       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))
-                
-      ! Create temporary empty solution vector which is needed to build the matrices
-      call lsyssc_createVecIndMat (p_rmatrix%RmatrixBlock(1,1),rvectorSolTemp,.true.)
-                
-       
-       ! First calculate the matrix for the cell terms
-       rform%itermCount = 2
-       rform%Idescriptors(1,1) = DER_FUNC
-       rform%Idescriptors(2,1) = DER_DERIV_X
-       rform%Idescriptors(1,2) = DER_FUNC
-       rform%Idescriptors(2,2) = DER_DERIV_Y
-       rform%ballCoeffConstant = .false.
-       rform%BconstantCoeff = .false.
-       !rcollection%p_rvectorQuickAccess1 => rsolBlock
-       
-       ! Type of finite element to use
-       call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
-       
-       if (ielementtype.ne.0) then
-          call bilf_buildMatrixScalar2 (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
-               fcoeff_MatrixScalarMgCell)!,rcollection)!,rscalarAssemblyInfo)
-       else
-          call lsyssc_clearMatrix(p_rmatrix%RmatrixBlock(1,1))
-       end if
-
-       call lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(1,1),-1.0_DP)
-
-
-       ! Next calculate the edge terms
-       rform%itermCount = 2
-       rform%Idescriptors(1,1) = DER_FUNC
-       rform%Idescriptors(2,1) = DER_FUNC
-       rform%Idescriptors(1,2) = DER_FUNC
-       rform%Idescriptors(2,2) = DER_FUNC
-       rform%ballCoeffConstant = .false.
-       rform%BconstantCoeff = .false.
-       !rcollection%p_rvectorQuickAccess1 => rsolBlock
-       !rcollection%Dquickaccess(1) = dt
-       call bilf_dg_buildMatrixScEdge2D_ss (rform, CUB_G5_1D, .false., p_rmatrix%RmatrixBlock(1,1),&
-            rvectorSolTemp, rproblem%RlevelInfo(i)%raddTriaData,&
-            flux_dg_MatrixScalarMgEdge)!,&
-            !rcollection)!, cconstrType)
-       
-       ! Deallocate temporary solution vector
-       call lsyssc_releaseVector (rvectorSolTemp)
-
-    end do
-
-    ! (Only) on the finest level, we need to calculate a RHS vector
-    ! and to allocate a solution vector.
-    
-    p_rrhs    => rproblem%rrhs
-    p_rvector => rproblem%rvector
-
-    ! Although we could manually create the solution/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rvector, .false.)
-
-    ! Clear the solution vector on the finest level.
-    call lsysbl_clearVector(rproblem%rvector)
-
-
-    ! Create RHS-Vector
-
-    ! At first set up the corresponding linear form (f,Phi_j):
+    !!! Build the RHS on the finest level !!!
+    ! Set up the corresponding linear form (f,Phi_j):
     rlinformedge%itermCount = 1
     rlinformedge%Idescriptors(1) = DER_FUNC2D
-    rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%rvector
-    
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
+     
     ! Now use the dg-function for the edge terms
-    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G5_1D, .true.,&
-         p_rrhs%RvectorBlock(1),&
-         p_rvector%RvectorBlock(1),&
-         rproblem%RlevelInfo(rproblem%ilvmax)%raddTriaData,&
-         flux_dg_VectorScalarMgEdge,&
+    call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
+         rproblem%rrhs,rproblem%rvector,&
+         rproblem%RlevelInfo(ilvmax)%raddTriaData,&
+         Euler_flux_dg_buildVectorBlEdge2D_sim_Newton,&
          rproblem%rcollection)
 
-    call lsysbl_scaleVector (p_rrhs,-1.0_DP)
+    call lsysbl_scaleVector (rproblem%rrhs,-1.0_DP)
 
-    ! Type of finite element to use
-    call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
 
-    ! Then add the cell terms
-    if (ielementtype.ne.0) then
-      ! Set up linear form
-       rlinformconv%itermCount = 2
-       rlinformconv%Idescriptors(1) = DER_DERIV_X
-       rlinformconv%Idescriptors(2) = DER_DERIV_Y
+    ! Then add the cell term
+    if(rproblem%ielementType .ne. EL_DG_T0_2D) then
+       ! Set up linear form
+       rlinformcell%itermCount = 2
+       rlinformcell%Idescriptors(1) = DER_DERIV_X
+       rlinformcell%Idescriptors(2) = DER_DERIV_Y
+       rform%ballCoeffConstant = .false.
+       rform%BconstantCoeff = .false.
        rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%rvector
        ! Call the linearformroutine
-       call linf_buildVectorScalar2 (rlinformconv, .false., p_rrhs%RvectorBlock(1),&
-                                     fcoeff_VectorScalarMgEdge, rproblem%rcollection)
+       call linf_buildVectorBlock2 (rlinformcell, .false., rproblem%rrhs,&
+                                    Euler_flux_sys_block,rproblem%rcollection)
     end if
-
-
-    
-  end subroutine
-  
-  
-  
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine dgmgs_solve (rproblem)
-  
-!<description>
-  ! Solves the given problem by applying a linear solver.
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout), target :: rproblem
-!</inputoutput>
-
-  ! local variables
-    integer :: ilvmin,ilvmax
-    integer :: i
-
-    ! Error indicator during initialisation of the solver
-    integer :: ierror
-  
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-
-    ! A pointer to the system matrix and the RHS vector as well as
-    ! the discretisation
-    type(t_matrixBlock), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
-    type(t_vectorBlock), target :: rtempBlock
-    
-    ! Später wieder löschen
-    type(t_vectorBlock) :: rvectorCoarse, rrhsCoarse, rtempCoarse
-    character(LEN=SYS_STRLEN) :: sofile
-    type(t_linearForm) :: rlinformIC
-    type(t_bilinearForm) :: rform
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    integer :: ivar
-    type(t_linsolNode), pointer :: p_rsolverNode1
     
     
 
-    ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
-    type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
+    
+    !!! Now build the nonlinear matrices on all levels !!!
+    do ilevel = ilvmin, ilvmax
+      
+      ! Create structure of the block matrix by copying MC to all blocks if we are at the first time step
+      if (1 == 1) then
+        call lsysbl_createEmptyMatrix (rproblem%RlevelInfo(ilevel)%rmatrix,nvar2d,nvar2d)
+        do i = 1, nvar2d
+           do j = 1, nvar2d
+              call lsyssc_copyMatrix (rmatrixMC(ilevel),rproblem%RlevelInfo(ilevel)%rmatrix%RmatrixBlock(i,j))
+           end do
+        end do
+        call lsysbl_updateMatStrucInfo (rproblem%RlevelInfo(ilevel)%rmatrix)
+      end if
+      
+      ! Clear the matrix
+      call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
+      
+      
+      ! Calculate the matrix for the cell terms
+      ! Set up the bilinear form
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_FUNC
+      rform%Idescriptors(2,2) = DER_DERIV_Y
+      rform%ballCoeffConstant = .false.
+      rform%BconstantCoeff = .false.
+      rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%RlevelInfo(ilevel)%rvector
+      if (rproblem%ielementtype.ne.EL_DG_T0_2D) then
+         call bilf_buildMatrixBlock2 (rform, .true., rproblem%RlevelInfo(ilevel)%rmatrix,&
+                                      fcoeff_buildMatrixBl_sim_iEuler,rproblem%rcollection)
+      else
+         call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
+      end if
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
+      call lsysbl_scaleMatrix (rproblem%RlevelInfo(ilevel)%rmatrix,-1.0_DP)
+
+
+      ! Calculate the matrix for the edge terms
+      ! Set up the bilinear form
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      rform%Idescriptors(1,2) = DER_FUNC
+      rform%Idescriptors(2,2) = DER_FUNC
+      rform%ballCoeffConstant = .false.
+      rform%BconstantCoeff = .false.
+      rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%RlevelInfo(ilevel)%rvector
+      rproblem%rcollection%Dquickaccess(1) = rproblem%dtstep
+      call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false.,&
+                                           rproblem%RlevelInfo(ilevel)%rmatrix,&
+                                           rproblem%RlevelInfo(ilevel)%rvector,&
+                                           rproblem%RlevelInfo(ilevel)%raddTriaData,&
+                                           flux_dg_buildMatrixBlEdge2D_sim_iEuler_Newton_ss,&
+                                           rproblem%rcollection)
+      
+      ! Add the mass matrix on the main diagonal
+      do i = 1, rproblem%nvar2d
+        call lsyssc_matrixLinearComb (rmatrixMC(ilevel),rproblem%RlevelInfo(ilevel)%rmatrix%RmatrixBlock(i,i),&
+                                      1.0_dp/rproblem%dtstep,1.0_dp,&
+                                      .false.,.false.,.true.,.false.)
+      end do
+      
+    end do
     
-    ! One level of multigrid
-    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
-    ilvmin = rproblem%ilvmin
-    ilvmax = rproblem%ilvmax
-    
+    !!! Create (rest of) multigrid solver and solve !!!
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
-    
-    ! Create a temporary vector we need that for some preparation.
-    call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
-
-    ! Now we have to build up the level information for multigrid.
-    !
-    ! Create a Multigrid-solver. Attach the above filter chain
-    ! to the solver, so that the solver automatically filters
-    ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
@@ -1142,9 +760,6 @@ contains
       nullify(p_rpreconditioner)
       nullify(p_rsmoother)
       nullify(p_rcoarseGridSolver)
-      
-      ! Get the level
-      call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
       
       if (i .eq. ilvmin) then
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
@@ -1164,18 +779,19 @@ contains
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-        call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
+        !call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+        !call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
         
         
-!        nullify(p_rpreconditioner)
-!        call linsol_initJacobi (p_rpreconditioner)
-!        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+          nullify(p_rpreconditioner)
+          call linsol_initJacobi (p_rpreconditioner)
+  !        call linsol_initSOR (p_rpreconditioner, 1.2_dp)
+  !        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
         
-!        call linsol_initJacobi (p_rsmoother)
-!        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
-!        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
-!        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+  !        call linsol_initJacobi (p_rsmoother)
+          call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
+  !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
+          call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
         
       end if
     
@@ -1200,7 +816,8 @@ contains
     allocate(Rmatrices(ilvmin:ilvmax))
     do i=ilvmin,ilvmax
       call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
-          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                                   Rmatrices(i),LSYSSC_DUP_SHARE,&
+                                   LSYSSC_DUP_SHARE)
     end do
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
@@ -1220,258 +837,61 @@ contains
     call linsol_initData (p_rsolverNode,ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
+    ! The linear solver stops, when this relative or absolut norm of
+    ! the residual is reached.
+    p_rsolverNode%depsRel = 1.0e-4
+    p_rsolverNode%depsAbs = 1.0e-6
+    
+    ! Set the maximum number of iteratons
+    p_rsolverNode%nmaxIterations = 5000
+    
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rproblem%RlevelInfo(ilvmax)%rvector,p_rrhs,rtempBlock)
     
-    
-    
-    
-   
-!    ! Solve with MILU
-!    
-!          call linsol_doneData (p_rsolverNode)
-!          call linsol_doneStructure (p_rsolverNode)
-!
-!          ! Release the solver node and all subnodes attached to it (if at all):
-!          call linsol_releaseSolver (p_rsolverNode)
-!    
-!    
-!!       nullify(p_rpreconditioner)
-!       call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-!       CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
-!       p_rsolverNode%domega = 1.0
-!       p_rsolverNode%nmaxIterations = 5000
-!       
-!       
-!       allocate(Rmatrices(1))
-!    
-!    i=rproblem%ilvmax
-!    
-!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
-!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!    p_rsolverNode%ioutputLevel = 2
-!       call linsol_setMatrices(p_rsolverNode,Rmatrices)
-!    
-!       call linsol_initStructure (p_rsolverNode,ierror)
-!       if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!       call linsol_initData (p_rsolverNode,ierror)
-!       if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!       
-!       
-!       call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
-    
-    
-    
-    
-    
-
-
-
-
-
-
-
-
-!    ! Test Projection of RHS (are the bounday conditions projected rightly)
-!    
-!
-!      i=rproblem%ilvmax-1
-!      ! Ask the problem structure to give us the discretisation structure
-!      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-!         
-!      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-!
-!       nullify(p_rpreconditioner)
-!       call linsol_initUMFPACK4 (p_rsolverNode1)
-!       
-!       p_rsolverNode1%ioutputLevel = 2
-!       p_rsolverNode1%nmaxIterations = 5000
-!       
-!       allocate(Rmatrices(1))
-!    
-!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
-!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!    
-!       call linsol_setMatrices(p_rsolverNode1,Rmatrices)
-!    
-!    call linsol_initStructure (p_rsolverNode1,ierror)
-!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!    call linsol_initData (p_rsolverNode1,ierror)
-!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!
-!    ! Create temporary empty solution vector which is needed to build the matrices
-!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rvectorCoarse,.true.)
-!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rrhsCoarse,.true.)
-!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rtempCoarse,.true.)
-!    
-!!    call Test_mlprj_performInterpolation (rvectorCoarse, &
-!!                                         p_rvector)
-!
-!!    call mlprj_initProjectionDiscr (rlevelInfo%p_rprojection,rdiscrCoarse)
-!    
-!    call mlprj_performRestriction (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(2)%p_rprojection,rrhsCoarse, &
-!                                       rproblem%rrhs,rtempBlock%rvectorblock(1),1)
-!
-!    call linsol_solveAdaptively (p_rsolverNode1,rvectorCoarse,rrhsCoarse,rtempCoarse)
-!    
-!    sofile = './gmv/testrestr' 
-!    
-!    ! Output solution to vtk file
-!    call dg2vtk(rvectorCoarse%Rvectorblock(1),3,sofile,-1)
-
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-!    ! Test Projections
-!    
-!    call linsol_doneData (p_rsolverNode)
-!          call linsol_doneStructure (p_rsolverNode)
-!
-!          ! Release the solver node and all subnodes attached to it (if at all):
-!          call linsol_releaseSolver (p_rsolverNode)
-!
-!      i=rproblem%ilvmax
-!      ! Ask the problem structure to give us the discretisation structure
-!      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-!         
-!      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-!      
-!      ! Initialise the block matrix with default values based on
-!      ! the discretisation.
-!      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
-!
-!      ! Now as the discretisation is set up, we can start to generate
-!      ! the structure of the system matrix which is to solve.
-!      ! We create that directly in the block (1,1) of the block matrix
-!      ! using the discretisation structure of the first block.
-!      call bilf_createMatrixStructure (&
-!                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-!                p_rmatrix%RmatrixBlock(1,1),&
-!                p_rdiscretisation%RspatialDiscr(1),&
-!                BILF_MATC_EDGEBASED)
-!                
-!       ! Build mass matrix
-!       rform%itermCount = 1
-!       rform%Idescriptors(1,1) = DER_FUNC
-!       rform%Idescriptors(2,1) = DER_FUNC
-!       rform%ballCoeffConstant = .true.
-!       rform%BconstantCoeff = .true.
-!       rform%Dcoefficients(1)  = 1.0
-!       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))
-!    
-!    
-!    
-!    
-!    
-!       ! Now set the initial conditions via L2 projection
-!       rlinformIC%itermCount = 1
-!       rlinformIC%Idescriptors(1) = DER_FUNC2D
-!       !rcollection%SquickAccess(2) = cvariables
-!       !rcollection%SquickAccess(1) = sic
-!
-!     write(*,*) 'Projecting initial condition'
-!
-!       do ivar = 1, 1
-!
-!!          rcollection%IquickAccess(1) = ivar
-!
-!          !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
-!          call linf_buildVectorScalar2 (rlinformIC, .true., p_rrhs%RvectorBlock(ivar),&
-!               Euler_coeff_RHS_IC)!, rcollection)
-!          !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
-!
-!       end do
-!       
-!       
-!       nullify(p_rpreconditioner)
-!       call linsol_initBiCGStab (p_rsolvernode,p_rpreconditioner)
-!       
-!       allocate(Rmatrices(1))
-!    
-!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
-!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!    
-!       call linsol_setMatrices(p_rsolverNode,Rmatrices)
-!    
-!    call linsol_initStructure (p_rsolverNode,ierror)
-!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!    call linsol_initData (p_rsolverNode,ierror)
-!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-!       
-!       
-!       call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
-!       !call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)  
-!    
-!    
-!    
-!    
-!    
-!    
-!    
-!    
-!    
-!    ! Create temporary empty solution vector which is needed to build the matrices
-!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(ilvmax-1)%rmatrix,rvectorCoarse,.true.)
-!    
-!!    call Test_mlprj_performInterpolation (rvectorCoarse, &
-!!                                         p_rvector)
-!    
-!    sofile = './gmv/fine' 
-!    
-!    ! Output solution to vtk file
-!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
-!    
-!    
-!    call Test_mlprj_performRestriction (rvectorCoarse, &
-!                                         p_rvector)
-!    
-!    sofile = './gmv/coarse' 
-!    
-!    ! Output solution to vtk file
-!    call dg2vtk(rvectorCoarse%Rvectorblock(1),3,sofile,-1)
-!    
-!    
-!!    
-!!    call Test_mlprj_performProlongation (rvectorCoarse, &
-!!                                        p_rvector)
-!!                                        
-!!    sofile = './gmv/againfine' 
-!!    
-!!    ! Output solution to vtk file
-!!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
-!    
-!    
-!    pause
-    
-    
-    
+    ! Add solution update
+    call lsysbl_vectorLinearComb (rproblem%RlevelInfo(ilvmax)%rvector,p_rvector,1.0_dp,1.0_dp)
     
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)
     
-    ! Release the solver node and all subnodes attached to it (if at all):
-    call linsol_releaseSolver (p_rsolverNode)
+    ! Add timestep and test if final time is reached
+    rproblem%dtcurrent = rproblem%dtcurrent + rproblem%dtstep
+    if (rproblem%dtcurrent.ge.(rproblem%dtfinal-0.5_dp*rproblem%dtstep)) exit mgsys_timestepping
     
-    ! Release the temporary vector
-    call lsysbl_releaseVector (rtempBlock)
+  end do mgsys_timestepping
+   
+  
+  
+  
+  
+  !!! Free memory !!!
 
+  ! Release the (solution) vectors on all levels
+  do ilevel = ilvmin, ilvmax
+    call lsysbl_releaseVector(rproblem%RlevelInfo(ilevel)%rvector)
+  end do
+  
+  ! Release temp vector
+  call lsysbl_releaseVector (rtempBlock)
+  
+  ! Release RHS vector
+  call lsysbl_releaseVector (rproblem%rrhs)
+  
+  ! Release the solver node and all subnodes attached to it (if at all):
+  call linsol_releaseSolver (p_rsolverNode)
+  
+  ! Deallocate mass matrices
+  do ilevel = ilvmin, ilvmax
+    call lsyssc_releaseMatrix(rmatrixMC(ilevel))
+  end do
+  deallocate(rmatrixMC)
+  
+  
   end subroutine
   
   
