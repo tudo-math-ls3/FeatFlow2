@@ -3438,7 +3438,7 @@ contains
             call transp_calcBilfBdrCond1D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, fcb_coeffMatBdrPrimal1d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3452,7 +3452,7 @@ contains
             call transp_calcBilfBdrCond2D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, fcb_coeffMatBdrPrimal2d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3466,7 +3466,7 @@ contains
 !!$            call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$                rboundaryContidion, rsolution, ssectionName,&
 !!$                dtime, dscale, fcb_coeffMatBdrPrimal3d_sim,&
-!!$                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3490,7 +3490,7 @@ contains
             call transp_calcBilfBdrCond1D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_coeffMatBdrConvP1d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           end if
 
         case (NDIM2D)
@@ -3505,7 +3505,7 @@ contains
             call transp_calcBilfBdrCond2D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_coeffMatBdrConvP2d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           end if
           
         case (NDIM3D)
@@ -3520,7 +3520,7 @@ contains
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffMatBdrConvP3d_sim,&
-!!$              bclear, rmatrix, , rcollection, BILF_MATC_LUMPED)
+!!$              bclear, rmatrix, , rcollection)
           end if
         end select
 
@@ -3531,7 +3531,7 @@ contains
         call transp_calcBilfBdrCond2D(rproblemLevel,&
             rboundaryCondition, rsolution, ssectionName,&
             dtime, dscale, transp_coeffMatBdrSTBurgP2d_sim,&
-            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3540,7 +3540,7 @@ contains
         call transp_calcBilfBdrCond2D(rproblemLevel,&
             rboundaryCondition, rsolution, ssectionName,&
             dtime, dscale, transp_coeffMatBdrSTBLevP2d_sim,&
-            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3549,7 +3549,7 @@ contains
         call transp_calcBilfBdrCond1D(rproblemLevel,&
             rboundaryCondition, rsolution, ssectionName,&
             dtime, dscale, transp_coeffMatBdrBurgP1d_sim,&
-            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3558,7 +3558,7 @@ contains
         call transp_calcBilfBdrCond2D(rproblemLevel,&
             rboundaryCondition, rsolution, ssectionName,&
             dtime, dscale, transp_coeffMatBdrBurgP2d_sim,&
-            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3567,7 +3567,7 @@ contains
         call transp_calcBilfBdrCond1D(rproblemLevel,&
             rboundaryCondition, rsolution, ssectionName,&
             dtime, dscale, transp_coeffMatBdrBLevP1d_sim,&
-            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+            bclear, rmatrix, rcollection)
 
       end select
 
@@ -3591,7 +3591,7 @@ contains
             call transp_calcBilfBdrCond1D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, fcb_coeffMatBdrDual1d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3605,7 +3605,7 @@ contains
             call transp_calcBilfBdrCond2D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, fcb_coeffMatBdrDual2d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3619,7 +3619,7 @@ contains
 !!$            call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$                rboundaryCondition, rsolution, ssectionName,&
 !!$                dtime, dscale, fcb_coeffMatBdrDual3d_sim,&
-!!$                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$                bclear, rmatrix, rcollection)
           else ! callback function not present
             call output_line('Missing user-defined callback function!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCondition')
@@ -3643,7 +3643,7 @@ contains
             call transp_calcBilfBdrCond1D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_coeffMatBdrConvD1d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           end if
 
         case (NDIM2D)
@@ -3658,7 +3658,7 @@ contains
             call transp_calcBilfBdrCond2D(rproblemLevel,&
                 rboundaryCondition, rsolution, ssectionName,&
                 dtime, dscale, transp_coeffMatBdrConvD2d_sim,&
-                bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+                bclear, rmatrix, rcollection)
           end if
 
         case (NDIM3D)
@@ -3673,7 +3673,7 @@ contains
 !!$          call transp_calcBilfBdrCond3D(rproblemLevel,&
 !!$              rboundaryCondition, rsolution, ssectionName,&
 !!$              dtime, dscale, transp_coeffMatBdrConvD3d_sim,&
-!!$              bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$              bclear, rmatrix, rcollection)
           end if
         end select
 
@@ -3684,7 +3684,7 @@ contains
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel,&
 !!$            rboundaryCondition, rsolution, ssectionName,&
 !!$            dtime, dscale, transp_coeffMatBdrSTBurgersD2d_sim,&
-!!$            bclear, rmatrix, , rcollection, BILF_MATC_LUMPED)
+!!$            bclear, rmatrix, , rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3693,7 +3693,7 @@ contains
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel,&
 !!$            rboundaryCondition, rsolution, ssectionName,&
 !!$            dtime, dscale, transp_coeffMatBdrSTBLevD2d_sim,&
-!!$            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3702,7 +3702,7 @@ contains
 !!$        call transp_calcBilfBdrCond1D(rproblemLevel,&
 !!$            rboundaryCondition, rsolution, ssectionName,&
 !!$            dtime, dscale, transp_coeffMatBdrBurgersD1d_sim,&
-!!$            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3711,7 +3711,7 @@ contains
 !!$        call transp_calcBilfBdrCond2D(rproblemLevel,&
 !!$            rboundaryCondition, rsolution, ssectionName,&
 !!$            dtime, dscale, transp_coeffMatBdrBurgersD2d_sim,&
-!!$            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$            bclear, rmatrix, rcollection)
 
         !-----------------------------------------------------------------------
 
@@ -3720,7 +3720,7 @@ contains
 !!$        call transp_calcBilfBdrCond1D(rproblemLevel,&
 !!$            rboundaryCondition, rsolution, ssectionName,&
 !!$            dtime, dscale, transp_coeffMatBdrBLevD1d_sim,&
-!!$            bclear, rmatrix, rcollection, BILF_MATC_LUMPED)
+!!$            bclear, rmatrix, rcollection)
 
       end select
 
@@ -4252,10 +4252,15 @@ contains
           ! linear form and the bilinear form has no boundary term
           
         case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
-              BDRC_FLUX, BDRC_DIRICHLET,&
-              BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+              BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
           
-          ! Assemble the discrete operator
+          ! Assemble the discrete operator consistently
+          call gfsc_buildOperatorNode(rgroupFEMBlock%RgroupFEMBlock(isegment),&
+              rsolution, fcb_calcMatBdr_sim, dscale, .false., rmatrix,&
+              cconstrType=GFEM_MATC_CONSISTENT, rcollection=rcollectionTmp)
+          
+        case (BDRC_DIRICHLET)
+          ! Assemble the discrete operator with lumping
           call gfsc_buildOperatorNode(rgroupFEMBlock%RgroupFEMBlock(isegment),&
               rsolution, fcb_calcMatBdr_sim, dscale, .false., rmatrix,&
               cconstrType=GFEM_MATC_LUMPED, rcollection=rcollectionTmp)
@@ -5076,7 +5081,7 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF`s on all elements test in the test space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5176,7 +5181,7 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5302,7 +5307,7 @@ contains
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5398,7 +5403,7 @@ contains
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5544,7 +5549,7 @@ contains
     case (BDRC_HOMNEUMANN)
       nexpressions = 0
       
-    case (BDRC_INHOMNEUMANN, BDRC_DIRICHLET, BDRC_ROBIN, BDRC_FLUX)
+    case (BDRC_INHOMNEUMANN, BDRC_FLUX, BDRC_ROBIN, BDRC_DIRICHLET)
       nexpressions = 1
 
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)

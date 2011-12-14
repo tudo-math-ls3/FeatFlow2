@@ -207,9 +207,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond1d(rproblemLevel, rboundaryCondition,&
-      rsolution, ssectionName, dtime, dscale, fcoeff_buildMatrixScBdr1D_sim,&
-      bclear, rmatrix, rcollection, cconstrType)
+  subroutine transp_calcBilfBdrCond1d(rproblemLevel,&
+      rboundaryCondition, rsolution, ssectionName, dtime, dscale,&
+      fcoeff_buildMatrixScBdr1D_sim, bclear, rmatrix, rcollection)
     
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -248,11 +248,6 @@ contains
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
-
-    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
-    ! specify the matrix construction method. If not specified,
-    ! BILF_MATC_ELEMENTBASED is used.
-    integer, intent(in), optional :: cconstrType
 !</intput>
 
 !<inputoutput>
@@ -354,7 +349,7 @@ contains
         
         ! Assemble the bilinear form
         call bilf_buildMatrixScalarBdr1D(rform, .false., rmatrix,&
-            fcoeff_buildMatrixScBdr1D_sim, ibdc, rcollectionTmp, cconstrType)
+            fcoeff_buildMatrixScBdr1D_sim, ibdc, rcollectionTmp, BILF_MATC_LUMPED)
           
       case default
         call output_line('Unsupported type of boundary conditions!',&
@@ -852,7 +847,7 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -895,7 +890,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dnv,dtime,dscale,dval
+    real(DP) :: dnormal,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -1058,10 +1053,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity and impose Dirichlet boundary condition
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           end do
         end do
@@ -1125,10 +1120,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
@@ -1184,10 +1179,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the primal inflow boundary
             if (dnv .lt. 0.0_DP) then
@@ -1290,7 +1285,7 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -1333,7 +1328,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dnv,dtime,dscale,dval
+    real(DP) :: dnormal,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -1496,10 +1491,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity and impose Dirichlet boundary condition
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             Dcoefficients(1,ipoint,iel) = dscale*dnv*Daux(ipoint,iel,2)
           end do
         end do
@@ -1563,10 +1558,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
@@ -1622,10 +1617,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the dual inflow boundary
             if (dnv .gt. 0.0_DP) then
@@ -1730,11 +1725,11 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -1768,7 +1763,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dnv,dtime,dscale
+    real(DP) :: dnormal,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -1818,10 +1813,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = -dscale*dnv
@@ -1886,10 +1881,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the primal outflow boundary
             if (dnv .gt. 0.0_DP) then
@@ -1973,11 +1968,11 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -2011,7 +2006,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dnv,dtime,dscale
+    real(DP) :: dnormal,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -2061,10 +2056,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0_DP, -1.0_DP, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
 
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = dscale*dnv
@@ -2128,10 +2123,10 @@ contains
           do ipoint = 1, npointsPerElement
             
             ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
             
             ! Compute the normal velocity
-            dnv = dnx*Daux(ipoint,iel,1)
+            dnv = dnormal*Daux(ipoint,iel,1)
             
             ! Check if we are at the dual outflow boundary
             if (dnv .lt. 0.0_DP) then
@@ -3678,7 +3673,7 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -3720,7 +3715,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dnv,dtime,dscale,dval
+    real(DP) :: dnormal,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -3874,10 +3869,10 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx*0.5_DP*Daux(ipoint,iel,1)
+          dnv = dnormal*0.5_DP*Daux(ipoint,iel,1)
           Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
       end do
@@ -3932,10 +3927,10 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
 
           ! Compute the normal velocity
-          dnv = dnx*0.5_DP*Daux(ipoint,iel,1)
+          dnv = dnormal*0.5_DP*Daux(ipoint,iel,1)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
@@ -3982,14 +3977,14 @@ contains
         do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx*0.5_DP*(Daux(ipoint,iel,1)+Daux(ipoint,iel,2))
+          dnv = dnormal*0.5_DP*(Daux(ipoint,iel,1)+Daux(ipoint,iel,2))
           
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
-            Dcoefficients(1,ipoint,iel) = -dscale*dnx*0.5_DP*Daux(ipoint,iel,2)**2
+            Dcoefficients(1,ipoint,iel) = -dscale*dnormal*0.5_DP*Daux(ipoint,iel,2)**2
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
           end if
@@ -4084,11 +4079,11 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -4121,7 +4116,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dnv,dtime,dscale
+    real(DP) :: dnormal,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -4168,10 +4163,10 @@ contains
         do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx*0.5_DP*Daux(ipoint,iel,1)
+          dnv = dnormal*0.5_DP*Daux(ipoint,iel,1)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale*dnv
@@ -4227,10 +4222,10 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-            dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+            dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx*0.5_DP*Daux(ipoint,iel,1)
+          dnv = dnormal*0.5_DP*Daux(ipoint,iel,1)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -4543,7 +4538,7 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -4585,7 +4580,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnx,dnv,dtime,dscale,dval
+    real(DP) :: dnormal,dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -4743,10 +4738,10 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = dnx*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+          dnv = dnormal*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
                       + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
           Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
@@ -4804,16 +4799,16 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
 
           ! Compute the normal velocity
-          dnv = dnx*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+          dnv = dnormal*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
                       + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = dnx*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
+            dnv = dnormal*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
                         + 0.5_DP*(1-Daux(ipoint,iel,2))**2)
             Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
@@ -4860,16 +4855,16 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
 
           ! Compute the normal velocity
-          dnv = dnx*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+          dnv = dnormal*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
                       + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = dnx*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
+            dnv = dnormal*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2&
                         + 0.5_DP*(1-Daux(ipoint,iel,2))**2)
             Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
@@ -4966,11 +4961,11 @@ contains
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5003,7 +4998,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dnx,dnv,dtime,dscale
+    real(DP) :: dnormal,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
 #ifndef TRANSP_USE_IBP
@@ -5050,10 +5045,10 @@ contains
         do ipoint = 1, npointsPerElement
           
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+          dnv = dnormal*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
                       + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
           
           ! Scale normal velocity by scaling parameter
@@ -5110,10 +5105,10 @@ contains
         do ipoint = 1, npointsPerElement
 
           ! Get the normal vector in the point from the boundary
-          dnx = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
+          dnormal = merge(1.0, -1.0, mod(ibct,2) .eq. 0)
           
           ! Compute the normal velocity
-          dnv = dnx*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
+          dnv = dnormal*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
                       + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
 
           ! Check if we are at the primal outflow boundary

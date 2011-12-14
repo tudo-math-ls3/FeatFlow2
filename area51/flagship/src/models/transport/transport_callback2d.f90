@@ -182,6 +182,7 @@ module transport_callback2d
   use collection
   use cubature
   use derivatives
+  use dofpreprocessing
   use domainintegration
   use element
   use feevaluation
@@ -337,7 +338,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
     integer :: iel,ipoint,icompFunc,icompVelX,icompVelY
@@ -368,11 +369,11 @@ contains
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
-    allocate(Dnx(size(DpointPar,1),size(DpointPar,2)))
-    allocate(Dny(size(DpointPar,1),size(DpointPar,2)))
+    allocate(DnormalX(size(DpointPar,1),size(DpointPar,2)))
+    allocate(DnormalY(size(DpointPar,1),size(DpointPar,2)))
 
     ! Get the normal vectors in the cubature points on the boundary
-    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
     
     ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
@@ -395,13 +396,13 @@ contains
         !
         ! in each cubature point on each elements
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,1) *&
-                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,2) +&
-                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,3))
+                              (DnormalX(ipoint,iel)*Dcoefficients(ipoint,iel,2) +&
+                               DnormalY(ipoint,iel)*Dcoefficients(ipoint,iel,3))
       end do
     end do
 
     ! Free temporal memory
-    deallocate(Dcoefficients, Dnx, Dny)
+    deallocate(Dcoefficients, DnormalX, DnormalY)
 
   end subroutine transp_refFuncBdrInt2d_sim
 
@@ -495,7 +496,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
     integer :: iel,ipoint,icompFunc,icompVelX,icompVelY
@@ -520,8 +521,8 @@ contains
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
-    allocate(Dnx(size(DpointPar,1),size(DpointPar,2)))
-    allocate(Dny(size(DpointPar,1),size(DpointPar,2)))
+    allocate(DnormalX(size(DpointPar,1),size(DpointPar,2)))
+    allocate(DnormalY(size(DpointPar,1),size(DpointPar,2)))
 
     ! Evaluate the velocity field in the cubature points on the boundary
     ! and store the result in Dcoefficients(:,:,1:2)
@@ -547,7 +548,7 @@ contains
     Dvalue(NDIM3D+1) = dtime
 
     ! Get the normal vectors in the cubature points on the boundary
-    call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+    call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 
     ! Evaluate the reference function and the exact velocities
     do iel = 1, size(Ielements)
@@ -570,16 +571,16 @@ contains
         !
         ! in each cubature point on each elements
         Dvalues(ipoint,iel) = Dcoefficients(ipoint,iel,3) *&
-                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,4) +&
-                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,5))-&
+                              (DnormalX(ipoint,iel)*Dcoefficients(ipoint,iel,4) +&
+                               DnormalY(ipoint,iel)*Dcoefficients(ipoint,iel,5))-&
                               Dvalues(ipoint,iel) *&
-                              (Dnx(ipoint,iel)*Dcoefficients(ipoint,iel,1) +&
-                               Dny(ipoint,iel)*Dcoefficients(ipoint,iel,2))
+                              (DnormalX(ipoint,iel)*Dcoefficients(ipoint,iel,1) +&
+                               DnormalY(ipoint,iel)*Dcoefficients(ipoint,iel,2))
       end do
     end do
 
     ! Free temporal memory
-    deallocate(Dcoefficients, Dnx, Dny)
+    deallocate(Dcoefficients, DnormalX, DnormalY)
 
   end subroutine transp_errorBdrInt2d_sim
 
@@ -698,9 +699,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcBilfBdrCond2d(rproblemLevel, rboundaryCondition,&
-      rsolution, ssectionName, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
-      bclear, rmatrix, rcollection, cconstrType)
+  subroutine transp_calcBilfBdrCond2d(rproblemLevel,&
+      rboundaryCondition, rsolution, ssectionName, dtime, dscale,&
+      fcoeff_buildMatrixScBdr2D_sim, bclear, rmatrix, rcollection)
 
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -739,11 +740,6 @@ contains
 
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
-
-    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
-    ! specify the matrix construction method. If not specified,
-    ! BILF_MATC_ELEMENTBASED is used.
-    integer, intent(in), optional :: cconstrType
 !</intput>
 
 !<inputoutput>
@@ -757,12 +753,16 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
+    character(LEN=SYS_STRLEN) :: sdiffusionName
+    real(DP), dimension(NDIM2D,NDIM2D) :: DdiffusionTensor
+    real(DP), dimension(1) :: Dunity = (/1.0_DP/)
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer :: ibdc, isegment, ccubTypeBdr
-    integer :: ivelocitytype, velocityfield
+    integer :: ivelocitytype, velocityfield, idiffusiontype
 
     ! Evaluate bilinear form for boundary integral and
     ! return if there are no weak boundary conditions
@@ -785,7 +785,6 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(3) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -800,6 +799,7 @@ contains
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         rboundaryCondition%rfparser, .true.)
     
+
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
@@ -812,6 +812,48 @@ contains
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
 
+
+    ! Attach type of diffusion operator (if any) to temporal
+    ! collection structure (only required for Dirichlet boundary
+    ! conditions). Therefore, here we do some initialisation
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'idiffusiontype', idiffusiontype)
+
+    ! Get function parser from collection
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        'rfparser', ssectionName=ssectionName)
+    
+    ! What type of diffusion are we?
+    select case(idiffusiontype)
+    case default
+      DdiffusionTensor = 0.0_DP
+      
+    case(DIFFUSION_ISOTROPIC)
+      DdiffusionTensor = 0.0_DP
+
+      ! Initialise isotropic diffusion tensor D=(/d,0;0,d/)
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,1))
+      DdiffusionTensor(2,2) = DdiffusionTensor(1,1)
+
+    case(DIFFUSION_ANISOTROPIC)
+      ! Initialise anisotropic diffusion tensor D=(/d11,d12;d21,d22/)
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,1))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=2)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,2))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=3)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(2,1))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=4)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(2,2))     
+    end select
+    
+    
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rmatrix)
 
@@ -837,14 +879,45 @@ contains
         
         ! What type of boundary conditions are we?
         select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
+
+        case (BDRC_DIRICHLET)
+
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%IquickAccess(3) = idiffusiontype
+          rcollectionTmp%DquickAccess(3) = DdiffusionTensor(1,1)
+          rcollectionTmp%DquickAccess(4) = DdiffusionTensor(1,2)
+          rcollectionTmp%DquickAccess(5) = DdiffusionTensor(2,1)
+          rcollectionTmp%DquickAccess(6) = DdiffusionTensor(2,2)
           
-        case (BDRC_ROBIN)
-          ! Do nothing since boundary conditions are build into the
-          ! linear form and the bilinear form has no boundary term
+          ! Initialise the bilinear form
+          rform%itermCount = 5
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+          rform%Idescriptors(1,2) = DER_DERIV2D_X
+          rform%Idescriptors(2,2) = DER_FUNC
+          rform%Idescriptors(1,3) = DER_DERIV2D_Y
+          rform%Idescriptors(2,3) = DER_FUNC
+          rform%Idescriptors(1,4) = DER_FUNC
+          rform%Idescriptors(2,4) = DER_DERIV2D_X
+          rform%Idescriptors(1,5) = DER_FUNC
+          rform%Idescriptors(2,5) = DER_DERIV2D_Y
           
-        case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
-              BDRC_FLUX, BDRC_DIRICHLET,&
-              BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+          ! We have no constant coefficients
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff    = .false.
+          
+          ! Create boundary region
+          call bdrc_createRegion(rboundaryCondition,&
+              ibdc, isegment-p_IbdrCondCpIdx(ibdc)+1,&
+              rboundaryRegion)
+          
+          ! Assemble the bilinear form
+          call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
+              .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
+
+        case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN,&
+              BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
 
           ! Remark: For periodic and antiperiodic boundary conditions
           ! only the convective flux at the outflow boundary is built
@@ -868,7 +941,7 @@ contains
           ! Assemble the bilinear form
           call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
               .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-              rboundaryRegion, rcollectionTmp, cconstrType)
+              rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
           
         case default
           call output_line('Unsupported type of boundary conditions!',&
@@ -944,13 +1017,17 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
     type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
     type(t_linearForm) :: rform
+    character(LEN=SYS_STRLEN) :: sdiffusionName
+    real(DP), dimension(NDIM2D,NDIM2D) :: DdiffusionTensor
+    real(DP), dimension(1) :: Dunity = (/1.0_DP/)
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
     integer :: ibdc, isegment, ccubTypeBdr
-    integer :: ivelocitytype, velocityfield
+    integer :: ivelocitytype, velocityfield, idiffusiontype
     
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
@@ -973,7 +1050,6 @@ contains
     rcollectionTmp%SquickAccess(2) = 'rfparser'
     rcollectionTmp%DquickAccess(1) = dtime
     rcollectionTmp%DquickAccess(2) = dscale
-    rcollectionTmp%IquickAccess(3) = ccubTypeBdr
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -988,6 +1064,7 @@ contains
     call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
         rboundaryCondition%rfparser, .true.)
     
+
     ! Attach velocity vector (if any) to second quick access vector of
     ! the temporal collection structure
     call parlst_getvalue_int(p_rparlist,&
@@ -1000,6 +1077,48 @@ contains
     else
       nullify(rcollectionTmp%p_rvectorQuickAccess2)
     end if
+
+    
+    ! Attach type of diffusion operator (if any) to temporal
+    ! collection structure (only required for Dirichlet boundary
+    ! conditions). Therefore, here we do some initialisation
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'idiffusiontype', idiffusiontype)
+
+    ! Get function parser from collection
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        'rfparser', ssectionName=ssectionName)
+    
+    ! What type of diffusion are we?
+    select case(idiffusiontype)
+    case default
+      DdiffusionTensor = 0.0_DP
+      
+    case(DIFFUSION_ISOTROPIC)
+      DdiffusionTensor = 0.0_DP
+
+      ! Initialise isotropic diffusion tensor D=(/d,0;0,d/)
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,1))
+      DdiffusionTensor(2,2) = DdiffusionTensor(1,1)
+
+    case(DIFFUSION_ANISOTROPIC)
+      ! Initialise anisotropic diffusion tensor D=(/d11,d12;d21,d22/)
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,1))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=2)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(1,2))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=3)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(2,1))
+      call parlst_getvalue_string(p_rparlist,&
+          ssectionName, 'sdiffusionname', sdiffusionName, isubString=4)
+      call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, DdiffusionTensor(2,2))     
+    end select
+
     
     ! Clear vector?
     if (bclear) call lsysbl_clearVector(rvector)
@@ -1039,9 +1158,32 @@ contains
           ! Do nothing for homogeneous Neumann boundary conditions
           ! since the boundary integral vanishes by construction
           
+        case (BDRC_DIRICHLET)
+          
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%IquickAccess(3) = idiffusiontype
+          rcollectionTmp%DquickAccess(3) = DdiffusionTensor(1,1)
+          rcollectionTmp%DquickAccess(4) = DdiffusionTensor(1,2)
+          rcollectionTmp%DquickAccess(5) = DdiffusionTensor(2,1)
+          rcollectionTmp%DquickAccess(6) = DdiffusionTensor(2,2)
+          
+          ! Initialise the linear form
+          rform%itermCount = 3
+          rform%Idescriptors(1) = DER_FUNC
+          rform%Idescriptors(2) = DER_DERIV2D_X
+          rform%Idescriptors(3) = DER_DERIV2D_Y
+
+          ! Create boundary segment
+          call bdrc_createRegion(rboundaryCondition, ibdc,&
+              isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
+          
+          ! Assemble the linear form
+          call linf_buildVectorScalarBdr2d(rform, ccubTypeBdr,&
+              .false., rvector%RvectorBlock(1), fcoeff_buildVectorScBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+
         case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
-              BDRC_FLUX, BDRC_DIRICHLET,&
-              BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+              BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
 
           ! Initialise the linear form
           rform%itermCount = 1
@@ -1727,7 +1869,7 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -1747,9 +1889,12 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     cubature rule
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for Dirichlet boundary conditions
+    !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
+    !   IquickAccess(3):     type of diffusion operator
     !
     ! only for periodic boundary conditions
     !   DquickAccess(3):     minimim parameter of the boundary component
@@ -1771,18 +1916,23 @@ do iedge = 1, nedges
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    type(t_vectorBlock), pointer :: p_rsolution,p_rvelocity
-    type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
-    real(DP), dimension(:), pointer :: p_Ddata, p_DvelocityX, p_DvelocityY
-    real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
-    real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny,DpointParMirror
-    real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:,:), pointer :: Dcoords
+    type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
+    real(DP), dimension(:,:,:), allocatable :: Daux  
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dlocalData,dnv,dscale,dtime,dval
-    real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff
+    integer :: ibdrtype,iel,ipoint,isegment
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+    type(t_dofSubset) :: rdofSubset
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:,:,:), pointer :: p_DdofCoords
+    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    integer, dimension(:,:), pointer :: p_IdofsLoc
+    logical, dimension(EL_MAXNDER) :: Bder
+    integer :: idofe,idofGlob
+#endif
+
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -1802,67 +1952,18 @@ do iedge = 1, nedges
     ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Set pointers
-    call lsysbl_getbase_double(p_rsolution, p_Ddata)
-    if (associated(p_rvelocity)) then
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
-    end if
-#endif
-
+    
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
     dtime  = rcollection%DquickAccess(1)
     dscale = rcollection%DquickAccess(2)
 
-    ! The first three quick access integer values hold the type of
-    ! boundary condition, the segment number and the cubature rule
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Evaluate one-dimensional basis functions on the boundary edge
-    if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
-      call output_line('Type of cubature rule at boundary mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
-      call sys_halt()
-    else
-      ! How many DOFs are located at the boundary? This should be made
-      ! more flexible by checking the type of element. For the time
-      ! being, only linear and bilinear finite elements are supported
-      npoints = 2
-      
-      ! How many vertices per element do we have?
-      nve = elem_igetNVE(rdomainIntSubset%celement)
-      
-      ! Allocate temporal memory for one-dimensional
-      ! cubature along the boundary edge
-      allocate(Dbas(npoints,npointsPerElement))
-      allocate(Domega(npointsPerElement))
-      allocate(DcubPtsRef(1,npointsPerElement))
-
-      ! Get the coordinates of the cubature points and the
-      ! corresponding weights for the given cubature rule
-      call cub_getCubature(ccubType, DcubPtsRef, Domega)
-      
-      ! Evaluate the one-dimensional basis functions
-      ! in the cubature points on the boundary
-      do icubp = 1, npointsPerElement
-        Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
-        Dbas(2,icubp) = 0.5_DP*(1.0_DP+DcubPtsRef(1,icubp))
-      end do
-
-      ! Deallocate temporal memory which is no longer required
-      deallocate(DcubPtsRef,Domega)
-    end if
-#else
-    ! Boundary values are evaluated directly at the cubature points
-    npoints = npointsPerElement
-#endif
-
+    
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
 
@@ -1870,38 +1971,116 @@ do iedge = 1, nedges
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
       !
-      ! The diffusive part in the linear form vanishes since
+      ! The linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
-      !
-      ! The convective part is included into the bilinear form.
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
       ! expensive assembly of a "zero" boundary integral.
       Dcoefficients = 0.0_DP
-
+      
       call output_line('Redundant assembly of vanishing boundary term!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
+      
 
-
-    case (BDRC_INHOMNEUMANN)
+    case (BDRC_INHOMNEUMANN, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! Inhomogeneous Neumann boundary conditions:
+      ! Inhomogeneous Neumann or Robin boundary conditions:
       !
-      ! Evaluate coefficient for the diffusive part of the linear form
+      ! Assemble the boundary integral term
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ \int_{Gamma_N} wg_N ds $$
+      ! 
+      ! for the Neumann boundary condition
       !
-      ! The convective part is included into the bilinear form (if any).
+      ! $$ D\nabla u\cdot{\bf n}=g_N $$
+      !
+      ! or
+      !
+      ! $$ \int_{Gamma_R} wg_R ds $$
+      !
+      ! for the Robin boundary condition
+      !
+      ! $$ \alpha u + (D\nabla u)\cdot {\bf n})=g_R $$
 
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
-      ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(1,:,:).
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
+      
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(1,npointsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+
+      ! Assemble the boundary integral for Neumann/Robin boundary conditions
+      do iel = 1, nelements
+        do idofe = 1, rdofSubset%ndofsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,idofe,iel)
+          
+          ! Evaluate the function parser for the Neumann/Robin values in the
+          ! degrees of freedom on the boundary and store the result in dcoeff
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+
+          ! Multiply by scaling coefficient
+          Daux(1,idofe,iel) = dscale*dcoeff
+        end do
+      end do
+      
+      ! Allocate temporal memory for local data
+      allocate(DlocalData(1))
+      
+      ! Loop over the cubature points and interpolate the flux
+      ! boundary conditions from the DOFs to the cubature points,
+      ! where they are needed by the linear form assembly routine
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Clear local data
+          DlocalData = 0.0_DP
+          
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
+          
+          ! Store boundary condition in the cubature points
+          Dcoefficients(1,ipoint,iel) = DlocalData(1)
+        end do
+      end do
+
+      ! Free temporal memory
+      deallocate(DbasTrial, Daux, DlocalData)
+      
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
+
+#else
+
+      ! Evaluate the function parser for the Neumann/Robin boundary
+      ! values in the cubature points on the boundary and store the
+      ! result in Dcoefficients(1,:,:).
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -1917,363 +2096,447 @@ do iedge = 1, nedges
         end do
       end do
 
+#endif
+
       
     case (BDRC_DIRICHLET)
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
       !
-      ! Evaluate coefficient for the convective part of the linear form
+      ! Assemble the boundary integral term
       !
-      ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! $$  \int_{\Gamma_D} \epsilon wg_D ds                          $$ (1)
+      ! $$ -\int_{\Gamma_D} (\gamma D\nabla w)\cdot{\bf n} g_D ds     $$ (2)
+      ! $$ -\int_{\Gamma_D\cap\Gamma_-} ({\bf v}w)\cdot{\bf n} g_D ds $$ (3)
       !
-      ! The diffusive part is included into the bilinear form.
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Allocate temporal memory
-      allocate(Dcoords(NDIM2D,npoints,1), DcoeffAtDOF(npoints))
-#endif
+      ! with parameter $\epsilon=C|D|/h$ and $\gamma \in \{-1,1\}$
+      ! and primal inflow boundary part
+      !
+      ! $$\Gamma_- := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} < 0\} $$
 
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-
-      ! Loop over all elements
-      do iel = 1, nelements
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Get global DOF of first endpoints
-        ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-        ivt    = IdofsTest(ipoint,iel)
-
-        ! Store vertex coordinate
-        Dcoords(1:NDIM2D,1,1) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        
-        ! Get global DOF of second endpoints
-        ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-        ivt    = IdofsTest(ipoint,iel)
-        
-        ! Store vertex coordinate
-        Dcoords(1:NDIM2D,2,1) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-#endif
-
-        ! Loop over all points
-        do ipoint = 1, npoints
-
-          ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,1)
-#else
-          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-
-          ! Evaluate function parser for Dirichlet value
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Impose Dirichlet value via penalty method
-          DcoeffAtDOF(ipoint) = dscale*dval*BDRC_DIRICHLET_PENALTY
-#else
-          ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale*dval*BDRC_DIRICHLET_PENALTY
-#endif
-        end do ! ipoint
-        
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Loop over the cubature points and interpolate the Robin
-        ! boundary conditions from the DOFs to the cubature points,
-        ! where they are needed by the linear form assembly routine
-        do icubp = 1, npointsPerElement
-          
-          dlocalData = 0.0_DP
-          
-          ! Loop over the DOFs and interpolate the Robin boundary conditions
-          do ipoint = 1, npoints
-            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-          end do
-          
-          ! Store Robin boundary condition in the cubature points
-          Dcoefficients(1,icubp,iel) = dlocalData
-        end do ! icubp
-#endif
-      end do ! iel
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Deallocate temporal memory
-      deallocate(Dcoords, DcoeffAtDOF)
-#endif
-
-
-    case (BDRC_ROBIN)
-      !-------------------------------------------------------------------------
-      ! Robin boundary conditions:
-      !
-      ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form
-      !
-      ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
-      !
-      ! and do not include any boundary integral into the bilinear form at all.
       
-      if (associated(p_rvelocity)) then
-        
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+      ! Get norm of diffusion tensor
+      ddiffusion = max( abs(rcollection%DquickAccess(3))&
+                       +abs(rcollection%DquickAccess(4)),&
+                        abs(rcollection%DquickAccess(5))&
+                       +abs(rcollection%DquickAccess(6)))
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
+      
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(3,npointsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+      
+      ! Calculate the normal vectors in DOFs on the boundary
+      call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+          DnormalX, DnormalY, 1)
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2)
+      ! and impose penalty parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
         do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,idofe,iel)
+            
+            ! Evaluate the function parser for the Dirichlet values in the
+            ! cubature points on the boundary and store the result in dcoeff
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            
+            ! Compute the coefficient for the first term of the linear
+            ! form which accounts for the penalty parameter. Note that
+            ! the element width is not computed yet.
+            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
 
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+            ! Compute the coefficients for the second and thirs terms
+            ! of the linear form
+            !
+            ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
+            Daux(2,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))*dcoeff
 
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+            Daux(3,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))*dcoeff
+          end do
         end do
 
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      else
+        ! Clear all coefficients
+        Daux = 0.0_DP
+      end if
+
+
+      ! Assemble the convective part of the boundary integral, eq. (3)
+      if (associated(p_rvelocity)) then
+        
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+        
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+            
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Check if we are at the primal inflow boundary
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Daux(1,idofe,iel) =&
+                  Daux(1,idofe,iel)-dscale*dnv*dcoeff
+            end if
+          end do
+        end do
+        
+      end if
+
+      ! Allocate temporal memory for local data
+      allocate(DlocalData(3))
+      
+      ! Loop over the cubature points and interpolate the flux
+      ! boundary conditions from the DOFs to the cubature points,
+      ! where they are needed by the linear form assembly routine
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          
+          ! Clear local data
+          DlocalData = 0.0_DP
+          
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData = DlocalData + Daux(:,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
+          
+          ! Store boundary condition in the cubature points
+          Dcoefficients(:,ipoint,iel) = DlocalData
+        end do
+      end do
+      
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
+
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
+
 #else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
+
+      ! Allocate temporal memory for normal vector and velocity
+      allocate(DnormalX(npointsPerElement,nelements),&
+               DnormalY(npointsPerElement,nelements))
+
+      ! Get the normal vectors in the cubature points on the boundary
+      if (npointsPerElement .gt. 1) then
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+      else
+        call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct,&
+            DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+      end if
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2)
+      ! and impose penalty parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+            
+            ! Evaluate the function parser for the Dirichlet values in the
+            ! cubature points on the boundary and store the result in dcoeff
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            
+            ! Compute the coefficient for the first term of the linear
+            ! form which accounts for the penalty parameter. Note that
+            ! the element width is not computed yet.
+            Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+
+            ! Compute the coefficients for the second and thirs terms
+            ! of the linear form
+            !
+            ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
+            Dcoefficients(2,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))*dcoeff
+
+            Dcoefficients(3,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))*dcoeff
+          end do
+        end do
+        
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
+
+      ! Assemble the convective part of the boundary integral, eq. (3)
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
+            p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Calculate the normal vectors in cubature on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        ! Initialise values
-        Dvalue = 0.0_DP
-        Dvalue(NDIM3D+1) = dtime
-        
-        ! Evaluate the function parser for the boundary values in the
-        ! cubature points or the DOFs on the boundary and store the
-        ! result in Dcoefficients(:,:,3). Multiply the velocity vector
-        ! with the normal in each point to get the normal velocity.
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
         do iel = 1, nelements
-          do ipoint = 1, npoints
-            
-            ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
-            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-            
-            ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = -dscale*dnv*dval
-#else
-            ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = -dscale*dnv*dval
-#endif
-          end do ! ipoint
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-
-            dlocalData = 0.0_DP
-
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
         
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+            ! Check if we are at the primal inflow boundary
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Dcoefficients(1,ipoint,iel) =&
+                  Dcoefficients(1,ipoint,iel)-dscale*dnv*dcoeff
+            end if
+          end do
+        end do
 
-      else
-
-        ! Clear coefficients for zero velocity
-        Dcoefficients = 0.0_DP
-
+        ! Free temporal memory
+        deallocate(Daux)
       end if
+      
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY)
+
+#endif
 
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
       !
-      ! Evaluate coefficient for both the convective and diffusive
-      ! part for the linear form at the inflow boundary part.
+      ! Assemble the boundary integral term
       !
-      ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
+      ! $$ -\int_{\Gamma_-} wg_F ds $$
       !
-      ! The boundary integral at the outflow boundary is included
-      ! into the bilinear form.
-
-      if (associated(p_rvelocity)) then
+      ! at the primal inflow boundary
+      !
+      ! $$\Gamma_- := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} < 0\} $$
         
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+      ! Initialise values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+
+      if (associated(p_rvelocity)) then
+
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
         
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,npointsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
 
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+              
         ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Check if we are at the primal inflow boundary
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Daux(1,idofe,iel) = -dscale*dnv*dcoeff
+            else
+              ! Set zero coefficient
+              Daux(1,idofe,iel) = 0.0_DP
+            end if
+          end do
+        end do
+          
+        ! Allocate temporal memory for the local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the flux
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Clear local data
+            DlocalData = 0.0_DP
+            
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+            end do
+            
+            ! Store flux boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
+        
+        ! Free temporal memory
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux)
+        
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
 #else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
+
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
+            p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
+        
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-   
-        ! Initialise values
-        Dvalue = 0.0_DP
-        Dvalue(NDIM3D+1) = dtime
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
 
-        ! Evaluate the function parser for the boundary values in the
-        ! cubature points or the DOFS on the boundary and store the
-        ! result in Dcoefficients(:,:,3). Multiply the velocity vector
-        ! with the normal in each point to get the normal velocity.
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
         do iel = 1, nelements
-          do ipoint = 1, npoints
-                        
-            ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
+          do ipoint = 1, npointsPerElement
             
+            ! Compute the normal velocity
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+        
             ! Check if we are at the primal inflow boundary
-            if (dnv .lt. 0.0_DP) then
-              
+            if (dnv .lt. -SYS_EPSREAL_DP) then
               ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale*dnv*dval
-#else
-              Dcoefficients(1,ipoint,iel) = -dscale*dnv*dval
-#endif
+              call fparser_evalFunction(p_rfparser, isegment,&
+                  Dvalue, Dcoefficients(1,ipoint,iel))
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Dcoefficients(1,ipoint,iel) =&
+                  -dscale*dnv*Dcoefficients(1,ipoint,iel)
             else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
+              ! Set zero coefficient
               Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
             end if
-          end do ! ipoint
-          
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
+          end do
+        end do
 
-            dlocalData = 0.0_DP
-
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
-        
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+        ! Free temporal memory
+        deallocate(Daux, DnormalX, DnormalY)
 
       else
-        
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
-
       end if
 
+#endif
 
+      
     case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
@@ -2286,160 +2549,160 @@ do iedge = 1, nedges
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
       
-      if (associated(p_rvelocity)) then
-        
-        ! Get mirrored boundary region from collection structure
-        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
-        
-        ! Get minimum/maximum parameter values from collection structure
-        dminParam = rcollection%DquickAccess(3)
-        dmaxParam = rcollection%DquickAccess(4)
-        dminParamMirror = rcollection%DquickAccess(5)
-        dmaxParamMirror = rcollection%DquickAccess(6)
-        
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
-        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
-        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
-            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-        
-        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
-            p_rvelocity%RvectorBlock(2), Dpoints,&
-            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-        
-        ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Rescale parameter values DedgePosition on the boundary
-          ! segment where to compute the boundary conditions into
-          ! parameter values on the mirror boundary region
-          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
-              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
-#else
-          ! Rescale parameter values DpointPar on the boundary segment
-          ! where to compute the boundary conditions into parameter
-          ! values on the mirror boundary region
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-#endif
-        else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Rescale parameter values DedgePosition on the boundary
-          ! segment where to compute the boundary conditions into
-          ! parameter values on the reversely mirror boundary region
-          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
-              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
-#else
-          ! Rescale parameter values DpointPar on the boundary segment
-          ! where to compute the boundary conditions into parameter
-          ! values on the reversely mirror boundary region
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-#endif
-        end if
-        
-        ! Evaluate the solution in the cubature points on the mirrored
-        ! boundary and store the result in Daux(:,:,3)
-        call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
-            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
-            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
-
-        do iel = 1, nelements
-          do ipoint = 1, npoints
-                        
-            ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-
-            ! Check if we are at the primal inflow boundary
-            if (dnv .lt. 0.0_DP) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale*dnv*Daux(ipoint,iel,3)
-#else
-              Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,3)
-#endif
-            else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
-              Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
-            end if
-          end do
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Loop over the cubature points and interpolate the Robin
-        ! boundary conditions from the DOFs to the cubature points,
-        ! where they are needed by the linear form assembly routine
-        do icubp = 1, npointsPerElement
-          
-          dlocalData = 0.0_DP
-          
-          ! Loop over the DOFs and interpolate the Robin boundary conditions
-          do ipoint = 1, npoints
-            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-          end do
-          
-          ! Store Robin boundary condition in the cubature points
-          Dcoefficients(1,icubp,iel) = dlocalData
-        end do
-#endif
-        end do
-        
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Deallocate temporal memory
-      deallocate(Dcoords, DcoeffAtDOF)
-#endif
-
-      else
-
-        ! Clear coefficients for zero velocity
-        Dcoefficients = 0.0_DP
-
-      end if
+!!$      if (associated(p_rvelocity)) then
+!!$        
+!!$        ! Get mirrored boundary region from collection structure
+!!$        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
+!!$            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
+!!$        
+!!$        ! Get minimum/maximum parameter values from collection structure
+!!$        dminParam = rcollection%DquickAccess(3)
+!!$        dmaxParam = rcollection%DquickAccess(4)
+!!$        dminParamMirror = rcollection%DquickAccess(5)
+!!$        dmaxParamMirror = rcollection%DquickAccess(6)
+!!$        
+!!$        ! Allocate temporal memory
+!!$        allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements))
+!!$        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
+!!$
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$        ! Allocate temporal memory
+!!$        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+!!$
+!!$        ! We need the solution values and the physical coordinates of the DOFs
+!!$        ! on the boundary, so compute them and store the result in Daux
+!!$        do iel = 1, nelements
+!!$          ! Get global DOF of first endpoints
+!!$          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+!!$          ivt    = IdofsTest(ipoint,iel)
+!!$
+!!$          ! Store velocity data
+!!$          Daux(1,iel,1) = p_DvelocityX(ivt)
+!!$          Daux(1,iel,2) = p_DvelocityY(ivt)
+!!$          
+!!$          ! Store vertex coordinate
+!!$          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+!!$
+!!$          ! Get global DOF of second endpoints
+!!$          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+!!$          ivt    = IdofsTest(ipoint,iel)
+!!$
+!!$          ! Store velocity data
+!!$          Daux(2,iel,1) = p_DvelocityX(ivt)
+!!$          Daux(2,iel,2) = p_DvelocityY(ivt)
+!!$
+!!$          ! Store vertex coordinate
+!!$          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+!!$        end do
+!!$
+!!$        ! Calculate the normal vectors in DOFs on the boundary
+!!$        call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
+!!$#else
+!!$        ! Evaluate the velocity field (if any) in the cubature points on
+!!$        ! the boundary and store the result in Daux(:,:,1:2)
+!!$        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+!!$            p_rvelocity%RvectorBlock(1), Dpoints, &
+!!$            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!!$        
+!!$        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+!!$            p_rvelocity%RvectorBlock(2), Dpoints,&
+!!$            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!!$        
+!!$        ! Get the normal vectors in the cubature points on the boundary
+!!$        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+!!$#endif
+!!$        
+!!$        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$          ! Rescale parameter values DedgePosition on the boundary
+!!$          ! segment where to compute the boundary conditions into
+!!$          ! parameter values on the mirror boundary region
+!!$          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+!!$              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#else
+!!$          ! Rescale parameter values DpointPar on the boundary segment
+!!$          ! where to compute the boundary conditions into parameter
+!!$          ! values on the mirror boundary region
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#endif
+!!$        else
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$          ! Rescale parameter values DedgePosition on the boundary
+!!$          ! segment where to compute the boundary conditions into
+!!$          ! parameter values on the reversely mirror boundary region
+!!$          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+!!$              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#else
+!!$          ! Rescale parameter values DpointPar on the boundary segment
+!!$          ! where to compute the boundary conditions into parameter
+!!$          ! values on the reversely mirror boundary region
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#endif
+!!$        end if
+!!$        
+!!$        ! Evaluate the solution in the cubature points on the mirrored
+!!$        ! boundary and store the result in Daux(:,:,3)
+!!$        call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
+!!$            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
+!!$            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+!!$
+!!$        do iel = 1, nelements
+!!$          do ipoint = 1, npoints
+!!$                        
+!!$            ! Compute the normal velocity
+!!$            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+!!$                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+!!$
+!!$            ! Check if we are at the primal inflow boundary
+!!$            if (dnv .lt. 0.0_DP) then
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$              DcoeffAtDOF(ipoint) = -dscale*dnv*Daux(ipoint,iel,3)
+!!$#else
+!!$              Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,3)
+!!$#endif
+!!$            else
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$              DcoeffAtDOF(ipoint) = 0.0_DP
+!!$#else
+!!$              Dcoefficients(1,ipoint,iel) = 0.0_DP
+!!$#endif
+!!$            end if
+!!$          end do
+!!$
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$        ! Loop over the cubature points and interpolate the Robin
+!!$        ! boundary conditions from the DOFs to the cubature points,
+!!$        ! where they are needed by the linear form assembly routine
+!!$        do icubp = 1, npointsPerElement
+!!$          
+!!$          dlocalData = 0.0_DP
+!!$          
+!!$          ! Loop over the DOFs and interpolate the Robin boundary conditions
+!!$          do ipoint = 1, npoints
+!!$            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
+!!$          end do
+!!$          
+!!$          ! Store Robin boundary condition in the cubature points
+!!$          Dcoefficients(1,icubp,iel) = dlocalData
+!!$        end do
+!!$#endif
+!!$        end do
+!!$        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(Daux, DnormalX, DnormalY)
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$      ! Deallocate temporal memory
+!!$      deallocate(Dcoords, DcoeffAtDOF)
+!!$#endif
+!!$
+!!$      else
+!!$
+!!$        ! Clear coefficients for zero velocity
+!!$        Dcoefficients = 0.0_DP
+!!$
+!!$      end if
 
       
     case default
@@ -2448,18 +2711,13 @@ do iedge = 1, nedges
       call sys_halt()
       
     end select
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Deallocate temporal memory
-    deallocate(Dbas)
-#endif
-
+    
   contains
 
     ! Here come the working routines
 
     !***************************************************************************
-    ! Evaluate th solution vector at some boundary points given in
+    ! Evaluate the solution vector at some boundary points given in
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
@@ -2482,7 +2740,7 @@ do iedge = 1, nedges
     
   end subroutine transp_coeffVecBdrConvP2d_sim
 
-  ! ***************************************************************************
+    ! ***************************************************************************
 
 !<subroutine>
 
@@ -2543,7 +2801,7 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -2563,9 +2821,12 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     cubature rule
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
+    !
+    ! only for Dirichlet boundary conditions
+    !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
+    !   IquickAccess(3):     type of diffusion operator
     !
     ! only for periodic boundary conditions
     !   DquickAccess(3):     minimim parameter of the boundary component
@@ -2588,18 +2849,23 @@ do iedge = 1, nedges
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
-    type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
-    real(DP), dimension(:), pointer :: p_Ddata, p_DvelocityX, p_DvelocityY
-    real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
-    real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny,DpointParMirror
-    real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:,:), pointer :: Dcoords
+    real(DP), dimension(:,:,:), allocatable :: Daux  
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dlocalData,dnv,dscale,dtime,dval
-    real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
-    
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff
+    integer :: ibdrtype,iel,ipoint,isegment
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+    type(t_dofSubset) :: rdofSubset
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:,:,:), pointer :: p_DdofCoords
+    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    integer, dimension(:,:), pointer :: p_IdofsLoc
+    logical, dimension(EL_MAXNDER) :: Bder
+    integer :: idofe,idofGlob
+#endif
+
+
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
         &-DTRANSP_USE_IBP if boundary conditions are imposed in weak sense',&
@@ -2618,67 +2884,18 @@ do iedge = 1, nedges
     ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Set pointers
-    call lsysbl_getbase_double(p_rsolution, p_Ddata)
-    if (associated(p_rvelocity)) then
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
-    end if
-#endif
-
+    
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
     dtime  = rcollection%DquickAccess(1)
     dscale = rcollection%DquickAccess(2)
 
-    ! The first three quick access integer values hold the type of
-    ! boundary condition, the segment number and the cubature rule
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Evaluate one-dimensional basis functions on the boundary edge
-    if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
-      call output_line('Type of cubature rule at boundary mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
-      call sys_halt()
-    else
-      ! How many DOFs are located at the boundary? This should be made
-      ! more flexible by checking the type of element. For the time
-      ! being, only linear and bilinear finite elements are supported
-      npoints = 2
-      
-      ! How many vertices per element do we have?
-      nve = elem_igetNVE(rdomainIntSubset%celement)
-      
-      ! Allocate temporal memory for one-dimensional
-      ! cubature along the boundary edge
-      allocate(Dbas(npoints,npointsPerElement))
-      allocate(Domega(npointsPerElement))
-      allocate(DcubPtsRef(1,npointsPerElement))
-
-      ! Get the coordinates of the cubature points and the
-      ! corresponding weights for the given cubature rule
-      call cub_getCubature(ccubType, DcubPtsRef, Domega)
-      
-      ! Evaluate the one-dimensional basis functions
-      ! in the cubature points on the boundary
-      do icubp = 1, npointsPerElement
-        Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
-        Dbas(2,icubp) = 0.5_DP*(1.0_DP+DcubPtsRef(1,icubp))
-      end do
-
-      ! Deallocate temporal memory which is no longer required
-      deallocate(DcubPtsRef,Domega)
-    end if
-#else
-    ! Boundary values are evaluated directly at the cubature points
-    npoints = npointsPerElement
-#endif
-
+    
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
 
@@ -2686,11 +2903,9 @@ do iedge = 1, nedges
       !-------------------------------------------------------------------------
       ! Homogeneous Neumann boundary conditions:
       !
-      ! The diffusive part in the linear form vanishes since
+      ! The linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
-      !
-      ! The convective part is included into the bilinear form.
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! Hence, this routine should not be called for homogeneous
       ! Neumann boundary conditions since it corresponds to an
@@ -2701,394 +2916,560 @@ do iedge = 1, nedges
           OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
 
 
-    case (BDRC_INHOMNEUMANN)
+    case (BDRC_INHOMNEUMANN, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! Inhomogeneous Neumann boundary conditions:
+      ! Inhomogeneous Neumann or Robin boundary conditions:
       !
-      ! Evaluate coefficient for the diffusive part of the linear form
+      ! Assemble the boundary integral term
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ -\int_{Gamma_N} wg_N ds $$
+      ! 
+      ! for the Neumann boundary condition
       !
-      ! The convective part is included into the bilinear form (if any)
+      ! $$ D\nabla u\cdot{\bf n}=g_N $$
+      !
+      ! or
+      !
+      ! $$ -\int_{Gamma_R} wg_R ds $$
+      !
+      ! for the Robin boundary condition
+      !
+      ! $$ \alpha u + (D\nabla u)\cdot {\bf n})=g_R $$
 
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
       
-      ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(1,npointsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+
+      ! Assemble the boundary integral for Neumann/Robin boundary conditions
+      do iel = 1, nelements
+        do idofe = 1, rdofSubset%ndofsPerElement
+          
+          ! Set values for function parser
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,idofe,iel)
+          
+          ! Evaluate the function parser for the Neumann/Robin values in the
+          ! degrees of freedom on the boundary and store the result in dcoeff
+          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+
+          ! Multiply by scaling coefficient
+          Daux(1,idofe,iel) = -dscale*dcoeff
+        end do
+      end do
+      
+      ! Allocate temporal memory for local data
+      allocate(DlocalData(1))
+      
+      ! Loop over the cubature points and interpolate the flux
+      ! boundary conditions from the DOFs to the cubature points,
+      ! where they are needed by the linear form assembly routine
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Set values for function parser
-          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D, ipoint, iel)
+          ! Clear local data
+          DlocalData = 0.0_DP
           
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Dcoefficients(1,ipoint,iel))
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
           
-          ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale*Dcoefficients(1,ipoint,iel)
+          ! Store boundary condition in the cubature points
+          Dcoefficients(1,ipoint,iel) = DlocalData(1)
         end do
       end do
 
+      ! Free temporal memory
+      deallocate(DbasTrial, Daux, DlocalData)
+      
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
 
+#else
+
+      ! Evaluate the function parser for the Neumann/Robin boundary
+      ! values in the cubature points on the boundary and store the
+      ! result in Dcoefficients(1,:,:).
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+
+          ! Set values for function parser
+          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment,&
+              Dvalue, Dcoefficients(1,ipoint,iel))
+
+          ! Multiply by scaling coefficient
+          Dcoefficients(1,ipoint,iel) = -dscale*Dcoefficients(1,ipoint,iel)
+        end do
+      end do
+
+#endif
+
+      
     case (BDRC_DIRICHLET)
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
       !
-      ! Evaluate coefficient for the convective part of the linear form
+      ! Assemble the boundary integral term
       !
-      ! $$ u=g \Rightarrow ({\bf v}u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
+      ! $$ -\int_{\Gamma_D} \frac{1}{\epsilon} wg_D ds                $$ (1)
+      ! $$ +\int_{\Gamma_D} (\gamma D\nabla w)\cdot{\bf n} g_D ds     $$ (2)
+      ! $$ +\int_{\Gamma_D\cap\Gamma_+} ({\bf v}w)\cdot{\bf n} g_D ds $$ (3)
       !
-      ! The diffusive part is included into the bilinear form.
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Allocate temporal memory
-      allocate(Dcoords(NDIM2D,npoints,1), DcoeffAtDOF(npoints))
-#endif
+      ! with parameter $\epsilon=C|D|/h$ and $\gamma \in \{-1,1\}$
+      ! and dual inflow boundary part
+      !
+      ! $$\Gamma_+ := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} > 0\} $$
 
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-
-      do iel = 1, nelements
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Get global DOF of first endpoints
-        ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-        ivt    = IdofsTest(ipoint,iel)
-
-        ! Store vertex coordinate
-        Dcoords(1:NDIM2D,1,1) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        
-        ! Get global DOF of second endpoints
-        ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-        ivt    = IdofsTest(ipoint,iel)
-        
-        ! Store vertex coordinate
-        Dcoords(1:NDIM2D,2,1) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-#endif
-
-        do ipoint = 1, npointsPerElement
-
-          ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,1)
-#else
-          Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-
-          ! Evaluate function parser for Dirichlet value
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Impose Dirichlet value via penalty method
-          DcoeffAtDOF(ipoint) = -dscale*dval*BDRC_DIRICHLET_PENALTY
-#else
-          ! Impose Dirichlet value via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale*dval*BDRC_DIRICHLET_PENALTY
-#endif
-        end do
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Loop over the cubature points and interpolate the Robin
-        ! boundary conditions from the DOFs to the cubature points,
-        ! where they are needed by the linear form assembly routine
-        do icubp = 1, npointsPerElement
-          
-          dlocalData = 0.0_DP
-          
-          ! Loop over the DOFs and interpolate the Robin boundary conditions
-          do ipoint = 1, npoints
-            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-          end do
-          
-          ! Store Robin boundary condition in the cubature points
-          Dcoefficients(1,icubp,iel) = dlocalData
-        end do
-#endif
-      end do
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Deallocate temporal memory
-      deallocate(Dcoords, DcoeffAtDOF)
-#endif
-
       
-    case (BDRC_ROBIN)
-      !-------------------------------------------------------------------------
-      ! Robin boundary conditions:
-      !
-      ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form
-      !
-      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
-      !
-      ! and do not include any boundary integral into the bilinear form at all.
+      ! Get norm of diffusion tensor
+      ddiffusion = max( abs(rcollection%DquickAccess(3))&
+                       +abs(rcollection%DquickAccess(4)),&
+                        abs(rcollection%DquickAccess(5))&
+                       +abs(rcollection%DquickAccess(6)))
 
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
+      
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(3,npointsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+      
+      ! Calculate the normal vectors in DOFs on the boundary
+      call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+          DnormalX, DnormalY, 1)
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2)
+      ! and impose penalty parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,idofe,iel)
+            
+            ! Evaluate the function parser for the Dirichlet values in the
+            ! cubature points on the boundary and store the result in dcoeff
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            
+            ! Compute the coefficient for the first term of the linear
+            ! form which accounts for the penalty parameter. Note that
+            ! the element width is not computed yet.
+            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+
+            ! Compute the coefficients for the second and thirs terms
+            ! of the linear form
+            !
+            ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
+            Daux(2,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))*dcoeff
+
+            Daux(3,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))*dcoeff
+          end do
+        end do
+
+      else
+        ! Clear all coefficients
+        Daux = 0.0_DP
+      end if
+
+
+      ! Assemble the convective part of the boundary integral, eq. (3)
       if (associated(p_rvelocity)) then
         
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+        
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
         do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+            
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
 
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
+            ! Check if we are at the primal inflow boundary
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Daux(1,idofe,iel) =&
+                  Daux(1,idofe,iel)+dscale*dnv*dcoeff
+            end if
+          end do
+        end do
+        
+      end if
+
+      ! Allocate temporal memory for local data
+      allocate(DlocalData(3))
+      
+      ! Loop over the cubature points and interpolate the flux
+      ! boundary conditions from the DOFs to the cubature points,
+      ! where they are needed by the linear form assembly routine
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
           
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+          ! Clear local data
+          DlocalData = 0.0_DP
+          
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData = DlocalData + Daux(:,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
+          
+          ! Store boundary condition in the cubature points
+          Dcoefficients(:,ipoint,iel) = DlocalData
+        end do
+      end do
+      
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
 
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
+      
+#else
 
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
+      ! Allocate temporal memory for normal vector and velocity
+      allocate(DnormalX(npointsPerElement,nelements),&
+               DnormalY(npointsPerElement,nelements))
 
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+      ! Get the normal vectors in the cubature points on the boundary
+      if (npointsPerElement .gt. 1) then
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+      else
+        call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct,&
+            DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+      end if
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2)
+      ! and impose penalty parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+            
+            ! Evaluate the function parser for the Dirichlet values in the
+            ! cubature points on the boundary and store the result in dcoeff
+            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            
+            ! Compute the coefficient for the first term of the linear
+            ! form which accounts for the penalty parameter. Note that
+            ! the element width is not computed yet.
+            Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+
+            ! Compute the coefficients for the second and thirs terms
+            ! of the linear form
+            !
+            ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
+            Dcoefficients(2,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))*dcoeff
+
+            Dcoefficients(3,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))*dcoeff
+          end do
         end do
 
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
+
+      ! Assemble the convective part of the boundary integral, eq. (3)
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
+            p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
-        ! Calculate the normal vectors in cubature on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        ! Initialise values
-        Dvalue = 0.0_DP
-        Dvalue(NDIM3D+1) = dtime
-        
-        ! Evaluate the function parser for the boundary values in the
-        ! cubature points or the DOFs on the boundary and store the
-        ! result in Dcoefficients(:,:,3). Multiply the velocity vector
-        ! with the normal in each point to get the normal velocity.
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
         do iel = 1, nelements
-          do ipoint = 1, npoints
-            
-            ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
-            Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
-            
-            ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            ! Store the Robin boundary condition at the DOF on the boundary
-            DcoeffAtDOF(ipoint) = dscale*dnv*dval
-#else
-            ! Store the Robin boundary condition at the cubature point on the boundary
-            Dcoefficients(1,ipoint,iel) = dscale*dnv*dval
-#endif
-          end do ! ipoint
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-
-            dlocalData = 0.0_DP
-
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
         
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+            ! Check if we are at the primal inflow boundary
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Dcoefficients(1,ipoint,iel) =&
+                  Dcoefficients(1,ipoint,iel)+dscale*dnv*dcoeff
+            end if
+          end do
+        end do
 
-      else
-
-        ! Clear coefficients for zero velocity
-        Dcoefficients = 0.0_DP
-
+        ! Free temporal memory
+        deallocate(Daux)
       end if
+      
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY)
+
+#endif
 
       
     case(BDRC_FLUX)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s prescribed at the inlet):
       !
-      ! Evaluate coefficient for both the convective and diffusive
-      ! part for the linear form at the inflow boundary part.
+      ! Assemble the boundary integral term
       !
-      ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n} = ({\bf v}g)\cdot{\bf n} $$
+      ! $$ +\int_{\Gamma_+} wg_F ds $$
       !
-      ! The boundary integral at the outflow boundary is included
-      ! into the bilinear form.
-
-      if (associated(p_rvelocity)) then
+      ! at the dual inflow boundary
+      !
+      ! $$\Gamma_+ := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} > 0\} $$
         
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+      ! Initialise values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+
+      if (associated(p_rvelocity)) then
+
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
         
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,npointsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
 
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+              
         ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Check if we are at the dual inflow boundary
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              ! Set values for function parser
+              Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
+              
+              ! Evaluate function parser
+              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              
+              ! Multiply by scaling coefficient and normal velocity
+              Daux(1,idofe,iel) = dscale*dnv*dcoeff
+            else
+              ! Set zero coefficient
+              Daux(1,idofe,iel) = 0.0_DP
+            end if
+          end do
+        end do
+          
+        ! Allocate temporal memory for the local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the flux
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Clear local data
+            DlocalData = 0.0_DP
+            
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+            end do
+            
+            ! Store flux boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
+        
+        ! Free temporal memory
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux)
+        
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
 #else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
+
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
+            p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
+        
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-   
-        ! Initialise values
-        Dvalue = 0.0_DP
-        Dvalue(NDIM3D+1) = dtime
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
 
-        ! Evaluate the function parser for the boundary values in the
-        ! cubature points or the DOFS on the boundary and store the
-        ! result in Dcoefficients(:,:,3). Multiply the velocity vector
-        ! with the normal in each point to get the normal velocity.
+        ! Evaluate the function parser for the flux boundary values in
+        ! the cubature points on the boundary and store the result
         do iel = 1, nelements
-          do ipoint = 1, npoints
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-            
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+        
             ! Check if we are at the dual inflow boundary
-            if (dnv .gt. 0.0_DP) then
-              
+            if (dnv .gt. SYS_EPSREAL_DP) then
               ! Set values for function parser
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              Dvalue(1:NDIM2D) = Dcoords(1:NDIM2D,ipoint,iel)
-#else
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
-#endif
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
+              call fparser_evalFunction(p_rfparser, isegment,&
+                  Dvalue, Dcoefficients(1,ipoint,iel))
               
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale*dnv*dval
-#else
-              Dcoefficients(1,ipoint,iel) = dscale*dnv*dval
-#endif
+              ! Multiply by scaling coefficient and normal velocity
+              Dcoefficients(1,ipoint,iel) =&
+                  dscale*dnv*Dcoefficients(1,ipoint,iel)
             else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
+              ! Set zero coefficient
               Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
             end if
-          end do ! ipoint
+          end do
+        end do
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-
-            dlocalData = 0.0_DP
-
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
-        
-        ! Deallocate temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+        ! Free temporal memory
+        deallocate(Daux, DnormalX, DnormalY)
 
       else
-        
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
-
       end if
 
+#endif
 
-      case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      
+    case(BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Periodic/Antiperiodic boundary conditions (Flux boundary conditions):
       !
@@ -3100,175 +3481,175 @@ do iedge = 1, nedges
       ! The boundary integral at the outflow boundary is included
       ! into the bilinear form.
       
-      if (associated(p_rvelocity)) then
-        
-        ! Get mirrored boundary region from collection structure
-        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
-            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
-        
-        ! Get minimum/maximum parameter values from collection structure
-        dminParam = rcollection%DquickAccess(3)
-        dmaxParam = rcollection%DquickAccess(4)
-        dminParamMirror = rcollection%DquickAccess(5)
-        dmaxParamMirror = rcollection%DquickAccess(6)
-        
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
-        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
+!!$      if (associated(p_rvelocity)) then
+!!$        
+!!$        ! Get mirrored boundary region from collection structure
+!!$        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
+!!$            'rboundaryRegionMirror', ssectionName=trim(rcollection%SquickAccess(1)))
+!!$        
+!!$        ! Get minimum/maximum parameter values from collection structure
+!!$        dminParam = rcollection%DquickAccess(3)
+!!$        dmaxParam = rcollection%DquickAccess(4)
+!!$        dminParamMirror = rcollection%DquickAccess(5)
+!!$        dmaxParamMirror = rcollection%DquickAccess(6)
+!!$        
+!!$        ! Allocate temporal memory
+!!$        allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements))
+!!$        allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,3))
+!!$
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$        ! Allocate temporal memory
+!!$        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+!!$
+!!$        ! We need the solution values and the physical coordinates of the DOFs
+!!$        ! on the boundary, so compute them and store the result in Daux
+!!$        do iel = 1, nelements
+!!$          ! Get global DOF of first endpoints
+!!$          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
+!!$          ivt    = IdofsTest(ipoint,iel)
+!!$
+!!$          ! Store velocity data
+!!$          Daux(1,iel,1) = p_DvelocityX(ivt)
+!!$          Daux(1,iel,2) = p_DvelocityY(ivt)
+!!$          
+!!$          ! Store vertex coordinate
+!!$          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+!!$
+!!$          ! Get global DOF of second endpoints
+!!$          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
+!!$          ivt    = IdofsTest(ipoint,iel)
+!!$
+!!$          ! Store velocity data
+!!$          Daux(2,iel,1) = p_DvelocityX(ivt)
+!!$          Daux(2,iel,2) = p_DvelocityY(ivt)
+!!$
+!!$          ! Store vertex coordinate
+!!$          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+!!$        end do
+!!$
+!!$        ! Calculate the normal vectors in DOFs on the boundary
+!!$        call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
+!!$#else
+!!$        ! Evaluate the velocity field (if any) in the cubature points on
+!!$        ! the boundary and store the result in Daux(:,:,1:2)
+!!$        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+!!$            p_rvelocity%RvectorBlock(1), Dpoints, &
+!!$            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!!$        
+!!$        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+!!$            p_rvelocity%RvectorBlock(2), Dpoints,&
+!!$            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+!!$        
+!!$        ! Get the normal vectors in the cubature points on the boundary
+!!$        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+!!$#endif
+!!$        
+!!$        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$          ! Rescale parameter values DedgePosition on the boundary
+!!$          ! segment where to compute the boundary conditions into
+!!$          ! parameter values on the mirror boundary region
+!!$          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+!!$              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#else
+!!$          ! Rescale parameter values DpointPar on the boundary segment
+!!$          ! where to compute the boundary conditions into parameter
+!!$          ! values on the mirror boundary region
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#endif
+!!$        else
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$          ! Rescale parameter values DedgePosition on the boundary
+!!$          ! segment where to compute the boundary conditions into
+!!$          ! parameter values on the reversely mirror boundary region
+!!$          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
+!!$              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#else
+!!$          ! Rescale parameter values DpointPar on the boundary segment
+!!$          ! where to compute the boundary conditions into parameter
+!!$          ! values on the reversely mirror boundary region
+!!$          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
+!!$              dmaxParamMirror, dminParamMirror, DpointParMirror)
+!!$#endif
+!!$        end if
+!!$        
+!!$        ! Evaluate the solution in the cubature points on the mirrored
+!!$        ! boundary and store the result in Daux(:,:,3)
+!!$        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+!!$            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
+!!$            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+!!$
+!!$        do iel = 1, nelements
+!!$          do ipoint = 1, npointsPerElement
+!!$                        
+!!$            ! Compute the normal velocity
+!!$            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+!!$                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+!!$
+!!$            ! Check if we are at the dual inflow boundary
+!!$            if (dnv .gt. 0.0_DP) then
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$              DcoeffAtDOF(ipoint) = dscale*dnv*Daux(ipoint,iel,3)
+!!$#else
+!!$              Dcoefficients(1,ipoint,iel) = dscale*dnv*Daux(ipoint,iel,3)
+!!$#endif
+!!$            else
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$              DcoeffAtDOF(ipoint) = 0.0_DP
+!!$#else
+!!$              Dcoefficients(1,ipoint,iel) = 0.0_DP
+!!$#endif
+!!$            end if
+!!$          end do
+!!$
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$        ! Loop over the cubature points and interpolate the Robin
+!!$        ! boundary conditions from the DOFs to the cubature points,
+!!$        ! where they are needed by the linear form assembly routine
+!!$        do icubp = 1, npointsPerElement
+!!$          
+!!$          dlocalData = 0.0_DP
+!!$          
+!!$          ! Loop over the DOFs and interpolate the Robin boundary conditions
+!!$          do ipoint = 1, npoints
+!!$            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
+!!$          end do
+!!$          
+!!$          ! Store Robin boundary condition in the cubature points
+!!$          Dcoefficients(1,icubp,iel) = dlocalData
+!!$        end do
+!!$#endif
+!!$        end do
+!!$        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(Daux, DnormalX, DnormalY)
+!!$#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+!!$      ! Deallocate temporal memory
+!!$      deallocate(Dcoords, DcoeffAtDOF)
+!!$#endif
+!!$
+!!$      else
+!!$
+!!$        ! Clear coefficients for zero velocity
+!!$        Dcoefficients = 0.0_DP
+!!$
+!!$      end if
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else
-        ! Evaluate the velocity field (if any) in the cubature points on
-        ! the boundary and store the result in Daux(:,:,1:2)
-        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
-            p_rvelocity%RvectorBlock(1), Dpoints, &
-            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-        
-        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
-            p_rvelocity%RvectorBlock(2), Dpoints,&
-            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-        
-        ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Rescale parameter values DedgePosition on the boundary
-          ! segment where to compute the boundary conditions into
-          ! parameter values on the mirror boundary region
-          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
-              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
-#else
-          ! Rescale parameter values DpointPar on the boundary segment
-          ! where to compute the boundary conditions into parameter
-          ! values on the mirror boundary region
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-#endif
-        else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Rescale parameter values DedgePosition on the boundary
-          ! segment where to compute the boundary conditions into
-          ! parameter values on the reversely mirror boundary region
-          call mprim_linearRescale(rdomainIntSubset%p_DedgePosition, dminParam,&
-              dmaxParam, dmaxParamMirror, dminParamMirror, DpointParMirror)
-#else
-          ! Rescale parameter values DpointPar on the boundary segment
-          ! where to compute the boundary conditions into parameter
-          ! values on the reversely mirror boundary region
-          call mprim_linearRescale(DpointPar, dminParam, dmaxParam,&
-              dmaxParamMirror, dminParamMirror, DpointParMirror)
-#endif
-        end if
-        
-        ! Evaluate the solution in the cubature points on the mirrored
-        ! boundary and store the result in Daux(:,:,3)
-        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
-            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
-            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
-
-        do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-                        
-            ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-
-            ! Check if we are at the dual inflow boundary
-            if (dnv .gt. 0.0_DP) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale*dnv*Daux(ipoint,iel,3)
-#else
-              Dcoefficients(1,ipoint,iel) = dscale*dnv*Daux(ipoint,iel,3)
-#endif
-            else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
-              Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
-            end if
-          end do ! ipoint
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Loop over the cubature points and interpolate the Robin
-        ! boundary conditions from the DOFs to the cubature points,
-        ! where they are needed by the linear form assembly routine
-        do icubp = 1, npointsPerElement
-          
-          dlocalData = 0.0_DP
-          
-          ! Loop over the DOFs and interpolate the Robin boundary conditions
-          do ipoint = 1, npoints
-            dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-          end do
-          
-          ! Store Robin boundary condition in the cubature points
-          Dcoefficients(1,icubp,iel) = dlocalData
-        end do ! icubp
-#endif
-      end do ! iel
       
-      ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-      ! Deallocate temporal memory
-      deallocate(Dcoords, DcoeffAtDOF)
-#endif
-
-      else
-
-        ! Clear coefficients for zero velocity
-        Dcoefficients = 0.0_DP
-
-      end if
-
-
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
       call sys_halt()
       
     end select
-
+    
   contains
 
     ! Here come the working routines
 
     !***************************************************************************
-    ! Evaluate th solution vector at some boundary points given in
+    ! Evaluate the solution vector at some boundary points given in
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
@@ -3356,11 +3737,11 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -3378,7 +3759,10 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     cubature rule
+    !
+    ! only for Dirichlet boundary conditions
+    !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
+    !   IquickAccess(3):     type of diffusion operator
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -3394,14 +3778,21 @@ do iedge = 1, nedges
 
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
-    real(DP), dimension(:), pointer :: p_Ddata, p_DvelocityX, p_DvelocityY
-    real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
-    real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
-    real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:,:), pointer :: Dcoords
-    real(DP) :: dlocalData,dnv,dscale,dtime
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    real(DP), dimension(:,:,:), allocatable :: Daux  
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
+    real(DP) :: dnv,dscale,dtime,ddiffusion
+    integer :: ibdrtype,iel,ipoint,isegment
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+    type(t_dofSubset) :: rdofSubset
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:,:,:), pointer :: p_DdofCoords
+    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    integer, dimension(:,:), pointer :: p_IdofsLoc
+    logical, dimension(EL_MAXNDER) :: Bder
+    integer :: idofe,idofGlob
+#endif
+    
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -3415,115 +3806,133 @@ do iedge = 1, nedges
     p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Set pointers
-    call lsysbl_getbase_double(p_rsolution, p_Ddata)
-    if (associated(p_rvelocity)) then
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
-    end if
-#endif
-
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
     dtime  = rcollection%DquickAccess(1)
     dscale = rcollection%DquickAccess(2)
 
-    ! The first three quick access integer values hold the type of
-    ! boundary condition, the segment number and the cubature rule
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Evaluate one-dimensional basis functions on the boundary edge
-    if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
-      call output_line('Type of cubature rule at boundary mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
-      call sys_halt()
-    else
-      ! How many DOFs are located at the boundary? This should be made
-      ! more flexible by checking the type of element. For the time
-      ! being, only linear and bilinear finite elements are supported
-      npoints = 2
-      
-      ! How many vertices per element do we have?
-      nve = elem_igetNVE(rdomainIntSubset%celement)
-      
-      ! Allocate temporal memory for one-dimensional
-      ! cubature along the boundary edge
-      allocate(Dbas(npoints,npointsPerElement))
-      allocate(Domega(npointsPerElement))
-      allocate(DcubPtsRef(1,npointsPerElement))
-
-      ! Get the coordinates of the cubature points and the
-      ! corresponding weights for the given cubature rule
-      call cub_getCubature(ccubType, DcubPtsRef, Domega)
-      
-      ! Evaluate the one-dimensional basis functions
-      ! in the cubature points on the boundary
-      do icubp = 1, npointsPerElement
-        Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
-        Dbas(2,icubp) = 0.5_DP*(1.0_DP+DcubPtsRef(1,icubp))
-      end do
-
-      ! Deallocate temporal memory which is no longer required
-      deallocate(DcubPtsRef,Domega)
-    end if
-#else
-    ! Boundary values are evaluated directly at the cubature points
-    npoints = npointsPerElement
-#endif
-
+    
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
+    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! (In-)Homogeneous Neumann boundary conditions:
-      ! Assemble the convective part of the boundary integral (if any)
+      ! (In-)Homogeneous Neumann boundary or Robin boundary conditions:
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$ -\int_{\Gamma_N} w({\bf v}u)\cdot{\bf n} ds $$
+      !
+      ! for all both types of Neumann boundary conditions.
+      ! Additionally, assemble the boundary integral term
+      !
+      ! $$ -\int_{\Gamma_R}w[\alpha u+(\bfv u)\cdot\bfn] ds $$
+      !
+      ! for the Robin boundary condition
+      !
+      ! $$ \alpha u + (D\nabla u)\cdot {\bf n})=g_R $$
+      
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      if (associated(p_rvelocity)) then
+        
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
+
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,rdofSubset%ndofsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
+
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+       
+        ! Calculate the normal vectors in DOFs on the boundary
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Scale normal velocity by the scaling parameter
+            Daux(1,idofe,iel) = -dscale*dnv
+          end do
+        end do
+        
+        ! Allocate temporal memory for local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the Neumann
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Clear local data
+            DlocalData = 0.0_DP
+            
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+            end do
+            
+            ! Store Neumann boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
+        
+        ! Free temporal memory
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
+
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+      end if
+
+#else
 
       if (associated(p_rvelocity)) then
 
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else
-        ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,1:2)
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3533,136 +3942,266 @@ do iedge = 1, nedges
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        ! Multiply the velocity vector with the normal in each point
-        ! to get the normal velocity.
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
+
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
         do iel = 1, nelements
-          do ipoint = 1, npoints
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-      
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            ! Scale normal velocity by scaling parameter
-            DcoeffAtDOF(ipoint) = -dscale*dnv
-#else
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = -dscale*dnv
-#endif
-          end do ! ipoint
+          end do
+        end do
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-            
-            dlocalData = 0.0_DP
-            
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
-        
         ! Free temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
-        
+        deallocate(Daux, DnormalX, DnormalY)
+
       else
-        
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
+      end if
 
+#endif
+      
+      ! Do we have to prescribe Robin boundary conditions?
+      if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ROBIN) then
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Also apply Robin boundary condition
+            Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)&
+                                        - dscale*BDRC_ROBIN_SCALING
+          end do
+        end do
       end if
 
 
     case (BDRC_DIRICHLET)
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
-      ! Impose penalty parameter
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$ -\int_{\Gamma_D} \epsilon wu ds                        $$ (1)
+      ! $$ -\int_{\Gamma_D} w({\bf v}u-D\nabla u)\cdot{\bf n} ds  $$ (2)
+      ! $$ +\int_{\Gamma_D} (\gamma D\nabla w)\cdot{\bf n}u ds    $$ (3)
+      ! $$ +\int_{\Gamma_D\cap\Gamma_-} (\bf v}w)\cdot{\bf n}u ds $$ (4)
+      !
+      ! with parameter $\epsilon=C|D|/h$ and $\gamma \in \{-1,1\}$
+      ! and primal inflow boundary part
+      !
+      ! $$\Gamma_- := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} < 0\} $$
 
+      ! Get norm of diffusion tensor
+      ddiffusion = max( abs(rcollection%DquickAccess(3))&
+                       +abs(rcollection%DquickAccess(4)),&
+                        abs(rcollection%DquickAccess(5))&
+                       +abs(rcollection%DquickAccess(6)))
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
+      
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(5,rdofSubset%ndofsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+
+      ! Calculate the normal vectors in DOFs on the boundary
+      call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                    DnormalX, DnormalY, 1)
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2) and (3) 
+      ! and impose penalry parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Compute the coefficient for the first term of the
+            ! bilinear form which accounts for the penalty parameter.
+            ! Note that the element width is not computed yet.           
+            Daux(1,idofe,iel) = -dscale*BDRC_DIRICHLET_PENALTY
+            
+            ! Compute coefficients for the second and third terms of
+            ! the bilinear form
+            !
+            ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
+            Daux(2,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))
+            
+            Daux(3,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))
+
+            ! Compute coefficients for the fourth and fifth terms of
+            ! the bilinear form
+            !
+            ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
+            Daux(4,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))
+            
+            Daux(5,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))
+          end do
+        end do
+
+      else
+        ! Clear all coefficients
+        Daux = 0.0_DP
+      end if
+      
+      ! Assemble the convective part of the boundary integral, eq. (2) and (4)
+      if (associated(p_rvelocity)) then
+
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Scale normal velocity by scaling parameter
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv
+            end if
+          end do
+        end do
+
+      end if
+          
+      ! Allocate temporal memory for the local data
+      allocate(DlocalData(5))
+
+      ! Loop over the cubature points and interpolate the boundary
+      ! conditions from the DOFs to the cubature points, where
+      ! they are needed by the linear form assembly routine
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
+          ! Clear local data
+          DlocalData = 0.0_DP
+          
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData = DlocalData + Daux(:,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
+          
+          ! Store boundary condition in the cubature points
+          Dcoefficients(:,ipoint,iel) = DlocalData
         end do
       end do
       
-
-    case (BDRC_ROBIN)
-      !-------------------------------------------------------------------------
-      ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form
-
-      Dcoefficients = 0.0_DP
-
-      ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assembly of "zero".
-      call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
-
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
       
-    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-      !-------------------------------------------------------------------------
-      ! Flux boundary conditions (Robin bc`s at the outlet)
-      ! Assemble the convective part of the boundary integral at the outflow
-      !
-      ! The convective part of the boundary integral at the outflow is
-      ! likewise assembled for periodic and antiperiodic boundary conditions
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
+      
+#else
+      
+      ! Allocate temporal memory for normal vector and velocity
+      allocate(DnormalX(npointsPerElement,nelements),&
+               DnormalY(npointsPerElement,nelements))
 
-      if (associated(p_rvelocity)) then
+      ! Get the normal vectors in the cubature points on the boundary
+      if (npointsPerElement .gt. 1) then
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+      else
+        call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+            DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+      end if
+      
+      ! Assemble the diffusive part of the boundary integral, eq. (2) and (3) 
+      ! and impose penalry parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
 
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
-
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
+          do ipoint = 1, npointsPerElement
+            
+            ! Compute the coefficient for the first term of the
+            ! bilinear form which accounts for the penalty parameter.
+            ! Note that the element width is not computed yet.           
+            Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
 
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+            ! Compute coefficients for the second and third terms of
+            ! the bilinear form
+            !
+            ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
+            Dcoefficients(2,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
+            
+            Dcoefficients(3,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
 
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
+            ! Compute coefficients for the fourth and fifth terms of
+            ! the bilinear form
+            !
+            ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
+            Dcoefficients(4,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
+            
+            Dcoefficients(5,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
+          end do
         end do
 
-        ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else
-        ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,1:2)
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+      
+      ! Assemble the convective part of the boundary integral, eq. (2) and (4)
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for velocity
+        allocate(Daux(npointsPerElement,nelements,NDIM2D))
+        
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3670,69 +4209,188 @@ do iedge = 1, nedges
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-        ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
         
-        ! Multiply the velocity vector with the normal in each point
-        ! to get the normal velocity.
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
         do iel = 1, nelements
-          do ipoint = 1, npoints
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-
-            ! Check if we are at the primal outflow boundary
-            if (dnv .gt. 0.0_DP) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = -dscale*dnv
-#else
-              Dcoefficients(1,ipoint,iel) = -dscale*dnv
-#endif
-            else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
-              Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
+            ! Scale normal velocity by scaling parameter and update
+            ! boundary condition in the cubature points
+            if (dnv .gt. SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)-dscale*dnv
             end if
-          end do ! ipoint
+          end do
+        end do
+
+        ! Free temporal memory
+        deallocate(Daux)
+      end if
+
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY)
+
+#endif
+      
+      
+    case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s at the outlet)
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$ -\int_{\Gamma_+} w({\bf v}u)\cdot{\bf n} ds $$
+      !
+      ! at the primal outflow boundary
+      !
+      ! $$\Gamma_+ := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} > 0\} $$
+      !
+      ! The convective part of the boundary integral at the outflow is
+      ! likewise assembled for periodic and antiperiodic boundary conditions
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
+
+      if (associated(p_rvelocity)) then
+
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
+
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,rdofSubset%ndofsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
+
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+     
+        ! Calculate the normal vectors in DOFs on the boundary
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Only at the primal outflow boundary:
+            ! Scale normal velocity by scaling parameter
+            Daux(1,idofe,iel) = -dscale*max(0.0_DP, dnv)
+          end do
+        end do
+        
+        ! Allocate temporal memory for local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the Neumann
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
             
-            dlocalData = 0.0_DP
+            ! Clear local data
+            DlocalData = 0.0_DP
             
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
             end do
             
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
+            ! Store Neumann boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
         
         ! Free temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
-        
-      else
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
 
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
+#else
+
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
+        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+            p_rvelocity%RvectorBlock(2), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Get the normal vectors in the cubature points on the boundary
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
+
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Compute the normal velocity
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
+            ! Only at the primal outflow boundary:
+            ! Scale normal velocity by scaling parameter
+            Dcoefficients(1,ipoint,iel) = -dscale*max(0.0_DP, dnv)
+          end do
+        end do
+
+        ! Free temporal memory
+        deallocate(Daux, DnormalX, DnormalY)
+
+      else
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
-
       end if
-      
+
+#endif
     
+
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
@@ -3807,11 +4465,11 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -3829,7 +4487,10 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
-    !   IquickAccess(3):     cubature rule
+    !
+    ! only for Dirichlet boundary conditions
+    !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
+    !   IquickAccess(3):     type of diffusion operator
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -3845,14 +4506,21 @@ do iedge = 1, nedges
 
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
-    real(DP), dimension(:), pointer :: p_Ddata, p_DvelocityX, p_DvelocityY
-    real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
-    real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
-    real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:,:), pointer :: Dcoords
-    real(DP) :: dlocalData,dnv,dscale,dtime
-    integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
+    real(DP), dimension(:,:,:), allocatable :: Daux  
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
+    real(DP) :: dnv,dscale,dtime,ddiffusion
+    integer :: ibdrtype,iel,ipoint,isegment
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+    type(t_dofSubset) :: rdofSubset
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
+    real(DP), dimension(:,:,:), pointer :: p_DdofCoords
+    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    integer, dimension(:,:), pointer :: p_IdofsLoc
+    logical, dimension(EL_MAXNDER) :: Bder
+    integer :: idofe,idofGlob
+#endif
+    
 
 #ifndef TRANSP_USE_IBP
     call output_line('Application must be compiled with flag &
@@ -3866,115 +4534,133 @@ do iedge = 1, nedges
     p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Set pointers
-    call lsysbl_getbase_double(p_rsolution, p_Ddata)
-    if (associated(p_rvelocity)) then
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
-      call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
-    end if
-#endif
-
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
     dtime  = rcollection%DquickAccess(1)
     dscale = rcollection%DquickAccess(2)
 
-    ! The first three quick access integer values hold the type of
-    ! boundary condition, the segment number and the cubature rule
+    ! The first two quick access integer values hold the type of
+    ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-    ccubType = rcollection%IquickAccess(3)
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-    ! Evaluate one-dimensional basis functions on the boundary edge
-    if (npointsPerElement .ne. cub_igetNumPts(ccubType)) then
-      call output_line('Type of cubature rule at boundary mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
-      call sys_halt()
-    else
-      ! How many DOFs are located at the boundary? This should be made
-      ! more flexible by checking the type of element. For the time
-      ! being, only linear and bilinear finite elements are supported
-      npoints = 2
-      
-      ! How many vertices per element do we have?
-      nve = elem_igetNVE(rdomainIntSubset%celement)
-      
-      ! Allocate temporal memory for one-dimensional
-      ! cubature along the boundary edge
-      allocate(Dbas(npoints,npointsPerElement))
-      allocate(Domega(npointsPerElement))
-      allocate(DcubPtsRef(1,npointsPerElement))
-
-      ! Get the coordinates of the cubature points and the
-      ! corresponding weights for the given cubature rule
-      call cub_getCubature(ccubType, DcubPtsRef, Domega)
-      
-      ! Evaluate the one-dimensional basis functions
-      ! in the cubature points on the boundary
-      do icubp = 1, npointsPerElement
-        Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
-        Dbas(2,icubp) = 0.5_DP*(1.0_DP+DcubPtsRef(1,icubp))
-      end do
-
-      ! Deallocate temporal memory which is no longer required
-      deallocate(DcubPtsRef,Domega)
-    end if
-#else
-    ! Boundary values are evaluated directly at the cubature points
-    npoints = npointsPerElement
-#endif
-
+    
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
 
-    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN)
+    case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN)
       !-------------------------------------------------------------------------
-      ! (In-)Homogeneous Neumann boundary conditions:
-      ! Assemble the boundary integral for the convective term (if any)
+      ! (In-)Homogeneous Neumann boundary or Robin boundary conditions:
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$ \int_{\Gamma_N} w({\bf v}u)\cdot{\bf n} ds $$
+      !
+      ! for all both types of Neumann boundary conditions.
+      ! Additionally, assemble the boundary integral term
+      !
+      ! $$ \int_{\Gamma_R}w[\alpha u+(\bfv u)\cdot\bfn] ds $$
+      !
+      ! for the Robin boundary condition
+      !
+      ! $$ \alpha u + (D\nabla u)\cdot {\bf n})=g_R $$
+      
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
 
       if (associated(p_rvelocity)) then
 
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,rdofSubset%ndofsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
 
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+       
         ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Scale normal velocity by the scaling parameter
+            Daux(1,idofe,iel) = dscale*dnv
+          end do
+        end do
+        
+        ! Allocate temporal memory for local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the Neumann
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Clear local data
+            DlocalData = 0.0_DP
+            
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+            end do
+            
+            ! Store Neumann boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
+        
+        ! Free temporal memory
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
+
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear coefficients for zero velocity
+        Dcoefficients = 0.0_DP
+      end if
+
 #else
-        ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,1:2)
+
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -3984,136 +4670,414 @@ do iedge = 1, nedges
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
         
         ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
-        
-        ! Multiply the velocity vector with the normal in each point
-        ! to get the normal velocity.
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
+
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
         do iel = 1, nelements
-          do ipoint = 1, npoints
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
-      
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            ! Scale normal velocity by scaling parameter
-            DcoeffAtDOF(ipoint) = dscale*dnv
-#else
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
             ! Scale normal velocity by scaling parameter
             Dcoefficients(1,ipoint,iel) = dscale*dnv
-#endif
-          end do ! ipoint
+          end do
+        end do
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-            
-            dlocalData = 0.0_DP
-            
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
-        
         ! Free temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+        deallocate(Daux, DnormalX, DnormalY)
 
       else
-
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
-
       end if
 
+#endif
+      
+      ! Do we have to prescribe Robin boundary conditions?
+      if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ROBIN) then
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Also apply Robin boundary condition
+            Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)&
+                                        + dscale*BDRC_ROBIN_SCALING
+          end do
+        end do
+      end if
 
+    
     case (BDRC_DIRICHLET)
       !-------------------------------------------------------------------------
       ! Dirichlet boundary conditions:
-      ! Impose penalty parameter
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$  \int_{\Gamma_D} \epsilon wu ds                        $$ (1)
+      ! $$ +\int_{\Gamma_D} w({\bf v}u-D\nabla u)\cdot{\bf n} ds  $$ (2)
+      ! $$ -\int_{\Gamma_D} (\gamma D\nabla w)\cdot{\bf n}u ds    $$ (3)
+      ! $$ -\int_{\Gamma_D\cap\Gamma_+} (\bf v}w)\cdot{\bf n}u ds $$ (4)
+      !
+      ! with parameter $\epsilon=C|D|/h$ and $\gamma \in \{-1,1\}$
+      ! and dual inflow boundary part
+      !
+      ! $$\Gamma_+ := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} > 0\} $$
 
+      ! Get norm of diffusion tensor
+      ddiffusion = max( abs(rcollection%DquickAccess(3))&
+                       +abs(rcollection%DquickAccess(4)),&
+                        abs(rcollection%DquickAccess(5))&
+                       +abs(rcollection%DquickAccess(6)))
+
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
+      ! Initialise subset of degrees of freedom
+      call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+      p_IdofsLoc   => rdofSubset%p_IdofsLoc
+      p_DdofCoords => rdofSubset%p_DdofCoords
+      
+      ! Allocate temporal memory for normal vector, velocity field,
+      ! the coefficients at the DOFs and the basis function values
+      allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+               DnormalY(rdofSubset%ndofsPerElement,nelements),&
+               Daux(5,rdofSubset%ndofsPerElement,nelements),&
+               DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                         elem_getMaxDerivative(rdomainIntSubset%celement),&
+                         npointsPerElement, nelements))
+
+      ! Evaluate function values only
+      Bder = .false.
+      Bder(DER_FUNC) = .true.
+      
+      ! Evaluate the basis functions at the cubature points
+      call elem_generic_sim2 (rdomainIntSubset%celement,&
+          rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+
+      ! Calculate the normal vectors in DOFs on the boundary
+      call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                    DnormalX, DnormalY, 1)
+
+      ! Assemble the diffusive part of the boundary integral, eq. (2) and (3) 
+      ! and impose penalry parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Compute the coefficient for the first term of the
+            ! bilinear form which accounts for the penalty parameter.
+            ! Note that the element width is not computed yet.           
+            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY
+            
+            ! Compute coefficients for the second and third terms of
+            ! the bilinear form
+            !
+            ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
+            Daux(2,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))
+            
+            Daux(3,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))
+
+            ! Compute coefficients for the fourth and fifth terms of
+            ! the bilinear form
+            !
+            ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
+            Daux(4,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(idofe,iel))
+            
+            Daux(5,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(idofe,iel))
+          end do
+        end do
+
+      else
+        ! Clear all coefficients
+        Daux = 0.0_DP
+      end if
+
+      
+      ! Assemble the convective part of the boundary integral, eq. (2) and (4)
+      if (associated(p_rvelocity)) then
+
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+            
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Scale normal velocity by scaling parameter
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv
+            end if
+          end do
+        end do
+
+      end if
+          
+      ! Allocate temporal memory for the local data
+      allocate(DlocalData(5))
+
+      ! Loop over the cubature points and interpolate the boundary
+      ! conditions from the DOFs to the cubature points, where
+      ! they are needed by the linear form assembly routine
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
           
-          ! Impose Dirichlet boundary conditions via penalty method
-          Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY
+          ! Clear local data
+          DlocalData = 0.0_DP
+          
+          do idofe = 1, rdofSubset%ndofsPerElement
+            DlocalData = DlocalData + Daux(:,idofe,iel)*&
+                DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+          end do
+          
+          ! Store boundary condition in the cubature points
+          Dcoefficients(:,ipoint,iel) = DlocalData
         end do
       end do
-
-
-    case (BDRC_ROBIN)
-      !-------------------------------------------------------------------------
-      ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form.
-
-      Dcoefficients = 0.0_DP
-
-      ! This routine should not be called at all for homogeneous Neumann boundary
-      ! conditions since it corresponds to an expensive assembly of "zero".
-      call output_line('Redundant assembly of vanishing boundary term!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
       
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
+      
+      ! Release subset of degrees of freedom
+      call dofprep_doneDofSet(rdofSubset)
+      
+#else
+      
+      ! Allocate temporal memory for normal vector and velocity
+      allocate(DnormalX(npointsPerElement,nelements),&
+               DnormalY(npointsPerElement,nelements))
 
+      ! Get the normal vectors in the cubature points on the boundary
+      if (npointsPerElement .gt. 1) then
+        call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+      else
+        call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+            DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+      end if
+      
+      ! Assemble the diffusive part of the boundary integral, eq. (2) and (3) 
+      ! and impose penalry parameter $C|D|/h, eq. (1)
+      if (ddiffusion .gt. 0.0_DP) then
+
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Compute the coefficient for the first term of the
+            ! bilinear form which accounts for the penalty parameter.
+            ! Note that the element width is not computed yet.           
+            Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY
+
+            ! Compute coefficients for the second and third terms of
+            ! the bilinear form
+            !
+            ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
+            Dcoefficients(2,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
+            
+            Dcoefficients(3,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
+
+            ! Compute coefficients for the fourth and fifth terms of
+            ! the bilinear form
+            !
+            ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
+            Dcoefficients(4,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
+            
+            Dcoefficients(5,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+                (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
+                 rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
+          end do
+        end do
+
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+      
+      ! Assemble the convective part of the boundary integral, eq. (2) and (4)
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for velocity
+        allocate(Daux(npointsPerElement,nelements,NDIM2D))
+        
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
+        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+            p_rvelocity%RvectorBlock(1), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+            p_rvelocity%RvectorBlock(2), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+        
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Compute the normal velocity
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
+            ! Scale normal velocity by scaling parameter and update
+            ! boundary condition in the cubature points
+            if (dnv .lt. -SYS_EPSREAL_DP) then
+              Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)+dscale*dnv
+            end if
+          end do
+        end do
+
+        ! Free temporal memory
+        deallocate(Daux)
+      end if
+
+      ! Free temporal memory
+      deallocate(DnormalX, DnormalY)
+
+#endif
+      
+      
     case(BDRC_FLUX, BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       !-------------------------------------------------------------------------
       ! Flux boundary conditions (Robin bc`s at the outlet)
-      ! Assemble the convective part of the boundary integral at the outflow
+      !
+      ! Assemble the boundary integral term
+      !
+      ! $$ \int_{\Gamma_-} w({\bf v}u)\cdot{\bf n} ds $$
+      !
+      ! at the dual outflow boundary
+      !
+      ! $$\Gamma_- := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} < 0\} $$
       !
       ! The convective part of the boundary integral at the outflow is
       ! likewise assembled for periodic and antiperiodic boundary conditions
 
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
+
       if (associated(p_rvelocity)) then
 
-        ! Allocate temporal memory
-        allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
-                 Daux(npoints,nelements,2))
+        ! Initialise subset of degrees of freedom
+        call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
+        p_IdofsLoc   => rdofSubset%p_IdofsLoc
+        p_DdofCoords => rdofSubset%p_DdofCoords
 
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        ! Allocate temporal memory
-        allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
+        ! Allocate temporal memory for normal vector, velocity field,
+        ! the coefficients at the DOFs and the basis function values
+        allocate(DnormalX(rdofSubset%ndofsPerElement,nelements),&
+                 DnormalY(rdofSubset%ndofsPerElement,nelements),&
+                 Daux(1,rdofSubset%ndofsPerElement,nelements),&
+                 DbasTrial(elem_igetNDofLoc(rdomainIntSubset%celement),&
+                           elem_getMaxDerivative(rdomainIntSubset%celement),&
+                           npointsPerElement, nelements))
 
-        ! We need the solution values and the physical coordinates of the DOFs
-        ! on the boundary, so compute them and store the result in Daux
-        do iel = 1, nelements
-          ! Get global DOF of first endpoints
-          ipoint = rdomainIntSubset%p_IelementOrientation(iel)
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(1,iel,1) = p_DvelocityX(ivt)
-          Daux(1,iel,2) = p_DvelocityY(ivt)
-          
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,1,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-
-          ! Get global DOF of second endpoints
-          ipoint = mod(rdomainIntSubset%p_IelementOrientation(iel),nve)+1
-          ivt    = IdofsTest(ipoint,iel)
-
-          ! Store velocity data
-          Daux(2,iel,1) = p_DvelocityX(ivt)
-          Daux(2,iel,2) = p_DvelocityY(ivt)
-
-          ! Store vertex coordinate
-          Dcoords(1:NDIM2D,2,iel) = rdomainIntSubset%p_Dcoords(1:NDIM2D,ipoint,iel)
-        end do
-
+        ! Evaluate function values only
+        Bder = .false.
+        Bder(DER_FUNC) = .true.
+        
+        ! Evaluate the basis functions at the cubature points
+        call elem_generic_sim2 (rdomainIntSubset%celement,&
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
+     
         ! Calculate the normal vectors in DOFs on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+        call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
+                                      DnormalX, DnormalY, 1)
+        ! Set pointers
+        call lsysbl_getbase_double(p_rsolution, p_Ddata)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(1), p_DvelocityX)
+        call lsyssc_getbase_double(p_rvelocity%RvectorBlock(2), p_DvelocityY)
+
+        ! Multiply the velocity vector with the normal in each degree
+        ! of freedom to get the normal velocity in the degrees of
+        ! freedom which is then interpolated to the cubature points.
+        do iel = 1, nelements
+          do idofe = 1, rdofSubset%ndofsPerElement
+
+            ! Get global DOF number
+            idofGlob = IdofsTest(p_IdofsLoc(idofe,iel),iel)
+
+            ! Compute the normal velocity
+            dnv = DnormalX(idofe,iel)*p_DvelocityX(idofGlob)+&
+                  DnormalY(idofe,iel)*p_DvelocityY(idofGlob)
+
+            ! Only at the dual outflow boundary:
+            ! Scale normal velocity by scaling parameter
+            Daux(1,idofe,iel) = dscale*min(0.0_DP, dnv)
+          end do
+        end do
+        
+        ! Allocate temporal memory for local data
+        allocate(DlocalData(1))
+
+        ! Loop over the cubature points and interpolate the Neumann
+        ! boundary conditions from the DOFs to the cubature points,
+        ! where they are needed by the linear form assembly routine
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Clear local data
+            DlocalData = 0.0_DP
+            
+            do idofe = 1, rdofSubset%ndofsPerElement
+              DlocalData(1) = DlocalData(1) + Daux(1,idofe,iel)*&
+                  DbasTrial(p_IdofsLoc(idofe,iel),DER_FUNC,ipoint,iel)
+            end do
+            
+            ! Store Neumann boundary condition in the cubature points
+            Dcoefficients(1,ipoint,iel) = DlocalData(1)
+          end do
+        end do
+        
+        ! Free temporal memory
+        deallocate(DnormalX, DnormalY, DbasTrial, Daux, DlocalData)
+
+        ! Release subset of degrees of freedom
+        call dofprep_doneDofSet(rdofSubset)
+
+      else
+        ! Clear all coefficients
+        Dcoefficients = 0.0_DP
+      end if
+
 #else
-        ! Evaluate the velocity field (if any) in the cubature points
-        ! on the boundary and store the result in Daux(:,:,1:2)
+
+      if (associated(p_rvelocity)) then
+
+        ! Allocate temporal memory for normal vector and velocity
+        allocate(DnormalX(npointsPerElement,nelements),&
+                 DnormalY(npointsPerElement,nelements),&
+                 Daux(npointsPerElement,nelements,NDIM2D))
+
+        ! Evaluate the velocity field in the cubature points on the
+        ! boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
             p_rvelocity%RvectorBlock(1), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
@@ -4121,69 +5085,41 @@ do iedge = 1, nedges
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
             p_rvelocity%RvectorBlock(2), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-
-        ! Get the normal vectors in the cubature points on the boundary
-        call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif
         
-        ! Multiply the velocity vector with the normal in each point
-        ! to get the normal velocity.
+        ! Get the normal vectors in the cubature points on the boundary
+        if (npointsPerElement .gt. 1) then
+          call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
+        else
+          call boundary_getNormalVec2D(rdiscretisationTest%p_rboundary, ibct,&
+              DpointPar, DnormalX, DnormalY, BDR_NORMAL_MEAN, BDR_PAR_LENGTH)
+        end if
+
+        ! Multiply the velocity vector with the normal in each
+        ! cubature point to get the normal velocity.
         do iel = 1, nelements
-          do ipoint = 1, npoints
+          do ipoint = 1, npointsPerElement
             
             ! Compute the normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1) +&
-                  Dny(ipoint,iel)*Daux(ipoint,iel,2)
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
+                  DnormalY(ipoint,iel)*Daux(ipoint,iel,2)
+            
+            ! Only at the dual outflow boundary:
+            ! Scale normal velocity by scaling parameter
+            Dcoefficients(1,ipoint,iel) = dscale*min(0.0_DP, dnv)
+          end do
+        end do
 
-            ! Check if we are at the dual outflow boundary
-            if (dnv .lt. 0.0_DP) then
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = dscale*dnv
-#else
-              Dcoefficients(1,ipoint,iel) = dscale*dnv
-#endif
-            else
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-              DcoeffAtDOF(ipoint) = 0.0_DP
-#else
-              Dcoefficients(1,ipoint,iel) = 0.0_DP
-#endif
-            end if
-          end do ! ipoint
-
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-          ! Loop over the cubature points and interpolate the Robin
-          ! boundary conditions from the DOFs to the cubature points,
-          ! where they are needed by the linear form assembly routine
-          do icubp = 1, npointsPerElement
-            
-            dlocalData = 0.0_DP
-            
-            ! Loop over the DOFs and interpolate the Robin boundary conditions
-            do ipoint = 1, npoints
-              dlocalData = dlocalData + Dbas(ipoint,icubp)*DcoeffAtDOF(ipoint)
-            end do
-            
-            ! Store Robin boundary condition in the cubature points
-            Dcoefficients(1,icubp,iel) = dlocalData
-          end do ! icubp
-#endif
-        end do ! iel
-        
         ! Free temporal memory
-        deallocate(Daux, Dnx, Dny)
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-        deallocate(Dcoords, DcoeffAtDOF)
-#endif
+        deallocate(Daux, DnormalX, DnormalY)
 
       else
-
         ! Clear coefficients for zero velocity
         Dcoefficients = 0.0_DP
-
       end if
 
-      
+#endif
+    
+
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
@@ -4501,7 +5437,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part in the linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
       !
@@ -4521,7 +5457,7 @@ do iedge = 1, nedges
       !
       ! Evaluate coefficient for the diffusive part of the linear form
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form (if any).
 
@@ -5015,7 +5951,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part in the linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
       !
@@ -5035,7 +5971,7 @@ do iedge = 1, nedges
       !
       ! Evaluate coefficient for the diffusive part of the linear form
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form (if any).
 
@@ -5499,7 +6435,7 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5543,7 +6479,7 @@ do iedge = 1, nedges
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
@@ -5585,7 +6521,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part in the linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
       !
@@ -5604,7 +6540,7 @@ do iedge = 1, nedges
       !
       ! Evaluate coefficient for the diffusive part of the linear form
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form (if any).
 
@@ -5613,8 +6549,7 @@ do iedge = 1, nedges
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
+      ! cubature points on the boundary and store the result
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -5673,19 +6608,18 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
       
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the boundary values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
+      ! cubature points on the boundary and store the result
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -5697,13 +6631,13 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,1))
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*0.5*Daux(ipoint,iel,1) + DnormalY(ipoint,iel)
           Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case(BDRC_FLUX)
@@ -5720,8 +6654,8 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,:1)
@@ -5730,7 +6664,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
       
       ! Initialise values
       Dvalue = 0.0_DP
@@ -5751,12 +6685,12 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,2))
 
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*0.5*Daux(ipoint,iel,1) + DnormalY(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,2) + Dny(ipoint,iel)
+            dnv = DnormalX(ipoint,iel)*0.5*Daux(ipoint,iel,2) + DnormalY(ipoint,iel)
             Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -5765,7 +6699,7 @@ do iedge = 1, nedges
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case default
@@ -5836,11 +6770,11 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -5873,7 +6807,7 @@ do iedge = 1, nedges
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
@@ -5908,8 +6842,8 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,1)
@@ -5918,7 +6852,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
       
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
@@ -5926,7 +6860,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*0.5*Daux(ipoint,iel,1) + DnormalY(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale*dnv
@@ -5934,7 +6868,7 @@ do iedge = 1, nedges
       end do
       
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
       
     case (BDRC_DIRICHLET)
@@ -5969,8 +6903,8 @@ do iedge = 1, nedges
       
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,1)
@@ -5979,7 +6913,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 
       ! Multiply the velocity vector [0.5*u,1] with the normal in each
       ! point to get the normal velocity.
@@ -5987,7 +6921,7 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*0.5*Daux(ipoint,iel,1) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*0.5*Daux(ipoint,iel,1) + DnormalY(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -5999,7 +6933,7 @@ do iedge = 1, nedges
       end do
       
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case default
@@ -6315,7 +7249,7 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -6359,7 +7293,7 @@ do iedge = 1, nedges
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dnv,dtime,dscale,dval
     integer :: ibdrtype,isegment,iel,ipoint
@@ -6401,7 +7335,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part in the linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
       !
@@ -6420,7 +7354,7 @@ do iedge = 1, nedges
       !
       ! Evaluate coefficient for the diffusive part of the linear form
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form (if any).
 
@@ -6429,8 +7363,7 @@ do iedge = 1, nedges
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
+      ! cubature points on the boundary and store the result
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -6493,11 +7426,11 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 1))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 
       ! Initialise values
       Dvalue = 0.0_DP
@@ -6518,14 +7451,14 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,1))
           
           ! Compute the normal velocity and impose Dirichlet boundary condition
-          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
-                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + DnormalY(ipoint,iel)
           Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,1)
         end do
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case(BDRC_FLUX)
@@ -6544,8 +7477,8 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
 
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,1)
@@ -6554,7 +7487,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 
       ! Initialise values
       Dvalue = 0.0_DP
@@ -6575,14 +7508,14 @@ do iedge = 1, nedges
               Dvalue, Daux(ipoint,iel,2))
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
-                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + DnormalY(ipoint,iel)
 
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
             ! Compute the prescribed normal velocity
-            dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2 +&
-                  0.5*(1-Daux(ipoint,iel,2))**2) + Dny(ipoint,iel)
+            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,2)/(Daux(ipoint,iel,2)**2 +&
+                  0.5*(1-Daux(ipoint,iel,2))**2) + DnormalY(ipoint,iel)
             Dcoefficients(1,ipoint,iel) = -dscale*dnv*Daux(ipoint,iel,2)
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -6591,7 +7524,7 @@ do iedge = 1, nedges
       end do
 
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case default
@@ -6662,11 +7595,11 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -6699,7 +7632,7 @@ do iedge = 1, nedges
     ! local variables
     type(t_vectorBlock), pointer :: p_rsolution
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP), dimension(:,:), pointer :: Dnx,Dny
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY
     real(DP) :: dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint
 
@@ -6734,8 +7667,8 @@ do iedge = 1, nedges
 
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
       ! and store the result in Daux(:,:,1)
@@ -6744,7 +7677,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
@@ -6752,8 +7685,8 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
-                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + DnormalY(ipoint,iel)
           
           ! Scale normal velocity by scaling parameter
           Dcoefficients(1,ipoint,iel) = -dscale*dnv
@@ -6761,7 +7694,7 @@ do iedge = 1, nedges
       end do
       
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
       
     case (BDRC_DIRICHLET)
@@ -6796,8 +7729,8 @@ do iedge = 1, nedges
       
       ! Allocate temporal memory
       allocate(Daux(npointsPerElement, nelements, 2))
-      allocate(Dnx(npointsPerElement, nelements))
-      allocate(Dny(npointsPerElement, nelements))
+      allocate(DnormalX(npointsPerElement, nelements))
+      allocate(DnormalY(npointsPerElement, nelements))
 
       ! Evaluate the solution field in the cubature points on the boundary
       ! and store the result in Daux(:,:,1)
@@ -6806,7 +7739,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
       
       ! Multiply the velocity vector [a,1] with the normal in each
       ! point to get the normal velocity.
@@ -6814,8 +7747,8 @@ do iedge = 1, nedges
         do ipoint = 1, npointsPerElement
           
           ! Compute the normal velocity
-          dnv = Dnx(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
-                0.5*(1-Daux(ipoint,iel,1))**2) + Dny(ipoint,iel)
+          dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2 +&
+                0.5*(1-Daux(ipoint,iel,1))**2) + DnormalY(ipoint,iel)
           
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -6827,7 +7760,7 @@ do iedge = 1, nedges
       end do
       
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 
 
     case default
@@ -7097,7 +8030,7 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -7144,7 +8077,7 @@ do iedge = 1, nedges
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
     real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny,DpointParMirror
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY,DpointParMirror
     real(DP), dimension(:,:,:), pointer :: Dcoords,Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dlocalData,dnv,dscale,dtime,dval
@@ -7234,7 +8167,7 @@ do iedge = 1, nedges
       !
       ! The diffusive part in the linear form vanishes since
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
       !
@@ -7253,7 +8186,7 @@ do iedge = 1, nedges
       !
       ! Evaluate coefficient for the diffusive part of the linear form
       !
-      ! $$ d\nabla u\cdot{\bf n}=0 $$
+      ! $$ D\nabla u\cdot{\bf n}=0 $$
       !
       ! The convective part is included into the bilinear form.
 
@@ -7262,8 +8195,7 @@ do iedge = 1, nedges
       Dvalue(NDIM3D+1) = dtime
 
       ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(1,:,:).
+      ! cubature points on the boundary and store the result
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
 
@@ -7375,7 +8307,7 @@ do iedge = 1, nedges
       ! and do not include any boundary integral into the bilinear form at all.
       
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
+      allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Allocate temporal memory
@@ -7397,10 +8329,10 @@ do iedge = 1, nedges
       end do
       
       ! Calculate the normal vectors in DOFs on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
 #else
       ! Calculate the normal vectors in cubature on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 #endif
       
       ! Initialise values
@@ -7426,7 +8358,7 @@ do iedge = 1, nedges
               Dvalue, dval)
           
           ! Compute the normal velocity
-          dnv = 0.5_DP*(Dnx(ipoint,iel)+Dny(ipoint,iel))*dval
+          dnv = 0.5_DP*(DnormalX(ipoint,iel)+DnormalY(ipoint,iel))*dval
 
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Store the Robin boundary condition at the DOF on the boundary
@@ -7457,7 +8389,7 @@ do iedge = 1, nedges
       end do
       
       ! Deallocate temporal memory
-      deallocate(Dnx, Dny)
+      deallocate(DnormalX, DnormalY)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       deallocate(Dcoords, DcoeffAtDOF)
 #endif
@@ -7476,7 +8408,7 @@ do iedge = 1, nedges
       ! into the bilinear form.
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements),Dny(npoints,nelements),&
+      allocate(DnormalX(npoints,nelements),DnormalY(npoints,nelements),&
                Daux(npoints,nelements,1))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7508,7 +8440,7 @@ do iedge = 1, nedges
       end do
       
       ! Calculate the normal vectors in DOFs on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
 #else
       ! Evaluate the solution vector in the cubature points on the
       ! boundary and store the result in Daux(:,:,1)
@@ -7517,7 +8449,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 #endif
       
       ! Initialise values
@@ -7542,16 +8474,16 @@ do iedge = 1, nedges
           call fparser_evalFunction(p_rfparser, isegment, Dvalue, dval)
           
           ! Compute the normal velocity
-          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel,1)
+          dnv = 0.5_DP*(DnormalX(ipoint,iel) + DnormalY(ipoint,iel))*Daux(ipoint,iel,1)
           
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
-                                                    Dny(ipoint,iel))*dval*dval
+            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(DnormalX(ipoint,iel) +&
+                                                    DnormalY(ipoint,iel))*dval*dval
 #else
-            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
-                                                            Dny(ipoint,iel))*dval*dval
+            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(DnormalX(ipoint,iel) +&
+                                                            DnormalY(ipoint,iel))*dval*dval
 #endif
           else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7582,7 +8514,7 @@ do iedge = 1, nedges
       end do
       
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       deallocate(Dcoords, DcoeffAtDOF)
 #endif
@@ -7611,7 +8543,7 @@ do iedge = 1, nedges
       dmaxParamMirror = rcollection%DquickAccess(6)
       
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements))
+      allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements))
       allocate(DpointParMirror(npoints,nelements), Daux(npoints,nelements,2))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7643,7 +8575,7 @@ do iedge = 1, nedges
       end do
       
       ! Calculate the normal vectors in DOFs on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
 #else
       ! Evaluate the solution vector in the cubature points on
       ! the boundary and store the result in Daux(:,:,1)
@@ -7652,7 +8584,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 #endif
       
       if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
@@ -7695,16 +8627,16 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel,1)
+          dnv = 0.5_DP*(DnormalX(ipoint,iel) + DnormalY(ipoint,iel))*Daux(ipoint,iel,1)
           
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. 0.0_DP) then
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
-            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
-                                  Dny(ipoint,iel))*Daux(ipoint,iel,2)**2
+            DcoeffAtDOF(ipoint) = -dscale*0.5_DP*(DnormalX(ipoint,iel) +&
+                                  DnormalY(ipoint,iel))*Daux(ipoint,iel,2)**2
 #else
-            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(Dnx(ipoint,iel) +&
-                                          Dny(ipoint,iel))*Daux(ipoint,iel,2)**2
+            Dcoefficients(1,ipoint,iel) = -dscale*0.5_DP*(DnormalX(ipoint,iel) +&
+                                          DnormalY(ipoint,iel))*Daux(ipoint,iel,2)**2
 #endif
           else
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -7735,7 +8667,7 @@ do iedge = 1, nedges
       end do
       
       ! Deallocate temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       ! Deallocate temporal memory
       deallocate(Dcoords, DcoeffAtDOF)
@@ -7759,7 +8691,7 @@ do iedge = 1, nedges
     ! Here come the working routines
 
     !***************************************************************************
-    ! Evaluate th solution vector at some boundary points given in
+    ! Evaluate the solution vector at some boundary points given in
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
@@ -7840,11 +8772,11 @@ do iedge = 1, nedges
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! An array accepting the DOF`s on all elements in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
@@ -7879,7 +8811,7 @@ do iedge = 1, nedges
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(:), pointer :: Domega,DcoeffAtDOF
     real(DP), dimension(:,:), pointer :: DcubPtsRef,Dbas
-    real(DP), dimension(:,:), pointer :: Dnx,Dny,Daux
+    real(DP), dimension(:,:), pointer :: DnormalX,DnormalY,Daux
     real(DP), dimension(:,:,:), pointer :: Dcoords
     real(DP) :: dlocalData,dnv,dscale,dtime
     integer :: ccubType,ibdrtype,icubp,iel,ipoint,isegment,ivt,npoints,nve
@@ -7976,7 +8908,7 @@ do iedge = 1, nedges
       ! Assemble the convective part of the boundary integral
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+      allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements),&
                Daux(npoints,nelements))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -8008,7 +8940,7 @@ do iedge = 1, nedges
       end do
       
       ! Calculate the normal vectors in DOFs on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
 #else
       ! Evaluate the solution vector in the cubature points on the
       ! boundary and store the result in Daux
@@ -8017,7 +8949,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 #endif
       
       ! Multiply the velocity vector [0.5*u*I] with the normal in
@@ -8026,7 +8958,7 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel)
+          dnv = 0.5_DP*(DnormalX(ipoint,iel) + DnormalY(ipoint,iel))*Daux(ipoint,iel)
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Scale normal velocity by scaling parameter
@@ -8057,7 +8989,7 @@ do iedge = 1, nedges
       end do
         
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       deallocate(Dcoords, DcoeffAtDOF)
 #endif
@@ -8099,7 +9031,7 @@ do iedge = 1, nedges
       ! likewise assembled for periodic and antiperiodic boundary conditions
 
       ! Allocate temporal memory
-      allocate(Dnx(npoints,nelements), Dny(npoints,nelements),&
+      allocate(DnormalX(npoints,nelements), DnormalY(npoints,nelements),&
                Daux(npoints,nelements))
       
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
@@ -8131,7 +9063,7 @@ do iedge = 1, nedges
       end do
       
       ! Calculate the normal vectors in DOFs on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dcoords, DnormalX, DnormalY, 1)
 #else
       ! Evaluate the velocity field (if any) in the cubature points on
       ! the boundary and store the result in Daux
@@ -8140,7 +9072,7 @@ do iedge = 1, nedges
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Get the normal vectors in the cubature points on the boundary
-      call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
+      call boundary_calcNormalVec2D(Dpoints, Dpoints, DnormalX, DnormalY, 1)
 #endif
       
       ! Multiply the velocity vector [0.5*u*I] with the normal in
@@ -8149,7 +9081,7 @@ do iedge = 1, nedges
         do ipoint = 1, npoints
           
           ! Compute the normal velocity
-          dnv = 0.5_DP*(Dnx(ipoint,iel) + Dny(ipoint,iel))*Daux(ipoint,iel)
+          dnv = 0.5_DP*(DnormalX(ipoint,iel) + DnormalY(ipoint,iel))*Daux(ipoint,iel)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then
@@ -8187,7 +9119,7 @@ do iedge = 1, nedges
       end do
       
       ! Free temporal memory
-      deallocate(Daux, Dnx, Dny)
+      deallocate(Daux, DnormalX, DnormalY)
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
       deallocate(Dcoords, DcoeffAtDOF)
 #endif
