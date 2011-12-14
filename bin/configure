@@ -186,6 +186,7 @@ use constant SRCLIST_KERNEL =>
     "DOFMaintenance/sortstrategy.f90 DOFMaintenance/spatialdiscretisation.f90 " .
     "DOFMaintenance/trilinearformevaluation.f90 DOFMaintenance/vectorfilters.f90 " .
     "DOFMaintenance/boundaryaux.f90 DOFMaintenance/ufci.f90 " .
+    "DOFMaintenance/dofpreprocessing.f90 " .
 
     "ElementCubature/cubature.f90 ElementCubature/derivatives.f90 ElementCubature/element.f90 " .
     "ElementCubature/adaptivecubature.f90 " .
