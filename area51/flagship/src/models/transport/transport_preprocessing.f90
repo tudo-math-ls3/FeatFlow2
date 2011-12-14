@@ -62,6 +62,7 @@ module transport_preprocessing
   use lineariser
   use linearsystemblock
   use linearsystemscalar
+  use meshmodification
   use paramlist
   use pprocsolution
   use problem
@@ -364,6 +365,7 @@ contains
     type(t_matrixScalar) :: rmatrixBdrSx,rmatrixBdrSy,rmatrixBdrSz
     integer, dimension(:), allocatable :: Celement
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
+    real(DP) :: dmeshdisturb
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: ccubType,i,ibdc,isegment,j,nmatrices,nsubstrings,neq
     character(len=SYS_STRLEN) :: selemName,smass,sconvection,sdiffusion
@@ -433,6 +435,13 @@ contains
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation => rproblemLevel%rtriangulation
+
+    ! Disturb the mesh?
+    call parlst_getvalue_double(rparlist,&
+        ssectionName, 'dmeshdisturb', dmeshdisturb, 0.0_DP)
+    if (dmeshdisturb .gt. 0.0_DP)&
+        call meshmod_disturbMesh(p_rtriangulation, dmeshdisturb)
+
     !---------------------------------------------------------------------------
     ! Create discretisation structure
     !---------------------------------------------------------------------------
