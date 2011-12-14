@@ -88,7 +88,7 @@ else
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -DUSE_COMPILER_INTEL -O0 -g -fpe0 -assume underscore
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
-		 -module $(OBJDIR) -C -check bounds -traceback -warn all 
+		 -module $(OBJDIR) -C -check bounds -traceback -warn all -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) 
