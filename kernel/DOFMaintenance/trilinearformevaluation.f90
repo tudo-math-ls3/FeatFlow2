@@ -2386,7 +2386,7 @@ contains
     
   case default
     call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
     call sys_halt()
   end select
   
