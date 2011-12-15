@@ -82,6 +82,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretefbc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\dofmapping.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\dofpreprocessing.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\domainintegration.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\feevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_bcassembly.inc"/>
