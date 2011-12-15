@@ -1309,7 +1309,7 @@ contains
     
     ! A discretisation structure for Q1
     type(t_blockDiscretisation) :: rprjDiscretisation
-    
+
     ! A dynamic level information structure containing the BC's.
     type(t_dynamicLevelInfo), target :: rdynamicInfo
     
@@ -1321,6 +1321,7 @@ contains
     
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
+    type(t_collection) :: rcollection
     
     ! Parameters used for the moving frame formulation
     integer :: imovingFrame
@@ -1546,6 +1547,23 @@ contains
       
     end if
     
+    ! Write out the viscosity if nonconstant
+    if (rproblem%rphysics%cviscoModel .ne. 0) then
+      
+      ! Prepare the collection. The "next" collection points to the user defined 
+      ! collection.
+      call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
+          rcollection,rvector)
+      rcollection%p_rnextCollection => rproblem%rcollection
+
+      ! Project the viscosity to the Q1 space.
+      call anprj_discrDirect(rprjVector%RvectorBlock(1), ffunctionViscoModel,rcollection)
+
+      ! Write the viscosity
+      call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+      call ucd_addVariableVertexBased (rexport,'viscosity',UCD_VAR_STANDARD, p_Ddata)
+    end if
+
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
