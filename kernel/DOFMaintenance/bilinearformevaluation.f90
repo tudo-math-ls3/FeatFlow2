@@ -6467,7 +6467,7 @@ contains
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
-    real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:), allocatable, target :: DedgeLength
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -6684,6 +6684,30 @@ contains
           DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
+      ! Calculate the length of egdes on the boundary. Depending on
+      ! whether the transformation is (multi-)linear or not we compute
+      ! the edge length as the distance between the two corner
+      ! vertices of the element located on the boundary or as the real
+      ! length of the boundary segment of the element.
+      !
+      ! The length of the current edge serves as a "determinant" in
+      ! the cubature, so we have to divide it by 2 as an edge on the
+      ! unit interval [-1,1] has length 2.
+      if (bisLinearTrafo) then
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*sqrt(&
+              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
+              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
+               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
+        end do
+      else
+        do iel = 1,IELmax-IELset+1
+          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
+                                     DedgePosition(1,IELset+iel-1))
+        end do
+      end if
+
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixScBdr2D_sim)) then
@@ -6693,6 +6717,7 @@ contains
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
           rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
+          rintSubset%p_DedgeLength         => DedgeLength(1:IELmax-IELset+1)
           rintSubset%p_IdofsTrial          => p_IdofsTrial
           rintSubset%celement              =  rlocalMatrixAssembly%celementTrial
           call fcoeff_buildMatrixScBdr2D_sim (rmatrix%p_rspatialDiscrTest,&
@@ -6721,30 +6746,6 @@ contains
             rlocalMatrixAssembly%p_DbasTrial)
       end if
       
-      ! Calculate the length of egdes on the boundary. Depending on
-      ! whether the transformation is (multi-)linear or not we compute
-      ! the edge length as the distance between the two corner
-      ! vertices of the element located on the boundary or as the real
-      ! length of the boundary segment of the element.
-      !
-      ! The length of the current edge serves as a "determinant" in
-      ! the cubature, so we have to divide it by 2 as an edge on the
-      ! unit interval [-1,1] has length 2.
-      if (bisLinearTrafo) then
-        do iel = 1,IELmax-IELset+1
-          DedgeLength(iel) = 0.5_DP*sqrt(&
-              (p_Dcoords(1,    IelementOrientation(IELset+iel-1),iel)-&
-               p_Dcoords(1,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2+&
-              (p_Dcoords(2,    IelementOrientation(IELset+iel-1),iel)-&
-               p_Dcoords(2,mod(IelementOrientation(IELset+iel-1),nve)+1,iel))**2)
-        end do
-      else
-        do iel = 1,IELmax-IELset+1
-          DedgeLength(iel) = 0.5_DP*(DedgePosition(2,IELset+iel-1)-&
-                                     DedgePosition(1,IELset+iel-1))
-        end do
-      end if
-
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
       ! Values of all basis functions calculated. Now we can start

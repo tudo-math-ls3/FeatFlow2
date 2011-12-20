@@ -3017,7 +3017,7 @@ contains
 
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:), allocatable, target :: DedgeLength
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
@@ -3198,34 +3198,7 @@ contains
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
-      
-      ! Now it is time to call our coefficient function to calculate the
-      ! function values in the cubature points:
-      if (present(fcoeff_buildVectorScBdr2D_sim)) then
-        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
-        rintSubset%ielementStartIdx      =  IELset
-        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
-        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
-        rintSubset%p_IdofsTrial          => p_Idofs
-        rintSubset%celement              =  rlocalVectorAssembly%celement
-        call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
-            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
-            p_Idofs, rintSubset, &
-            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
-        call domint_doneIntegration (rintSubset)
-      else
-        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
-      end if
-      
-      ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
-          p_revalElementSet, rlocalVectorAssembly%Bder, &
-          rlocalVectorAssembly%p_Dbas)
-      
+
       ! Calculate the length of egdes on the boundary. Depending on
       ! whether the transformation is (multi-)linear or not we compute
       ! the edge length as the distance between the two corner
@@ -3249,6 +3222,33 @@ contains
                                      DedgePosition(1,IELset+iel-1))
         end do
       end if
+      
+      ! Now it is time to call our coefficient function to calculate the
+      ! function values in the cubature points:
+      if (present(fcoeff_buildVectorScBdr2D_sim)) then
+        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
+        rintSubset%p_DedgeLength         => DedgeLength(1:IELmax-IELset+1)
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
+        call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
+            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
+            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+        call domint_doneIntegration (rintSubset)
+      else
+        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+      end if
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
+          p_revalElementSet, rlocalVectorAssembly%Bder, &
+          rlocalVectorAssembly%p_Dbas)
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -3685,7 +3685,7 @@ contains
     
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:), allocatable, target :: DedgeLength
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
@@ -3868,32 +3868,6 @@ contains
           DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
-      ! Now it is time to call our coefficient function to calculate the
-      ! function values in the cubature points:
-      if (present(fcoeff_buildVectorBlBdr2D_sim)) then
-        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
-        rintSubset%ielementStartIdx      =  IELset
-        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
-        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
-        rintSubset%p_IdofsTrial          => p_Idofs
-        rintSubset%celement              =  rlocalVectorAssembly%celement
-        call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
-            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
-            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
-            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
-        call domint_doneIntegration (rintSubset)
-      else
-        p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
-      end if
-      
-      ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
-          p_revalElementSet, rlocalVectorAssembly%Bder, &
-          rlocalVectorAssembly%p_Dbas)
-      
       ! Calculate the length of egdes on the boundary. Depending on
       ! whether the transformation is (multi-)linear or not we compute
       ! the edge length as the distance between the two corner
@@ -3917,6 +3891,33 @@ contains
                                      DedgePosition(1,IELset+iel-1))
         end do
       end if
+
+      ! Now it is time to call our coefficient function to calculate the
+      ! function values in the cubature points:
+      if (present(fcoeff_buildVectorBlBdr2D_sim)) then
+        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
+        rintSubset%p_DedgeLength         => DedgeLength(1:IELmax-IELset+1)
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
+        call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rspatialDiscr,&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
+            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
+            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
+        call domint_doneIntegration (rintSubset)
+      else
+        p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
+      end if
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
+          p_revalElementSet, rlocalVectorAssembly%Bder, &
+          rlocalVectorAssembly%p_Dbas)
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -4697,7 +4698,7 @@ contains
     
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:), allocatable :: DedgeLength
+    real(DP), dimension(:), allocatable, target :: DedgeLength
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
@@ -4871,7 +4872,7 @@ contains
       ! of vertices per element to compute the length of the element
       ! edge at the boundary
       if (bisLinearTrafo) cevaluationTag = ior(cevaluationTag, EL_EVLTAG_COORDS)
-      
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
@@ -4880,33 +4881,7 @@ contains
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
-      
-      ! Now it is time to call our coefficient function to calculate the
-      ! function values in the cubature points:
-      if (present(fcoeff_buildVectorBlBdr2D_sim)) then
-        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
-        rintSubset%ielementStartIdx      =  IELset
-        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
-        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
-        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
-        rintSubset%p_IdofsTrial          => p_Idofs
-        rintSubset%celement              =  rlocalVectorAssembly%celement
-        call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
-            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
-            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
-            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
-        call domint_doneIntegration (rintSubset)
-      else
-        p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
-      end if
-      
-      ! Calculate the values of the basis functions.
-      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
-          p_revalElementSet, rlocalVectorAssembly%Bder, &
-          rlocalVectorAssembly%p_Dbas)
-      
+
       ! Calculate the length of egdes on the boundary. Depending on
       ! whether the transformation is (multi-)linear or not we compute
       ! the edge length as the distance between the two corner
@@ -4930,6 +4905,33 @@ contains
                                      DedgePosition(1,IELset+iel-1))
         end do
       end if
+      
+      ! Now it is time to call our coefficient function to calculate the
+      ! function values in the cubature points:
+      if (present(fcoeff_buildVectorBlBdr2D_sim)) then
+        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+        rintSubset%ielementDistribution  =  0
+        rintSubset%ielementStartIdx      =  IELset
+        rintSubset%p_Ielements           => IelementList(IELset:IELmax)
+        rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
+        rintSubset%p_DedgePosition       => DedgePosition(:,IELset:IELmax)
+        rintSubset%p_DedgeLength         => DedgeLength(1:IELmax-IELset+1)
+        rintSubset%p_IdofsTrial          => p_Idofs
+        rintSubset%celement              =  rlocalVectorAssembly%celement
+        call fcoeff_buildVectorBlBdr2D_sim (rvector%p_rblockDiscr%RspatialDiscr(1),&
+            rlocalVectorAssembly%rform, IELmax-IELset+1, ncubp,&
+            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+            ibdc, DpointsPar(:,1:IELmax-IELset+1), p_Idofs, rintSubset, &
+            p_Dcoefficients(:,:,:,1:IELmax-IELset+1), rcollection)
+        call domint_doneIntegration (rintSubset)
+      else
+        p_Dcoefficients(:,:,:,1:IELmax-IELset+1) = 1.0_DP
+      end if
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
+          p_revalElementSet, rlocalVectorAssembly%Bder, &
+          rlocalVectorAssembly%p_Dbas)
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
