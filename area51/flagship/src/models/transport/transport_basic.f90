@@ -238,16 +238,10 @@ module transport_basic
   integer, parameter, public :: BDRC_DIRICHLET    = 3
 
   ! Penalty parameter for Dirichlet boundary conditions
-  real(DP), parameter, public :: BDRC_DIRICHLET_PENALTY = 1e2_DP
-
-  ! Switch parameter {-1,1} for Dirichlet boundary conditions
-  real(DP), parameter, public :: BDRC_DIRICHLET_SWITCH = 1.0_DP
+  real(DP), parameter, public :: BDRC_DIRICHLET_PENALTY = 1e4_DP
 
   ! Robin boundary conditions
   integer, parameter, public :: BDRC_ROBIN        = 4
-
-  ! Scaling parameter for Robin boundary conditions
-  real(DP), parameter, public :: BDRC_ROBIN_SCALING = 1.0_DP
 
   ! Flux boundary condition
   integer, parameter, public :: BDRC_FLUX         = 5
