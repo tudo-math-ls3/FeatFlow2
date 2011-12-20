@@ -6236,13 +6236,7 @@ contains
         ! What kind of stabilisation should be applied?
         select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
 
-        case (AFCSTAB_DMP)
-          ! Satisfy discrete maximum principle
-          call gfsc_buildOperatorEdge(&
-              rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1),&
-              dscale, .true., rmatrix)
-
-        case (AFCSTAB_SYMMETRIC,&
+        case (AFCSTAB_DMP, AFCSTAB_SYMMETRIC,&
               AFCSTAB_LINLPT_SYMMETRIC,&
               AFCSTAB_NLINLPT_SYMMETRIC)
           ! Satisfy discrete maximum principle
