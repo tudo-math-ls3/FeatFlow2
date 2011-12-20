@@ -30,7 +30,8 @@
 !#     -> Assembles a discrete operator node-by-node by the
 !#        group finite element formulation
 !#
-!# 2.) gfsc_buildOperatorEdge = gfsc_buildOperatorEdgeScalar /
+!# 2.) gfsc_buildOperatorEdge = gfsc_buildOperatorConst /
+!#                              gfsc_buildOperatorEdgeScalar /
 !#                              gfsc_buildOperatorEdgeBlock1 /
 !#                              gfsc_buildOperatorEdgeBlock2 /
 !#                              gfsc_buildOperatorEdgeBlock3
