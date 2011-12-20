@@ -42,5 +42,5 @@ IBCT
 NCOMP
 2
 PARAMETERS
-1.0  T  'DIRICHLET_WEAK'  'if(abs(y-0.5) < 0.01, 1.0, 0.0)'
-4.0  F  'FLUX_WEAK'  '0.0'
+1.0  T  'DIRICHLET_WEAK'  'if(abs(y-0.5) < 0.01, 1.0, 0.0)'  '1e1'  '1.0'
+4.0  F  'FLUX_WEAK'       '0.0'

@@ -873,9 +873,10 @@ contains
         if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
         ! Prepare further quick access arrays of temporal collection
-        ! structure with boundary component and type
+        ! structure with boundary component, type and maximum expressions
         rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
         rcollectionTmp%IquickAccess(2) = isegment
+        rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
         
         ! What type of boundary conditions are we?
         select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
@@ -883,7 +884,7 @@ contains
         case (BDRC_DIRICHLET)
 
           ! Prepare quick access array of temporal collection structure
-          rcollectionTmp%IquickAccess(3) = idiffusiontype
+          rcollectionTmp%IquickAccess(4) = idiffusiontype
           rcollectionTmp%DquickAccess(3) = DdiffusionTensor(1,1)
           rcollectionTmp%DquickAccess(4) = DdiffusionTensor(1,2)
           rcollectionTmp%DquickAccess(5) = DdiffusionTensor(2,1)
@@ -1147,9 +1148,10 @@ contains
         if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
         
         ! Prepare further quick access arrays of temporal collection
-        ! structure with boundary component and type
+        ! structure with boundary component, type and maximum expressions
         rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
         rcollectionTmp%IquickAccess(2) = isegment
+        rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
         
         ! What type of boundary conditions are we?
         select case(iand(p_IbdrCondType(isegment), BDRC_TYPEMASK))
@@ -1161,7 +1163,7 @@ contains
         case (BDRC_DIRICHLET)
           
           ! Prepare quick access array of temporal collection structure
-          rcollectionTmp%IquickAccess(3) = idiffusiontype
+          rcollectionTmp%IquickAccess(4) = idiffusiontype
           rcollectionTmp%DquickAccess(3) = DdiffusionTensor(1,1)
           rcollectionTmp%DquickAccess(4) = DdiffusionTensor(1,2)
           rcollectionTmp%DquickAccess(5) = DdiffusionTensor(2,1)
@@ -1889,12 +1891,13 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     !
     ! only for Dirichlet boundary conditions
     !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
-    !   IquickAccess(3):     type of diffusion operator
+    !   IquickAccess(4):     type of diffusion operator
     !
     ! only for periodic boundary conditions
     !   DquickAccess(3):     minimim parameter of the boundary component
@@ -1920,8 +1923,8 @@ do iedge = 1, nedges
     real(DP), dimension(:,:,:), allocatable :: Daux  
     real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff
-    integer :: ibdrtype,iel,ipoint,isegment
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff,dgamma,dpenalty
+    integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
     real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
@@ -1962,7 +1965,7 @@ do iedge = 1, nedges
     ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-
+    nmaxExpr = rcollection%IquickAccess(3)
     
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
@@ -2041,7 +2044,8 @@ do iedge = 1, nedges
           
           ! Evaluate the function parser for the Neumann/Robin values in the
           ! degrees of freedom on the boundary and store the result in dcoeff
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+          call fparser_evalFunction(p_rfparser,&
+              nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
 
           ! Multiply by scaling coefficient
           Daux(1,idofe,iel) = dscale*dcoeff
@@ -2088,7 +2092,7 @@ do iedge = 1, nedges
           Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
 
           ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
+          call fparser_evalFunction(p_rfparser, nmaxExpr*(isegment-1)+1,&
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
@@ -2117,6 +2121,13 @@ do iedge = 1, nedges
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
+
+      ! Get penalty and weighting parameters which are assumed
+      ! constant for the entire boundary segment
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+2, Dvalue, dpenalty)
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+3, Dvalue, dgamma)
       
       ! Get norm of diffusion tensor
       ddiffusion = max( abs(rcollection%DquickAccess(3))&
@@ -2164,22 +2175,23 @@ do iedge = 1, nedges
             
             ! Evaluate the function parser for the Dirichlet values in the
             ! cubature points on the boundary and store the result in dcoeff
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
             
             ! Compute the coefficient for the first term of the linear
-            ! form which accounts for the penalty parameter. Note that
-            ! the element width is not computed yet.
-            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+            ! form which accounts for the penalty parameter.
+            Daux(1,idofe,iel) = dscale*dpenalty*ddiffusion*dcoeff/&
+                                rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute the coefficients for the second and thirs terms
             ! of the linear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
-            Daux(2,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(2,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))*dcoeff
 
-            Daux(3,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(3,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))*dcoeff
           end do
@@ -2217,11 +2229,11 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
-              Daux(1,idofe,iel) =&
-                  Daux(1,idofe,iel)-dscale*dnv*dcoeff
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)-dscale*dnv*dcoeff
             end if
           end do
         end do
@@ -2282,22 +2294,24 @@ do iedge = 1, nedges
             
             ! Evaluate the function parser for the Dirichlet values in the
             ! cubature points on the boundary and store the result in dcoeff
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
             
             ! Compute the coefficient for the first term of the linear
             ! form which accounts for the penalty parameter. Note that
             ! the element width is not computed yet.
-            Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+            Dcoefficients(1,ipoint,iel) = dscale*dpenalty*ddiffusion*dcoeff/&
+                                          rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute the coefficients for the second and thirs terms
             ! of the linear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
-            Dcoefficients(2,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(2,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))*dcoeff
 
-            Dcoefficients(3,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(3,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))*dcoeff
           end do
@@ -2340,7 +2354,8 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
               Dcoefficients(1,ipoint,iel) =&
@@ -2427,7 +2442,8 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
               Daux(1,idofe,iel) = -dscale*dnv*dcoeff
@@ -2513,7 +2529,7 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment,&
+              call fparser_evalFunction(p_rfparser, nmaxExpr*(isegment-1)+1,&
                   Dvalue, Dcoefficients(1,ipoint,iel))
               
               ! Multiply by scaling coefficient and normal velocity
@@ -2740,7 +2756,7 @@ do iedge = 1, nedges
     
   end subroutine transp_coeffVecBdrConvP2d_sim
 
-    ! ***************************************************************************
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -2821,12 +2837,13 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
     !   SquickAccess(1):     section name in the collection
     !   SquickAccess(2):     string identifying the function parser
     !
     ! only for Dirichlet boundary conditions
     !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
-    !   IquickAccess(3):     type of diffusion operator
+    !   IquickAccess(4):     type of diffusion operator
     !
     ! only for periodic boundary conditions
     !   DquickAccess(3):     minimim parameter of the boundary component
@@ -2852,8 +2869,8 @@ do iedge = 1, nedges
     real(DP), dimension(:,:,:), allocatable :: Daux  
     real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff
-    integer :: ibdrtype,iel,ipoint,isegment
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dcoeff,dgamma,dpenalty
+    integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
     real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
@@ -2894,7 +2911,7 @@ do iedge = 1, nedges
     ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-
+    nmaxExpr = rcollection%IquickAccess(3)
     
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
@@ -2973,7 +2990,8 @@ do iedge = 1, nedges
           
           ! Evaluate the function parser for the Neumann/Robin values in the
           ! degrees of freedom on the boundary and store the result in dcoeff
-          call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+          call fparser_evalFunction(p_rfparser,&
+              nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
 
           ! Multiply by scaling coefficient
           Daux(1,idofe,iel) = -dscale*dcoeff
@@ -3020,7 +3038,7 @@ do iedge = 1, nedges
           Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
 
           ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
+          call fparser_evalFunction(p_rfparser, nmaxExpr*(isegment-1)+1,&
               Dvalue, Dcoefficients(1,ipoint,iel))
 
           ! Multiply by scaling coefficient
@@ -3049,7 +3067,14 @@ do iedge = 1, nedges
       ! Initialise values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-      
+
+      ! Get penalty and weighting parameters which are assumed
+      ! constant for the entire boundary segment
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+2, Dvalue, dpenalty)
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+3, Dvalue, dgamma)
+
       ! Get norm of diffusion tensor
       ddiffusion = max( abs(rcollection%DquickAccess(3))&
                        +abs(rcollection%DquickAccess(4)),&
@@ -3096,22 +3121,23 @@ do iedge = 1, nedges
             
             ! Evaluate the function parser for the Dirichlet values in the
             ! cubature points on the boundary and store the result in dcoeff
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
             
             ! Compute the coefficient for the first term of the linear
-            ! form which accounts for the penalty parameter. Note that
-            ! the element width is not computed yet.
-            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+            ! form which accounts for the penalty parameter.
+            Daux(1,idofe,iel) = -dscale*dpenalty*ddiffusion*dcoeff/&
+                                 rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute the coefficients for the second and thirs terms
             ! of the linear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
-            Daux(2,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(2,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))*dcoeff
 
-            Daux(3,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(3,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))*dcoeff
           end do
@@ -3149,11 +3175,11 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
-              Daux(1,idofe,iel) =&
-                  Daux(1,idofe,iel)+dscale*dnv*dcoeff
+              Daux(1,idofe,iel) = Daux(1,idofe,iel)+dscale*dnv*dcoeff
             end if
           end do
         end do
@@ -3214,22 +3240,24 @@ do iedge = 1, nedges
             
             ! Evaluate the function parser for the Dirichlet values in the
             ! cubature points on the boundary and store the result in dcoeff
-            call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+            call fparser_evalFunction(p_rfparser,&
+                nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
             
             ! Compute the coefficient for the first term of the linear
             ! form which accounts for the penalty parameter. Note that
             ! the element width is not computed yet.
-            Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY*dcoeff
+            Dcoefficients(1,ipoint,iel) = -dscale*dpenalty*ddiffusion*dcoeff/&
+                                           rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute the coefficients for the second and thirs terms
             ! of the linear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} g_D ds $$
-            Dcoefficients(2,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(2,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))*dcoeff
 
-            Dcoefficients(3,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(3,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))*dcoeff
           end do
@@ -3272,7 +3300,8 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
               Dcoefficients(1,ipoint,iel) =&
@@ -3359,7 +3388,8 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = p_DdofCoords(1:NDIM2D,idofe,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment, Dvalue, dcoeff)
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+1, Dvalue, dcoeff)
               
               ! Multiply by scaling coefficient and normal velocity
               Daux(1,idofe,iel) = dscale*dnv*dcoeff
@@ -3445,7 +3475,7 @@ do iedge = 1, nedges
               Dvalue(1:NDIM2D) = Dpoints(1:NDIM2D,ipoint,iel)
               
               ! Evaluate function parser
-              call fparser_evalFunction(p_rfparser, isegment,&
+              call fparser_evalFunction(p_rfparser, nmaxExpr*(isegment-1)+1,&
                   Dvalue, Dcoefficients(1,ipoint,iel))
               
               ! Multiply by scaling coefficient and normal velocity
@@ -3576,12 +3606,12 @@ do iedge = 1, nedges
 !!$        
 !!$        ! Evaluate the solution in the cubature points on the mirrored
 !!$        ! boundary and store the result in Daux(:,:,3)
-!!$        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+!!$        call doEvaluateAtBdr2d(DER_FUNC, npoints*nelements,&
 !!$            Daux(:,:,3), p_rsolution%RvectorBlock(1), DpointParMirror,&
 !!$            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 !!$
 !!$        do iel = 1, nelements
-!!$          do ipoint = 1, npointsPerElement
+!!$          do ipoint = 1, npoints
 !!$                        
 !!$            ! Compute the normal velocity
 !!$            dnv = DnormalX(ipoint,iel)*Daux(ipoint,iel,1) +&
@@ -3759,10 +3789,13 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     !
     ! only for Dirichlet boundary conditions
     !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
-    !   IquickAccess(3):     type of diffusion operator
+    !   IquickAccess(4):     type of diffusion operator
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -3777,11 +3810,13 @@ do iedge = 1, nedges
 !</subroutine>
 
     ! local variables
+    type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), allocatable :: Daux  
     real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
-    real(DP) :: dnv,dscale,dtime,ddiffusion
-    integer :: ibdrtype,iel,ipoint,isegment
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dpenalty,dgamma,dalpha
+    integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
     real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
@@ -3801,6 +3836,13 @@ do iedge = 1, nedges
     call sys_halt()
 #endif
 
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
     ! This subroutine assumes that the first two quick access vectors
     ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
@@ -3815,7 +3857,7 @@ do iedge = 1, nedges
     ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-
+    nmaxExpr = rcollection%IquickAccess(3)
     
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
@@ -3975,12 +4017,21 @@ do iedge = 1, nedges
       
       ! Do we have to prescribe Robin boundary conditions?
       if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ROBIN) then
+
+        ! Initialise values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Evaluate the function parser for the Robin value alpha
+        call fparser_evalFunction(p_rfparser,&
+            nmaxExpr*(isegment-1)+2, Dvalue, dalpha)
+
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
             ! Also apply Robin boundary condition
             Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)&
-                                        - dscale*BDRC_ROBIN_SCALING
+                                        - dscale*dalpha
           end do
         end do
       end if
@@ -4001,6 +4052,17 @@ do iedge = 1, nedges
       ! and primal inflow boundary part
       !
       ! $$\Gamma_- := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} < 0\} $$
+
+      ! Initialise values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Get penalty and weighting parameters which are assumed
+      ! constant for the entire boundary segment
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+2, Dvalue, dpenalty)
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+3, Dvalue, dgamma)
 
       ! Get norm of diffusion tensor
       ddiffusion = max( abs(rcollection%DquickAccess(3))&
@@ -4045,18 +4107,18 @@ do iedge = 1, nedges
             
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
-            ! Note that the element width is not computed yet.           
-            Daux(1,idofe,iel) = -dscale*BDRC_DIRICHLET_PENALTY
+            Daux(1,idofe,iel) = -dscale*dpenalty*ddiffusion/
+                                 rdomainIntSubset%p_DedgeLength(iel)
             
             ! Compute coefficients for the second and third terms of
             ! the bilinear form
             !
             ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Daux(2,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(2,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))
             
-            Daux(3,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(3,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))
 
@@ -4064,11 +4126,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Daux(4,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(4,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))
             
-            Daux(5,idofe,iel) = BDRC_DIRICHLET_SWITCH*&
+            Daux(5,idofe,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))
           end do
@@ -4161,17 +4223,18 @@ do iedge = 1, nedges
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
             ! Note that the element width is not computed yet.           
-            Dcoefficients(1,ipoint,iel) = -dscale*BDRC_DIRICHLET_PENALTY
+            Dcoefficients(1,ipoint,iel) = -dscale*dpenalty*ddiffusion/&
+                                           rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute coefficients for the second and third terms of
             ! the bilinear form
             !
             ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Dcoefficients(2,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(2,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
             
-            Dcoefficients(3,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(3,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
 
@@ -4179,11 +4242,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Dcoefficients(4,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(4,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
             
-            Dcoefficients(5,ipoint,iel) = BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(5,ipoint,iel) = dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
           end do
@@ -4487,10 +4550,13 @@ do iedge = 1, nedges
     !   DquickAccess(2):     scaling parameter
     !   IquickAccess(1):     boundary type
     !   IquickAccess(2):     segment number
+    !   IquickAccess(3):     maximum number of expressions
+    !   SquickAccess(1):     section name in the collection
+    !   SquickAccess(2):     string identifying the function parser
     !
     ! only for Dirichlet boundary conditions
     !   DquickAccess(3:6):   diffusion tensor D=(/d11,d12;d21,d22/)
-    !   IquickAccess(3):     type of diffusion operator
+    !   IquickAccess(4):     type of diffusion operator
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
@@ -4505,11 +4571,13 @@ do iedge = 1, nedges
 !</subroutine>
 
     ! local variables
+    type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     real(DP), dimension(:,:,:), allocatable :: Daux  
     real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
-    real(DP) :: dnv,dscale,dtime,ddiffusion
-    integer :: ibdrtype,iel,ipoint,isegment
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dnv,dscale,dtime,ddiffusion,dpenalty,dgamma,dalpha
+    integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
     real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
@@ -4529,6 +4597,13 @@ do iedge = 1, nedges
     call sys_halt()
 #endif
 
+    ! This subroutine assumes that the first and second quick access
+    ! string values hold the section name and the name of the function
+    ! parser in the collection, respectively.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(2)),&
+        ssectionName=trim(rcollection%SquickAccess(1)))
+
     ! This subroutine assumes that the first two quick access vectors
     ! point to the solution and velocity vector (if any)
     p_rsolution => rcollection%p_rvectorQuickAccess1
@@ -4543,7 +4618,7 @@ do iedge = 1, nedges
     ! boundary condition and the segment number
     ibdrtype = rcollection%IquickAccess(1)
     isegment = rcollection%IquickAccess(2)
-
+    nmaxExpr = rcollection%IquickAccess(3)
     
     ! What type of boundary conditions are we?
     select case(iand(ibdrtype, BDRC_TYPEMASK))
@@ -4703,12 +4778,21 @@ do iedge = 1, nedges
       
       ! Do we have to prescribe Robin boundary conditions?
       if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ROBIN) then
+        
+        ! Initialise values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser for the Robin value alpha
+        call fparser_evalFunction(p_rfparser,&
+            nmaxExpr*(isegment-1)+2, Dvalue, dalpha)
+
         do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
             ! Also apply Robin boundary condition
             Dcoefficients(1,ipoint,iel) = Dcoefficients(1,ipoint,iel)&
-                                        + dscale*BDRC_ROBIN_SCALING
+                                        + dscale*dalpha
           end do
         end do
       end if
@@ -4729,6 +4813,17 @@ do iedge = 1, nedges
       ! and dual inflow boundary part
       !
       ! $$\Gamma_+ := \{{\bf x}\in\Gamma : {\bf v}\cdot{\bf n} > 0\} $$
+
+      ! Initialise values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Get penalty and weighting parameters which are assumed
+      ! constant for the entire boundary segment
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+2, Dvalue, dpenalty)
+      call fparser_evalFunction(p_rfparser,&
+          nmaxExpr*(isegment-1)+3, Dvalue, dgamma)
 
       ! Get norm of diffusion tensor
       ddiffusion = max( abs(rcollection%DquickAccess(3))&
@@ -4773,18 +4868,18 @@ do iedge = 1, nedges
             
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
-            ! Note that the element width is not computed yet.           
-            Daux(1,idofe,iel) = dscale*BDRC_DIRICHLET_PENALTY
+            Daux(1,idofe,iel) = dscale*dpenalty*ddiffusion/&
+                                rdomainIntSubset%p_DedgeLength(iel)
             
             ! Compute coefficients for the second and third terms of
             ! the bilinear form
             !
             ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Daux(2,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(2,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))
             
-            Daux(3,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(3,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))
 
@@ -4792,11 +4887,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Daux(4,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(4,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(idofe,iel))
             
-            Daux(5,idofe,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Daux(5,idofe,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(idofe,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(idofe,iel))
           end do
@@ -4806,7 +4901,6 @@ do iedge = 1, nedges
         ! Clear all coefficients
         Daux = 0.0_DP
       end if
-
       
       ! Assemble the convective part of the boundary integral, eq. (2) and (4)
       if (associated(p_rvelocity)) then
@@ -4890,17 +4984,18 @@ do iedge = 1, nedges
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
             ! Note that the element width is not computed yet.           
-            Dcoefficients(1,ipoint,iel) = dscale*BDRC_DIRICHLET_PENALTY
+            Dcoefficients(1,ipoint,iel) = dscale*dpenalty*ddiffusion/&
+                                          rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute coefficients for the second and third terms of
             ! the bilinear form
             !
             ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Dcoefficients(2,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(2,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
             
-            Dcoefficients(3,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(3,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
 
@@ -4908,11 +5003,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Dcoefficients(4,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(4,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(3)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(5)*DnormalY(ipoint,iel))
             
-            Dcoefficients(5,ipoint,iel) = -BDRC_DIRICHLET_SWITCH*&
+            Dcoefficients(5,ipoint,iel) = -dgamma*&
                 (rcollection%DquickAccess(4)*DnormalX(ipoint,iel)+&
                  rcollection%DquickAccess(6)*DnormalY(ipoint,iel))
           end do

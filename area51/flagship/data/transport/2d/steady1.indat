@@ -38,6 +38,6 @@ IBCT
 NCOMP
 3
 PARAMETERS
-0.5  T  'DIRICHLET_WEAK'  '1.0'
-3.0  F  'DIRICHLET_WEAK'  '0.0'
+0.5  T  'DIRICHLET_WEAK'  '1.0'  '1e1'  '1.0'
+3.0  F  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
 4.0  F  'FLUX_WEAK'       '0.0'

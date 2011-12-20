@@ -43,11 +43,11 @@ IBCT
 NCOMP
 5
 PARAMETERS
-0.0625  T  'DIRICHLET_WEAK'  0.0
-0.375   F  'DIRICHLET_WEAK'  1.0
-1.0     T  'DIRICHLET_WEAK'  0.0
+0.0625  T  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
+0.375   F  'DIRICHLET_WEAK'  '1.0'  '1e1'  '1.0'
+1.0     T  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
 3.0     F  'HOMNEUMANN_WEAK'
-4.0     T  'DIRICHLET_WEAK'  0.0
+4.0     T  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
 
 # Specify the boundary conditions for the dual problem
 [bdrcond_dual]
@@ -61,5 +61,5 @@ NCOMP
 3
 PARAMETERS
 1.0  F  'HOMNEUMANN_WEAK'
-3.0  T  'DIRICHLET_WEAK'  0.0
+3.0  T  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
 4.0  T  'HOMNEUMANN_WEAK'

@@ -5549,8 +5549,17 @@ contains
     case (BDRC_HOMNEUMANN)
       nexpressions = 0
       
-    case (BDRC_INHOMNEUMANN, BDRC_FLUX, BDRC_ROBIN, BDRC_DIRICHLET)
-      nexpressions = 1
+    case (BDRC_INHOMNEUMANN, BDRC_FLUX)
+      nexpressions = 1 ! prescribed boundary value $g$
+
+    case (BDRC_ROBIN)
+      nexpressions = 2 ! prescribed boundary value $g$
+                       ! multiplication factor $\alpha$
+
+    case (BDRC_DIRICHLET)
+      nexpressions = 3 ! prescribed boundary value $g$
+                       ! penalty parameter $\epsilon$
+                       ! switching parameter $\gamma$
 
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       nexpressions = -1
