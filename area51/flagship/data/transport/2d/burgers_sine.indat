@@ -21,7 +21,7 @@ deffunc: @diffusion = 0.0 ; x,y,t
 NBCT
 1
 NEXPR
-1
+3
 IBCT
 1
 NCOMP
