@@ -4107,7 +4107,7 @@ do iedge = 1, nedges
             
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
-            Daux(1,idofe,iel) = -dscale*dpenalty*ddiffusion/
+            Daux(1,idofe,iel) = -dscale*dpenalty*ddiffusion/&
                                  rdomainIntSubset%p_DedgeLength(iel)
             
             ! Compute coefficients for the second and third terms of
