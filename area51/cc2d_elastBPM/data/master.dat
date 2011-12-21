@@ -57,35 +57,71 @@ simportdatafiles(8) =
 # parameter settings that overwrite settings in the DAT files. The
 # parameters here must be introduced by the corresponding section
 # to be overwritten. You can for example define:
+###############
+[GENERALOUTPUT]
+###############
+smsgLog = '%{slogdirectory}/output.log'
 #####################
  [CC-DISCRETISATION]
 #####################
+iMass= 1
+iMassLumpType= 0 
  NLMIN = 1
- NLMAX = 2
+ NLMAX =2
  RE = 1
+ lambda = 1
+ mu = 1
+ nSo = 0
+ nFo = 1
+ rhoFR = 1
+ rhoSR = 1
 ctypeInitialSolution = 3
-ielementType = 3
+ielementType = 4
 #################
 [CC-LINEARSOLVER]
 #################
 isolverType = 1
 ismootherType = 1
 icoarseGridSolverType = 0
+####################
+[CC-MULTIGRIDSOLVER]
+####################
+nmaxIterations     = 20
+depsRel            = 1E-10
 #####################
 [TIME-DISCRETISATION]
 #####################
+itimedependence = 1                      # ISTAT
 dtimeInit = 0.0 
-dtimeMax  = 0.03
-dtimeStep = 0.015
+dtimeMax  = 1E3
+dtimeStep = 1E0
 dtimeStepTheta = 1
+dminTimeDerivative = 1.0E-5
+ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-depsD_u     = 1.0E-4
-depsD_vS    = 1.0E-5
-depsD_vF    = 1.0E-5
-depsDiv     = 1.0E-5
-depsUR      = 1.0E-5
-depsVSR     = 1.0E-5
-depsVFR     = 1.0E-5
-depsPR      = 1.0E-2
+nmaxIterations     = 16
+depsD_u     = 1.0E-8
+depsD_vS    = 1.0E-8
+depsD_vF    = 1.0E-8
+depsDiv     = 1.0E-8
+depsUR      = 1.0E-8
+depsVSR     = 1.0E-8
+depsVFR     = 1.0E-8
+depsPR      = 1.0E-8
+###################
+[CC-POSTPROCESSING]
+###################
+ioutputUCD = 1
+#############
+[PARAMTRIANG]
+#############
+sParametrisation = '%{spredirectory}/QUAD.prm'
+sMesh = '%{spredirectory}/QUAD.tri'
+##############
+[BDCONDITIONS]
+##############
+bdComponent1(1)=
+   4.0  3  1  'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC'
+

@@ -11,7 +11,7 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 1                       # ISTAT
+itimedependence = 0                       # ISTAT
 
 # ----------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ itimeStepScheme = 0                       # IFRSTP
 # parameter for one step scheme (THETA) if itimeStepScheme=0;
 # =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
 
-dtimeStepTheta = 0.5                      # THETA
+dtimeStepTheta = 1                      # THETA
 
 # Timestep-scheme for the pressure.
 # =0: Use the same timestep scheme as for the velocity.
