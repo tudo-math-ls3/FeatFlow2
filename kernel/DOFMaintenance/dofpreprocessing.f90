@@ -138,7 +138,7 @@ contains
       IdofsLoc = (/1,4,2,5,3,6/)
 
     case (EL_Q2)
-      IdofsLoc = (/1,5,2,6,3,7,4,8/)
+      IdofsLoc = (/1,5,2,6,3,7,4,8,9/)
 
     case default
       call output_line('Unsupported element type!',&
@@ -239,6 +239,69 @@ contains
                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
         end do
 
+      case (EL_P2)
+        ! For P2 finite elements three degrees of freedom coincide
+        ! with the vertices of the elements and three degrees of
+        ! freedom coincide with the edge midpoints.
+        do iel = 1, rdofSubset%nelements
+          ! Copy the vertex coordinates
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
+          rdofSubset%p_DdofCoords(:,5,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
+          
+          ! Compute the coordinates of the edge midpoints
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+          rdofSubset%p_DdofCoords(:,6,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
+        end do
+
+      case (EL_Q2)
+        ! For Q2 finite elements four degrees of freedom coincide with
+        ! the vertices of the elements and four degrees of freedom
+        ! coincide with the edge midpoints. One additional degree of
+        ! freedom is located at the center of the element.
+        do iel = 1, rdofSubset%nelements
+          ! Copy the vertex coordinates
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
+          rdofSubset%p_DdofCoords(:,5,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
+          rdofSubset%p_DdofCoords(:,7,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel)
+
+          ! Compute the coordinates of the edge midpoints
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+          rdofSubset%p_DdofCoords(:,6,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
+          rdofSubset%p_DdofCoords(:,8,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
+        
+          ! Compute the coordinates of the element center
+          rdofSubset%p_DdofCoords(:,9,iel) =&
+              0.25_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
+        end do
+        
       case default
         call output_line('Unsupported element type!',&
             OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSet')
