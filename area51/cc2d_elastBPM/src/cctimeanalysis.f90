@@ -407,8 +407,8 @@ contains
 !</function>
 
     ! local variables
-    real(DP), dimension(7) :: Dnorms1
-    integer, dimension(7) :: Cnorms
+    real(DP), dimension(7) :: Dnorms1 ! nblocks
+    integer, dimension(7) :: Cnorms  ! nblocks
     type(t_timeDerivatives),target :: rtimeNormLocal
     type(t_timeDerivatives), pointer :: p_rtimeNorm
     integer :: nequ,neqvS,neqvF,neqp

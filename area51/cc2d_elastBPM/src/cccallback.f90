@@ -890,11 +890,9 @@ contains
     else
       dtime = 0.0_DP
     end if
-
-    Dcoefficients(1,:,:) = -0.75_DP*dtime
+     Dcoefficients(:,:,:) = 0.0_DP
+!      Dcoefficients(1,:,:) = -9.81_DP*Dpoints(2,:,:)**2
     
-!     Dcoefficients(1,:,:) = 1.5_DP*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
-!                            2.0_DP*dtime**2 + 19.62_DP*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))*dtime
 
   end subroutine
 
@@ -981,8 +979,9 @@ contains
     else
       dtime = 0.0_DP
     end if
-    
-    Dcoefficients(1,:,:) = -0.75_DP*dtime
+
+       Dcoefficients(:,:,:) = 0.0_DP
+!      Dcoefficients(1,:,:) = -9.81_DP*Dpoints(1,:,:)**2
 
   end subroutine
 
@@ -1249,7 +1248,7 @@ contains
       dtime = 0.0_DP
     end if
 
-    Dcoefficients(1,:,:) = -0.25_DP*dtime
+    Dcoefficients(:,:,:) = -3.0_DP
 
   end subroutine
 
@@ -1338,7 +1337,7 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(1,:,:) = -0.25_DP*dtime
+    Dcoefficients(:,:,:) = -3.0_DP
 
   end subroutine
 
@@ -2241,16 +2240,16 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-!     Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = 0.0_DP
     
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)*dtime
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = dtime
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)**2
+!       case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_Y);  Dvalues(:,:) = 2.0_DP*Dpoints(2,:,:)
+!       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) = 2.0_DP
+!       end select
 
   end subroutine
 
@@ -2343,16 +2342,16 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-!     Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = 0.0_DP
     
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 1.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)
+!       case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_Y);  Dvalues(:,:) = 1.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+!       end select
 
   end subroutine
 
@@ -2449,12 +2448,12 @@ contains
 !     Dvalues(:,:) = 0.0_DP
 
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)
+      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)**2
       case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 1.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) = 2.0_DP*Dpoints(2,:,:)
       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) = 2.0_DP
       end select
     
   end subroutine
@@ -2549,16 +2548,16 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-   ! Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 0.0_DP
     
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)*dtime
-      case (DER_DERIV_X);  Dvalues(:,:) = dtime
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)**2
+!       case (DER_DERIV_X);  Dvalues(:,:) = 2.0_DP*Dpoints(1,:,:)
+!       case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) = 2.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+!       end select
 
   end subroutine
 
@@ -2652,16 +2651,16 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    !Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 0.0_DP
     
-      select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 1.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
+!       select case (cderivative)
+!       case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)
+!       case (DER_DERIV_X);  Dvalues(:,:) = 1.0_DP
+!       case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
+!       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+!       end select
 
   end subroutine
 
@@ -2758,10 +2757,10 @@ contains
     !Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 1.0_DP
+      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)**2
+      case (DER_DERIV_X);  Dvalues(:,:) = 2.0_DP*Dpoints(1,:,:)
       case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) = 2.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
       end select
@@ -2861,9 +2860,9 @@ contains
     !Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = (1.0_DP - Dpoints(1,:,:) - Dpoints(2,:,:))*dtime
-      case (DER_DERIV_X);  Dvalues(:,:) = -dtime
-      case (DER_DERIV_Y);  Dvalues(:,:) = -dtime
+      case (DER_FUNC);     Dvalues(:,:) = 1.0_DP-Dpoints(1,:,:)-Dpoints(2,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) = -1.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) = -1.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
@@ -2946,19 +2945,19 @@ contains
      IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
 
      if (icomponent .EQ. 1) then
-       dvalue =  dy * dtime
+       dvalue =  0.0_DP
      elseif (icomponent .EQ. 2) then
-      dvalue  =  dx * dtime
+      dvalue  =  0.0_DP
      elseif (icomponent .EQ. 3) then
-      dvalue = dy
+      dvalue = 0.0_DP
      elseif (icomponent .EQ. 4) then
-       dvalue = dx
+       dvalue = 0.0_DP
      elseif (icomponent .EQ. 5) then
-       dvalue = dy
+       dvalue = dy**2
      elseif (icomponent .EQ. 6) then
-       dvalue = dx
+       dvalue = dx**2
      else
-      dvalue = (1-dx-dy)*dtime
+      dvalue = 1.0_DP-dx-dy
     end if
 
   end subroutine

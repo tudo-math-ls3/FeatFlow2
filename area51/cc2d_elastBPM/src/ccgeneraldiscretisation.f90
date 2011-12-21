@@ -912,7 +912,7 @@ contains
 
     call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
                 rasmTempl%rmatrixK12,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-!/***/ transpose, K21 = K12^T
+!/***/ transpose, K21 = K12^T will be done latter
     call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
                 rasmTempl%rmatrixK21,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
@@ -923,7 +923,7 @@ contains
     call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
     call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixK11,LSYSSC_SETM_UNDEFINED)
     call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixK12,LSYSSC_SETM_UNDEFINED)
-!/***/ transpose, K21 = K12^T
+!/***/ transpose, K21 = K12^T will be done latter
     call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixK21,LSYSSC_SETM_UNDEFINED)
     call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixK22,LSYSSC_SETM_UNDEFINED)
     
