@@ -177,7 +177,7 @@ H1-error: 3.7268393199E-02
 Calculating Poisson-2D-Problem with method 1 - EM30
 ---------------------------------------------------
 UMFPACK: !!Initial RES!! = 2.098843860710978E-02
-UMFPACK: !!solution!!    = 5.182340172412562E-01 Status = 0
+UMFPACK: !!solution!!    = 5.182340172412560E-01 Status = 0
 L2-error: 1.8029470064E-03
 H1-error: 1.9708230651E-01
 
@@ -318,15 +318,15 @@ UMFPACK: !!solution!!    = 4.801422615914687E-01 Status = 0
 UMFPACK: !!Initial RES!! = 5.032753177455979E-02
 UMFPACK: !!solution!!    = 5.178358619296243E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 UMFPACK: !!Initial RES!! = 3.694232952830823E-02
-UMFPACK: !!solution!!    = 4.636731570627289E-01 Status = 0
+UMFPACK: !!solution!!    = 4.636731570627290E-01 Status = 0
 L2-error: 2.4290446677E-03
 H1-error: 1.5800847079E-01
 
