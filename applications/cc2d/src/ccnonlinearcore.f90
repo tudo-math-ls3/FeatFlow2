@@ -919,7 +919,6 @@ contains
         call output_line ('Boundary conditions set up properly?', &
             OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call sys_halt()
-        stop
       end if
       
       ! Ok, we have the nominator and the denominator. Divide them
@@ -1188,7 +1187,11 @@ contains
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
         call linsol_initData (p_rsolverNode, ierror)
-        if (ierror .ne. LINSOL_ERR_NOERROR) stop
+        if (ierror .ne. LINSOL_ERR_NOERROR) then
+          call output_line ('linsol_initData failed! Matrix singular!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'cc_precondDefect')
+          call sys_halt()
+        end if
         
         ! Gather statistics
         call stat_stopTimer(rtimer)

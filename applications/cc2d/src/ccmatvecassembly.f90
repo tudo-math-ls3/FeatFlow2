@@ -1059,7 +1059,7 @@ contains
         if (.not. present(rvelocityvector)) then
           call output_line ('Velocity vector not present!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
-          stop
+          call sys_halt()
         end if
       
         select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)

@@ -1178,13 +1178,21 @@ contains
       
         call linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
-        if (ierror .ne. LINSOL_ERR_NOERROR) stop
+        if (ierror .ne. LINSOL_ERR_NOERROR) then
+          call output_line ('linsol_initStructure failed! Matrix invalid!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+          call sys_halt()
+        end if
         
       else if (bstructuralUpdate) then
       
         call linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
-        if (ierror .ne. LINSOL_ERR_NOERROR) stop
+        if (ierror .ne. LINSOL_ERR_NOERROR) then
+          call output_line ('linsol_updateStructure failed! Matrix invalid!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+          call sys_halt()
+        end if
         
       end if
       

@@ -1456,7 +1456,7 @@ contains
     case default
       call output_line ('Invalid visualisation output type.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'cc_writeUCD')
-      stop
+      call sys_halt()
     end select
         
     ! Is there a simulation time?
