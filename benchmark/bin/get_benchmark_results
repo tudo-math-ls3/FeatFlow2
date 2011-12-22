@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Collects the results of all benchmarks in one result directory.
+# Used if regression tests change, to collect new reference results.
+
+mkdir results
+cp -r benchmark_*/results/* results
