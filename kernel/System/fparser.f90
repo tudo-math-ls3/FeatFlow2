@@ -817,15 +817,14 @@ contains
 !</subroutine>
 
     ! local variables
-    character(FPAR_VARLEN), dimension(:), pointer :: Svariables
-
-    real(DP) :: dvalue
+    character(FPAR_VARLEN), dimension(:), allocatable :: Svariables
     character(SYS_STRLEN) :: skeyword
     character(FPAR_CONSTLEN) :: sconstName
     character(FPAR_EXPRLEN) :: sexpressionName
     character(FPAR_FUNCLEN) :: sfunctionName
     character(FPAR_STRLEN) :: sdata,svalue,svariable
     integer :: iunit,ios,ipos,jpos,kpos,ivar,idatalen,icomp
+    real(DP) :: dvalue
 
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit, .true.)
@@ -870,24 +869,8 @@ contains
           sexpressionName = trim(adjustl(sdata(ipos+1:jpos-1)))
           svalue = trim(adjustl(sdata(jpos+1:)))
 
-          call fparser_defineExpression(sexpressionName, svalue)
-
-        case (FPAR_FUNCTION)
-          
-          ! Split the line into name, expression and symbolic variables
-          jpos = scan(sdata(1:idatalen), "=")
-          sfunctionName = trim(adjustl(sdata(ipos+1:jpos-1)))
-          svalue(1:) = sdata(jpos+1:idatalen)
-
-          ! Check if function name already exists
-          do icomp = 1, rfparser%ncomp
-            if (trim(adjustl(sfunctionName)) .eq.&
-                trim(rfparser%ScompName(icomp))) cycle readline
-          end do
-
           ! Concatenate multi-line expressions
           do while(ios .eq. 0)
-
             ! Get length of expression
             ipos = len_trim(svalue)
             
@@ -907,8 +890,46 @@ contains
             end if
             
             ! Append line
-            svalue(ipos:) = sdata(1:idatalen)
+            svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
+          end do
 
+          call fparser_defineExpression(sexpressionName, svalue)
+
+        case (FPAR_FUNCTION)
+          
+          ! Split the line into name, expression and symbolic variables
+          jpos = scan(sdata(1:idatalen), "=")
+          sfunctionName = trim(adjustl(sdata(ipos+1:jpos-1)))
+          svalue(1:) = sdata(jpos+1:idatalen)
+
+          ! Check if function name already exists
+          do icomp = 1, rfparser%ncomp
+            if (trim(adjustl(sfunctionName)) .eq.&
+                trim(rfparser%ScompName(icomp))) cycle readline
+          end do
+
+          ! Concatenate multi-line expressions
+          do while(ios .eq. 0)
+            ! Get length of expression
+            ipos = len_trim(svalue)
+            
+            ! Check if expression is continued in the following line
+            if (svalue(max(1, ipos-2):ipos) .eq. '...') then
+              ipos = ipos-2
+            else
+              exit
+            end if
+            
+            ! Read next line in file
+            call io_readlinefromfile(iunit, sdata, idatalen, ios)
+            if (ios .ne. 0) then
+              call output_line('Syntax error in input file!',&
+                  OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
+              call sys_halt()
+            end if
+            
+            ! Append line
+            svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
           end do
 
           ! Extract the symbolic variables
