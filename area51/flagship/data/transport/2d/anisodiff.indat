@@ -35,10 +35,14 @@ defconst: a22 = 0.1
 defconst: ang1 = 0.523598775598299
 
 # Definition of user-defined expressions
-defexpr: d1_11 = (COS(_ang1)*_a11-SIN(_ang1)*_a21)*COS(_ang1)-(COS(_ang1)*_a12-SIN(_ang1)*_a22)*SIN(_ang1)
-defexpr: d1_12 = (COS(_ang1)*_a11-SIN(_ang1)*_a21)*SIN(_ang1)+(COS(_ang1)*_a12-SIN(_ang1)*_a22)*COS(_ang1)
-defexpr: d1_21 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*COS(_ang1)-(SIN(_ang1)*_a12+COS(_ang1)*_a22)*SIN(_ang1)
-defexpr: d1_22 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*SIN(_ang1)+(SIN(_ang1)*_a12+COS(_ang1)*_a22)*COS(_ang1)
+defexpr: d1_11 = (COS(_ang1)*_a11-SIN(_ang1)*_a21)*COS(_ang1)-...
+                 (COS(_ang1)*_a12-SIN(_ang1)*_a22)*SIN(_ang1)
+defexpr: d1_12 = (COS(_ang1)*_a11-SIN(_ang1)*_a21)*SIN(_ang1)+...
+                 (COS(_ang1)*_a12-SIN(_ang1)*_a22)*COS(_ang1)
+defexpr: d1_21 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*COS(_ang1)-...
+                 (SIN(_ang1)*_a12+COS(_ang1)*_a22)*SIN(_ang1)
+defexpr: d1_22 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*SIN(_ang1)+...
+                 (SIN(_ang1)*_a12+COS(_ang1)*_a22)*COS(_ang1)
 
 # Specify the diffusion tensor
 deffunc: @diffusion1_11 = @d1_11 ; x,y,t
@@ -83,10 +87,14 @@ defconst: b22 = 1e-3
 defconst: ang2 = 1.17809724509617
 
 # Definition of user-defined expressions
-defexpr: d2_11 = (COS(_ang2)*_b11-SIN(_ang2)*_b21)*COS(_ang2)-(COS(_ang2)*_b12-SIN(_ang2)*_b22)*SIN(_ang2)
-defexpr: d2_12 = (COS(_ang2)*_b11-SIN(_ang2)*_b21)*SIN(_ang2)+(COS(_ang2)*_b12-SIN(_ang2)*_b22)*COS(_ang2)
-defexpr: d2_21 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*COS(_ang2)-(SIN(_ang2)*_b12+COS(_ang2)*_b22)*SIN(_ang2)
-defexpr: d2_22 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*SIN(_ang2)+(SIN(_ang2)*_b12+COS(_ang2)*_b22)*COS(_ang2)
+defexpr: d2_11 = (COS(_ang2)*_b11-SIN(_ang2)*_b21)*COS(_ang2)-...
+                 (COS(_ang2)*_b12-SIN(_ang2)*_b22)*SIN(_ang2)
+defexpr: d2_12 = (COS(_ang2)*_b11-SIN(_ang2)*_b21)*SIN(_ang2)+...
+                 (COS(_ang2)*_b12-SIN(_ang2)*_b22)*COS(_ang2)
+defexpr: d2_21 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*COS(_ang2)-...
+                 (SIN(_ang2)*_b12+COS(_ang2)*_b22)*SIN(_ang2)
+defexpr: d2_22 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*SIN(_ang2)+...
+                 (SIN(_ang2)*_b12+COS(_ang2)*_b22)*COS(_ang2)
 
 # Specify the diffusion tensor
 deffunc: @diffusion2_11 = @d2_11 ; x,y,t
@@ -119,7 +127,7 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  'HOMNEUMANN_WEAK' ' 0.0'
+4.0  T  'HOMNEUMANN_WEAK' '0.0'
 4.0  T  'DIRICHLET_WEAK'  '0.0'  '1e2'  '1.0'
 4.0  T  'DIRICHLET_WEAK'  '1.0'  '1e2'  '1.0'
 
@@ -205,7 +213,9 @@ deffunc: @diffusion5_21 = 0.5 ; x,y,t
 deffunc: @diffusion5_22 = 1.5 ; x,y,t
 
 # Specify the right-hand side
-deffunc: @rhs5 = 1.5*sin((1-x)*(1-y))*(y-1)^2-9*(1-x)*(1-y)^2+sin((1-x)*1-y)*(y-1)*(x-1)-cos((1-x)*(1-y))-6*(1-x)^2*(1-y)+1.5*sin((1-x)*(1-y))*(x-1)^2-3*(1-x)^3 ; x,y,t
+deffunc: @rhs5 = 1.5*sin((1-x)*(1-y))*(y-1)^2-9*(1-x)*(1-y)^2+...
+                    sin((1-x)*1-y)*(y-1)*(x-1)-cos((1-x)*(1-y))-...
+                    6*(1-x)^2*(1-y)+1.5*sin((1-x)*(1-y))*(x-1)^2-3*(1-x)^3 ; x,y,t
 
 # Specify the exact solution
 deffunc: @exactsol5 = sin((1-x)*(1-y))+(1-x)^3*(1-y)^2 ; x,y,t
@@ -221,6 +231,6 @@ IBCT
 NCOMP
 3
 PARAMETERS
-1.0  T  'DIRICHLET_WEAK'  'sin(1-y)+(1-y)^2'  '1e2'  '1.0'
-2.0  T  'DIRICHLET_WEAK'  'sin(1-x)+(1-x)^3'  '1e2'  '1.0'
+1.0  T  'DIRICHLET_WEAK'  'sin(1-y)+(1-y)^2'  '1e2'  '1.0' ; x,y,t
+2.0  T  'DIRICHLET_WEAK'  'sin(1-x)+(1-x)^3'  '1e2'  '1.0' ; x,y,t
 4.0  T  'DIRICHLET_WEAK'  '0.0'               '1e2'  '1.0'

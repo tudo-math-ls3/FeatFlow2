@@ -36,8 +36,8 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  'FLUX_WEAK'  sin(2*_pi*(x-t))
-0.0  T  'FLUX_WEAK'  0.0
+0.0  T  'FLUX_WEAK'  'sin(2*_pi*(x-t))' ; x,t
+0.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem:
 # This boundary conditions realises periodic boundary conditions

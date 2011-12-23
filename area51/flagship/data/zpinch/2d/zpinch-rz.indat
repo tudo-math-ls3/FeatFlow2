@@ -22,12 +22,14 @@ defexpr:  rad = (1-t^4)
 ################################################################################
 
 # Specify the initial solution for the Euler model (dimensionless)
-deffunc: @initsol_rho  = if(@sqr < @rad, 1.0, if (@sqr > @rad + _width, 0.5, 1e6)) ; x,y,t
+deffunc: @initsol_rho  = if(@sqr < @rad, 1.0, ...
+	                 if (@sqr > @rad + _width, 0.5, 1e6)) ; x,y,t
 deffunc: @initsol_vel  = 0.0 ; x,y,t
 deffunc: @initsol_Etot = 2.5 ; x,y,t
 
 # Specify the initial solution for the Euler model (physical dimensions)
-#deffunc: @initsol_rho = if(@sqr < @rad, 1e-6, if (@sqr > @rad + _width, 5e-7, 1.0)) ; x,y,t
+#deffunc: @initsol_rho = if(@sqr < @rad, 1e-6, ...
+#                        if (@sqr > @rad + _width, 5e-7, 1.0)) ; x,y,t
 #deffunc: @initsol_vel = 0.0 ; x,y,t
 #deffunc: @initsol_Etot = 2.5e-6 ; x,y,t
 

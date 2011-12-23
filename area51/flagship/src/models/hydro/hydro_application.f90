@@ -275,7 +275,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'sprimalbdrcondname', sbdrcondName)
     call bdrc_readBoundaryCondition(rbdrCondPrimal,&
-        sindatfileName, '['//trim(sbdrcondName)//']',&
+        sindatfileName, sbdrcondName,&
         ndimension, hydro_parseBoundaryCondition)
 
     ! Initialise the boundary conditions for the dual problem
@@ -283,7 +283,7 @@ contains
         'sdualbdrcondname', sbdrcondName, '')
     if (sbdrcondName .ne. '') then
       call bdrc_readBoundaryCondition(rbdrCondDual,&
-          sindatfileName, '['//trim(sbdrcondName)//']',&
+          sindatfileName, sbdrcondName,&
           ndimension, hydro_parseBoundaryCondition)
     end if
 

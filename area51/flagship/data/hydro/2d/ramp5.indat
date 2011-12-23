@@ -48,7 +48,10 @@ PARAMETERS
 2.0  T  'FREESLIP_WEAK'
 3.0  F  'SUPEROUTLET_WEAK'
 5.0  F  'FREESLIP_WEAK'
-6.0  T  'SUPERINLET_WEAK'  '1.0'  '2.0*COS(_angle*_PI/180)'  'SIN(_angle*_PI/180)' '3.78571428571429'
+6.0  T  'SUPERINLET_WEAK'  '1.0' ...
+                           '2.0*COS(_angle*_PI/180)' ...
+                           'SIN(_angle*_PI/180)' ...
+                           '3.78571428571429'
 
 # Specify the boundary conditions
 # Supersonic inflow with periodically changing angle of attack
@@ -65,4 +68,7 @@ PARAMETERS
 2.0  T  'FREESLIP_WEAK'
 3.0  F  'SUPEROUTLET_WEAK'
 5.0  F  'FREESLIP_WEAK'
-6.0  T  'SUPERINLET_WEAK'  1.0  '(3.0-COS(_period*MAX(0,t-_t0)))*COS(_angle*_PI/180)'  'SIN(_angle*_PI/180)'  '0.71428571428571'
+6.0  T  'SUPERINLET_WEAK'  '1.0' ...
+                           '(3.0-COS(_period*MAX(0,t-_t0)))*COS(_angle*_PI/180)' ...
+                           'SIN(_angle*_PI/180)' ...
+                           '0.71428571428571' ; x,y,t

@@ -98,13 +98,6 @@ module boundarycondaux
   ! This condition couples two boundary segments periodically
   integer, parameter, public :: BDRC_ANTIPERIODIC  = 102
 !</constantblock>
-
-!<constantblock description="Symbolic variables for boundary description">
-
-  ! List of variables which are evaluated by the bytecode interpreter in 3D
-  character (LEN=*), dimension(NDIM3D+1), parameter ::&
-      BDRC_SYMBOLICVARS = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
-!</constantblock>
 !</constants>
 
   ! *****************************************************************************
@@ -190,7 +183,7 @@ contains
 !<subroutine>
 
   subroutine bdrc_readBoundaryCondition(rboundaryCondition, sfilename,&
-      ssectionname, ndimension, fcb_parseBoundaryCondition, berror)
+      ssectionname, ndimension, fcb_parseBoundaryCondition)
 
 !<description>
     ! This subroutine reads boundary conditions from the parameter
@@ -215,12 +208,6 @@ contains
 !<output>
     ! The boundary conditions
     type(t_boundarycondition), intent(out) :: rboundarycondition
-
-    ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
-    ! whether the boundary conditions could be read successfully or not.
-    ! If not given, an error will inform the user of the boundary conditions
-    ! could not be read successfully and the program will halt.
-    logical, intent(out), optional :: berror
 !</output>
 !</subroutine>
 
@@ -232,12 +219,11 @@ contains
     integer, dimension(:), pointer :: p_IbdrCompPeriodic
     integer, dimension(:), pointer :: p_IbdrCondPeriodic
     logical, dimension(:), pointer :: p_BisSegClosed
-    character(LEN=1024), dimension(:), allocatable :: cMathExpression
-
-    character(LEN=SYS_NAMELEN) :: keyword
-    integer :: iunit,ibct,ibct1,icomp,nncomp,iexpr,nexpr
-    logical :: bisOpened
-
+    character(FPAR_VARLEN), dimension(:), allocatable :: Svariables
+    character(FPAR_STRLEN), dimension(:), allocatable :: Sexpressions
+    character(FPAR_STRLEN) :: skeyword
+    character(FPAR_STRLEN) :: sdata,svalue,svariable
+    integer :: ibct,ibct1,icomp,idatalen,iexpr,ios,ipos,iunit,ivar,jpos,kpos,nexpr,nncomp
 
     ! Set spatial dimension
     rboundaryCondition%ndimension = ndimension
@@ -251,239 +237,367 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'bdrc_readBoundaryCondition')
       call sys_halt()
     end if
-
-    ! Find section with boundary condition
-    do
-      read(iunit, *, end=8888, ERR=9999) keyword
-      if (trim(adjustl(keyword)) .eq. trim(adjustl(ssectionname))) exit
-    end do
-
-    ! Read number of boundary components
-    read(iunit, *, end=8888, ERR=9999) keyword
-    call sys_tolower(keyword)
-
-    if (trim(adjustl(keyword)) .ne. 'nbct') then
-      call output_line('NBCT missing!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-      call sys_halt()
-    end if
-    read(iunit, *, end=8888, ERR=9999) rboundaryCondition%iboundarycount
-
-    ! Read maximum number of boundary expressions
-    read(iunit, *, end=8888, ERR=9999) keyword
-    call sys_tolower(keyword)
-
-    if (trim(adjustl(keyword)) .ne. 'nexpr') then
-      call output_line('NEXPR missing!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-      call sys_halt()
-    end if
-    read(iunit, *, end=8888, ERR=9999) rboundaryCondition%nmaxExpressions
-
-    ! Allocate an array containing the pointers to boundary components
-    call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondCpIdx',&
-        rboundaryCondition%iboundarycount+1, ST_INT,&
-        rboundaryCondition%h_IbdrCondCpIdx, ST_NEWBLOCK_NOINIT)
-    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
-
-    ! Allocate an array containing the numbers of boundary segments at
-    ! each boundary components
-    call storage_new('bdrc_readBoundaryCondition', 'h_IsegCount',&
-        rboundaryCondition%iboundarycount, ST_INT,&
-        rboundaryCondition%h_IsegCount, ST_NEWBLOCK_NOINIT)
-    call storage_getbase_int(rboundaryCondition%h_IsegCount, p_IsegCount)
-
-    ! Initialise the number of components
-    nncomp = 0
-
-    ! Loop over all boundary components
-    do ibct = 1, rboundaryCondition%iboundarycount
-
-      ! Set index for first boundary segment of component IBCT
-      p_IbdrCondCpIdx(ibct) = nncomp+1
-
-      ! Read 'IBCT'
-      read(iunit, *, end=8888, ERR=9999) keyword
-      call sys_tolower(keyword)
-
-      if (trim(adjustl(keyword)) .ne. 'ibct') then
-        call output_line('IBCT missing!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-        call sys_halt()
-      end if
-
-      ! Read IBCT and check with current IBCT
-      read(iunit, *, end=8888, ERR=9999) ibct1
-      if (ibct .ne. ibct1) then
-        call output_line('Conflict with IBCT while reading boundary conditions!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-        call sys_halt()
-      end if
-
-      ! Read 'NCOMP'
-      read(iunit, *, end=8888, ERR=9999) keyword
-      call sys_tolower(keyword)
-
-      if (trim(adjustl(keyword)) .ne. 'ncomp') then
-        call output_line('NCOMP missing!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-        call sys_halt()
-      end if
-
-      ! Read NCOMP and increment component counter
-      read(iunit, *, end=8888, ERR=9999) p_IsegCount(ibct)
-      nncomp = nncomp+p_IsegCount(ibct)
-
-    end do ! ibct
-
-    ! Set index of last boundary segment
-    p_IbdrCondCpIdx(rboundaryCondition%iboundarycount+1) = nncomp+1
-
-    ! Allocate data arrays
-    call storage_new('bdrc_readBoundaryCondition', 'h_DmaxPar',&
-        nncomp, ST_DOUBLE, rboundaryCondition%h_DmaxPar,&
-        ST_NEWBLOCK_NOINIT)
-    call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondType',&
-        nncomp, ST_INT, rboundaryCondition%h_IbdrCondType,&
-        ST_NEWBLOCK_NOINIT)
-    call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCompPeriodic',&
-        nncomp, ST_INT, rboundaryCondition%h_IbdrCompPeriodic,&
-        ST_NEWBLOCK_ZERO)
-    call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondPeriodic',&
-        nncomp, ST_INT, rboundaryCondition%h_IbdrCondPeriodic,&
-        ST_NEWBLOCK_ZERO)
-    call storage_new('bdrc_readBoundaryCondition', 'h_BisSegClosed',&
-        nncomp, ST_LOGICAL, rboundaryCondition%h_BisSegClosed,&
-        ST_NEWBLOCK_NOINIT)
-
-    ! Set pointers
-    call storage_getbase_double(rboundaryCondition%h_DmaxPar,&
-        p_DmaxPar)
-    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
-        p_IbdrCondType)
-    call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
-        p_IbdrCompPeriodic)
-    call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic,&
-        p_IbdrCondPeriodic)
-    call storage_getbase_logical(rboundaryCondition%h_BisSegClosed,&
-        p_BisSegClosed)
-
-    ! Initialise parser for mathematical expressions
-    call fparser_create(rboundaryCondition%rfparser,&
-        nncomp*rboundaryCondition%nmaxExpressions)
-
-    ! Allocate temporal array of characters for mathematical expressions
-    allocate(cMathExpression(rboundaryCondition%nmaxExpressions))
-
-    ! Read boundary parameter intervals, type of boundary
-    ! and boundary expression from parameter file
-    read(iunit, *, end=8888, ERR=9999) keyword
-    call sys_tolower(keyword)
-
-    if (trim(adjustl(keyword)) .ne. 'parameters') then
-      call output_line('PARAMETERS missing!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
-      call sys_halt()
-    end if
-
-    ! Loop over all components
-    do icomp = 1, nncomp
+    
+    ! Read through the complete file and look for the specified
+    ! boundary section section
+    ios = 0
+    readline: do while(ios .eq. 0)
       
-      ! Read parameters from file
-      read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-          p_BisSegClosed(icomp), keyword
+      ! Read next line in file
+      call io_readlinefromfile(iunit, sdata, idatalen, ios)
 
-      ! Parse type of boundary conditions and number of mathematical expressions
-      call fcb_parseBoundaryCondition(keyword, ndimension,&
-          p_IbdrCondType(icomp), nexpr)
+      ! Check for opening brackets
+      ipos = scan(sdata(1:idatalen), "[")
+      if (ipos .eq. 0) cycle
 
-      ! Set indicator for strong boundary conditions
-      if (iand(int(p_IbdrCondType(icomp),I32), BDRC_STRONG) .eq. BDRC_STRONG)&
-          rboundaryCondition%bStrongBdrCond = .true.
-      
-      ! Set indicator for weak boundary conditions
-      if (iand(int(p_IbdrCondType(icomp),I32), BDRC_WEAK) .eq. BDRC_WEAK)&
-          rboundaryCondition%bWeakBdrCond = .true.
+      ! Check for closing brackets
+      jpos = scan(sdata(ipos:idatalen), "]")
+      if (jpos .le. ipos) cycle
 
-      ! How many mathematical expressions are required for
-      ! this type of boundary conditions?
-      
-      if (nexpr .lt. 0) then
-        ! Reread parameters from file and obtain
-        ! number of periodic boundary segment
-        backspace iunit
-        read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-            p_BisSegClosed(icomp), keyword,&
-            p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
-        rboundaryCondition%bPeriodic = .true.
-      elseif (nexpr .gt. 0) then
-        ! Reread parameters from file to obtain mathematical expressions
-        backspace iunit
-        read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-            p_BisSegClosed(icomp), keyword, cMathExpression(1:nexpr)
+      ! Check for "[ssectionName]"
+      call sys_tolower(sdata(ipos+1:jpos-1), skeyword)
+      if (trim(adjustl(skeyword)) .eq. trim(adjustl(ssectionName))) then
+
+        !-----------------------------------------------------------------------
+        ! Read in boundary conditions from section [ssectionName]
+        !-----------------------------------------------------------------------
+
+        ! (1) Read number of boundary components 'NBCT'
+        call io_readlinefromfile(iunit, sdata, idatalen, ios)
+        if (ios .ne. 0) then
+          call output_line('Syntax error in input file!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+
+        call sys_tolower(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'nbct') then
+          call output_line('NBCT missing!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+
+        call io_readlinefromfile(iunit, sdata, idatalen, ios)
+        if (ios .ne. 0) then
+          call output_line('Syntax error in input file!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
         
-        ! Loop over all expressions and apply them to function parser
-        do iexpr = 1, nexpr
-          call fparser_parseFunction(rboundaryCondition%rfparser,&
-              rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-              trim(adjustl(cMathExpression(iexpr))), BDRC_SYMBOLICVARS)
-        end do
+        ! Store value of NBCT in boundary condition structure
+        read(sdata(1:idatalen),*) rboundaryCondition%iboundarycount
+        
+        ! (2) Read maximum number of boundary expressions 'NEXPR'
+        call io_readlinefromfile(iunit, sdata, idatalen, ios)
+        if (ios .ne. 0) then
+          call output_line('Syntax error in input file!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+
+        call sys_tolower(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'nexpr') then
+          call output_line('NEXPR missing!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+
+        call io_readlinefromfile(iunit, sdata, idatalen, ios)
+        if (ios .ne. 0) then
+          call output_line('Syntax error in input file!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+        
+        ! Store value of NEXPR in boundary condition structure
+        read(sdata(1:idatalen),*) rboundaryCondition%nmaxExpressions
+        
+        ! Allocate an array containing the pointers to boundary components
+        call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondCpIdx',&
+            rboundaryCondition%iboundarycount+1, ST_INT,&
+            rboundaryCondition%h_IbdrCondCpIdx, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+        
+        ! Allocate an array containing the numbers of boundary
+        ! segments at each boundary components
+        call storage_new('bdrc_readBoundaryCondition', 'h_IsegCount',&
+            rboundaryCondition%iboundarycount, ST_INT,&
+            rboundaryCondition%h_IsegCount, ST_NEWBLOCK_NOINIT)
+        call storage_getbase_int(rboundaryCondition%h_IsegCount, p_IsegCount)
+        
+        ! Initialise the number of components
+        nncomp = 0
+        
+        ! Loop over all boundary components
+        do ibct = 1, rboundaryCondition%iboundarycount
+          
+          ! Set index for first boundary segment of component IBCT
+          p_IbdrCondCpIdx(ibct) = nncomp+1
+
+          ! (3) Read 'IBCT'
+          call io_readlinefromfile(iunit, sdata, idatalen, ios)
+          if (ios .ne. 0) then
+            call output_line('Syntax error in input file!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+          
+          call sys_tolower(sdata(1:idatalen), skeyword)        
+          if (trim(adjustl(skeyword)) .ne. 'ibct') then
+            call output_line('IBCT missing!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+          
+          call io_readlinefromfile(iunit, sdata, idatalen, ios)
+          if (ios .ne. 0) then
+            call output_line('Syntax error in input file!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+          
+          ! Compare read IBCT with current IBCT
+          read(sdata(1:idatalen),*) ibct1
+          if (ibct .ne. ibct1) then
+            call output_line('Conflict with IBCT while reading boundary conditions!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+
+          ! (4) Read 'NCOMP'
+          call io_readlinefromfile(iunit, sdata, idatalen, ios)
+          if (ios .ne. 0) then
+            call output_line('Syntax error in input file!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+          
+          call sys_tolower(sdata(1:idatalen), skeyword)        
+          if (trim(adjustl(skeyword)) .ne. 'ncomp') then
+            call output_line('NCOMP missing!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+
+          call io_readlinefromfile(iunit, sdata, idatalen, ios)
+          if (ios .ne. 0) then
+            call output_line('Syntax error in input file!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+
+          ! Read NCOMP and increment component counter
+          read(sdata(1:idatalen),*) p_IsegCount(ibct)
+          nncomp = nncomp+p_IsegCount(ibct) 
+        end do ! ibct
+
+        ! Set index of last boundary segment
+        p_IbdrCondCpIdx(rboundaryCondition%iboundarycount+1) = nncomp+1
+        
+        ! Allocate data arrays
+        call storage_new('bdrc_readBoundaryCondition', 'h_DmaxPar',&
+            nncomp, ST_DOUBLE, rboundaryCondition%h_DmaxPar,&
+            ST_NEWBLOCK_NOINIT)
+        call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondType',&
+            nncomp, ST_INT, rboundaryCondition%h_IbdrCondType,&
+            ST_NEWBLOCK_NOINIT)
+        call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCompPeriodic',&
+            nncomp, ST_INT, rboundaryCondition%h_IbdrCompPeriodic,&
+            ST_NEWBLOCK_ZERO)
+        call storage_new('bdrc_readBoundaryCondition', 'h_IbdrCondPeriodic',&
+            nncomp, ST_INT, rboundaryCondition%h_IbdrCondPeriodic,&
+            ST_NEWBLOCK_ZERO)
+        call storage_new('bdrc_readBoundaryCondition', 'h_BisSegClosed',&
+            nncomp, ST_LOGICAL, rboundaryCondition%h_BisSegClosed,&
+            ST_NEWBLOCK_NOINIT)
+        
+        ! Set pointers
+        call storage_getbase_double(rboundaryCondition%h_DmaxPar,&
+            p_DmaxPar)
+        call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
+            p_IbdrCondType)
+        call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
+            p_IbdrCompPeriodic)
+        call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic,&
+            p_IbdrCondPeriodic)
+        call storage_getbase_logical(rboundaryCondition%h_BisSegClosed,&
+            p_BisSegClosed)
+        
+        ! Initialise parser for mathematical expressions
+        call fparser_create(rboundaryCondition%rfparser,&
+            nncomp*rboundaryCondition%nmaxExpressions)
+        
+        ! (5) Read boundary parameter intervals, type of boundary and
+        !     boundary expression from parameter file
+        call io_readlinefromfile(iunit, sdata, idatalen, ios)
+        if (ios .ne. 0) then
+          call output_line('Syntax error in input file!',&
+              OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+        
+        call sys_tolower(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'parameters') then
+          call output_line('PARAMETERS missing!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+          call sys_halt()
+        end if
+
+        ! Loop over all components
+        do icomp = 1, nncomp
+
+          ! Read next line from file
+          call io_readlinefromfile(iunit, sdata, idatalen, ios)
+          if (ios .ne. 0) then
+            call output_line('Syntax error in input file!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
+          
+          ! Split current line into individual tokens
+          read(sdata(1:idatalen),*) p_DmaxPar(icomp), p_BisSegClosed(icomp), skeyword
+
+          ! Parse type of boundary conditions and number of
+          ! mathematical expressions
+          call fcb_parseBoundaryCondition(skeyword, ndimension,&
+              p_IbdrCondType(icomp), nexpr)
+
+          ! Set indicator for strong boundary conditions
+          if (iand(int(p_IbdrCondType(icomp),I32), BDRC_STRONG) .eq. BDRC_STRONG)&
+              rboundaryCondition%bStrongBdrCond = .true.
+          
+          ! Set indicator for weak boundary conditions
+          if (iand(int(p_IbdrCondType(icomp),I32), BDRC_WEAK) .eq. BDRC_WEAK)&
+              rboundaryCondition%bWeakBdrCond = .true.
+          
+          ! How many mathematical expressions are required for
+          ! this type of boundary conditions?
+          
+          if (nexpr .lt. 0) then
+
+            ! Get number of periodic boundary segment
+            read(sdata(1:idatalen),*) p_DmaxPar(icomp), p_BisSegClosed(icomp),&
+                skeyword, p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
+            rboundaryCondition%bPeriodic = .true.
+
+          elseif (nexpr .gt. 0) then
+            
+            ! Determine starting position of boundary data
+            do ipos = 1, idatalen-len_trim(skeyword)
+              if (sdata(ipos:ipos+len_trim(skeyword)-1)&
+                  .eq. trim(skeyword)) exit
+            end do
+
+            ! Copy remainder of sdata to svalue
+            if (sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. "'"  .or.&
+                sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. '"') then
+              svalue = trim(adjustl(sdata(ipos+len_trim(skeyword)+1:)))
+            else
+              svalue = trim(adjustl(sdata(ipos+len_trim(skeyword):)))
+            end if
+
+            ! Concatenate multi-line expressions
+            do while(ios .eq. 0)
+              ! Get length of expression
+              ipos = len_trim(svalue)
+              
+              ! Check if expression is continued in the following line
+              if (svalue(max(1, ipos-2):ipos) .eq. '...') then
+                ipos = ipos-2
+              else
+                exit
+              end if
+              
+              ! Read next line in file
+              call io_readlinefromfile(iunit, sdata, idatalen, ios)
+              if (ios .ne. 0) then
+                call output_line('Syntax error in input file!',&
+                    OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+                call sys_halt()
+              end if
+              
+              ! Append line
+              svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
+            end do
+
+            ! Extract the symbolic variables (if any)
+            jpos = scan(svalue(1:ipos), ";", .true.)
+
+            if (jpos .eq. 0) then
+
+              ! Allocate temporal memory
+              allocate(Sexpressions(nexpr))
+
+              ! Split mathematical expressions into tokens
+              read(svalue(1:ipos),*) Sexpressions
+
+              ! Loop over all expressions and apply them to function
+              ! parser, whereby no symbolic variables are given
+              do iexpr = 1, nexpr
+                call fparser_parseFunction(rboundaryCondition%rfparser,&
+                    rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+                    Sexpressions(iexpr), (/''/))
+              end do
+              
+              ! Deallocate temporal memory
+              deallocate(Sexpressions)
+              
+            else
+              
+              ! Counte number of symbolic variables
+              svariable = svalue(jpos+1:ipos)
+            
+              kpos = scan(svariable, ","); ivar = 0
+              do while (kpos .ne. 0)
+                ivar = ivar+1
+                svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
+                kpos = scan(svariable, ",")
+              end do
+              
+              ! Allocate temporal memory
+              allocate(Svariables(ivar+1),Sexpressions(nexpr))
+              
+              ! Split mathematical expressions into tokens
+              read(svalue(1:ipos),*) Sexpressions
+
+              ! Initialise symbolic variables
+              svariable = svalue(jpos+1:ipos)
+              
+              kpos = scan(svariable, ","); ivar = 0
+              do while (kpos .ne. 0)
+                ivar = ivar+1
+                Svariables(ivar) = trim(adjustl(svariable(1:kpos-1)))
+                svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
+                kpos = scan(svariable, ",")
+              end do
+              Svariables(ivar+1) = trim(adjustl(svariable(1:len_trim(svariable))))
+              
+              ! Loop over all expressions and apply them to function parser
+              do iexpr = 1, nexpr
+                call fparser_parseFunction(rboundaryCondition%rfparser,&
+                    rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+                    Sexpressions(iexpr), Svariables)
+              end do
+              
+              ! Deallocate temporal memory
+              deallocate(Svariables,Sexpressions)
+            end if
+          end if
+
+          ! Initialise empty expressions by zero
+          do iexpr = max(1,nexpr+1), rboundaryCondition%nmaxExpressions
+            call fparser_parseFunction(rboundaryCondition%rfparser,&
+                rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+                '0', (/''/))
+          end do
+          
+        end do ! icomp
+        exit readline
       end if
-
-      ! Initialise empty expressions by zero
-      do iexpr = max(1,nexpr+1), rboundaryCondition%nmaxExpressions
-        call fparser_parseFunction(rboundaryCondition%rfparser,&
-            rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-            '0', BDRC_SYMBOLICVARS)
-      end do
-
-    end do ! icomp
-
+    end do readline
+    
     ! Close the file, finish
     close(iunit)
-
-    ! Deallocate temporal memory
-    deallocate(cMathExpression)
-    
-    if (present(berror)) berror = .false.
-    return
-
-    ! Error handling
-8888 if (present(berror)) then
-      berror = .true.
-
-      ! Deallocate auxiliary memory
-      if (allocated(cMathExpression)) deallocate(cMathExpression)
-
-      ! Close the file, if required
-      inquire(iunit,OPENED=bisOpened)
-      if (bisOpened) close(iunit)
-
-      return
-    else
-      call output_line('End of file reached while reading the boundary conditions from file '&
-          //trim(adjustl(sfilename))//'!',OU_CLASS_ERROR,&
-          OU_MODE_STD,'bdrc_readBoundaryCondition')
-      call sys_halt()
-    end if
-
-9999 if (present(berror)) then
-      berror = .true.
-
-      ! Deallocate auxiliary memory
-      if (allocated(cMathExpression)) deallocate(cMathExpression)
-
-      ! Close the file, if required
-      inquire(iunit,OPENED=bisOpened)
-      if (bisOpened) close(iunit)
-
-      return
-    else
-      call output_line('An error occured while reading the boundary conditions from file '&
-          //trim(adjustl(sfilename))//'!',OU_CLASS_ERROR,&
-          OU_MODE_STD,'bdrc_readBoundaryCondition')
-      call sys_halt()
-    end if
 
   end subroutine bdrc_readBoundaryCondition
 

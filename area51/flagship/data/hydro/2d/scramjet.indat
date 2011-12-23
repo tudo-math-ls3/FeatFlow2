@@ -36,7 +36,10 @@ PARAMETERS
 5.0   T  'FREESLIP_WEAK'
 6.0   F  'SUPEROUTLET_WEAK'
 11.0  T  'FREESLIP_WEAK'
-12.0  F	 'SUPERINLET_WEAK'  '1.0'  'COS(_ang*_PI/180)'  'SIN(_ang*_PI/180)'  '1.0/12.6'
+12.0  F	 'SUPERINLET_WEAK'  '1.0' ...
+                            'COS(_ang*_PI/180)' ...
+                            'SIN(_ang*_PI/180)' ...
+                            '1.0/12.6'
 0.0   T  'FREESLIP_WEAK' #0
 3.0   F  'FREESLIP_WEAK'
 3.0   T  'FREESLIP_WEAK' #0

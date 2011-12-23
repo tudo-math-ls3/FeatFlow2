@@ -387,7 +387,7 @@ contains
     ! The boundary condition for the primal problem is required for
     ! all solution strategies so initialise it from the parameter file
     call bdrc_readBoundaryCondition(p_rbdrCondHydro,&
-        sindatfileName, '['//trim(sbdrcondName)//']',&
+        sindatfileName, sbdrcondName,&
         ndimension, hydro_parseBoundaryCondition)
     
     ! Initialise the boundary condition for the transport model
@@ -399,7 +399,7 @@ contains
     ! The boundary condition for the primal problem is required for
     ! all solution strategies so initialise it from the parameter file
     call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
-        sindatfileName, '['//trim(sbdrcondName)//']',&
+        sindatfileName, sbdrcondName,&
         ndimension, transp_parseBoundaryCondition)
     
     ! Initialise the abstract problem structure

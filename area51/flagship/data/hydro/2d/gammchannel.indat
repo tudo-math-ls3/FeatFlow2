@@ -48,4 +48,6 @@ PARAMETERS
 3.0  F  'FREESLIP_WEAK'
 4.0  T  'SUBOUTLET_WEAK'  '1.0/1.4'
 5.0  F  'FREESLIP_WEAK'
-6.0  T  'SUBINLET_WEAK'   1.0  '1.0/1.4'  0.0
+6.0  T  'SUBINLET_WEAK'   '1.0' ...
+     			  '1.0/1.4' ...
+			  '0.0'
