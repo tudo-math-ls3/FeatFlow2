@@ -60,27 +60,28 @@ simportdatafiles(8) =
 ###############
 [GENERALOUTPUT]
 ###############
-smsgLog = '%{slogdirectory}/output.log'
+smsgLog = '%{slogdirectory}/Q2QP1_dtime_5.log'
 #####################
  [CC-DISCRETISATION]
 #####################
 iMass= 1
 iMassLumpType= 0 
- NLMIN = 1
- NLMAX =2
+ielementType = 4
+ NLMIN = 2
+ NLMAX = 2
  RE = 1
  lambda = 1
  mu = 1
- nSo = 0
- nFo = 1
+ nSo = 0.75
+ nFo = 0.25
  rhoFR = 1
  rhoSR = 1
-ctypeInitialSolution = 3
-ielementType = 4
+kFo = 0.0625
+ctypeInitialSolution = 0
 #################
 [CC-LINEARSOLVER]
 #################
-isolverType = 1
+isolverType = 0
 ismootherType = 1
 icoarseGridSolverType = 0
 ####################
@@ -93,16 +94,16 @@ depsRel            = 1E-10
 #####################
 itimedependence = 1                      # ISTAT
 dtimeInit = 0.0 
-dtimeMax  = 1E3
-dtimeStep = 1E0
+dtimeMax  = 200
+dtimeStep = 5
 dtimeStepTheta = 1
-dminTimeDerivative = 1.0E-5
+dminTimeDerivative = 1.0E-18
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
 nmaxIterations     = 16
-depsD_u     = 1.0E-8
+depsD_u     = 1.0E-12
 depsD_vS    = 1.0E-8
 depsD_vF    = 1.0E-8
 depsDiv     = 1.0E-8
@@ -113,7 +114,7 @@ depsPR      = 1.0E-8
 ###################
 [CC-POSTPROCESSING]
 ###################
-ioutputUCD = 1
+ioutputUCD = 0
 #############
 [PARAMTRIANG]
 #############

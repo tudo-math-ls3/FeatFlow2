@@ -83,6 +83,7 @@ module ccgeneraldiscretisation
   use multileveloperators
   use analyticprojection
   use feevaluation
+  use matrixio !obaid
   
   use collection
   use convection
@@ -1260,6 +1261,7 @@ contains
    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                 rasmTempl%rmatrixK21,coeff_K21,&
                                 rproblem%rcollection)
+!  call matio_writeMatrixHR(rasmTempl%rmatrixK21,'K_21',.true.,0,'K_21','(E20.10)')
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~` 
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are built either as "int p grad(phi)" (standard case)

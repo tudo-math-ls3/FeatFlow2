@@ -693,10 +693,10 @@ contains
       !    ( .     .     DS1   DS2   DF1   DF2    .    )
 !/***/ new1
 !-----------------------------------------------------------------------
-! call matio_writeBlockMatrixHR (rmatrix,'rmatrix',.true.,0,'K','(E20.10)')
+!  call matio_writeBlockMatrixHR (rmatrix,'rmatrix',.true.,0,'K','(E20.10)')
 ! call matio_writeMatrixHR(rmatrix%RmatrixBlock(1,1),'A_11',.true.,0,'A_11','(E20.10)')
 ! call matio_writeMatrixHR(rmatrix%RmatrixBlock(2,1),'A_21',.true.,0,'A_21','(E20.10)')
-! call matio_writeMatrixHR(rmatrix%RmatrixBlock(1,2),'A_12',.true.,0,'A_12','(E20.10)')
+!  call matio_writeMatrixHR(rmatrix%RmatrixBlock(1,2),'A_12',.true.,0,'A_12','(E20.10)')
 ! call matio_writeMatrixHR(rmatrix%RmatrixBlock(2,2),'A_22',.true.,0,'A_22','(E20.10)')
 ! call matio_writeMatrixHR(rmatrix%RmatrixBlock(1,3),'A_13',.true.,0,'A_13','(E20.10)')
 ! call matio_writeMatrixHR(rmatrix%RmatrixBlock(2,4),'A_24',.true.,0,'A_24','(E20.10)')
@@ -721,19 +721,17 @@ contains
 
 
 !-----------------------------------------------------------------------
-!obaid      
-!       rmatrix%RmatrixBlock(1,7)%dscaleFactor = rnonlinearCCMatrix%deta
-!       rmatrix%RmatrixBlock(2,7)%dscaleFactor = rnonlinearCCMatrix%deta
+    
+      rmatrix%RmatrixBlock(1,7)%dscaleFactor = rnonlinearCCMatrix%deta
+      rmatrix%RmatrixBlock(2,7)%dscaleFactor = rnonlinearCCMatrix%deta
       rmatrix%RmatrixBlock(5,7)%dscaleFactor = rnonlinearCCMatrix%deta
       rmatrix%RmatrixBlock(6,7)%dscaleFactor = rnonlinearCCMatrix%deta
-!obaid      
-!       rmatrix%RmatrixBlock(7,3)%dscaleFactor = rnonlinearCCMatrix%dtau
-!       rmatrix%RmatrixBlock(7,4)%dscaleFactor = rnonlinearCCMatrix%dtau
+     
+      rmatrix%RmatrixBlock(7,3)%dscaleFactor = rnonlinearCCMatrix%dtau
+      rmatrix%RmatrixBlock(7,4)%dscaleFactor = rnonlinearCCMatrix%dtau
       rmatrix%RmatrixBlock(7,5)%dscaleFactor = rnonlinearCCMatrix%dtau
       rmatrix%RmatrixBlock(7,6)%dscaleFactor = rnonlinearCCMatrix%dtau
-! !-------------------- for obaid debugging------------------------------------
-!        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
-!        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+
 
       
       ! Matrix restriction
@@ -820,7 +818,6 @@ contains
               rnonlinearCCMatrix%iadaptiveMatrices, rnonlinearCCMatrix%dadmatthreshold)
         end if
       end if
- ! to here .............................................. to be revised latter
     end if
     
   contains
@@ -1078,13 +1075,13 @@ contains
       ! Later, the BS-matrices are copied into here and modified for boundary
       ! conditions. The same is applied to BF1/BF2
 !obaid
-!       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1, &
-!           rmatrix%RmatrixBlock(1,7),&
-!           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-! !
-!       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2, &
-!           rmatrix%RmatrixBlock(2,7),&
-!           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1, &
+          rmatrix%RmatrixBlock(1,7),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2, &
+          rmatrix%RmatrixBlock(2,7),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !
       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBF1, &
           rmatrix%RmatrixBlock(5,7),&
@@ -1101,11 +1098,11 @@ contains
       ! variants in the preconditioner e.g.)
       if (rnonlinearCCMatrix%bvirtualTransposedD) then
 !obaid
-!         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1T,&
-!             rmatrix%RmatrixBlock(7,3),LSYSSC_TR_VIRTUAL)
-!             
-!         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2T,&
-!             rmatrix%RmatrixBlock(7,4),LSYSSC_TR_VIRTUAL)
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1T,&
+            rmatrix%RmatrixBlock(7,3),LSYSSC_TR_VIRTUAL)
+            
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2T,&
+            rmatrix%RmatrixBlock(7,4),LSYSSC_TR_VIRTUAL)
 !
         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF1T,&
             rmatrix%RmatrixBlock(7,5),LSYSSC_TR_VIRTUAL)
@@ -1115,11 +1112,11 @@ contains
 !
       else
 !obaid
-!         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1, &
-!             rmatrix%RmatrixBlock(7,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-! 
-!         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2, &
-!             rmatrix%RmatrixBlock(7,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1, &
+            rmatrix%RmatrixBlock(7,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2, &
+            rmatrix%RmatrixBlock(7,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 ! !
         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF1, &
             rmatrix%RmatrixBlock(7,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -1329,50 +1326,76 @@ contains
 !         end if
 !       end if
     
+      ! Allocate memory if necessary. Normally this should not be necessary...
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+	if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,2))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,1))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,3))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,3),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,5))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,5),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,3))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,3),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,5))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,5),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,3))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,3),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,1))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,1),LSYSSC_SETM_UNDEFINED)
+      end if
+
+      if (.not. bshared) then
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,6))) then
+	  call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,6),LSYSSC_SETM_UNDEFINED)
+        end if
+      end if
+!
+      ! Clear all matrices to be sure that there is no garbage
+      ! in it.
+
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,3))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,5))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,3))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,1))
+      
+      if (.not. bshared) then
+	call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+      end if
+      
+
       ! ---------------------------------------------------
       ! Plug in the mass matrix? dalpha is always not zero in our case -
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
        
-        ! Allocate memory if necessary. Normally this should not be necessary...
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,2))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,1))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,3))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,3),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,5))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,5),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,3))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,3),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,5))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,5),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,3))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,3),LSYSSC_SETM_UNDEFINED)
-        end if
-!
-        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,1))) then
-          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,1),LSYSSC_SETM_UNDEFINED)
-        end if
 !   		Plug in the 3 mass matrices * alpha	................................
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,3),&
@@ -1402,10 +1425,6 @@ contains
 !             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
 !           end if
 !
-          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,6))) then
-            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,6),LSYSSC_SETM_UNDEFINED)
-          end if
-!
 !           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
 !             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
 !           end if
@@ -1425,28 +1444,6 @@ contains
 !           call lsyssc_matrixLinearComb (&
 !               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
 !               rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
-        end if
-        
-      else
-      
-        ! Otherwise, initialise the basic matrix with 0.0
-        ! A comment by Obaid:
-        ! however, since alpha = 0 is not considered
-	! the below will be commented
-
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,3))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,5))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,3))
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,1))
-        
-        if (.not. bshared) then
-          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
         end if
         
       end if
@@ -1480,13 +1477,13 @@ contains
         ! that is done during the assembly of the nonlinearity.
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
-    ! A_55^\tilde
+    ! K_55^\tilde = L
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(5,5),&
               rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
-    ! A_66^\tilde
+    ! K_66^\tilde = l
             call lsyssc_matrixLinearComb (&
                 rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rmatrix%RmatrixBlock(6,6),&
                 rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
@@ -1512,33 +1509,31 @@ contains
             rnonlinearCCMatrix%p_rasmTempl%rmatrixK22,rmatrix%RmatrixBlock(2,2),&
             rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
     ! ##########################################################################
-    ! Plug in/add the mass matrices -
+    ! Plug in/add the mass matrices in the stiffness matrix -
     ! ##########################################################################
-!obaid
+
     ! K_13
-!         call lsyssc_matrixLinearComb (&
-!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,3),&
-!             rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
-! obaid the coupling terms are removed
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,3),&
+            rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
 !     ! K_15
-!         call lsyssc_matrixLinearComb (&
-!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,5),&
-!             rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
-!obaid
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(1,5),&
+            rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
     ! K_33
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(3,3),&
             rnonlinearCCMatrix%dtheta*(-1.0_DP),1.0_DP,.false.,.false.,.true.,.true.)
 !obaid
 !     ! K_55^\hat
-!         call lsyssc_matrixLinearComb (&
-!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,5),&
-!             rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,5),&
+            rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
 !coupling terms are removed
-!     ! K_53
-!         call lsyssc_matrixLinearComb (&
-!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,3),&
-!             rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
+    ! K_53
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,3),&
+            rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
 !       .......................
 	if (.not. bshared) then
 !       .......................
@@ -2155,13 +2150,13 @@ contains
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
 !obaid
-!       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1, &
-!                                     rmatrix%RmatrixBlock(1,7),&
-!                                     idubStructure,idubContent)
-! 
-!       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2, &
-!                                     rmatrix%RmatrixBlock(2,7),&
-!                                     idubStructure,idubContent)
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1, &
+                                    rmatrix%RmatrixBlock(1,7),&
+                                    idubStructure,idubContent)
+
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2, &
+                                    rmatrix%RmatrixBlock(2,7),&
+                                    idubStructure,idubContent)
 
       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBF1, &
                                     rmatrix%RmatrixBlock(5,7),&
@@ -2180,11 +2175,11 @@ contains
       ! created as virtually transposed B-matrices or by taking the D-matrices.
       if (rnonlinearCCMatrix%bvirtualTransposedD) then
 !obaid
-!         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1T,&
-!             rmatrix%RmatrixBlock(7,3),LSYSSC_TR_VIRTUAL)
-!             
-!         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2T,&
-!             rmatrix%RmatrixBlock(7,4),LSYSSC_TR_VIRTUAL)
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1T,&
+            rmatrix%RmatrixBlock(7,3),LSYSSC_TR_VIRTUAL)
+            
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2T,&
+            rmatrix%RmatrixBlock(7,4),LSYSSC_TR_VIRTUAL)
 
         call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF1T,&
             rmatrix%RmatrixBlock(7,5),LSYSSC_TR_VIRTUAL)
@@ -2193,13 +2188,13 @@ contains
             rmatrix%RmatrixBlock(7,6),LSYSSC_TR_VIRTUAL)
       else
 !obaid
-!         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1, &
-!                                       rmatrix%RmatrixBlock(7,3),&
-!                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-! 
-!         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2, &
-!                                       rmatrix%RmatrixBlock(7,4),&
-!                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1, &
+                                      rmatrix%RmatrixBlock(7,3),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2, &
+                                      rmatrix%RmatrixBlock(7,4),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF1, &
                                       rmatrix%RmatrixBlock(7,5),&
                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -2371,19 +2366,19 @@ contains
 !           rmatrix%RmatrixBlock(6,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !     end if
 !obaid    
-!     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1,&
-!         rmatrix%RmatrixBlock(1,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2,&
-!         rmatrix%RmatrixBlock(2,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS1,&
+        rmatrix%RmatrixBlock(1,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBS2,&
+        rmatrix%RmatrixBlock(2,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBF1,&
         rmatrix%RmatrixBlock(5,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixBF2,&
         rmatrix%RmatrixBlock(6,7),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 !obaid
-!     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1,&
-!         rmatrix%RmatrixBlock(7,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2,&
-!         rmatrix%RmatrixBlock(7,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS1,&
+        rmatrix%RmatrixBlock(7,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDS2,&
+        rmatrix%RmatrixBlock(7,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF1,&
         rmatrix%RmatrixBlock(7,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixDF2,&
@@ -2439,13 +2434,13 @@ contains
 
     ! Initialise the weights for the B/B^T matrices
 !obaid
-!     rmatrix%RmatrixBlock(1,7)%dscaleFactor = rnonlinearCCMatrix%deta
-!     rmatrix%RmatrixBlock(2,7)%dscaleFactor = rnonlinearCCMatrix%deta
+    rmatrix%RmatrixBlock(1,7)%dscaleFactor = rnonlinearCCMatrix%deta
+    rmatrix%RmatrixBlock(2,7)%dscaleFactor = rnonlinearCCMatrix%deta
     rmatrix%RmatrixBlock(5,7)%dscaleFactor = rnonlinearCCMatrix%deta
     rmatrix%RmatrixBlock(6,7)%dscaleFactor = rnonlinearCCMatrix%deta
 !obaid    
-!     rmatrix%RmatrixBlock(7,3)%dscaleFactor = rnonlinearCCMatrix%dtau
-!     rmatrix%RmatrixBlock(7,4)%dscaleFactor = rnonlinearCCMatrix%dtau
+    rmatrix%RmatrixBlock(7,3)%dscaleFactor = rnonlinearCCMatrix%dtau
+    rmatrix%RmatrixBlock(7,4)%dscaleFactor = rnonlinearCCMatrix%dtau
     rmatrix%RmatrixBlock(7,5)%dscaleFactor = rnonlinearCCMatrix%dtau
     rmatrix%RmatrixBlock(7,6)%dscaleFactor = rnonlinearCCMatrix%dtau
 ! !-------------------- for obaid debugging------------------------------------
@@ -2556,13 +2551,13 @@ contains
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
 !obaid
 ! M13
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(3), rdefect%RvectorBlock(1), &
-!             -rnonlinearCCMatrix%dalpha*dnSrhoSR, 1.0_DP)
-! ! M24
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
-!             -rnonlinearCCMatrix%dalpha*dnSrhoSR, 1.0_DP)
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(3), rdefect%RvectorBlock(1), &
+            -rnonlinearCCMatrix%dalpha*dnSrhoSR, 1.0_DP)
+! M24
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
+            -rnonlinearCCMatrix%dalpha*dnSrhoSR, 1.0_DP)
 ! M55
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
@@ -2571,7 +2566,7 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
             -rnonlinearCCMatrix%dalpha*dnFrhoFR, 1.0_DP)
-!obaid
+
 ! M31
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(3), &
@@ -2621,24 +2616,22 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixK22, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
-!obaid
 ! - \theta * K_13 * u3
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(3), rdefect%RvectorBlock(1), &
-!             -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(3), rdefect%RvectorBlock(1), &
+            -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
 ! - \theta * K_24 * u4
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
-!             -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
-!Obaid coupling terms removed temporary for dubugging
-! ! - \theta * K_15 * u5
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(5), rdefect%RvectorBlock(1), &
-!             -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
-! ! - \theta * K_26 * u6
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(6), rdefect%RvectorBlock(2), &
-!             -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(4), rdefect%RvectorBlock(2), &
+            -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
+! - \theta * K_15 * u5
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(5), rdefect%RvectorBlock(1), &
+            -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
+! - \theta * K_26 * u6
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(6), rdefect%RvectorBlock(2), &
+            -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
 
 ! - \theta * K_33 * u3
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
@@ -2649,23 +2642,22 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(4), rdefect%RvectorBlock(4), &
             -rnonlinearCCMatrix%dtheta*(-1.0_DP), 1.0_DP)
-! ! - \theta * \K_55^hat * u5
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
-!             -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
-! ! - \theta * \hat{K_66} * u6
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
-!             -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
-!obaid coupling terms are removed
-! ! - \theta * K_53 * u3
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(3), rdefect%RvectorBlock(5), &
-!             -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
-! ! - \theta * K_64 * u4
-!         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!             rvector%RvectorBlock(4), rdefect%RvectorBlock(6), &
-!             -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)        
+! - \theta * \K_55^hat * u5
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(5), rdefect%RvectorBlock(5), &
+            -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
+! - \theta * \hat{K_66} * u6
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(6), rdefect%RvectorBlock(6), &
+            -rnonlinearCCMatrix%dtheta*dnF2kF, 1.0_DP)
+! - \theta * K_53 * u3
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(3), rdefect%RvectorBlock(5), &
+            -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)
+! - \theta * K_64 * u4
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+            rvector%RvectorBlock(4), rdefect%RvectorBlock(6), &
+            -rnonlinearCCMatrix%dtheta*(-dnF2kF), 1.0_DP)        
       end if
       ! below will be uncommented latter on
 !       ! ---------------------------------------------------
