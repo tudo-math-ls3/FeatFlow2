@@ -457,10 +457,18 @@ contains
           ! Split current line into individual tokens
           read(sdata(1:idatalen),*) p_DmaxPar(icomp), p_BisSegClosed(icomp), skeyword
 
-          ! Parse type of boundary conditions and number of
-          ! mathematical expressions
+          ! Parse type of boundary conditions and get the number of
+          ! mathematical expressions required
           call fcb_parseBoundaryCondition(skeyword, ndimension,&
               p_IbdrCondType(icomp), nexpr)
+
+          ! Check if the number of boundary conditions exceeds the
+          ! maximum number of expressions
+          if (nexpr .gt. rboundaryCondition%nmaxExpressions) then
+            call output_line('Number of boundary conditions exceeds NEXPR!',&
+                OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+            call sys_halt()
+          end if
 
           ! Set indicator for strong boundary conditions
           if (iand(int(p_IbdrCondType(icomp),I32), BDRC_STRONG) .eq. BDRC_STRONG)&
@@ -473,115 +481,106 @@ contains
           ! How many mathematical expressions are required for
           ! this type of boundary conditions?
           
-          if (nexpr .lt. 0) then
-
-            ! Get number of periodic boundary segment
-            read(sdata(1:idatalen),*) p_DmaxPar(icomp), p_BisSegClosed(icomp),&
-                skeyword, p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
-            rboundaryCondition%bPeriodic = .true.
-
-          elseif (nexpr .gt. 0) then
+          ! Determine starting position of boundary data
+          do ipos = 1, idatalen-len_trim(skeyword)
+            if (sdata(ipos:ipos+len_trim(skeyword)-1)&
+                .eq. trim(skeyword)) exit
+          end do
+          
+          ! Copy remainder of sdata to svalue
+          if (sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. "'"  .or.&
+              sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. '"') then
+            svalue = trim(adjustl(sdata(ipos+len_trim(skeyword)+1:)))
+          else
+            svalue = trim(adjustl(sdata(ipos+len_trim(skeyword):)))
+          end if
+          
+          ! Concatenate multi-line expressions
+          do while(ios .eq. 0)
+            ! Get length of expression
+            ipos = len_trim(svalue)
             
-            ! Determine starting position of boundary data
-            do ipos = 1, idatalen-len_trim(skeyword)
-              if (sdata(ipos:ipos+len_trim(skeyword)-1)&
-                  .eq. trim(skeyword)) exit
-            end do
-
-            ! Copy remainder of sdata to svalue
-            if (sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. "'"  .or.&
-                sdata(ipos+len_trim(skeyword):ipos+len_trim(skeyword)) .eq. '"') then
-              svalue = trim(adjustl(sdata(ipos+len_trim(skeyword)+1:)))
+            ! Check if expression is continued in the following line
+            if (svalue(max(1, ipos-2):ipos) .eq. '...') then
+              ipos = ipos-2
             else
-              svalue = trim(adjustl(sdata(ipos+len_trim(skeyword):)))
+              exit
             end if
-
-            ! Concatenate multi-line expressions
-            do while(ios .eq. 0)
-              ! Get length of expression
-              ipos = len_trim(svalue)
-              
-              ! Check if expression is continued in the following line
-              if (svalue(max(1, ipos-2):ipos) .eq. '...') then
-                ipos = ipos-2
-              else
-                exit
-              end if
-              
-              ! Read next line in file
-              call io_readlinefromfile(iunit, sdata, idatalen, ios)
-              if (ios .ne. 0) then
-                call output_line('Syntax error in input file!',&
-                    OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
-                call sys_halt()
-              end if
-              
-              ! Append line
-              svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
-            end do
-
-            ! Extract the symbolic variables (if any)
-            jpos = scan(svalue(1:ipos), ";", .true.)
-
-            if (jpos .eq. 0) then
-
-              ! Allocate temporal memory
-              allocate(Sexpressions(nexpr))
-
-              ! Split mathematical expressions into tokens
-              read(svalue(1:ipos),*) Sexpressions
-
-              ! Loop over all expressions and apply them to function
-              ! parser, whereby no symbolic variables are given
-              do iexpr = 1, nexpr
-                call fparser_parseFunction(rboundaryCondition%rfparser,&
-                    rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-                    Sexpressions(iexpr), (/''/))
-              end do
-              
-              ! Deallocate temporal memory
-              deallocate(Sexpressions)
-              
-            else
-              
-              ! Counte number of symbolic variables
-              svariable = svalue(jpos+1:ipos)
             
-              kpos = scan(svariable, ","); ivar = 0
-              do while (kpos .ne. 0)
-                ivar = ivar+1
-                svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
-                kpos = scan(svariable, ",")
-              end do
-              
-              ! Allocate temporal memory
-              allocate(Svariables(ivar+1),Sexpressions(nexpr))
-              
-              ! Split mathematical expressions into tokens
-              read(svalue(1:ipos),*) Sexpressions
-
-              ! Initialise symbolic variables
-              svariable = svalue(jpos+1:ipos)
-              
-              kpos = scan(svariable, ","); ivar = 0
-              do while (kpos .ne. 0)
-                ivar = ivar+1
-                Svariables(ivar) = trim(adjustl(svariable(1:kpos-1)))
-                svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
-                kpos = scan(svariable, ",")
-              end do
-              Svariables(ivar+1) = trim(adjustl(svariable(1:len_trim(svariable))))
-              
-              ! Loop over all expressions and apply them to function parser
-              do iexpr = 1, nexpr
-                call fparser_parseFunction(rboundaryCondition%rfparser,&
-                    rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
-                    Sexpressions(iexpr), Svariables)
-              end do
-              
-              ! Deallocate temporal memory
-              deallocate(Svariables,Sexpressions)
+            ! Read next line in file
+            call io_readlinefromfile(iunit, sdata, idatalen, ios)
+            if (ios .ne. 0) then
+              call output_line('Syntax error in input file!',&
+                  OU_CLASS_ERROR, OU_MODE_STD,'bdrc_readBoundaryCondition')
+              call sys_halt()
             end if
+            
+            ! Append line
+            svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
+          end do
+          
+          ! Extract the symbolic variables (if any)
+          jpos = scan(svalue(1:ipos), ";", .true.)
+          
+          if (jpos .eq. 0) then
+            
+            ! Allocate temporal memory
+            allocate(Sexpressions(min(rboundaryCondition%nmaxExpressions,nexpr)))
+            
+            ! Split mathematical expressions into tokens
+            read(svalue(1:ipos),*) Sexpressions
+            
+            ! Loop over all expressions and apply them to function
+            ! parser, whereby no symbolic variables are given
+            do iexpr = 1, min(nexpr,rboundaryCondition%nmaxExpressions)
+              call fparser_parseFunction(rboundaryCondition%rfparser,&
+                  rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+                  Sexpressions(iexpr), (/''/))
+            end do
+            
+            ! Deallocate temporal memory
+            deallocate(Sexpressions)
+            
+          else
+            
+            ! Counte number of symbolic variables
+            svariable = svalue(jpos+1:ipos)
+            
+            kpos = scan(svariable, ","); ivar = 0
+            do while (kpos .ne. 0)
+              ivar = ivar+1
+              svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
+              kpos = scan(svariable, ",")
+            end do
+            
+            ! Allocate temporal memory
+            allocate(Svariables(ivar+1),&
+                     Sexpressions(min(nexpr,rboundaryCondition%nmaxExpressions)))
+            
+            ! Split mathematical expressions into tokens
+            read(svalue(1:ipos),*) Sexpressions
+            
+            ! Initialise symbolic variables
+            svariable = svalue(jpos+1:ipos)
+            
+            kpos = scan(svariable, ","); ivar = 0
+            do while (kpos .ne. 0)
+              ivar = ivar+1
+              Svariables(ivar) = trim(adjustl(svariable(1:kpos-1)))
+              svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
+              kpos = scan(svariable, ",")
+            end do
+            Svariables(ivar+1) = trim(adjustl(svariable(1:len_trim(svariable))))
+            
+            ! Loop over all expressions and apply them to function parser
+            do iexpr = 1, min(nexpr,rboundaryCondition%nmaxExpressions)
+              call fparser_parseFunction(rboundaryCondition%rfparser,&
+                  rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
+                  Sexpressions(iexpr), Svariables)
+            end do
+            
+            ! Deallocate temporal memory
+            deallocate(Svariables,Sexpressions)
           end if
 
           ! Initialise empty expressions by zero
@@ -590,7 +589,29 @@ contains
                 rboundaryCondition%nmaxExpressions*(icomp-1)+iexpr,&
                 '0', (/''/))
           end do
-          
+
+          ! Do we have periodic boundary conditions
+          if ((iand(int(p_IbdrCondType(icomp),I32),&
+                    BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+              (iand(int(p_IbdrCondType(icomp),I32),&
+                    BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+            
+            ! Allocate temporal memory
+            allocate(Sexpressions(nexpr+2))
+            read(svalue(1:ipos),*) Sexpressions
+            
+            ! The two last tokens specify the component and segment of
+            ! the periodic boundary part, respectively.
+            read(Sexpressions(nexpr+1),*) p_IbdrCompPeriodic(icomp)
+            read(Sexpressions(nexpr+2),*) p_IbdrCondPeriodic(icomp)
+
+            ! Mark presence of periodic boundary conditions
+            rboundaryCondition%bPeriodic = .true.
+            
+            ! Deallocate temporal memory
+            deallocate(Sexpressions)
+          end if
+
         end do ! icomp
         exit readline
       end if

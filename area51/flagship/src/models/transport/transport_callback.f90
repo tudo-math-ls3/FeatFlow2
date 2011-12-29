@@ -5562,7 +5562,8 @@ contains
                        ! switching parameter $\gamma$
 
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-      nexpressions = -1
+      nexpressions = 2 ! penalty parameter $\epsilon$
+                       ! switching parameter $\gamma$
 
     case default
       nexpressions = 0
