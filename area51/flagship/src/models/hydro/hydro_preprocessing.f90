@@ -38,42 +38,43 @@ module hydro_preprocessing
 
 #include "hydro.h"
 
+  use afcstabbase
+  use afcstabsystem
+  use basicgeometry
+  use bilinearformevaluation
+  use boundary
+  use boundarycondaux
+  use collection
+  use cubature
+  use derivatives
+  use dofmapping
+  use element
+  use flagship_basic
   use fparser
   use fsystem
   use genoutput
-  use afcstabbase
-  use collection
+  use groupfembase
+  use groupfemsystem
+  use linearalgebra
+  use linearformevaluation
+  use lineariser
   use linearsystemblock
   use linearsystemscalar
+  use meshmodification
   use paramlist
+  use pprocerror
   use problem
-  use timestepaux
+  use scalarpde
   use solveraux
   use spatialdiscretisation
-  use basicgeometry
-  use derivatives
-  use groupfembase
-  use dofmapping
-  use groupfemsystem
-  use boundary
-  use boundarycondaux
-  use triangulation
-  use scalarpde
-  use element
-  use cubature
-  use flagship_basic
-  use hydro_callback
-  use linearalgebra
-  use pprocerror
-  use afcstabsystem
-  use linearformevaluation
-  use bilinearformevaluation
   use stdoperators
   use timestep
-  use lineariser
+  use timestepaux
+  use triangulation
 
   ! Modules from hydrodynamic model
   use hydro_basic
+  use hydro_callback
 
   implicit none
 
@@ -95,8 +96,9 @@ contains
       rtimestep, rsolver)
 
 !<description>
-    ! This subroutine initialises the time-stepping structure and
-    ! the top-level solver structure from the parameter list
+    ! This subroutine initialises the time-stepping structure
+    ! and the top-level solver structure using the
+    ! parameter settings defined in the parameter list
 !</description>
 
 !<input>
@@ -205,7 +207,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ndimension', rproblemDescriptor%ndimension, 0)
+        ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
     call parlst_getvalue_int(rparlist,&
@@ -376,12 +378,13 @@ contains
     character(len=SYS_STRLEN) :: slimitingvariable
     type(t_matrixScalar) :: rmatrixSX,rmatrixSY,rmatrixSZ
     integer, dimension(:), allocatable :: Celement
+    real(DP) :: dmeshdisturb
     integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed,neq
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: nmatrices,nsubstrings,ccubType
     character(len=SYS_STRLEN) :: selemName,smass,sinviscid,sviscous
 
-    ! Retrieve application specific parameters from the collection
+    ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'templatematrix', templateMatrix, 0)
     call parlst_getvalue_int(rparlist,&
@@ -460,6 +463,12 @@ contains
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation => rproblemLevel%rtriangulation
+
+    ! Disturb the mesh?
+    call parlst_getvalue_double(rparlist,&
+        ssectionName, 'dmeshdisturb', dmeshdisturb, 0.0_DP)
+    if (dmeshdisturb .gt. 0.0_DP)&
+        call meshmod_disturbMesh(p_rtriangulation, dmeshdisturb)
 
     !---------------------------------------------------------------------------
     ! Create discretisation structure
@@ -995,7 +1004,7 @@ contains
           ! Adjust number of variables
           p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
           
-          ! Compute number of matrices to by copied
+          ! Compute number of matrices to be copied
           nmatrices = 0
           if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
           if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
@@ -1106,7 +1115,7 @@ contains
           ! Adjust number of variables
           p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
           
-          ! Compute number of matrices to by copied
+          ! Compute number of matrices to be copied
           nmatrices = 0
           if (coeffMatrix_CXX > 0) nmatrices = nmatrices+1
           if (coeffMatrix_CYY > 0) nmatrices = nmatrices+1

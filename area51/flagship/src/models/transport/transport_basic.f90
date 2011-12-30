@@ -328,7 +328,7 @@ contains
     ! UCD export
     type(t_ucdExport), intent(in) :: rexport
 
-    ! Name of the veariable in the UCD export
+    ! Name of the variable in the UCD export
     character(LEN=*), intent(in) :: cvariable
 
     ! OPTIONAL: Number of the scalar subvector

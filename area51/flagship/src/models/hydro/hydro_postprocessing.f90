@@ -109,8 +109,11 @@ contains
     type(t_blockDiscretisation) :: rdiscretisationPrimal
     type(t_blockDiscretisation) :: rdiscretisationDual
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual
-    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
+    real(DP), dimension(:,:), allocatable :: DdofCoords
+    real(DP), dimension(:), pointer :: p_DdataPrimal,p_DdataDual
+    real(DP), dimension(:), pointer :: p_DdofCoords
     integer :: isystemFormat,iformatUCD,ilineariseUCD,nrefineUCD
+    integer :: dofCoords,idofe,idim
     logical :: bexportMeshOnly,bdiscontinuous
 
     ! Initialisation
@@ -121,14 +124,16 @@ contains
     nullify(p_DdataPrimal, p_DdataDual)
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'output', soutputName)
-    call parlst_getvalue_string(rparlist,&
-        trim(soutputName), 'sucdsolution', sucdsolution)
-    call parlst_getvalue_int(rparlist,&
-        trim(soutputName), 'iformatucd', iformatUCD)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'isystemformat', isystemformat)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'dofCoords', dofCoords, 0)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName),&
+                                'sucdsolution', sucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'iformatucd', iformatUCD)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'isystemformat', isystemformat)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'ilineariseucd', ilineariseUCD, UCDEXPORT_STD)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
@@ -137,8 +142,8 @@ contains
     ! Initialise the UCD exporter
     select case(ilineariseUCD)
     case (UCDEXPORT_STD)
-      call flagship_initUCDexport(rproblemLevel, sucdsolution,&
-          iformatUCD, rexport, ifilenumber)
+      call flagship_initUCDexport(rproblemLevel,&
+          sucdsolution, iformatUCD, rexport, ifilenumber)
 
       ! Set pointers to solution(s)
       if (present(rsolutionPrimal))&
@@ -188,13 +193,38 @@ contains
     ! Set simulation time
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
+    ! Prepare array containing the coordinates of the DOFs
+    if (.not.bexportMeshOnly .and. dofCoords .gt. 0) then
+      ! Get coordinate vector (1D-format)
+      call lsyssc_getbase_double(&
+          rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
+      
+      ! Allocate temporal memory
+      allocate(DdofCoords(rproblemLevel%rtriangulation%ndim,&
+                          size(p_DdofCoords)/rproblemLevel%rtriangulation%ndim))
+
+      ! Recast coordinates into 2D-format (1:NDIM,1:NDOF)
+      do idofe = 1, size(DdofCoords,2)
+        do idim = 1, rproblemLevel%rtriangulation%ndim
+          DdofCoords(idim,idofe) =&
+              p_DdofCoords((idofe-1)*rproblemLevel%rtriangulation%ndim+idim)
+        end do
+      end do
+
+      ! Set tracer coordinates
+      call ucd_setTracers(rexport, DdofCoords)
+
+      ! Release temporal memory
+      deallocate(DdofCoords)
+    end if
+    
     ! Add primal solution vector
     if (associated(p_DdataPrimal))&
-        call outputSolution(rexport, p_DdataPrimal,'')
-
+        call outputSolution(rexport, p_DdataPrimal,'', (dofCoords.gt.0))
+    
     ! Add dual solution vector
     if (associated(p_DdataDual))&
-        call outputSolution(rexport, p_DdataDual,'_dual')
+        call outputSolution(rexport, p_DdataDual,'_dual', (dofCoords.gt.0))
 
     ! Write UCD file
     call ucd_write(rexport)
@@ -215,11 +245,12 @@ contains
     ! **************************************************************************
     ! This subroutine outputs the solution given by the array Ddata
 
-    subroutine outputSolution(rexport, Ddata, csuffix)
+    subroutine outputSolution(rexport, Ddata, csuffix, btracers)
       
       ! Input parameters
       real(DP), dimension(:), intent(in) :: Ddata
       character(len=*), intent(in) :: csuffix
+      logical, intent(in) :: btracers
 
       ! Input/output paramters
       type(t_ucdExport), intent(inout) :: rexport
@@ -284,6 +315,11 @@ contains
                   'velocity_x', Ddata, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+              end if
               
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
@@ -292,6 +328,14 @@ contains
                   'velocity_y', Ddata, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'velocity_y'//csuffix,&
+                    p_Ddata2)
+              end if
+              
 
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
@@ -302,6 +346,15 @@ contains
                   'velocity_z', Ddata, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'velocity_y'//csuffix,&
+                    p_Ddata2)
+                call ucd_addTracerVariable(rexport, 'velocity_z'//csuffix,&
+                    p_Ddata3)
+              end if
             end select
 
           elseif (trim(cvariable) .eq. 'momentum') then
@@ -311,7 +364,13 @@ contains
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', Ddata, p_Ddata1)
-              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+              end if
               
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
@@ -320,6 +379,13 @@ contains
                   'momentum_y', Ddata, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'momentum_y'//csuffix,&
+                    p_Ddata2)
+              end if
 
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
@@ -330,6 +396,15 @@ contains
                   'momentum_z', Ddata, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'momentum_y'//csuffix,&
+                    p_Ddata2)
+                call ucd_addTracerVariable(rexport, 'momentum_z'//csuffix,&
+                    p_Ddata3)
+              end if
             end select
             
           else
@@ -349,6 +424,11 @@ contains
             
             call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
+
+            if (btracers) then
+              call ucd_addTracerVariable(rexport, cvariable//csuffix,&
+                  p_Ddata1)
+            end if
             
           end if
         end do
@@ -371,6 +451,11 @@ contains
                   'velocity_x', Ddata, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+              end if
               
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
@@ -379,6 +464,13 @@ contains
                   'velocity_y', Ddata, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'velocity_y'//csuffix,&
+                    p_Ddata2)
+              end if
 
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
@@ -389,6 +481,15 @@ contains
                   'velocity_z', Ddata, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'velocity_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'velocity_y'//csuffix,&
+                    p_Ddata2)
+                call ucd_addTracerVariable(rexport, 'velocity_z'//csuffix,&
+                    p_Ddata3)
+              end if
             end select
             
           elseif (trim(cvariable) .eq. 'momentum') then
@@ -399,6 +500,11 @@ contains
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', Ddata, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix, p_Ddata1)
+              
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+              end if
 
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
@@ -407,6 +513,13 @@ contains
                   'momentum_y', Ddata, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2)
+
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'momentum_y'//csuffix,&
+                    p_Ddata2)
+              end if
 
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
@@ -417,6 +530,15 @@ contains
                   'momentum_z', Ddata, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
+              
+              if (btracers) then
+                call ucd_addTracerVariable(rexport, 'momentum_x'//csuffix,&
+                    p_Ddata1)
+                call ucd_addTracerVariable(rexport, 'momentum_y'//csuffix,&
+                    p_Ddata2)
+                call ucd_addTracerVariable(rexport, 'momentum_z'//csuffix,&
+                    p_Ddata3)
+              end if
             end select
 
           else
@@ -433,9 +555,15 @@ contains
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
                   cvariable, Ddata, p_Ddata1)
             end select
+
             call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
+            if (btracers) then
+              call ucd_addTracerVariable(rexport, cvariable//csuffix,&
+                  p_Ddata1)
+            end if
+
           end if
         end do
 

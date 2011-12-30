@@ -134,8 +134,10 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'timestep', stimestepName)
-    call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'timestep', stimestepName)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'solver',   ssolverName)
 
     ! Initialise time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep)
@@ -865,7 +867,7 @@ contains
       !-------------------------------------------------------------------------
       ! Initialise/resize group finite element structure as duplicate of
       ! the template group finite element structure and fill it with the
-      ! precomputed matrix coefficients for the diffusice term
+      ! precomputed matrix coefficients for the diffusife term
       if (diffusionGFEM > 0) then
         ! Check if structure has been initialised
         if (rproblemLevel%RgroupFEMBlock(diffusionGFEM)%nblocks .eq. 0)&
@@ -882,7 +884,7 @@ contains
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
               p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
           
-          ! Compute number of matrices to by copied
+          ! Compute number of matrices to be copied
           nmatrices = 0
           if (coeffMatrix_S > 0) nmatrices = nmatrices+1
           

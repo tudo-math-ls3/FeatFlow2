@@ -102,10 +102,13 @@ contains
     type(t_blockDiscretisation) :: rdiscretisationPrimal
     type(t_blockDiscretisation) :: rdiscretisationDual
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual
-    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
-    integer :: iformatUCD,ilineariseUCD,nrefineUCD
+    real(DP), dimension(:,:), allocatable :: DdofCoords
+    real(DP), dimension(:), pointer :: p_DdataPrimal,p_DdataDual
+    real(DP), dimension(:), pointer :: p_DdofCoords
+    integer :: iformatUCD,ilineariseUCD,nrefineUCD,dofCoords,idofe,idim
     logical :: bexportMeshOnly,bdiscontinuous
-
+  
+    
     ! Initialisation
     bexportMeshOnly = .true.
     if (present(rsolutionPrimal) .or.&
@@ -114,6 +117,8 @@ contains
     nullify(p_DdataPrimal, p_DdataDual)
 
     ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'dofCoords', dofCoords, 0)
     call parlst_getvalue_string(rparlist, ssectionName,&
                                 'output', soutputName)
     call parlst_getvalue_string(rparlist, trim(soutputName),&
@@ -123,8 +128,8 @@ contains
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'ilineariseucd', ilineariseUCD, UCDEXPORT_STD)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
-                             'nrefineucd', nrefineUCD, 0)
-    
+                             'nrefineucd', nrefineUCD, 0)   
+
     ! Initialise the UCD exporter
     select case(ilineariseUCD)
     case (UCDEXPORT_STD)
@@ -179,16 +184,53 @@ contains
     ! Set simulation time
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
-    ! Add primal/dual solution vectors
-    if (associated(p_DdataPrimal))&
-        call ucd_addVariableVertexBased (rexport, 'u',&
-        UCD_VAR_STANDARD, p_DdataPrimal)
-    if (associated(p_DdataDual))&
-        call ucd_addVariableVertexBased (rexport, 'z',&
-        UCD_VAR_STANDARD, p_DdataDual)
+    ! Prepare array containing the coordinates of the DOFs
+    if (.not.bexportMeshOnly .and. dofCoords .gt. 0) then
+      ! Get coordinate vector (1D-format)
+      call lsyssc_getbase_double(&
+          rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
+      
+      ! Allocate temporal memory
+      allocate(DdofCoords(rproblemLevel%rtriangulation%ndim,&
+                          size(p_DdofCoords)/rproblemLevel%rtriangulation%ndim))
+
+      ! Recast coordinates into 2D-format (1:NDIM,1:NDOF)
+      do idofe = 1, size(DdofCoords,2)
+        do idim = 1, rproblemLevel%rtriangulation%ndim
+          DdofCoords(idim,idofe) =&
+              p_DdofCoords((idofe-1)*rproblemLevel%rtriangulation%ndim+idim)
+        end do
+      end do
+
+      ! Set tracer coordinates
+      call ucd_setTracers(rexport, DdofCoords)
+
+      ! Release temporal memory
+      deallocate(DdofCoords)
+    end if
+    
+    ! Add primal solution vector
+    if (associated(p_DdataPrimal)) then
+      call ucd_addVariableVertexBased (rexport, 'u',&
+          UCD_VAR_STANDARD, p_DdataPrimal)
+      
+      ! Add pointvalues as tracer variable?
+      if (dofCoords .gt. 0)&
+          call ucd_addTracerVariable(rexport, 'u', p_DdataPrimal)
+    end if
+
+    ! Add dual solution vector
+    if (associated(p_DdataDual)) then
+      call ucd_addVariableVertexBased (rexport, 'z',&
+          UCD_VAR_STANDARD, p_DdataDual)
+
+      ! Add pointvalues as tracer variable?
+      if (dofCoords .gt. 0)&
+          call ucd_addTracerVariable(rexport, 'z', p_DdataDual)
+    end if
 
     ! Write UCD file
-    call ucd_write  (rexport)
+    call ucd_write(rexport)
     call ucd_release(rexport)
 
     ! Release temporal memory
@@ -215,7 +257,7 @@ contains
     ! timer for total time measurement
     type(t_timer), intent(in) :: rtimerTotal
 
-    ! section name in parameter collection structure
+    ! section name in collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
 
