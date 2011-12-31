@@ -1921,16 +1921,18 @@ do iedge = 1, nedges
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
     real(DP), dimension(:,:,:), allocatable :: Daux  
-    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY,Dvalue,DpointParMirror
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
+    real(DP), dimension(:,:), allocatable :: Dvalue,DpointParMirror
     real(DP) :: dnv,dscale,dtime,ddiffusion,dgamma,dpenalty
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
     integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
-    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
     real(DP), dimension(:,:,:), pointer :: p_DdofCoords
-    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:), pointer :: p_DdofPosition
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
     real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    real(DP), dimension(:), allocatable :: DlocalData    
     integer, dimension(:,:), pointer :: p_IdofsLoc
     logical, dimension(EL_MAXNDER) :: Bder
     integer :: idofe,idofGlob
@@ -2133,8 +2135,9 @@ do iedge = 1, nedges
 
       ! Initialise subset of degrees of freedom
       call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
-      p_IdofsLoc   => rdofSubset%p_IdofsLoc
-      p_DdofCoords => rdofSubset%p_DdofCoords
+      p_IdofsLoc     => rdofSubset%p_IdofsLoc
+      p_DdofCoords   => rdofSubset%p_DdofCoords
+      p_DdofPosition => rdofSubset%p_DdofPosition
       
       ! Allocate temporal memory for normal vector, velocity field,
       ! the coefficients at the DOFs and the basis function values
@@ -2146,6 +2149,62 @@ do iedge = 1, nedges
                          elem_getMaxDerivative(rdomainIntSubset%celement),&
                          npointsPerElement, nelements))
 
+      ! Do we have to apply special treatment for periodic or
+      ! antiperiodic boundary conditions?
+      if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+        
+        ! Allocate additional temporal memory
+        allocate(DpointParMirror(rdofSubset%ndofsPerElement,nelements))
+
+        ! Rescale parameter values DdofPosition on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region using linear mapping
+        !
+        ! $$ m : [dminParam,dmaxParam] -> [dminParamMirror,dmaxParamMirror] $$
+
+        call mprim_linearRescale(p_DdofPosition, dminParam, dmaxParam,&
+            dminParamMirror, dmaxParamMirror, DpointParMirror)
+
+        ! Evaluate the solution in the positions of the DOFs on the
+        ! mirrored (!) boundary and store the result in Dvalues
+        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+            Dvalue, p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+        
+        ! Deallocate additional temporal memory
+        deallocate(DpointParMirror)
+
+      elseif (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC) then
+
+        ! Allocate additional temporal memory
+        allocate(DpointParMirror(rdofSubset%ndofsPerElement,nelements))
+
+        ! Rescale parameter values DdofPosition on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region using linear mapping
+        !
+        ! $$ m : [dminParam,dmaxParam] -> [dmaxParamMirror,dminParamMirror] $$
+
+        call mprim_linearRescale(p_DdofPosition, dminParam, dmaxParam,&
+            dmaxParamMirror, dminParamMirror, DpointParMirror)
+
+        ! Evaluate the solution in the positions of the DOFs on the
+        ! mirrored (!) boundary and store the result in Dvalues
+        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+            Dvalue, p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+        
+        ! Deallocate additional temporal memory
+        deallocate(DpointParMirror)
+
+      else
+        ! Evaluate the function parser for the Dirichlet values in the
+        ! DOFs on the boundary and store the result in Dvalue
+        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+            NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
+            rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
+      end if
+
       ! Evaluate function values only
       Bder = .false.
       Bder(DER_FUNC) = .true.
@@ -2153,13 +2212,7 @@ do iedge = 1, nedges
       ! Evaluate the basis functions at the cubature points
       call elem_generic_sim2 (rdomainIntSubset%celement,&
           rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
-
-      ! Evaluate the function parser for the Dirichlet values in the
-      ! DOFs on the boundary and store the result in Dvalue
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
-          NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
-          rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
-      
+    
       ! Calculate the normal vectors in DOFs on the boundary
       call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
           DnormalX, DnormalY, 1)
@@ -2709,16 +2762,18 @@ do iedge = 1, nedges
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
     type(t_boundaryRegion), pointer :: p_rboundaryRegionMirror
     real(DP), dimension(:,:,:), allocatable :: Daux  
-    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY,Dvalue,DpointParMirror
+    real(DP), dimension(:,:), allocatable :: DnormalX,DnormalY
+    real(DP), dimension(:,:), allocatable :: Dvalue,DpointParMirror
     real(DP) :: dnv,dscale,dtime,ddiffusion,dgamma,dpenalty
     real(DP) :: dminParam,dmaxParam,dminParamMirror,dmaxParamMirror
     integer :: ibdrtype,iel,ipoint,isegment,nmaxExpr
 #ifdef TRANSP_USE_GFEM_AT_BOUNDARY
     type(t_dofSubset) :: rdofSubset
-    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
     real(DP), dimension(:,:,:), pointer :: p_DdofCoords
-    real(DP), dimension(:), allocatable :: DlocalData
+    real(DP), dimension(:,:), pointer :: p_DdofPosition
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvelocityX,p_DvelocityY
     real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
+    real(DP), dimension(:), allocatable :: DlocalData
     integer, dimension(:,:), pointer :: p_IdofsLoc
     logical, dimension(EL_MAXNDER) :: Bder
     integer :: idofe,idofGlob
@@ -2921,8 +2976,9 @@ do iedge = 1, nedges
 
       ! Initialise subset of degrees of freedom
       call dofprep_initDofSetAtBoundary(rdofSubset, rdomainIntSubset)
-      p_IdofsLoc   => rdofSubset%p_IdofsLoc
-      p_DdofCoords => rdofSubset%p_DdofCoords
+      p_IdofsLoc     => rdofSubset%p_IdofsLoc
+      p_DdofCoords   => rdofSubset%p_DdofCoords
+      p_DdofPosition => rdofSubset%p_DdofPosition
       
       ! Allocate temporal memory for normal vector, velocity field,
       ! the coefficients at the DOFs and the basis function values
@@ -2934,6 +2990,62 @@ do iedge = 1, nedges
                          elem_getMaxDerivative(rdomainIntSubset%celement),&
                          npointsPerElement, nelements))
 
+      ! Do we have to apply special treatment for periodic or
+      ! antiperiodic boundary conditions?
+      if (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_PERIODIC) then
+        
+        ! Allocate additional temporal memory
+        allocate(DpointParMirror(rdofSubset%ndofsPerElement,nelements))
+
+        ! Rescale parameter values DdofPosition on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region using linear mapping
+        !
+        ! $$ m : [dminParam,dmaxParam] -> [dminParamMirror,dmaxParamMirror] $$
+
+        call mprim_linearRescale(p_DdofPosition, dminParam, dmaxParam,&
+            dminParamMirror, dmaxParamMirror, DpointParMirror)
+
+        ! Evaluate the solution in the positions of the DOFs on the
+        ! mirrored (!) boundary and store the result in Dvalues
+        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+            Dvalue, p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+        
+        ! Deallocate additional temporal memory
+        deallocate(DpointParMirror)
+
+      elseif (iand(ibdrtype, BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC) then
+
+        ! Allocate additional temporal memory
+        allocate(DpointParMirror(rdofSubset%ndofsPerElement,nelements))
+
+        ! Rescale parameter values DdofPosition on the boundary segment
+        ! where to compute the boundary conditions into parameter
+        ! values on the mirror boundary region using linear mapping
+        !
+        ! $$ m : [dminParam,dmaxParam] -> [dmaxParamMirror,dminParamMirror] $$
+
+        call mprim_linearRescale(p_DdofPosition, dminParam, dmaxParam,&
+            dmaxParamMirror, dminParamMirror, DpointParMirror)
+
+        ! Evaluate the solution in the positions of the DOFs on the
+        ! mirrored (!) boundary and store the result in Dvalues
+        call doEvaluateAtBdr2d(DER_FUNC, npointsPerElement*nelements,&
+            Dvalue, p_rsolution%RvectorBlock(1), DpointParMirror,&
+            ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
+        
+        ! Deallocate additional temporal memory
+        deallocate(DpointParMirror)
+
+      else
+        ! Evaluate the function parser for the Dirichlet values in the
+        ! DOFs on the boundary and store the result in Dvalue
+        call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
+            NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
+            rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
+      end if
+
       ! Evaluate function values only
       Bder = .false.
       Bder(DER_FUNC) = .true.
@@ -2941,12 +3053,6 @@ do iedge = 1, nedges
       ! Evaluate the basis functions at the cubature points
       call elem_generic_sim2 (rdomainIntSubset%celement,&
           rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
-
-      ! Evaluate the function parser for the Dirichlet values in the
-      ! DOFs on the boundary and store the result in Dvalue
-      call fparser_evalFuncBlockByNumber2(p_rfparser, nmaxExpr*(isegment-1)+1,&
-          NDIM2D, rdofSubset%ndofsPerElement*nelements, p_DdofCoords,&
-          rdofSubset%ndofsPerElement*nelements, Dvalue, (/dtime/))
       
       ! Calculate the normal vectors in DOFs on the boundary
       call boundary_calcNormalVec2D(Dpoints, p_DdofCoords,&
