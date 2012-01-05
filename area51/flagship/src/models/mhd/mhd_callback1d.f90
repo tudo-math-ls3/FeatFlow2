@@ -4553,7 +4553,7 @@ contains
       allocate(Daux1(npointsPerElement*nvar, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      call fevl_evaluate_sim(DER_FUNC1D, Daux1, p_rsolution%RvectorBlock(1),&
+      call fevl_evaluate_sim(DER_FUNC, Daux1, p_rsolution%RvectorBlock(1),&
           Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! What type of boundary conditions are we?
@@ -4609,7 +4609,7 @@ contains
       
       ! Evaluate the solution in the cubature points on the boundary
       do ivar = 1, nvar
-        call fevl_evaluate_sim(DER_FUNC1D, Daux2(:,:,ivar),&
+        call fevl_evaluate_sim(DER_FUNC, Daux2(:,:,ivar),&
             p_rsolution%RvectorBlock(ivar), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       end do

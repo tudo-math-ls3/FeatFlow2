@@ -8205,7 +8205,7 @@ contains
       allocate(Daux(npointsPerElement*nvar, nelements))
       
       ! Evaluate the solution in the cubature points on the boundary
-      call fevl_evaluate_sim(DER_FUNC2D, Daux, p_rsolution%RvectorBlock(1),&
+      call fevl_evaluate_sim(DER_FUNC, Daux, p_rsolution%RvectorBlock(1),&
           Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       ! Distribute solution values to the internal state vector
@@ -8260,7 +8260,7 @@ contains
       
       ! Evaluate the solution in the cubature points on the boundary
       do ivar = 1, nvar
-        call fevl_evaluate_sim(DER_FUNC2D, Daux,&
+        call fevl_evaluate_sim(DER_FUNC, Daux,&
             p_rsolution%RvectorBlock(ivar), Dpoints,&
             rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
@@ -8699,7 +8699,7 @@ contains
 !!$        end if
 !!$
 !!$        ! Evaluate the solution in the cubature points on the mirrored boundary
-!!$        call doEvaluateAtBdrScalar(DER_FUNC2D, npointsPerElement*nelements*nvar,&
+!!$        call doEvaluateAtBdrScalar(DER_FUNC, npointsPerElement*nelements*nvar,&
 !!$            Daux3, p_rsolution%RvectorBlock(1), npointsPerElement*nelements,&
 !!$            DpointParMirror, ibct, BDR_PAR_LENGTH, p_rboundaryRegionMirror)
 !!$
