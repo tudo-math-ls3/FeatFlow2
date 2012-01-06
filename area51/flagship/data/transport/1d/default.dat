@@ -33,10 +33,10 @@ DiffusionGFEM = 2
 TemplateGFEM = 3
 
 # Position of the group finite element block for the primal boundary
-PrimalBdrGFEM = 4
+PrimalBdrGFEM = 0 #4
 
 # Position of the group finite element block for the dual boundary
-DualBdrGFEM = 5
+DualBdrGFEM = 0 #5
 
 #-------------------------------------------------------------------------------
 
