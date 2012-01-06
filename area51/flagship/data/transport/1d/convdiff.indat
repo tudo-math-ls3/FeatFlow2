@@ -37,5 +37,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  'DIRICHLET_WEAK'  '1.0'  '1e1'  '1.0'
-0.0  T  'DIRICHLET_WEAK'  '0.0'  '1e1'  '1.0'
+0.0  T  'DIRICHLET_WEAK'  '1.0'  '1e3'  '-1.0'
+0.0  T  'DIRICHLET_WEAK'  '0.0'  '1e3'  '-1.0'
