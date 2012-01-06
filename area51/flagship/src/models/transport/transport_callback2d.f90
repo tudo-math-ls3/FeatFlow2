@@ -901,9 +901,17 @@ contains
               rboundaryRegion)
           
           ! Assemble the bilinear form
-          call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
-              .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-              rboundaryRegion, rcollectionTmp)
+          if (iand(p_IbdrCondType(ibdc), BDRC_LUMPED) .eq. BDRC_LUMPED) then
+            ! ... using lumped assembly
+            call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
+                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
+          else
+            ! ... using standard assembly
+            call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
+                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp)
+          end if
 
         case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
           
@@ -922,9 +930,17 @@ contains
               rboundaryRegion)
           
           ! Assemble the bilinear form
-          call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
-              .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-              rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
+          if (iand(p_IbdrCondType(ibdc), BDRC_LUMPED) .eq. BDRC_LUMPED) then
+            ! ... using lumped assembly
+            call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
+                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
+          else
+            ! ... using standard assembly
+            call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
+                .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp)
+          end if
           
         case default
           call output_line('Unsupported type of boundary conditions!',&

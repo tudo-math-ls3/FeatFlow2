@@ -78,13 +78,21 @@ module boundarycondaux
 !<constants>
 !<constantblock description="Flags for boundary condition specification bitfield">
 
-  ! Impose boundary condition in weak sense
-  integer(I32), parameter, public :: BDRC_WEAK     = 2**10
+  ! Impose boundary condition in strong sense by filtering the system
+  ! matrix and the right-hand side/residul vector explicitly
+  integer(I32), parameter, public :: BDRC_STRONG   = 2**8
 
-  ! Impose boundary condition in strong sense by filtering
-  integer(I32), parameter, public :: BDRC_STRONG   = 2**11
+  ! Impose boundary condition in weak sense by overwriting the
+  ! integral terms resulting from integration by parts and introducing
+  ! additional integral terms into the bilinear and linear forms
+  integer(I32), parameter, public :: BDRC_WEAK     = 2**9
 
-  ! Bitmask for boundary condition (bits 0..9)
+  ! Adopt lumped assembly of the bilinear form
+  integer(I32), parameter, public :: BDRC_LUMPED   = 2**10
+
+  ! Bitmask for boundary condition (bits 0..7): Each application can
+  ! defined up to 255 different tpyes of boundary conditions which can
+  ! be addressed by the numbers 1..255
   integer(I32), parameter, public :: BDRC_TYPEMASK = 255
 !</constantblock>
 
@@ -92,11 +100,11 @@ module boundarycondaux
 
   ! Periodic boundary condition (symmetric)
   ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_PERIODIC      = 101
+  integer, parameter, public :: BDRC_PERIODIC      = 254
 
   ! Periodic boundary condition (anti-symmetric)
   ! This condition couples two boundary segments periodically
-  integer, parameter, public :: BDRC_ANTIPERIODIC  = 102
+  integer, parameter, public :: BDRC_ANTIPERIODIC  = 255
 !</constantblock>
 !</constants>
 

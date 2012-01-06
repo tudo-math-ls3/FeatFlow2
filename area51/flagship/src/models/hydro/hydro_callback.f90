@@ -3499,90 +3499,113 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
+    ! Free-selip boundary conditions
     case ('FREESLIP_STRONG')
       ibdrCondType = BDRC_FREESLIP + BDRC_STRONG
-
     case ('FREESLIP_WEAK')
       ibdrCondType = BDRC_FREESLIP + BDRC_WEAK
-
+    case ('FREESLIP_WEAK_LUMPED')
+      ibdrCondType = BDRC_FREESLIP + BDRC_WEAK + BDRC_LUMPED
+      
+    ! Relaxed free-slip boundary conditions
     case ('RLXFREESLIP_STRONG')
       ibdrCondType = BDRC_RLXFREESLIP + BDRC_STRONG
-
     case ('RLXFREESLIP_WEAK')
       ibdrCondType = BDRC_RLXFREESLIP + BDRC_WEAK
+    case ('RLXFREESLIP_WEAK_LUMPED')
+      ibdrCondType = BDRC_RLXFREESLIP + BDRC_WEAK + BDRC_LUMPED
 
+    ! Viscous wall boundary conditions
     case ('VISCOUSWALL_STRONG')
       ibdrCondType = BDRC_VISCOUSWALL + BDRC_STRONG
-
     case ('VISCOUSWALL_WEAK')
       ibdrCondType = BDRC_VISCOUSWALL + BDRC_WEAK
+    case ('VISCOUSWALL_WEAK_LUMPED')
+      ibdrCondType = BDRC_VISCOUSWALL + BDRC_WEAK + BDRC_LUMPED
 
+    ! Supersonic outlet boundary conditions
     case ('SUPEROUTLET_STRONG')
       ibdrCondType = BDRC_SUPEROUTLET
       ! No strong boundary conditions are prescribed
-
     case ('SUPEROUTLET_WEAK')
       ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
+    case ('SUPEROUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK + BDRC_LUMPED
 
+    ! Subsonic outlet boundary conditions
     case ('SUBOUTLET_STRONG')
       ibdrCondType = BDRC_SUBOUTLET + BDRC_STRONG
-
     case ('SUBOUTLET_WEAK')
       ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK
+    case ('SUBOUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUBOUTLET + BDRC_WEAK + BDRC_LUMPED
 
+    ! Massflow outlet boundary conditions
     case ('MASSOUTLET_STRONG')
       ibdrCondType = BDRC_MASSOUTLET + BDRC_STRONG
-
     case ('MASSOUTLET_WEAK')
       ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK
+    case ('MASSOUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_MASSOUTLET + BDRC_WEAK + BDRC_LUMPED
       
+    ! Freestream boundary conditions
     case ('FREESTREAM_STRONG')
-      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG
-      
+      ibdrCondType = BDRC_FREESTREAM + BDRC_STRONG     
     case ('FREESTREAM_WEAK')
       ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK
+    case ('FREESTREAM_WEAK_LUMPED')
+      ibdrCondType = BDRC_FREESTREAM + BDRC_WEAK + BDRC_LUMPED
 
+    ! Supersonic inlet boundary conditions
     case ('SUPERINLET_STRONG')
       ibdrCondType = BDRC_SUPERINLET + BDRC_STRONG
-
     case ('SUPERINLET_WEAK')
       ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK
+    case ('SUPERINLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUPERINLET + BDRC_WEAK + BDRC_LUMPED
 
+    ! Subsonic inlet boundary conditions
     case ('SUBINLET_STRONG')
       ibdrCondType = BDRC_SUBINLET + BDRC_STRONG
-
     case ('SUBINLET_WEAK')
       ibdrCondType = BDRC_SUBINLET + BDRC_WEAK
+    case ('SUBINLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUBINLET + BDRC_WEAK + BDRC_LUMPED
 
+    ! Massflow inlet boundary conditions
     case ('MASSINLET_STRONG')
       ibdrCondType = BDRC_MASSINLET + BDRC_STRONG
-
     case ('MASSINLET_WEAK')
       ibdrCondType = BDRC_MASSINLET + BDRC_WEAK
+    case ('MASSINLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_MASSINLET + BDRC_WEAK + BDRC_LUMPED
 
+      ! Periodic boundary conditions
     case ('PERIODIC_STRONG')
       ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
-      
     case ('PERIODIC_WEAK')
       ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
-      
+    case ('PERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK + BDRC_LUMPED
+
+    ! Antiperiodic boundary conditions
     case ('ANTIPERIODIC_STRONG')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
-      
     case ('ANTIPERIODIC_WEAK')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
-
+    case ('ANTIPERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK + BDRC_LUMPED
+    
     case default
-      read(cbdrCondType, '(I3)') ibdrCondType
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_parseBoundaryCondition')
+      call sys_halt()
     end select
 
     
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
       
-    case (BDRC_FREESLIP, BDRC_VISCOUSWALL, BDRC_SUPEROUTLET)
-      nexpressions = 0
-
     case (BDRC_SUBOUTLET, BDRC_MASSOUTLET, BDRC_RLXFREESLIP)
       nexpressions = 1
      
@@ -3596,7 +3619,8 @@ contains
       nexpressions = ndimension+2
       
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
-      nexpressions = -1
+      nexpressions = 2 ! penalty parameter $\epsilon$
+                       ! switching parameter $\gamma$
 
     case default
       nexpressions = 0

@@ -3724,25 +3724,49 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
+    ! Supersonic outlet boundary conditions
     case ('SUPEROUTLET_STRONG')
       ibdrCondType = BDRC_SUPEROUTLET
       ! No strong boundary conditions are prescribed
-      
     case ('SUPEROUTLET_WEAK')
       ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK
+    case ('SUPEROUTLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_SUPEROUTLET + BDRC_WEAK + BDRC_LUMPED
       
+    ! Periodic boundary conditions
+    case ('PERIODIC_STRONG')
+      ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
+    case ('PERIODIC_WEAK')
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
+    case ('PERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK + BDRC_LUMPED
+
+    ! Antiperiodic boundary conditions
+    case ('ANTIPERIODIC_STRONG')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
+    case ('ANTIPERIODIC_WEAK')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
+    case ('ANTIPERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK + BDRC_LUMPED
+
     case default
-      read(cbdrCondType, '(I3)') ibdrCondType
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_parseBoundaryCondition')
+      call sys_halt()
     end select
 
     
     ! Determine number of mathematical expressions
     select case (iand(ibdrCondType, BDRC_TYPEMASK))
 
+    case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+      nexpressions = 2 ! penalty parameter $\epsilon$
+                       ! switching parameter $\gamma$
+
     case default
       nexpressions = 0
     end select
-
+    
   end subroutine mhd_parseBoundaryCondition
 
   !*****************************************************************************

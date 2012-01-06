@@ -5494,52 +5494,69 @@ contains
     ! Determine type of boundary condition in numeral form
     select case (sys_upcase(cbdrCondType))
 
+    ! Homogeneous Neumann boundary conditions
     case ('HOMNEUMANN_STRONG')
       ibdrCondType = BDRC_HOMNEUMANN
       ! No strong boundary conditions are prescribed
-
     case ('HOMNEUMANN_WEAK')
       ibdrCondType = BDRC_HOMNEUMANN + BDRC_WEAK
+    case ('HOMNEUMANN_WEAK_LUMPED')
+      ibdrCondType = BDRC_HOMNEUMANN + BDRC_WEAK + BDRC_LUMPED
       
+    ! Inhomogeneous Neumann boundary conditions
     case ('INHOMNEUMANN_STRONG')
       ibdrCondType = BDRC_INHOMNEUMANN
       ! No strong boundary conditions are prescribed
-
     case ('INHOMNEUMANN_WEAK')
       ibdrCondType = BDRC_INHOMNEUMANN + BDRC_WEAK
-      
+    case ('INHOMNEUMANN_WEAK_LUMPED')
+      ibdrCondType = BDRC_INHOMNEUMANN + BDRC_WEAK + BDRC_LUMPED
+
+    ! Dirichlet boundary conditions
     case ('DIRICHLET_STRONG')
       ibdrCondType = BDRC_DIRICHLET + BDRC_STRONG
-
     case ('DIRICHLET_WEAK')
       ibdrCondType = BDRC_DIRICHLET + BDRC_WEAK
+    case ('DIRICHLET_WEAK_LUMPED')
+      ibdrCondType = BDRC_DIRICHLET + BDRC_WEAK + BDRC_LUMPED
+      
 
+    ! Robin boundary conditions
     case ('ROBIN_STRONG')
       ibdrCondType = BDRC_ROBIN + BDRC_STRONG
-
     case ('ROBIN_WEAK')
       ibdrCondType = BDRC_ROBIN + BDRC_WEAK
+    case ('ROBIN_LUMPED_WEAK')
+      ibdrCondType = BDRC_ROBIN + BDRC_WEAK + BDRC_LUMPED
 
+    ! Flux boundary conditions
     case ('FLUX_STRONG')
       ibdrCondType = BDRC_FLUX + BDRC_STRONG
-
     case ('FLUX_WEAK')
       ibdrCondType = BDRC_FLUX + BDRC_WEAK
+    case ('FLUX_LUMPED_LUMPED')
+      ibdrCondType = BDRC_FLUX + BDRC_WEAK + BDRC_LUMPED
 
+    ! Periodic boundary conditions
     case ('PERIODIC_STRONG')
       ibdrCondType = BDRC_PERIODIC + BDRC_STRONG
-
     case ('PERIODIC_WEAK')
       ibdrCondType = BDRC_PERIODIC + BDRC_WEAK
+    case ('PERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_PERIODIC + BDRC_WEAK + BDRC_LUMPED
 
+    ! Antiperiodic boundary conditions
     case ('ANTIPERIODIC_STRONG')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_STRONG
-
     case ('ANTIPERIODIC_WEAK')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
+    case ('ANTIPERIODIC_WEAK_LUMPED')
+      ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK + BDRC_LUMPED
 
     case default
-      read(cbdrCondType, '(I3)') ibdrCondType
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_parseBoundaryCondition')
+      call sys_halt()
     end select
 
     
