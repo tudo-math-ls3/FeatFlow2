@@ -903,7 +903,7 @@ contains
           ! Assemble the bilinear form
           call bilf_buildMatrixScalarBdr2D(rform, ccubTypeBdr,&
               .false., rmatrix, fcoeff_buildMatrixScBdr2D_sim,&
-              rboundaryRegion, rcollectionTmp, BILF_MATC_LUMPED)
+              rboundaryRegion, rcollectionTmp)
 
         case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
           
@@ -3880,11 +3880,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Daux(2,idofe,iel) = dscale*dgamma*&
+            Daux(2,idofe,iel) = dscale*&
                 (rcollection%DquickAccess(3)*Dnormal(idofe,iel,1)+&
                  rcollection%DquickAccess(5)*Dnormal(idofe,iel,2))
             
-            Daux(3,idofe,iel) = dscale*dgamma*&
+            Daux(3,idofe,iel) = dscale*&
                 (rcollection%DquickAccess(4)*Dnormal(idofe,iel,1)+&
                  rcollection%DquickAccess(6)*Dnormal(idofe,iel,2))
 
@@ -3892,13 +3892,8 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Daux(4,idofe,iel) = dscale*dgamma*&
-                (rcollection%DquickAccess(3)*Dnormal(idofe,iel,1)+&
-                 rcollection%DquickAccess(5)*Dnormal(idofe,iel,2))
-            
-            Daux(5,idofe,iel) = dscale*dgamma*&
-                (rcollection%DquickAccess(4)*Dnormal(idofe,iel,1)+&
-                 rcollection%DquickAccess(6)*Dnormal(idofe,iel,2))
+            Daux(4,idofe,iel) = dgamma*Daux(2,idofe,iel)
+            Daux(5,idofe,iel) = dgamma*Daux(3,idofe,iel)
           end do
         end do
 
@@ -3996,11 +3991,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Dcoefficients(2,ipoint,iel) = dscale*dgamma*&
+            Dcoefficients(2,ipoint,iel) = dscale*&
                 (rcollection%DquickAccess(3)*Dnormal(ipoint,iel,1)+&
                  rcollection%DquickAccess(5)*Dnormal(ipoint,iel,2))
             
-            Dcoefficients(3,ipoint,iel) = dscale*dgamma*&
+            Dcoefficients(3,ipoint,iel) = dscale*&
                 (rcollection%DquickAccess(4)*Dnormal(ipoint,iel,1)+&
                  rcollection%DquickAccess(6)*Dnormal(ipoint,iel,2))
 
@@ -4008,13 +4003,8 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Dcoefficients(4,ipoint,iel) = dscale*dgamma*&
-                (rcollection%DquickAccess(3)*Dnormal(ipoint,iel,1)+&
-                 rcollection%DquickAccess(5)*Dnormal(ipoint,iel,2))
-            
-            Dcoefficients(5,ipoint,iel) = dscale*dgamma*&
-                (rcollection%DquickAccess(4)*Dnormal(ipoint,iel,1)+&
-                 rcollection%DquickAccess(6)*Dnormal(ipoint,iel,2))
+            Dcoefficients(4,ipoint,iel) = dgamma*Dcoefficients(2,ipoint,iel)
+            Dcoefficients(5,ipoint,iel) = dgamma*Dcoefficients(3,ipoint,iel)
           end do
         end do
 
@@ -4646,11 +4636,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Daux(2,idofe,iel) = -dscale*dgamma*&
+            Daux(2,idofe,iel) = -dscale*&
                 (rcollection%DquickAccess(3)*Dnormal(idofe,iel,1)+&
                  rcollection%DquickAccess(5)*Dnormal(idofe,iel,2))
             
-            Daux(3,idofe,iel) = -dscale*dgamma*&
+            Daux(3,idofe,iel) = -dscale*&
                 (rcollection%DquickAccess(4)*Dnormal(idofe,iel,1)+&
                  rcollection%DquickAccess(6)*Dnormal(idofe,iel,2))
 
@@ -4658,13 +4648,8 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Daux(4,idofe,iel) = -dscale*dgamma*&
-                (rcollection%DquickAccess(3)*Dnormal(idofe,iel,1)+&
-                 rcollection%DquickAccess(5)*Dnormal(idofe,iel,2))
-            
-            Daux(5,idofe,iel) = -dscale*dgamma*&
-                (rcollection%DquickAccess(4)*Dnormal(idofe,iel,1)+&
-                 rcollection%DquickAccess(6)*Dnormal(idofe,iel,2))
+            Daux(4,idofe,iel) = dgamma*Daux(2,idofe,iel)
+            Daux(5,idofe,iel) = dgamma*Daux(3,idofe,iel)
           end do
         end do
 
@@ -4762,11 +4747,11 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Dcoefficients(2,ipoint,iel) = -dscale*dgamma*&
+            Dcoefficients(2,ipoint,iel) = -dscale*&
                 (rcollection%DquickAccess(3)*Dnormal(ipoint,iel,1)+&
                  rcollection%DquickAccess(5)*Dnormal(ipoint,iel,2))
             
-            Dcoefficients(3,ipoint,iel) = -dscale*dgamma*&
+            Dcoefficients(3,ipoint,iel) = -dscale*&
                 (rcollection%DquickAccess(4)*Dnormal(ipoint,iel,1)+&
                  rcollection%DquickAccess(6)*Dnormal(ipoint,iel,2))
 
@@ -4774,13 +4759,8 @@ do iedge = 1, nedges
             ! the bilinear form
             !
             ! $$ -\gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Dcoefficients(4,ipoint,iel) = -dscale*dgamma*&
-                (rcollection%DquickAccess(3)*Dnormal(ipoint,iel,1)+&
-                 rcollection%DquickAccess(5)*Dnormal(ipoint,iel,2))
-            
-            Dcoefficients(5,ipoint,iel) = -dscale*dgamma*&
-                (rcollection%DquickAccess(4)*Dnormal(ipoint,iel,1)+&
-                 rcollection%DquickAccess(6)*Dnormal(ipoint,iel,2))
+            Dcoefficients(4,ipoint,iel) = dgamma*Dcoefficients(2,ipoint,iel)
+            Dcoefficients(5,ipoint,iel) = dgamma*Dcoefficients(3,ipoint,iel)
           end do
         end do
 

@@ -380,7 +380,7 @@ contains
         ! Assemble the bilinear form
         call bilf_buildMatrixScalarBdr1D(rform, .false.,&
             rmatrix, fcoeff_buildMatrixScBdr1D_sim,&
-            ibdc, rcollectionTmp, BILF_MATC_LUMPED)
+            ibdc, rcollectionTmp)
         
       case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN, BDRC_ROBIN, BDRC_FLUX)
         
@@ -409,7 +409,7 @@ contains
     
     ! Release temporal collection structure
     call collct_done(rcollectionTmp)
-      
+
   end subroutine transp_calcBilfBdrCond1d
 
   !*****************************************************************************
@@ -1975,7 +1975,6 @@ contains
 
             ! Compute the coefficient for the first term of the
             ! bilinear form which accounts for the penalty parameter.
-            ! Note that the element width is not computed yet.           
             Dcoefficients(1,ipoint,iel) = -dscale*dpenalty*ddiffusion/&
                                            abs(rdomainIntSubset%p_Dcoords(1,1,iel)-&
                                                rdomainIntSubset%p_Dcoords(1,2,iel))
@@ -1983,14 +1982,13 @@ contains
             ! Compute coefficients for the second term of the bilinear form
             !
             ! $$ \int_{\Gamma_D} w(D\nabla u)\cdot{\bf n} ds $$
-            Dcoefficients(2,ipoint,iel) = dscale*dgamma*&
+            Dcoefficients(2,ipoint,iel) = dscale*&
                                           rcollection%DquickAccess(3)*dnormal
 
             ! Compute coefficients for the third term of the bilinear form
             !
             ! $$ \gamma \int_{\Gamma_D} (D\nabla w)\cdot{\bf n} u ds $$
-            Dcoefficients(3,ipoint,iel) = dscale*dgamma*&
-                                          rcollection%DquickAccess(3)*dnormal
+            Dcoefficients(3,ipoint,iel) = dgamma*Dcoefficients(2,ipoint,iel)
           end do
         end do
 
