@@ -194,7 +194,7 @@ pgiminversion_9_0=\
 	$(if $(findstring 9.0-,$(PGIVERSION)),yes,no)),yes,no)
 pgiminversion_8_0=\
 	$(if $(findstring yes,\
-	$(call pgiminversion_8_0) \
+	$(call pgiminversion_9_0) \
 	$(if $(findstring 8.0-,$(PGIVERSION)),yes,no)),yes,no)
 pgiminversion_7_2=\
 	$(if $(findstring yes,\
@@ -257,7 +257,7 @@ pgimaxversion_11_1=\
 pgimaxversion_11_0=\
 	$(if $(findstring yes,\
 	$(call pgimaxversion_10_9) \
-	$(if $(findstring 10.0-,$(PGIVERSION)),yes,no)),yes,no)
+	$(if $(findstring 11.0-,$(PGIVERSION)),yes,no)),yes,no)
 pgimaxversion_10_9=\
 	$(if $(findstring yes,\
 	$(call pgimaxversion_10_8) \
