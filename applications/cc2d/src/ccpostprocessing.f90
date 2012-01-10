@@ -471,8 +471,10 @@ contains
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     integer :: cflag
+    integer :: icubError
     logical :: bfileExists
     real(DP) :: dtimebackup
+    type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IERRORANALYSISL2', icalcL2, 0)
@@ -480,6 +482,15 @@ contains
         'IERRORANALYSISH1', icalcH1, 0)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'ICALCKINETICENERGY', icalcEnergy, 1)
+
+    call parlst_getvalue_string (rproblem%rparamList,'CC-POSTPROCESSING',&
+                                 'scubError',stemp,'')
+    if (stemp .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-POSTPROCESSING',&
+                                'icubError',icubError,int(CUB_GEN_AUTO))
+    else
+      icubError = cub_igetID(stemp)
+    end if
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IWRITEERRORANALYSISL2', iwriteErrorAnalysisL2, 0)
@@ -506,6 +517,12 @@ contains
     if (sfilenameKineticEnergy .eq. '') &
       iwriteKineticEnergy = 0
       
+    ! Create an cubature info structure which contains our cubature rule
+    call spdiscr_createDefCubStructure(&
+        rsolution%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfoUV,int(icubError,I32))
+    call spdiscr_createDefCubStructure(&
+        rsolution%RvectorBlock(3)%p_rspatialDiscr,rcubatureInfoP,int(icubError,I32))
+    
     ! The error analysis might take place at an arbitrary time.
     ! Therefore, modify the 'current' time to the time where we want to
     ! do the analysis. Save the 'current' time and restore afterwards.
@@ -529,16 +546,19 @@ contains
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
       ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
-      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-                         ffunction_TargetX,rproblem%rcollection)
+      call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                         ffunction_TargetX,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoUV)
 
-      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-                         ffunction_TargetY,rproblem%rcollection)
+      call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                         ffunction_TargetY,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoUV)
                          
       derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
-      call pperr_scalar (rsolution%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
-                         ffunction_TargetP,rproblem%rcollection)
+      call pperr_scalar (PPERR_L2ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                         ffunction_TargetP,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoP)
 
       derrorP = Derr(3)
       
@@ -571,11 +591,13 @@ contains
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
       ! Perform error analysis to calculate and add ||u-z||_{H^1}.
-      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_H1ERROR,Derr(1),&
-                         ffunction_TargetX,rproblem%rcollection)
+      call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                         ffunction_TargetX,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoUV)
 
-      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_H1ERROR,Derr(2),&
-                         ffunction_TargetY,rproblem%rcollection)
+      call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                         ffunction_TargetY,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoUV)
                          
       if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
         derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
@@ -587,8 +609,9 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
-      call pperr_scalar (rsolution%RvectorBlock(3),PPERR_H1ERROR,Derr(3),&
-                        ffunction_TargetP,rproblem%rcollection)
+      call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                         ffunction_TargetP,rproblem%rcollection,&
+                         rcubatureInfo=rcubatureInfoP)
 
       if (Derr(3) .ne. -1.0_DP) then
         derrorP = Derr(3)
@@ -625,8 +648,10 @@ contains
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
       ! Perform error analysis to calculate and add 1/2||u||^2_{L^2}.
-      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1))
-      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2))
+      call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
+          rcubatureInfo=rcubatureInfoUV)
+      call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
+          rcubatureInfo=rcubatureInfoUV)
                          
       denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
@@ -662,6 +687,10 @@ contains
       end if
 
     end if
+    
+    ! Release the cubature information structures
+    call spdiscr_releaseCubStructure(rcubatureInfoUV)
+    call spdiscr_releaseCubStructure(rcubatureInfoP)
     
     ! Restore the 'current' time.
     rproblem%rtimedependence%dtime = dtimebackup
@@ -1357,20 +1386,14 @@ contains
     
     call spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
     
-    call spdiscr_deriveDiscr_triquad (&
-                 rvector%p_rblockDiscr%RspatialDiscr(1), &
-                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscr(1))
+    call spdiscr_deriveDiscr_triquad (rvector%p_rblockDiscr%RspatialDiscr(1), &
+                 EL_P1, EL_Q1, rprjDiscretisation%RspatialDiscr(1))
 
-    call spdiscr_deriveDiscr_triquad (&
-                 rvector%p_rblockDiscr%RspatialDiscr(2), &
-                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscr(2))
+    call spdiscr_deriveDiscr_triquad (rvector%p_rblockDiscr%RspatialDiscr(2), &
+                 EL_P1, EL_Q1, rprjDiscretisation%RspatialDiscr(2))
 
-    call spdiscr_deriveDiscr_triquad (&
-                 rvector%p_rblockDiscr%RspatialDiscr(3), &
-                 EL_P0, EL_Q0, CUB_TRZ_T, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscr(3))
+    call spdiscr_deriveDiscr_triquad (rvector%p_rblockDiscr%RspatialDiscr(3), &
+                 EL_P0, EL_Q0, rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -1758,22 +1781,16 @@ contains
     p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
-    call spdiscr_deriveDiscr_triquad (&
-                 p_rdiscr%RspatialDiscr(1), &
-                 EL_P0, EL_Q0, CUB_G1_T, CUB_G1X1,&
-                 rpostprocessing%rdiscrConstant)
+    call spdiscr_deriveDiscr_triquad (p_rdiscr%RspatialDiscr(1), &
+                 EL_P0, EL_Q0,rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
-    call spdiscr_deriveDiscr_triquad (&
-                 p_rdiscr%RspatialDiscr(1), &
-                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
-                 rpostprocessing%rdiscrLinear)
+    call spdiscr_deriveDiscr_triquad (p_rdiscr%RspatialDiscr(1), &
+                 EL_P1, EL_Q1, rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
-    call spdiscr_deriveDiscr_triquad (&
-                 p_rdiscr%RspatialDiscr(1), &
-                 EL_P2, EL_Q2, CUB_G3_T, CUB_G3X3, &
-                 rpostprocessing%rdiscrQuadratic)
+    call spdiscr_deriveDiscr_triquad (p_rdiscr%RspatialDiscr(1), &
+                 EL_P2, EL_Q2, rpostprocessing%rdiscrQuadratic)
   
     ! Initialise the time/file suffix when the first UCD file is to be written out.
     rpostprocessing%bnonstationaryPostprocessing = (rproblem%itimedependence .ne. 0)

@@ -362,8 +362,20 @@ contains
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: sarray
+    character(len=SYS_STRLEN) :: sarray,sstr
+    integer :: icubF
 
+    ! Get the cubature formula for the RHS
+    call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
+                                 'scubF',sstr,'')
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
+                                'icubF',icubF,int(CUB_GEN_AUTO))
+    else
+      icubF = cub_igetID(sstr)
+    end if
+    rrhsAssembly%icubF = icubF
+        
     ! Just get the parameters.
     call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
         'irhs',rrhsAssembly%ctype,0)

@@ -338,9 +338,7 @@ contains
               ! have found Neumann boundary. If no, the segment is just too
               ! small to be considered as Neumann boundary.
               
-              call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
-                                            rboundaryRegion, &
-                                            IminIndex,ImaxIndex,icount)
+              call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, icount)
               if (icount .gt. 0) bNeumann = .true.
             
             case (1)

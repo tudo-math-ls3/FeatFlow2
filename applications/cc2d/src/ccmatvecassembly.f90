@@ -89,6 +89,7 @@ module ccmatvecassembly
   use linearsolverautoinitialise
   use collection
   use feevaluation
+  use extstdassemblyinfo
   use convection
   
   use ccbasic
@@ -945,6 +946,7 @@ contains
     real(DP) :: dvecWeight
     type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_IedgesDirichletBC
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
@@ -1083,11 +1085,16 @@ contains
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+                              rmatrix,rcubatureInfo=rcubatureInfo)
+                              
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
 
@@ -1136,10 +1143,13 @@ contains
           call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
-              ffunctionViscoModel,rcollection)
+              ffunctionViscoModel,rcollection,rcubatureInfo)
            
-          
+          call spdiscr_releaseCubStructure (rcubatureInfo)
               
           ! That is it.
           call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
@@ -1161,6 +1171,9 @@ contains
           end if
           
           ! Call the upwind method to calculate the nonlinear matrix.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_upwind2d (rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
@@ -1173,6 +1186,8 @@ contains
                                 rupwind, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2))
           end if
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
@@ -1197,11 +1212,16 @@ contains
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+                              rmatrix,rcubatureInfo=rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -1277,11 +1297,16 @@ contains
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+                              rmatrix,rcubatureInfo=rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
@@ -1365,8 +1390,13 @@ contains
           call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
-              ffunctionViscoModel,rcollection)
+              ffunctionViscoModel,rcollection,rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
 
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -1887,6 +1917,7 @@ contains
     type(T_jumpStabilisation) :: rjumpStabil
     type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_IedgesDirichletBC
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
@@ -1968,11 +1999,17 @@ contains
           ! As velocity field, we specify rvelocityVector here. The first two
           ! subvectors are used as velocity field.
           
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityVector, rvelocityVector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)
+                              rmatrix,rsolution=rvector,rdefect=rdefect,&
+                              rcubatureInfo=rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
                   
@@ -2024,8 +2061,13 @@ contains
           call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to assemble.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
+              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
           ! That is it.
           call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
@@ -2042,10 +2084,15 @@ contains
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
           
           ! Call the upwind method to calculate the nonlinear defect.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_upwind2d (rvelocityvector, rvelocityvector, &
                               dvectorWeight, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rvector,rdefect)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
           if (.not. bshared) then
             call output_line ('Upwind does not support independent A11/A22!', &
@@ -2096,11 +2143,17 @@ contains
           end if
          
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityVector, rvelocityVector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)
+                              rmatrix,rsolution=rvector,rdefect=rdefect,&
+                              rcubatureInfo=rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -2219,8 +2272,13 @@ contains
           call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to assemble.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
+              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -2316,11 +2374,17 @@ contains
           end if
          
           ! Call the SD method to calculate the nonlinearity.
+          call spdiscr_createDefCubStructure (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+              rcubatureInfo,rproblem%rmatrixAssembly%icubA)
+
           call conv_streamlineDiffusionBlk2d (&
                               rvelocityvector, rvelocityvector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)
+                              rmatrix,rsolution=rvector,rdefect=rdefect,&
+                              rcubatureInfo=rcubatureInfo)
+        
+          call spdiscr_releaseCubStructure (rcubatureInfo)
         
           ! Subtract the stabilisation matrix stuff.
           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &

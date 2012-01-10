@@ -91,14 +91,6 @@ module ccbasic
     ! or describes an independent D2 matrix.
     type(t_matrixScalar) :: rmatrixD2T
 
-    ! A scalar discretisation structure that specifies how to generate
-    ! the mass matrix in the velocity FEM space.
-    type(t_spatialDiscretisation) :: rdiscretisationMass
-
-    ! A scalar discretisation structure that specifies how to generate
-    ! the mass matrix in the pressure FEM space.
-    type(t_spatialDiscretisation) :: rdiscretisationMassPressure
-
     ! Precalculated mass matrix for the velocity space.
     type(t_matrixScalar) :: rmatrixMass
 
@@ -131,11 +123,37 @@ module ccbasic
 
 !</typeblock>
 
+!<typeblock description="General assembly information">
+
+  type t_matrixAssembly
+  
+    ! Cubature formula tag for the Stokes matrices
+    integer :: icubA = CUB_GEN_AUTO
+
+    ! Cubature formula tag for the B-matrices matrices
+    integer :: icubB = CUB_GEN_AUTO
+
+    ! Cubature formula tag for the mass matrices
+    integer :: icubM = CUB_GEN_AUTO
+
+    ! Use mass lumping for the velocity
+    logical :: bmassLumpingVelocity = .false.
+    
+    ! Type of mass lumping
+    integer :: imassLumpTypeVelocity = LSYSSC_LUMP_DIAG
+  
+  end type
+
+!</typeblock>
+
 !<typeblock>
 
   ! Type block configuring the RHS.
   type t_rhsAssembly
     
+    ! Cubature formula tag for the right hand side vectors
+    integer :: icubF = CUB_GEN_AUTO
+
     ! Type of the RHS.
     ! =0: zero.
     ! =1: stationary RHS, analytically defined by coeff_RHS_x/coeff_RHS_y
@@ -403,7 +421,6 @@ module ccbasic
 
 !</typeblock>
 
-
 !<typeblock description="Application-specific type block for the Nav.St. problem">
 
   type t_problem
@@ -434,6 +451,9 @@ module ccbasic
     ! =2: nonstationary boundary conditions, possibly with
     !     prssure drop and/or Neumann boundary parts
     integer :: iboundary
+    
+    ! Assembly structure for the matrices.
+    type(t_matrixAssembly) :: rmatrixAssembly
     
     ! Assembly structure specifying the RHS.
     type(t_rhsAssembly) :: rrhsAssembly
