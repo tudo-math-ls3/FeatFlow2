@@ -170,6 +170,9 @@ contains
   ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
   ! the type of the coordinate system that is used for specifying the coordinates
   ! on the reference element.
+  ! If a TRAFO_CS_GENERAL_xD constant is provided here, memory is allocated
+  ! is such a way that all supported transformations in the corresponding
+  ! dimension x are supported.
   integer(I32), intent(in) :: icoordSystem
   
   ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D,
@@ -205,6 +208,14 @@ contains
     ! Check the coordinate system to find out what coordinate
     ! dimension to use
     select case (icoordSystem)
+    case (TRAFO_CS_GENERAL_2D)
+      ! General 2D.
+      allocate(rintSubset%p_DcubPtsRef(3,npointsPerElement,nelements))
+
+    case (TRAFO_CS_GENERAL_3D)
+      ! General 3D.
+      allocate(rintSubset%p_DcubPtsRef(4,npointsPerElement,nelements))
+      
     case (TRAFO_CS_BARY2DTRI)
       allocate(rintSubset%p_DcubPtsRef(3,npointsPerElement,nelements))
       

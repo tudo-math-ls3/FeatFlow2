@@ -26,7 +26,6 @@ module stdoperators
   use scalarpde
   use derivatives
   use spatialdiscretisation
-  use extstdassemblyinfo
   use bilinearformevaluation
   use perfconfig
   
@@ -44,7 +43,7 @@ contains
 !<subroutine>
 
   subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha, &
-      rscalarAssemblyInfo, rperfconfig)
+      rcubatureInfo, rperfconfig)
   
 !<description>
   ! This routine assembles a Laplace matrix into rmatrix.
@@ -59,10 +58,9 @@ contains
   ! to all entries. If not specified, 1.0 is assumed.
   real(DP), intent(in), optional :: dalpha
 
-  ! OPTIONAL: A scalar assembly structure that gives additional information
-  ! about how to set up the matrix (e.g. cubature formula). If not specified,
-  ! default settings are used.
-  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -86,6 +84,8 @@ contains
     real(DP) :: dalpha1
     logical :: bclear1
     type(t_spatialDiscretisation), pointer :: p_rdiscr => null()
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
@@ -135,9 +135,24 @@ contains
     rform%BconstantCoeff(1:rform%itermCount) = .true.
     rform%Dcoefficients(1:rform%itermCount)  = dalpha1
 
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
+
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix,&
-        rscalarAssemblyInfo=rscalarAssemblyInfo,rperfconfig=rperfconfig)
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix,&
+        p_rcubatureInfo,rperfconfig=rperfconfig)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
   end subroutine stdop_assembleLaplaceMatrix
 
@@ -146,7 +161,7 @@ contains
 !<subroutine>
 
   subroutine stdop_assembleSimpleMatrix (rmatrix,cderivTrial,cderivTest,dalpha,&
-      bclear,rscalarAssemblyInfo,rperfconfig)
+      bclear,rcubatureInfo,rperfconfig)
   
 !<description>
   ! This routine assembles a simple Finite element matrix into rmatrix.
@@ -176,10 +191,9 @@ contains
   ! before assembling the matrix.
   logical, intent(in), optional :: bclear
 
-  ! OPTIONAL: A scalar assembly structure that gives additional information
-  ! about how to set up the matrix (e.g. cubature formula). If not specified,
-  ! default settings are used.
-  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -202,6 +216,8 @@ contains
     ! local variables
     real(DP) :: dalpha1
     logical :: bclear1
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
@@ -221,9 +237,24 @@ contains
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dalpha1
 
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
+
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix,&
-        rscalarAssemblyInfo=rscalarAssemblyInfo,rperfconfig=rperfconfig)
+    call bilf_buildMatrixScalar (rform,bclear1,rmatrix,&
+        p_rcubatureInfo,rperfconfig=rperfconfig)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
   end subroutine stdop_assembleSimpleMatrix
 

@@ -204,6 +204,7 @@ contains
     real(DP) :: depsAbs, depsRel, dresInit
     type(t_vectorScalar), pointer :: p_rvectorTemp1,p_rvectorTemp2
     real(dp) :: domega
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     ! Evaluate the optional arguments as far as possible
     if (present(rL2ProjectionConfig)) rconfig = rL2ProjectionConfig
@@ -248,12 +249,14 @@ contains
     call lsyssc_clearVector (rvector)
 
     ! Assemble a RHS vector using the analytically given function in rtempVector1.
+    call spdiscr_createDefCubStructure (rvector%p_rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO)
     
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
-    call linf_buildVectorScalar (&
-              rmatrixMass%p_rspatialDiscrTest,rlinform,.true.,&
-              p_rvectorTemp1,fcoeff_buildVectorSc_sim,rcollection)
+    call linf_buildVectorScalar (rlinform,.true.,&
+        p_rvectorTemp1,rcubatureInfo,fcoeff_buildVectorSc_sim,rcollection)
+        
+    call spdiscr_releaseCubStructure (rcubatureInfo)
               
     ! This is also the initial defect because x=0!
     call lsyssc_copyVector (p_rvectorTemp1,p_rvectorTemp2)

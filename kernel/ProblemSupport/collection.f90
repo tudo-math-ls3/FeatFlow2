@@ -276,7 +276,7 @@ module collection
   use boundarycondition, only: t_boundaryConditions
   use triangulation, only: t_triangulation
   use spatialdiscretisation, only: t_spatialDiscretisation, &
-                                   t_blockDiscretisation
+                                   t_blockDiscretisation,t_scalarCubatureInfo
   use discretebc, only: t_discreteBC
   use linearsystemscalar, only: t_vectorScalar, t_matrixScalar
   use linearsystemblock, only: t_vectorBlock, t_matrixBlock
@@ -466,6 +466,9 @@ module collection
   ! group finite element block
   integer, parameter, public :: COLLCT_GROUPFEMBLOCK  = 42
 
+  ! Cubature information structure
+  integer, parameter, public :: COLLCT_CUBINFO        = 43
+
 !</constantblock>
 
 !</constants>
@@ -612,6 +615,9 @@ module collection
 
     ! Pointer to a group finite element block
     type(t_groupFEMBlock), pointer              :: p_rgroupFEMBlock => null()
+
+    ! Pointer to a cubature information structure
+    type(t_scalarCubatureInfo), pointer    :: p_rcubatureInfo => null()
   end type
   
   public :: t_collctValue
@@ -845,6 +851,7 @@ module collection
   public :: collct_setvalue_particles3D
   public :: collct_setvalue_gfemset
   public :: collct_setvalue_gfemblk
+  public :: collct_setvalue_cubinfo
 
   public :: collct_getmaxlevel
   public :: collct_getmaxlevel_direct
@@ -898,6 +905,7 @@ module collection
   public :: collct_getvalue_mlprjh
   public :: collct_getvalue_gfemset
   public :: collct_getvalue_gfemblk
+  public :: collct_getvalue_cubinfo
   
 contains
   
@@ -5286,6 +5294,69 @@ contains
 
   ! ***************************************************************************
   
+!<function>
+
+  function collct_getvalue_cubinfo (rcollection, sparameter, &
+                                    ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a group finite element block.
+  ! An error is thrown if the value is of the wrong type.
+!</description>
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_scalarCubatureInfo), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_CUBINFO,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rcubatureInfo
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   subroutine collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -7810,6 +7881,67 @@ contains
     p_rvalue%p_rgroupFEMBlock => value
     
   end subroutine collct_setvalue_gfemblk
+
+! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_cubinfo(rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName)
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_scalarCubatureInfo), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_CUBINFO,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rcubatureInfo => value
+    
+  end subroutine 
 
 ! ***************************************************************************
   

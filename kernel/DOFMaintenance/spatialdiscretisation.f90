@@ -103,6 +103,83 @@
 !#
 !# 26.) spdiscr_isElemDistrCompatible
 !#      -> Checks whether two element distribution structures are compatible
+!#
+!# 25.) spdiscr_createDefCubStructure
+!#      -> Create a default cubature information structure based on a
+!#         discretisation structure.
+!#
+!# 26.) spdiscr_releaseCubStructure
+!#      -> Release an cubature information structure.
+!#
+!# 27.) spdiscr_getStdDiscrInfo
+!#      -> Obtain typical information from discretisation/assembly information
+!#         structure which is used during the assembly.
+!#
+!# 28.) spdiscr_defineCubature
+!#      -> Initialise a cubature information structure based on an automatic
+!#         cubature formula.
+!#
+!# 29.) spdiscr_getElementCubMapping
+!#      -> Calculate for every element its cubature formula
+!#
+!#
+!#   The cubature information structure \\
+!# -------------------------------------- \\
+!#
+!# A t_scalarCubatureInfo structure is associated to a discretisation
+!# structure. For the assembly of a matrix or vector with a specific cubature
+!# formula e.g., the code can create a default assembly structure, modify the
+!# cubature formula and assemble with this:
+!#
+!# <code>
+!#   ! Use 4-pt Gauss formula. We assume for this example: 2D QUAD mesh
+!#
+!#   ! Get a structure and modify the cubature formulas.
+!#   call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo,CUB_GEN_AUTO_G4)
+!#
+!#   ! Assemble a matrix based on this.
+!#   call bilf_buildMatrixScalar2 (rbilform,.true.,rmatrix,&
+!#       rcubatureInfo=rcubatureInfo)
+!#
+!#   ! Assemble a RHS vector based on this.
+!#   call linf_buildVectorScalar (rlinform,.true.,rvector,fcallback,&
+!#       rcubatureInfo=rcubatureInfo)
+!#
+!#   ! Release the info structure.
+!#   call spdiscr_releaseCubStructure (rcubatureInfo)
+!# </code>
+!#
+!# In this example, a default rcubatureInfo structure is created based on the
+!# cubature formula CUB_GEN_AUTO_G4. This constant represents the automatic
+!# 4-pt Gauss formula which automatically adapts to the underlying finite
+!# element: It automatically chooses the proper 4-pt Gauss formula, independent
+!# of whether the finite element is 2D, 3D, triangular, quadrilateral or whatever.
+!# 
+!# If the user wants to choose a specific cubature formula, the corresponding
+!# constant can directly be written into the structure as follows:
+!#
+!# <code>
+!#   ! Use 4-pt Gauss formula. We assume for this example: 2D QUAD mesh
+!#
+!#   ! Get a structure and modify the cubature formulas.
+!#   call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo)
+!#   rcubatureInfo%p_RinfoBlocks(:)%ccubature = CUB_G4_2D
+!#
+!#   ! Assemble a matrix based on this.
+!#   call bilf_buildMatrixScalar2 (rbilform,.true.,rmatrix,&
+!#       rcubatureInfo=rcubatureInfo)
+!#
+!#   ! Assemble a RHS vector based on this.
+!#   call linf_buildVectorScalar (rlinform,.true.,rvector,fcallback,&
+!#       rcubatureInfo=rcubatureInfo)
+!#
+!#   ! Release the info structure.
+!#   call spdiscr_releaseCubStructure (rcubatureInfo)
+!# </code>
+!#
+!# However it has to be noted that in this example, it is not possible to
+!# write "...%ccubature = CUB_GEN_AUTO_G4". The automatic cubature formula
+!# only works in combination with "spdiscr_createDefCubStructure".
 !# </purpose>
 !##############################################################################
 
@@ -143,10 +220,10 @@ module spatialdiscretisation
 !<constantblock description="Additional constants for cubature formulas">
 
   ! Automatically determine cubature formula for a discretisation.
-  integer(I32), parameter, public :: SPDISC_CUB_AUTOMATIC = 0
+  integer(I32), parameter, public :: SPDISC_CUB_AUTOMATIC = CUB_GEN_AUTO
 
   ! Cubature formula stays unchanged.
-  integer(I32), parameter, public :: SPDISC_CUB_NOCHANGE  = -1
+  integer(I32), parameter, public :: SPDISC_CUB_NOCHANGE  = -20
 
 !</constantblock>
 
@@ -163,6 +240,19 @@ module spatialdiscretisation
   
   ! Convection matrix
   integer(I32), parameter, public :: SPDISC_OPTP_CONVEC = 3
+
+!</constantblock>
+
+!<constantblock variable="ccubType" description="Additional generic cubature formulas">
+
+  ! DEPRECATED: Use ccubTypeBilForm from the discretisation structure.
+  integer(I32), parameter, public :: CUB_GEN_DEPR_BILFORM = CUB_TP_DEPR + 10
+
+  ! DEPRECATED: Use ccubTypeLinForm from the discretisation structure.
+  integer(I32), parameter, public :: CUB_GEN_DEPR_LINFORM = CUB_TP_DEPR + 11
+
+  ! DEPRECATED: Use ccubTypeEval from the discretisation structure.
+  integer(I32), parameter, public :: CUB_GEN_DEPR_EVAL = CUB_TP_DEPR + 12
 
 !</constantblock>
 
@@ -188,21 +278,21 @@ module spatialdiscretisation
     ! element list.
     integer(I32) :: celement        = EL_UNDEFINED
     
-    ! Cubature formula to use for the discretisation of this element pair
+    ! DEPRECATED: Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of bilinear forms (matrix generation).
     ! Note: When evaluating bilinear forms, the ccubTypeBilForm
     ! constant of the test space decides about the cubature formula
     ! to be used!
-    integer(I32) :: ccubTypeBilForm      = 0
+    integer(I32) :: ccubTypeBilForm      = CUB_UNDEFINED
     
-    ! Cubature formula to use for the discretisation of this element pair
+    ! DEPRECATED: Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of linear forms (RHS generation).
-    integer(I32) :: ccubTypeLinForm      = 0
+    integer(I32) :: ccubTypeLinForm      = CUB_UNDEFINED
 
-    ! Cubature formula to use for the evaluation of integrals over an FE
+    ! DEPRECATED: Cubature formula to use for the evaluation of integrals over an FE
     ! function. This is used e.g. in postprocessing routines to calculate
     ! an integral to get an error to a reference solution.
-    integer(I32) :: ccubTypeEval         = 0
+    integer(I32) :: ccubTypeEval         = CUB_UNDEFINED
     
     ! Type of transformation to use from the reference element to
     ! the real element. One of the TRAFO_IDxxxx constants of the module
@@ -407,6 +497,60 @@ module spatialdiscretisation
 
 !</typeblock>
 
+!<typeblock>
+  
+  ! Contains information that configures the cubature in the assembly 
+  ! of matrices and vectors for a set of elements.
+  type t_scalarCubatureInfoBlock
+    
+    ! Cubature rule to use.
+    integer(I32) :: ccubature = 0
+    
+    ! Id of the element set, this assembly block refers to.
+    integer :: ielementDistr = 0
+    
+    ! Apply the above cubature rule for all elements in the above element set.
+    ! =0: Only apply for a limited set of elements specified in the element list
+    ! p_IelementList.
+    ! =1: Apply the above cubature rule for all elements in element set
+    ! ielementDistr.
+    integer :: celementListQuantifier = 1
+    
+    ! Number of elements in this block
+    integer :: NEL = 0
+    
+    ! If celementListQuantifier=0, this specifies handle to a list of elements where to
+    ! apply the above cubature rule. All elements shall be in the element set
+    ! ielementDistr!
+    integer :: h_IelementList = ST_NOHANDLE
+    
+    ! Ownership flag. This flag is set to .true. by the routines in this module
+    ! if h_IelementList is internally created. Assures that
+    ! spdiscr_releaseCubStructure does not accidentally release memory
+    ! that was not allocated here.
+    logical :: blocalElementList = .false.
+    
+  end type
+  
+!</typeblock>
+
+!<typeblock>
+  
+  ! Contains information that configures the cubature in the assembly
+  ! of matrices and vectors.
+  type t_scalarCubatureInfo
+  
+    ! Number of cubature information blocks in p_RinfoBlocks.
+    integer :: ninfoBlockCount = 0
+    
+    ! A list of cubature information blocks.
+    type(t_scalarCubatureInfoBlock), dimension(:), pointer :: p_RinfoBlocks => null()
+  
+  end type
+  
+!</typeblock>
+
+
 !</types>
 
   public :: spdiscr_initBlockDiscr
@@ -434,6 +578,35 @@ module spatialdiscretisation
   public :: spdiscr_isBlockDiscrCompatible
   public :: spdiscr_isDiscrCompatible
   public :: spdiscr_isElemDistrCompatible
+
+  public :: t_scalarCubatureInfoBlock
+  public :: t_scalarCubatureInfo
+  public :: spdiscr_createDefCubStructure
+  public :: spdiscr_releaseCubStructure
+  public :: spdiscr_defineCubature
+  public :: spdiscr_getElementCubMapping
+  
+  public :: spdiscr_getStdDiscrInfo
+  
+  interface spdiscr_initDiscr_simple
+    module procedure spdiscr_initDiscr_simple_old
+    module procedure spdiscr_initDiscr_simple_new
+  end interface
+  
+  interface spdiscr_initDiscr_triquad
+    module procedure spdiscr_initDiscr_triquad_old
+    module procedure spdiscr_initDiscr_triquad_new
+  end interface
+  
+  interface spdiscr_deriveSimpleDiscrSc
+    module procedure spdiscr_deriveSimpleDiscrSc_old
+    module procedure spdiscr_deriveSimpleDiscrSc_new
+  end interface
+
+  interface spdiscr_deriveDiscr_triquad
+    module procedure spdiscr_deriveDiscr_triquad_old
+    module procedure spdiscr_deriveDiscr_triquad_new
+  end interface
 
 contains
 
@@ -796,7 +969,7 @@ contains
           ccubType = CUB_G1X1
         end select
 
-      case (EL_Q1)
+      case (EL_Q1,EL_Q1TB)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -807,7 +980,7 @@ contains
           ccubType = CUB_G2X2
         end select
 
-      case (EL_Q2)
+      case (EL_Q2,EL_Q2T,EL_Q2TB)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -878,6 +1051,39 @@ contains
         case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
           ! 2x2 Gauss formula
           ccubType = CUB_G2_3D
+        end select
+
+      case (EL_QP1_3D)
+      
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 2-pt Gauss formula
+          ccubType = CUB_G2_3D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 1-pt Gauss formula
+          ccubType = CUB_G1_3D
+        end select
+
+      case (EL_Q1T_3D)
+      
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3-pt Gauss formula
+          ccubType = CUB_G3_3D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2-pt Gauss formula
+          ccubType = CUB_G2_3D
+        end select
+
+      case (EL_Q2T_3D)
+      
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 4-pt Gauss formula
+          ccubType = CUB_G4_3D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 3-pt Gauss formula
+          ccubType = CUB_G3_3D
         end select
 
       case default
@@ -1153,8 +1359,8 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_initDiscr_simple (rspatialDiscr,celement, ccubType,&
-                                       rtriangulation, rboundary)
+  subroutine spdiscr_initDiscr_simple_old (rspatialDiscr,celement, ccubType,&
+                                           rtriangulation, rboundary)
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
@@ -1170,7 +1376,7 @@ contains
   integer(I32), intent(in) :: celement
   
   ! Cubature formula CUB_xxxx to use for calculating integrals.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubType
   
@@ -1196,9 +1402,13 @@ contains
 
   ! Automatically determine cubature formula if necessary
   ccub = ccubType
-  if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
+  
+  if (ccub .eq. CUB_GEN_AUTO) &
       ccub = spdiscr_getStdCubature(celement)
   
+  if (ccub .eq. CUB_GEN_AUTO_LUMPMASS) &
+      ccub = spdiscr_getLumpCubature(celement)
+        
   ! Do we have a structure?
   if (rspatialDiscr%ndimension .ne. 0) then
     ! Release the old structure.
@@ -1267,7 +1477,103 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_initDiscr_triquad (rspatialDiscr, ieltyptri, ieltypquad,&
+  subroutine spdiscr_initDiscr_simple_new (rspatialDiscr,celement,&
+                                           rtriangulation, rboundary)
+  
+!<description>
+  ! This routine initialises a discretisation structure for a uniform
+  ! discretisation with one element for all geometric element primitives,
+  ! for trial as well as for test functions.
+  !
+  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
+!</description>
+
+!<input>
+  ! The element type identifier that is to be used for all elements.
+  integer(I32), intent(in) :: celement
+  
+  ! The triangulation structure underlying to the discretisation.
+  type(t_triangulation), intent(in), target :: rtriangulation
+  
+  ! The underlying domain.
+  type(t_boundary), intent(in), target, optional :: rboundary
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    integer, dimension(:), pointer :: p_Iarray
+    type(t_elementDistribution), pointer :: p_relementDistr
+
+    ! Do we have a structure?
+    if (rspatialDiscr%ndimension .ne. 0) then
+      ! Release the old structure.
+      call spdiscr_releaseDiscr(rspatialDiscr)
+    end if
+
+    ! Initialise the variables of the structure for the simple discretisation
+    rspatialDiscr%ndimension       =  rtriangulation%ndim
+    rspatialDiscr%p_rtriangulation => rtriangulation
+    if (present(rboundary)) then
+      rspatialDiscr%p_rboundary    => rboundary
+    else
+      nullify(rspatialDiscr%p_rboundary)
+    end if
+    rspatialDiscr%ccomplexity      =  SPDISC_UNIFORM
+    
+    ! All trial elements are celement:
+    
+  !  CALL storage_new ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
+  !        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+  !        ST_NEWBLOCK_NOINIT)
+  !  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+  !  DO i=1,rtriangulation%NEL
+  !    p_Iarray(i) = celement
+  !  END DO
+    rspatialDiscr%h_IelementDistr = ST_NOHANDLE
+    
+    ! Initialise the first element distribution
+    rspatialDiscr%inumFESpaces = 1
+    allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
+    p_relementDistr => rspatialDiscr%RelementDistr(1)
+    
+    ! Initialise FE space for that block
+    p_relementDistr%celement        = celement
+    
+    ! Get the typical transformation used with the element
+    p_relementDistr%ctrafoType = elem_igetTrafoType(celement)
+    
+    ! Initialise an 'identity' array containing the numbers of all elements.
+    ! This list defines the sequence how elements are processed, e.g. in the
+    ! assembly of matrices/vectors.
+    call storage_new ('spdiscr_initDiscr_simple', 'h_IelementList', &
+        rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
+        ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int (p_relementDistr%h_IelementList,p_Iarray)
+    do i = 1, rtriangulation%NEL
+      p_Iarray(i) = i
+    end do
+    
+    ! Save the number of elements in that element list.
+    p_relementDistr%NEL = rtriangulation%NEL
+    
+    ! This is a complete new structure, everything 'belongs' to this.
+    rspatialDiscr%bisCopy = .false.
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_initDiscr_triquad_old (rspatialDiscr, ieltyptri, ieltypquad,&
                                         ccubTypeTri, ccubTypeQuad,&
                                         rtriangulation, rboundary)
   
@@ -1290,13 +1596,13 @@ contains
   
   ! Cubature formula CUB_xxxx to use for calculating integrals
   ! on triangular elements
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeTri
 
   ! Cubature formula CUB_xxxx to use for calculating integrals on
   ! quadrilateral elements
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeQuad
   
@@ -1324,11 +1630,20 @@ contains
   
   ! Automatically determine cubature formula if necessary
   ccubTri = ccubTypeTri
-  if (ccubTri .eq. SPDISC_CUB_AUTOMATIC) &
+  
+  if (ccubTri .eq. CUB_GEN_AUTO) &
       ccubTri = spdiscr_getStdCubature(ieltypTri)
+
+  if (ccubTri .eq. CUB_GEN_AUTO_LUMPMASS) &
+      ccubTri = spdiscr_getLumpCubature(ieltypTri)
+  
   ccubQuad = ccubTypeQuad
-  if (ccubQuad .eq. SPDISC_CUB_AUTOMATIC) &
+
+  if (ccubQuad .eq. CUB_GEN_AUTO) &
       ccubQuad = spdiscr_getStdCubature(ieltypQuad)
+
+  if (ccubQuad .eq. CUB_GEN_AUTO_LUMPMASS) &
+      ccubQuad = spdiscr_getLumpCubature(ieltypQuad)
   
   ! Do we have a structure?
   if (rspatialDiscr%ndimension .ne. 0) then
@@ -1487,8 +1802,194 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_deriveSimpleDiscrSc (rsourceDiscr, celement, ccubType, &
-                                          rdestDiscr)
+  subroutine spdiscr_initDiscr_triquad_new (rspatialDiscr, ieltyptri, ieltypquad,&
+                                            rtriangulation, rboundary)
+  
+!<description>
+  ! This routine initialises a discretisation structure for a conformal
+  ! discretisation, mixed triangular/quad mesh with one element type for all
+  ! triangles and one element type for all quads -- for trial as well as
+  ! for test functions.
+  !
+  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
+!</description>
+
+!<input>
+  ! The element type identifier that is to be used for all triangular elements.
+  integer(I32), intent(in) :: ieltypTri
+
+  ! The element type identifier that is to be used for all quadrilateral elements.
+  integer(I32), intent(in) :: ieltypQuad
+  
+  ! The triangulation structure underlying to the discretisation.
+  type(t_triangulation), intent(in), target :: rtriangulation
+  
+  ! The underlying domain.
+  type(t_boundary), intent(in), target, optional :: rboundary
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,j
+  integer, dimension(2) :: IelemCount
+  integer, dimension(:), pointer :: p_Iarray,p_IelementCounter
+  type(t_elementDistribution), pointer :: p_relementDistrTria,p_relementDistrQuad
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  
+  ! Do we have a structure?
+  if (rspatialDiscr%ndimension .ne. 0) then
+    ! Release the old structure.
+    call spdiscr_releaseDiscr(rspatialDiscr)
+  end if
+
+  ! Initialise the variables of the structure for the simple discretisation
+  rspatialDiscr%ndimension       = NDIM2D
+  rspatialDiscr%p_rtriangulation => rtriangulation
+  if (present(rboundary)) then
+    rspatialDiscr%p_rboundary    => rboundary
+  else
+    nullify(rspatialDiscr%p_rboundary)
+  end if
+  rspatialDiscr%ccomplexity      = SPDISC_CONFORMAL
+  
+  ! Allocate an array containing the element distribution for each element
+  call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
+      ST_NEWBLOCK_NOINIT)
+  call storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
+
+  ! Allocate an array with an element counter for every element type.
+  call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
+      rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementCounter,   &
+      ST_NEWBLOCK_NOINIT)
+  call storage_getbase_int (rspatialDiscr%h_IelementCounter,p_IelementCounter)
+  
+  ! Create both arrays simultaneously.
+  call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
+  IelemCount(:) = 0
+  if (ubound(p_IverticesAtElement,1) .ge. 4) then
+    ! There are quads and probably triangles in the mesh
+    do i = 1, rtriangulation%NEL
+      if (p_IverticesAtElement (4,i) .eq. 0) then
+        ! Triangular elements are in element distribution 1
+        p_Iarray(i) = 1
+        
+        ! This is the IelemCount(1)-th triangle
+        IelemCount(1) = IelemCount(1)+1
+        p_IelementCounter(i) = IelemCount(1)
+      else
+        ! Quad elements are in element distribution 2
+        p_Iarray(i) = 2
+
+        ! This is the IelemCount(2)-th quad
+        IelemCount(2) = IelemCount(2)+1
+        p_IelementCounter(i) = IelemCount(2)
+      end if
+    end do
+  else
+    ! Pure triangular mesh
+    do i = 1, rtriangulation%NEL
+      ! Triangular elements are in element distribution 1
+      p_Iarray(i) = 1
+      
+      ! This is the IelemCount(1)-th triangle
+      IelemCount(1) = IelemCount(1)+1
+      p_IelementCounter(i) = IelemCount(1)
+    end do
+  end if
+  
+  ! Initialise the first element distribution
+  rspatialDiscr%inumFESpaces = 2
+  allocate(rspatialDiscr%RelementDistr(rspatialDiscr%inumFESpaces))
+  p_relementDistrTria => rspatialDiscr%RelementDistr(1)
+  p_relementDistrQuad => rspatialDiscr%RelementDistr(2)
+  
+  ! Initialise test and trial space for that block
+  p_relementDistrTria%celement        = ieltypTri
+  p_relementDistrQuad%celement        = ieltypQuad
+  
+  ! Get the typical transformation used with the element
+  p_relementDistrTria%ctrafoType = elem_igetTrafoType(ieltypTri)
+  p_relementDistrQuad%ctrafoType = elem_igetTrafoType(ieltypQuad)
+  
+  ! Save the number of elements in the two element lists.
+  p_relementDistrTria%NEL = rtriangulation%InelOfType(TRIA_NVETRI2D)
+  p_relementDistrQuad%NEL = rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+
+  ! Initialise an 'identity' array containing the numbers of all elements.
+  ! This list defines the sequence how elements are processed, e.g. in the
+  ! assembly of matrices/vectors.
+  
+  ! We have to collect all triangles to the first and all quads to the second
+  ! element distribution. j counts how many elements we found
+  !
+  ! Collect all triangles
+  j = 0
+  if (rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) then
+    
+    call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementList', &
+          rtriangulation%InelOfType(TRIA_NVETRI2D), &
+          ST_INT, p_relementDistrTria%h_IelementList,   &
+          ST_NEWBLOCK_NOINIT)
+          
+    call storage_getbase_int (p_relementDistrTria%h_IelementList,p_Iarray)
+    
+    if (ubound(p_IverticesAtElement,1) .ge. TRIA_NVEQUAD2D) then
+      ! There are quads and probably triangles in the mesh
+      do i = 1, rtriangulation%NEL
+        if (p_IverticesAtElement(TRIA_NVEQUAD2D,i) .eq. 0) then
+          j = j+1
+          p_Iarray(j) = i
+        end if
+      end do
+    else
+      ! Pure triangular mesh
+      do i = 1, rtriangulation%NEL
+        j = j+1
+        p_Iarray(j) = i
+      end do
+    end if
+  end if
+  
+  ! Collect all quads
+  j = 0
+  if (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) then
+    
+    call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementList', &
+          rtriangulation%InelOfType(TRIA_NVEQUAD2D), &
+          ST_INT, p_relementDistrQuad%h_IelementList,   &
+          ST_NEWBLOCK_NOINIT)
+          
+    call storage_getbase_int (p_relementDistrQuad%h_IelementList,p_Iarray)
+    
+    ! Because of the IF above, there are for sure quads in the mesh!
+    do i = 1, rtriangulation%NEL
+      if (p_IverticesAtElement(4,i) .ne. 0) then
+        j = j+1
+        p_Iarray(j) = i
+      end if
+    end do
+    
+  end if
+  
+  rspatialDiscr%bisCopy = .false.
+  
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_deriveSimpleDiscrSc_old (rsourceDiscr, celement, ccubType, &
+                                              rdestDiscr)
   
 !<description>
   ! This routine derives a discretisation structure from another one.
@@ -1513,7 +2014,7 @@ contains
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   ! A value SPDISC_CUB_NOCHANGE means:
   ! take the cubature formula from the source discretisation.
@@ -1536,8 +2037,12 @@ contains
 
   ! Automatically determine cubature formula if necessary
   ccub = ccubType
-  if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
+
+  if (ccub .eq. CUB_GEN_AUTO) &
       ccub = spdiscr_getStdCubature(celement)
+
+  if (ccub .eq. CUB_GEN_AUTO_LUMPMASS) &
+      ccub = spdiscr_getLumpCubature(celement)
   
   ! Check that the source discretisation structure is valid.
   if (rsourceDiscr%ndimension .le. 0) then
@@ -1612,8 +2117,97 @@ contains
   
 !<subroutine>
 
-  subroutine spdiscr_deriveDiscr_triquad (rsourceDiscr, ieltypTri, ieltypQuad,&
-                                          ccubTypeTri, ccubTypeQuad, rdestDiscr)
+  subroutine spdiscr_deriveSimpleDiscrSc_new (rsourceDiscr, celement, rdestDiscr)
+  
+!<description>
+  ! This routine derives a discretisation structure from another one.
+  !
+  ! rsourceDiscr is a given uniform discretisation structure. The structure
+  ! will be copied to rdestDiscr and changed in such a way, that the element
+  ! type and cubature formula are changed according to the parameters.
+  !
+  ! The new discretisation will also be a uniform discretisation based
+  ! on the element celement. It is not a complete new structure, but a
+  ! 'derived' structure, i.e. it uses the same dynamic information
+  ! (element lists) as rsourceDiscr.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  type(t_spatialDiscretisation), intent(in), target :: rsourceDiscr
+
+  ! The element type identifier that is to be used for all elements
+  ! in the new discretisation structure
+  integer(I32), intent(in) :: celement
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  ! Any old existing discretisation information in rdestDiscr
+  ! is released if necessary.
+  type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+  ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
+
+  ! Check that the source discretisation structure is valid.
+  if (rsourceDiscr%ndimension .le. 0) then
+    call output_line ('Source structure invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
+    call sys_halt()
+  end if
+  
+  ! Check that the discretisation structure is really uniform.
+  ! More complex situations are not supported by this routine.
+  if (rsourceDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+    call output_line ('Only uniform discretisations supported!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
+    call sys_halt()
+  end if
+  
+  if (elem_igetDimension(rsourceDiscr%RelementDistr(1)%celement) .ne. &
+      elem_igetDimension(celement)) then
+    call output_line ('Element dimension different!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
+    call sys_halt()
+  end if
+  
+  ! Release old information if present
+  call spdiscr_releaseDiscr(rdestDiscr)
+  
+  ! Copy the source structure to the destination.
+  ! This copies all handles and hence all dynamic information
+  rdestDiscr = rsourceDiscr
+  
+  ! Allocate a new element distribution and copy content from source
+  allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+  rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
+      rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
+
+  ! Change the element type of all trial functions to celement
+  rdestDiscr%RelementDistr(1)%celement = celement
+  
+  ! Get the typical transformation used with the element
+  rdestDiscr%RelementDistr(1)%ctrafoType = elem_igetTrafoType(celement)
+  
+  ! Mark the new discretisation structure as 'copy', to prevent
+  ! the dynamic information to be released.
+  ! The dynamic information 'belongs' to rdiscrSource and not to the
+  ! newly created rdiscrDest!
+  rdestDiscr%bisCopy = .true.
+  
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_deriveDiscr_triquad_old (rsourceDiscr, ieltypTri, ieltypQuad,&
+                                              ccubTypeTri, ccubTypeQuad, rdestDiscr)
   
 !<description>
   ! This routine derives a discretisation structure from another one.
@@ -1642,13 +2236,13 @@ contains
   
   ! Cubature formula to use for calculating integrals on triangular
   ! elements in the new discretisation structure.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeTri
 
   ! Cubature formula to use for calculating integrals on quad
   ! elements in the new discretisation structure.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
+  ! Alternatively, the value CUB_GEN_AUTO means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeQuad
 !</input>
@@ -1670,11 +2264,20 @@ contains
 
     ! Automatically determine cubature formula if necessary
     ccubTri = ccubTypeTri
-    if (ccubTri .eq. SPDISC_CUB_AUTOMATIC) &
+    
+    if (ccubTri .eq. CUB_GEN_AUTO) &
         ccubTri = spdiscr_getStdCubature(ieltypTri)
+    
+    if (ccubTri .eq. CUB_GEN_AUTO_LUMPMASS) &
+        ccubTri = spdiscr_getLumpCubature(ieltypTri)
+
     ccubQuad = ccubTypeQuad
-    if (ccubQuad .eq. SPDISC_CUB_AUTOMATIC) &
+    
+    if (ccubQuad .eq. CUB_GEN_AUTO) &
         ccubQuad = spdiscr_getStdCubature(ieltypQuad)
+    
+    if (ccubQuad .eq. CUB_GEN_AUTO_LUMPMASS) &
+        ccubQuad = spdiscr_getLumpCubature(ieltypQuad)
     
     ! Check that the source discretisation structure is valid.
     if (rsourceDiscr%ndimension .ne. NDIM2D) then
@@ -1738,6 +2341,116 @@ contains
         rdestDiscr%RelementDistr(idistr)%ccubTypeBilForm = ccubQuad
         rdestDiscr%RelementDistr(idistr)%ccubTypeLinForm = ccubQuad
         rdestDiscr%RelementDistr(idistr)%ccubTypeEval = ccubQuad
+
+        ! Get the typical transformation used with the element
+        rdestDiscr%RelementDistr(idistr)%ctrafoType = &
+            elem_igetTrafoType(ieltypQuad)
+      end select
+      
+    end do
+  
+    ! Mark the new discretisation structure as 'copy', to prevent
+    ! the dynamic information to be released.
+    ! The dynamic information 'belongs' to rdiscrSource and not to the
+    ! newly created rdiscrDest!
+    rdestDiscr%bisCopy = .true.
+  
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_deriveDiscr_triquad_new (rsourceDiscr, ieltypTri, ieltypQuad,&
+                                              rdestDiscr)
+  
+!<description>
+  ! This routine derives a discretisation structure from another one.
+  !
+  ! rsourceDiscr is a given uniform discretisation structure. The structure
+  ! will be copied to rdestDiscr and changed in such a way, that the element
+  ! type and cubature formula are changed according to the parameters.
+  !
+  ! The new discretisation will also be a uniform discretisation based
+  ! on the element celement. It is not a complete new structure, but a
+  ! 'derived' structure, i.e. it uses the same dynamic information
+  ! (element lists) as rsourceDiscr.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  type(t_spatialDiscretisation), intent(in), target :: rsourceDiscr
+
+  ! The element type identifier that is to be used for all triangular
+  ! elements in the new discretisation structure
+  integer(I32), intent(in) :: ieltypTri
+
+  ! The element type identifier that is to be used for all quad
+  ! elements in the new discretisation structure
+  integer(I32), intent(in) :: ieltypQuad
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  ! Any old existing discretisation information in rdestDiscr
+  ! is released if necessary.
+  type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+    ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
+    integer :: idistr,nve
+
+    ! Check that the source discretisation structure is valid.
+    if (rsourceDiscr%ndimension .ne. NDIM2D) then
+      call output_line ('Source structure invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdiscr_deriveSimpleDiscr_triquad')
+      call sys_halt()
+    end if
+    
+    ! Check that the discretisation structure is really uniform.
+    ! More complex situations are not supported by this routine.
+    if ((rsourceDiscr%ccomplexity .ne. SPDISC_UNIFORM) .and. &
+        (rsourceDiscr%ccomplexity .ne. SPDISC_CONFORMAL)) then
+      call output_line ('Only uniform discretisations supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdiscr_deriveSimpleDiscr_triquad')
+      call sys_halt()
+    end if
+    
+    ! Release old information if present
+    call spdiscr_releaseDiscr(rdestDiscr)
+    
+    ! Copy the source structure to the destination.
+    ! This copies all handles and hence all dynamic information
+    rdestDiscr = rsourceDiscr
+    
+    ! Allocate a new element distribution
+    allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+    rdestDiscr%RelementDistr(1:rdestDiscr%inumFESpaces) = &
+        rsourceDiscr%RelementDistr(1:rsourceDiscr%inumFESpaces)
+
+    ! Loop through the element distributions...
+    do idistr = 1,rdestDiscr%inumFESpaces
+    
+      ! Check the element there. If it is a triangular element,
+      ! change the element type to ielTypTri. If it is a quad
+      ! element, change the element type to ielTypQuad.
+      nve = elem_igetNVE(rsourceDiscr%RelementDistr(idistr)%celement)
+      select case (nve)
+      case (TRIA_NVETRI2D)
+        rdestDiscr%RelementDistr(idistr)%celement = ieltypTri
+
+        ! Get the typical transformation used with the element
+        rdestDiscr%RelementDistr(idistr)%ctrafoType = &
+            elem_igetTrafoType(ieltypTri)
+        
+      case (TRIA_NVEQUAD2D)
+        rdestDiscr%RelementDistr(idistr)%celement = ieltypQuad
 
         ! Get the typical transformation used with the element
         rdestDiscr%RelementDistr(idistr)%ctrafoType = &
@@ -2624,9 +3337,6 @@ contains
     ! complexity, number of components and DOF-mapping must be precomputed
     ! either for both discretisations or not.
     if ((relemDistr1%celement .ne. relemDistr2%celement) .or.&
-        (relemDistr1%ccubTypeBilForm .ne. relemDistr1%ccubTypeBilForm) .or.&
-        (relemDistr1%ccubTypeLinForm .ne. relemDistr1%ccubTypeLinForm) .or.&
-        (relemDistr1%ccubTypeEval .ne. relemDistr1%ccubTypeEval) .or.&
         (relemDistr1%ctrafoType .ne. relemDistr1%ctrafoType) .or.&
         (relemDistr1%NEL .ne. relemDistr1%NEL)) then
       if (present(bcompatible)) then
@@ -2640,5 +3350,370 @@ contains
     end if
     
   end subroutine spdiscr_isElemDistrCompatible
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_createDefCubStructure (rdiscretisation, rcubatureInfo, &
+      ccubType)
+  
+!<description>
+  ! Creates a default cubature information structure based on a discretisation.
+  ! All elements in an element set are assembled with the same cubature formula.
+!</description>
+
+!<input>
+  ! A discretisation structure, the cubature information structure should be
+  ! associated to.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! OPTIONAL: Cubature formula to use. If not specified, CUB_GEN_AUTO is used,
+  ! which automatically choses the default cubature formula. 
+  !
+  ! DEPRECATED: Additionally, the following constants are allowed for compatibility to
+  ! the old discretisation structure. 
+  ! =CUB_GEN_DEPR_BILFORM: Take ccubTypeBilForm from the discretisation stricture.
+  ! =CUB_GEN_DEPR_LINFORM: Take ccubTypeLinForm from the discretisation stricture.
+  ! =CUB_GEN_DEPR_EVAL: Take ccubTypeEval from the discretisation stricture
+  integer(I32), intent(in), optional :: ccubType
+!</input>
+
+!<output>
+  ! Cubature information structure to be created.
+  type(t_scalarCubatureInfo), intent(out) :: rcubatureInfo
+!</output>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+    integer(I32) :: ccub
+    
+    ! We take as many blocks as element sets.
+    rcubatureInfo%ninfoBlockCount = rdiscretisation%inumFESpaces
+    allocate(rcubatureInfo%p_RinfoBlocks(rcubatureInfo%ninfoBlockCount))
+    
+    ! Loop through the element sets and insert the default cubature formula.
+    do i = 1,rcubatureInfo%ninfoBlockCount
+      rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = i
+      
+      ! Handle all elements in the same way...
+      rcubatureInfo%p_RinfoBlocks(i)%celementListQuantifier = 1
+      
+      rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
+      
+      rcubatureInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
+    end do
+
+    ! Initialise the cubature formula
+    ! Default: Automatic.
+    ccub = CUB_GEN_AUTO
+
+    ! Is the cubature formula specified?
+    if (present(ccubType)) then
+      select case (ccubType)
+      case (CUB_GEN_DEPR_BILFORM,CUB_GEN_DEPR_LINFORM,CUB_GEN_DEPR_EVAL)
+        ! Use automatic cubature formula.
+        ! Nothing to do...
+      case default
+        ! Use predefined cubature formula.
+        ccub = ccubType
+      end select
+    end if
+    
+    ! Initialise the cubature formula
+    call spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccub)
+
+    ! Post-correction. Is the cubature formula specified?      
+    if (present(ccubType)) then
+      select case (ccubType)
+      case (CUB_GEN_DEPR_BILFORM,CUB_GEN_DEPR_LINFORM,CUB_GEN_DEPR_EVAL)
+        ! Fetch the DEPRECATED cubature formula from the
+        ! discretisation structure.
+        do i = 1,rcubatureInfo%ninfoBlockCount
+          select case (ccubType)
+          case (CUB_GEN_DEPR_BILFORM)
+            if (rdiscretisation%RelementDistr(i)%ccubTypeBilForm .ne. CUB_UNDEFINED) then
+              rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+                  rdiscretisation%RelementDistr(i)%ccubTypeBilForm
+
+#if WARN_DEPREC
+              call output_line ("Using deprecated feature. Please update your code.", &
+                  OU_CLASS_WARNING,OU_MODE_STD,"spdiscr_createDefCubStructure")
+#endif
+            end if
+
+          case (CUB_GEN_DEPR_LINFORM)
+            if (rdiscretisation%RelementDistr(i)%ccubTypeLinForm .ne. CUB_UNDEFINED) then
+              rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+                  rdiscretisation%RelementDistr(i)%ccubTypeLinForm
+
+#if WARN_DEPREC
+              call output_line ("Using deprecated feature. Please update your code.", &
+                  OU_CLASS_WARNING,OU_MODE_STD,"spdiscr_createDefCubStructure")
+#endif
+            end if
+
+          case (CUB_GEN_DEPR_EVAL)
+            if (rdiscretisation%RelementDistr(i)%ccubTypeEval .ne. CUB_UNDEFINED) then
+              rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+                  rdiscretisation%RelementDistr(i)%ccubTypeEval
+
+#if WARN_DEPREC
+              call output_line ("Using deprecated feature. Please update your code.", &
+                  OU_CLASS_WARNING,OU_MODE_STD,"spdiscr_createDefCubStructure")
+#endif
+            end if
+          end select
+        end do
+        
+      end select
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccubType)
+  
+!<description>
+  ! Initialises the cubature formula in rcubatureInfo according to ccubType.
+  ! ccubType should be a generic cubature formula like "CUB_GEN_AUTO_xxxx".
+  ! The cubature formulas for all element spaces in rcubatureInfo
+  ! are initialised with a cubature rule compatible to ccubType.
+  ! If no compatible cubature rule exists, the cubature formula is
+  ! initialised with CUB_UNDEFINED.
+!</description>
+
+!<input>
+  ! A discretisation structure, the cubature information structure should be
+  ! associated to.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Generic cubature formula constant. One of the "CUB_GEN_AUTO(_xxxx)" constants.
+  ! E.g., CUB_GEN_AUTO initialises the cubature formula with the default
+  ! cubature rule for each FEM space.
+  integer, intent(in) :: ccubType
+!</input>
+
+!<inputoutput>
+  ! Cubature information structure to be modified.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+!</inputoutput>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+
+    ! Loop through the element sets and insert the default cubature formula.
+    select case (cub_isExtended(ccubType))
+    case (0)
+      ! Not generic. Check every cubature formula if it is valid
+      ! for the current element. If yes, initialise.
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        call spdiscr_checkCubature (ccubType,&
+            rdiscretisation%RelementDistr(i)%celement)
+        rcubatureInfo%p_RinfoBlocks(i)%ccubature = ccubType
+      end do
+      
+    case (1)
+      ! Generic, resolve using the element shape.
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+            cub_resolveGenericCubType(&
+              elem_igetShape(rdiscretisation%RelementDistr(i)%celement),ccubType)
+      end do
+      
+    case (2)
+      ! Special case
+      select case (ccubType)
+
+      case (CUB_GEN_AUTO)
+        ! Standard cubature formula for that element set.
+        do i = 1,rcubatureInfo%ninfoBlockCount
+          rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+              spdiscr_getStdCubature(rdiscretisation%RelementDistr(i)%celement)
+        end do
+            
+      case (CUB_GEN_AUTO_LUMPMASS)
+        ! Stabdard cubature formula that lumps the mass matrix
+        do i = 1,rcubatureInfo%ninfoBlockCount
+          rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
+              spdiscr_getLumpCubature(rdiscretisation%RelementDistr(i)%celement)
+        end do
+            
+      end select
+      
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_releaseCubStructure (rcubatureInfo)
+  
+!<description>
+  ! Cleans up an cubature information structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_scalarCubatureInfo), intent(inout) :: rcubatureInfo
+!</inputoutput>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+
+    ! Loop through the element sets and release memory
+    do i = 1,rcubatureInfo%ninfoBlockCount
+      ! Release memory if necessary -- and if the memory belongs to us
+      if ((rcubatureInfo%p_RinfoBlocks(i)%h_IelementList .ne. ST_NOHANDLE) .and.&
+          rcubatureInfo%p_RinfoBlocks(i)%blocalElementList) then
+        call storage_free(rcubatureInfo%p_RinfoBlocks(i)%h_IelementList)
+      end if
+    end do
+    
+    deallocate(rcubatureInfo%p_RinfoBlocks)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getElementCubMapping (rcubatureInfo,rdiscretisation,IcubPerElement)
+  
+!<description>
+  ! Determins an array which identifies for every element the corresponding
+  ! cubature formula.
+!</description>
+
+!<input>
+  ! Cubature information structure.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+
+  ! Associated discretisation structure.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+!</input>
+
+!<output>
+  ! Cubature identifier list. For every element i, IcubPerElement(i)
+  ! identifies the cubature formula on that element.
+  integer(I32), dimension(:), intent(out) :: IcubPerElement
+!</output>
+
+!</subroutine>
+    ! local variables
+    integer :: i,j,NEL
+    integer, dimension(:), pointer :: p_IelementList
+    integer(I32) :: ccubature
+
+    ! Loop through the element sets and release memory
+    do i = 1,rcubatureInfo%ninfoBlockCount
+
+      ! For every element in the associated p_IelementList, identify
+      ! its cubature formula.
+      call spdiscr_getStdDiscrInfo(i,rcubatureInfo,rdiscretisation,&
+          ccubature=ccubature,NEL=NEL,p_IelementList=p_IelementList)
+
+      do j = 1,NEL
+        IcubPerElement(p_IelementList(j)) = ccubature
+      end do
+      
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfo,rdiscretisation,&
+      ielementDistr,celement,ccubature,NEL,p_IelementList)
+  
+!<description>
+  ! Returns typically used information for an assembly block.
+!</description>
+
+!<input>
+  ! Identifier of the information block in rcubatureInfo
+  ! where information should be acquired from.
+  integer, intent (in) :: icubatureBlock
+
+  ! Underlying cubature information structure.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+
+  ! Associated discretisation structure.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+!</input>
+
+!<output>
+  ! Id of the underlying element distribution in the discretisation.
+  integer, intent(out), optional :: ielementDistr
+
+  ! Element identifier of that block
+  integer(I32), intent(out), optional :: celement
+  
+  ! Cubature rule in that block
+  integer(I32), intent(out), optional :: ccubature
+  
+  ! Number of elements in that block
+  integer, intent(out), optional :: NEL
+  
+  ! Pointer to the list of elements of that block.
+  ! =null if NEL=0.
+  integer, dimension(:), pointer, optional :: p_IelementList
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ielementDistLocal
+    type(t_elementDistribution), pointer :: p_relementDistr
+
+    ielementDistLocal = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielementDistr
+    p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
+
+    ! Return all information specified in the parameters
+    if (present(ielementDistr)) then
+      ielementDistr = ielementDistLocal
+    end if
+
+    if (present(celement)) then
+      celement = p_relementDistr%celement
+    end if
+
+    if (present(ccubature)) then
+      ccubature =  rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature
+    end if
+
+    if (present(NEL)) then
+      NEL = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL
+    end if
+    
+    if (present(p_IelementList)) then
+      nullify(p_IelementList)
+      if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .ne. 0) then
+        ! Get list of elements present in the element distribution.
+        ! If the handle of the info block structure is not associated,
+        ! take all elements of the corresponding element distribution.
+        if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .ne. ST_NOHANDLE) then
+          call storage_getbase_int(&
+              rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList,&
+              p_IelementList)
+        else
+          call storage_getbase_int(&
+              rdiscretisation%RelementDistr(ielementDistLocal)%h_IelementList,&
+              p_IelementList)
+        end if
+      end if
+    end if
+
+  end subroutine
 
 end module

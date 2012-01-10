@@ -1436,7 +1436,7 @@ contains
 
 
   ! local variables
-  integer :: i,JDFG, ICUBP, NELC,NELF, IELDIST
+  integer :: i,JDFG, ICUBP, NELC, NELF, IELDIST
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
@@ -1449,6 +1449,9 @@ contains
   
   ! number of cubature points on the reference element
   integer :: ncubpFine,ncubpCoarse,nmaxcubpFine,nmaxcubpCoarse
+  
+  ! Cubature formula
+  integer(I32) :: ccubCoarse,ccubFine
   
   ! Pointer to KLD, KCOL, DA
   integer, dimension(:), pointer :: p_KLD, p_KCOL
@@ -1493,9 +1496,6 @@ contains
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDistCoarse, p_relemDistFine
-  
   ! Number of elements that have already been processed and number of
   ! elements that are to be processed in the current run
   integer :: nelementsDone, nelementsToDo
@@ -1508,6 +1508,11 @@ contains
   
   ! Element evaluation structures for evaluation of finite elements
   type(t_evalElementSet) :: relementSetCoarse, relementSetFine
+  
+  ! Cubature information structure defining the cubature rule
+  type(t_scalarCubatureInfo) :: rcubatureInfoCoarse,rcubatureInfoFine
+  integer :: icubatureBlock
+  integer(I32) :: celementCoarse, celementFine
   
   integer :: nmaxDerCoarse, nmaxDerFine
   integer :: nmaxRefDimCoarse, nmaxRefDimFine
@@ -1566,6 +1571,14 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
     
+    ! Create default assembly structures with the default cubature
+    ! formula for the coarse grid discretisation.
+    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    
+    call spdiscr_createDefCubStructure(rdiscretisationFine,&
+        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+    
     ! Let us loop over all element distributions and determine the
     ! maximum values.
     inmaxdofCoarse = 0
@@ -1578,29 +1591,34 @@ contains
     nmaxDerFine = 0
     nmaxRefDimCoarse = 0
     nmaxRefDimFine = 0
-    do i = 1, rdiscretisationCoarse%inumFESpaces
     
-      ! Activate the current coarse mesh element distribution
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(i)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(i)
-      
+    ! Let us run through the info blocks specifying the cubature
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          i,celementCoarse,ccubCoarse,NELC)
+
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine)
+    
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
     
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
       
       ! Get the number of elements
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
       
       ! Get the number of cubature points on the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
+      ncubpFine = cub_igetNumPts(ccubFine)
       
       ! Get the number of cubature points on the coarse mesh
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubFine))
       case (BGEOM_SHAPE_LINE)
         ncubpCoarse = 2*ncubpFine
         nelementsFine = 2*nelementsCoarse
@@ -1620,9 +1638,9 @@ contains
       nmaxcubpCoarse = max(nmaxcubpCoarse, ncubpCoarse)
       nmaxcubpFine   = max(nmaxcubpFine,   ncubpFine)
       nmaxDerCoarse = max(nmaxDerCoarse, &
-          elem_getMaxDerivative(p_relemDistCoarse%celement))
+          elem_getMaxDerivative(celementCoarse))
       nmaxDerFine = max(nmaxDerFine, &
-          elem_getMaxDerivative(p_relemDistFine%celement))
+          elem_getMaxDerivative(celementFine))
       nmaxRefDimCoarse = max(nmaxRefDimCoarse, &
           trafo_igetReferenceDimension(ctrafoCoarse))
       nmaxRefDimFine = max(nmaxRefDimFine, &
@@ -1661,34 +1679,30 @@ contains
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
     
     ! Let us run through the element distributions
-    do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
     
-      ! Activate the current element distributions
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
-      if (p_relemDistCoarse%NEL .eq. 0) cycle
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine,NEL=NELF)
     
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that the trial functions
-      call storage_getbase_int (p_relemDistCoarse%h_IelementList, p_IelementList)
-
+      if (NELF .eq. 0) cycle
+    
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
         
-      ! Get the number of coarse mesh elements there.
-      NELC = p_relemDistCoarse%NEL
-
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
-      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
+      ncubpFine = cub_igetNumPts(ccubFine)
+      call cub_getCubature(ccubFine, p_DcubPtsRefFine, Domega)
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
@@ -1697,7 +1711,7 @@ contains
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
       ! meshes!
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubCoarse))
       case (BGEOM_SHAPE_LINE)
         nelementsFine = 2*nelementsCoarse
         call trafo_mapCubPtsRef2LvlEdge1D(ncubpFine,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
@@ -1859,8 +1873,8 @@ contains
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
         ! a combined evaluation tag.
-        cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
-        cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
+        cevalTagCoarse = elem_getEvaluationTag(celementCoarse)
+        cevalTagFine = elem_getEvaluationTag(celementFine)
                         
         cevalTagCoarse = ior(cevalTagCoarse,EL_EVLTAG_REFPOINTS)
         cevalTagFine   = ior(cevalTagFine,EL_EVLTAG_REFPOINTS)
@@ -1879,9 +1893,9 @@ contains
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.
-        call elem_generic_sim2 (p_relemDistCoarse%celement, &
+        call elem_generic_sim2 (celementCoarse, &
             relementSetCoarse, Bder, DbasCoarse)
-        call elem_generic_sim2 (p_relemDistFine%celement, &
+        call elem_generic_sim2 (celementFine, &
             relementSetFine, Bder, DbasFine)
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -1967,9 +1981,11 @@ contains
         
       end do ! while(nelementsDone .lt. NELC)
     
-    end do ! IELDIST
+    end do ! icubatureBlock
     
     ! Release memory
+    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
+    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(Domega)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
@@ -2080,15 +2096,12 @@ contains
   real(DP), dimension(:,:,:), allocatable :: Dentry
 
   ! An array that takes coordinates of the cubature formula on the reference element
-  real(DP), dimension(:,:), allocatable :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
+  real(DP), dimension(:,:), pointer :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
   real(DP), dimension(:), allocatable :: Domega
   
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDistCoarse, p_relemDistFine
-  
   ! Number of elements that have already been processed and number of
   ! elements that are to be processed in the current run
   integer :: nelementsDone, nelementsToDo
@@ -2117,6 +2130,11 @@ contains
   
   ! Maximum reference dimension
   integer :: nmaxRefDimFine, nmaxRefDimCoarse
+
+  ! Current assembly block, cubature formula, element type,...
+  integer :: icubatureBlock
+  integer(I32) :: celementFine, celementCoarse, ccubFine,ccubCoarse
+  type(t_scalarCubatureInfo), target :: rcubatureInfoFine,rcubatureInfoCoarse
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -2164,6 +2182,14 @@ contains
       
     end if
     
+    ! Create default assembly structures with the default cubature
+    ! formula for the coarse grid discretisation.
+    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    
+    call spdiscr_createDefCubStructure(rdiscretisationFine,&
+        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+    
     ! Get a pointer to the triangulation - for easier access.
     p_rtriaCoarse => rdiscretisationCoarse%p_rtriangulation
     p_rtriaFine => rdiscretisationFine%p_rtriangulation
@@ -2184,29 +2210,34 @@ contains
     nmaxDerFine = 0
     nmaxRefDimCoarse = 0
     nmaxRefDimFine = 0
-    do i = 1, rdiscretisationCoarse%inumFESpaces
+
+    ! Let us run through the info blocks specifying the cubature
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
     
-      ! Activate the current coarse mesh element distribution
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(i)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(i)
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          i,celementCoarse,ccubCoarse,NELC)
+
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
     
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
       
       ! Get the number of elements
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
       
       ! Get the number of cubature points on the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
+      ncubpFine = cub_igetNumPts(ccubFine)
       
       ! Get the number of cubature points on the coarse mesh
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubFine))
       case (BGEOM_SHAPE_LINE)
         ncubpCoarse = 2*ncubpFine
         nelementsFine = 2*nelementsCoarse
@@ -2226,9 +2257,9 @@ contains
       nmaxcubpCoarse = max(nmaxcubpCoarse, ncubpCoarse)
       nmaxcubpFine   = max(nmaxcubpFine,   ncubpFine)
       nmaxDerCoarse = max(nmaxDerCoarse, &
-          elem_getMaxDerivative(p_relemDistCoarse%celement))
+          elem_getMaxDerivative(celementCoarse))
       nmaxDerFine = max(nmaxDerFine, &
-          elem_getMaxDerivative(p_relemDistFine%celement))
+          elem_getMaxDerivative(celementFine))
       nmaxRefDimCoarse = max(nmaxRefDimCoarse, &
           trafo_igetReferenceDimension(ctrafoCoarse))
       nmaxRefDimFine = max(nmaxRefDimFine, &
@@ -2280,44 +2311,40 @@ contains
     ! Format the local weights array to 1
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
-    ! Let us run through the element distributions
-    do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
-
-      ! Activate the current element distributions
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+    ! Let us run through the info blocks specifying the cubature
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
     
-      if (p_relemDistCoarse%NEL .eq. 0) cycle
-    
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that the trial functions
-      call storage_getbase_int (p_relemDistCoarse%h_IelementList, p_IelementList)
-      
-      ! Get the number of coarse mesh elements there.
-      NELC = p_relemDistCoarse%NEL
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine)
+    
+      if (NELC .eq. 0) cycle
+    
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
         
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
-      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
+      ncubpFine = cub_igetNumPts(ccubFine)
+      call cub_getCubature(ccubFine, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,NELC)
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
       ! meshes!
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubFine))
       case (BGEOM_SHAPE_LINE)
         nelementsFine = 2*nelementsCoarse
         call trafo_mapCubPtsRef2LvlEdge1D(ncubpFine,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
@@ -2479,8 +2506,8 @@ contains
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
         ! a combined evaluation tag.
-        cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
-        cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
+        cevalTagCoarse = elem_getEvaluationTag(celementCoarse)
+        cevalTagFine = elem_getEvaluationTag(celementFine)
                         
         cevalTagCoarse = ior(cevalTagCoarse,EL_EVLTAG_REFPOINTS)
         cevalTagFine   = ior(cevalTagFine,EL_EVLTAG_REFPOINTS)
@@ -2499,10 +2526,8 @@ contains
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.
-        call elem_generic_sim2 (p_relemDistCoarse%celement, &
-            relementSetCoarse, Bder, DbasCoarse)
-        call elem_generic_sim2 (p_relemDistFine%celement, &
-            relementSetFine, Bder, DbasFine)
+        call elem_generic_sim2 (celementCoarse,relementSetCoarse, Bder, DbasCoarse)
+        call elem_generic_sim2 (celementFine,relementSetFine, Bder, DbasFine)
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
         
@@ -2648,6 +2673,8 @@ contains
     end do ! i
     
     ! Release memory
+    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
+    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(DlocWeights)
     deallocate(DglobWeights)
     deallocate(Ipivot)
@@ -2767,9 +2794,6 @@ contains
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Current element distribution
-  type(t_elementDistribution), pointer :: p_relemDistCoarse, p_relemDistFine
-  
   ! Number of elements that have already been processed and number of
   ! elements that are to be processed in the current run
   integer :: nelementsDone, nelementsToDo
@@ -2798,6 +2822,11 @@ contains
   
   ! Maximum reference dimension
   integer :: nmaxRefDimFine, nmaxRefDimCoarse
+
+  ! Current assembly block, cubature formula, element type,...
+  integer :: icubatureBlock
+  integer(I32) :: celementFine, celementCoarse, ccubFine,ccubCoarse
+  type(t_scalarCubatureInfo), target :: rcubatureInfoFine,rcubatureInfoCoarse
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -2846,6 +2875,14 @@ contains
       
     end if
     
+    ! Create default assembly structures with the default cubature
+    ! formula for the coarse grid discretisation.
+    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    
+    call spdiscr_createDefCubStructure(rdiscretisationFine,&
+        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+
     ! Get a pointer to the triangulation - for easier access.
     p_rtriaCoarse => rdiscretisationCoarse%p_rtriangulation
     p_rtriaFine => rdiscretisationFine%p_rtriangulation
@@ -2866,29 +2903,34 @@ contains
     nmaxDerFine = 0
     nmaxRefDimCoarse = 0
     nmaxRefDimFine = 0
-    do i = 1, rdiscretisationCoarse%inumFESpaces
+
+    ! Let us run through the info blocks specifying the cubature
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
     
-      ! Activate the current coarse mesh element distribution
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(i)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(i)
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          i,celementCoarse,ccubCoarse,NELC)
+
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine)
       
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
     
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
       
       ! Get the number of elements
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
       
       ! Get the number of cubature points on the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
+      ncubpFine = cub_igetNumPts(ccubFine)
       
       ! Get the number of cubature points on the coarse mesh
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubFine))
       case (BGEOM_SHAPE_LINE)
         ncubpCoarse = 2*ncubpFine
         nelementsFine = 2*nelementsCoarse
@@ -2908,9 +2950,9 @@ contains
       nmaxcubpCoarse = max(nmaxcubpCoarse, ncubpCoarse)
       nmaxcubpFine   = max(nmaxcubpFine,   ncubpFine)
       nmaxDerCoarse = max(nmaxDerCoarse, &
-          elem_getMaxDerivative(p_relemDistCoarse%celement))
+          elem_getMaxDerivative(celementCoarse))
       nmaxDerFine = max(nmaxDerFine, &
-          elem_getMaxDerivative(p_relemDistFine%celement))
+          elem_getMaxDerivative(celementFine))
       nmaxRefDimCoarse = max(nmaxRefDimCoarse, &
           trafo_igetReferenceDimension(ctrafoCoarse))
       nmaxRefDimFine = max(nmaxRefDimFine, &
@@ -2959,44 +3001,40 @@ contains
     ! Format the local weights array to 1
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
-    ! Let us run through the element distributions
-    do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
-
-      ! Activate the current element distributions
-      p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
-      p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+    ! Let us run through the info blocks specifying the cubature
+    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
     
-      if (p_relemDistCoarse%NEL .eq. 0) cycle
-    
-      ! p_IelementList must point to our set of elements in the discretisation
-      ! with that the trial functions
-      call storage_getbase_int (p_relemDistCoarse%h_IelementList, p_IelementList)
-      
-      ! Get the number of coarse mesh elements there.
-      NELC = p_relemDistCoarse%NEL
+      ! Get the element distribution, element id, number of elements,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+          IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
+      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+          celement=celementFine,ccubature=ccubFine)
+    
+      if (NELC .eq. 0) cycle
+    
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
-      indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
+      indofCoarse = elem_igetNDofLoc(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine)
         
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
-      ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine)
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
-      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
+      ncubpFine = cub_igetNumPts(ccubFine)
+      call cub_getCubature(ccubFine, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,NELC)
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
       ! meshes!
-      select case(cub_igetShape(p_relemDistFine%ccubTypeBilForm))
+      select case(cub_igetShape(ccubFine))
       case (BGEOM_SHAPE_LINE)
         nelementsFine = 2*nelementsCoarse
         call trafo_mapCubPtsRef2LvlEdge1D(ncubpFine,p_DcubPtsRefFine,p_DcubPtsRefCoarse)
@@ -3155,8 +3193,8 @@ contains
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
         ! a combined evaluation tag.
-        cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
-        cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
+        cevalTagCoarse = elem_getEvaluationTag(celementCoarse)
+        cevalTagFine = elem_getEvaluationTag(celementFine)
                         
         cevalTagCoarse = ior(cevalTagCoarse,EL_EVLTAG_REFPOINTS)
         cevalTagFine   = ior(cevalTagFine,EL_EVLTAG_REFPOINTS)
@@ -3175,10 +3213,8 @@ contains
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.
-        call elem_generic_sim2 (p_relemDistCoarse%celement, &
-            relementSetCoarse, Bder, DbasCoarse)
-        call elem_generic_sim2 (p_relemDistFine%celement, &
-            relementSetFine, Bder, DbasFine)
+        call elem_generic_sim2 (celementCoarse,relementSetCoarse, Bder, DbasCoarse)
+        call elem_generic_sim2 (celementFine,relementSetFine, Bder, DbasFine)
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
         
@@ -3370,6 +3406,8 @@ contains
     end do ! i
     
     ! Release memory
+    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
+    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(DlocWeights)
     deallocate(DglobWeights)
     deallocate(Ipivot)

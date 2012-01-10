@@ -272,50 +272,59 @@ module transformation
   ! Undefined coordinate system or no coordinate system
   integer(I32), parameter, public :: TRAFO_CS_UNDEFINED   = 0
 
+  ! General 1D coordinate system
+  integer(I32), parameter, public :: TRAFO_CS_GENERAL_1D  = TRAFO_DIM_1D
+
+  ! General 2D coordinate system
+  integer(I32), parameter, public :: TRAFO_CS_GENERAL_2D  = TRAFO_DIM_2D
+
+  ! General 3D coordinate system
+  integer(I32), parameter, public :: TRAFO_CS_GENERAL_3D  = TRAFO_DIM_3D
+
   ! Parameter value [-1..1] on reference interval in 1D
   integer(I32), parameter, public :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
 
   ! Barycentric coordinates on triangle
-  integer(I32), parameter, public :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
+  integer(I32), parameter, public :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 1
 
   ! 2D coordinates on reference triangle
-  integer(I32), parameter, public :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
+  integer(I32), parameter, public :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 2
 
   ! 2D coordinates on real triangle
-  integer(I32), parameter, public :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 3
   
   ! 2D coordinates on reference quadrilateral
-  integer(I32), parameter, public :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
+  integer(I32), parameter, public :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 4
 
   ! 2D coordinates on real quadrilateral
-  integer(I32), parameter, public :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 5
   
   ! Barycentric coordinates on tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
+  integer(I32), parameter, public :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 1
   
   ! 3D coordinates on reference tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
+  integer(I32), parameter, public :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 2
   
   ! 3D coodinates on real tetrahedron
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 3
   
   ! 3D coordinates on reference hexahedron
-  integer(I32), parameter, public :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
+  integer(I32), parameter, public :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 4
   
   ! 3D coordinates on real hexahedron
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 5
   
   ! 3D coordinates on reference pyramid
-  integer(I32), parameter, public :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 15
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 6
   
   ! 3D coordinates on real pyramid
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 16
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 7
   
   ! 3D coordinates on reference prism
-  integer(I32), parameter, public :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 17
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 8
   
   ! 3D coordinates on real prism
-  integer(I32), parameter, public :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 18
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 9
 !</constantblock>
 
 !</constants>

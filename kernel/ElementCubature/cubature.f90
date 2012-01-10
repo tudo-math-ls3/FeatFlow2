@@ -63,6 +63,13 @@
 !# 10.) cub_getName
 !#      -> Returns the name of the cubature formula as a string.
 !#
+!# 11.) cub_resolveGenericCubType
+!#      -> Resolves a generic cubature formula ID to the actual
+!#         cubature formula ID.
+!#
+!# 12.) cub_isExtended
+!#      -> Determine if a cubature formula ID refers to a generic cubature formula.
+!#
 !#
 !# A note on cub_getCubPoints and cub_getCubature
 !# ----------------------------------------------
@@ -147,9 +154,10 @@
 !# The cubature ID is interpreted as a bitfield that codes the necessary
 !# information about the cubature rule. The following bits are used:
 !#
-!#  Bit 30/31: Type of the cubature formula.
+!#  Bit 28-30: Type of the cubature formula.
 !#             =0: Standard and summed cubature formula.
-!#  Bit 16-29: For standard and summed cubature formulas:
+!#             =4: Identifies special constants like automatic cubature rules etc.
+!#  Bit 16-27: For standard and summed cubature formulas:
 !#             Refinement level of the reference element.
 !#  Bit 0-15:  For standard and summed cubature formulas:
 !#             Identifier for the underlying cubature formula.
@@ -157,6 +165,25 @@
 !# Standard and summed cubature formulas differ only in Bit 16-29 which
 !# encodes a refinement level of the reference element; if this is set to a
 !# value > 0, the cubature formula is summed, otherwise it is without summing.
+!#
+!# About generic cubature formulas
+!# -------------------------------
+!# There are a couple of generic cubature formulas available.
+!# They are named "CUB_GEN_xxxx". These formulas apply for all types
+!# of elements (1D, 2D, 3D, quad, triangle, hexa, ...) and define a
+!# standard way for numerical integration. For the actual integration,
+!# these formulas have to be "resolved" to the actual, dimension- and
+!# element-shape dependent cubature formula. this can be done with the
+!# routine "cub_resolveGenericCubType" which calculates the cubature
+!# formula specifier according to the element shape.
+!#
+!# Note however, that the "CUB_GEN_AUTO" and "CUB_GEN_AUTO_LUMPMASS"
+!# specifiers cannot be resolved that way. These specifiers are reserved
+!# for being used with special finite elements and are therefore element
+!# dependent. Due to the fact that this module does not know about
+!# finite elements, appropriate finite element modules must implement
+!# the behaviour if these constants are specified -- with a replacement
+!# for "cub_resolveGenericCubType".
 !#
 !# </purpose>
 !##############################################################################
@@ -172,6 +199,66 @@ module cubature
   private
   
 !<constants>
+
+!<constantblock variable="ccubType" description="General values">
+
+  ! Undefined cubature formula
+  integer(I32), parameter, public :: CUB_UNDEFINED = 0
+  
+!</constantblock>
+
+!<constantblock description="Special types of cubature formulas.">
+
+  ! internal mask for special cubature formula types.
+  integer(I32), parameter         :: CUB_TP_MASK = ishft(7_I32,28)
+
+  ! Standard or summed cubature formula.
+  integer(I32), parameter, public :: CUB_TP_STD = 0
+  
+  ! Automatic cubature formula.
+  integer(I32), parameter, public :: CUB_TP_AUTO = ishft(1_I32,28)
+
+  ! Deprecated cubature rule.
+  integer(I32), parameter, public :: CUB_TP_DEPR = ishft(2_I32,28)
+
+!</constantblock>
+
+!<constantblock variable="ccubType" description="Generic cubature formulas">
+
+  ! Automatic cubature formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO = CUB_TP_AUTO + 1
+
+  ! Automatic cubature formula, lumping the mass matrix (if possible)
+  integer(I32), parameter, public :: CUB_GEN_AUTO_LUMPMASS = CUB_TP_AUTO + 2
+
+  ! Automatic cubature formula, 1-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G1 = CUB_TP_AUTO + 101
+
+  ! Automatic cubature formula, 2-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G2 = CUB_TP_AUTO + 102
+
+  ! Automatic cubature formula, 3-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G3 = CUB_TP_AUTO + 103
+
+  ! Automatic cubature formula, 4-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G4 = CUB_TP_AUTO + 104
+
+  ! Automatic cubature formula, 5-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G5 = CUB_TP_AUTO + 105
+
+  ! Automatic cubature formula, 6-point Gauss formula
+  integer(I32), parameter, public :: CUB_GEN_AUTO_G6 = CUB_TP_AUTO + 106
+
+  ! Automatic cubature formula, Trapezoidal rule
+  integer(I32), parameter, public :: CUB_GEN_AUTO_TRZ = CUB_TP_AUTO + 107
+
+  ! Automatic cubature formula, Midpoint rule
+  integer(I32), parameter, public :: CUB_GEN_AUTO_MID = CUB_TP_AUTO + 108
+
+  ! Automatic cubature formula, Simpson rule
+  integer(I32), parameter, public :: CUB_GEN_AUTO_SIMPSON = CUB_TP_AUTO + 109
+  
+!</constantblock>
 
 !<constantblock variable="ccubType" description="1D formulas">
 
@@ -291,10 +378,12 @@ module cubature
   ! 3-point Gauss formula, triangle, degree = 3, ncubp = 3
   integer(I32), parameter, public :: CUB_G3_T = 252
 
-  ! Collatz formula, degree = 3, ncubp = 3
+  ! Collatz formula (Gauss formula, edge midpoints), degree = 3, ncubp = 3
   integer(I32), parameter, public :: CUB_Collatz = 253
+  integer(I32), parameter, public :: CUB_Collatz_T = 253
+  integer(I32), parameter, public :: CUB_G3MP_T = 253
 
-  ! vertices, midpoints, center, degree = 4, ncubp = 7
+  ! Vertices, midpoints, center, degree = 4, ncubp = 7
   integer(I32), parameter, public :: CUB_VMC = 254
 !</constantblock>
 
@@ -394,6 +483,8 @@ module cubature
   public :: cub_getRefLevels
   public :: cub_getSummedCubType
   public :: cub_getName
+  public :: cub_resolveGenericCubType
+  public :: cub_isExtended
   
 contains
 
@@ -434,8 +525,32 @@ contains
 
   scub = trim(sys_upcase(scubName))
 
+  ! Generic formulas
+  if (scub .eq. "AUTO") then
+    cub_igetID=CUB_GEN_AUTO
+  else if (scub .eq. "AUTO_LUMPMASS") then
+    cub_igetID=  CUB_GEN_AUTO_LUMPMASS
+  else if (scub .eq. "AUTO_G1") then
+    cub_igetID=CUB_GEN_AUTO_G1
+  else if (scub .eq. "AUTO_G2") then
+    cub_igetID=CUB_GEN_AUTO_G2
+  else if (scub .eq. "AUTO_G3") then
+    cub_igetID=CUB_GEN_AUTO_G3
+  else if (scub .eq. "AUTO_G4") then
+    cub_igetID=CUB_GEN_AUTO_G4
+  else if (scub .eq. "AUTO_G5") then
+    cub_igetID=CUB_GEN_AUTO_G5
+  else if (scub .eq. "AUTO_G6") then
+    cub_igetID=CUB_GEN_AUTO_G6
+  else if (scub .eq. "AUTO_TRZ") then
+    cub_igetID=CUB_GEN_AUTO_TRZ
+  else if (scub .eq. "AUTO_MID") then
+    cub_igetID=CUB_GEN_AUTO_MID
+  else if (scub .eq. "AUTO_SIMPSON") then
+    cub_igetID=CUB_GEN_AUTO_SIMPSON
+
   ! 1D-formulas
-  if (scub .eq. "G1_1D") then
+  else if (scub .eq. "G1_1D") then
     cub_igetID=CUB_G1_1D
   else if (scub .eq. "TRZ_1D") then
     cub_igetID =CUB_TRZ_1D
@@ -503,8 +618,8 @@ contains
     cub_igetID=CUB_TRZ_T
   else if (scub .eq. "G3_T") then
     cub_igetID=CUB_G3_T
-  else if (scub .eq. "COLLATZ") then
-    cub_igetID=CUB_COLLATZ
+  else if ((scub .eq. "G3MP_T") .or. (scub .eq. "COLLATZ")) then
+    cub_igetID=CUB_G3MP_T
   else if (scub .eq. "VMC") then
     cub_igetID=CUB_VMC
 
@@ -560,7 +675,7 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
       call sys_halt()
     else
-      cub_igetID = 0
+      cub_igetID = CUB_UNDEFINED
     end if
   end if
     
@@ -603,6 +718,30 @@ contains
 !</function>
 
     select case(ccubature)
+    ! General cubature formulas
+    case (CUB_GEN_AUTO)
+      sname ="AUTO"
+    case (CUB_GEN_AUTO_LUMPMASS)
+      sname ="AUTO_LUMPMASS"
+    case (CUB_GEN_AUTO_G1)
+      sname ="AUTO_G1"
+    case (CUB_GEN_AUTO_G2)
+      sname ="AUTO_G2"
+    case (CUB_GEN_AUTO_G3)
+      sname ="AUTO_G3"
+    case (CUB_GEN_AUTO_G4)
+      sname ="AUTO_G4"
+    case (CUB_GEN_AUTO_G5)
+      sname ="AUTO_G5"
+    case (CUB_GEN_AUTO_G6)
+      sname ="AUTO_G6"
+    case (CUB_GEN_AUTO_TRZ)
+      sname ="AUTO_TRZ"
+    case (CUB_GEN_AUTO_MID)
+      sname ="AUTO_MID"
+    case (CUB_GEN_AUTO_SIMPSON)
+      sname ="AUTO_SIMPSON"
+
     ! 1D formulas, line
     case (CUB_G1_1D)
       sname = 'G1_1D'
@@ -672,8 +811,8 @@ contains
       sname = 'G3_T'
     case (CUB_TRZ_T)
       sname = 'TRZ_T'
-    case (CUB_COLLATZ)
-      sname = 'COLLATZ'
+    case (CUB_G3MP_T)
+      sname = 'CUB_G3MP_T'
     case (CUB_VMC)
       sname = 'VMC'
 
@@ -751,7 +890,11 @@ contains
 !</function>
   
     ! Blend out the highest 16 bit.
-    n = iand(ccubType,int(2**16-1,I32))
+    if (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) then
+      n = iand(ccubType,int(2**16-1,I32))
+    else
+      n = ccubType
+    end if
   
   end function
 
@@ -782,7 +925,11 @@ contains
 !</function>
   
     ! Include the number of levels into ccubType.
-    n = ior(cub_getStdCubType(ccubType),ishft(int(max(0,nlevels),I32),16))
+    if (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) then
+      n = ior(cub_getStdCubType(ccubType),ishft(int(max(0,nlevels),I32),16))
+    else
+      n = 0
+    end if
   
   end function
 
@@ -808,9 +955,14 @@ contains
 !</input>
   
 !</function>
-  
-    ! Get the level from the highest 16 bit.
-    n = ishft(ccubType,-16)
+    if ((iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) .or. &
+        (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_AUTO)) then
+      ! Get the level from the highest 16 bit.
+      n = iand(ccubType,NOT(CUB_TP_MASK))
+      n = ishft(n,-16)
+    else
+      n = 0
+    end if
   
   end function
 
@@ -932,7 +1084,7 @@ contains
     ! -= 2D Triangle Formulas =-
     case (CUB_G1_T)
       n = 1
-    case (CUB_G3_T,CUB_TRZ_T,CUB_Collatz)
+    case (CUB_G3_T,CUB_TRZ_T,CUB_G3MP_T)
       n = 3
     case (CUB_VMC)
       n = 7
@@ -1056,7 +1208,7 @@ contains
           ! Now compute the number of edges from Euler formula
           n = n+4**nreflevels-1
 
-        case (CUB_G1_T,CUB_Collatz)
+        case (CUB_G1_T,CUB_G3MP_T)
           ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
           ! This is a triangle in 2D, so every refinement brings 4 new
@@ -1162,6 +1314,239 @@ contains
       ishp = BGEOM_SHAPE_UNKNOWN
     end if
 
+  end function
+
+  !****************************************************************************
+
+!<function>
+
+  integer(I32) function cub_resolveGenericCubType(cgeoShape,ccubType) result(ccubTypeAct)
+  
+!<description>
+  ! Maps an automatic cubature formula to the actual cubature
+  ! formula. If not possible, CUB_UNDEFINED is returned.
+!</description>
+
+!<result>
+  ! The actual cubature formula or CUB_UNDEFINED, if the cubature
+  ! formula could not be determined.
+!</result>
+
+!<input>
+  ! Geometrical shape identifier which defines the shape of the
+  ! underlying element primitive. One of the BGEOM_SHAPE_xxxx constants.
+  integer(I32), intent(in) :: cgeoShape
+
+  ! Cubature type identifier; one of the CUB_GEN_xxxx constants.
+  integer(I32), intent(in) :: ccubType
+!</input>
+
+!<remark>
+  ! The automatic cubature formulas CUB_GEN_AUTO and CUB_GEN_AUTO_LUMPMASS
+  ! cannot be resolved with this routine! These depend on the discretisation
+  ! and thus, must be determined with the corresponding cubature
+  ! determination routine which involves the underlying finite element!
+!</remark>
+  
+!</function>
+
+    ccubTypeAct = CUB_UNDEFINED
+
+    select case (cgeoShape)
+    case (BGEOM_SHAPE_LINE)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_1D
+        
+      case (CUB_GEN_AUTO_G2)
+        ccubTypeAct = CUB_G2_1D
+        
+      case (CUB_GEN_AUTO_G3)
+        ccubTypeAct = CUB_G3_1D
+        
+      case (CUB_GEN_AUTO_G4)
+        ccubTypeAct = CUB_G4_1D
+        
+      case (CUB_GEN_AUTO_G5)
+        ccubTypeAct = CUB_G5_1D
+        
+      case (CUB_GEN_AUTO_G6)
+        ccubTypeAct = CUB_G6_1D
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_1D
+        
+      case (CUB_GEN_AUTO_MID)
+        ccubTypeAct = CUB_G1_1D
+        
+      case (CUB_GEN_AUTO_SIMPSON)
+        ccubTypeAct = CUB_SIMPSON_1D
+        
+      end select
+
+    case (BGEOM_SHAPE_QUAD)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_2D
+        
+      case (CUB_GEN_AUTO_G2)
+        ccubTypeAct = CUB_G2_2D
+        
+      case (CUB_GEN_AUTO_G3)
+        ccubTypeAct = CUB_G3_2D
+        
+      case (CUB_GEN_AUTO_G4)
+        ccubTypeAct = CUB_G4_2D
+        
+      case (CUB_GEN_AUTO_G5)
+        ccubTypeAct = CUB_G5_2D
+        
+      case (CUB_GEN_AUTO_G6)
+        ccubTypeAct = CUB_G6_2D
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_2D
+        
+      case (CUB_GEN_AUTO_MID)
+        ccubTypeAct = CUB_MID_2D
+        
+      case (CUB_GEN_AUTO_SIMPSON)
+        ccubTypeAct = CUB_SIMPSON_2D
+        
+      end select
+
+    case (BGEOM_SHAPE_TRIA)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_T
+
+      case (CUB_GEN_AUTO_G2)
+        ! Not implemented. Take G3.
+        ccubTypeAct = CUB_G3_T
+        
+      case (CUB_GEN_AUTO_G3)
+        ccubTypeAct = CUB_G3_T
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_T
+        
+      case (CUB_GEN_AUTO_MID)
+        ccubTypeAct = CUB_G3MP_T
+        
+      case (CUB_GEN_AUTO_SIMPSON)
+        ccubTypeAct = CUB_VMC
+        
+      end select
+
+    case (BGEOM_SHAPE_HEXA)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_3D
+        
+      case (CUB_GEN_AUTO_G2)
+        ccubTypeAct = CUB_G2_3D
+        
+      case (CUB_GEN_AUTO_G3)
+        ccubTypeAct = CUB_G3_3D
+        
+      case (CUB_GEN_AUTO_G4)
+        ccubTypeAct = CUB_G4_3D
+        
+      case (CUB_GEN_AUTO_G5)
+        ccubTypeAct = CUB_G5_3D
+        
+      case (CUB_GEN_AUTO_G6)
+        ccubTypeAct = CUB_G6_3D
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_3D
+        
+      case (CUB_GEN_AUTO_MID)
+        ccubTypeAct = CUB_MIDAREA_3D
+        
+      end select
+
+    case (BGEOM_SHAPE_TETRA)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_3D_T
+        
+      case (CUB_GEN_AUTO_G2)
+        ccubTypeAct = CUB_S2_3D_T
+        
+      case (CUB_GEN_AUTO_G3)
+        ccubTypeAct = CUB_S3_3D_T
+        
+      case (CUB_GEN_AUTO_G5)
+        ccubTypeAct = CUB_S5_3D_T
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_3D_T
+        
+      end select
+
+    case (BGEOM_SHAPE_PYRA)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_3D_Y
+        
+      case (CUB_GEN_AUTO_G2)
+        ccubTypeAct = CUB_TRZ_3D_Y
+        
+      end select
+
+    case (BGEOM_SHAPE_PRISM)
+      select case (ccubType)
+      case (CUB_GEN_AUTO_G1)
+        ccubTypeAct = CUB_G1_3D_R
+        
+      case (CUB_GEN_AUTO_TRZ)
+        ccubTypeAct = CUB_TRZ_3D_R
+        
+      end select
+
+    end select
+
+  end function
+
+  !****************************************************************************
+
+!<function>
+
+  integer function cub_isExtended(ccubType) result(igeneric)
+  
+!<description>
+  ! Determins if ccubType refers to an extended cubature rule.
+!</description>
+
+!<result>
+  ! =0, if ccubType directly specifies a cubature rule.
+  ! =1, if ccubType refers to a generic (CUB_GEN_xxxx) cubature formula
+  ! =2, if ccubType refers to a generic cubature formula which cannot be
+  !     resolved due to implementation specific details, e.g. FEM information.
+  !     I.e., ccubType is =CUB_GEN_AUTO or =CUB_GEN_AUTO_LUMPMASS.
+  ! =3, if ccubType refers to a deprecated cubature rule.
+!</result>
+
+!<input>
+  ! Cubature type identifier; one of the CUB_GEN_xxxx constants.
+  integer(I32), intent(in) :: ccubType
+!</input>
+
+!</function>
+
+    select case (iand(ccubType,CUB_TP_MASK))
+    case (CUB_TP_AUTO)
+      igeneric = 1
+      if ((ccubType .eq. CUB_GEN_AUTO) .or.&
+          (ccubType .eq. CUB_GEN_AUTO_LUMPMASS)) then
+        igeneric = 2
+      end if
+    case (CUB_TP_DEPR)
+      igeneric = 3
+    case default
+      igeneric = 0
+    end select
 
   end function
 
@@ -1870,7 +2255,7 @@ contains
                  (13*isubelement+1)/2-5*nsubelements) = dweight
         end do
 
-      case (CUB_G1_T,CUB_Collatz)
+      case (CUB_G1_T,CUB_G3MP_T)
         ! All points are inner points. Total number =
         ! number per element * #elements in the reference element.
         ! This is a triangle element in 2D, so every refinement brings 4 new
@@ -3078,7 +3463,7 @@ contains
     
     ncubp     =  3
     
-  case(CUB_G3_T)
+  case(CUB_G3MP_T)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.5_DP
     Dxi(1,3)  =  0.0_DP
@@ -3095,7 +3480,7 @@ contains
     
     ncubp     =  3
     
-  case(CUB_Collatz)
+  case(CUB_G3_T)
     Dxi(1,1)  =  0.6666666666666667_DP
     Dxi(1,2)  =  0.1666666666666667_DP
     Dxi(1,3)  =  0.1666666666666667_DP

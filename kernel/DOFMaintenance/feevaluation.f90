@@ -62,6 +62,7 @@ module feevaluation
   use transformation
   use triangulation
   use triasearch
+  use extstdassemblyinfo
   
   implicit none
   
@@ -83,6 +84,28 @@ module feevaluation
 !</constantblock>
 
 !</constants>
+
+!<types>
+
+!<typeblock>
+
+  ! An evaluation assembly structure that saves crucial data during the assembly.
+  type t_fevlAssembly
+  
+    ! Current cubature settings
+    type(t_stdCubatureData) :: rcubatureInfo
+    
+    ! Current FE evaluation settings
+    type(t_stdFEBasisEvalData) :: rfeBasisEvalData
+    
+  end type
+  
+!</typeblock>
+
+  public :: t_fevlAssembly
+
+!</types>
+
 
   ! There are two functions fevl_evaluate, one for scalar functions, one for
   ! multivariate ones.
@@ -159,7 +182,7 @@ module feevaluation
   public :: fevl_evaluateBdr2d4
 
   public :: fevl_getVectorMagnitude
-
+  
 contains
 
   ! ***************************************************************************
@@ -1140,6 +1163,11 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   
+#if WARN_DEPREC
+  call output_line ("Using deprecated feature. Please update your code.", &
+      OU_CLASS_WARNING,OU_MODE_STD,"fevl_evaluate_mult2")
+#endif
+
   ! What to evaluate?
   Bder = .false.
   Bder(iderType) = .true.
@@ -1942,6 +1970,11 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   
+#if WARN_DEPREC
+  call output_line ("Using deprecated feature. Please update your code.", &
+      OU_CLASS_WARNING,OU_MODE_STD,"fevl_evaluate_sim2")
+#endif
+
   ! What to evaluate?
   Bder = .false.
   Bder(iderType) = .true.

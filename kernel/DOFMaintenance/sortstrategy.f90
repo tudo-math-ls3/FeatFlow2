@@ -220,6 +220,11 @@ contains
     integer :: i,k,n
     integer :: j
 
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"sstrat_calcStochastic")
+#endif
+
     ! Fill the array with 1,2,3,...
     n = size(Ipermutation) / 2
     

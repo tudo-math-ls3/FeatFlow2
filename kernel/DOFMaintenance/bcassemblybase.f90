@@ -129,6 +129,11 @@ contains
   integer :: i, ifoundRegions
   integer, dimension(2) :: Iindex
   
+#if WARN_DEPREC
+  call output_line ("Using deprecated feature. Please update your code.", &
+      OU_CLASS_WARNING,OU_MODE_STD,"bcasm_getVertInBCregion")
+#endif
+  
   ! Get the parameter value array from the triangulation
   call storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
                                p_DvertexParameterValue)
@@ -318,6 +323,11 @@ contains
   integer :: i, ifoundRegions
   integer, dimension(2) :: Iindex
   
+#if WARN_DEPREC
+  call output_line ("Using deprecated feature. Please update your code.", &
+      OU_CLASS_WARNING,OU_MODE_STD,"bcasm_getEdgesInBCregion")
+#endif
+
   ! Get the parameter value array from the triangulation
   call storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
                                p_DedgeParameterValue)

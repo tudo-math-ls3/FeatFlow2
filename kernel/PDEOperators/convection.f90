@@ -45,6 +45,8 @@
 
 module convection
 
+  use fsystem
+  use genoutput
   use basicgeometry
   use bilinearformevaluation
   use collection
@@ -54,9 +56,8 @@ module convection
   use domainintegration
   use element
   use elementpreprocessing
+  use extstdassemblyinfo
   use feevaluation
-  use fsystem
-  use genoutput
   use geometryaux
   use jumpstabilisation
   use linearalgebra
@@ -70,6 +71,7 @@ module convection
   use transformation
   use triangulation
   use vectorio
+  use extstdassemblyinfo
 
   implicit none
 
@@ -1342,9 +1344,9 @@ contains
 !<subroutine>
 
   subroutine conv_streamlineDiffusion2d ( &
-                           rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
-                           rconfig, cdef, &
-                           rmatrix, rsolution, rdefect, DmeshVelocity,rperfconfig)
+      rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
+      rconfig, cdef, &
+      rmatrix, rsolution, rdefect, DmeshVelocity, rcubatureInfo, rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -1419,6 +1421,10 @@ contains
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1543,7 +1549,8 @@ contains
                       rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                       rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                       rconfig%bALE, rconfig%clocalh,&
-                      p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity,rperfconfig)
+                      p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity,&
+                      rcubatureInfo,rperfconfig)
 
       else
 
@@ -1572,7 +1579,7 @@ contains
                         rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                         rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                         rconfig%bALE, rconfig%clocalh,&
-                        p_DsolX,p_DdefectX, DmeshVelocity,rperfconfig)
+                        p_DsolX,p_DdefectX, DmeshVelocity,rcubatureInfo,rperfconfig)
         end do
 
       end if
@@ -1586,7 +1593,7 @@ contains
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity,&
-                    rperfconfig=rperfconfig)
+                    rcubatureInfo=rcubatureInfo,rperfconfig=rperfconfig)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -1603,7 +1610,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  clocalh, Du1,Ddef1, DmeshVelocity, rperfconfig)
+                  clocalh, Du1,Ddef1, DmeshVelocity, rcubatureInfo, rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -1740,6 +1747,10 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -1829,6 +1840,11 @@ contains
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
   integer(I32) :: cevaluationTag
+  
+  ! Cubature formula
+  integer(I32) :: ccubature
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -1874,6 +1890,20 @@ contains
 
     ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
+    
+    ! Do we have an assembly structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
+
+    ! Cubature formula. Only one cubature formula supported.
+    ccubature = rcubatureInfo%p_RinfoBlocks(1)%ccubature
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -1905,14 +1935,14 @@ contains
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(ccubature,p_DcubPtsRef, Domega)
 
     ! Allocate an array saving the coordinates of corner vertices of elements
 
@@ -2006,7 +2036,7 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, size(p_IelementList), nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -2568,6 +2598,11 @@ contains
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
 
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+
     deallocate(p_DcubPtsRef)
     deallocate(Domega)
     deallocate(DlocalDelta)
@@ -2588,7 +2623,8 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  clocalh,Du1,Du2,Ddef1,Ddef2, DmeshVelocity,rperfconfig)
+                  clocalh,Du1,Du2,Ddef1,Ddef2,DmeshVelocity,&
+                  rcubatureInfo,rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -2723,6 +2759,10 @@ contains
   ! Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2995,7 +3035,7 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, size(p_IelementList), nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -3578,7 +3618,8 @@ contains
   subroutine conv_streamlineDiffusionBlk2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
-                           rmatrix, rsolution, rdefect, DmeshVelocity, rperfconfig)
+                           rmatrix, rsolution, rdefect, DmeshVelocity, &
+                           rcubatureInfo,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -3655,6 +3696,10 @@ contains
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3849,7 +3894,8 @@ contains
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, &
                     rconfig%dnewtonTransposed, rconfig%bALE, rconfig%clocalh,&
-                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity, rperfconfig)
+                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity, &
+                    rcubatureInfo,rperfconfig)
 
     else
 
@@ -3859,7 +3905,7 @@ contains
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, rconfig%dnewtonTransposed, &
                     rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity,&
-                    rperfconfig=rperfconfig)
+                    rcubatureInfo=rcubatureInfo,rperfconfig=rperfconfig)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -3883,7 +3929,8 @@ contains
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
                   ddeltaTransposed,dnewtonTransposed, bALE, clocalh, &
-                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity, rperfconfig)
+                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity, &
+                  rcubatureInfo, rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -4040,6 +4087,10 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -4154,6 +4205,11 @@ contains
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
   integer(I32) :: cevaluationTag
+  
+  ! Cubature formula and cubature info structure
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  integer(I32) :: ccubature
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -4202,6 +4258,20 @@ contains
 
     ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
+
+    ! Do we have an assembly structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
+    
+    ! Cubature
+    ccubature = p_rcubatureInfo%p_RinfoBlocks(1)%ccubature
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
@@ -4259,14 +4329,14 @@ contains
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(ccubature,p_DcubPtsRef, Domega)
 
     ! OpenMP-Extension: Open threads here.
     ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
@@ -4420,7 +4490,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, size(p_IelementList), nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -5678,6 +5748,11 @@ contains
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
 
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+
     deallocate(DlocalDelta)
     if ((dnewton .ne. 0.0_DP) .or. (dnewtonTransposed .ne. 0.0_DP)) then
       deallocate(DentryA22)
@@ -6881,7 +6956,7 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, size(p_IelementList), nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -8371,7 +8446,7 @@ contains
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+    do IELset = 1, size(p_IelementList), nelementsPerBlock
 
       ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
@@ -10573,7 +10648,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dMat (rconfig,rmatrix,rvelocity,&
-      ffunctionCoefficient,rcollection,rperfconfig)
+      ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10610,6 +10685,10 @@ contains
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -10649,7 +10728,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToMatrix2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection,rperfconfig)
+        ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
 
   end subroutine
 
@@ -10658,7 +10737,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dDef (rconfig,rmatrix,rx,rd,rvelocity,&
-      ffunctionCoefficient,rcollection,rperfconfig)
+      ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10703,6 +10782,10 @@ contains
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -10741,7 +10824,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToDefect2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection,rperfconfig)
+        ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
 
     ! Note: When calculating the defect, it does not matter if
     ! one uses a call to lsyssc_isMatrixContentShared or .TRUE. in the above
@@ -10754,7 +10837,8 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dCalc (rconfig,rvelocityDiscr,bsimpleAij,rvelocity,&
-      fincorporate,rincorporateCollection,ffunctionCoefficient,rcollection,rperfconfig)
+      fincorporate,rincorporateCollection,ffunctionCoefficient,rcollection,&
+      rcubatureInfo,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10839,6 +10923,10 @@ contains
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -10854,8 +10942,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ielementDistr
-    integer :: iel,idofe,jdofe,jdfg
+    integer :: iel,idofe,jdofe,jdfg,NVE
     real(DP) :: du1loc,du2loc,du1locx,du1locy,du2locx,du2locy,db,dbx,dby,OM
     real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ
     real(DP) :: AH11,AH22,AH12,AH21
@@ -10874,16 +10961,13 @@ contains
 
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
-    real(DP), dimension(:), allocatable :: Domega
+    real(DP), dimension(:), pointer :: p_Domega
 
     ! number of cubature points on the reference element
     integer :: ncubp,icubp
 
     ! Derivative qualifiers for evaluating the finite elements.
     logical, dimension(EL_MAXNDER) :: Bder
-
-    ! Type of transformation from the reference to the real element
-    integer(I32) :: ctrafoType
 
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -10901,11 +10985,11 @@ contains
     integer, dimension(:), pointer :: p_IelementList
 
     ! An allocateable array accepting the DOF`s of a set of elements.
-    integer, dimension(:,:), allocatable, target :: Idofs
+    integer, dimension(:,:), pointer :: p_Idofs
 
     ! Allocateable arrays for the values of the basis functions -
     ! for test and trial spaces.
-    real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
 
     ! Index arrays that define the positions of local matrices in the global matrix.
     integer, dimension(:,:,:), allocatable :: Kentry11, Kentry12
@@ -10929,17 +11013,11 @@ contains
     ! The discretisation - for easier access
     type(t_spatialDiscretisation), pointer :: p_rdiscr
 
-    ! Current element distribution
-    type(t_elementDistribution), pointer :: p_relementDistr
-
     ! Variables specifying the current element set
     integer :: IELset,IELmax
 
     ! Number of DOF`s in the current element distribution
     integer :: indof
-
-    ! Type of the element; may be triangle (3) or quad (4)
-    integer :: NVE
 
     ! Maximum norm of the vector field and its reciprocal
     real(DP) :: dumax,dumaxR
@@ -10964,6 +11042,14 @@ contains
 
     ! A temporary block vector containing only the velocity
     type(t_vectorBlock) :: rvelocitytemp
+
+    ! Current assembly block, cubature formula, element type,...
+    integer :: ielementDistr,icubatureBlock,NEL
+    integer(I32) :: cevalTag, celement, ccubature, ctrafoType
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    type(t_stdCubatureData) :: rcubatureData
+    type(t_stdFEBasisEvalData) :: rfeBasisEvalData
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -11037,50 +11123,56 @@ contains
 
     end if
 
-    ! Loop through the element distributions
-    do ielementDistr = 1,p_rdiscr%inumFESpaces
+    ! Do we have an assembly structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
-      ! Get the element distribution
-      p_relementDistr => p_rdiscr%RelementDistr(ielementDistr)
+    ! Loop over the element blocks. Each defines a separate cubature formula.
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-      ! Get a list with all elements of the current element distribution
-      call storage_getbase_int (p_relementDistr%h_IelementList, &
-                                p_IelementList)
-
-      ! Get the number of local DOF`s for trial/test functions.
-      ! We assume trial and test functions to be the same.
-      indof = elem_igetNDofLoc(p_relementDistr%celement)
-
-      ! Get the basic element shape in the element distribution;
-      ! 3=triangles, 4=quads
-      NVE = elem_igetNVE(p_relementDistr%celement)
+      ! Get typical information: Number of elements, element list,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
+          ielementDistr,celement,ccubature,NEL,p_IelementList)
+    
+      ! Cancel if this element list is empty.
+      if (NEL .le. 0) cycle
 
       ! For saving some memory in smaller discretisations, we calculate
       ! the number of elements per block. For smaller triangulations,
       ! this is NEL. If there are too many elements, it is at most
       ! NELEMSIM. This is only used for allocating some arrays.
-      nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
+      nelementsPerBlock = min(p_rperfconfig%NELEMSIM, NEL)
+      
+      ! Initialise cubature and evaluation of the FE basis
+      call easminfo_initStdCubature(ccubature,rcubatureData)
 
-      ! Get from the trial element space the type of coordinate system
-      ! that is used there:
-      ctrafoType = elem_igetTrafoType(p_relementDistr%celement)
+      ! For faster access...
+      ncubp = cub_igetNumPts(ccubature)
+      p_DcubPtsRef => rcubatureData%p_DcubPtsRef
+      p_Domega => rcubatureData%p_Domega
 
-      ! Get the number of cubature points for the cubature formula
-      ncubp = cub_igetNumPts(p_relementDistr%ccubTypeBilForm)
+      ! Initialise the evaluation structure for the FE basis
+      call easminfo_initStdFEBasisEval(celement,&
+          elem_getMaxDerivative(celement),rcubatureData%ncubp,nelementsPerBlock,rfeBasisEvalData)
 
-      ! Allocate two arrays for the points and the weights
-      allocate(Domega(ncubp))
-      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
+      ! Get the basic element shape in the element distribution;
+      ! 3=triangles, 4=quads
+      NVE = rfeBasisEvalData%NVE
 
-      ! Get the cubature formula
-      call cub_getCubature(p_relementDistr%ccubTypeBilForm,p_DcubPtsRef, Domega)
+      ! For faster access...
+      p_Dbas => rfeBasisEvalData%p_Dbas
+      p_Idofs => rfeBasisEvalData%p_Idofs
+      ctrafoType = rfeBasisEvalData%ctrafoType
 
-      ! Allocate memory for the values of the basis functions in the cubature points
-      allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistr%celement), &
-               ncubp,nelementsPerBlock))
-
-      ! Allocate memory for the DOF`s of all the elements.
-      allocate(Idofs(indof,nelementsPerBlock))
+      ! Get the number of local DOF`s for trial/test functions.
+      ! We assume trial and test functions to be the same.
+      indof = rfeBasisEvalData%ndofLocal
 
       ! Allocate memory for array with local DELTA`s
       allocate(DlocalDelta(nelementsPerBlock))
@@ -11123,17 +11215,17 @@ contains
       bcubPtsInitialised = .false.
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
+      do IELset = 1, size(p_IelementList), nelementsPerBlock
 
         ! Number of the last element in the current set
-        IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
+        IELmax = min(size(p_IelementList),IELset-1+nelementsPerBlock)
 
         ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), &
-                                    Idofs)
+                                     p_Idofs)
 
         ! Ok, we found the positions of the local matrix entries
         ! that we have to change.
@@ -11144,7 +11236,7 @@ contains
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
         ! a combined evaluation tag.
-        cevaluationTag = elem_getEvaluationTag(p_relementDistr%celement)
+        cevaluationTag = elem_getEvaluationTag(celement)
         cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(EL_Q1))
 
         ! In the first loop, calculate the coordinates on the reference element.
@@ -11176,8 +11268,7 @@ contains
         ! coordinates on the reference element (the same for all elements)
         ! or on the real element - depending on whether this is a
         ! parametric or nonparametric element.
-        call elem_generic_sim2 (p_relementDistr%celement, &
-            revalElementSet, Bder, Dbas)
+        call elem_generic_sim2 (celement,revalElementSet, Bder, p_Dbas)
 
         ! Probably evaluate the velocity field in the cubature points
         if ((inonlinComplexity .ge. 1) .and. (inonlinComplexity .le. 3)) then
@@ -11200,11 +11291,11 @@ contains
                   ! Get the value of the (test) basis function
                   ! phi_i (our "O") in the cubature point:
 
-                  db = Dbas(JDOFE,1,ICUBP,IEL)
+                  db = p_Dbas(JDOFE,1,ICUBP,IEL)
 
                   ! Sum up to the value in the cubature point
 
-                  JDFG = Idofs(JDOFE,IEL)
+                  JDFG = p_Idofs(JDOFE,IEL)
                   du1loc = du1loc + p_Du1(JDFG)*db
                   du2loc = du2loc + p_Du2(JDFG)*db
 
@@ -11242,12 +11333,12 @@ contains
                 do JDOFE=1,indof
 
                   ! Get the value of the (test) basis function
-                  db = Dbas(JDOFE,1,ICUBP,IEL)
-                  dbx = Dbas(JDOFE,DER_DERIV_X,ICUBP,IEL)
-                  dby = Dbas(JDOFE,DER_DERIV_Y,ICUBP,IEL)
+                  db = p_Dbas(JDOFE,1,ICUBP,IEL)
+                  dbx = p_Dbas(JDOFE,DER_DERIV_X,ICUBP,IEL)
+                  dby = p_Dbas(JDOFE,DER_DERIV_Y,ICUBP,IEL)
 
                   ! Sum up to the value in the cubature point
-                  JDFG = Idofs(JDOFE,IEL)
+                  JDFG = p_Idofs(JDOFE,IEL)
                   du1loc = du1loc + p_Du1(JDFG)*db
                   du2loc = du2loc + p_Du2(JDFG)*db
                   du1locx = du1locx + p_Du1(JDFG)*dbx
@@ -11282,14 +11373,14 @@ contains
           rintSubset%ielementDistribution = ielementDistr
           rintSubset%ielementStartIdx = IELset
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial => Idofs
-          rintSubset%celement = p_relementDistr%celement
+          rintSubset%p_IdofsTrial => p_Idofs
+          rintSubset%celement = celement
 
           if (.not. rconfig%bconstNu) then
             call ffunctionCoefficient (0,p_rdiscr, &
                       int(IELmax-IELset+1),ncubp,&
                       revalElementSet%p_DpointsReal,&
-                      Idofs,rintSubset,&
+                      p_Idofs,rintSubset,&
                       Dnu(:,1:IELmax-IELset+1_I32),rcollection)
           end if
 
@@ -11297,7 +11388,7 @@ contains
             call ffunctionCoefficient (1,p_rdiscr, &
                       int(IELmax-IELset+1),ncubp,&
                       revalElementSet%p_DpointsReal,&
-                      Idofs,rintSubset,&
+                      p_Idofs,rintSubset,&
                       Dalpha(:,1:IELmax-IELset+1_I32),rcollection)
           end if
 
@@ -11318,12 +11409,12 @@ contains
         if ((rconfig%dupsam .ne. 0.0_DP) .and. present(rvelocity)) then
           if (NVE .eq. 3) then
             call getLocalDeltaTriSim (rconfig%clocalh,&
-                          Dvelocity,Dnu,Domega,p_Ddetj,duMaxR,&
+                          Dvelocity,Dnu,p_Domega,p_Ddetj,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
           else
             call getLocalDeltaQuadSim (rconfig%clocalh,&
-                          Dvelocity,Dnu,Domega,p_Ddetj,duMaxR,&
+                          Dvelocity,Dnu,p_Domega,p_Ddetj,duMaxR,&
                           rconfig%cstabiltype,rconfig%dupsam,&
                           p_IelementList(IELset:IELmax),p_rtriangulation,DlocalDelta)
           end if
@@ -11378,7 +11469,7 @@ contains
                 ! But because this routine only works in 2D, we can skip
                 ! the ABS here!
 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
                 ! Current velocity in this cubature point:
                 du1loc = Dvelocity (1,ICUBP,IEL)
@@ -11418,9 +11509,9 @@ contains
                   ! (our "O")  for function value and first derivatives for the
                   ! current DOF into HBASIy:
 
-                  HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
-                  HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                  HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                   ! Calculate
                   !
@@ -11449,9 +11540,9 @@ contains
                     ! (out "X") for function value and first derivatives for the
                     ! current DOF into HBASJy:
 
-                    HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
-                    HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                    HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                     ! Calculate
                     !
@@ -11522,24 +11613,24 @@ contains
 
               do ICUBP = 1, ncubp
 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
                 du1loc = Dvelocity (1,ICUBP,IEL)
                 du2loc = Dvelocity (2,ICUBP,IEL)
 
                 do IDOFE=1,indof
 
-                  HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
-                  HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                  HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                   HSUMI = HBASI2*du1loc + HBASI3*du2loc
 
                   do JDOFE=1,indof
 
-                    HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
-                    HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                    HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                     HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
 
@@ -11590,7 +11681,7 @@ contains
                 ! But because this routine only works in 2D, we can skip
                 ! the ABS here!
 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
                 ! Outer loop over the DOF`s i=1..indof on our current element,
                 ! which corresponds to the basis functions Phi_i:
@@ -11601,9 +11692,9 @@ contains
                   ! (our "O")  for function value and first derivatives for the
                   ! current DOF into HBASIy:
 
-                  HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
-                  HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                  HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                   ! Inner loop over the DOF`s j=1..indof, which corresponds to
                   ! the basis function Phi_j:
@@ -11614,9 +11705,9 @@ contains
                     ! (out "X") for function value and first derivatives for the
                     ! current DOF into HBASJy:
 
-                    HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
-                    HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                    HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                     ! Finally calculate the contribution to the system
                     ! matrix. Depending on the configuration of DNU,
@@ -11656,19 +11747,19 @@ contains
                 dnuloc = rconfig%dbeta * Dnu(icubp,iel)
                 dalphaloc = rconfig%dalpha * Dalpha(icubp,iel)
 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
                 do IDOFE=1,indof
 
-                  HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
-                  HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                  HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                   do JDOFE=1,indof
 
-                    HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
-                    HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                    HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                     AH11 = dnuloc*(HBASI2*HBASJ2+HBASI3*HBASJ3) &
                           + dalphaloc*HBASI1*HBASJ1
@@ -11712,7 +11803,7 @@ contains
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
               ! Outer loop over the DOF`s i=1..indof on our current element,
               ! which corresponds to the basis functions Phi_i:
@@ -11723,8 +11814,8 @@ contains
                 ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
 
-                HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                 ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
@@ -11735,8 +11826,8 @@ contains
                   ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
 
-                  HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                  HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                  HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                  HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                   ! Finally calculate the contribution to the system
                   ! matrix. Depending on the configuration of DNU,
@@ -11795,7 +11886,7 @@ contains
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
               ! Current velocity in this cubature point:
               du1locx = DvelocityUderiv (1,ICUBP,IEL)
@@ -11812,7 +11903,7 @@ contains
                 ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
 
-                HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
+                HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
 
                 ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
@@ -11823,7 +11914,7 @@ contains
                   ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
 
-                  HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
+                  HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
 
                   ! Finally calculate the contribution to the system
                   ! matrices A11, A12, A21 and A22.
@@ -11907,7 +11998,7 @@ contains
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
               ! Current velocity in this cubature point:
               du1loc = Dvelocity (1,ICUBP,IEL)
@@ -11922,9 +12013,9 @@ contains
                 ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
 
-                HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
-                HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
-                HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
+                HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
 
                 ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
@@ -11935,9 +12026,9 @@ contains
                   ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
 
-                  HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
-                  HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
-                  HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
+                  HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                  HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                  HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
 
                   ! Finally calculate the contribution to the system
                   ! matrices A11, A12, A21 and A22.
@@ -11992,7 +12083,7 @@ contains
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
-              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
               ! Current velocity in this cubature point:
               du1locx = DvelocityUderiv (1,ICUBP,IEL)
@@ -12009,7 +12100,7 @@ contains
                 ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
 
-                HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
+                HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
 
                 ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
@@ -12020,7 +12111,7 @@ contains
                   ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
 
-                  HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
+                  HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
 
                   ! Finally calculate the contribution to the system
                   ! matrices A11, A12, A21 and A22.
@@ -12058,7 +12149,7 @@ contains
         end if
 
         ! Now do something with the calculated matrices...
-        call fincorporate (inonlinComplexity,IELmax-IELset+1,indof,rconfig%dtheta,Idofs,&
+        call fincorporate (inonlinComplexity,IELmax-IELset+1,indof,rconfig%dtheta,p_Idofs,&
           DentryA11,DentryA12,DentryA21,DentryA22,rincorporatecollection,Kentry11,Kentry12)
 
       end do ! IELset
@@ -12070,10 +12161,6 @@ contains
       deallocate(Dvelocity)
       deallocate(DvelocityUderiv)
       deallocate(DvelocityVderiv)
-      deallocate(Domega)
-      deallocate(p_DcubPtsRef)
-      deallocate(Dbas)
-      deallocate(Idofs)
       deallocate(Dnu)
       deallocate(Dalpha)
       deallocate(DlocalDelta)
@@ -12084,7 +12171,16 @@ contains
       deallocate(DentryA21)
       deallocate(DentryA22)
 
-    end do ! ielementDistr
+      ! Release FE evaluation and cubature information
+      call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
+      call easminfo_doneStdCubature(rcubatureData)
+
+    end do ! icubatureBlock
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
   end subroutine
 

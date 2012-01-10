@@ -5,37 +5,33 @@
 !#
 !# <purpose>
 !# This module contains additional assembly information that allows to
-!# configure the assembly routines. The basic structure t_extScalarAssemblyInfo
+!# configure the assembly routines. The basic structure t_scalarCubatureInfo
 !# controls e.g. the cubature rule used during the assembly.
 !#
-!# A t_extScalarAssemblyInfo structure is associated to a discretisation
-!# structure. For the assembly of a matrix or vector with a specific cubature
-!# formula e.g., the code can create a default assembly structure, modify the
-!# cubature formula and assemble with this:
+!# The t_stdCubatureData structure contains basic dynamic information
+!# about a cubature formula. It can be initialised using a cubature
+!# formula ID.
 !#
-!# <code>
-!#   ! We assume for this example: 2D QUAD mesh
-!#
-!#   ! Get a structure and modify the cubature formulas.
-!#   call easminfo_createDefInfoStructure (rdiscretisation,rassemblyInfo)
-!#   rassemblyInfo%p_RinfoBlocks(:)%ccubature = CUB_G4_2D
-!#
-!#   ! Assemble a matrix based on this.
-!#   call bilf_buildMatrixScalar2 (rform,.true.,rmatrix,&
-!#       rscalarAssemblyInfo=rassemblyInfo)
-!#
-!#   ! Release the info structure.
-!#   call easminfo_releaseInfoStructure (rassemblyInfo)
-!# </code>
+!# The t_stdFEBasisEvalData structure contains basic information
+!# for the evaluatiuon of finite element basis functions on a set of
+!# points on a set of elements.
 !#
 !# Routines in this module:
 !#
-!# 1.) easminfo_createDefInfoStructure
-!#     -> Create a default assembly information structure based on a
-!#        discretisation structure.
+!# 1.) easminfo_initStdCubature
+!#      -> Create a structure with all necessary information about
+!#         a cubature formula.
 !#
-!# 2.) easminfo_releaseInfoStructure
-!#     -> Release an assembly information structure.
+!# 2.) easminfo_doneStdCubature
+!#     -> Release the structure with the cubature information.
+!#
+!# 3.) easminfo_initStdFEBasisEval
+!#     -> Create an evaluation structure to evaluate a finite element
+!#        on a set of points for a set of elements.
+!#
+!# 4.) easminfo_doneStdFEBasisEval
+!#     -> Release an initialised evaluation structure.
+!#
 !#
 !# </purpose>
 !##############################################################################
@@ -50,6 +46,8 @@ module extstdassemblyinfo
   use boundaryaux
   use cubature
   use scalarpde
+  use element
+  use transformation
   use spatialdiscretisation
   
   implicit none
@@ -60,36 +58,20 @@ module extstdassemblyinfo
 
 !<typeblock>
   
-  ! Contains information that configures the assembly of matrices and vectors
-  ! for a set of elements.
-  type t_extScalarAssemblyInfoBlock
+  ! Standard information for cubature.
+  type t_stdCubatureData
     
-    ! Cubature rule to use.
-    integer(I32) :: ccubature = 0
+    ! ID of the cubature rule.
+    integer(I32) :: ccubature = CUB_UNDEFINED
     
-    ! Id of the element set, this assembly block refers to.
-    integer :: ielementDistr = 0
+    ! Number of cubature points per element
+    integer :: ncubp = 0
     
-    ! Apply the above cubature rule for all elements in the above element set.
-    ! =0: Only apply for a limited set of elements specified in the element list
-    ! p_IelementList.
-    ! =1: Apply the above cubature rule for all elements in element set
-    ! ielementDistr.
-    integer :: celementListQuantifier = 1
+    ! Cubature weights
+    real(DP), dimension(:), pointer :: p_Domega
     
-    ! Number of elements in this block
-    integer :: NEL = 0
-    
-    ! If celementListQuantifier=0, this specifies handle to a list of elements where to
-    ! apply the above cubature rule. All elements shall be in the element set
-    ! ielementDistr!
-    integer :: h_IelementList = ST_NOHANDLE
-    
-    ! Ownership flag. This flag is set to .true. by the routines in this module
-    ! if h_IelementList is internally created. Assures that
-    ! easminfo_releaseInfoStructure does not accidentally release memory
-    ! that was not allocated here.
-    logical :: blocalElementList = .false.
+    ! An array that takes coordinates of the cubature formula on the reference element.
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
     
   end type
   
@@ -97,106 +79,123 @@ module extstdassemblyinfo
 
 !<typeblock>
   
-  ! Contains information that configures the assembly of matrices and vectors.
-  type t_extScalarAssemblyInfo
-  
-    ! Number of assembly information blocks in p_RinfoBlocks.
-    integer :: ninfoBlockCount = 0
+  ! Standard information for evaluating FE basis functions in
+  ! a set of cubature points on a set of elements.
+  type t_stdFEBasisEvalData
+
+    ! Element ID
+    integer(I32) :: celement = EL_UNDEFINED    
     
-    ! A list of assembly information blocks.
-    type(t_extScalarAssemblyInfoBlock), dimension(:), pointer :: p_RinfoBlocks => null()
-  
+    ! Number of local DOF`s
+    integer :: ndofLocal = 0
+
+    ! Number of vertices per element
+    integer :: NVE = 0
+    
+    ! Highest supported derivative ID
+    integer :: nmaxderivative = 0
+    
+    ! Number of points on each element
+    integer :: npoints = 0
+    
+    ! Number of elements simultaneously supported
+    ! by this structure
+    integer :: nelements = 0
+
+    ! Type of transformation
+    integer(I32) :: ctrafoType = TRAFO_ID_UNKNOWN
+
+    ! Arrays saving the DOF`s in the elements
+    integer, dimension(:,:), pointer :: p_Idofs
+
+    ! Arrays for the basis function values in the points.
+    ! dimension(ndofLocal,nmaxderivative,npoints,nelements)
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    
   end type
   
 !</typeblock>
 
 !</types>
 
-  public :: t_extScalarAssemblyInfoBlock
-  public :: t_extScalarAssemblyInfo
-  public :: easminfo_createDefInfoStructure
-  public :: easminfo_releaseInfoStructure
+!<constants>
+
+!</constants>
+
+  public :: t_stdCubatureData
+  public :: easminfo_initStdCubature
+  public :: easminfo_doneStdCubature
   
+  public :: t_stdFEBasisEvalData
+  public :: easminfo_initStdFEBasisEval
+  public :: easminfo_doneStdFEBasisEval
+    
 contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine easminfo_createDefInfoStructure (rdiscretisation, rassemblyInfo, &
-      idepCubatureType)
+  subroutine easminfo_initStdCubature (ccubature,rcubatureInfo)
   
 !<description>
-  ! Creates a default assembly information structure based on a discretisation.
-  ! All elements in an element set are assembled with the same cubature formula.
+  ! Initialises the standard cubature structure.
 !</description>
 
 !<input>
-  ! A discretisation structure, the assembly information structure should be
-  ! associated to.
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-  
-  ! OPTIONAL: Compatibility flag. If present, this identifier allows to transfer
-  ! a specific cubature formula from the (deprecated) discretisation structure
-  ! to the assembly structure.
-  ! =0: Transfer ccubTypeBilForm.
-  ! =1: Transfer ccubTypeLinForm.
-  ! =2: Transfer ccubTypeEval.
-  integer, intent(in), optional :: idepCubatureType
+  ! ID of the cubature rule to be used.
+  integer(I32), intent(in) :: ccubature
 !</input>
 
-!<output>
-  ! Assembly information structure to be created.
-  type(t_extScalarAssemblyInfo), intent(out) :: rassemblyInfo
-!</output>
+!<inputoutput>
+  ! Structure to be set up.
+  type(t_stdCubatureData), intent(out) :: rcubatureInfo
+!</inputoutput>
 
 !</subroutine>
-    ! local variables
-    integer :: i
 
-    ! We take as many blocks as element sets.
-    rassemblyInfo%ninfoBlockCount = rdiscretisation%inumFESpaces
-    allocate(rassemblyInfo%p_RinfoBlocks(rassemblyInfo%ninfoBlockCount))
+    ! Cubature rule ID.
+    rcubatureInfo%ccubature = ccubature
+
+    ! Get the number of cubature points for the cubature formula
+    rcubatureInfo%ncubp = cub_igetNumPts(ccubature)
+
+    ! Allocate two arrays for the points and the weights
+    allocate(rcubatureInfo%p_Domega(rcubatureInfo%ncubp))
+    allocate(rcubatureInfo%p_DcubPtsRef(&
+        cub_igetCoordDim(ccubature),rcubatureInfo%ncubp))
     
-    ! Loop through the element sets and insert the default cubature formula.
-    do i = 1,rassemblyInfo%ninfoBlockCount
-      rassemblyInfo%p_RinfoBlocks(i)%ielementDistr = i
-      
-      ! Handle all elements in the same way...
-      rassemblyInfo%p_RinfoBlocks(i)%celementListQuantifier = 1
-      
-      ! Standard cubature formula for that element set.
-      rassemblyInfo%p_RinfoBlocks(i)%ccubature = &
-          spdiscr_getStdCubature(rdiscretisation%RelementDistr(i)%celement)
-          
-      rassemblyInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
-      
-      rassemblyInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
-      
-      ! Probably fetch the DEPRECATED cubature formula from the
-      ! discretisation structure.
-      if (present(idepCubatureType)) then
-        select case (idepCubatureType)
-        case (0)
-          if (rdiscretisation%RelementDistr(i)%ccubTypeBilForm .ne. 0) then
-            rassemblyInfo%p_RinfoBlocks(i)%ccubature = &
-                rdiscretisation%RelementDistr(i)%ccubTypeBilForm
-          end if
+    ! Get the cubature formula
+    call cub_getCubature(ccubature,rcubatureInfo%p_DcubPtsRef,rcubatureInfo%p_Domega)
 
-        case (1)
-          if (rdiscretisation%RelementDistr(i)%ccubTypeLinForm .ne. 0) then
-            rassemblyInfo%p_RinfoBlocks(i)%ccubature = &
-                rdiscretisation%RelementDistr(i)%ccubTypeLinForm
-          end if
+  end subroutine
 
-        case (2)
-          if (rdiscretisation%RelementDistr(i)%ccubTypeEval .ne. 0) then
-            rassemblyInfo%p_RinfoBlocks(i)%ccubature = &
-                rdiscretisation%RelementDistr(i)%ccubTypeEval
-          end if
-        end select
-      end if
-    end do
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine easminfo_doneStdCubature (rcubatureInfo)
+  
+!<description>
+  ! Cleans up a standard cubature structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_stdCubatureData), intent(inout) :: rcubatureInfo
+!</inputoutput>
+
+!</subroutine>
+
+    ! Cubature rule ID.
+    rcubatureInfo%ccubature = CUB_UNDEFINED
+
+    ! Get the number of cubature points for the cubature formula
+    rcubatureInfo%ncubp = 0
+
+    ! Allocate two arrays for the points and the weights
+    deallocate(rcubatureInfo%p_Domega)
+    deallocate(rcubatureInfo%p_DcubPtsRef)
     
   end subroutine
 
@@ -204,32 +203,93 @@ contains
 
 !<subroutine>
 
-  subroutine easminfo_releaseInfoStructure (rassemblyInfo)
+  subroutine easminfo_initStdFEBasisEval (celement,&
+      nmaxderivative,npoints,nelements,rfeBasisEvalData)
   
 !<description>
-  ! Cleans up an assembly information structure.
+  ! Initialises the standard cubature structure.
+!</description>
+
+!<input>
+  ! ID of the element to be used.
+  integer(I32), intent(in) :: celement
+  
+  ! Highest derivative ID which will occur during the evaluation
+  integer, intent(in) :: nmaxderivative
+
+  ! Number of points on each element.
+  integer, intent(in) :: npoints
+  
+  ! Maximum supported number of elements.
+  integer, intent(in) :: nelements
+!</input>
+
+!<output>
+  ! Structure to be set up.
+  type(t_stdFEBasisEvalData), intent(out) :: rfeBasisEvalData
+!</output>
+
+!</subroutine>
+
+    ! Element ID.
+    rfeBasisEvalData%celement = celement
+
+    ! Get the number of local DOF`s for trial and test functions
+    rfeBasisEvalData%ndofLocal = elem_igetNDofLoc(celement)
+
+    ! Get the number of vertices of the element, specifying the transformation
+    ! form the reference to the real element.
+    rfeBasisEvalData%NVE = elem_igetNVE(celement)
+    
+    ! Get from the element space the type of coordinate system
+    ! that is used there:
+    rfeBasisEvalData%ctrafoType = elem_igetTrafoType(celement)
+    
+    ! Number of points and number of elements.
+    rfeBasisEvalData%npoints = npoints
+    rfeBasisEvalData%nelements = nelements
+    
+    ! Maximum supported derivative
+    rfeBasisEvalData%nmaxDerivative = nmaxderivative
+
+    ! Allocate memory for the DOF`s of all the elements.
+    allocate(rfeBasisEvalData%p_Idofs(rfeBasisEvalData%ndofLocal,nelements))
+
+    ! Allocate arrays for the values of the test functions.
+    allocate(rfeBasisEvalData%p_Dbas(rfeBasisEvalData%ndofLocal,&
+             rfeBasisEvalData%nmaxDerivative,npoints,nelements))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine easminfo_doneStdFEBasisEval (rfeBasisEvalData)
+  
+!<description>
+  ! Cleans up a standard structure for the evaluation of FE basis functions.
 !</description>
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_extScalarAssemblyInfo), intent(inout) :: rassemblyInfo
+  type(t_stdFEBasisEvalData), intent(inout) :: rfeBasisEvalData
 !</inputoutput>
 
 !</subroutine>
-    ! local variables
-    integer :: i
 
-    ! Loop through the element sets and release memory
-    do i = 1,rassemblyInfo%ninfoBlockCount
-      ! Release memory if necessary -- and if the memory belongs to us
-      if ((rassemblyInfo%p_RinfoBlocks(i)%h_IelementList .ne. ST_NOHANDLE) .and.&
-          rassemblyInfo%p_RinfoBlocks(i)%blocalElementList) then
-        call storage_free(rassemblyInfo%p_RinfoBlocks(i)%h_IelementList)
-      end if
-    end do
+    rfeBasisEvalData%celement = EL_UNDEFINED
+    rfeBasisEvalData%ndofLocal = 0
+    rfeBasisEvalData%NVE = 0
+    rfeBasisEvalData%ctrafoType = TRAFO_ID_UNKNOWN
+    rfeBasisEvalData%npoints = 0
+    rfeBasisEvalData%nelements = 0
+    rfeBasisEvalData%nmaxDerivative = 0
     
-    deallocate(rassemblyInfo%p_RinfoBlocks)
-
+    deallocate(rfeBasisEvalData%p_Dbas)
+    deallocate(rfeBasisEvalData%p_Idofs)
+    
   end subroutine
+
 
 end module

@@ -20029,6 +20029,11 @@ contains
 
 !</subroutine>
 
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"lsyssc_matrixLinearComb2")
+#endif
+
     call lsyssc_matrixLinearComb(rmatrixA,rmatrixB,ca,cb,&
         bmemory,bsymb,bnumb,bisExactStructure,rmatrixC,rperfconfig)
 

@@ -46,6 +46,7 @@ module spdiscprojection
   use spatialdiscretisation
   use storage
   use triangulation
+  use cubature
   
   implicit none
 
@@ -1086,8 +1087,7 @@ contains
       
       call spdiscr_deriveDiscr_triquad(&
           rsourceVector%p_rspatialDiscr,&
-          EL_P1,EL_Q1,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
-          rdestDiscretisation)
+          EL_P1,EL_Q1,rdestDiscretisation)
     
     end if
     

@@ -86,6 +86,7 @@
 !# 15.) elem_getName
 !#      -> Returns the name of an element as a string.
 !#
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
@@ -1563,7 +1564,7 @@ contains
 !</input>
 
 !<result>
-  ! The maximum derivative of that element. <= MAX_NDER.
+  ! Identifier for the transformation from the reference to the real element.
 !</result>
 
 !</function>
@@ -2066,6 +2067,11 @@ contains
   real(DP), dimension(size(Dbas,1),size(Dbas,2),1,1) :: Dbas2
   type(t_evalElementSet) :: reval
   type(t_perfconfig), target :: rperfconfig
+
+!#if WARN_DEPREC
+!    call output_line ("Using deprecated feature. Please update your code.", &
+!        OU_CLASS_WARNING,OU_MODE_STD,"elem_generic1")
+!#endif
 
     ! Take care of the 1D PN element
     if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
@@ -2668,6 +2674,11 @@ contains
 
   type(t_perfconfig) :: rperfconfig
   integer :: i
+
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"elem_generic_sim1")
+#endif
 
     ! Choose the right element subroutine to call.
     select case (celement)

@@ -74,7 +74,6 @@ module trilinearformevaluation
   use domainintegration
   use element
   use elementpreprocessing
-  use extstdassemblyinfo
   use fsystem
   use genoutput
   use linearalgebra
@@ -2152,7 +2151,7 @@ contains
 !<subroutine>
 
   recursive subroutine trilf_buildMatrixScalar2 (rform, bclear, rmatrix, rvector,&
-      fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo,rperfconfig)
+      fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -2215,10 +2214,9 @@ contains
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
 
-  ! OPTIONAL: A scalar assembly structure that gives additional information
-  ! about how to set up the matrix (e.g. cubature formula). If not specified,
-  ! default settings are used.
-  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2235,10 +2233,10 @@ contains
   ! local variables
   type(t_matrixScalar) :: rmatrixBackup
   type(t_trilfMatrixAssembly) :: rmatrixAssembly
-  integer :: ielementDistr,iinfoBlock
+  integer :: ielementDistr,icubatureBlock,NEL
   integer, dimension(:), pointer :: p_IelementList
-  type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
-  type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -2274,14 +2272,14 @@ contains
     call sys_halt()
   end if
   
-  ! If we do not have it, create a scalar assembly info structure that
+  ! If we do not have it, create a cubature info structure that
   ! defines how to do the assembly.
-  if (.not. present(rscalarAssemblyInfo)) then
-    call easminfo_createDefInfoStructure(rmatrix%p_rspatialDiscrTrial,&
-        rlocalScalarAssemblyInfo,0)
-    p_rscalarAssemblyInfo => rlocalScalarAssemblyInfo
+  if (.not. present(rcubatureInfo)) then
+    call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+        rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+    p_rcubatureInfo => rtempCubatureInfo
   else
-    p_rscalarAssemblyInfo => rscalarAssemblyInfo
+    p_rcubatureInfo => rcubatureInfo
   end if
 
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -2309,36 +2307,23 @@ contains
           if (bclear) call lsyssc_clearMatrix (rmatrix)
         end if
       
-        ! Loop over the element blocks to discretise
-        do iinfoBlock = 1,p_rscalarAssemblyInfo%ninfoBlockCount
+        ! Loop over the cubature blocks to discretise
+        do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
         
-          ! Get the elemetn distribution of that block.
-          ielementDistr = p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
-
+          ! Get information about that block.
+          call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
+              rvector%p_rspatialDiscr,ielementDistr,NEL=NEL,p_IelementList=p_IelementList)
+        
           ! Check if element distribution is empty
-          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL .le. 0 ) cycle
-
-          ! Get list of elements present in the element distribution.
-          ! If the handle of the info block structure is not associated,
-          ! take all elements of the corresponding element distribution.
-          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList .ne. ST_NOHANDLE) then
-            call storage_getbase_int(&
-                p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList,&
-                p_IelementList)
-          else
-            call storage_getbase_int(&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
-                p_IelementList)
-          end if
+          if (NEL .le. 0 ) cycle
 
           ! Initialise a matrix assembly structure for that element distribution
           call trilf_initAssembly(rmatrixAssembly,rform,&
               rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
               rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
-              min(p_rperfconfig%NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL),&
-              rperfconfig)
+              p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature,&
+              min(p_rperfconfig%NELEMSIM,NEL),rperfconfig)
               
           ! Assemble the data for all elements in this element distribution
           call trilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,rvector,&
@@ -2365,7 +2350,7 @@ contains
       
       ! Create the matrix in structure 9
       call trilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup, rvector,&
-          fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo,&
+          fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,&
           rperfconfig)
       
       ! Convert back to structure 7
@@ -2391,8 +2376,8 @@ contains
   end select
   
   ! Release the assembly structure if necessary.
-  if (.not. present(rscalarAssemblyInfo)) then
-    call easminfo_releaseInfoStructure(rlocalScalarAssemblyInfo)
+  if (.not. present(rcubatureInfo)) then
+    call spdiscr_releaseCubStructure(rtempCubatureInfo)
   end if
 
   end subroutine
