@@ -43,6 +43,9 @@ module heatcond_basic
     ! An object specifying the discretisation (trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+
     ! The static matrix (containing Laplace, convection,...) which does not
     ! change in time.
     type(t_matrixBlock) :: rmatrixStatic

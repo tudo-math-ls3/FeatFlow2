@@ -182,7 +182,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
+  ! 7.) Write solution to VTK file
   ! 8.) Release all variables, finish
 !</description>
 

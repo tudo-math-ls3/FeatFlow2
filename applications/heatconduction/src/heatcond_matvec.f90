@@ -98,6 +98,8 @@ contains
     real(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
     character(LEN=10) :: Sstr
   
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
   
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -174,6 +176,9 @@ contains
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
     
+      ! Get the cubature information structure
+      p_rcubatureInfo => rproblem%RlevelInfo(i)%rcubatureInfo
+    
       ! -------------------------------------------------------------
       ! Laplace matrix
     
@@ -205,8 +210,8 @@ contains
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
-                                   p_rmatrixStatic%RmatrixBlock(1,1),coeff_heatcond,&
-                                   rproblem%rcollection)
+          p_rmatrixStatic%RmatrixBlock(1,1),p_rcubatureInfo,&
+          coeff_heatcond,rproblem%rcollection)
 
       ! -------------------------------------------------------------
       ! Mass matrix
@@ -229,7 +234,7 @@ contains
       
       ! Now we can build the matrix entries of the mass matrix.
       call bilf_buildMatrixScalar (rformmass,.true.,&
-                                   p_rmatrixMass%RmatrixBlock(1,1))
+          p_rmatrixMass%RmatrixBlock(1,1),p_rcubatureInfo)
 
       ! -------------------------------------------------------------
       ! System matrix.
@@ -263,7 +268,8 @@ contains
     call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
 
     ! Reserve memory for all the vectors on the finest level.
-    call lsysbl_createVecBlockIndMat (p_rmatrixStatic,p_rrhs, .false.)
+    p_rdiscretisation => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscretisation
+    call lsysbl_createVectorBlock(p_rdiscretisation,p_rrhs,.true.)
 
     ! -------------------------------------------------------------
     ! Matrix resorting
@@ -333,6 +339,9 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
@@ -347,8 +356,10 @@ contains
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
+    ! Get discretisation and cubature information structure
     p_rdiscretisation => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscretisation
-    
+    p_rcubatureInfo => rproblem%RlevelInfo(rproblem%ilvmax)%rcubatureInfo
+
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the
     ! first block.
@@ -357,9 +368,8 @@ contains
     ! so the callback routine has access to everything what is
     ! in the collection.
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              rrhs%RvectorBlock(1),coeff_RHS,&
-              rproblem%rcollection)
+        rlinform,.true.,rrhs%RvectorBlock(1),p_rcubatureInfo,&
+        coeff_RHS,rproblem%rcollection)
     
     ! Remove the "TIME"-parameter from the collection again.
     call collct_deletevalue (rproblem%rcollection,'TIME')

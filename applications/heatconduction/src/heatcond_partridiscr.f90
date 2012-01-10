@@ -176,6 +176,12 @@ contains
                   EL_E011,CUB_G2X2, &
                   p_rtriangulation, p_rboundary)
 
+      ! Create an assembly information structure on each level which tells the code
+      ! the cubature formula to use. Standard: Gauss 3x3.
+      call spdiscr_createDefCubStructure(&  
+          p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
+          CUB_GEN_AUTO_G3)
+
     end do
                                    
   end subroutine
@@ -207,6 +213,9 @@ contains
       
       ! and remove the allocated block discretisation structure from the heap.
       deallocate(rproblem%RlevelInfo(i)%p_rdiscretisation)
+      
+      ! Release the cubature info structures
+      call spdiscr_releaseCubStructure(rproblem%RlevelInfo(i)%rcubatureInfo)
     end do
     
   end subroutine

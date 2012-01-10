@@ -15,7 +15,7 @@
 !#     -> Calculate the solution of the next timestep.
 !#
 !# 3.) hc5_postprocessing
-!#     -> Perform postprocessing (write GMV`s,...)
+!#     -> Perform postprocessing (write VTK`s,...)
 !#
 !# 4.) hc5_timeloop
 !#     Start the nonstationary solver, perform the time stepping.
@@ -255,7 +255,7 @@ contains
   subroutine hc5_postprocessing (rproblem,rvector,iiteration,dtime)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Writes the solution into a VTK file.
 !</description>
 
 !<input>
@@ -281,7 +281,7 @@ contains
     ! We need some more variables for postprocessing
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
 
     ! A pointer to the solution vector and to the triangulation.
@@ -293,9 +293,9 @@ contains
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing.
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(rproblem%sucddir)//'/u5.gmv.'//trim(sys_si0L(iiteration,5)))
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       trim(rproblem%sucddir)//'/u5.vtk.'//trim(sys_si0L(iiteration,5)))
     call ucd_setSimulationTime (rexport,dtime)
     
     call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
