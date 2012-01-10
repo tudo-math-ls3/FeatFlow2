@@ -56,6 +56,9 @@ module poisson2d_method2
 
     ! An object specifying the discretisation (trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     ! A matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form. The matrix will receive the discrete Laplace operator.
@@ -92,7 +95,7 @@ module poisson2d_method2
     ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
-    
+
   end type
 
 !</typeblock>
@@ -122,6 +125,8 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -171,6 +176,8 @@ contains
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! An object for saving the domain:
@@ -178,14 +185,18 @@ contains
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
-    
+
     ! An object for the spatial discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
     rboundary => rproblem%rboundary
     p_rtriangulation => rproblem%RlevelInfo(1)%rtriangulation
+    p_rcubatureInfo => rproblem%RlevelInfo(1)%rcubatureInfo
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -201,11 +212,17 @@ contains
     ! p_rdiscretisation%Rdiscretisations is a list of scalar
     ! discretisation structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
-    ! and cubature rule for this solution component:
+    ! for this solution component:
     call spdiscr_initDiscr_simple ( &
                  p_rdiscretisation%RspatialDiscr(1), &
-                 EL_E011,CUB_G2X2, &
-                 p_rtriangulation, rboundary)
+                 EL_Q1,p_rtriangulation, rboundary)
+
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! Create an assembly information structure which tells the code
+    ! the cubature formula to use. Standard: Gauss 3x3.
+    call spdiscr_createDefCubStructure(&  
+        p_rdiscretisation%RspatialDiscr(1),p_rcubatureInfo,CUB_GEN_AUTO_G3)
 
   end subroutine
 
@@ -227,6 +244,8 @@ contains
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! A bilinear and linear form describing the analytic problem to solve
@@ -240,8 +259,13 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
+    
+    p_rcubatureInfo => rproblem%RlevelInfo(1)%rcubatureInfo
     
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs
@@ -292,16 +316,14 @@ contains
     ! so the callback routine has access to everything what is
     ! in the collection.
     call bilf_buildMatrixScalar (rform,.true.,&
-                                 p_rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D,&
-                                 rproblem%rcollection)
+        p_rmatrix%RmatrixBlock(1,1),p_rcubatureInfo,rcollection=rproblem%rcollection)
     
-    ! Now we want to build up the right hand side. At first we need a block
-    ! vector of the right structure. Although we could manually create
-    ! that vector, the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    
-    ! The vector structure is done but the entries are missing.
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
+
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -316,15 +338,8 @@ contains
     ! so the callback routine has access to everything what is
     ! in the collection.
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS_2D,&
-              rproblem%rcollection)
-    
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution.
-    ! Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
+              rlinform,.true.,p_rrhs%RvectorBlock(1),p_rcubatureInfo,&
+              coeff_RHS_2D,rproblem%rcollection)
     
   end subroutine
 
@@ -344,6 +359,7 @@ contains
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
+!</subroutine>
   ! local variables
 
     ! A pointer to the system matrix and the RHS vector as well as
@@ -363,7 +379,7 @@ contains
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
-    ! From the matrix or the RHS we have access to the discretisation and the
+    ! From the matrix or the RHS we have access to the discretisation
     ! boundary conditions.
     p_rdiscretisation => p_rmatrix%p_rblockDiscrTest
     
@@ -412,14 +428,14 @@ contains
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
 
-    ! Hang the pointer into the vectors and the matrix. That way, these
+    ! Assign the BC`s to the vectors and the matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
     p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
-    
-    p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
-    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
-    p_rvector%p_rdiscreteBC => p_rdiscreteBC
+
+    call lsysbl_assignDiscreteBC(p_rmatrix,p_rdiscreteBC)
+    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
+    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
                 
   end subroutine
 
@@ -437,6 +453,8 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -476,6 +494,8 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
 
@@ -540,10 +560,19 @@ contains
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    call linsol_initStructure (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-    call linsol_initData (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initStructure (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -561,7 +590,7 @@ contains
     
     ! Release the temporary vector
     call lsysbl_releaseVector (rtempBlock)
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -571,7 +600,7 @@ contains
   subroutine pm3_postprocessing (rproblem)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Writes the solution into a VTK file.
 !</description>
 
 !<inputoutput>
@@ -579,14 +608,19 @@ contains
   type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! We need some more variables for postprocessing.
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
+
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     ! A pointer to the solution vector and to the triangulation.
     type(t_vectorBlock), pointer :: p_rvector
@@ -597,6 +631,9 @@ contains
 
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%RlevelInfo(1)%rvector
+    
+    ! Get the cubature information structure
+    p_rcubatureInfo => rproblem%RlevelInfo(1)%rcubatureInfo
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
@@ -609,9 +646,9 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(sucddir)//'/u2d_2.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       trim(sucddir)//'/u2d_2.vtk')
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -621,11 +658,11 @@ contains
     call ucd_release (rexport)
     
     ! Calculate the error to the reference function.
-    call pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+    call pperr_scalar (PPERR_L2ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    call pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+    call pperr_scalar (PPERR_H1ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
@@ -700,6 +737,9 @@ contains
 
 !</subroutine>
 
+    ! Release the cubature info structure.
+    call spdiscr_releaseCubStructure(rproblem%RlevelInfo(1)%rcubatureInfo)
+
     ! Delete the block discretisation together with the associated
     ! scalar spatial discretisations...
     call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(1)%p_rdiscretisation)
@@ -758,7 +798,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
+  ! 7.) Write solution to VTK file
   ! 8.) Release all variables, finish
 !</description>
 

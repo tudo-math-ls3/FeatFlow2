@@ -139,6 +139,9 @@ contains
     
     ! An object for the spatial discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
@@ -155,15 +158,23 @@ contains
     ! p_rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
-    ! and cubature rule for this solution component:
+    ! for this solution component:
     call spdiscr_initDiscr_simple (p_rdiscretisation%RspatialDiscr(1), &
-                                   EL_E011,CUB_G2X2, &
-                                   p_rtriangulation, rboundary)
+                                   EL_Q1,p_rtriangulation, rboundary)
                                    
     ! Add the discretisation structure to the collection so that
     ! we can use it later.
     call collct_setvalue_bldiscr(rcollection,'DISCR2D',p_rdiscretisation,.true.)
     
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! Create an assembly information structure which tells the code
+    ! the cubature formula to use. Standard: Gauss 3x3.
+    allocate(p_rcubatureInfo)    
+    call spdiscr_createDefCubStructure(&  
+        p_rdiscretisation%RspatialDiscr(1),p_rcubatureInfo,CUB_GEN_AUTO_G3)
+    call collct_setvalue_cubinfo(rcollection,'CUBINFO2D',p_rcubatureInfo,.true.)
+
   end subroutine
 
   ! ***************************************************************************
@@ -201,8 +212,14 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! Ask the collection to give us the discretisation structure
     p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
+
+    ! Get the cubature information structure
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
     
     ! Create the matrix and the vectors on the heap
     allocate(p_rmatrix)
@@ -213,6 +230,12 @@ contains
     ! the discretisation.
     call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
     
+    ! Save matrix and vectors to the collection.
+    ! They maybe used later, expecially in nonlinear problems.
+    call collct_setvalue_vec(rcollection,'RHS',p_rrhs,.true.)
+    call collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.true.)
+    call collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.true.)
+
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create that directly in the block (1,1) of the block matrix
@@ -244,14 +267,13 @@ contains
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical data.
     call bilf_buildMatrixScalar (rform,.true.,&
-                                 p_rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
+        p_rmatrix%RmatrixBlock(1,1),p_rcubatureInfo)
     
-    ! Now we want to build up the right hand side. At first we need a block
-    ! vector of the right structure. Although we could manually create
-    ! that vector, the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
+
     ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
@@ -263,19 +285,8 @@ contains
     ! the block vector using the discretisation structure of the
     ! first block.
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS_2D)
-    
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution.
-    ! Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
-    
-    ! Save matrix and vectors to the collection.
-    call collct_setvalue_vec(rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.true.)
-    call collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.true.)
+              rlinform,.true.,p_rrhs%RvectorBlock(1),p_rcubatureInfo,&
+              coeff_RHS_2D)
     
   end subroutine
 
@@ -445,6 +456,9 @@ contains
 !</subroutine>
 
   ! local variables
+
+    ! Error indicator during initialisation of the solver
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
@@ -463,10 +477,7 @@ contains
     ! the linear solver.
     type(t_matrixBlock), dimension(1) :: Rmatrices
 
-    ! Error indicator during initialisation of the solver
-    integer :: ierror
-
-    ! Get our matrix and right hand side from the collection.
+    ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
     p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
     p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
@@ -508,9 +519,18 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -538,7 +558,7 @@ contains
   subroutine pm2_postprocessing (rcollection)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Writes the solution into a VTK file.
 !</description>
 
 !<inputoutput>
@@ -554,9 +574,12 @@ contains
     ! We need some more variables for postprocessing
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
+
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     ! A pointer to the solution vector and to the triangulation.
     type(t_vectorBlock), pointer :: p_rvector
@@ -567,6 +590,9 @@ contains
 
     ! Get the solution vector from the collection.
     p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
+    
+    ! Get the cubature information structure
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
@@ -579,9 +605,9 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(sucddir)//'/u2d_2_collect.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       trim(sucddir)//'/u2d_2_collect.vtk')
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -591,11 +617,11 @@ contains
     call ucd_release (rexport)
     
     ! Calculate the error to the reference function.
-    call pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+    call pperr_scalar (PPERR_L2ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    call pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+    call pperr_scalar (PPERR_H1ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
@@ -705,6 +731,9 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
+      ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! Ask the collection to give us the discretisation structure
     p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
     
@@ -716,6 +745,18 @@ contains
     
     ! and remove it from the collection.
     call collct_deletevalue (rcollection,'DISCR2D')
+
+    ! A pointer to the cubature information structure with the data.    
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
+    
+    ! Delete the structure...
+    call spdiscr_releaseCubStructure(p_rcubatureInfo)
+    
+    ! remove the allocated block discretisation structure
+    deallocate(p_rcubatureInfo)
+    
+    ! and remove it from the collection.
+    call collct_deletevalue (rcollection,'CUBINFO2D')
     
   end subroutine
     
@@ -783,7 +824,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
+  ! 7.) Write solution to VTK file
   ! 8.) Release all variables, finish
 !</description>
 

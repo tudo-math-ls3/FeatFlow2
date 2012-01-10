@@ -61,6 +61,9 @@ module poisson2d_method1_l2prj
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+    
     ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
@@ -108,7 +111,7 @@ contains
   !  6.) Create solver structure
   !  7.) Solve the problem
   !  8.) Perform L2-Projection of the solution to Q1 space
-  !  9.) Write solution to GMV file
+  !  9.) Write solution to VTK file
   ! 10.) Release all variables, finish
 !</description>
 
@@ -177,7 +180,7 @@ contains
     ! Error of FE function to reference function
     real(DP) :: derror
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
@@ -194,6 +197,10 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
     
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Read the domain, read the mesh, refine
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
@@ -228,6 +235,11 @@ contains
     
     end do
 
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up discretisation structures which tells the code which
+    ! finite element to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
@@ -240,13 +252,30 @@ contains
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
-    ! and cubature rule for this solution component:
+    ! for this solution component:
     do i = NLMIN, NLMAX
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_EB30,CUB_G3X3,Rlevels(i)%rtriangulation, rboundary)
+          EL_EB30,Rlevels(i)%rtriangulation, rboundary)
     end do
-                 
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! Create an assembly information structure on each level which tells the code
+    ! the cubature formula to use. Standard: Gauss 3x3.
+    do i = NLMIN, NLMAX
+      call spdiscr_createDefCubStructure(&  
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),Rlevels(i)%rcubatureInfo,&
+          CUB_GEN_AUTO_G3)
+    end do                   
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create a 1x1 block matrix with the operator on every level
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -289,15 +318,20 @@ contains
       ! the framework will call the callback routine to get analytical
       ! data.
       call bilf_buildMatrixScalar (rform,.true.,&
-           Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
+           Rlevels(i)%rmatrix%RmatrixBlock(1,1),Rlevels(i)%rcubatureInfo)
     
     end do
       
-    ! Although we could manually create the solution/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create RHS and solution vectors
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    ! Next step: Create a RHS vector, a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rrhsBlock,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvectorBlock,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rtempBlock,.true.)
+      
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
@@ -311,8 +345,11 @@ contains
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-        rlinform,.true.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
+        rlinform,.true.,rrhsBlock%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_2D)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     do i = NLMIN, NLMAX
     
@@ -343,25 +380,21 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Hang the pointer into the matrix. That way, these
+      ! Assign the BC`s to the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
-      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
+      call lsysbl_assignDiscreteBC(Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
   
       ! Also implement the boundary conditions into the matrix.
       call matfil_discreteBC (Rlevels(i)%rmatrix)
       
     end do
 
-    ! Our right-hand-side also needs to know the boundary conditions.
-    rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
-    
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution and
-    ! temporary data. Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
-    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
-    
+    ! Our right-hand-side/solution/temp vectors also needs to 
+    ! know the boundary conditions.
+    call lsysbl_assignDiscreteBC(rrhsBlock,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvectorBlock,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rtempBlock,Rlevels(NLMAX)%rdiscreteBC)
+
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
@@ -394,7 +427,7 @@ contains
       
       ! Assemble the mass matrix
       call stdop_assembleSimpleMatrix(Rlevels(i)%rmatrixMass,&
-                                      DER_FUNC, DER_FUNC)
+          DER_FUNC, DER_FUNC, rcubatureInfo=Rlevels(i)%rcubatureInfo)
 
       ! Now create the matrix structure of the 2-Level mass matrix.
       call mlop_create2LvlMatrixStruct(&
@@ -428,6 +461,10 @@ contains
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! L2-projection for Multigrid is set up now
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a linear solver
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Now we have to build up the level information for multigrid.
@@ -498,10 +535,23 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-    call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Solve the system
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
@@ -512,11 +562,11 @@ contains
     ! That is it, rvectorBlock now contains our solution.
 
     ! Calculate the error to the reference function.
-    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
+    call pperr_scalar (PPERR_L2ERROR,derror,rvectorBlock%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
+    call pperr_scalar (PPERR_H1ERROR,derror,rvectorBlock%RvectorBlock(1),&
                        getReferenceFunction_2D)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
@@ -572,7 +622,7 @@ contains
     ! Q1 solution v_h...
     !
     ! The first thing that we need is a Q1 discretisation on the fine mesh.
-    call spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, CUB_G3X3, &
+    call spdiscr_initDiscr_simple(rdiscrQ1, EL_Q1, &
                                   Rlevels(NLMAX)%rtriangulation, rboundary)
 
     ! Now create the the matrix structure of N.
@@ -582,7 +632,8 @@ contains
         LSYSSC_MATRIX9, rmatrixMassPrj, rdiscrQ1)
 
     ! And assemble the mass matrix entries of N:
-    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
+    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC,&
+        rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
 
     ! We need to create the Q1 coefficient vector y:
     call lsyssc_createVecByDiscr (rdiscrQ1, rvecSolQ1, .true.)
@@ -600,7 +651,8 @@ contains
 
     ! As rmatrixMassPrj is free now, we will use it to store M
     call bilf_createMatrixStructure (rdiscrQ1,LSYSSC_MATRIX9,rmatrixMassPrj)
-    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC)
+    call stdop_assembleSimpleMatrix(rmatrixMassPrj, DER_FUNC, DER_FUNC,&
+        rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     
     ! We now have assembled the Q1 mass matrix M, created a Q1 solution
     ! vector y and calculated the right-hand-side vector r := N*x.
@@ -670,14 +722,16 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! L2-projection of solution into Q1 space done
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Postprocessing of the solution
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_l2prj.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_l2prj.vtk')
     
     ! Add our Q1-solution to the UCD exporter:
     call lsyssc_getbase_double (rvecSolQ1,p_Ddata)
@@ -687,9 +741,13 @@ contains
     call ucd_write (rexport)
     call ucd_release (rexport)
     
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Clean up
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
-    !
+
     ! Release the three Q1 vectors
     call lsyssc_releaseVector(rvecDefQ1)
     call lsyssc_releaseVector(rvecRhsQ1)
@@ -740,6 +798,11 @@ contains
     ! Release our discrete version of the boundary conditions
     do i = NLMAX, NLMIN, -1
       call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
+    end do
+
+    ! Release the cubature info structures
+    do i=NLMAX,NLMIN,-1
+      call spdiscr_releaseCubStructure(Rlevels(i)%rcubatureInfo)
     end do
 
     ! Release the discretisation structure and all spatial discretisation

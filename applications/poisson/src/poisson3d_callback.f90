@@ -12,39 +12,32 @@
 !#
 !# --- 3D version ---
 !#
-!# 1.) coeff_Laplace_3D
-!#     -> Returns the coefficients for the Laplace matrix. This routine is
-!#        only used if the problem to calculate has nonconstant coefficients!
-!#        Otherwise the routine is dead.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
-!#
-!# 2.) coeff_RHS_3D
+!# 1.) coeff_RHS_3D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 3D case, Q2 bubble solution.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) coeff_RHS_Sin3D
+!# 2.) coeff_RHS_Sin3D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 3D case, sinus bubble solution.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValuesMR_3D
+!# 3.) getBoundaryValuesMR_3D
 !#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_discretebc.inc'
 !#
-!# 5.) getReferenceFunction_3D
+!# 4.) getReferenceFunction_3D
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_3D, Q2 bubble solution.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 6.) getReferenceFunction_Sin3D
+!# 5.) getReferenceFunction_Sin3D
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_3D, sinus bubble solution.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
@@ -74,90 +67,6 @@ module poisson3d_callback
   implicit none
 
 contains
-
-! ***************************************************************************
-  !<subroutine>
-
-  subroutine coeff_Laplace_3D(rdiscretisationTrial,rdiscretisationTest,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(in)    :: rdiscretisationTrial
-    
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(in)    :: rdiscretisationTest
-
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(in)             :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in)                          :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in)                          :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in)       :: Dpoints
-    
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(#local DOF`s in trial space,nelements)
-    integer, dimension(:,:), intent(in)          :: IdofsTrial
-    
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(#local DOF`s in test space,nelements)
-    integer, dimension(:,:), intent(in)          :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in)          :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional  :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(out)      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-
-      Dcoefficients = 1.0_DP
-
-  end subroutine
 
   ! ***************************************************************************
 

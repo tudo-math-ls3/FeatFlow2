@@ -12,58 +12,51 @@
 !#
 !# --- 2D version ---
 !#
-!# 1.) coeff_Laplace_2D
-!#     -> Returns the coefficients for the Laplace matrix. This routine is
-!#        only used if the problem to calculate has nonconstant coefficients!
-!#        Otherwise the routine is dead.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
-!#
-!# 2.) coeff_RHS_2D
+!# 1.) coeff_RHS_2D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, Q2 bubble solution.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) coeff_RHS_Sin2D
+!# 2.) coeff_RHS_Sin2D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, sinus bubble solution.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValues_2D
+!# 3.) getBoundaryValues_2D
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 5.) getBoundaryValuesFBC_2D
+!# 4.) getBoundaryValuesFBC_2D
 !#     -> Returns analytic values in the inner of the domain on
 !#        fictitious boundary objects
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcfassembly.inc'
 !#
-!# 6.) getBoundaryValuesMR_2D
+!# 5.) getBoundaryValuesMR_2D
 !#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_discretebc.inc'
 !#
-!# 7.) getReferenceFunction_2D
+!# 6.) getReferenceFunction_2D
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_2D, Q2 bubble solution.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 8.) getReferenceFunction_Sin2D
+!# 7.) getReferenceFunction_Sin2D
 !#     -> Returns the values of the analytic function and its derivatives,
 !#        corresponding to coeff_RHS_Sin2D, sinus bubble solution.
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
 !#
-!# 9.) gethadaptMonitorFunction_2D
+!# 8.) gethadaptMonitorFunction_2D
 !#     -> Controls the grid adaption strategy in poisson2d_method1_hadapt.
 !#
 !# </purpose>
@@ -92,90 +85,6 @@ module poisson2d_callback
   implicit none
 
 contains
-
-! ***************************************************************************
-  !<subroutine>
-
-  subroutine coeff_Laplace_2D (rdiscretisationTrial,rdiscretisationTest,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTrial
-    
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisationTest
-
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(in)                            :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
-    
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(#local DOF`s in trial space,nelements)
-    integer, dimension(:,:), intent(in) :: IdofsTrial
-    
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(#local DOF`s in test space,nelements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-
-    Dcoefficients = 1.0_DP
-
-  end subroutine
 
   ! ***************************************************************************
 
@@ -894,6 +803,7 @@ contains
     type(t_vectorBlock)         :: rgradient,rgradientRef
     type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     real(DP)                    :: dsolutionError,dgradientError,daux
+    type(t_scalarCubatureInfo) :: rcubatureInfo
 
     ! Initialise block discretisations
     call spdiscr_initBlockDiscr (rdiscrBlock,2,&
@@ -906,71 +816,67 @@ contains
     case(1)
       ! Initialise spatial discretisations for gradient with P0-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+          EL_E000, rdiscrBlock%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
+          EL_E000, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+          EL_P1, rdiscrBlockRef%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
+          EL_P1, rdiscrBlockRef%RspatialDiscr(2))
       
     case(2)
       ! Initialise spatial discretisations for gradient with P1-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+          EL_P1, rdiscrBlock%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
+          EL_P1, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P2-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+          EL_E002, rdiscrBlockRef%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
+          EL_E002, rdiscrBlockRef%RspatialDiscr(2))
 
     case(11)
       ! Initialise spatial discretisations for gradient with Q0-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+          EL_E010, rdiscrBlock%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
+          EL_E010, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q1-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+          EL_Q1, rdiscrBlockRef%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
+          EL_Q1, rdiscrBlockRef%RspatialDiscr(2))
 
     case(13)
       ! Initialise spatial discretisations for gradient with Q1-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(1))
+          EL_Q1, rdiscrBlock%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%RspatialDiscr(2))
+          EL_Q1, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with Q2-elements
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(1))
+          EL_E013, rdiscrBlockRef%RspatialDiscr(1))
       call spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialDiscr,&
-          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%RspatialDiscr(2))
+          EL_E013, rdiscrBlockRef%RspatialDiscr(2))
 
     case(-1)
       ! Initialise spatial discretisations for gradient with P0/Q0-elements
       call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
-          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlock%RspatialDiscr(1))
+          EL_E000, EL_E010, rdiscrBlock%RspatialDiscr(1))
       call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
-          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlock%RspatialDiscr(2))
+          EL_E000, EL_E010, rdiscrBlock%RspatialDiscr(2))
       
       ! Initialise spatial discretisations for reference gradient with P1/Q1-elements
       call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
-          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlockRef%RspatialDiscr(1))
+          EL_P1, EL_Q1, rdiscrBlockRef%RspatialDiscr(1))
       call spdiscr_deriveDiscr_triquad (rsolution%p_rspatialDiscr,&
-          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
-          rdiscrBlockRef%RspatialDiscr(2))
+          EL_P1, EL_Q1, rdiscrBlockRef%RspatialDiscr(2))
       
     case DEFAULT
       call output_line('Unsupproted element type!',&
@@ -985,33 +891,39 @@ contains
     ! Recover consistent gradient
     call ppgrd_calcGradient (rsolution, rgradient)
 
+    call spdiscr_createDefCubStructure(&  
+        rsolution%p_rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G2)
+
     ! Recover smoothed gradient
     select case(ierrorestimator)
     case (1)
       call ppgrd_calcGradient (rsolution, rgradientRef)
 
     case (2)
-      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH,rcubatureInfo)
 
     case (3)
-      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH,rcubatureInfo)
 
     case (4)
-      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+      call ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH,rcubatureInfo)
 
     case DEFAULT
-      call output_line('Invalid type of error estimator!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      call output_line("Invalid type of error estimator!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"getMonitorFunction")
       call sys_halt()
     end select
 
     ! Compute gradient error
     call pperr_blockErrorEstimate(rgradient,rgradientRef,PPERR_L2ERROR,&
-        dgradientError,relementError=rindicator)
-    print *, "!!gradient error!! = ",dgradientError
+        dgradientError,rcubatureInfo,relementError=rindicator)
+    call output_line("!!gradient error!! = "//&
+        trim(sys_sdEL(dgradientError,10)))
 
     ! Compute L2-norm of solution
-    call pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
+    call pperr_scalar(PPERR_L2ERROR,dsolutionError,rsolution)
+
+    call spdiscr_releaseCubStructure(rcubatureInfo)
 
     ! Prepare indicator for grid refinement/coarsening
     daux=sqrt((dsolutionError**2+dgradientError**2)/real(rindicator%NEQ,DP))
