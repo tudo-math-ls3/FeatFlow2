@@ -157,6 +157,11 @@ ierrorAnalysisH1 = 0
 
 icalcKineticEnergy = 1
 
+# Cubature formula for error analysis. E.g. "AUTO_G3" for 3-point Gauss.
+# ="": use default cubature formula.
+
+scubError          = 
+
 # Whether to write the L2/H1-error and/or kinetic energy to a file
 
 iwriteErrorAnalysisL2 = 0

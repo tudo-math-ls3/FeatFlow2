@@ -326,22 +326,22 @@ iMassLumpType      = 0
 
 istrongDerivativeBmatrix = 0
 
-# cubature formula for Mass matrix. 
+# cubature formula for Mass matrix. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
 scubMass           = 
 
-# cubature formula for Stokes/Laplacian matrix.
+# cubature formula for Stokes/Laplacian matrix. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
 scubStokes         = 
 
-# cubature formula for Pressure matrices B.
+# cubature formula for Pressure matrices B. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
 scubB              = 
 
-# cubature formula for RHS F.
+# cubature formula for RHS F. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
 
 scubF              = 
