@@ -982,8 +982,7 @@ contains
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
   integer, intent(in) :: cerrortype
   
-  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
-  ! If omitted, the function is assumed to be constantly =0.
+  ! The FE solution vector. Represents a scalar FE function.
   type(t_vectorScalar), intent(in), target :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides the analytical reference
