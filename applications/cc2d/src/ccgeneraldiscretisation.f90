@@ -1026,8 +1026,13 @@ contains
     else
     
       ! No mass lumping. Just set up the mass matrix.
+      call spdiscr_createDefCubStructure (rasmTempl%rmatrixMass%p_rspatialDiscrTrial,&
+          rcubatureInfoMass,rproblem%rmatrixAssembly%icubM)
+
       call stdop_assembleSimpleMatrix (rasmTempl%rmatrixMass,&
           DER_FUNC,DER_FUNC,rcubatureInfo=rcubatureInfoMass)
+
+      call spdiscr_releaseCubStructure (rcubatureInfoMass)
     
     end if
 
