@@ -504,24 +504,20 @@ module spatialdiscretisation
   type t_scalarCubatureInfoBlock
     
     ! Cubature rule to use.
-    integer(I32) :: ccubature = 0
+    integer(I32) :: ccubature = CUB_UNDEFINED
     
     ! Id of the element set, this assembly block refers to.
     integer :: ielementDistr = 0
     
-    ! Apply the above cubature rule for all elements in the above element set.
-    ! =0: Only apply for a limited set of elements specified in the element list
-    ! p_IelementList.
-    ! =1: Apply the above cubature rule for all elements in element set
-    ! ielementDistr.
-    integer :: celementListQuantifier = 1
+    ! Number of elements in this block.
+    ! =-1: structure not initialised.
+    integer :: NEL = -1
     
-    ! Number of elements in this block
-    integer :: NEL = 0
-    
-    ! If celementListQuantifier=0, this specifies handle to a list of elements where to
-    ! apply the above cubature rule. All elements shall be in the element set
+    ! If h_IelementList != ST_NOHANDLE, this specifies a handle to a list of elements 
+    ! where to apply the above cubature rule. All elements shall be in the element set
     ! ielementDistr!
+    ! If h_IelementList=ST_NOHANDLE, the element list for the above cubature rule 
+    ! is the complete list of elements in the element distribution ielementDistr.
     integer :: h_IelementList = ST_NOHANDLE
     
     ! Ownership flag. This flag is set to .true. by the routines in this module
@@ -3398,8 +3394,6 @@ contains
       rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = i
       
       ! Handle all elements in the same way...
-      rcubatureInfo%p_RinfoBlocks(i)%celementListQuantifier = 1
-      
       rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
       
       rcubatureInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
@@ -3679,6 +3673,13 @@ contains
     ielementDistLocal = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielementDistr
     p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
 
+    ! Structure initialised?
+    if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .eq. -1) then
+      call output_line ("rcubatureInfo structure not initialised!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_getStdDiscrInfo")
+      call sys_halt()
+    end if
+    
     ! Return all information specified in the parameters
     if (present(ielementDistr)) then
       ielementDistr = ielementDistLocal
@@ -3699,7 +3700,6 @@ contains
     if (present(p_IelementList)) then
       nullify(p_IelementList)
       if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .ne. 0) then
-        ! Get list of elements present in the element distribution.
         ! If the handle of the info block structure is not associated,
         ! take all elements of the corresponding element distribution.
         if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .ne. ST_NOHANDLE) then
