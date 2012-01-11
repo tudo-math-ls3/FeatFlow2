@@ -368,6 +368,7 @@ my %defaults = (
     SRCEXTRA             => [],
     SRCEXTRA_APP         => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
     SRCLIST_APP          => [ "DETERMINED_ON_DEMAND_IF_UNSET" ],
+    WARN                 => [],
 );
 
 
@@ -477,6 +478,7 @@ GetOptions (
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "suppressflags=s"               => \@{ $cl{'suppressflags'} },
             "version"                       => \$cl{'version'},
+            "warn=s{0,}"                    => \@{ $cl{'WARN'} },
             ) || ($unknownoption=1);
 
 $FEAT2BASEDIR = ".." if ($cl{'regressionbenchmark'});
@@ -659,6 +661,7 @@ if ($cl{'regressionbenchmark'}) {
     # --serial skipped as it is an alternative for --mode=".." only
     $options .= " --srcextra=\"" . join(',', @{$cl{'SRCEXTRA'}}) . "\"" if ($#{$cl{'SRCEXTRA'}} >= 0);
     $options .= " --suppressflags=\"" . join(',', @{$cl{'suppressflags'}}) . "\"" if ($#{$cl{'suppressflags'}} >= 0);
+    $options .= " --warn=\""          . join(',', @{$cl{'WARN'}})          . "\"" if ($#{$cl{'WARN'}} >= 0);
 
     foreach my $feastappdir (sort @srcdirs) {
         my $dir = &concat_filename($cwd, $feastappdir);
@@ -887,7 +890,7 @@ sub check_options {
     		       'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'COPROCLIST',
     		       'HEADER_FILES_TO_COPY', 'INC', 'LDFLAGS', 'LIBDIR', 'LIBS',
     		       'MPIINC', 'MPILIBDIR', 'MPILIBS', 'SRCEXTRA', 'SRCEXTRA_APP',
-		       'SRCLIST_APP') {
+		       'SRCLIST_APP', 'WARN') {
     	# $cl{'...'} has been passed as an array to GetOptions()
     	# and as such is always defined. But is does not necessarily have
     	# entries: unset => #entries=-1; set, but empty => #entries=0
@@ -1040,6 +1043,7 @@ sub check_options {
         "OPENMP"              => [ "yes", "no" ],
 	"OPT"                 => [ "yes", "no", "expensive" ],
 	"RELINK_ALWAYS"       => [ "yes", "no" ],
+	"WARN"                => [ "debug", "deprecated", "off", "unsupported", "unusual" ],
     );
 
     foreach my $entry (keys %validkeywords) {
@@ -1372,11 +1376,30 @@ sub create_feastAppMakefile {
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
 	    print MAKEFILE_HDL "NO\n" unless (defined($coprocs{$entry}));
 	}
+
     }
-
     print MAKEFILE_HDL
-        "\n";
+	"\n";
+    
+    $entry = (defined($cl{'WARN'})) ? $cl{'WARN'} : $defaults{'WARN'};
+    print MAKEFILE_HDL
+        "# Create binary with Warnings enabled?\n";
 
+    if ($#{$entry} >= 0) {
+
+	# convert array with warnings into hash for easier lookups
+	my %warns = ();
+	map { $warns{$_} = $_; } @{ $entry };
+
+	foreach $entry ('debug', 'deprecated', 'off', 'unsupported', 'unusual') {
+	    print MAKEFILE_HDL
+		"WARN_" . uc($entry) . "          = ";
+	    print MAKEFILE_HDL "YES\n" if (defined($warns{$entry}));
+	    print MAKEFILE_HDL "NO\n" unless (defined($warns{$entry}));
+	}
+    }
+    print MAKEFILE_HDL
+	"\n";
 
     ##############################################################################
     # Create section specifying source directories and source files
@@ -4095,7 +4118,7 @@ sub debug_command_line_options {
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP', 'WARN') {
 	$colwidth = &max(length($entry), $colwidth);
     }
     $colwidth++;
@@ -4106,7 +4129,7 @@ sub debug_command_line_options {
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
                        'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODEXTENSION',
                        'MOVEMOD', 'MPI', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
-                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP') {
+                       'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCEXTRA_APP', 'SRCLIST_APP', 'WARN') {
 	# Determine type of variable: scalar or array
 	if (ref($cl{$entry}) eq "") {
 	    # current token is a scalar value, print if not empty
@@ -5132,6 +5155,7 @@ sub show_help {
         "                    because of a specific compiler option that ought not\n" .
         "                    be removed globally, you can inhibit its usage for\n" .
         "                    your application by adding the exact string to <string>.\n" .
+	"--warn=<string>     Compile code with warnings <string> enabled.\n" .
         "Options which cause $progname to print only information without a\n" .
         "Makefile being created:\n" .
         "--help              Print this message\n" .

@@ -2728,6 +2728,37 @@ LDFLAGS       := -m64 $(LDFLAGS)
 endif
 
 
+##############################################################################
+# Check for enabled Warnings
+##############################################################################
+ifeq ($(strip $(WARN_DEBUG)),YES)
+CFLAGSF77     := -DWARN_DEBUG $(CFLAGSF77)
+CFLAGSF90     := -DWARN_DEBUG $(CFLAGSF90)
+CFLAGSC       := -DWARN_DEBUG $(CFLAGSC)
+CFLAGSCXX     := -DWARN_DEBUG $(CFLAGSCXX)
+endif
+
+ifeq ($(strip $(WARN_DEPRECATED)),YES)
+CFLAGSF77     := -DWARN_DEPREC $(CFLAGSF77)
+CFLAGSF90     := -DWARN_DEPREC $(CFLAGSF90)
+CFLAGSC       := -DWARN_DEPREC $(CFLAGSC)
+CFLAGSCXX     := -DWARN_DEPREC $(CFLAGSCXX)
+endif
+
+ifeq ($(strip $(WARN_UNSUPPORTED)),YES)
+CFLAGSF77     := -DWARN_UNSUPP $(CFLAGSF77)
+CFLAGSF90     := -DWARN_UNSUPP $(CFLAGSF90)
+CFLAGSC       := -DWARN_UNSUPP $(CFLAGSC)
+CFLAGSCXX     := -DWARN_UNSUPP $(CFLAGSCXX)
+endif
+
+ifeq ($(strip $(WARN_UNUSUAL)),YES)
+CFLAGSF77     := -DWARN_UNUSUAL $(CFLAGSF77)
+CFLAGSF90     := -DWARN_UNUSUAL $(CFLAGSF90)
+CFLAGSC       := -DWARN_UNUSUAL $(CFLAGSC)
+CFLAGSCXX     := -DWARN_UNUSUAL $(CFLAGSCXX)
+endif
+
 
 ##############################################################################
 # auxiliary targets: .id, .idonly
