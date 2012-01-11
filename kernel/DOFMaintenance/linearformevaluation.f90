@@ -5731,7 +5731,7 @@ contains
         do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
         
           ! Get standard information: Number of elements, element list,...
-          call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfo,p_rspatialDiscr,&
+          call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rspatialDiscr,&
               ielementDistr,celement,ccubature,NEL,p_IelementList)
           
           ! Check if element distribution is empty
