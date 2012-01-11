@@ -298,6 +298,9 @@ module spacematvecassembly
   
     ! The physics of the problem
     type(t_settings_physics) :: rphysicsPrimal
+    
+    ! Discretisation settings of the problem (element, cubature rule,...)
+    type(t_settings_discr) :: rsettingsSpaceDiscr
 
     ! Stabilisation parameters for the primal and dual system.
     type(t_settings_stabil) :: rstabilPrimal
@@ -511,6 +514,7 @@ contains
     if (present(rphysics)) then
       rdiscrData%rphysicsPrimal = rphysics
     end if
+    rdiscrData%rsettingsSpaceDiscr = rsettings%rsettingsSpaceDiscr
     rdiscrData%rstabilPrimal = rsettings%rstabilPrimal
     rdiscrData%rstabilDual = rsettings%rstabilDual
     rdiscrData%rconstraints = rdiscrData%rconstraints
@@ -1229,6 +1233,7 @@ contains
     real(dp), dimension(:), pointer :: p_Ddata
     real(DP) :: dweightConvection, dweightDualConvection, dweightNaturalBdcDual
     real(DP) :: dweightDualNewtonT
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     logical, parameter :: bnewmethod = .false.
     
@@ -1288,6 +1293,12 @@ contains
     end if
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
+    
+      ! Create a cubature information structure that defines how to
+      ! set up the nonlinear operator.
+      call spdiscr_createDefCubStructure (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+          rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
 
       if (.not. bnewmethod) then
         ! The system matrix in the whole looks like:
@@ -1334,7 +1345,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (2)
           call assembleConvection (&
@@ -1345,7 +1356,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (3)
           call assembleConvection (&
@@ -1356,7 +1367,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
               dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         end select
 
@@ -1411,7 +1422,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1433,7 +1444,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1455,7 +1466,7 @@ contains
               dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
               dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
               dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
           ! Assemble the additional term for the natural BDC in the dual equation.
@@ -1514,7 +1525,7 @@ contains
             dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
-            rstabilisation)
+            rcubatureInfo,rstabilisation)
             
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
@@ -1538,7 +1549,7 @@ contains
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,0.0_DP,&
             dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
-            0.0_DP,rstabilisation)
+            0.0_DP,rcubatureInfo,rstabilisation)
 
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
@@ -1800,12 +1811,15 @@ contains
         
         ! Calculate the velocity-dependent part of the system matrix.
         call conv_strdiffOptC2dgetMatrix (rmatrix,roptcoperator,1.0_DP,&
-            p_rprimalSol,p_rdualSol)
+            p_rprimalSol,p_rdualSol,rcubatureInfo=rcubatureInfo)
             
         !call matio_writeBlockMatrixHR (rmatrix, 'matrix',&
         !    .true., 0, 'matrix2.txt', '(E12.5)', 1E-10_DP)
       
       end if
+      
+      ! Release cubature related stuff
+      call spdiscr_releaseCubStructure(rcubatureInfo)
       
     end if
     
@@ -2103,17 +2117,17 @@ contains
          
           call lsyssc_matrixLinearComb (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-              dalpha,rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
-              .false.,.false.,.true.,.true.)
+              dalpha,1.0_DP,&
+              .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
               
           if (.not. bshared) then
 
             call lsyssc_matrixLinearComb (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-                dalpha,rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
-                .false.,.false.,.true.,.true.)
+                dalpha,1.0_DP,&
+                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
           end if
           
         end if
@@ -2123,18 +2137,16 @@ contains
         if (dtheta .ne. 0.0_DP) then
           call lsyssc_matrixLinearComb (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
-              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,&
-              rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
-              .false.,.false.,.true.,.true.)
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,1.0_DP,&
+              .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
-                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,&
-                rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
-                .false.,.false.,.true.,.true.)
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,1.0_DP,&
+                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
           end if
         end if
         
@@ -2204,7 +2216,7 @@ contains
 
     subroutine assembleConvection (&
         rnonlinearSpatialMatrix,rmatrix,rvector,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
-        rstabilisation,rmatrixEOJ)
+        rcubatureInfo,rstabilisation,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
@@ -2239,6 +2251,9 @@ contains
 
     ! Weight for the nonlinear term (\grad(.))^t u
     real(DP), intent(in) :: dnewtonT
+    
+    ! Cubature info structure that defines how to apply cubature.
+    type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
     
     ! Stabilisation parameters.
     type(t_settings_stabil), intent(in) :: rstabilisation
@@ -2324,7 +2339,7 @@ contains
                               rvector, rvector, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+                              rmatrix,rcubatureInfo=rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
           ! Set up the SD structure for the creation of the defect.
@@ -2344,7 +2359,8 @@ contains
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+          call conv_streamDiff2Blk2dMat (&
+              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
           
         case (CCMASM_STAB_UPWIND)
         
@@ -2365,7 +2381,8 @@ contains
           ! for the convection. As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+          call conv_streamDiff2Blk2dMat (&
+              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
           ! Note: Stabilisation weight is actually wrong, but it is not possible
@@ -2423,7 +2440,7 @@ contains
                               rvector, rvector, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+                              rmatrix,rcubatureInfo=rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -2475,7 +2492,8 @@ contains
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+          call conv_streamDiff2Blk2dMat (&
+              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -2529,22 +2547,21 @@ contains
           ! that thing!
           call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
           call lsyssc_getbase_double (rmatrixEOJ, p_Ddata2)
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+          call conv_streamDiff2Blk2dMat (&
+              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
                               
           ! We use the precomputed EOJ matrix and sum it up to the
           ! existing matrix.
           ! Matrix weight. Compensate for any "-" sign in dgamma!
-          call lsyssc_matrixLinearComb(rmatrixEOJ,&
-              dgamma*mprim_signum(rstabilisation%dupsam),&
-              rmatrix%RmatrixBlock(1,1),1.0_DP,&
-              rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
+          call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(1,1),&
+              dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP,&
+              .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             ! Also for the Y-velocity.
-            call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                dgamma*mprim_signum(rstabilisation%dupsam),&
-                rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
+            call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(2,2),&
+                dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP,&
+                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
           end if
 
         case default
@@ -2594,17 +2611,15 @@ contains
             
             ! We use the precomputed EOJ matrix and sum it up to the
             ! existing matrix.
-            call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                dtheta,&
-                rmatrix%RmatrixBlock(1,1),1.0_DP,&
-                rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
+            call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(1,1),&
+                dtheta,1.0_DP,&
+                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
             if (.not. bshared) then
               ! Also for the Y-velocity.
-              call lsyssc_matrixLinearComb(rmatrixEOJ,&
-                  dtheta,&
-                  rmatrix%RmatrixBlock(2,2),1.0_DP,&
-                  rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
+              call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(2,2),&
+                  dtheta,1.0_DP,&
+                  .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
             end if
             
           case default
@@ -2813,7 +2828,7 @@ contains
             ! The collection is passed as additional parameter. That's the way
             ! how we get the vector to the callback routine.
             call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                coeff_ProjMass,rcollection)
+                rcubatureInfo,coeff_ProjMass,rcollection)
 
             ! Now, set up A25, depending on lambda_2.
             rcollection%IquickAccess(1) = 2
@@ -2821,7 +2836,7 @@ contains
             rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
             call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
-                coeff_ProjMass,rcollection)
+                rcubatureInfo,coeff_ProjMass,rcollection)
             
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
@@ -2917,7 +2932,7 @@ contains
             ! The collection is passed as additional parameter. That's the way
             ! how we get the vector to the callback routine.
             call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                coeff_ProjMassCollect,rcollection)
+                rcubatureInfo,coeff_ProjMassCollect,rcollection)
                 
             ! Assemble a submesh matrix on the elements in the list
             ! with a summed cubature formula.
@@ -2942,7 +2957,7 @@ contains
             rcollection%IquickAccess(3) = 0
 
             call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
-                coeff_ProjMassCollect,rcollection)
+                rcubatureInfo,coeff_ProjMassCollect,rcollection)
             
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
@@ -3061,9 +3076,10 @@ contains
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_settings_stabil) :: rstabilisation
     type(t_optcoperator) :: roptcoperator
-    type(t_blockDIscretisation) :: rvelDiscr
+    type(t_blockDiscretisation) :: rvelDiscr
     real(DP) :: dweightConvection,dweightDualConvection,dweightNaturalBdcDual
     real(DP) :: dweightDualNewtonT
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     logical, parameter :: bnewmethod = .false.
     
@@ -3353,6 +3369,11 @@ contains
       !    (                            )
       !    (                            )
       
+      ! For the nonlinearity, apply cubature formula icubStokes
+      call spdiscr_createDefCubStructure (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+          rcubatureInfo, rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
+      
       call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,1,2,.true.)
 
@@ -3363,7 +3384,7 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
-          rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
+          rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
       
       call lsysbl_releaseVector (rtempVectorX)
@@ -3388,7 +3409,7 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
           dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
-          rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
+          rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
       
       ! 2a) Dual equation, natural boundary condition.
@@ -3423,7 +3444,7 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
-          rstabilisation,dcx)
+          rcubatureInfo,rstabilisation,dcx)
       
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
@@ -3434,10 +3455,13 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
           dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
-          0.0_DP,rstabilisation,dcx)
+          0.0_DP,rcubatureInfo,rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
+      
+      ! Release cubature-related stuff
+      call spdiscr_releaseCubStructure (rcubatureInfo)
       
       ! 4.) (Projected) mass matrix
       !
@@ -3485,22 +3509,31 @@ contains
             ! Temp vector.
             call lsysbl_deriveSubvector(rx,rtempVectorB,1,2,.false.)
             
+            ! Apply cubature formula icubF
+            call spdiscr_createDefCubStructure (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                rcubatureInfo, rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubF)
+            
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
-              call smva_asmProjControlTstepConst (rtempVectorX%RvectorBlock(1),&
+              call smva_asmProjControlTstepConst (&
+                  rcubatureInfo,rtempVectorX%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,&
                   rtempVectorB%RvectorBlock(1))
-              call smva_asmProjControlTstepConst (rtempVectorX%RvectorBlock(2),&
+              call smva_asmProjControlTstepConst (&
+                  rcubatureInfo,rtempVectorX%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,&
                   rtempVectorB%RvectorBlock(2))
             case (1)
-              call smva_asmProjControlTstepVec (rtempVectorX%RvectorBlock(1),&
+              call smva_asmProjControlTstepVec (&
+                  rcubatureInfo,rtempVectorX%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1),&
                   rtempVectorB%RvectorBlock(1))
-              call smva_asmProjControlTstepVec (rtempVectorX%RvectorBlock(2),&
+              call smva_asmProjControlTstepVec (&
+                  rcubatureInfo,rtempVectorX%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2),&
                   rtempVectorB%RvectorBlock(2))
@@ -3509,6 +3542,8 @@ contains
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
             end select
+            
+            call spdiscr_releaseCubStructure (rcubatureInfo)
             
             ! Add/Subtract the assembled auxiliary vector to the defect.
             call lsyssc_vectorLinearComb (rtempVectorB%RvectorBlock(1),rd%RvectorBlock(1),dcx,1.0_DP)
@@ -3749,7 +3784,7 @@ contains
       ! Calculate the velocity-dependent part of the system matrix.
       call conv_strdiffOptC2dgetDefect (&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-          roptcoperator,p_rprimalSol,p_rdualSol,dcx,rx,rd)
+          roptcoperator,p_rprimalSol,p_rdualSol,dcx,rx,rd,rcubatureInfo=rcubatureInfo)
     
     end if
     
@@ -3814,7 +3849,7 @@ contains
 
     subroutine assembleConvectionDefect (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
-        rstabilisation,dcx,rmatrixEOJ)
+        rcubatureInfo,rstabilisation,dcx,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
@@ -3858,6 +3893,9 @@ contains
     
     ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
     real(DP), intent(in) :: dcx
+    
+    ! Cubature information structure that defines how to do the cubature.
+    type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
     
     ! Stabilisation parameters
     type(t_settings_stabil), intent(in) :: rstabilisation
@@ -3918,7 +3956,7 @@ contains
                               rvector, rvector, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rx,rb)
+                              rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
           ! Set up the SD structure for the creation of the defect.
@@ -3941,7 +3979,7 @@ contains
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector)
+              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
               
         case (CCMASM_STAB_UPWIND)
         
@@ -3965,7 +4003,7 @@ contains
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector)
+              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
           ! Note: Stabilisation weight is actually wrong, but it is not possible
@@ -4019,7 +4057,7 @@ contains
                               rvector, rvector, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rx,rb)
+                              rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4071,7 +4109,7 @@ contains
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector)
+              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4121,7 +4159,7 @@ contains
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector)
+              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
                               
           ! Just do some mat-vec's to compute the defect.
           !
@@ -4262,6 +4300,7 @@ contains
       type(t_bilfMatrixAssembly) :: rmatrixAssembly
       integer(I32) :: celement,ccubType
       integer :: ccontrolConstraints
+      type(t_scalarCubatureInfo) :: rcubatureInfo
       
       ! If we have a reactive coupling mass matrix, it gets interesting...
       if (dcx .ne. 0.0_DP) then
@@ -4347,6 +4386,11 @@ contains
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
           ! Assemble the modified mass matrices.
+
+          ! Cubature formula from icubStokes          
+          call spdiscr_createDefCubStructure (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
           
           rform%itermCount = 1
           rform%Idescriptors(1,1) = DER_FUNC
@@ -4382,7 +4426,7 @@ contains
           ! The collection is passed as additional parameter. That's the way
           ! how we get the vector to the callback routine.
           call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
-              coeff_ProjMass,rcollection)
+              rcubatureInfo,coeff_ProjMass,rcollection)
 
           ! Now, set up A22, depending on lambda_2.
           rcollection%IquickAccess(1) = 2
@@ -4390,10 +4434,13 @@ contains
           rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
           call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
-              coeff_ProjMass,rcollection)
+              rcubatureInfo,coeff_ProjMass,rcollection)
           
           ! Now we can forget about the collection again.
           call collct_done (rcollection)
+          
+          ! Release cubature-related stuff
+          call spdiscr_releaseCubStructure (rcubatureInfo)
           
         case (3)
         
@@ -4443,6 +4490,11 @@ contains
           call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
               ST_NEWBLOCK_NOINIT)
         
+          ! Cubature formula from icubStokes          
+          call spdiscr_createDefCubStructure (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
+        
           ! In A11/A22 we have to create a 'projective mass matrix'.
           ! This is the derivative of a projection operator
           ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
@@ -4490,7 +4542,7 @@ contains
           ! The collection is passed as additional parameter. That's the way
           ! how we get the vector to the callback routine.
           call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
-              coeff_ProjMassCollect,rcollection)
+              rcubatureInfo,coeff_ProjMassCollect,rcollection)
               
           ! Assemble a submesh matrix on the elements in the list
           ! with a summed cubature formula.
@@ -4517,7 +4569,7 @@ contains
           rcollection%IquickAccess(3) = 0
 
           call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
-              coeff_ProjMassCollect,rcollection)
+              rcubatureInfo,coeff_ProjMassCollect,rcollection)
           
           ! Assemble a submesh matrix on the elements in the list
           ! with a summed cubature formula.
@@ -4538,6 +4590,9 @@ contains
           
           ! Release the element set.
           call storage_free (ielemHandle)
+          
+          ! Release cubature-related stuff
+          call spdiscr_releaseCubStructure (rcubatureInfo)
 
         case default
         
@@ -4899,7 +4954,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_asmProjControlTstepConst (rcontrolUnrest,dumin,dumax,rprjControl)
+  subroutine smva_asmProjControlTstepConst (rcubatureInfo,rcontrolUnrest,dumin,dumax,rprjControl)
 
 !<description>
   ! Assembles the projected control in the dual space:
@@ -4911,6 +4966,9 @@ contains
 !</description>
 
 !<input>
+  ! Cubature information block which determines the cubature formula.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+  
   ! Minimum value for u
   real(DP), intent(in) :: dumin
 
@@ -4946,7 +5004,8 @@ contains
     rcollection%DquickAccess(2) = dumax
     
     ! Assemble the vector
-    call linf_buildVectorScalar2(rlinform,.true.,rprjControl,coeff_prjControl,rcollection)
+    call linf_buildVectorScalar(rlinform,.true.,rprjControl,rcubatureInfo,&
+        coeff_prjControl,rcollection)
     
     ! Release memory
     call lsysbl_releaseVector (rvectorTemp)
@@ -4957,7 +5016,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_asmProjControlTstepVec (rcontrolUnrest,rvectorumin,rvectorumax,rprjControl)
+  subroutine smva_asmProjControlTstepVec (rcubatureInfo,rcontrolUnrest,&
+      rvectorumin,rvectorumax,rprjControl)
 
 !<description>
   ! Assembles the projected control in the dual space:
@@ -4971,6 +5031,9 @@ contains
 !</description>
 
 !<input>
+  ! Cubature information block which determines the cubature formula.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+
   ! Vector specifying the minimum value for u in each DOF
   type(t_vectorScalar), intent(in) :: rvectorumin
 
@@ -5008,7 +5071,8 @@ contains
     rcollection%p_rvectorQuickAccess3 => rvectorTempUmax
     
     ! Assemble the vector
-    call linf_buildVectorScalar2(rlinform,.true.,rprjControl,coeff_prjControlVec,rcollection)
+    call linf_buildVectorScalar(rlinform,.true.,rprjControl,rcubatureInfo,&
+        coeff_prjControlVec,rcollection)
     
     ! Release memory
     call lsysbl_releaseVector (rvectorTemp)

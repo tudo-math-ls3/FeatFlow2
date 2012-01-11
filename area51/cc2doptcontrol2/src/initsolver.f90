@@ -170,6 +170,14 @@ contains
         rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual,&
         rsettings%ssectionDiscrSpace)
     
+    ! Basic space discretisation settings
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising discretisation rules.")
+    end if
+    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
+        rsettingsSolver%rsettingsSpaceDiscr)
+
     ! Now, read the mesh and the domain
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -266,8 +274,9 @@ contains
       call output_lbrk()
       call output_line ("Initialising template matrices.")
     end if
-    call inmat_initStaticAsmTemplHier (rsettingsSolver%rspaceAsmHierarchy,&
-        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rfeHierMass,&
+    call inmat_initStaticAsmTemplHier (&
+        rsettingsSolver%rspaceAsmHierarchy,&
+        rsettingsSolver%rfeHierPrimal,&
         rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual)
 
     if (ioutputLevel .ge. 2) then
@@ -285,7 +294,9 @@ contains
       call output_line ("Level: [",bnoLineBreak=.true.)
     end if
     
-    call inmat_calcStaticLevelAsmHier (rsettingsSolver%rspaceAsmHierarchy,&
+    call inmat_calcStaticLevelAsmHier (&
+        rsettingsSolver%rsettingsSpaceDiscr,&
+        rsettingsSolver%rspaceAsmHierarchy,&
         rsettingsSolver,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
@@ -1083,14 +1094,6 @@ contains
       ! as follows:
       !   rcollection%IquickAccess(1) = ieltype
       !   rcollection%IquickAccess(2) = nequations (=3:primal space. =6: primal+dual space)
-      !   rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC or icubA
-      !   rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC or icubB
-      !   rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC or icubF
-      !
-      ! Get parameters about the discretisation from the parameter list
-      rcollection%IquickAccess(3) = rsettingsSpaceDiscr%icubStokes
-      rcollection%IquickAccess(4) = rsettingsSpaceDiscr%icubB
-      rcollection%IquickAccess(5) = rsettingsSpaceDiscr%icubF
 
       ! We want primal+dual space.
       rcollection%IquickAccess(2) = 6
@@ -1107,38 +1110,7 @@ contains
       ! space hierarchy based on that.
       call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
           rsettings%rfeHierPrimal,1,3)
-          
-      ! Extract the data of the primal velocity space (Block 1..2) and
-      ! create a new FE space hierarchy for mass matrices
-      call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
-          rsettings%rfeHierMass,1,3)
 
-      ! Which cubature rule to use for mass matrices?
-      icubM = rsettingsSpaceDiscr%icubMass
-      
-      ! Set the cubature rule in the mass matrix discretisation structure.
-      if (icubM .ne. SPDISC_CUB_AUTOMATIC) then
-        do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
-          do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
-            rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)%&
-                RelementDistr(:)%ccubTypeBilForm = icubM
-          end do
-        end do
-      else
-        do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
-          do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
-            do k=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
-                RspatialDiscr(j)%RelementDistr)
-              celement = rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
-                  RspatialDiscr(j)%RelementDistr(k)%celement
-            
-              rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)%&
-                  RelementDistr(:)%ccubTypeBilForm = spdiscr_getStdCubature(celement)
-            end do
-          end do
-        end do
-      end if
-      
     end select
     
     if (ioutputLevel .ge. 2) then
@@ -1170,7 +1142,6 @@ contains
 !</subroutine>
 
     ! Release all discretisation hierarchies.
-    call fesph_releaseHierarchy(rsettings%rfeHierMass)
     call fesph_releaseHierarchy(rsettings%rfeHierPrimal)
     call fesph_releaseHierarchy(rsettings%rfeHierPrimalDual)
 
@@ -1701,9 +1672,6 @@ contains
         ! Set up the collection for the creation of appropriate discretisation structures
         rcollection%IquickAccess(1) = ielementType
         rcollection%IquickAccess(2) = ncomponents
-        rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
-        rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
-        rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
         
         if (ielementType .eq. -1) then
           ! Get the element type from the discretisation section
@@ -1720,9 +1688,6 @@ contains
         !
         ! Set up the collection for the creation of appropriate discretisation structures
         rcollection%IquickAccess(2) = ncomponents
-        rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
-        rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
-        rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
 
         ! Get the element type from the discretisation
         ieltype = rsettingsSpaceDiscr%ielementType
@@ -1769,9 +1734,6 @@ contains
       ! Set up the collection for the creation of appropriate discretisation structures
       rcollection%IquickAccess(1) = ielementType
       rcollection%IquickAccess(2) = ncomponents
-      rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC
-      rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
-      rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
       
       if (ielementType .eq. -1) then
         ! Get the element type from the discretisation
@@ -3884,7 +3846,8 @@ contains
 
     ! CAll the assembly routine to do that task.
     call trhsevl_assembleRHS (rsettings%rglobalData, rsettings%rphysicsPrimal, &
-        rrhs, rrhsDiscrete, rsettings%rsettingsOptControl, rsettings%rdebugFlags)
+        rrhs, rrhsDiscrete, rsettings%rsettingsSpaceDiscr, &
+        rsettings%rsettingsOptControl, rsettings%rdebugFlags)
 
   end subroutine
 

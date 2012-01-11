@@ -334,7 +334,7 @@ contains
           call user_initCollectForVecAssembly (rglobalData,&
               rreference%iid,1,dtime,rcollection)
 
-          call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+          call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(1),&
               user_fct_Target,rcollection)
 
           call user_doneCollectForAssembly (rglobalData,rcollection)
@@ -342,7 +342,7 @@ contains
           call user_initCollectForVecAssembly (rglobalData,&
               rreference%iid,2,dtime,rcollection)
 
-          call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+          call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(2),&
               user_fct_Target,rcollection)
               
           call user_doneCollectForAssembly (rglobalData,rcollection)
@@ -352,12 +352,12 @@ contains
 
           ! X-velocity
           rcollection%IquickAccess(1) = 1
-          call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+          call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(1),&
               optcana_evalFunction,rcollection)
 
           ! Y-velocity
           rcollection%IquickAccess(1) = 2
-          call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+          call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(2),&
               optcana_evalFunction,rcollection)
               
           call ansol_doneEval (rcollection,"SOL")
@@ -408,8 +408,8 @@ contains
         end if
         
         !das hier gibt ein falsches Ergebnis1!
-        call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
-        call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
+        call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(4))
+        call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(5))
               
         ! We use the summed trapezoidal rule.
         if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
@@ -592,7 +592,7 @@ contains
               rreference%iid,i,dtimePrimal,ruserCollection)
         end if
 
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
@@ -611,7 +611,7 @@ contains
               rreference%iid,i,dtimePrimal,ruserCollection)
         end if
         
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
@@ -629,7 +629,7 @@ contains
               rreference%iid,i,dtimePrimal,ruserCollection)
         end if
 
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
@@ -659,7 +659,7 @@ contains
               rreference%iid,i,dtimeDual,ruserCollection)
         end if
 
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
@@ -678,7 +678,7 @@ contains
               rreference%iid,i,dtimeDual,ruserCollection)
         end if
 
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
@@ -697,7 +697,7 @@ contains
               rreference%iid,i,dtimeDual,ruserCollection)
         end if
 
-        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+        call pperr_scalar (PPERR_L2ERROR,Derr(i),rtempVector%RvectorBlock(i),&
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then

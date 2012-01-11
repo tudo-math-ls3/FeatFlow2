@@ -110,9 +110,6 @@ contains
   ! Expects the following information in rcollection:
   !   rcollection%IquickAccess(1) = ieltype
   !   rcollection%IquickAccess(2) = nequations (=3:primal space. =6: primal+dual space)
-  !   rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC or icubA
-  !   rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC or icubB
-  !   rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC or icubF
 !</description>
 
   type(t_triangulation), intent(in) :: rtriangulation
@@ -126,10 +123,7 @@ contains
     ! and element type ieltype.
     call spdsc_get1LevelDiscrNavSt2D (rboundary,rtriangulation,&
       rcollection%IquickAccess(2),rdiscr,&
-      rcollection%IquickAccess(1),&
-      int(rcollection%IquickAccess(3),I32),&
-      int(rcollection%IquickAccess(4),I32),&
-      int(rcollection%IquickAccess(5),I32))
+      rcollection%IquickAccess(1))
     
   end subroutine
 
@@ -138,7 +132,7 @@ contains
 !<subroutine>
 
   subroutine spdsc_get1LevelDiscrNavSt2D (rboundary,rtriangulation,&
-      nequations,rdiscretisation,ieltype,ccubA,ccubB,ccubF)
+      nequations,rdiscretisation,ieltype)
   
 !<description>
   ! Sets up the discretisation structures for the (primal) velocity and pressure
@@ -166,18 +160,6 @@ contains
   ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
   ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
   integer, intent(in) :: ieltype
-  
-  ! OPTIONAL: Cubature type for constructing bilinear forms.
-  ! =SPDISC_CUB_AUTOMATIC: use default.
-  integer(I32), intent(in), optional :: ccubA
-
-  ! OPTIONAL: Cubature type for constructing bilinear forms on mixed matrices.
-  ! =SPDISC_CUB_AUTOMATIC: use default.
-  integer(I32), intent(in), optional :: ccubB
-  
-  ! OPTIONAL: Cubature type for constructing linear forms.
-  ! =SPDISC_CUB_AUTOMATIC: use default.
-  integer(I32), intent(in), optional :: ccubF
 !</input>
 
 !<inputoutput>
@@ -187,55 +169,7 @@ contains
 
 !</subroutine>
 
-    integer(I32) :: icubA,icubB,icubF
     integer :: i,j
-
-    icubA = SPDISC_CUB_AUTOMATIC
-    icubB = SPDISC_CUB_AUTOMATIC
-    icubF = SPDISC_CUB_AUTOMATIC
-
-    if (present(ccubA)) icubA = ccubA
-    if (present(ccubB)) icubB = ccubB
-    if (present(ccubF)) icubF = ccubF
-
-!    if (present(rparlist)) then
-!      ! Get parameters about the discretisation from the parameter list
-!      call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-!                                'iElementType',ielementType,3)
-!
-!      if (present(ieltype)) ielementType = ieltype
-!
-!      call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
-!                                  'scubStokes',sstr,'')
-!      if (sstr .eq. '') then
-!        call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-!                                  'icubStokes',icubA,CUB_G2X2)
-!      else
-!        icubA = cub_igetID(sstr)
-!      end if
-!
-!      call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
-!                                  'scubB',sstr,'')
-!      if (sstr .eq. '') then
-!        call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-!                                  'icubB',icubB,CUB_G2X2)
-!      else
-!        icubB = cub_igetID(sstr)
-!      end if
-!
-!      call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
-!                                  'scubF',sstr,'')
-!      if (sstr .eq. '') then
-!        call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-!                                  'icubF',icubF,CUB_G2X2)
-!      else
-!        icubF = cub_igetID(sstr)
-!      end if
-!    else
-!      icubA = SPDISC_CUB_AUTOMATIC
-!      icubB = SPDISC_CUB_AUTOMATIC
-!      icubF = SPDISC_CUB_AUTOMATIC
-!    end if
 
     call spdiscr_initBlockDiscr (rdiscretisation,nequations,&
                                  rtriangulation, rboundary)
@@ -252,13 +186,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_E031,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_E031,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -275,7 +203,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case (1)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -288,13 +216,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_E030,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_E030,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -311,7 +233,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case (2)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -324,13 +246,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_EM31,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_EM31,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -347,7 +263,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case (3)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -360,13 +276,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_EM30,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -383,7 +293,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case (4)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -396,13 +306,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_Q2,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_Q2,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -419,7 +323,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_QP1NP, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_QP1NP, rdiscretisation%RspatialDiscr(3))
                   
     case (5)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -432,13 +336,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30_UNPIVOTED,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_EM30_UNPIVOTED,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -455,7 +353,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case (6)
       ! rdiscretisation%Rdiscretisations is a list of scalar
@@ -468,13 +366,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30_UNSCALED,icubA, &
-                  rtriangulation, rboundary)
-                  
-      ! Manually set the cubature formula for the RHS as the above routine
-      ! uses the same for matrix and vectors.
-      rdiscretisation%RspatialDiscr(1)% &
-        RelementDistr(1)%ccubTypeLinForm = icubF
+                  EL_EM30_UNSCALED,rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -491,7 +383,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_Q0, rdiscretisation%RspatialDiscr(3))
 
     case default
       print *,'Unknown discretisation: ieltype = ',ieltype
@@ -515,18 +407,6 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(3),&
                                      rdiscretisation%RspatialDiscr(6))
           
-    end if
-    
-    ! Post correction of the cubature formulas: If icubF=automatic,
-    ! put the standard cubature formulas there.
-    if (icubF .eq. SPDISC_CUB_AUTOMATIC) then
-      do i=1,size(rdiscretisation%RspatialDiscr)
-        do j=1,size(rdiscretisation%RspatialDiscr(i)%RelementDistr)
-          rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm = &
-              spdiscr_getStdCubature(&
-              rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%celement)
-        end do
-      end do
     end if
     
   end subroutine

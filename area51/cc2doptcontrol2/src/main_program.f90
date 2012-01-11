@@ -1148,9 +1148,6 @@ contains
     ! for the stack.
     type(t_settings_optflow), pointer :: p_rsettingsSolver
     
-    ! Basic space discretisation settings
-    type(t_settings_discr) :: rsettingsSpaceDiscr
-    
     ! Nonlinear solve structure representing the solver.
     type(t_nlstsolver), pointer :: p_rnlstsolver
     
@@ -1232,13 +1229,11 @@ contains
         p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
         p_rsettingsSolver%rfeHierPrimalDual% &
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
-        rsettingsSpaceDiscr)
     
     call stat_clearTimer (rstartvectime)
     call stat_startTimer (rstartvectime)
 
-    call init_initStartVector(p_rsettingsSolver,rsettingsSpaceDiscr,&
+    call init_initStartVector(p_rsettingsSolver,p_rsettingsSolver%rsettingsSpaceDiscr,&
         p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
         rparlist,rsettings%ssectionSpaceTimePreprocessing,&
         p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete,rsettings%routput%ioutputInit)

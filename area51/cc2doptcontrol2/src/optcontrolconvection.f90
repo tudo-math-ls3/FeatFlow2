@@ -2946,7 +2946,7 @@ contains
 
 !<subroutine>
   subroutine conv_strdiffOptC2dgetMatrix (rmatrix,roptcoperator,dweight,&
-      rvelocityVectorPrimal,rvelocityVectorDual)
+      rvelocityVectorPrimal,rvelocityVectorDual,rcubatureInfo)
 !<description>
   ! Calculate the matrix of the nonlinear operator:
   !   dweight*A(rvelocityVector)
@@ -2970,6 +2970,10 @@ contains
   ! point (dual velocity).
   type(t_vectorBlock), intent(in) :: rvelocityVectorDual
   
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target :: rcubatureInfo
+
 !</input>
 
 !<inputoutput>
@@ -3017,6 +3021,9 @@ contains
   
   ! Assembly status structure
   type(t_optcassemblyinfo) :: roptcassemblyinfo
+  
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     if (roptcoperator%dnu .eq. 0.0_DP) then
       print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
@@ -3094,6 +3101,17 @@ contains
     allocate(DentryA24(roptcassemblyinfo%indof,roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
     allocate(DentryA15(roptcassemblyinfo%indof,roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
   
+!    ! Do we have an assembly structure?
+!    ! If we do not have it, create a cubature info structure that
+!    ! defines how to do the assembly.
+!    if (.not. present(rcubatureInfo)) then
+!      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+!          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+!      p_rcubatureInfo => rtempCubatureInfo
+!    else
+      p_rcubatureInfo => rcubatureInfo
+!    end if
+
     ! Initialise the array with the local Delta values for the stabilisation
     call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
     call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
@@ -3221,6 +3239,11 @@ contains
     end do ! ielset
     !%OMP end do
     
+!    ! Release the assembly structure if necessary.
+!    if (.not. present(rcubatureInfo)) then
+!      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+!    end if
+    
     ! Release memory
     deallocate(DentryA11)
     deallocate(DentryA22)
@@ -3281,7 +3304,7 @@ contains
 !<subroutine>
   subroutine conv_strdiffOptC2dgetDerMatrix (rmatrix,roptcoperator,dweight,&
       rvelocityVectorPrimal,rvelocityVectorDual,dh,&
-      rvelocityVectorPrimalAlt,rvelocityVectorDualAlt)
+      rvelocityVectorPrimalAlt,rvelocityVectorDualAlt,rcubatureInfo)
 !<description>
   ! Calculate the derivative matrix of the nonlinear operator:
   !   dweight*A(rvelocityVector)
@@ -3322,6 +3345,10 @@ contains
   
   ! Step length for the discrete derivative.
   real(dp), intent(in) :: dh
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target :: rcubatureInfo
 
   ! Alternative Velocity vector for the nonlinearity to be multiplied to the
   ! matrix. The first blocks 1/2 in this vector define the evaluation
@@ -3384,6 +3411,9 @@ contains
   
   ! Assembly status structure
   type(t_optcassemblyinfo) :: roptcassemblyinfo
+
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     if (roptcoperator%dnu .eq. 0.0_DP) then
       print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
@@ -3479,6 +3509,17 @@ contains
         
     ! Temp array
     allocate(Dtemp(roptcassemblyinfo%indof))
+
+!    ! Do we have an assembly structure?
+!    ! If we do not have it, create a cubature info structure that
+!    ! defines how to do the assembly.
+!    if (.not. present(rcubatureInfo)) then
+!      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+!          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+!      p_rcubatureInfo => rtempCubatureInfo
+!    else
+      p_rcubatureInfo => rcubatureInfo
+!    end if
 
     ! Initialise the array with the local Delta values for the stabilisation
     call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
@@ -4579,6 +4620,11 @@ contains
     end do ! ielset
     !%OMP end do
     
+!    ! Release the assembly structure if necessary.
+!    if (.not. present(rcubatureInfo)) then
+!      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+!    end if
+   
     deallocate(Dtemp)
     
     ! Release memory
@@ -4689,7 +4735,7 @@ contains
 
 !<subroutine>
   subroutine conv_strdiffOptC2dgetDefect (rvelMatrix,roptcoperator,&
-      rvelocityVectorPrimal,rvelocityVectorDual,dweight,rx,rd)
+      rvelocityVectorPrimal,rvelocityVectorDual,dweight,rx,rd,rcubatureInfo)
       
 !<description>
   ! Calculate the defect of the nonlinear operator:
@@ -4719,6 +4765,10 @@ contains
   
   ! Weight for the solution
   real(DP), intent(in) :: dweight
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target :: rcubatureInfo
 !</input>
   
 !<inputoutput>
@@ -4761,6 +4811,11 @@ contains
   
   ! Assembly status structure
   type(t_optcassemblyinfo) :: roptcassemblyinfo
+
+  ! Cubature formula and cubature info structure
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  integer(I32) :: ccubature
 
     if (roptcoperator%dnu .eq. 0.0_DP) then
       print *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
@@ -4815,6 +4870,17 @@ contains
     call lsyssc_getbase_double (rd%RvectorBlock(2),p_Dd2)
     call lsyssc_getbase_double (rd%RvectorBlock(4),p_Dd4)
     call lsyssc_getbase_double (rd%RvectorBlock(5),p_Dd5)
+
+!    ! Do we have an assembly structure?
+!    ! If we do not have it, create a cubature info structure that
+!    ! defines how to do the assembly.
+!    if (.not. present(rcubatureInfo)) then
+!      call spdiscr_createDefCubStructure(p_rdiscretisation,&
+!          rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+!      p_rcubatureInfo => rtempCubatureInfo
+!    else
+      p_rcubatureInfo => rcubatureInfo
+!    end if
 
     ! Loop over the elements - blockwise.
     !
@@ -4915,6 +4981,11 @@ contains
       
     end do ! ielset
     !%OMP end do
+    
+!    ! Release the assembly structure if necessary.
+!    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+!    end if
     
     ! Release memory
     deallocate(DentryA11)

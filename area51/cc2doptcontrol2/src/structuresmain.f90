@@ -20,7 +20,6 @@ module structuresmain
   
   public :: t_settings_genoutput
   public :: t_settings_main
-  public :: t_settings_discr
   public :: smain_initMainParams
   
 !<types>
@@ -45,39 +44,6 @@ module structuresmain
     ! ='': Use log file.
     character(len=SYS_STRLEN) :: serrorLog = ""
     
-  end type
-
-!</typeblock>
-
-!<typeblock>
-  
-  ! Structure encapsuling the main discretisation
-  type t_settings_discr
-  
-    ! Type of element pair to use for the discretisation.
-    ! 0 = Q1~(E031) / Q1~(E031) / Q0
-    ! 1 = Q1~(E030) / Q1~(E030) / Q0
-    ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
-    ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
-    ! 4 = Q2 (E013) / Q2 (E013) / QP1
-    ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
-    ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-    ! (EM30 = nonparametric, nonconformal Rannacher-Turek element)
-    ! (QP1  = Quadrilateral discontinuous P1 element)
-    integer :: ielementType = 3
-    
-    ! cubature formula for Mass matrix
-    integer(i32) :: icubMass = 0
-
-    ! cubature formula for Stokes/Laplacian matrix
-    integer(i32) :: icubStokes = 0
-
-    ! cubature formula for Pressure matrices B
-    integer(i32) :: icubB = 0
-
-    ! cubature formula for RHS F
-    integer(i32) :: icubF = 0
-
   end type
 
 !</typeblock>

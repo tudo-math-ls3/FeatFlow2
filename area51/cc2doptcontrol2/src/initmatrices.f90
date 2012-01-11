@@ -87,7 +87,7 @@ contains
 !<subrotine>
   
   subroutine inmat_initSpaceLevel(rstaticAsmTemplates,rtriangulation,&
-      rdiscrVelocity,rdiscrPressure,rdiscrMassVelocity,rdiscrMassPressure)
+      rdiscrVelocity,rdiscrPressure)
 
 !<description>
   ! Basic initialisation of a t_staticSpaceAsmTemplates structure.
@@ -102,12 +102,6 @@ contains
 
   ! Discretisation of the pressure space.
   type(t_spatialDiscretisation), intent(in), target :: rdiscrPressure
-  
-  ! Discretisation of the velocity space for mass matrices.
-  type(t_spatialDiscretisation), intent(in), target :: rdiscrMassVelocity
-
-  ! Discretisation of the pressure space for mass matrices.
-  type(t_spatialDiscretisation), intent(in), target :: rdiscrMassPressure
 !</input>
 
 !<output>
@@ -121,8 +115,6 @@ contains
     rstaticAsmTemplates%p_rtriangulation => rtriangulation
     rstaticAsmTemplates%p_rdiscrVelocity => rdiscrVelocity
     rstaticAsmTemplates%p_rdiscrPressure => rdiscrPressure
-    rstaticAsmTemplates%p_rdiscrMassVelocity => rdiscrMassVelocity
-    rstaticAsmTemplates%p_rdiscrMassPressure => rdiscrMassPressure
     
   end subroutine
 
@@ -351,7 +343,7 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_generateStaticMatrices (rstaticAsmTemplates,rsettings)
+  subroutine inmat_generateStaticMatrices (rsettingsSpaceDiscr,rstaticAsmTemplates,rsettings)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
@@ -364,6 +356,9 @@ contains
 !</description>
 
 !<input>
+  ! Settings controlling the spatial discretisation (cubature)
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
   ! Solver parameters.
   type(t_settings_optflow), intent(inout) :: rsettings
 !</input>
@@ -375,8 +370,9 @@ contains
 
 !</subroutine>
 
-    ! Stabilisation stuff
+    ! local variables
     integer, dimension(:), pointer :: p_Kld
+    type(t_scalarCubatureInfo) :: rcubatureInfo
 
     ! -----------------------------------------------------------------------
     ! Basic (Navier-) Stokes problem
@@ -396,17 +392,33 @@ contains
     ! convection matrix, resulting in the nonlinear system matrix,
     ! as well as both B-matrices.
     
+    ! Stokes matrix
+    
+    call spdiscr_createDefCubStructure(&
+        rstaticAsmTemplates%rmatrixLaplace%p_rspatialDiscrTrial,rcubatureInfo,&
+        rsettingsSpaceDiscr%icubStokes)
+    
     ! Assemble the Stokes operator:
     call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixLaplace,.true.,&
-        1.0_DP)
+        1.0_DP,rcubatureInfo)
+        
+    call spdiscr_releaseCubStructure(rcubatureInfo)
+
+    ! B/D-matrices
+
+    call spdiscr_createDefCubStructure(&
+        rstaticAsmTemplates%rmatrixB1%p_rspatialDiscrTrial,rcubatureInfo,&
+        rsettingsSpaceDiscr%icubB)
     
     ! Build the first pressure matrix B1.
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixB1,&
-        DER_FUNC,DER_DERIV_X,-1.0_DP)
+        DER_FUNC,DER_DERIV_X,-1.0_DP,rcubatureInfo=rcubatureInfo)
 
     ! Build the second pressure matrix B2.
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixB2,&
-        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+        DER_FUNC,DER_DERIV_Y,-1.0_DP,rcubatureInfo=rcubatureInfo)
+    
+    call spdiscr_releaseCubStructure(rcubatureInfo)
     
     ! Set up the matrices D1 and D2 by transposing B1 and B2.
     call lsyssc_transposeMatrix (rstaticAsmTemplates%rmatrixB1,&
@@ -431,18 +443,26 @@ contains
     call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure,&
         rstaticAsmTemplates%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
-    ! Change the discretisation structure of the mass matrix to the
-    ! correct one; at the moment it points to the discretisation structure
-    ! of the Stokes matrix...
-    call lsyssc_assignDiscrDirectMat (rstaticAsmTemplates%rmatrixMassVelocity,&
-        rstaticAsmTemplates%p_rdiscrMassVelocity)
-    call lsyssc_assignDiscrDirectMat (rstaticAsmTemplates%rmatrixMassPressure,&
-        rstaticAsmTemplates%p_rdiscrMassPressure)
-
     ! Call the standard matrix setup routine to build the matrix.
-    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassVelocity,DER_FUNC,DER_FUNC)
-    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,DER_FUNC,DER_FUNC)
-                
+    call spdiscr_createDefCubStructure(&
+        rstaticAsmTemplates%rmatrixMassVelocity%p_rspatialDiscrTrial,rcubatureInfo,&
+        rsettingsSpaceDiscr%icubMass)
+
+    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassVelocity,&
+        DER_FUNC,DER_FUNC,rcubatureInfo=rcubatureInfo)
+
+    call spdiscr_releaseCubStructure(rcubatureInfo)
+
+
+    call spdiscr_createDefCubStructure(&
+        rstaticAsmTemplates%rmatrixMassPressure%p_rspatialDiscrTrial,rcubatureInfo,&
+        rsettingsSpaceDiscr%icubMass)
+
+    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
+        DER_FUNC,DER_FUNC,rcubatureInfo=rcubatureInfo)
+
+    call spdiscr_releaseCubStructure(rcubatureInfo)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -576,7 +596,7 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_initStaticAsmTemplHier(rhierarchy,rfeHierPrimal,rfeHierMass,&
+  subroutine inmat_initStaticAsmTemplHier(rhierarchy,rfeHierPrimal,&
       rstabilPrimal,rstabilDual)
   
 !<description>
@@ -587,9 +607,6 @@ contains
   ! A hierarchy of space levels for velocity+pressure (primal/dual space)
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
   
-  ! A hierarchy of space levels for mass matrices
-  type(t_feHierarchy), intent(in) :: rfeHierMass
-
   ! Stabilisation parameters for the primal and dual system.
   type(t_settings_stabil), intent(in) :: rstabilPrimal
   type(t_settings_stabil), intent(in) :: rstabilDual
@@ -609,12 +626,11 @@ contains
 
     ! Calculate the structures
     do ilevel = 1,rfeHierPrimal%nlevels
-      call inmat_initSpaceLevel(rhierarchy%p_RasmTemplList(ilevel),&
+      call inmat_initSpaceLevel(&
+          rhierarchy%p_RasmTemplList(ilevel),&
           rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(ilevel),&
           rfeHierPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation%RspatialDiscr(1),&
-          rfeHierPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation%RspatialDiscr(3),&
-          rfeHierMass%p_rfeSpaces(ilevel)%p_rdiscretisation%RspatialDiscr(1),&
-          rfeHierMass%p_rfeSpaces(ilevel)%p_rdiscretisation%RspatialDiscr(3))
+          rfeHierPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation%RspatialDiscr(3))
           
       call inmat_allocStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),&
           rstabilPrimal,rstabilDual)
@@ -684,13 +700,16 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_calcStaticLevelAsmHier(rhierarchy,rsettings,bprint)
+  subroutine inmat_calcStaticLevelAsmHier(rsettingsSpaceDiscr,rhierarchy,rsettings,bprint)
   
 !<description>
   ! Calculates the static matrices on all levels.
 !</description>
 
 !<input>
+  ! Settings controlling the spatial discretisation (element, cubature)
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
   ! Settings structure for the optimal control solver.
   ! Not used here, but passed to callback routines called during
   ! the assembly process.
@@ -725,7 +744,9 @@ contains
         end if
       end if
 
-      call inmat_generateStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),&
+      call inmat_generateStaticMatrices (&
+          rsettingsSpaceDiscr,&
+          rhierarchy%p_RasmTemplList(ilevel),&
           rsettings)
 
     end do

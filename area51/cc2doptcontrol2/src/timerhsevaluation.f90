@@ -92,7 +92,7 @@ contains
 !<subroutine>
 
   subroutine trhsevl_assembleRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
-      roptimalControl, rdebugFlags, roptcBDC)
+      rsettingsDiscr, roptimalControl, rdebugFlags, roptcBDC)
 
 !<description>
   ! Discretises the RHS according to the space/time discretisation scheme
@@ -108,6 +108,9 @@ contains
 
   ! Analytic solution defining the RHS of the equation.
   type(t_anSolution), intent(inout) :: rrhs
+  
+  ! Discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
   
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
@@ -134,7 +137,7 @@ contains
     select case (rrhsDiscrete%p_rtimeDiscr%ctype)
     case (TDISCR_ONESTEPTHETA)
       call trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
-          roptimalControl, rdebugFlags, roptcBDC)
+          rsettingsDiscr, roptimalControl, rdebugFlags, roptcBDC)
     !case (TDISCR_DG0)
     !  call trhsevl_assembledG0RHS (rglobalData, rrhs, rrhsDiscrete, roptimalControl, roptcBDC)
     case default
@@ -150,7 +153,7 @@ contains
 !<subroutine>
 
   subroutine trhsevl_assembleThetaRHS (rglobalData, rphysics, rrhs, rrhsDiscrete, &
-      roptimalControl, rdebugFlags, roptcBDC)
+      rsettingsDiscr, roptimalControl, rdebugFlags, roptcBDC)
 
 !<description>
   ! Assembles the space-time RHS vector rrhsDiscrete for a Theta-Scheme.
@@ -165,6 +168,9 @@ contains
 
   ! Analytic solution defining the RHS of the equation.
   type(t_anSolution), intent(inout) :: rrhs
+  
+  ! Discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
   
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
@@ -198,6 +204,12 @@ contains
     ! A temporary vector for the creation of the RHS.
     type(t_vectorBlock) :: rtempVectorRHS
     
+    ! Cubature information structure that determins how to do the cubature in the velocity.
+    type(t_scalarCubatureInfo) :: rcubatureInfoU
+
+    ! Cubature information structure that determins how to do the cubature in the pressure.
+    type(t_scalarCubatureInfo) :: rcubatureInfoP
+    
     real(DP), dimension(:),pointer :: p_Dx1, p_Dx2, p_Dx3, p_Drhs
 
     nintervals = rrhsDiscrete%p_rtimeDiscr%nintervals
@@ -223,6 +235,14 @@ contains
     ! temporary data: Last, current and next vector.
     call sptivec_createAccessPool(rrhsDiscrete%p_rspaceDiscr,raccessPool,3)
 
+    ! Set up the cubature. Apply the cubature based on icubF
+    call spdiscr_createDefCubStructure (rrhsDiscrete%p_rspaceDiscr%RspatialDiscr(1), &
+        rcubatureInfoU, rsettingsDiscr%icubF)
+
+    call spdiscr_createDefCubStructure (rrhsDiscrete%p_rspaceDiscr%RspatialDiscr(3), &
+        rcubatureInfoP, rsettingsDiscr%icubF)
+    
+
     ! NOTE:
     ! For setting up the RHS, the time in the dual equation matches the time
     ! of the primal equation. For explicit Euler, this is the case anyway.
@@ -243,7 +263,7 @@ contains
           dtimeDual = dtimePrimal
           call sptivec_getFreeBufferFromPool (raccessPool,iiterate-1,p_rvecLast)
           call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
-              roptimalControl, p_rvecLast)
+              rcubatureInfoU,rcubatureInfoP, roptimalControl, p_rvecLast)
         end if
         call lsysbl_getbase_double (p_rvecLast,p_Dx1)
       end if
@@ -254,7 +274,7 @@ contains
         dtimeDual = dtimePrimal
         call sptivec_getFreeBufferFromPool (raccessPool,iiterate,p_rvecCurrent)
         call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
-            roptimalControl, p_rvecCurrent)
+            rcubatureInfoU,rcubatureInfoP, roptimalControl, p_rvecCurrent)
       end if
       call lsysbl_getbase_double (p_rvecCurrent,p_Dx2)
       
@@ -265,7 +285,7 @@ contains
           dtimeDual = dtimePrimal
           call sptivec_getFreeBufferFromPool (raccessPool,iiterate+1,p_rvecNext)
           call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
-              roptimalControl, p_rvecNext)
+              rcubatureInfoU,rcubatureInfoP, roptimalControl, p_rvecNext)
         end if
         call lsysbl_getbase_double (p_rvecNext,p_Dx3)
       endif
@@ -622,6 +642,10 @@ contains
     ! Release the temp vectors.
     call lsysbl_releaseVector (rtempVectorRHS)
     call sptivec_releaseAccessPool (raccessPool)
+    
+    ! Release cubatuere-related stuff
+    call spdiscr_releaseCubStructure (rcubatureInfoP)
+    call spdiscr_releaseCubStructure (rcubatureInfoU)
 
   end subroutine
   
@@ -907,7 +931,7 @@ contains
   
   subroutine trhsevl_assembleSpatialRHS (rglobalData, rphysics,&
       bclear, rrhs, dtimePrimal, dtimeDual, &
-      roptimalControl, rrhsDiscrete)
+      rcubatureInfoU, rcubatureInfoP, roptimalControl, rrhsDiscrete)
   
 !<description>
   ! Generate the RHS vector at the time dtime. isubstep may specify the
@@ -932,6 +956,12 @@ contains
   real(DP), intent(in) :: dtimePrimal
   real(DP), intent(in) :: dtimeDual
 
+  ! Cubature information structure that determins how to do the cubature in the velocity.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfoU
+
+  ! Cubature information structure that determins how to do the cubature in the pressure.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfoP
+  
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
 !</input>
@@ -1007,17 +1037,16 @@ contains
 
         ! Discretise the X-velocity part:
         call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(1),rlinform,bclear,&
-                  rrhsDiscrete%RvectorBlock(1),user_coeff_RHS,rcollection)
+                  rlinform,bclear,rrhsDiscrete%RvectorBlock(1),&
+                  rcubatureInfoU,user_coeff_RHS,rcollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
         
         call user_initCollectForVecAssembly (rglobalData,rrhs%iid,2,dtimePrimal,rcollection)
 
         ! And the Y-velocity part:
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(2),rlinform,bclear,&
-                  rrhsDiscrete%RvectorBlock(2),user_coeff_RHS,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(2),&
+            rcubatureInfoU,user_coeff_RHS,rcollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
 
@@ -1028,21 +1057,18 @@ contains
         
         ! Discretise the primal X-velocity part:
         rcollection%IquickAccess(1) = 1
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(1),rlinform,bclear,&
-            rrhsDiscrete%RvectorBlock(1),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(1),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         ! And the primal Y-velocity part:
         rcollection%IquickAccess(1) = 2
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(2),rlinform,bclear,&
-            rrhsDiscrete%RvectorBlock(2),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(2),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         ! Dual pressure RHS.
         rcollection%IquickAccess(1) = 6
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(6),rlinform,bclear,&
-            rrhsDiscrete%RvectorBlock(6),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(6),&
+            rcubatureInfoP,trhsevl_evalFunction,rcollection)
         
         call ansol_doneEval (rcollection,"RHS")
         
@@ -1060,9 +1086,8 @@ contains
         ! dual RHS -- which are normally zero.
         !
         ! Discretise the X-velocity part:
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(4),rlinform,bclear,&
-                  rrhsDiscrete%RvectorBlock(4),user_coeff_Target,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(4),&
+            rcubatureInfoU,user_coeff_Target,rcollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
 
@@ -1070,9 +1095,8 @@ contains
             roptimalControl%rtargetFunction%iid,2,dtimeDual,rcollection)
         
         ! And the Y-velocity part:
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(5),rlinform,bclear,&
-                  rrhsDiscrete%RvectorBlock(5),user_coeff_Target,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(5),&
+            rcubatureInfoU,user_coeff_Target,rcollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
         
@@ -1083,15 +1107,13 @@ contains
         
         ! Discretise the X-velocity part:
         rcollection%IquickAccess(1) = 1
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(4),rlinform,bclear,&
-            rrhsDiscrete%RvectorBlock(4),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(4),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         ! And the Y-velocity part:
         rcollection%IquickAccess(1) = 2
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(5),rlinform,bclear,&
-            rrhsDiscrete%RvectorBlock(5),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(5),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         call ansol_doneEval (rcollection,"RHS")
       
@@ -1116,18 +1138,16 @@ contains
         call user_initCollectForVecAssembly (rglobalData,rrhs%iid,4,dtimeDual,rcollection)
 
         ! Discretise the X-velocity part:
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
-                  rrhsDiscrete%RvectorBlock(4),user_coeff_RHS,rcollection)
+        call linf_buildVectorScalar (rlinform,.false.,rrhsDiscrete%RvectorBlock(4),&
+            rcubatureInfoU,user_coeff_RHS,rcollection)
         
         call user_doneCollectForAssembly (rglobalData,rcollection)
         
         call user_initCollectForVecAssembly (rglobalData,rrhs%iid,5,dtimeDual,rcollection)
         
         ! And the Y-velocity part:
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
-                  rrhsDiscrete%RvectorBlock(5),user_coeff_RHS,rcollection)
+        call linf_buildVectorScalar (rlinform,.false.,rrhsDiscrete%RvectorBlock(5),&
+            rcubatureInfoU,user_coeff_RHS,rcollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
                   
@@ -1138,21 +1158,18 @@ contains
         
         ! Discretise the dual X-velocity part:
         rcollection%IquickAccess(1) = 4
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
-            rrhsDiscrete%RvectorBlock(4),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,.false.,rrhsDiscrete%RvectorBlock(4),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         ! And the dual Y-velocity part:
         rcollection%IquickAccess(1) = 5
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
-            rrhsDiscrete%RvectorBlock(5),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,.false.,rrhsDiscrete%RvectorBlock(5),&
+            rcubatureInfoU,trhsevl_evalFunction,rcollection)
 
         ! Primal pressure:
         rcollection%IquickAccess(1) = 3
-        call linf_buildVectorScalar (&
-            p_rdiscretisation%RspatialDiscr(3),rlinform,.false.,&
-            rrhsDiscrete%RvectorBlock(3),trhsevl_evalFunction,rcollection)
+        call linf_buildVectorScalar (rlinform,.false.,rrhsDiscrete%RvectorBlock(3),&
+            rcubatureInfoP,trhsevl_evalFunction,rcollection)
 
         call ansol_doneEval (rcollection,"RHS")
       

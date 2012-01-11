@@ -14,6 +14,7 @@ module structuresoptflow
   use storage
   use boundary
   use triangulation
+  use cubature
   use paramlist
   use discretebc
   use discretefbc
@@ -48,6 +49,7 @@ module structuresoptflow
   
   public :: t_optcPostprocessing
   public :: t_settings_optflow
+  public :: t_settings_discr
   
 !<types>
 
@@ -226,6 +228,39 @@ module structuresoptflow
 !</typeblock>
 
 !<typeblock>
+  
+  ! Structure encapsuling the main discretisation
+  type t_settings_discr
+  
+    ! Type of element pair to use for the discretisation.
+    ! 0 = Q1~(E031) / Q1~(E031) / Q0
+    ! 1 = Q1~(E030) / Q1~(E030) / Q0
+    ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
+    ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+    ! 4 = Q2 (E013) / Q2 (E013) / QP1
+    ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+    ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+    ! (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+    ! (QP1  = Quadrilateral discontinuous P1 element)
+    integer :: ielementType = 3
+    
+    ! cubature formula for Mass matrix
+    integer(i32) :: icubMass = CUB_GEN_AUTO
+
+    ! cubature formula for Stokes/Laplacian matrix
+    integer(i32) :: icubStokes = CUB_GEN_AUTO
+
+    ! cubature formula for Pressure matrices B
+    integer(i32) :: icubB = CUB_GEN_AUTO
+
+    ! cubature formula for RHS F
+    integer(i32) :: icubF = CUB_GEN_AUTO
+
+  end type
+
+!</typeblock>
+
+!<typeblock>
 
   ! Structure collecting all settings of the space-time optflow solver.
   type t_settings_optflow
@@ -247,6 +282,9 @@ module structuresoptflow
 
     ! Parameters of the optimal control problem
     type(t_settings_optcontrol) :: rsettingsOptControl
+
+    ! Settings controlling the spatial discretisation (element, cubature)
+    type(t_settings_discr) :: rsettingsSpaceDiscr
 
     ! Stabilisation parameters for the primal and dual system.
     type(t_settings_stabil) :: rstabilPrimal
@@ -276,9 +314,6 @@ module structuresoptflow
     ! A level info hierarchy for the assembly of optimal control stuff on all levels.
     type(t_staticSpaceAsmHierarchyOptC) :: rspaceAsmHierarchyOptC
 
-    ! A hierarchy of space levels for mass matrices
-    type(t_feHierarchy) :: rfeHierMass
-    
     ! A hierarchy of space levels for velocity+pressure (primal/dual space)
     type(t_feHierarchy) :: rfeHierPrimal
     

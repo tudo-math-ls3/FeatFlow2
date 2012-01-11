@@ -773,8 +773,8 @@ contains
       if (rpostproc%icalcKineticEnergy .ne. 0) then
       
         ! Perform error analysis to calculate and add 1/2||u||^2_{L^2}.
-        call pperr_scalar (rvector%RvectorBlock(1),PPERR_L2ERROR,Derr(1))
-        call pperr_scalar (rvector%RvectorBlock(2),PPERR_L2ERROR,Derr(2))
+        call pperr_scalar (PPERR_L2ERROR,Derr(1),rvector%RvectorBlock(1))
+        call pperr_scalar (PPERR_L2ERROR,Derr(2),rvector%RvectorBlock(2))
                            
         denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
