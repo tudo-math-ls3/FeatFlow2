@@ -2260,7 +2260,7 @@ contains
                 !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
                 if (ielementtype.ne.EL_DG_T0_2D) then
                    call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                        fcoeff_buildMatrixBl_sim_iSystem,rcollection)!,rscalarAssemblyInfo)
+                        fcoeff_buildMatrixBl_sim=fcoeff_buildMatrixBl_sim_iSystem,rcollection=rcollection)
                 else
                    call lsysbl_clearMatrix(rmatrixABlock)
                 end if
@@ -2566,7 +2566,7 @@ contains
                 !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
                 if (ielementtype.ne.EL_DG_T0_2D) then
                    call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                        fcoeff_buildMatrixBl_sim_iEuler,rcollection)!,rscalarAssemblyInfo)
+                        fcoeff_buildMatrixBl_sim=fcoeff_buildMatrixBl_sim_iEuler,rcollection=rcollection)
                 else
                    call lsysbl_clearMatrix(rmatrixABlock)
                 end if
@@ -2827,7 +2827,7 @@ contains
                 !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
                 if (ielementtype.ne.EL_DG_T0_2D) then
                    call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                        fcoeff_buildMatrixBl_sim_iConvNewton,rcollection)!,rscalarAssemblyInfo)
+                        fcoeff_buildMatrixBl_sim=fcoeff_buildMatrixBl_sim_iConvNewton,rcollection=rcollection)
                 else
                    call lsysbl_clearMatrix(rmatrixABlock)
                 end if
@@ -3206,7 +3206,7 @@ contains
                 !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
                 if (ielementtype.ne.EL_DG_T0_2D) then
                    call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                        fcoeff_buildMatrixBl_sim_iEuler,rcollection)!,rscalarAssemblyInfo)
+                        fcoeff_buildMatrixBl_sim=fcoeff_buildMatrixBl_sim_iEuler,rcollection=rcollection)
                 else
                    call lsysbl_clearMatrix(rmatrixABlock)
                 end if

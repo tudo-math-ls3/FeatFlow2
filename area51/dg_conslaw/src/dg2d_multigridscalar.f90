@@ -388,8 +388,8 @@ contains
        call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
        
        if (ielementtype.ne.0) then
-          call bilf_buildMatrixScalar2 (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
-               fcoeff_MatrixScalarMgCell)!,rcollection)!,rscalarAssemblyInfo)
+          call bilf_buildMatrixScalar (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
+               fcoeff_MatrixScalarMgCell)
        else
           call lsyssc_clearMatrix(p_rmatrix%RmatrixBlock(1,1))
        end if

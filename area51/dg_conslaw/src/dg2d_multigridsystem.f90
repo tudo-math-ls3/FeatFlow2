@@ -592,7 +592,7 @@ contains
   ! is missing, create it
   do ilevel = 2,nlmax
     ! Initialise the projection structure
-    call linsol_initProjMG2LvByDiscr (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+    call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
                                       rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
                                       rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
   end do
@@ -708,8 +708,8 @@ contains
       rform%BconstantCoeff = .false.
       rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%RlevelInfo(ilevel)%rvector
       if (rproblem%ielementtype.ne.EL_DG_T0_2D) then
-         call bilf_buildMatrixBlock2 (rform, .true., rproblem%RlevelInfo(ilevel)%rmatrix,&
-                                      fcoeff_buildMatrixBl_sim_iEuler,rproblem%rcollection)
+        call bilf_buildMatrixBlock2 (rform, .true., rproblem%RlevelInfo(ilevel)%rmatrix,&
+            fcoeff_buildMatrixBl_sim=fcoeff_buildMatrixBl_sim_iEuler,rcollection=rproblem%rcollection)
       else
          call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
       end if

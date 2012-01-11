@@ -11738,9 +11738,9 @@ contains
 
   !<subroutine>
 
-  subroutine bilf_buildMatrixBlock2 (rform, bclear, rmatrix,&
-       fcoeff_buildMatrixBl_sim,rcollection,rscalarAssemblyInfo)
-    use extstdassemblyinfo
+  subroutine bilf_buildMatrixBlock2 (rform, bclear, rmatrix,rcubatureInfo,&
+       fcoeff_buildMatrixBl_sim,rcollection)
+    
     !<description>
     ! This routine calculates the entries of a finite element matrix.
     ! The matrix structure must be prepared with bilf_createMatrixStructure
@@ -11774,6 +11774,10 @@ contains
     ! If .FALSE., the new matrix entries are added to the existing entries.
     logical, intent(in) :: bclear
 
+    ! (OPTINOAL:) A scalar cubature information structure that specifies the cubature
+    ! formula(s) to use. If not specified, default settings are used.
+    type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
     ! information.
@@ -11784,10 +11788,6 @@ contains
     include 'intf_coefficientMatrixBl.inc'
     optional :: fcoeff_buildMatrixBl_sim
 
-    ! OPTIONAL: A scalar assembly structure that gives additional information
-    ! about how to set up the matrix (e.g. cubature formula). If not specified,
-    ! default settings are used.
-    type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
     !</input>
 
     !<inputoutput>
@@ -11801,8 +11801,8 @@ contains
     type(t_bilfMatrixAssembly) :: rmatrixAssembly
     integer :: ielementDistr,iinfoBlock
     integer, dimension(:), pointer :: p_IelementList
-    type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
-    type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
 
     ! The matrix must be unsorted, otherwise we can not set up the matrix.
@@ -11822,14 +11822,14 @@ contains
     !    call sys_halt()
     !  end if
 
-    ! If we do not have it, create a scalar assembly info structure that
+    ! If we do not have it, create a cubature info structure that
     ! defines how to do the assembly.
-    if (.not. present(rscalarAssemblyInfo)) then
-       call easminfo_createDefInfoStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
-            rlocalScalarAssemblyInfo,0)
-       p_rscalarAssemblyInfo => rlocalScalarAssemblyInfo
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
     else
-       p_rscalarAssemblyInfo => rscalarAssemblyInfo
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Do we have a uniform triangulation? Would simplify a lot...
@@ -11850,20 +11850,20 @@ contains
              !        end if
 
              ! Loop over the element blocks to discretise
-             do iinfoBlock = 1,p_rscalarAssemblyInfo%ninfoBlockCount
+             do iinfoBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
                 ! Get the element distribution of that block.
-                ielementDistr = p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
+                ielementDistr = p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
 
                 ! Check if element distribution is empty
-                if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL .le. 0 ) cycle
+                if (p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%NEL .le. 0 ) cycle
 
                 ! Get list of elements present in the element distribution.
                 ! If the handle of the info block structure is not associated,
                 ! take all elements of the corresponding element distribution.
-                if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList .ne. ST_NOHANDLE) then
+                if (p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList .ne. ST_NOHANDLE) then
                    call storage_getbase_int(&
-                        p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList,&
+                        p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList,&
                         p_IelementList)
                 else
                    call storage_getbase_int(&
@@ -11875,8 +11875,8 @@ contains
                 call bilf_initAssembly(rmatrixAssembly,rform,&
                      rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                      rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                     p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
-                     min(BILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
+                     p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
+                     min(BILF_NELEMSIM,p_rcubatureInfo%p_RinfoBlocks(iinfoBlock)%NEL))
 
                 ! Assemble the data for all elements in this element distribution
                 call bilf_assembleSubmeshMatrix9Block (rmatrixAssembly,rmatrix,&
@@ -11905,8 +11905,8 @@ contains
     end select
 
     ! Release the assembly structure if necessary.
-    if (.not. present(rscalarAssemblyInfo)) then
-       call easminfo_releaseInfoStructure(rlocalScalarAssemblyInfo)
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
     end if
 
   end subroutine bilf_buildMatrixBlock2
