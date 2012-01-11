@@ -5263,12 +5263,6 @@ contains
   ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
   ! element distribution.
-  !
-  ! IMPLEMENTATIONAL REMARK 2:
-  ! Currently, rcubatureInfo is not optional such that the
-  ! interfaces of bilf_buildMatrixScalar1 and bilf_buildMatrixScalar2
-  ! are different and unique. However, bilf_buildMatrixScalar1
-  ! is a deprecated interface! In the future, if bilf_buildMatrixScalar1
 !</description>
 
 !<input>
@@ -5285,7 +5279,7 @@ contains
 
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
-  type(t_scalarCubatureInfo), intent(in), target :: rcubatureInfo
+  type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5309,7 +5303,7 @@ contains
     type(t_linfVectorAssembly) :: rvectorAssembly
     integer :: ielementDistr,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
-!    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     integer(I32) :: celement, ccubature
     
@@ -5360,15 +5354,15 @@ contains
     ! is removed, rcubatureInfo may be made optional by uncommenting
     ! the following and adding "optional" to the declaration.
 
-!    ! If we do not have it, create a cubature structure that
-!    ! defines how to do the assembly.
-!    if (.not. present(rcubatureInfo)) then
-!      call spdiscr_createDefCubStructure(rvector%p_rspatialDiscr,&
-!          rtempCubatureInfo,CUB_GEN_DEPR_LINFORM)
-!      p_rcubatureInfo => rtempCubatureInfo
-!    else
+    ! If we do not have it, create a cubature structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rvector%p_rspatialDiscr,&
+          rtempCubatureInfo,CUB_GEN_DEPR_LINFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
       p_rcubatureInfo => rcubatureInfo
-!    end if
+    end if
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
@@ -5413,10 +5407,10 @@ contains
     end if
 
     ! Release the assembly structure if necessary.
-!    if (.not. present(rcubatureInfo)) then
-!      call spdiscr_releaseCubStructure(rtempCubatureInfo)
-!    end if
-
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+    
   end subroutine
 
   !****************************************************************************
