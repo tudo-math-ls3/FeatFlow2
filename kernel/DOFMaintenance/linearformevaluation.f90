@@ -348,8 +348,10 @@ module linearformevaluation
 
   interface linf_buildVectorScalar
     module procedure linf_buildVectorScalar1
-    module procedure linf_buildVectorScalar2
+    module procedure linf_buildVectorScalar3
   end interface
+  
+  public :: linf_buildVectorScalar2
 
 contains
 
@@ -5147,7 +5149,98 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalar2 (rform, bclear, rvector, rcubatureInfo,&
+  subroutine linf_buildVectorScalar2 (rform, bclear, rvector, &
+                                      fcoeff_buildVectorSc_sim, rcollection,&
+                                      rperfconfig)
+  
+!<description>
+  ! DEPRECATED INTERFACE!
+  ! This routine assembles the entries of a vector according to a linear form
+  ! (typically used for assembling RHS vectors).
+  !
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
+  ! sorting of the entries is switched off - the vector is set up unsorted.
+  !
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
+  ! otherwise an error is thrown.
+  !
+  ! IMPLEMENTATIONAL REMARK:
+  ! This is a new implementation of the vector assembly using element subsets.
+  ! In contrast to linf_buildVectorScalar, this routine loops itself about
+  ! the element subsets and calls linf_initAssembly/
+  ! linf_assembleSubmeshVector/linf_doneAssembly to assemble vector entries of a
+  ! submesh.
+  ! The linf_assembleSubmeshVector interface allows to assemble parts of a
+  ! vector based on an arbitrary element list which is not bound to an
+  ! element distribution.
+  !
+  ! IMPLEMENTATIONAL REMARK 2:
+  ! Currently, rcubatureInfo is not optional such that the
+  ! interfaces of bilf_buildMatrixScalar1 and bilf_buildMatrixScalar2
+  ! are different and unique. However, bilf_buildMatrixScalar1
+  ! is a deprecated interface! In the future, if bilf_buildMatrixScalar1
+!</description>
+
+!<input>
+  ! The linear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+  
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new entries are added to the existing entries.
+  logical, intent(in) :: bclear
+  
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+  ! The FE vector. Calculated entries are imposed to this vector.
+  ! The vector must exist before being passed to this routine.
+  type(t_vectorScalar), intent(inout) :: rvector
+  
+  ! OPTIONAL: A collection structure. This structure is
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+  
+    ! DEPRECATED INTERFACE!!!
+    type(t_scalarCubatureInfo), target :: rcubatureInfo
+
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"linf_buildVectorScalar2")
+#endif
+
+    ! Create a cubature info structure that
+    ! defines how to do the assembly.
+    ! This will either take the cubature formula from the
+    ! discretisation (DEPRECATED) or use the standard cubature formula if none
+    ! is given in the discretisation.
+    call spdiscr_createDefCubStructure(rvector%p_rspatialDiscr,&
+        rcubatureInfo,CUB_GEN_DEPR_LINFORM)
+        
+    ! Calculate the entries
+    call linf_buildVectorScalar (rform, bclear, rvector, rcubatureInfo,&
+        fcoeff_buildVectorSc_sim, rcollection,rperfconfig)
+
+    ! Release the assembly structure if necessary.
+    call spdiscr_releaseCubStructure(rcubatureInfo)
+
+  end subroutine
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildVectorScalar3 (rform, bclear, rvector, rcubatureInfo,&
                                       fcoeff_buildVectorSc_sim, rcollection,&
                                       rperfconfig)
   
