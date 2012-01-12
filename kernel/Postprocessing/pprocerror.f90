@@ -1285,7 +1285,7 @@ contains
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
             p_IelementList(IELset:IELmax), ctrafoType, p_DcubPts, &
             rperfconfig=rperfconfig)
-        p_Ddetj => revalElementSet%p_Ddetj
+        p_Ddetj => revalElementSet%p_Ddetj(:,1:IELmax-IELset+1)
         
         ! Remove the ref-points eval tag for the next loop iteration
         cevalTag = iand(cevalTag,not(EL_EVLTAG_REFPOINTS))
@@ -1295,7 +1295,7 @@ contains
         rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
+        rintSubset%p_IdofsTrial => p_Idofs(:,1:IELmax-IELset+1)
         rintSubset%celement = celement
         
         ! Evaluate the element
@@ -1308,7 +1308,8 @@ contains
           ! otherwise simply format DvalFunc to zero.
           if(present(ffunctionReference)) then
             call ffunctionReference(DER_FUNC,p_rdiscr,IELmax-IELset+1,ncubp,&
-                revalElementSet%p_DpointsReal,p_Idofs,rintSubset,&
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                p_Idofs(:,1:IELmax-IELset+1),rintSubset,&
                 DvalFunc(:,1:IELmax-IELset+1),rcollection)
           else
             DvalFunc = 0.0_DP
@@ -1329,7 +1330,8 @@ contains
           ! If a weighting function is specified, evaluate it and multiply
           if(present(ffunctionWeight)) then
             call ffunctionWeight(p_rdiscr,IELmax-IELset+1,ncubp,&
-                revalElementSet%p_DpointsReal,p_Idofs,rintSubset,&
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                p_Idofs(:,1:IELmax-IELset+1),rintSubset,&
                 DvalWeight(:,1:IELmax-IELset+1),rcollection)
 
             do j = 1,IELmax-IELset+1
@@ -1355,7 +1357,8 @@ contains
           if(present(ffunctionReference)) then
             do ider = ifirstDer, ilastDer
               call ffunctionReference(ider,p_rdiscr,IELmax-IELset+1,ncubp, &
-                  revalElementSet%p_DpointsReal,p_Idofs,rintSubset,&
+                  revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                  p_Idofs(:,1:IELmax-IELset+1),rintSubset,&
                   DvalDer(:,1:IELmax-IELset+1,ider),rcollection)
             end do
           else
@@ -1379,7 +1382,8 @@ contains
           ! If a weighting function is specified, evaluate it and multiply
           if(present(ffunctionWeight)) then
             call ffunctionWeight(p_rdiscr,IELmax-IELset+1,ncubp,&
-                revalElementSet%p_DpointsReal,p_Idofs,rintSubset,&
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                p_Idofs(:,1:IELmax-IELset+1),rintSubset,&
                 DvalWeight(:,1:IELmax-IELset+1),rcollection)
                 
             do ider = ifirstDer, ilastDer
