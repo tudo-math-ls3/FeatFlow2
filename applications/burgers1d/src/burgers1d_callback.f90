@@ -159,21 +159,10 @@ contains
     ! In the first subvector of p_rsolution, there is our scalar solution u.
     !
     ! Evaluate the solution in all the points where we need it.
-    ! All of the information comes already in the parameters of this routine!
-    ! So we can directly call our evaluation function.
-    !
-    ! We only have to make sure *what* for coordinates to pass to the
-    ! evaluation routines - either on the reference element or on the real
-    ! element (depending on whether we use a conforming space or not).
     
-    ieldistr = rdomainIntSubset%ielementDistribution
-    ieltyp = rdiscretisationTrial%RelementDistr(ieldistr)%celement
+    call fevl_evaluate_sim (p_rsolution%RvectorBlock(1), rdomainIntSubset,&
+        DER_FUNC,Dvalues)
     
-    call fevl_evaluate_sim (p_rsolution%RvectorBlock(1), rdomainIntSubset%p_Dcoords, &
-                  rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
-                  ieltyp, IdofsTrial, npointsPerElement, nelements, Dpoints, DER_FUNC,&
-                  Dvalues)
-                  
     ! Transfer the values to the coefficient vector.
     ! DEBUG: Dcoefficients(2,1:npointsPerElement,1:nelements) = 0.0
     Dcoefficients(2,1:npointsPerElement,1:nelements) = Dvalues(1:npointsPerElement,1:nelements)

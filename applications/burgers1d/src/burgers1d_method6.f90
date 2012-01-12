@@ -78,8 +78,12 @@ module burgers1d_method6
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
-    ! An object specifying the discretisation (trial/test functions,...)
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    ! An object specifying the discretisation (structure of the
+    ! solution, trial/test functions,...)
+    type(t_blockDiscretisation) :: rdiscretisation
+
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
@@ -120,7 +124,9 @@ module burgers1d_method6
     ! to one level of the discretisation.
     type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
     
-    ! A collection structure with problem-dependent data
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
+    ! callback routines.
     type(t_collection) :: rcollection
     
   end type
@@ -222,34 +228,36 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: I
+    ! local variables
+    integer :: i
   
     ! An object for saving the domain:
     type(t_boundary), pointer :: p_rboundary
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
-    
-    ! An object for the spatial discretisation
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
+    ! An object for the block discretisation on one level
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    
+    ! A cubature information structure on one level
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
-      ! Now we can startto initialise the discretisation. At first, set up
+      ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this simple problem, we only have one block.
       allocate(p_rdiscretisation)
-      call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
-                                   p_rtriangulation, p_rboundary)
+      call spdiscr_initBlockDiscr (rproblem%RlevelInfo(i)%rdiscretisation,1,&
+          p_rtriangulation, p_rboundary)
 
-      ! Save the discretisation structure to our local LevelInfo structure
-      ! for later use.
-      rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
+      ! Get the discretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
 
       ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
@@ -257,8 +265,19 @@ contains
       ! and cubature rule for this solution component:
       call spdiscr_initDiscr_simple ( &
                   p_rdiscretisation%RspatialDiscr(1), &
-                  EL_E011,CUB_G2X2, &
-                  p_rtriangulation, p_rboundary)
+                  EL_Q1, p_rtriangulation, p_rboundary)
+
+      ! Set up an cubature info structure to tell the code which cubature
+      ! formula to use
+      ! Create an assembly information structure which tells the code
+      ! the cubature formula to use. Standard: Gauss 3x3.
+      call spdiscr_createDefCubStructure(&  
+          p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
+          CUB_GEN_AUTO_G2)
+
+      call collct_setvalue_cubinfo(rproblem%rcollection,'CUBINFO',&
+          rproblem%RlevelInfo(i)%rcubatureInfo,.true.,i)
+
     end do
                                    
   end subroutine
@@ -295,18 +314,24 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! Arrays for the Cuthill McKee renumbering strategy
     integer, dimension(1) :: H_Iresort
     integer, dimension(:), pointer :: p_Iresort
     
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! Get the matrix structure; we want to build a template matrix
       ! on the level, which receives the entries later.
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-
+      
+      ! Get the cubature information structure
+      p_rcubatureInfo => rproblem%RlevelInfo(i)%rcubatureInfo
+            
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
@@ -320,8 +345,8 @@ contains
       ! We create that directly in the block (1,1) of the block matrix
       ! using the discretisation structure of the first block.
       call bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-                p_rmatrix%RmatrixBlock(1,1))
+          p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
+          p_rmatrix%RmatrixBlock(1,1))
 
       ! Allocate memory for the matrix, do not calculate the entries.
       ! Remember hat we have a nonlinear matrix, which entries must be build
@@ -355,7 +380,7 @@ contains
       ! It is used for building the matrices on lower levels.
       if (i .lt. rproblem%ilvmax) then
         p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
-        call lsysbl_createVecBlockIndMat (p_rmatrix,p_rtempVector,.false.)
+        call lsysbl_createVectorBlock (p_rdiscretisation,p_rtempVector,.false.)
         
         ! Add the temp vector to the collection on level i
         ! for use in the callback routine
@@ -366,20 +391,20 @@ contains
 
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
+    
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
-    ! Although we could manually create the solution/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rvector, .false.)
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
     call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
-    
+
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
@@ -397,9 +422,8 @@ contains
     !
     ! Note that the vector is unsorted after calling this routine!
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS,&
-              rproblem%rcollection)
+              rlinform,.true.,p_rrhs%RvectorBlock(1),p_rcubatureInfo,&
+              coeff_RHS,rproblem%rcollection)
                                 
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
@@ -525,8 +549,8 @@ contains
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
-    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
-    p_rvector%p_rdiscreteBC => p_rdiscreteBC
+    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
+    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
                 
   end subroutine
 
@@ -611,12 +635,18 @@ contains
       integer :: ilvmax
       type(t_matrixBlock), pointer :: p_rmatrix
 
+      ! A cubature information structure
+      type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
       ! Get maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
 
       ! Get the system matrix on the maximum level
       p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
       
+      ! Get the cubature information structure
+      p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,'CUBINFO',ilvmax)
+
       ! Put a reference to rx into the collection. This way, we inform the callback
       ! routine of the matrix assembly about the solution vector to use
       ! fot the nonlinear term.
@@ -664,9 +694,8 @@ contains
       ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
-      call bilf_buildMatrixScalar (rform,.true.,&
-                                   p_rmatrix%RmatrixBlock(1,1),coeff_burgers,&
-                                   p_rcollection)
+      call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1),&
+          p_rcubatureInfo,coeff_burgers,p_rcollection)
 
       ! Remove the vector from the collection - not necessary anymore.
       call collct_deletevalue (p_rcollection,'RX')
@@ -749,6 +778,7 @@ contains
     type(t_interlevelProjectionBlock), pointer :: p_rprojection
     type(t_vectorScalar), pointer :: p_rvectorTemp
     type(t_bilinearForm) :: rform
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
       ! Our 'parent' (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
@@ -817,6 +847,9 @@ contains
       ! from the finest to the coarsest for getting the nonlinarity
       ! on all the levels.
       do i=ilvmax-1,ilvmin,-1
+
+        ! Get the cubature information structure
+        p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,'CUBINFO',i)
       
         ! Get the destination matrix on that level
         p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',i)
@@ -859,9 +892,8 @@ contains
         ! We pass our collection structure as well to this routine,
         ! so the callback routine has access to everything what is
         ! in the collection.
-        call bilf_buildMatrixScalar (rform,.true.,&
-                                    p_rmatrix%RmatrixBlock(1,1),coeff_burgers,&
-                                    p_rcollection)
+        call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1),&
+            p_rcubatureInfo,coeff_burgers,p_rcollection)
         
         ! Remove RX from the collection, not needed there anymore.
         call collct_deletevalue(p_rcollection,'RX')
@@ -892,15 +924,20 @@ contains
       ! Ok, system matrices on all levels are assembled now.
       ! Now we turn to invokle the linear solver for preconditioning...
       !
-      ! Resort the vector rd before solving the corresponding linear
+      ! Resort the vector rd in the same way as the matrix
+      ! before solving the corresponding linear
       ! system/perform the preconditioning. Use p_rvectorTemp as temporary
       ! vector for that purpose - it is prepared large enough.
-      call lsysbl_sortVectorInSitu (rd,p_rvectorTemp,.true.)
+      call lsysbl_synchroniseSortMatVec(p_rmatrix,rd,p_rvectorTemp)
       
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
       call linsol_initData (p_rsolverNode, ierror)
-      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+
+      if (ierror .ne. LINSOL_ERR_NOERROR) then
+        call output_line("Matrix singular!",OU_CLASS_ERROR)
+        call sys_halt()
+      end if
       
       ! Finally solve the system. As we want to solve Ax=b with
       ! b being the real RHS and x being the real solution vector,
@@ -911,7 +948,7 @@ contains
 
       ! Release the numeric factorisation of the matrix.
       ! We do not release the symbolic factorisation, as we can use them
-      ! in the next iteration.
+      ! for the next iteration.
       call linsol_doneData (p_rsolverNode)
 
       ! Unsort our rd again so that it is in the state it was before.
@@ -964,7 +1001,7 @@ contains
     type(t_filterChain), dimension(1), target :: RfilterChain
 
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection
@@ -1010,7 +1047,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid (p_rsolverNode,RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
     
     ! Set the output level of the solver for some output
     p_rsolverNode%ioutputLevel = 1
@@ -1037,6 +1074,10 @@ contains
       nullify(p_rpreconditioner)
       nullify(p_rsmoother)
       nullify(p_rcoarseGridSolver)
+      
+      ! Get the level
+      call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+      
       if (i .eq. ilvmin) then
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
@@ -1047,7 +1088,7 @@ contains
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
       else
-        ! Set up Jacobi smoother for multigrid would be:
+        ! Setting up Jacobi smoother for multigrid would be:
         ! CALL linsol_initJacobi (p_rsmoother)
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
@@ -1061,9 +1102,13 @@ contains
       end if
     
       ! Add the level.
-      call linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rprojection,&
-                                     p_rsmoother,p_rsmoother,p_rcoarseGridSolver)
-                                     
+      ! And add this multi-grid level. We will use the same smoother
+      ! for pre- and post-smoothing.
+      call linsol_getMultigrid2Level (p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
+      p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
+
       ! How much memory is necessary for performing the level change?
       ! We ourself must build nonlinear matrices on multiple levels and have
       ! to interpolate the solution vector from finer level to coarser ones.
@@ -1076,6 +1121,7 @@ contains
                               rproblem%RlevelInfo(i-1)%rmatrix,&
                               rproblem%RlevelInfo(i)%rmatrix))
       end if
+
     end do
     
     ! Set up a scalar temporary vector that we need for building up nonlinear
@@ -1109,7 +1155,11 @@ contains
     ! In fact, solvers like UMFPACK use this for a symbolic factorisation
     ! of the matrix.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
 
     ! Unsort the matrix structure again. The matrices stay in unsorted form
     ! until the entries are assembled.
@@ -1192,6 +1242,9 @@ contains
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
 
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     ! A pointer to the solution vector and to the triangulation.
     type(t_vectorBlock), pointer :: p_rvector
     type(t_triangulation), pointer :: p_rtriangulation
@@ -1203,6 +1256,9 @@ contains
     p_rtriangulation => &
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
+    ! Get the cubature information structure
+    p_rcubatureInfo => rproblem%RlevelInfo(rproblem%ilvmax)%rcubatureInfo
+    
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing.
     !
@@ -1210,8 +1266,8 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,trim(sucddir)//'/u6.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,trim(sucddir)//'/u6.vtk')
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -1322,12 +1378,15 @@ contains
   integer :: i
 
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
+
+      ! Release the cubature info structure.
+      call spdiscr_releaseCubStructure(rproblem%RlevelInfo(i)%rcubatureInfo)
+      call collct_deletevalue (rproblem%rcollection,'CUBINFO',i)
+
       ! Delete the block discretisation together with the associated
-      ! scalar spatial discretisations....
-      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
-     
-      ! and remove the allocated block discretisation structure from the heap.
-      deallocate(rproblem%RlevelInfo(i)%p_rdiscretisation)
+      ! scalar spatial discretisations.
+      call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
+
     end do
     
   end subroutine
