@@ -117,6 +117,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock) :: rvector1, rvector2
+    type(t_vectorScalar) :: rvectorScalar
     type(t_matrixScalar) :: rmatrix
     type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
@@ -250,8 +251,9 @@ contains
     ! compute the local L1-norms of nodal error vector which yields
     ! the local values of the a posteriori error estimator.
     call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
-    call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L1ERROR, daux,&
-        relementError=rtargetError)
+    call lsyssc_getbase_double(rtargetError, p_DtargetError)
+    call pperr_scalar(PPERR_L1ERROR, daux, rvector2%RvectorBlock(1),&
+        DelementError=p_DtargetError)
 
     ! Release temporal vectors
     call lsysbl_releaseVector(rvector1)
@@ -348,14 +350,20 @@ contains
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
               rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
-              rcollectionTmp, ffunctionWeight=transp_weightFuncAnalytic)
+              rcollectionTmp, transp_weightFuncAnalytic)
           
+          ! Create empty vector
+          call lsyssc_createVector(&
+              rsolutionPrimal%RvectorBlock(1)%p_rspatialDiscr,&
+              rvectorScalar, .true.)
+
           ! Compute the exact value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncAnalytic,&
-              rcollection=rcollectionTmp,&
-              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-              ffunctionWeight=transp_weightFuncAnalytic)
+              rvectorScalar, transp_refFuncAnalytic,&
+              rcollectionTmp, transp_weightFuncAnalytic)
+
+          ! Release temporal vector
+          call lsyssc_releaseVector(rvectorScalar)
         end if
 
         ! Release temporal collection structure
@@ -541,15 +549,21 @@ contains
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
               rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
-              rcollectionTmp, ffunctionWeight=transp_weightFuncAnalytic)
+              rcollectionTmp, transp_weightFuncAnalytic)
+
+          ! Create empty vector
+          call lsyssc_createVector(&
+              rsolutionPrimal%RvectorBlock(1)%p_rspatialDiscr,&
+              rvectorScalar, .true.)
 
           ! Compute the exact value of the quantity of interest.
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncAnalytic,&
-              rcollection=rcollectionTmp,&
-              rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-              ffunctionWeight=transp_weightFuncAnalytic)
+              rvectorScalar, transp_refFuncAnalytic,&
+              rcollectionTmp, transp_weightFuncAnalytic)
           
+          ! Release temporal vector
+          call lsyssc_releaseVector(rvectorScalar)
+
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
           if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
@@ -784,7 +798,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorScalar) :: rvectorScalar
     type(t_collection) :: rcollectionTmp
-    real(DP), dimension(:), pointer :: p_Ddata, p_Derror
+    real(DP), dimension(:), pointer :: p_Ddata, p_Derror, p_DelementError
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
@@ -949,8 +963,9 @@ contains
 
       ! We need the global norm of the scalar error variable
       call lsyssc_createVector(rvectorScalar, rerror%NEQ, .true.)
+      call lsyssc_getbase_double(rvectorScalar, p_DelementError)
       call pperr_scalar(PPERR_H1ERROR, dsolution,&
-          rsolution%RvectorBlock(1), relementError=rvectorScalar)
+          rsolution%RvectorBlock(1), DelementError=p_DelementError)
 
       call output_line('Total percentage error: '//trim(sys_sdEP(derror/dsolution,15,6)))
       call output_lbrk()

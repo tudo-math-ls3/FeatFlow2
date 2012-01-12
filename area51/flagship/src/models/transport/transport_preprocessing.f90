@@ -470,29 +470,22 @@ contains
       ! Get spatial dimension
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        call spdiscr_initDiscr_simple(&
-            p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation)
+        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), p_rtriangulation)
 
       case (NDIM2D)
         if (size(Celement) .eq. 1) then
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              Celement(1), SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+              Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         else
           call spdiscr_initDiscr_triquad(&
               p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
-              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         end if
 
       case (NDIM3D)
-        call spdiscr_initDiscr_simple(&
-            p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation)
+        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), p_rtriangulation)
       
       case default
         call output_line('Invalid number of spatial dimensions',&
@@ -729,7 +722,7 @@ contains
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
                                  rproblemLevel%Rmatrix(coeffMatrix_CX))
         call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                       DER_DERIV3D_X, DER_FUNC)
+                                        DER_DERIV3D_X, DER_FUNC)
       end if
 
       !-------------------------------------------------------------------------
@@ -1603,8 +1596,9 @@ contains
       rform%Idescriptors(1) = DER_FUNC
       
       ! Assemble the linear form for the scalar subvector
-      call linf_buildVectorScalar2(rform, .true.,&
-          rvector%RvectorBlock(1), transp_coeffVectorAnalytic, rcollectionTmp)
+      call linf_buildVectorScalar(rform, .true., rvector%RvectorBlock(1),&
+          fcoeff_buildVectorSc_sim=transp_coeffVectorAnalytic,&
+          rcollection=rcollectionTmp)
 
       ! Release temporal collection structure
       call collct_done(rcollectionTmp)
@@ -1784,8 +1778,9 @@ contains
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the discretised right-hand side vector
-      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-                                   transp_coeffVectorAnalytic, rcollectionTmp)
+      call linf_buildVectorScalar(rform, .true., rvector%RvectorBlock(1),&
+          fcoeff_buildVectorSc_sim=transp_coeffVectorAnalytic,&
+          rcollection=rcollectionTmp)
 
       ! Release temporal collection structure
       call collct_done(rcollectionTmp)
@@ -1890,8 +1885,9 @@ contains
 
       ! Build the discretised target functional. The contribution of
       ! the surfae integral comes in be weakly impose boundary conditions
-      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-          transp_coeffVectorAnalytic, rcollectionTmp)
+      call linf_buildVectorScalar(rform, .true., rvector%RvectorBlock(1),&
+          fcoeff_buildVectorSc_sim=transp_coeffVectorAnalytic,&
+          rcollection=rcollectionTmp)
 
       ! Release temporal collection structure
       call collct_done(rcollectionTmp)

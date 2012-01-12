@@ -509,29 +509,22 @@ contains
       ! Get spatial dimension
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        call spdiscr_initDiscr_simple(&
-            p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation)
+        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), p_rtriangulation)
 
       case (NDIM2D)
         if (size(Celement) .eq. 1) then
-          call spdiscr_initDiscr_simple(&
-              p_rdiscretisation%RspatialDiscr(1),&
-              Celement(1), SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+              Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         else
           call spdiscr_initDiscr_triquad(&
               p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
-              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         end if
 
       case (NDIM3D)
-        call spdiscr_initDiscr_simple(&
-            p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation)
+        call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
+            Celement(1), p_rtriangulation)
       
       case default
         call output_line('Invalid number of spatial dimensions',&
