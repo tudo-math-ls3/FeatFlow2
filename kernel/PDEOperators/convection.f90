@@ -11370,7 +11370,7 @@ contains
         if (.not. (rconfig%bconstNu .and. rconfig%bconstAlpha)) then
           ! Prepare the call to the evaluation routine of the analytic function.
           call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = ielementDistr
+          !rintSubset%ielementDistribution = ielementDistr
           rintSubset%ielementStartIdx = IELset
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial => p_Idofs

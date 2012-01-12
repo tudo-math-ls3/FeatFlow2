@@ -51,10 +51,12 @@ module domainintegration
     ! Number of (cubature) points per element.
     integer :: npointsPerElement = 0
 
+    !<!-- DEPRECCATED, REMOVED!
     ! The currently active element distribution in the discretisation.
     ! Allows the routine to get the currently active element type for
     ! trial and test functions.
-    integer :: ielementDistribution = 0
+    !integer :: ielementDistribution = 0
+    !-->
     
     ! Start index of the current element block in the current element
     ! distribution ielementDistribution of the discretisation.
@@ -194,7 +196,7 @@ contains
     ! Initialise constants in the structure
     rintSubset%nelements            = nelements
     rintSubset%npointsPerElement    = npointsPerElement
-    rintSubset%ielementDistribution = 1
+    !rintSubset%ielementDistribution = 1
     rintSubset%ielementStartIdx     = 1
     
     ! Allocate memory for the structures:
@@ -278,7 +280,7 @@ contains
     ! Initialise constants in the structure
     rintSubset%nelements            = revalElementSet%nelements
     rintSubset%npointsPerElement    = revalElementSet%npointsPerElement
-    rintSubset%ielementDistribution = 1
+    !rintSubset%ielementDistribution = 1
     rintSubset%ielementStartIdx     = 1
     
     ! Let the pointers of the integration structure point to

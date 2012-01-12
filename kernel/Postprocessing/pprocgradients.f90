@@ -4644,7 +4644,7 @@ contains
               p_DcubPtsReal)
       
         ! Prepare the call to the evaluation routine of the analytic function.
-        rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         

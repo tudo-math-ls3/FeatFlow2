@@ -2330,7 +2330,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorSc_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution =  0
+        !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -2662,7 +2662,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution =  0
+        !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -2941,7 +2941,7 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorScBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution  =  0
+      !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -3325,7 +3325,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorScBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
+        !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -3605,7 +3605,7 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution  =  0
+      !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -3994,7 +3994,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
+        !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
@@ -4334,7 +4334,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = 0
+        !rintSubset%ielementDistribution = 0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial         => p_Idofs
@@ -4617,7 +4617,7 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-      rintSubset%ielementDistribution  =  0
+      !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
       rintSubset%p_IelementOrientation => IelementOrientation
@@ -5008,7 +5008,7 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution  =  0
+        !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
         rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)

@@ -1586,7 +1586,7 @@ contains
       ! In case, dpf1 is nonconstant, calculate dpf1.
       if (present(ffunctionReference)) then
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = ieldistr
+        !rintSubset%ielementDistribution = ieldistr
         rintSubset%ielementStartIdx = 1
         rintSubset%p_Ielements => IcurrentElementSet(1:nelements)
         rintSubset%p_IdofsTrial => Idofs
@@ -3154,7 +3154,7 @@ contains
         ! In case, dpf1 is nonconstant, calculate dpf1.
         if (present(ffunctionReference)) then
           call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = icurrentElementDistr
+          !rintSubset%ielementDistribution = icurrentElementDistr
           rintSubset%ielementStartIdx = 1
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial => IdofsTrial

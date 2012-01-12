@@ -1082,7 +1082,7 @@ contains
         ! Prepare an evaluation set that passes some information to the
         ! callback routine about where to evaluate
         call domint_initIntegrationByEvalSet(revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_IdofsTrial
@@ -1886,7 +1886,7 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildTrilMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution  =  0
+          !rintSubset%ielementDistribution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial          => p_IdofsTrial

@@ -618,7 +618,7 @@ contains
 
         ! Prepare the domain integration structure
         call domint_initIntegrationByEvalSet(revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = icurrentElementDistr
+        !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => Idofs
@@ -1292,7 +1292,7 @@ contains
 
         ! Prepare the domain integration structure
         call domint_initIntegrationByEvalSet(revalElementSet, rintSubset)
-        rintSubset%ielementDistribution = ielementDistr
+        !rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         rintSubset%p_IdofsTrial => p_Idofs(:,1:IELmax-IELset+1)

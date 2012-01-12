@@ -2397,8 +2397,7 @@ contains
   Bder(iderType) = .true.
   
   ! Get the currently active element
-  celement = rvectorScalar%p_rspatialDiscr%RelementDistr( &
-      rdomainIntSubset%ielementDistribution)%celement
+  celement = rdomainIntSubset%celement
   
   ! Allocate memory for the basis function values
   indofTrial = elem_igetNDofLoc(celement)
@@ -2610,8 +2609,7 @@ contains
   Bder(iderType) = .true.
   
   ! Get the currently active element
-  celement = rvectorScalar%p_rspatialDiscr%RelementDistr( &
-      rdomainIntSubset%ielementDistribution)%celement
+  celement = rdomainIntSubset%celement
   
   ! Allocate memory for the basis function values
   indofTrial = elem_igetNDofLoc(celement)
@@ -3141,7 +3139,7 @@ contains
   Bder(iderType) = .true.
   
   ! Get the currently active element
-  celement = rspatialDiscr%RelementDistr(rdomainIntSubset%ielementDistribution)%celement
+  celement = rdomainIntSubset%celement
   
   ! Allocate memory for the basis function values
   indofTrial = elem_igetNDofLoc(celement)
@@ -3243,7 +3241,7 @@ contains
   Bder(iderType) = .true.
   
   ! Get the currently active element
-  celement = rspatialDiscr%RelementDistr(rdomainIntSubset%ielementDistribution)%celement
+  celement = rdomainIntSubset%celement
   
   ! Allocate memory for the basis function values
   indofTrial = elem_igetNDofLoc(celement)

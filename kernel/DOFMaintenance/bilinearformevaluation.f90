@@ -5770,7 +5770,7 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution =  0
+          !rintSubset%ielementDistribution =  0
           rintSubset%ielementStartIdx     =  IELset
           rintSubset%p_Ielements          => IelementList(IELset:IELmax)
           rintSubset%p_IdofsTrial         => p_IdofsTrial
@@ -6214,7 +6214,7 @@ contains
     if (.not. rmatrixAssembly%rform%ballCoeffConstant) then
       if (present(fcoeff_buildMatrixScBdr1D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-        rintSubset%ielementDistribution =  0
+        !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  1
         rintSubset%p_Ielements          => IelementList
         rintSubset%p_IdofsTrial         => p_IdofsTrial
@@ -6777,7 +6777,7 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixScBdr2D_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-          rintSubset%ielementDistribution  =  0
+          !rintSubset%ielementDistribution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
           rintSubset%p_IelementOrientation => IelementOrientation(IELset:IELmax)
