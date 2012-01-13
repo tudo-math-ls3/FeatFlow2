@@ -255,22 +255,22 @@ Rate of convergence     : 7.541050269504384E-01
 Calculating 3D Stokes-Problem 1 - multigrid
 -------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 1.303575384003643E-03
-Multigrid: Iteration 1,  !!RES!! = 1.429238190397353E-04
-Multigrid: Iteration 2,  !!RES!! = 1.961517608210157E-05
-Multigrid: Iteration 3,  !!RES!! = 3.680948703052670E-06
-Multigrid: Iteration 4,  !!RES!! = 7.089069895580569E-07
-Multigrid: Iteration 5,  !!RES!! = 1.410468010227156E-07
-Multigrid: Iteration 6,  !!RES!! = 2.821583927574974E-08
-Multigrid: Iteration 7,  !!RES!! = 5.681163335914885E-09
+Multigrid: Iteration 1,  !!RES!! = 1.429238190397464E-04
+Multigrid: Iteration 2,  !!RES!! = 1.961517608211080E-05
+Multigrid: Iteration 3,  !!RES!! = 3.680948703053320E-06
+Multigrid: Iteration 4,  !!RES!! = 7.089069895579878E-07
+Multigrid: Iteration 5,  !!RES!! = 1.410468010225489E-07
+Multigrid: Iteration 6,  !!RES!! = 2.821583927568974E-08
+Multigrid: Iteration 7,  !!RES!! = 5.681163191896740E-09
 
 Multigrid statistics:
 
 Iterations              : 7
 !!INITIAL RES!!         : 1.303575384003643E-03
-!!RES!!                 : 5.681163335914885E-09
-!!RES!!/!!INITIAL RES!! : 4.358139472123545E-06
+!!RES!!                 : 5.681163191896740E-09
+!!RES!!/!!INITIAL RES!! : 4.358139361644206E-06
 
-Rate of convergence     : 1.714691026088476E-01
+Rate of convergence     : 1.714691019878817E-01
 
 Heap statistics:
 ----------------

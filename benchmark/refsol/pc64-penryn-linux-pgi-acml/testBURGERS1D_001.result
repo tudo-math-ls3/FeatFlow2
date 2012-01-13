@@ -1,66 +1,57 @@
-NLSOL: Iteration 0, !!RES!! = 6.790266562525013E-04
-NLSOL: Iteration 1, !!RES!! = 2.398660969692086E-04
-NLSOL: Iteration 2, !!RES!! = 1.519988042311361E-04
-NLSOL: Iteration 3, !!RES!! = 1.205642207295468E-04
-NLSOL: Iteration 4, !!RES!! = 6.503803631340275E-05
-NLSOL: Iteration 5, !!RES!! = 3.427122049284928E-05
-NLSOL: Iteration 6, !!RES!! = 1.569286146785829E-05
-NLSOL: Iteration 7, !!RES!! = 7.049987709483542E-06
-NLSOL: Iteration 8, !!RES!! = 3.092160019074639E-06
-NLSOL: Iteration 9, !!RES!! = 1.347567753794356E-06
-NLSOL: Iteration 10, !!RES!! = 5.842089769029161E-07
-NLSOL: Iteration 11, !!RES!! = 2.525112089422873E-07
-NLSOL: Iteration 12, !!RES!! = 1.088534850056066E-07
-NLSOL: Iteration 13, !!RES!! = 4.680902946390450E-08
-NLSOL: Iteration 14, !!RES!! = 2.007753310558107E-08
-NLSOL: Iteration 15, !!RES!! = 8.588628588546413E-09
-NLSOL: Iteration 16, !!RES!! = 3.663442202229750E-09
+NLSOL: Iteration 0, !!RES!! = 6.792936203547456E-04
+NLSOL: Iteration 1, !!RES!! = 2.401641768764865E-04
+NLSOL: Iteration 2, !!RES!! = 1.534087446048839E-04
+NLSOL: Iteration 3, !!RES!! = 1.240346130334714E-04
+NLSOL: Iteration 4, !!RES!! = 6.251308794799068E-05
+NLSOL: Iteration 5, !!RES!! = 2.872641417728842E-05
+NLSOL: Iteration 6, !!RES!! = 1.090085488480403E-05
+NLSOL: Iteration 7, !!RES!! = 3.980425964838229E-06
+NLSOL: Iteration 8, !!RES!! = 1.388379876293144E-06
+NLSOL: Iteration 9, !!RES!! = 4.757215424120897E-07
+NLSOL: Iteration 10, !!RES!! = 1.604235976410523E-07
+NLSOL: Iteration 11, !!RES!! = 5.349918093016005E-08
+NLSOL: Iteration 12, !!RES!! = 1.767625889799778E-08
+NLSOL: Iteration 13, !!RES!! = 5.793927510906403E-09
 
 Nonlinear solver statistics
 ---------------------------
-Initial defect: 6.790266562525013E-04
-Final defect:  3.663442202229750E-09
-#Iterations:   16
+Initial defect: 6.792936203547456E-04
+Final defect:  5.793927510906403E-09
+#Iterations:   13
 []
-NLSOL: Iteration 0, !!RES!! = 6.790266562525013E-04
-MG: Iterations/Rate of convergence: 2 /1.269167365564852E-01
-NLSOL: Iteration 1, !!RES!! = 2.377663866938027E-04
-MG: Iterations/Rate of convergence: 2 /1.665134128044120E-01
-NLSOL: Iteration 2, !!RES!! = 1.513489633068862E-04
-MG: Iterations/Rate of convergence: 2 /2.028512509766442E-01
-NLSOL: Iteration 3, !!RES!! = 1.260116916294134E-04
-MG: Iterations/Rate of convergence: 2 /1.168451907728635E-01
-NLSOL: Iteration 4, !!RES!! = 6.337610468285509E-05
-MG: Iterations/Rate of convergence: 2 /9.836831841378579E-02
-NLSOL: Iteration 5, !!RES!! = 3.509461897657522E-05
-MG: Iterations/Rate of convergence: 2 /6.172289947307306E-02
-NLSOL: Iteration 6, !!RES!! = 1.561166035663258E-05
-MG: Iterations/Rate of convergence: 2 /3.847168496355936E-02
-NLSOL: Iteration 7, !!RES!! = 7.072601845776748E-06
-MG: Iterations/Rate of convergence: 2 /2.015188002586587E-02
-NLSOL: Iteration 8, !!RES!! = 3.110307004937167E-06
-MG: Iterations/Rate of convergence: 2 /2.063932095230248E-02
-NLSOL: Iteration 9, !!RES!! = 1.346438139261652E-06
-MG: Iterations/Rate of convergence: 2 /2.108882451519938E-02
-NLSOL: Iteration 10, !!RES!! = 5.875141948768326E-07
-MG: Iterations/Rate of convergence: 2 /1.792394503846470E-02
-NLSOL: Iteration 11, !!RES!! = 2.526862743485289E-07
-MG: Iterations/Rate of convergence: 2 /1.463856328135903E-02
-NLSOL: Iteration 12, !!RES!! = 1.092075164637699E-07
-MG: Iterations/Rate of convergence: 2 /1.147955374905051E-02
-NLSOL: Iteration 13, !!RES!! = 4.689769767729768E-08
-MG: Iterations/Rate of convergence: 2 /1.053385206665455E-02
-NLSOL: Iteration 14, !!RES!! = 2.011813372526018E-08
-MG: Iterations/Rate of convergence: 2 /1.044332458857312E-02
-NLSOL: Iteration 15, !!RES!! = 8.605924573593336E-09
-MG: Iterations/Rate of convergence: 2 /1.042826659239845E-02
-NLSOL: Iteration 16, !!RES!! = 3.669385301909272E-09
+NLSOL: Iteration 0, !!RES!! = 6.792936203547456E-04
+MG: Iterations/Rate of convergence: 2 /1.269003485200224E-01
+NLSOL: Iteration 1, !!RES!! = 2.381045149038981E-04
+MG: Iterations/Rate of convergence: 2 /1.660081888102228E-01
+NLSOL: Iteration 2, !!RES!! = 1.522158986560607E-04
+MG: Iterations/Rate of convergence: 2 /2.030110613366755E-01
+NLSOL: Iteration 3, !!RES!! = 1.294892453426286E-04
+MG: Iterations/Rate of convergence: 2 /1.158533100166301E-01
+NLSOL: Iteration 4, !!RES!! = 6.087582985363744E-05
+MG: Iterations/Rate of convergence: 2 /1.003139812693051E-01
+NLSOL: Iteration 5, !!RES!! = 2.967249362947766E-05
+MG: Iterations/Rate of convergence: 2 /6.682159738950236E-02
+NLSOL: Iteration 6, !!RES!! = 1.099491196201362E-05
+MG: Iterations/Rate of convergence: 2 /4.322933456435674E-02
+NLSOL: Iteration 7, !!RES!! = 4.012802555748991E-06
+MG: Iterations/Rate of convergence: 2 /3.573490562760517E-02
+NLSOL: Iteration 8, !!RES!! = 1.445435733862294E-06
+MG: Iterations/Rate of convergence: 2 /4.733866806125429E-02
+NLSOL: Iteration 9, !!RES!! = 4.747108759594743E-07
+MG: Iterations/Rate of convergence: 2 /5.416011422860079E-02
+NLSOL: Iteration 10, !!RES!! = 1.679382006502860E-07
+MG: Iterations/Rate of convergence: 2 /5.248175892088381E-02
+NLSOL: Iteration 11, !!RES!! = 5.334792793450779E-08
+MG: Iterations/Rate of convergence: 2 /4.858801638907816E-02
+NLSOL: Iteration 12, !!RES!! = 1.812752777758750E-08
+MG: Iterations/Rate of convergence: 2 /3.837174329471141E-02
+NLSOL: Iteration 13, !!RES!! = 5.809611458104935E-09
 
 Nonlinear solver statistics
 ---------------------------
-Initial defect: 6.790266562525013E-04
-Final defect:  3.669385301909272E-09
-#Iterations:   16
+Initial defect: 6.792936203547456E-04
+Final defect:  5.809611458104935E-09
+#Iterations:   13
 []
 
 Heap statistics:
