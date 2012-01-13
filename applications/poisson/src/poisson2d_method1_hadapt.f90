@@ -142,10 +142,10 @@ contains
     ! 2.) the maximum refinement level of the h-adaptive refinement routines.
     ! This is relative to NLMIN: Starting from level NLMIN, the h-adaptivity
     ! routines refine the mesh up to NLMAXhRefinement times.
-    NLMAXhRefinement = 6
+    NLMAXhRefinement = 8
 
     ! 3.) the maximum number of refinement sweeps.
-    MAXhRefinementSteps = 8
+    MAXhRefinementSteps = 10
     
     ! +------------------------------------------------------------------------
     ! | BOUNDARY AND TRIANGULATION
@@ -182,7 +182,7 @@ contains
     ! gethadaptMonitorFunction below. If this monitor function returns a value
     ! > drefinementTolerance to an element, that element is refined.
     ! A value < dcoarseningTolerance on the other hand results in coarsening.
-    rhadapt%drefinementTolerance = 0.5
+    rhadapt%drefinementTolerance = 0.2
     rhadapt%dcoarseningTolerance = 0.1
     call hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
