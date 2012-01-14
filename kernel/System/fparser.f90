@@ -359,7 +359,9 @@
 !##############################################################################
 
 module fparser
-  
+
+  !$ use omp_lib
+
   use fsystem
   use genoutput
   use io
@@ -1631,14 +1633,18 @@ contains
     ! Get total number of variable sets
     nvalue = size(DvalueBlock, idim)
 
+    ! Initialise error flag
+    EvalErrType = 0
+
     ! Check if the compiled function is vectorizable
     if (rfparser%Rcomp(icomp)%bisVectorizable) then
       ! ...ok, vectorization of the bytecode is admissible.
       
       ! What is the organization of ValBlock(:,:)
       if (idim .eq. 1) then
-        !$omp parallel default(shared) &
-        !$omp private(Dstack,iValMax,iblockSize)
+        !$omp parallel default(shared)&
+        !$omp private(Dstack,iValMax,iblockSize)&
+        !$omp reduction(max:EvalErrType)
         
         ! Allocate temporal memory
         allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
@@ -1661,8 +1667,9 @@ contains
         deallocate(Dstack)
         !$omp end parallel
       else
-        !$omp parallel default(shared) &
-        !$omp private(Dstack,iValMax,iblockSize)
+        !$omp parallel default(shared)&
+        !$omp private(Dstack,iValMax,iblockSize)&
+        !$omp reduction(max:EvalErrType)
         
         ! Allocate temporal memory
         allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
@@ -1706,7 +1713,7 @@ contains
         if (idim .eq. 1) then
           do iValSet = 1, nvalue
             
-            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(iValSet,:)
+            DvalueTemp(1:isizeValueBlock)  = DvalueBlock(iValSet,1:isizeValueBlock)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
             ! Invoke working routine
@@ -1718,7 +1725,7 @@ contains
             
             DvalueTemp(1:isizeValueBlock)  = DvalueBlock(:,iValSet)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
-            
+
             ! Invoke working routine
             call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueTemp, EvalErrType, Dresult(iValSet))
@@ -1923,7 +1930,7 @@ contains
         iinstPtr = iinstPtr+2
 
       case(cImmed)
-        write(*,FMT='(A,1X,T10,G8.2)') "push", p_Comp%Dimmed(idataPtr)
+        write(*,FMT='(A,1X,T10,G16.8)') "push", p_Comp%Dimmed(idataPtr)
         idataPtr = idataPtr+1
 
       case default
@@ -4583,7 +4590,7 @@ contains
     integer, intent(out) :: EvalErrType
 
     ! Evaluated function
-    real(DP), dimension(:) :: Dresult
+    real(DP), dimension(:), intent(out) :: Dresult
 !</output>
 !</subroutine>
     
