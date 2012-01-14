@@ -1480,9 +1480,9 @@ contains
     integer :: icubp,idim
     
     ! Current assembly block, cubature formula, element type,...
-    integer :: ielementDistr,iinfoBlock,NEL
-    integer(I32) :: cevalTag, celementSource, ccubatureSource
-    integer(I32) :: ctrafoTypeSource,ctrafoTypeDest
+    integer :: iinfoBlock,NEL
+    integer(I32) :: celementSource,ccubatureSource
+    integer(I32) :: ctrafoTypeSource
     type(t_scalarCubatureInfo), target :: rlocalcubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     integer :: h_IcubPerElement
