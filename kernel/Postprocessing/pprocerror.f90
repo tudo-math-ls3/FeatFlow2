@@ -360,7 +360,7 @@ contains
     
     ! Get the number of components
     ncomp = ubound(rerror%p_RvecCoeff,1)
-    
+
     ! Do we have a separate discretisation?
     if(associated(rerror%p_rdiscr)) then
       ! Yes, so check whether the discretisation is compatible to the
@@ -615,9 +615,10 @@ contains
       ! Each thread will allocate its own local memory...
       !
       !$omp parallel default(shared) &
-      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
-      !$omp         derrH1,derrL1,derrL2,derrMean,dom,i,icomp,ider,iel,j,k,p_Dcoeff,&
-      !$omp         p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,revalElementSet,rintSubset) &
+      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,cevalTag,daux,daux2,&
+      !$omp         derrH1,derrL1,derrL2,derrMean,dom,i,icomp,ider,iel,j,k,&
+      !$omp         p_Dcoeff,p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,p_DerrMean,&
+      !$omp         revalElementSet,rintSubset)&
       !$omp         firstprivate(cevalTag)&
       !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
       
@@ -761,7 +762,6 @@ contains
             
           ! Do we calculate L2-errors?
           if(bcalcL2 .and. associated(p_DerrL2)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -772,7 +772,6 @@ contains
               p_DerrL2(iel) = sqrt(daux)
               derrL2 = derrL2 + daux
             end do ! j
-            !$omp end critical
           else if(bcalcL2) then
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -786,7 +785,6 @@ contains
           
           ! Do we calculate H1-errors?
           if(bcalcH1 .and. associated(p_DerrH1)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -801,7 +799,6 @@ contains
               p_DerrH1(iel) = sqrt(daux)
               derrH1 = derrH1 + daux
             end do ! j
-            !$omp end critical
           else if(bcalcH1) then
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -819,7 +816,6 @@ contains
 
           ! Do we calculate L1-errors?
           if(bcalcL1 .and. associated(p_DerrL1)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -830,7 +826,6 @@ contains
               p_DerrL1(iel) = daux
               derrL1 = derrL1 + daux
             end do ! j
-            !$omp end critical
           else if(bcalcL1) then
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -844,7 +839,6 @@ contains
 
           ! Do we calculate Mean-errors?
           if(bcalcMean .and. associated(p_DerrMean)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -855,7 +849,6 @@ contains
               p_DerrMean(iel) = daux
               derrMean = derrMean + daux
             end do ! j
-            !$omp end critical
           else if(bcalcMean) then
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -1148,7 +1141,7 @@ contains
   ! Some other local variables
   integer :: i,j,k,ndofs,ncubp,iel,ider
   integer :: IELset,IELmax,NEL
-  real(DP) :: dom, daux, daux2, derrorTmp
+  real(DP) :: dom,daux,daux2
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
   ! Pointer to the performance configuration
@@ -1305,13 +1298,14 @@ contains
       ! OpenMP-Extension: Open threads here.
       ! Each thread will allocate its own local memory...
       !
-      !$omp parallel default(shared) &
-      !$omp private(DvalDer,DvalFunc,IELmax,rfeBasisEvalData,daux,daux2,&
-      !$omp         derrorTmp,dom,i,ider,iel,j,k,&
-      !$omp         p_Ddetj,revalElementSet,rintSubset) &
+      !$omp parallel default(shared)&
+      !$omp private(DvalDer,DvalFunc,DvalWeight,IELmax,daux,daux2,dom,&
+      !$omp         i,ider,iel,j,k,ndofs,p_Dbas,p_Ddetj,p_Idofs,revalElementSet,&
+      !$omp         rfeBasisEvalData,rintSubset)&
       !$omp         firstprivate(cevalTag)&
+      !$omp         reduction(+:derror)&
       !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
-      
+
       ! Initialise the evaluation structure for the FE basis
       call easminfo_initStdFEBasisEval(celement,&
           elem_getMaxDerivative(celement),ncubp,nelementsPerBlock,rfeBasisEvalData)
@@ -1359,7 +1353,7 @@ contains
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
             p_IelementList(IELset:IELmax), ctrafoType, p_DcubPts, &
-            rperfconfig=rperfconfig)
+            rperfconfig=p_rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj(:,1:IELmax-IELset+1)
         
         ! Remove the ref-points eval tag for the next loop iteration
@@ -1419,11 +1413,6 @@ contains
         
         end if ! function values evaluation
         
-        ! Reset the temporary accumulated error.
-        ! The computed error will be added to derror at the end.
-        ! This procedure is advantaheous if OpenMP is activated.
-        derrorTmp = 0.0_DP
-        
         ! Evaluate derivatives?
         if(allocated(DvalDer)) then
         
@@ -1478,7 +1467,6 @@ contains
         
           ! Calculate the MEAN error
           if(present(DelementError)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -1487,9 +1475,8 @@ contains
                 daux = daux + dom*DvalFunc(i,j)
               end do ! i
               DelementError(iel) = daux
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
-            !$omp end critical
           else
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -1497,7 +1484,7 @@ contains
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)
               end do ! i
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
           end if
         
@@ -1505,7 +1492,6 @@ contains
         
           ! Calculate the L1 error
           if(present(DelementError)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -1514,9 +1500,8 @@ contains
                 daux = daux + dom*abs(DvalFunc(i,j))
               end do ! i
               DelementError(iel) = daux
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
-            !$omp end critical
           else 
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -1524,7 +1509,7 @@ contains
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*abs(DvalFunc(i,j))
               end do ! i
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
           end if
         
@@ -1532,7 +1517,6 @@ contains
         
           ! Calculate the L2 error
           if(present(DelementError)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -1541,9 +1525,8 @@ contains
                 daux = daux + dom*DvalFunc(i,j)**2
               end do ! i
               DelementError(iel) = sqrt(daux)
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
-            !$omp end critical
           else
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -1551,14 +1534,13 @@ contains
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)**2
               end do ! i
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
           end if
         
         case (PPERR_H1ERROR)
           ! Do we calculate H1-errors?
           if(present(DelementError)) then
-            !$omp critical
             do j = 1,IELmax-IELset+1
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
@@ -1573,9 +1555,8 @@ contains
                 daux = daux + dom*daux2
               end do ! i
               DelementError(iel) = sqrt(daux)
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
-            !$omp end critical
           else 
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
@@ -1589,19 +1570,12 @@ contains
                 end do ! ider
                 daux = daux + dom*daux2
               end do ! i
-              derrorTmp = derrorTmp + daux
+              derror = derror + daux
             end do ! j
           end if
 
         end select
         
-        !$omp critical
-        
-        ! Sum up to the global error
-        derror = derror + derrorTmp
-        
-        !$omp end critical
-
         ! Release the domain integration structure
         call domint_doneIntegration (rintSubset)
 
@@ -1611,15 +1585,17 @@ contains
       ! Release the element evaluation set
       call elprep_releaseElementSet(revalElementSet)
       
-      ! Release FE evaluation and cubature information
+      ! Release FE evaluation
       call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
-      call easminfo_doneStdCubature(rcubatureData)
 
       ! Deallocate all arrays
       if(allocated(DvalDer)) deallocate(DvalDer)
       if(allocated(DvalFunc)) deallocate(DvalFunc)
       if(allocated(DvalWeight)) deallocate(DvalWeight)
       !$omp end parallel
+
+      ! Release cubature information
+      call easminfo_doneStdCubature(rcubatureData)
     
     end do ! icubatureBlock
 
@@ -1968,7 +1944,7 @@ contains
           present(ffunctionWeight)) then
       
         ! We need the real coordinates of the points.
-        allocate(Dpoints(NDIM2D+1,ncubp,NELbdc))
+        allocate(Dpoints(NDIM2D,ncubp,NELbdc))
       
         ! We need the parameter values of the points.
         allocate (DpointPar(ncubp,NELbdc))
@@ -2045,7 +2021,7 @@ contains
         if (present(ffunctionWeight)) then
           
           ! Evaluate the reference function on the boundary
-          call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+          call ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 rboundaryRegion%iboundCompIdx, DpointPar,&
                                 IelementList(1:NELbdc), Dcoefficients(:,:,3), rcollection)
         else
@@ -2119,7 +2095,7 @@ contains
         if (present(ffunctionWeight)) then
           
           ! Evaluate the reference function on the boundary
-          call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+          call ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 rboundaryRegion%iboundCompIdx, DpointPar,&
                                 IelementList(1:NELbdc), Dcoefficients(:,:,3), rcollection)
         else
@@ -2204,7 +2180,7 @@ contains
         if (present(ffunctionWeight)) then
           
           ! Evaluate the reference function on the boundary
-          call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+          call ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 rboundaryRegion%iboundCompIdx, DpointPar,&
                                 IelementList(1:NELbdc), Dcoefficients(:,:,5), rcollection)
         else
@@ -2279,7 +2255,7 @@ contains
         if (present(ffunctionWeight)) then
           
           ! Evaluate the reference function on the boundary
-          call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+          call ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 rboundaryRegion%iboundCompIdx, DpointPar,&
                                 IelementList(1:NELbdc), Dcoefficients(:,:,3), rcollection)
         else
@@ -2353,7 +2329,7 @@ contains
         if (present(ffunctionWeight)) then
           
           ! Evaluate the reference function on the boundary
-          call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+          call ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 rboundaryRegion%iboundCompIdx, DpointPar,&
                                 IelementList(1:NELbdc), Dcoefficients(:,:,2), rcollection)
         else
