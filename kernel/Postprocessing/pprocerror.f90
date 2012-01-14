@@ -168,6 +168,10 @@ module pprocerror
     ! OUT, OPTIONAL: If given, recieves the calculated L1-errors for each
     ! component of p_RvecCoeff.
     real(DP), dimension(:), pointer :: p_DerrorL1 => null()
+
+    ! OUT, OPTIONAL: If given, recieves the calculated MEAN-errors for each
+    ! component of p_RvecCoeff.
+    real(DP), dimension(:), pointer :: p_DerrorMean => null()
     
     ! OUT, OPTIONAL: An array of scalar vectors which recieve the L2-errors
     ! of each component per element.
@@ -180,6 +184,10 @@ module pprocerror
     ! OUT, OPTIONAL: An array of scalar vectors which recieve the L1-errors
     ! of each component per element.
     type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorL1 => null()
+
+    ! OUT, OPTIONAL: An array of scalar vectors which recieve the MEAN-errors
+    ! of each component per element.
+    type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorMean => null()
   
   end type
   
@@ -288,7 +296,7 @@ contains
   type(t_triangulation), pointer :: p_rtria
   
   ! Which errors do we have to calculate?
-  logical :: bcalcL2, bcalcH1, bcalcL1
+  logical :: bcalcL2, bcalcH1, bcalcL1, bcalcMean
   
   ! The total number of components
   integer :: ncomp,icomp
@@ -320,7 +328,7 @@ contains
   real(DP), dimension(:), pointer :: p_Dcoeff
   
   ! Pointers to the arrays that recieve th element-wise errors
-  real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
+  real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1, p_DerrMean
   
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -331,7 +339,7 @@ contains
   integer :: IELset,IELmax,NEL,icurrentElementDistr
   integer(I32) :: ctrafoType,ccubature
   integer(I32) :: cevalTag, celement
-  real(DP) :: derrL1, derrL2, derrH1, dom, daux, daux2
+  real(DP) :: derrL1, derrL2, derrH1, derrMean, dom, daux, daux2
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
   ! Pointer to the performance configuration
@@ -404,6 +412,8 @@ contains
     bcalcL2 = .false.
     bcalcH1 = .false.
     bcalcL1 = .false.
+    bcalcMean = .false.
+
     if(associated(rerror%p_DerrorL2)) then
       bcalcL2 = .true.
       if(ubound(rerror%p_DerrorL2,1) .lt. ncomp) then
@@ -413,6 +423,7 @@ contains
       end if
       rerror%p_DerrorL2 = 0.0_DP
     end if
+
     if(associated(rerror%p_DerrorH1)) then
       bcalcH1 = .true.
       if(ubound(rerror%p_DerrorH1,1) .lt. ncomp) then
@@ -422,6 +433,7 @@ contains
       end if
       rerror%p_DerrorH1 = 0.0_DP
     end if
+
     if(associated(rerror%p_DerrorL1)) then
       bcalcL1 = .true.
       if(ubound(rerror%p_DerrorL1,1) .lt. ncomp) then
@@ -431,6 +443,17 @@ contains
       end if
       rerror%p_DerrorL1 = 0.0_DP
     end if
+
+    if(associated(rerror%p_DerrorMean)) then
+      bcalcMean = .true.
+      if(ubound(rerror%p_DerrorMean,1) .lt. ncomp) then
+        call output_line('Dimension of p_DerrorMean array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      rerror%p_DerrorMean = 0.0_DP
+    end if
+
     if(associated(rerror%p_RvecErrorL2)) then
       bcalcL2 = .true.
       if(ubound(rerror%p_RvecErrorL2,1) .lt. ncomp) then
@@ -447,6 +470,7 @@ contains
         call lsyssc_clearVector(rerror%p_RvecErrorL2(i))
       end do
     end if
+
     if(associated(rerror%p_RvecErrorH1)) then
       bcalcH1 = .true.
       if(ubound(rerror%p_RvecErrorH1,1) .lt. ncomp) then
@@ -463,6 +487,7 @@ contains
         call lsyssc_clearVector(rerror%p_RvecErrorH1(i))
       end do
     end if
+
     if(associated(rerror%p_RvecErrorL1)) then
       bcalcL1 = .true.
       if(ubound(rerror%p_RvecErrorL1,1) .lt. ncomp) then
@@ -479,9 +504,26 @@ contains
         call lsyssc_clearVector(rerror%p_RvecErrorL1(i))
       end do
     end if
+
+    if(associated(rerror%p_RvecErrorMean)) then
+      bcalcMean = .true.
+      if(ubound(rerror%p_RvecErrorMean,1) .lt. ncomp) then
+        call output_line('Dimension of p_RvecErrorMean array is too small!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call sys_halt()
+      end if
+      do i = 1, ncomp
+        if(rerror%p_RvecErrorMean(i)%NEQ .lt. NEL) then
+          call output_line('Length of p_RvecErrorMean('//trim(sys_siL(i,4))//&
+              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call sys_halt()
+        end if
+        call lsyssc_clearVector(rerror%p_RvecErrorMean(i))
+      end do
+    end if
     
     ! Do not we have anything to do?
-    if(.not. (bcalcL2 .or. bcalcH1 .or. bcalcL1)) return
+    if(.not. (bcalcL2 .or. bcalcH1 .or. bcalcL1 .or. bcalcMean)) return
     
     ! Do we have to calculate H1 errors?
     if(bcalcH1) then
@@ -515,7 +557,7 @@ contains
     
     ! Set up the Bder array
     Bder = .false.
-    Bder(DER_FUNC) = bcalcL2 .or. bcalcL1
+    Bder(DER_FUNC) = bcalcL2 .or. bcalcL1 .or. bcalcMean
     if(bcalcH1) Bder(ifirstDer:ilastDer) = .true.
     
     ! For saving some memory in smaller discretisations, we calculate
@@ -574,7 +616,7 @@ contains
       !
       !$omp parallel default(shared) &
       !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
-      !$omp         derrH1,derrL1,derrL2,dom,i,icomp,ider,iel,j,k,p_Dcoeff,&
+      !$omp         derrH1,derrL1,derrL2,derrMean,dom,i,icomp,ider,iel,j,k,p_Dcoeff,&
       !$omp         p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,revalElementSet,rintSubset) &
       !$omp         firstprivate(cevalTag)&
       !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
@@ -586,7 +628,7 @@ contains
       allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,nelementsPerBlock))
       
       ! Allocate two arrays for the evaluation
-      if(bcalcL2 .or. bcalcL1) &
+      if(bcalcL2 .or. bcalcL1 .or. bcalcMean) &
         allocate(DvalFunc(ncubp,nelementsPerBlock))
       if(bcalcH1) &
         allocate(DvalDer(ncubp,nelementsPerBlock,ifirstDer:ilastDer))
@@ -645,15 +687,21 @@ contains
             nullify(p_DerrH1)
           end if
           if(associated(rerror%p_RvecErrorL1)) then
-            call lsyssc_getbase_double(rerror%p_RvecErrorL2(icomp), p_DerrL1)
+            call lsyssc_getbase_double(rerror%p_RvecErrorL1(icomp), p_DerrL1)
           else
             nullify(p_DerrL1)
+          end if
+          if(associated(rerror%p_RvecErrorMean)) then
+            call lsyssc_getbase_double(rerror%p_RvecErrorMean(icomp), p_DerrMean)
+          else
+            nullify(p_DerrMean)
           end if
 
           ! Reset errors for this component
           derrL1 = 0.0_DP
           derrL2 = 0.0_DP
           derrH1 = 0.0_DP
+          derrMean = 0.0_DP
           
           ! Evaluate function values?
           if(allocated(DvalFunc)) then
@@ -715,7 +763,7 @@ contains
           if(bcalcL2 .and. associated(p_DerrL2)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -740,7 +788,7 @@ contains
           if(bcalcH1 .and. associated(p_DerrH1)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -773,7 +821,7 @@ contains
           if(bcalcL1 .and. associated(p_DerrL1)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = Domega(i) * abs(p_Ddetj(i,j))
@@ -794,6 +842,31 @@ contains
             end do ! j
           end if
 
+          ! Do we calculate Mean-errors?
+          if(bcalcMean .and. associated(p_DerrMean)) then
+            !$omp critical
+            do j = 1,IELmax-IELset+1
+              iel = p_IelementList(IELset+j-1)
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*DvalFunc(i,j)
+              end do ! i
+              p_DerrMean(iel) = daux
+              derrMean = derrMean + daux
+            end do ! j
+            !$omp end critical
+          else if(bcalcMean) then
+            do j = 1,IELmax-IELset+1
+              daux = 0.0_DP
+              do i = 1, ncubp
+                dom = Domega(i) * abs(p_Ddetj(i,j))
+                daux = daux + dom*DvalFunc(i,j)
+              end do ! i
+              derrMean = derrMean + daux
+            end do ! j
+          end if
+
           !$omp critical
           if(bcalcL2 .and. associated(rerror%p_DerrorL2)) &
               rerror%p_DerrorL2(icomp) = rerror%p_DerrorL2(icomp) + derrL2
@@ -801,6 +874,8 @@ contains
               rerror%p_DerrorH1(icomp) = rerror%p_DerrorH1(icomp) + derrH1
           if(bcalcL1 .and. associated(rerror%p_DerrorL1)) &
               rerror%p_DerrorL1(icomp) = rerror%p_DerrorL1(icomp) + derrL1
+          if(bcalcMean .and. associated(rerror%p_DerrorMean)) &
+              rerror%p_DerrorMean(icomp) = rerror%p_DerrorMean(icomp) + derrMean
           !$omp end critical
         
         end do ! icomp
@@ -1405,7 +1480,7 @@ contains
           if(present(DelementError)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
@@ -1432,7 +1507,7 @@ contains
           if(present(DelementError)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
@@ -1459,7 +1534,7 @@ contains
           if(present(DelementError)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
@@ -1485,7 +1560,7 @@ contains
           if(present(DelementError)) then
             !$omp critical
             do j = 1,IELmax-IELset+1
-              iel = p_IelementList(j)
+              iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
                 dom = p_Domega(i) * abs(p_Ddetj(i,j))
