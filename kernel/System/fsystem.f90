@@ -19,7 +19,7 @@
 !#  2.) sys_halt
 !#      -> Halts the application. Replacement for STOP commands in F90.
 !#         Can be configured how to halt.
-!#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROFPE,
+!#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROWFPE,
 !#         this routine will stop the program by a floating point exception,
 !#         which prints the stack trace to the terminal on some compilers.
 !#
