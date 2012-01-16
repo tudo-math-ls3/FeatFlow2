@@ -3731,7 +3731,7 @@ contains
     ! IverticesAtBoundary.
     ! If rboundary is specified, the parameter values of the boundary vertices are
     ! updated and the coordinates of the boundary points are corrected according
-    ! to the analytic boundarty. the boundary vertices are not sorted for their
+    ! to the analytic boundary. the boundary vertices are not sorted for their
     ! parameter value!
 
     ! The source triangulation to be refined
@@ -3754,9 +3754,9 @@ contains
       real(DP), dimension(:), pointer :: p_DedgeParamsSource
       real(DP), dimension(:), pointer :: p_DvertParamsDest
       real(DP), dimension(:,:), pointer :: p_DcornerCoordDest
-      integer, dimension(:), pointer :: p_IvertAtBoundartySource
-      integer, dimension(:), pointer :: p_IedgesAtBoundartySource
-      integer, dimension(:), pointer :: p_IvertAtBoundartyDest
+      integer, dimension(:), pointer :: p_IvertAtBoundarySource
+      integer, dimension(:), pointer :: p_IedgesAtBoundarySource
+      integer, dimension(:), pointer :: p_IvertAtBoundaryDest
       integer, dimension(:), pointer :: p_IboundaryCpIdxSource
       integer, dimension(:), pointer :: p_IboundaryCpIdxDest
       integer, dimension(:), allocatable :: IverticesAtBoundaryTmp
@@ -3764,9 +3764,9 @@ contains
       
       ! Get the definition of the boundary vertices and -edges.
       call storage_getbase_int(rsourceTriangulation%h_IverticesAtBoundary,&
-          p_IvertAtBoundartySource)
+          p_IvertAtBoundarySource)
       call storage_getbase_int(rsourceTriangulation%h_IedgesAtBoundary,&
-          p_IedgesAtBoundartySource)
+          p_IedgesAtBoundarySource)
       call storage_getbase_int(rsourceTriangulation%h_IboundaryCpIdx,&
           p_IboundaryCpIdxSource)
 
@@ -3781,11 +3781,11 @@ contains
           rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
 
       call storage_new('tria_generateBasicBoundary', 'KBCT',&
-          size(p_IboundaryCpIdxSource), ST_INT,&
+          rdestTriangulation%NBCT+rdestTriangulation%NblindBCT+1, ST_INT,&
           rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
 
       call storage_getbase_int(&
-          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundartyDest)
+          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundaryDest)
       call storage_getbase_int(&
           rdestTriangulation%h_IboundaryCpIdx, p_IboundaryCpIdxDest)
 
@@ -3801,13 +3801,13 @@ contains
       ! to multiply each index by 2 as we have twice as many vertices per boundary
       ! component now.
       
-      do ibct = 1, size(p_IboundaryCpIdxDest)
+      do ibct = 1, rdestTriangulation%NBCT+rdestTriangulation%NblindBCT+1
         p_IboundaryCpIdxDest(ibct) = 2*(p_IboundaryCpIdxSource(ibct)-1) + 1
       end do
-      do ivbd = 0, size(p_IvertAtBoundartySource)-1
-        p_IvertAtBoundartyDest(1+2*ivbd) = p_IvertAtBoundartySource(1+ivbd)
-        p_IvertAtBoundartyDest(2+2*ivbd) = p_IedgesAtBoundartySource(1+ivbd)&
-                                         + rsourceTriangulation%NVT
+      do ivbd = 0, rsourceTriangulation%NVBD-1
+        p_IvertAtBoundaryDest(1+2*ivbd) = p_IvertAtBoundarySource(1+ivbd)
+        p_IvertAtBoundaryDest(2+2*ivbd) = p_IedgesAtBoundarySource(1+ivbd)&
+                                        + rsourceTriangulation%NVT
       end do
       
       ! Let us see if parameter values of boundary vertices are available.
@@ -3828,7 +3828,7 @@ contains
         call storage_getbase_double(&
             rdestTriangulation%h_DvertexParameterValue, p_DvertParamsDest)
             
-        do ivbd = 0,size(p_IvertAtBoundartySource)-1
+        do ivbd = 0, rsourceTriangulation%NVBD-1
           p_DvertParamsDest(1+2*ivbd) = p_DvertParamsSource(1+ivbd)
           p_DvertParamsDest(2+2*ivbd) = p_DedgeParamsSource(1+ivbd)
         end do
@@ -3839,7 +3839,7 @@ contains
         ! boundary. We now 'shift' all these '-1'-nodes to the end of the array
         ! and that way assign them to the 'blind' boundary component.
         
-        allocate(IverticesAtBoundaryTmp(size(p_IvertAtBoundartyDest)))
+        allocate(IverticesAtBoundaryTmp(rdestTriangulation%NVBD))
         ivtdest = 1
         ivtpos = 1
         ivtstart = p_IboundaryCpIdxDest(1)
@@ -3856,11 +3856,11 @@ contains
             if (p_DvertParamsDest(ivtsource) .ne. -1.0_DP) then
               ! This is a vertex on the boundary. Copy it to the destination position.
               p_DvertParamsDest(ivtdest) = p_DvertParamsDest(ivtsource)
-              p_IvertAtBoundartyDest(ivtdest) = p_IvertAtBoundartyDest(ivtsource)
+              p_IvertAtBoundaryDest(ivtdest) = p_IvertAtBoundaryDest(ivtsource)
               ivtdest = ivtdest + 1
             else
               ! Extract that DOF, so we can overwrite with the forthcoming DOF`s.
-              IverticesAtBoundaryTmp(ivtpos) = p_IvertAtBoundartyDest(ivtsource)
+              IverticesAtBoundaryTmp(ivtpos) = p_IvertAtBoundaryDest(ivtsource)
               ivtpos = ivtpos + 1
             end if
           end do
@@ -3879,7 +3879,7 @@ contains
         ! Ok, the array is compressed now. The only thing that remains is
         ! to copy the 'blind' vertices to the 'blind' boundary component.
         do ivtsource = 1, ivtpos-1
-          p_IvertAtBoundartyDest(ivtdest) = IverticesAtBoundaryTmp(ivtsource)
+          p_IvertAtBoundaryDest(ivtdest) = IverticesAtBoundaryTmp(ivtsource)
           p_DvertParamsDest(ivtdest) = -1.0_DP
           ivtdest = ivtdest + 1
         end do
@@ -3908,8 +3908,8 @@ contains
             do ivbd = p_IboundaryCpIdxDest(ibct), p_IboundaryCpIdxDest(ibct+1)-1
               if (p_DvertParamsDest(ivbd) .ge. 0.0_DP) then
                 call boundary_getCoords(rboundary, ibct, p_DvertParamsDest(ivbd),&
-                    p_DcornerCoordDest(1,p_IvertAtBoundartyDest(ivbd)),&
-                    p_DcornerCoordDest(2,p_IvertAtBoundartyDest(ivbd)))
+                    p_DcornerCoordDest(1,p_IvertAtBoundaryDest(ivbd)),&
+                    p_DcornerCoordDest(2,p_IvertAtBoundaryDest(ivbd)))
               end if
             end do
           end do
@@ -5154,10 +5154,10 @@ contains
 
       ! local variables
       
-      integer, dimension(:), pointer :: p_IvertAtBoundartySource
-      integer, dimension(:), pointer :: p_IvertAtBoundartyDest
-      integer, dimension(:), pointer :: p_IedgesAtBoundartySource
-      integer, dimension(:), pointer :: p_IedgesAtBoundartyDest
+      integer, dimension(:), pointer :: p_IvertAtBoundarySource
+      integer, dimension(:), pointer :: p_IvertAtBoundaryDest
+      integer, dimension(:), pointer :: p_IedgesAtBoundarySource
+      integer, dimension(:), pointer :: p_IedgesAtBoundaryDest
       integer, dimension(:), pointer :: p_InodalPropertyDest
       integer, dimension(:), pointer :: p_IboundaryCpIdxSource
       integer, dimension(:), pointer :: p_IboundaryCpIdxDest
@@ -5170,9 +5170,9 @@ contains
       
       ! Set pointers
       call storage_getbase_int(&
-          rsourceTriangulation%h_IverticesAtBoundary, p_IvertAtBoundartySource)
+          rsourceTriangulation%h_IverticesAtBoundary, p_IvertAtBoundarySource)
       call storage_getbase_int(&
-          rsourceTriangulation%h_IedgesAtBoundary, p_IedgesAtBoundartySource)
+          rsourceTriangulation%h_IedgesAtBoundary, p_IedgesAtBoundarySource)
       call storage_getbase_int(&
           rsourceTriangulation%h_IboundaryCpIdx, p_IboundaryCpIdxSource)
       call storage_getbase_int(&
@@ -5193,7 +5193,7 @@ contains
           ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
       
       call storage_getbase_int(&
-          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundartyDest)
+          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundaryDest)
       
       call storage_getbase_int(&
           rdestTriangulation%h_InodalProperty, p_InodalPropertyDest)
@@ -5211,7 +5211,7 @@ contains
       ivbd = 1
       do ivt = 1, rdestTriangulation%NVT
         if(p_InodalPropertyDest(ivt) > 0) then
-          p_IvertAtBoundartyDest(ivbd) = ivt
+          p_IvertAtBoundaryDest(ivbd) = ivt
           ivbd = ivbd + 1
         end if
       end do
@@ -6298,10 +6298,10 @@ contains
     ! the intermediate 'repetition' of the numbers. Nevertheless,
     ! this is a very easy method of calculating NVT and the new numbering
     ! simultaneously!
-    do ivt=2,size(p_Idata)
+    do ivt=2,rtriangulation%NVT
       p_Idata(ivt) = p_Idata(ivt-1)+p_Idata(ivt)
     end do
-    rtriaDest%NVT = p_Idata(size(p_Idata))
+    rtriaDest%NVT = p_Idata(rtriangulation%NVT)
     
     ! Set up the inverse of the temp array -- to calculate from a 'local'
     ! vertex the corresponding 'global' vertex number.
@@ -6310,7 +6310,7 @@ contains
     call storage_getbase_int(htempinverse,p_IdataInverse)
     
     ivt2 = 0
-    do ivt = 1,size(p_Idata)
+    do ivt = 1,rtriangulation%NVT
       ! When the number changes, we found a new vertex
       if (p_Idata(ivt) .ne. ivt2) then
         ivt2 = p_Idata(ivt)
@@ -6384,7 +6384,7 @@ contains
     ! Dimension-dependent part: What is this for a mesh?
     select case(rtriangulation%ndim)
     case (NDIM1D)
-      ! Nothing implemented here; probably noting to do.
+      ! Nothing implemented here; probably nothing to do.
       ! Has to be checked...
       
     case (NDIM2D)
@@ -6439,8 +6439,7 @@ contains
       if (present(rboundary)) then
 
         ! Allocate memory for DvertexParameterValue
-        call storage_new ('tria_generateSubdomain', &
-            'DVBDP', rtriaDest%NVBD, &
+        call storage_new ('tria_generateSubdomain', 'DVBDP', rtriaDest%NVBD, &
             ST_DOUBLE, rtriaDest%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
         
         call storage_getbase_double (&
@@ -6460,7 +6459,7 @@ contains
         
         ! Loop through all vertices on the boundary. Find out their position
         ! in the original boundary-vertex array and get their parameter values.
-        do ivt2=1,size(p_IverticesAtBoundary)
+        do ivt2=1,rtriaDest%NVBD
         
           ivt = p_IverticesAtBoundary(ivt2)
         
@@ -6491,7 +6490,7 @@ contains
         call storage_getbase_int(rtriaDest%h_IboundaryCpIdx, &
             p_IboundaryCpIdx)
         
-        allocate(IverticesAtBoundaryTmp(size(p_IverticesAtBoundary)))
+        allocate(IverticesAtBoundaryTmp(rtriaDest%NVBD))
         ivtdest = 1
         ivtpos = 1
         ivtstart = p_IboundaryCpIdx(1)
@@ -7080,7 +7079,7 @@ contains
       
       ! Loop through all vertices on the boundary. Find out their position
       ! in the original boundary-vertex array and get their parameter values.
-      do ivt2=1,size(p_IverticesAtBoundary)
+      do ivt2=1,rtriaDest%NVBD
       
         ivt = p_IverticesAtBoundary(ivt2)
         
@@ -11522,7 +11521,7 @@ contains
     call storage_clear (rtriangulation%h_IedgesAtElement)
 
     call storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
-    
+
     ! iedge counts the edges and specifies the last given edge number.
     iedge = 0
     
@@ -11729,7 +11728,7 @@ contains
         
     call storage_getbase_int (&
         rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
-    
+
     ! Sort the p_DvertexCoords (sub)-arrays for increasing
     ! parameter value.
     call storage_new ('tria_sortBoundaryVertices1D2D', &
@@ -11758,11 +11757,11 @@ contains
     ! Resort the vertices according to the calculated mapping.
     ! Afterwards, the vertices are ordered according to the increasing
     ! parameter value.
-    do ivbd=1,size(p_IverticesAtBoundary)
+    do ivbd=1,rtriangulation%NVBD
       p_Iresort(ivbd) = p_IverticesAtBoundary(p_Iresort(ivbd))
     end do
     
-    do ivbd=1,size(p_IverticesAtBoundary)
+    do ivbd=1,rtriangulation%NVBD
       p_IverticesAtBoundary(ivbd) = p_Iresort(ivbd)
     end do
     
@@ -12792,7 +12791,7 @@ contains
       p_IboundaryEdgePos(1,ivbd) = p_IedgesAtBoundary(ivbd)
       p_IboundaryEdgePos(2,ivbd) = ivbd
     end do
-    
+
     ! We only sort the first NBCT BC`s. The boundary component NBCT+1 (if it exists)
     ! collects all vertices that are not on the physical boundary but stem from
     ! the creation of subdomains. These vertices have no parameter value.
