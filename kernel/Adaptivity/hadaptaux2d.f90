@@ -551,7 +551,7 @@ contains
 
     ! Set state of all vertices to "free". Note that vertices of the
     ! initial triangulation are always "locked", i.e. have no positive age.
-    do ivt = 1, size(rhadapt%p_IvertexAge, 1)
+    do ivt = 1, rhadapt%NVT
       rhadapt%p_IvertexAge(ivt) = abs(rhadapt%p_IvertexAge(ivt))
     end do
 
