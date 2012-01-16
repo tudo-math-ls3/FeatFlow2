@@ -4464,10 +4464,12 @@ contains
   ! DIMENSION(TRAFO_NAUXJAC3D)
   real(DP), dimension(TRAFO_NAUXJAC3D) :: DjacPrep
   real(DP), dimension(9) :: Djac
-  real(DP), dimension(3) :: DPoints
-  real(DP)               :: ddetj,ddetjx,ddetjy,ddetjz
+  !DEBUG
+  !real(DP), dimension(3) :: DPoints
+  !real(DP) :: c1,c2,c3
+  real(DP) :: ddetj,ddetjx,ddetjy,ddetjz
   real(dp) :: rhsx,rhsy,rhsz,eps
-  real(DP) :: dparx_old,dpary_old,dparz_old,c1,c2,c3
+  real(DP) :: dparx_old,dpary_old,dparz_old
   integer  :: i
   ! initialise
   dparx=0.0_dp
@@ -4562,21 +4564,21 @@ contains
   !  dparx = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2
   !      + a6*xi1*xi3 + a7*xi2*xi3 + a8*xi1*xi2*xi3  dxreal,dyreal,dzreal
   ! DEBUG
-!  DPoints(1)=-1.0_dp
-!  DPoints(2)=-1.0_dp
-!  DPoints(3)=-1.0_dp
-!
-!  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
-!              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)
-!
-!  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
-!              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)
-!
-!  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
-!              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)
+  !  DPoints(1)=-1.0_dp
+  !  DPoints(2)=-1.0_dp
+  !  DPoints(3)=-1.0_dp
+  !
+  !  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
+  !              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
+  !              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)
+  !
+  !  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
+  !              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
+  !              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)
+  !
+  !  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
+  !              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
+  !              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)
   
   do i=1,20
   
@@ -4652,11 +4654,11 @@ contains
     dparz = ddetjz/ddetj
     
     ! DEBUG
-!    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
-!
-!    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
-!
-!    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
+    !    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
+    !
+    !    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
+    !
+    !    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
     
     ! compute the correction
     dparx = dparx_old-dparx
