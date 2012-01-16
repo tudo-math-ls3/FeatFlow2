@@ -4363,8 +4363,6 @@ contains
 !<input>
     ! Number of the vertex to be deleted
     integer, intent(in) :: ivt
-
-    
 !</input>
 
 !<inputoutput>
@@ -4442,6 +4440,9 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
+
+      ! Decrease number of boundary nodes
+      rhadapt%NVBD = rhadapt%NVBD-1
     end if
     
     ! If IVT is not the last node then copy the data for vertex IVTREPLACE
