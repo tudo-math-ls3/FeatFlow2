@@ -1063,8 +1063,8 @@ contains
     end if
 
     ! Check if handle needs to be freed first
-    if (h_IverticesAtElement .ne. ST_NOHANDLE .and.&
-        h_IverticesAtElement .ne. rhadapt%h_IverticesAtElement)&
+    if ((h_IverticesAtElement .ne. ST_NOHANDLE) .and.&
+        (h_IverticesAtElement .ne. rhadapt%h_IverticesAtElement))&
         call storage_free(h_IverticesAtElement)
 
     ! Assign handle
@@ -1170,8 +1170,8 @@ contains
     end if
 
     ! Check if handle needs to be freed first
-    if (h_IneighboursAtElement .ne. ST_NOHANDLE .and.&
-        h_IneighboursAtElement .ne. rhadapt%h_IneighboursAtElement)&
+    if ((h_IneighboursAtElement .ne. ST_NOHANDLE) .and.&
+        (h_IneighboursAtElement .ne. rhadapt%h_IneighboursAtElement))&
         call storage_free(h_IneighboursAtElement)
 
     ! Assign handle
@@ -1574,8 +1574,8 @@ contains
     end if
 
     ! Check if handle needs to be freed first
-    if (h_InodalProperty .ne. ST_NOHANDLE .and.&
-        h_InodalProperty .ne. rhadapt%h_InodalProperty)&
+    if ((h_InodalProperty .ne. ST_NOHANDLE) .and.&
+        (h_InodalProperty .ne. rhadapt%h_InodalProperty))&
         call storage_free(h_InodalProperty)
 
     ! Assign handle
