@@ -324,25 +324,31 @@ UMFPACK: !!solution!!    = 4.480259991544770E-01 Status = 0
 UMFPACK: !!Initial RES!! = 1.468565409736916E-01
 UMFPACK: !!solution!!    = 4.801422615914689E-01 Status = 0
 !!gradient error!! = 3.8246919573E-01
-UMFPACK: !!Initial RES!! = 5.031693383101419E-02
-UMFPACK: !!solution!!    = 5.178531002063650E-01 Status = 0
-!!gradient error!! = 2.1790217434E-01
-UMFPACK: !!Initial RES!! = 3.694227571040457E-02
-UMFPACK: !!solution!!    = 4.636729456577081E-01 Status = 0
-!!gradient error!! = 1.8849892052E-01
-UMFPACK: !!Initial RES!! = 3.694227571040457E-02
-UMFPACK: !!solution!!    = 4.636729456577081E-01 Status = 0
-!!gradient error!! = 1.8849892052E-01
-UMFPACK: !!Initial RES!! = 3.694227571040457E-02
-UMFPACK: !!solution!!    = 4.636729456577081E-01 Status = 0
-!!gradient error!! = 1.8849892052E-01
-UMFPACK: !!Initial RES!! = 3.694227571040457E-02
-UMFPACK: !!solution!!    = 4.636729456577081E-01 Status = 0
-!!gradient error!! = 1.8849892052E-01
-UMFPACK: !!Initial RES!! = 3.694227571040457E-02
-UMFPACK: !!solution!!    = 4.636729456577081E-01 Status = 0
-L2-error: 2.6753674935E-03
-H1-error: 1.5795029478E-01
+UMFPACK: !!Initial RES!! = 4.020919152630596E-02
+UMFPACK: !!solution!!    = 5.035747832718087E-01 Status = 0
+!!gradient error!! = 1.9831838311E-01
+UMFPACK: !!Initial RES!! = 1.048942122563152E-02
+UMFPACK: !!solution!!    = 5.175879215682196E-01 Status = 0
+!!gradient error!! = 1.0031464187E-01
+UMFPACK: !!Initial RES!! = 8.170201852279263E-03
+UMFPACK: !!solution!!    = 4.205287420056626E-01 Status = 0
+!!gradient error!! = 8.6040132592E-02
+UMFPACK: !!Initial RES!! = 3.726215052219213E-03
+UMFPACK: !!solution!!    = 5.845686744564677E-01 Status = 0
+!!gradient error!! = 7.1224227725E-02
+UMFPACK: !!Initial RES!! = 6.450556440269300E-03
+UMFPACK: !!solution!!    = 4.006453312076342E-01 Status = 0
+!!gradient error!! = 7.9521197891E-02
+UMFPACK: !!Initial RES!! = 3.619787516315471E-03
+UMFPACK: !!solution!!    = 5.715947601362978E-01 Status = 0
+!!gradient error!! = 6.5810385442E-02
+UMFPACK: !!Initial RES!! = 6.350146206284556E-03
+UMFPACK: !!solution!!    = 3.995749722726682E-01 Status = 0
+!!gradient error!! = 7.8899132925E-02
+UMFPACK: !!Initial RES!! = 3.677002818110972E-03
+UMFPACK: !!solution!!    = 5.722770067468087E-01 Status = 0
+L2-error: 3.7812936755E-04
+H1-error: 5.3840521880E-02
 
 Calculating Poisson-2D-Problem with method 1 - L2-projection
 ------------------------------------------------------------
