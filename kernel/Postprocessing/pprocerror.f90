@@ -615,7 +615,7 @@ contains
       ! Each thread will allocate its own local memory...
       !
       !$omp parallel default(shared) &
-      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,cevalTag,daux,daux2,&
+      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
       !$omp         derrH1,derrL1,derrL2,derrMean,dom,i,icomp,ider,iel,j,k,&
       !$omp         p_Dcoeff,p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,p_DerrMean,&
       !$omp         revalElementSet,rintSubset)&
