@@ -77,6 +77,18 @@ module stack
 
     ! Handle to stack data
     integer :: h_StackData = ST_NOHANDLE
+
+    ! Integer stack data
+    ! NOTE: This array is introduced to increase performance.
+    integer, dimension(:), pointer :: p_IstackData => null()
+
+    ! Double stack data
+    ! NOTE: This array is introduced to increase performance.
+    real(DP), dimension(:), pointer :: p_DstackData => null()
+
+    ! Single stack data
+    ! NOTE: This array is introduced to increase performance.
+    real(SP), dimension(:), pointer :: p_FstackData => null()
   end type t_stack
 
 !</typeblock>
@@ -111,14 +123,17 @@ contains
     case (ST_INT)
       call storage_new('stack_create','h_StackData',isize,ST_INT,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int(rstack%h_StackData,rstack%p_IstackData)
       
     case (ST_SINGLE)
       call storage_new('stack_create','h_StackData',isize,ST_SINGLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_single(rstack%h_StackData,rstack%p_FstackData)
 
     case (ST_DOUBLE)
       call storage_new('stack_create','h_StackData',isize,ST_DOUBLE,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_double(rstack%h_StackData,rstack%p_DstackData)
       
     case DEFAULT
       call output_line('Invalid data type!',&
@@ -127,7 +142,7 @@ contains
     end select
 
     rstack%istackSize = isize
-    rstack%idataType = cdataType
+    rstack%idataType  = cdataType
 
   end subroutine stack_create
   
@@ -149,7 +164,11 @@ contains
     if (rstack%h_StackData .ne. ST_NOHANDLE)&
         call storage_free(rstack%h_StackData)
     
-    rstack%istackSize = 0
+    nullify(rstack%p_IstackData)
+    nullify(rstack%p_FstackData)
+    nullify(rstack%p_DstackData)
+
+    rstack%istackSize     = 0
     rstack%istackPosition = 0
 
   end subroutine stack_release
@@ -237,9 +256,6 @@ contains
     type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
-
-    ! local variables
-    integer, dimension(:), pointer :: StackData
     
     if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
@@ -251,13 +267,13 @@ contains
     if (rstack%istackSize .eq. rstack%istackPosition) then
       call storage_realloc('stack_pushInt', 2*rstack%istackSize,&
           rstack%h_StackData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int(rstack%h_StackData, rstack%p_IstackData)
       rstack%istackSize = 2*rstack%istackSize
     end if
     
     ! Push to stack
     rstack%istackPosition = rstack%istackPosition+1
-    call storage_getbase_int(rstack%h_StackData, StackData)
-    StackData(rstack%istackPosition) = idata
+    rstack%p_IstackData(rstack%istackPosition) = idata
 
   end subroutine stack_pushInt
 
@@ -280,9 +296,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    real(SP), dimension(:), pointer :: StackData
-
     if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
           OU_CLASS_ERROR, OU_MODE_STD,' stack_pushSngl')
@@ -293,13 +306,13 @@ contains
     if (rstack%istackSize .eq. rstack%istackPosition) then
       call storage_realloc('stack_pushSngl', 2*rstack%istackSize,&
           rstack%h_StackData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_single(rstack%h_StackData, rstack%p_FstackData)
       rstack%istackSize = 2*rstack%istackSize
     end if
 
     ! Push to stack
     rstack%istackPosition = rstack%istackPosition+1
-    call storage_getbase_single(rstack%h_StackData, StackData)
-    StackData(rstack%istackPosition) = sdata
+    rstack%p_FstackData(rstack%istackPosition) = sdata
 
   end subroutine stack_pushSngl
 
@@ -322,9 +335,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    real(DP), dimension(:), pointer :: StackData
-
     if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_pushDble')
@@ -335,13 +345,13 @@ contains
     if (rstack%istackSize .eq. rstack%istackPosition) then
       call storage_realloc('stack_pushDble', 2*rstack%istackSize,&
           rstack%h_StackData, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_double(rstack%h_StackData, rstack%p_DstackData)
       rstack%istackSize = 2*rstack%istackSize
     end if
     
     ! Push to stack
     rstack%istackPosition = rstack%istackPosition+1
-    call storage_getbase_double(rstack%h_StackData, StackData)
-    StackData(rstack%istackPosition) = ddata
+    rstack%p_DstackData(rstack%istackPosition) = ddata
 
   end subroutine stack_pushDble
 
@@ -364,11 +374,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    integer, dimension(:), pointer :: StackData
-    
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_int(rstack%h_StackData, StackData)
-      idata = StackData(rstack%istackPosition)
+      idata = rstack%p_IstackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_topInt')
@@ -395,12 +402,9 @@ contains
     real(SP) :: sdata
 !</inputoutput>
 !</subroutine>
-
-    real(SP), dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_single(rstack%h_StackData, StackData)
-      sdata = StackData(rstack%istackPosition)
+      sdata = rstack%p_FstackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_topSngl')
@@ -416,7 +420,7 @@ contains
   subroutine stack_topDble(rstack, ddata)
 
 !<description>
-    ! Return a single value from top of the stack
+    ! Return a double value from top of the stack
 !</description>
 
 !<input>
@@ -427,12 +431,9 @@ contains
     real(DP) :: ddata
 !</inputoutput>
 !</subroutine>
-
-    real(DP), dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_double(rstack%h_StackData, StackData)
-      ddata = StackData(rstack%istackPosition)
+      ddata = rstack%p_DstackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_topDble')
@@ -456,12 +457,9 @@ contains
     integer, intent(inout) :: idata
 !</inputoutput>
 !</subroutine>
-
-    integer, dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_int(rstack%h_StackData, StackData)
-      idata = StackData(rstack%istackPosition)
+      idata = rstack%p_IstackData(rstack%istackPosition)
       rstack%istackPosition = rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
@@ -487,11 +485,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    real(SP), dimension(:), pointer :: StackData
-    
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_single(rstack%h_StackData, StackData)
-      sdata = StackData(rstack%istackPosition)
+      sdata = rstack%p_FstackData(rstack%istackPosition)
       rstack%istackPosition = rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
@@ -508,7 +503,7 @@ contains
   subroutine stack_popDble(rstack, ddata)
 
 !<description>
-    ! Remove a single value from top of the stack
+    ! Remove a double value from top of the stack
 !</description>
 
 !<inputoutput>
@@ -516,12 +511,9 @@ contains
     real(DP), intent(inout) :: ddata
 !</inputoutput>
 !</subroutine>
-
-    real(DP), dimension(:), pointer :: StackData
     
     if (.not.stack_isempty(rstack)) then
-      call storage_getbase_double(rstack%h_StackData, StackData)
-      ddata = StackData(rstack%istackPosition)
+      ddata = rstack%p_DstackData(rstack%istackPosition)
       rstack%istackPosition = rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
