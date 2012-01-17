@@ -1008,24 +1008,24 @@ contains
     ! Constant Gamma
     real(dp) :: gamma = 1.4_dp
 
-    ! Calculate primitive variables
+!    ! Calculate primitive variables
     rho=Q(1)
     u=Q(2)/rho
     v=Q(3)/rho
-    E=Q(4)/rho
-
-    ! Compute the pressure
-    p = (gamma - 1.0_dp)*rho*(E-0.5_dp*(u*u+v*v))
-
-    ! Compute H, the stagnation enthalpy
-    H = E + p/rho
+!    E=Q(4)/rho
+!
+!    ! Compute the pressure
+!    p = (gamma - 1.0_dp)*rho*(E-0.5_dp*(u*u+v*v))
+!
+!    ! Compute H, the stagnation enthalpy
+!    H = E + p/rho
 
     if (d==1) then
-       ! build Flux in x direction
-       Flux(1) = Q(2)
-       Flux(2) = Q(2)*u+p
-       Flux(3) = Q(3)*u
-       Flux(4) = Q(2)*H
+!       ! build Flux in x direction
+!       Flux(1) = Q(2)
+!       Flux(2) = Q(2)*u+p
+!       Flux(3) = Q(3)*u
+!       Flux(4) = Q(2)*H
 
 
        ! Stolen from Matthias :)
@@ -1036,11 +1036,11 @@ contains
 
 
     else
-       ! build Flux in y direction
-       Flux(1) = Q(3)
-       Flux(2) = Q(2)*v
-       Flux(3) = Q(3)*v+p
-       Flux(4) = Q(3)*H
+!       ! build Flux in y direction
+!       Flux(1) = Q(3)
+!       Flux(2) = Q(2)*v
+!       Flux(3) = Q(3)*v+p
+!       Flux(4) = Q(3)*H
 
        ! Stolen from Matthias :)
        Flux(1) = Q(3)
@@ -2711,6 +2711,76 @@ function Euler_buildlambda(Qll, Qrr, a, b) result(dlambda)
       U(i) = U(i) - h
       DRotated_RHLL_2nd(:,i+4) = 0.5_dp*(DRotated_RHLL_2nd(:,i+4)-Rotated_RHLL(uL, U, nx, ny))/h
     end do
+    
+  end function
+  
+  
+  
+  
+  function Euler_WallFlux(Qi,nx,ny) result(Flux)
+
+    ! The flux vector
+    real(DP), dimension(4)	:: Flux
+
+    ! The solution components q1 = rho, q2 = rho u, q3 = rho v, q4 = rho E
+    real(DP), dimension(4), intent(IN)		:: Qi
+    
+    ! Components of the normal vector
+    real(dp), intent(in) :: nx, ny
+
+    ! pressure, stagnation enthalpy
+    real(DP)                                :: p, H
+
+    ! temporary variable
+    real(DP)                                :: rho, u, v, E
+
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    ! Calculate primitive variables
+    rho=Qi(1)
+    u=Qi(2)/rho
+    v=Qi(3)/rho
+    E=Qi(4)/rho
+
+    ! Compute the pressure
+    p = (gamma - 1.0_dp)*rho*(E-0.5_dp*(u*u+v*v))
+
+!    ! Compute H, the stagnation enthalpy
+!    H = E + p/rho
+    
+    ! Build the flux vector
+    Flux(1) = 0.0_dp
+    Flux(2) = nx*p
+    Flux(3) = ny*p
+    Flux(4) = 0.0_dp
+
+  end function
+  
+  
+  
+  function dEuler_WallFlux(uL, nx, ny, h) result(DFlux)
+    real(dp) :: uL(4), uR(4)             !  Input: conservative variables rho*[1, u, v, E]
+    real(dp) :: nx, ny                   !  Input: face normal vector, [nx, ny]
+    real(dp) :: h                        !  Input: infinitesimal constant
+    real(dp), dimension(4,8) :: DFlux    ! Output: Approximate differential of Roe flux function
+    
+    real(dp), dimension(4) :: F, U
+    integer :: i
+    
+
+    ! Second order approx
+    do i = 1,4
+      U = uL
+      U(i) = U(i) + h
+      DFlux(:,i) = Euler_WallFlux(U,nx,ny)
+      U = uL
+      U(i) = U(i) - h
+      DFlux(:,i) = 0.5_dp*(DFlux(:,i)-Euler_WallFlux(U,nx,ny))/h
+    end do
+    
+    DFlux(:,5:8) = 0.0_dp
+    
     
   end function
 

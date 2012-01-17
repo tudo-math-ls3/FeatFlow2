@@ -532,7 +532,7 @@ contains
   integer :: ierror
   
   ! A solver node that accepts parameters for the linear solver
-  type(t_linsolNode), pointer :: p_rsolverNode
+  type(t_linsolNode), pointer :: p_rsolverNode, p_rsolverNode1
   type(t_linsolNode), pointer :: p_rcoarseGridSolver, p_rpreconditioner, p_rsmoother
   
   ! Pointer to the block discretisations
@@ -563,6 +563,8 @@ contains
   ! One level of multigrid
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   
+  integer :: iloopCounter
+  
 
 
   ilvmin = rproblem%ilvmin
@@ -581,18 +583,22 @@ contains
   
     
   !!! Create a Multigrid-solver !!!
-  call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1)
+  call linsol_initMultigrid2 (p_rsolverNode1,ilvmax-ilvmin+1)
   
   
   
   !!! Now initialise the projections !!!
-  nlmax = p_rsolverNode%p_rsubnodeMultigrid2%nlevels
+  nlmax = p_rsolverNode1%p_rsubnodeMultigrid2%nlevels
   
   ! Loop through all levels. Whereever the projection structure
   ! is missing, create it
   do ilevel = 2,nlmax
     ! Initialise the projection structure
+!<<<<<<< .mine
+!    call linsol_initProjMG2LvByDiscr (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!=======
     call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!>>>>>>> .r9854
                                       rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
                                       rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
   end do
@@ -623,9 +629,14 @@ contains
   end do
   
   
+  ! Set loop counter to zero
+  iloopCounter = 0
   
   !!! Start timestepping loop !!!
   mgsys_timestepping: do
+  
+  ! Increase loop counter
+  iloopCounter = iloopCounter +1
   
     !!! Project the initial solution to all levels !!!
     do ilevel = ilvmax, ilvmin, -1
@@ -637,7 +648,7 @@ contains
       else
         ! We're on a lower level and have to project the solution from the higher level
         call lsyssc_createVecByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation%RspatialDiscr(1),rvectorTemp1)
-        call mlprj_performInterpolation (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-ilvmin+2)%p_rprojection,&
+        call mlprj_performInterpolation (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-ilvmin+2)%p_rprojection,&
                                          rproblem%RlevelInfo(ilevel)%rvector, &
                                          rproblem%RlevelInfo(ilevel+1)%rvector, &
                                          rvectorTemp1)
@@ -682,8 +693,10 @@ contains
     !!! Now build the nonlinear matrices on all levels !!!
     do ilevel = ilvmin, ilvmax
       
+!      call lsysbl_createMatBlockByDiscr (rproblem%RlevelInfo(ilevel)%p_rdiscretisation,rproblem%RlevelInfo(ilevel)%rmatrix)
+      
       ! Create structure of the block matrix by copying MC to all blocks if we are at the first time step
-      if (1 == 1) then
+      if (iloopcounter == 1) then
         call lsysbl_createEmptyMatrix (rproblem%RlevelInfo(ilevel)%rmatrix,nvar2d,nvar2d)
         do i = 1, nvar2d
            do j = 1, nvar2d
@@ -693,6 +706,11 @@ contains
         call lsysbl_updateMatStrucInfo (rproblem%RlevelInfo(ilevel)%rmatrix)
       end if
       
+      ! Set blockdiscretisation
+      rproblem%RlevelInfo(ilevel)%rmatrix%p_rblockDiscrTest  => rproblem%RlevelInfo(ilevel)%p_rdiscretisation
+      rproblem%RlevelInfo(ilevel)%rmatrix%p_rblockDiscrTrial => rproblem%RlevelInfo(ilevel)%p_rdiscretisation
+      
+           
       ! Clear the matrix
       call lsysbl_clearMatrix(rproblem%RlevelInfo(ilevel)%rmatrix)
       
@@ -752,6 +770,9 @@ contains
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
+    !!! Create multigrid solver !!!
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1)
+    
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
       
@@ -784,14 +805,14 @@ contains
         
         
           nullify(p_rpreconditioner)
-          call linsol_initJacobi (p_rpreconditioner)
+!          call linsol_initJacobi (p_rpreconditioner)
   !        call linsol_initSOR (p_rpreconditioner, 1.2_dp)
   !        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
         
   !        call linsol_initJacobi (p_rsmoother)
           call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
   !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
-          call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+          call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
         
       end if
     
@@ -858,9 +879,13 @@ contains
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
     
     ! Add timestep and test if final time is reached
     rproblem%dtcurrent = rproblem%dtcurrent + rproblem%dtstep
+    write(*,*) ''
+    write(*,*) 'Current time:',rproblem%dtcurrent
+    write(*,*) ''
     if (rproblem%dtcurrent.ge.(rproblem%dtfinal-0.5_dp*rproblem%dtstep)) exit mgsys_timestepping
     
   end do mgsys_timestepping
@@ -883,7 +908,7 @@ contains
   call lsysbl_releaseVector (rproblem%rrhs)
   
   ! Release the solver node and all subnodes attached to it (if at all):
-  call linsol_releaseSolver (p_rsolverNode)
+  call linsol_releaseSolver (p_rsolverNode1)
   
   ! Deallocate mass matrices
   do ilevel = ilvmin, ilvmax

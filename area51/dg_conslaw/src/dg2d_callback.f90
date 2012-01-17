@@ -4375,6 +4375,7 @@ contains
              drho = Dsolutionvalues(1,ipoint,iedge,1)
              du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+             dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
 
              ! Calculate normal and tangential part
              dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
@@ -4394,6 +4395,7 @@ contains
              Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
              
+
             end if
 
 
@@ -4477,7 +4479,7 @@ contains
           !      DFya = Euler_buildFlux(DQa,2)
           !
           ! Calculate Roevalues
-          DQroec = Euler_calculateQroec(DQi,DQa)
+!          DQroec = Euler_calculateQroec(DQi,DQa)
           !
           !      ! First calculate flux in x-direction
           !      DFx = 0.5_dp*(DFxi+DFxa)
@@ -4492,7 +4494,7 @@ contains
           !
           !      ! Add artificial diffusion
           !      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
-                DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
+!                DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
           !      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
           !
           !      ! Save the calculated flux (Roe)
@@ -4506,11 +4508,22 @@ contains
 !          DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*maxval(DaLambda)*(DQi - DQa)
 
 
-!                ! Foreign Roe-Flux
-!                DfluxValues(:,1,ipoint,iedge) = Roe(DQi, DQa, normal(1,iedge), normal(2,iedge))
+                ! Foreign Roe-Flux
+                DfluxValues(:,1,ipoint,iedge) = Roe(DQi, DQa, normal(1,iedge), normal(2,iedge))
+                
+                
+                
+!if (IelementList(iedge)==0) then
+!if (dx<0.0000001_dp) then
+!elseif (dx>3.9999999_dp) then
+!else
+!DfluxValues(:,1,ipoint,iedge) = Euler_WallFlux(DQi, normal(1,iedge), normal(2,iedge))
+!end if
+!end if                
+                
 
                 ! Foreign Rotated_RHLL-Flux
-                DfluxValues(:,1,ipoint,iedge) = Rotated_RHLL(DQi, DQa, normal(1,iedge), normal(2,iedge))
+!                DfluxValues(:,1,ipoint,iedge) = Rotated_RHLL(DQi, DQa, normal(1,iedge), normal(2,iedge))
 
 
           !     ! Lax Friedrichs #2
@@ -4533,8 +4546,9 @@ contains
 
 !                ! Galerkin
 !                DfluxValues(:,1,ipoint,iedge) = DFlux
-          
 
+!         ! Local Lax-Friedrichs  
+!         DfluxValues(:,1,ipoint,iedge) = LLF(DQi,DQa,normal(1,iedge),normal(2,iedge)) 
        end do ! ipoint
        
     end do ! iedge
@@ -7662,7 +7676,7 @@ contains
              dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
 
              ! Invert the normal part
-             dvn = -dvn
+             dvn =  -dvn
              dvt =  dvt
 
              ! Calculate new velocity
@@ -7675,6 +7689,7 @@ contains
              Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
              
+
             end if
 
 
@@ -7780,11 +7795,11 @@ contains
 !          dlambda = max(Euler_buildMixedalambda (DQi,normal(1,iedge),normal(2,iedge)),Euler_buildMixedalambda (DQa,normal(1,iedge),normal(2,iedge)))
 !          write(*,*) '2:', dlambda
 
-!         ! Calculate numerical derivative of Roe flux
-!         DDRoe = DRoe(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+         ! Calculate numerical derivative of Roe flux
+         DdRoe = DRoe(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
          
-         ! Calculate numerical derivative of LLF flux
-         DdLLF = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+!         ! Calculate numerical derivative of LLF flux
+!         DdLLF = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
 
 
 !          ! At the boundary use 2nd order approx of rotated Roe HLL Flux
@@ -7796,6 +7811,14 @@ contains
 !          if (IelementList(iedge)==0) then
 !            DDRoe = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
 !          end if
+
+!if (IelementList(iedge)==0) then
+!if (dx<0.0000001_dp) then
+!elseif (dx>3.9999999_dp) then
+!else
+!DdRoe = dEuler_WallFlux(DQi, normal(1,iedge), normal(2,iedge), 0.0000000001_dp)
+!end if
+!end if
          
 
 !          ! Calculate derivative of lambda
@@ -7821,11 +7844,11 @@ contains
 !!                  end do
 !!                end do
                 
-!                ! Roe
-!                DfluxValues(:,:,iterm,ipoint,iedge) = DDRoe(1:4,1:4)
+                ! Roe
+                DfluxValues(:,:,iterm,ipoint,iedge) = DdRoe(1:4,1:4)
 
-                ! LLF
-                DfluxValues(:,:,iterm,ipoint,iedge) = DdLLF(1:4,1:4)
+!                ! LLF
+!                DfluxValues(:,:,iterm,ipoint,iedge) = DdLLF(1:4,1:4)
                 
 !                ! Nothing
 !                DfluxValues(:,:,iterm,ipoint,iedge) = 0.0_dp
@@ -7847,11 +7870,11 @@ contains
 !!                  end do
 !!                end do
                 
-!                ! Roe
-!                DfluxValues(:,:,iterm,ipoint,iedge) = DDRoe(1:4,5:8)
+                ! Roe
+                DfluxValues(:,:,iterm,ipoint,iedge) = DdRoe(1:4,5:8)
 
-                ! LLF
-                DfluxValues(:,:,iterm,ipoint,iedge) = DDLLF(1:4,5:8)
+!                ! LLF
+!                DfluxValues(:,:,iterm,ipoint,iedge) = DdLLF(1:4,5:8)
                 
 !                ! Nothing
 !                DfluxValues(:,:,iterm,ipoint,iedge) = 0.0_dp
