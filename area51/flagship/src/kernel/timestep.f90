@@ -62,6 +62,7 @@
 
 module timestep
 
+!$use omp_lib
   use collection
   use fsystem
   use genoutput

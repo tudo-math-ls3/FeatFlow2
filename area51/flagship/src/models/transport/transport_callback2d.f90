@@ -175,6 +175,7 @@
 
 module transport_callback2d
 
+!$use omp_lib
   use basicgeometry
   use bilinearformevaluation
   use boundary

@@ -58,6 +58,7 @@
 
 module transport_callback3d
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use collection

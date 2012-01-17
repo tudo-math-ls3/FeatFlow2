@@ -104,6 +104,7 @@ module mhd_callback
 #endif
 #include "mhd.h"
 
+!$use omp_lib
   use afcstabbase
   use afcstabsystem
   use basicgeometry

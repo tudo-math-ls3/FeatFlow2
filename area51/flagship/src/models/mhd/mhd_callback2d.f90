@@ -228,6 +228,7 @@ module mhd_callback2d
 #define MHD_NDIM 2
 #include "mhd.h"
 
+!$use omp_lib
   use basicgeometry
   use boundary
   use boundarycondaux

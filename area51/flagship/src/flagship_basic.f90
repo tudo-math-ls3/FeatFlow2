@@ -24,6 +24,7 @@
 
 module flagship_basic
 
+!$use omp_lib
   use fsystem
   use fparser
   use genoutput

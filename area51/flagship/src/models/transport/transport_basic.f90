@@ -20,6 +20,7 @@
 
 module transport_basic
 
+!$use omp_lib
   use fparser
   use fsystem
   use genoutput

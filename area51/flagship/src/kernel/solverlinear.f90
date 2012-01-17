@@ -69,6 +69,7 @@
 
 module solverlinear
 
+!$use omp_lib
   use boundaryfilter
   use fsystem
   use genoutput

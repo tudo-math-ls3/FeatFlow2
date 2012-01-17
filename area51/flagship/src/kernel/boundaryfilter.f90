@@ -46,6 +46,7 @@
 
 module boundaryfilter
 
+!$use omp_lib
   use basicgeometry
   use boundary
   use boundarycondaux

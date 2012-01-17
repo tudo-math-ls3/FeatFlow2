@@ -25,6 +25,7 @@ module hydro_basic3d
 #define HYDRO_NDIM 3
 #include "hydro.h"
 
+!$use omp_lib
   use fsystem
   use genoutput
   use linearsystemblock

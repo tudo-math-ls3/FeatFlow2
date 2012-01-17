@@ -132,6 +132,7 @@
 
 module transport_callback
 
+!$use omp_lib
   use afcstabbase
   use afcstabscalar
   use basicgeometry

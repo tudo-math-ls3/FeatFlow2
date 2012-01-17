@@ -19,6 +19,7 @@
 
 module zpinch_errorestimation
 
+!$use omp_lib
   use fsystem
   use hydro_basic
   use linearsystemblock

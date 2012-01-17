@@ -25,6 +25,7 @@ module mhd_basic2d
 #define MHD_NDIM 2
 #include "mhd.h"
 
+!$use omp_lib
   use fsystem
   use genoutput
   use linearsystemblock

@@ -24,6 +24,7 @@
 
 module transport_postprocessing
 
+!$use omp_lib
   use bilinearformevaluation
   use collection
   use derivatives

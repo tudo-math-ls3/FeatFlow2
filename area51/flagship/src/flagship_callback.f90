@@ -24,13 +24,14 @@
 
 module flagship_callback
 
+!$use omp_lib
   use collection
   use fsystem
   use genoutput
   use graph
   use hadaptaux
   use linearsystemscalar
-   use storage
+  use storage
 
   implicit none
 

@@ -213,6 +213,7 @@ module mhd_callback3d
 #define MHD_NDIM 3
 #include "mhd.h"
 
+!$use omp_lib
   use basicgeometry
   use collection
   use fsystem

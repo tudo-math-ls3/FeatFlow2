@@ -210,6 +210,7 @@ module mhd_callback1d
 #define MHD_NDIM 1
 #include "mhd.h"
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use collection

@@ -45,6 +45,7 @@ module hydro_meshadaptation
 
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use collection
   use flagship_basic

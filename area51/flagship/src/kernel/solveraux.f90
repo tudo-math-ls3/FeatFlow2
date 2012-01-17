@@ -122,6 +122,7 @@
 
 module solveraux
 
+!$use omp_lib
   use boundarycondaux
   use boundaryfilter
   use fsystem

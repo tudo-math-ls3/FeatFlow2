@@ -213,6 +213,7 @@ module hydro_callback2d
 #define HYDRO_NDIM 2
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use boundary
   use boundaryaux

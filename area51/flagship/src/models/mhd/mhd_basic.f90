@@ -29,6 +29,7 @@ module mhd_basic
 
 #include "mhd.h"
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use fparser

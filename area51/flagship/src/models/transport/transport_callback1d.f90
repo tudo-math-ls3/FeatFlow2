@@ -139,6 +139,7 @@
 
 module transport_callback1d
 
+!$use omp_lib
   use basicgeometry
   use bilinearformevaluation
   use boundarycondaux

@@ -60,6 +60,7 @@
 
 module mhd_application
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use boundaryfilter

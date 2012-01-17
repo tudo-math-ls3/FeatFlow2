@@ -202,6 +202,7 @@ module hydro_callback3d
 #define HYDRO_NDIM 3
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use collection
   use fsystem

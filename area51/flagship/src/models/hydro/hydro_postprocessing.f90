@@ -26,6 +26,7 @@ module hydro_postprocessing
 
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use bilinearformevaluation
   use collection

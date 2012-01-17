@@ -30,6 +30,7 @@
 
 module transport_meshadaptation
 
+!$use omp_lib
   use basicgeometry
   use collection
   use flagship_callback

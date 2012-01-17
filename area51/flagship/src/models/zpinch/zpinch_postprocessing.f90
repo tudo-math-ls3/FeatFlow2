@@ -27,6 +27,7 @@ module zpinch_postprocessing
 
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use collection
   use flagship_basic

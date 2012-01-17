@@ -198,6 +198,7 @@ module hydro_callback1d
 #define HYDRO_NDIM 1
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use collection

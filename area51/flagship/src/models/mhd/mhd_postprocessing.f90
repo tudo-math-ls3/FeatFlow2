@@ -26,6 +26,7 @@ module mhd_postprocessing
 
 #include "mhd.h"
 
+!$use omp_lib
   use basicgeometry
   use bilinearformevaluation
   use collection

@@ -11,6 +11,7 @@
 
 module timestepaux
 
+!$use omp_lib
   use fsystem
   use linearsystemblock
 

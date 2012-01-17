@@ -74,6 +74,7 @@
 
 module solvernonlinear
 
+!$use omp_lib
   use boundaryfilter
   use collection
   use fsystem

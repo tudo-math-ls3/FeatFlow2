@@ -38,6 +38,7 @@ module hydro_preprocessing
 
 #include "hydro.h"
 
+!$use omp_lib
   use afcstabbase
   use afcstabsystem
   use basicgeometry

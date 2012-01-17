@@ -21,6 +21,7 @@
 
 module transport_errorestimation
 
+!$use omp_lib
   use afcstabbase
   use collection
   use cubature

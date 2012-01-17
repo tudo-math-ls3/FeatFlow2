@@ -24,6 +24,7 @@ module zpinch_preprocessing
 
 #include "hydro.h"
 
+!$use omp_lib
   use collection
   use fparser
   use genoutput

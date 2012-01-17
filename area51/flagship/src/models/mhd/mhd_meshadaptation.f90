@@ -44,7 +44,8 @@
 module mhd_meshadaptation
 
 #include "mhd.h"
-  
+
+!$use omp_lib
   use basicgeometry
   use collection
   use flagship_basic

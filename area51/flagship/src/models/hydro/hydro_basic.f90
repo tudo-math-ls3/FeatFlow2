@@ -29,6 +29,7 @@ module hydro_basic
 
 #include "hydro.h"
 
+!$use omp_lib
   use basicgeometry
   use boundarycondaux
   use fparser

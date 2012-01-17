@@ -61,6 +61,7 @@ module zpinch_callback2d
 #define HYDRO_NDIM 2
 #include "../hydro/hydro.h"
 
+!$use omp_lib
   use collection
   use hydro_basic
   use fsystem
