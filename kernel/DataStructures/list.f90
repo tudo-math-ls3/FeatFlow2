@@ -2586,35 +2586,89 @@ contains
 !</subroutine>
 
     ! local variable
-    integer :: ipos
+    character(SYS_STRLEN) :: cstring
+    integer :: ipos,i
     
     ipos = rlist%Knext(LHEAD)
     if (ipos .eq. LNULL) return
     
+    ! Write header
+    write(*,fmt='(A)') 'Key | Ddata | SData | IData'
+
     select case (rlist%clistFormat)
     case (ST_DOUBLE)
       do while (ipos .ne. rlist%Knext(LTAIL))
-        write(*,*) rlist%DKey(ipos)
+        
+        cstring = adjustl(sys_sd(rlist%DKey(ipos),10))//' | '
+        call printData(cstring,ipos)
+        write(*,fmt='(A)') cstring
+
         ipos = rlist%Knext(ipos)
       end do
-
+      cstring = adjustl(sys_sd(rlist%DKey(ipos),10))//' | '
+      call printData(cstring,ipos)
+      write(*,fmt='(A)') cstring
+      
+      
     case (ST_SINGLE)
       do while (ipos .ne. rlist%Knext(LTAIL))
-        write(*,*) rlist%SKey(ipos)
+
+        cstring = adjustl(sys_sd(real(rlist%SKey(ipos),DP),10))//' | '
+        call printData(cstring,ipos)
+        write(*,fmt='(A)') cstring
+        
         ipos = rlist%Knext(ipos)
       end do
+      cstring = adjustl(sys_sd(real(rlist%SKey(ipos),DP),10))//' | '
+      call printData(cstring,ipos)
+      write(*,fmt='(A)') cstring
+      
       
     case (ST_INT)
       do while (ipos .ne. rlist%Knext(LTAIL))
-        write(*,*) rlist%IKey(ipos)
+        
+        cstring = trim(adjustl(sys_si(rlist%IKey(ipos),10)))//' | '
+        call printData(cstring,ipos)
+        write(*,fmt='(A)') cstring
+        
         ipos = rlist%Knext(ipos)
       end do
+      cstring = trim(adjustl(sys_si(rlist%IKey(ipos),10)))//' | '
+      call printData(cstring,ipos)       
+      write(*,fmt='(A)') cstring
+      
       
     case DEFAULT
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'list_printList')
       call sys_halt()
     end select
+
+  contains
+
+    subroutine printData(cstring,ipos)
+      character(len=*), intent(inout) :: cstring
+      integer, intent(in) :: ipos
+
+      if (rlist%isizeDble .eq. 0) cstring = trim(cstring)//' - '
+      do i=1,rlist%isizeDble
+        cstring = trim(cstring)//' '//adjustl(sys_sd(rlist%DData(i,ipos),10))
+      end do
+      cstring = trim(cstring)//' | '
+
+      if (rlist%isizeSngl .eq. 0) cstring = trim(cstring)//' - '
+      do i=1,rlist%isizeSngl
+        cstring = trim(cstring)//' '//adjustl(sys_sd(real(rlist%SData(i,ipos),DP),10))
+      end do
+      cstring = trim(cstring)//' | '
+
+      if (rlist%isizeInt .eq. 0) cstring = trim(cstring)//' - '
+      do i=1,rlist%isizeInt
+        cstring = trim(cstring)//' '//adjustl(sys_si(rlist%Idata(i,ipos),10))
+      end do
+      
+    end subroutine printData
+
   end subroutine list_printList
 
   ! ***************************************************************************
