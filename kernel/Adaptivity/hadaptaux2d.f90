@@ -281,6 +281,7 @@
 
 module hadaptaux2d
 
+!$use omp_lib
   use fsystem
   use hadaptaux
   use linearsystemscalar

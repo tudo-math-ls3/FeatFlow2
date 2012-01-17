@@ -67,6 +67,7 @@
 
 module fespacehierarchy
 
+!$use omp_lib
   use fsystem
   use genoutput
   use boundary

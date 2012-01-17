@@ -77,6 +77,7 @@
 
 module graph
 
+!$use omp_lib
   use arraylist
   use binarytree
   use fsystem

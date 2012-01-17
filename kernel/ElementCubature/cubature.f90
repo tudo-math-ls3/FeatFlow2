@@ -190,6 +190,7 @@
 
 module cubature
 
+!$use omp_lib
   use fsystem
   use basicgeometry
   use genoutput

@@ -12,6 +12,7 @@
 
 module element_hexa3d
 
+!$use omp_lib
   use fsystem
   use basicgeometry
   use elementbase

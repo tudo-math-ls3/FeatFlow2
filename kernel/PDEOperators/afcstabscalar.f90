@@ -107,6 +107,7 @@
 
 module afcstabscalar
 
+!$use omp_lib
   use afcstabbase
   use basicgeometry
   use collection

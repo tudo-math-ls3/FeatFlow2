@@ -25,6 +25,7 @@
 
 module dofpreprocessing
 
+!$use omp_lib
   use element
   use fsystem
   use genoutput

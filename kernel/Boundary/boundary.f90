@@ -76,6 +76,7 @@
 
 module boundary
 
+!$use omp_lib
   use storage
   use fsystem
   use error

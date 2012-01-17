@@ -32,6 +32,7 @@
 
 module spdiscprojection
 
+!$use omp_lib
   use basicgeometry
   use derivatives
   use dofmapping

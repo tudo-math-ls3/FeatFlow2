@@ -15,6 +15,7 @@
 
 module derivatives
 
+!$use omp_lib
   use fsystem
 
   implicit none

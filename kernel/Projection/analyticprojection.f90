@@ -31,6 +31,7 @@
 
 module analyticprojection
 
+!$use omp_lib
   use afcstabbase
   use afcstabscalar
   use basicgeometry

@@ -95,6 +95,7 @@
 
 module vanka_navst2d
 
+!$use omp_lib
   use fsystem
   use storage
   use genoutput

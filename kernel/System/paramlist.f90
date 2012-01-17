@@ -203,6 +203,7 @@
 
 module paramlist
 
+!$use omp_lib
   use fsystem
   use io
   use genoutput

@@ -27,6 +27,7 @@
 
 module error
 
+!$ise omp_lib
   use genoutput
   use fsystem
   

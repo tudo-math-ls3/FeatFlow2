@@ -195,6 +195,7 @@
 
 module groupfembase
 
+!$use omp_lib
   use bcassemblybase
   use boundary
   use fsystem

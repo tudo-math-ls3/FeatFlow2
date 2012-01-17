@@ -65,6 +65,7 @@
 
 module coarsegridcorrection
 
+!$use omp_lib
   use fsystem
   use linearsystemscalar
   use linearsystemblock

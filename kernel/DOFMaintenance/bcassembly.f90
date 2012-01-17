@@ -78,6 +78,7 @@
 
 module bcassembly
 
+!$use omp_lib
   use basicgeometry
   use bcassemblybase
   use boundary

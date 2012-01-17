@@ -228,6 +228,7 @@
 
 module genoutput
 
+!$use omp_lib
   use fsystem
 
   implicit none

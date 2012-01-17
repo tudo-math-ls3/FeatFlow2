@@ -94,6 +94,7 @@
 
 module griddeform
 
+!$use omp_lib
   use basicgeometry
   use bcassembly
   use bilinearformevaluation

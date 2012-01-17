@@ -29,6 +29,7 @@
 
 module adaptivecubature
 
+!$use omp_lib
   use basicgeometry
   use collection
   use cubature

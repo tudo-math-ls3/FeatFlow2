@@ -82,9 +82,12 @@
 !##############################################################################
 
 module octree
+
+!$use omp_lib
   use fsystem
   use storage
   use genoutput
+
   implicit none
   
   private

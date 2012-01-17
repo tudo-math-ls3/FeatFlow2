@@ -110,6 +110,8 @@
 
 module fsystem
 
+!$use omp_lib
+
   implicit none
 
 !<constants>

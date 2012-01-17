@@ -16,6 +16,7 @@
 
 module meshmodification
 
+!$use omp_lib
   use fsystem
   use storage
   use triangulation

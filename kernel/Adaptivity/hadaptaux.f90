@@ -72,6 +72,7 @@
 
 module hadaptaux
 
+!$use omp_lib
   use arraylist
   use basicgeometry
   use binarytree

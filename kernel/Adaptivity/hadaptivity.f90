@@ -61,6 +61,7 @@
 
 module hadaptivity
 
+!$use omp_lib
   use arraylist
   use binarytree
   use boundary

@@ -241,6 +241,7 @@
 
 module bilinearformevaluation
 
+!$use omp_lib
   use basicgeometry
   use boundary
   use boundaryaux

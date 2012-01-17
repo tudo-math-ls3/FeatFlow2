@@ -22,6 +22,7 @@
 
 module perfconfig
 
+!$use omp_lib
   use fsystem
   use paramlist
   

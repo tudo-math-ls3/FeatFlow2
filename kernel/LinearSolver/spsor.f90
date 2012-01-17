@@ -78,26 +78,27 @@
 
 module spsor
 
-use fsystem
-use genoutput
-use storage
-use mprimitives
-use element
-use spatialdiscretisation
-use linearsystemscalar
-use linearsystemblock
+!$use omp_lib
+  use fsystem
+  use genoutput
+  use storage
+  use mprimitives
+  use element
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
 
-implicit none
+  implicit none
 
-private
+  private
 
-public :: t_spsor
-public :: spsor_init
-public :: spsor_initNavSt2D
-public :: spsor_initData
-public :: spsor_done
-public :: spsor_solve
-public :: spsor_precond
+  public :: t_spsor
+  public :: spsor_init
+  public :: spsor_initNavSt2D
+  public :: spsor_initData
+  public :: spsor_done
+  public :: spsor_solve
+  public :: spsor_precond
 
 
 !<constants>

@@ -28,7 +28,8 @@
 !# </purpose>
 !##############################################################################
 module boundaryaux
-  
+
+!$use omp_lib
   use basicgeometry
   use boundary
   use fsystem

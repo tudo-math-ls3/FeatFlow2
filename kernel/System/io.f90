@@ -34,6 +34,7 @@
 
 module io
 
+!$use omp_lib
   use fsystem
   use error
 

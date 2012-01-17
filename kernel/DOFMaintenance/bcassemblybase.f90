@@ -29,6 +29,7 @@
 
 module bcassemblybase
 
+!$use omp_lib
   use basicgeometry
   use boundary
   use dofmapping

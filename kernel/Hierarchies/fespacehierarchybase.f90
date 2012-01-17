@@ -32,6 +32,7 @@
 
 module fespacehierarchybase
 
+!$use omp_lib
   use fsystem
   use boundary
   use basicgeometry

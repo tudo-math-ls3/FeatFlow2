@@ -30,6 +30,7 @@
 
 module matrixmodification
 
+!$use omp_lib
   use fsystem
   use storage
   use linearsystemscalar

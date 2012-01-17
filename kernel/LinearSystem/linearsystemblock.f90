@@ -257,6 +257,7 @@
 
 module linearsystemblock
 
+!$use omp_lib
   use basicgeometry
   use discretebc
   use discretefbc

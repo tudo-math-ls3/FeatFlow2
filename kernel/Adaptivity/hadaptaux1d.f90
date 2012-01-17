@@ -74,6 +74,7 @@
 
 module hadaptaux1d
 
+!$use omp_lib
   use fsystem
   use hadaptaux
   use linearsystemscalar

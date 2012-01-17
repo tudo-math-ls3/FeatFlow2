@@ -60,6 +60,7 @@
 
 module groupfemscalar
 
+!$use omp_lib
   use afcstabbase
   use basicgeometry
   use collection

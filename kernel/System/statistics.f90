@@ -135,6 +135,7 @@
 
 module statistics
 
+!$use omp_lib
   use fsystem
   use genoutput
 

@@ -12,6 +12,7 @@
 
 module element_tetra3d
 
+!$use omp_lib
   use fsystem
   use elementbase
   use derivatives

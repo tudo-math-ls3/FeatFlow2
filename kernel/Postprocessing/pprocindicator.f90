@@ -15,6 +15,7 @@
 
 module pprocindicator
 
+!$use omp_lib
   use basicgeometry
   use element
   use fsystem

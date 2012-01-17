@@ -49,7 +49,8 @@
 !##############################################################################
 
 module lineariser
-  
+
+!$use omp_lib
   use basicgeometry
   use boundary
   use derivatives

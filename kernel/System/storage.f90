@@ -125,7 +125,8 @@
 !##############################################################################
 
 module storage
-  
+
+!$use omp_lib
   use fsystem
   use fpersistence
   use genoutput

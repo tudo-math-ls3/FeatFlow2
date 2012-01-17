@@ -330,6 +330,7 @@
 
 module linearsystemscalar
 
+!$use omp_lib
   use dofmapping
   use fpersistence
   use fsystem

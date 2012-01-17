@@ -12,13 +12,14 @@
 
 module ufci
 
-use fsystem
+!$use omp_lib
+  use fsystem
 
-implicit none
+  implicit none
 
-private
+  private
 
-public :: t_ufciData
+  public :: t_ufciData
 
 !<constants>
 

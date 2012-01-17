@@ -53,6 +53,7 @@
 
 module numbersets
 
+!$use omp_lib
   use fsystem
   use genoutput
   use storage

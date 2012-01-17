@@ -11,6 +11,7 @@
 
 module element_tri2d
 
+!$use omp_lib
   use fsystem
   use elementbase
   use derivatives

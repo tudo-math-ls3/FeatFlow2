@@ -30,6 +30,7 @@
 
 module discretefbc
 
+!$use omp_lib
   use fsystem
   use storage
   use boundarycondition
