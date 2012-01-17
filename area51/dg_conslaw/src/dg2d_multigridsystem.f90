@@ -596,11 +596,14 @@ contains
     ! Initialise the projection structure
 !<<<<<<< .mine
 !    call linsol_initProjMG2LvByDiscr (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!                                      rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
+!                                      rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
 !=======
-    call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+    call linsol_initProjMultigrid2Level (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+                                         rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
+                                         rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
 !>>>>>>> .r9854
-                                      rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
-                                      rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
+
   end do
   
   
@@ -812,7 +815,10 @@ contains
   !        call linsol_initJacobi (p_rsmoother)
           call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
   !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
-          call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
+  
+          call linsol_convertToSmoother (p_rsmoother,16,1.0_DP)
+          
+          !call linsol_initUMFPACK4 (p_rsmoother)
         
       end if
     

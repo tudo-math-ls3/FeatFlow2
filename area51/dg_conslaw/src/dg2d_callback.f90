@@ -2901,8 +2901,9 @@ contains
 
     integer :: iel, ipoint
     real(DP) :: dvx, dvy, dx, dy, dsol
-
-    rdomainIntSubset%ielementDistribution = 1
+     
+    !!!!!!!!! MAYBE THIS COULD POSE AN ERROR !!!!!!!!
+    !rdomainIntSubset%ielementDistribution = 1
 
     ! rform%%itermCount gives the number of additional terms, here 2
 
@@ -3423,7 +3424,8 @@ contains
     !nvar2d = 1
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    !!!!!!!!!!! MAYBE THIS COULD POSE AN ERROR SOMETIMES
+    !rdomainIntSubset%ielementDistribution = 1
 
     ! Which variable (of the system) we are at
     currentvar = rcollection%IquickAccess(1)
@@ -3577,7 +3579,7 @@ contains
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
     rdIS = rdomainIntSubset
-    rdIS%ielementDistribution = 1
+    !rdIS%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
@@ -3714,7 +3716,7 @@ contains
     !nvar2d = 3
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    !rdomainIntSubset%ielementDistribution = 1
 
 
     ! rform%itermCount gives the number of additional terms, here 2
@@ -4659,7 +4661,7 @@ contains
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
     rdIS = rdomainIntSubset
-    rdIS%ielementDistribution = 1
+    !rdIS%ielementDistribution = 1
 
 
     ! rform%itermCount gives the number of additional terms, here 2
@@ -4785,7 +4787,7 @@ contains
     !nvar2d = 1
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    !rdomainIntSubset%ielementDistribution = 1
 
     ! Which variable (of the system) we are at
     currentvar = rcollection%IquickAccess(1)
@@ -5079,7 +5081,7 @@ contains
     ! nvar2d = 4
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    !rdomainIntSubset%ielementDistribution = 1
 
 
     ! rform%itermCount gives the number of additional terms, here 2
@@ -5204,7 +5206,7 @@ contains
     !nvar2d = 1
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    !rdomainIntSubset%ielementDistribution = 1
 
     ! Which variable (of the system) we are at
     currentvar = rcollection%IquickAccess(1)
@@ -5341,7 +5343,7 @@ contains
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
     rdIS = rdomainIntSubset
-    rdIS%ielementDistribution = 1
+    !rdIS%ielementDistribution = 1
 
     ! Which variable (of the system) we are at
     currentvar = rcollection%IquickAccess(1)
@@ -7977,7 +7979,7 @@ contains
 
     nvar2d = 1
 
-    rdomainIntSubset%ielementDistribution = 1
+    !rdomainIntSubset%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
@@ -8383,7 +8385,7 @@ contains
     nvar2d = 1
 
     rdIS = rdomainIntSubset
-    rdIS%ielementDistribution = 1
+    !rdIS%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
@@ -9055,7 +9057,7 @@ contains
     nvar2d = 1
 
     rdIS = rdomainIntSubset
-    rdIS%ielementDistribution = 1
+    !rdIS%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount

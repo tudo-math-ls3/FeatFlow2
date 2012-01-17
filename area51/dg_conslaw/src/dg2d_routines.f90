@@ -12158,7 +12158,7 @@ contains
        ! If the matrix has nonconstant coefficients, calculate the coefficients now.
 
        call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-       rintSubset%ielementDistribution =  1
+       !rintSubset%ielementDistribution =  1
        rintSubset%ielementStartIdx     =  IELset
        rintSubset%p_Ielements          => IelementList(IELset:IELmax)
        rintSubset%p_IdofsTrial         => p_IdofsTrial
