@@ -758,13 +758,18 @@ module storage
     module procedure storage_getbase_int16UBnd
     module procedure storage_getbase_int16LUBnd
 
+#ifdef USE_LARGEINT
     module procedure storage_getbase_int32Default
     module procedure storage_getbase_int32UBnd
     module procedure storage_getbase_int32LUBnd
-
+#else
     module procedure storage_getbase_int64Default
     module procedure storage_getbase_int64UBnd
     module procedure storage_getbase_int64LUBnd
+#endif
+    module procedure storage_getbase_intDefault
+    module procedure storage_getbase_intUBnd
+    module procedure storage_getbase_intLUBnd
 
     module procedure storage_getbase_singleDefault
     module procedure storage_getbase_singleUBnd
@@ -796,14 +801,19 @@ module storage
     module procedure storage_getbase_int16_2DUBnd
     module procedure storage_getbase_int16_2DLUBnd
 
+#ifdef USE_LARGEINT
     module procedure storage_getbase_int32_2DDef
     module procedure storage_getbase_int32_2DUBnd
     module procedure storage_getbase_int32_2DLUBnd
-
+#else
     module procedure storage_getbase_int64_2DDef
     module procedure storage_getbase_int64_2DUBnd
     module procedure storage_getbase_int64_2DLUBnd
-
+#endif
+    module procedure storage_getbase_int2DDef
+    module procedure storage_getbase_int2DUBnd
+    module procedure storage_getbase_int2DLUBnd
+    
     module procedure storage_getbase_single2DDef
     module procedure storage_getbase_single2DUBnd
     module procedure storage_getbase_single2DLUBnd
@@ -834,13 +844,18 @@ module storage
     module procedure storage_getbase_int16_3DUBnd
     module procedure storage_getbase_int16_3DLUBnd
 
+#ifdef USE_LARGEINT
     module procedure storage_getbase_int32_3DDef
     module procedure storage_getbase_int32_3DUBnd
     module procedure storage_getbase_int32_3DLUBnd
-
+#else
     module procedure storage_getbase_int64_3DDef
     module procedure storage_getbase_int64_3DUBnd
     module procedure storage_getbase_int64_3DLUBnd
+#endif
+    module procedure storage_getbase_int3DDef
+    module procedure storage_getbase_int3DUBnd
+    module procedure storage_getbase_int3DLUBnd
 
     module procedure storage_getbase_single3DDef
     module procedure storage_getbase_single3DUBnd
@@ -3748,6 +3763,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64Default (ihandle, p_Iarray, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32Default (ihandle, p_Iarray, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int')
       call sys_halt()
@@ -3812,6 +3840,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64UBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32UBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_intUBnd')
       call sys_halt()
@@ -3885,6 +3926,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64LUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32LUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_intLUBnd')
       call sys_halt()
@@ -5809,6 +5863,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_2DDef (ihandle, p_Iarray, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_2DDef (ihandle, p_Iarray, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDef')
       call sys_halt()
@@ -5872,6 +5939,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_2DUBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_2DUBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
       call sys_halt()
@@ -5946,6 +6026,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_2DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_2DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DLUBnd')
       call sys_halt()
@@ -7855,6 +7948,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_3DDef (ihandle, p_Iarray, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_3DDef (ihandle, p_Iarray, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DDef')
       call sys_halt()
@@ -7918,6 +8024,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_3DUBnd (ihandle, p_Iarray, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
       call sys_halt()
@@ -7992,6 +8111,19 @@ contains
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
+
+#ifdef USE_LARGEINT
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT64) then
+        call storage_getbase_int64_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#else
+      if (p_rheap%p_Rdescriptors(ihandle)%idataType .eq. ST_INT32) then
+        call storage_getbase_int32_3DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
+        return
+      end if
+#endif
+
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DLUBnd')
       call sys_halt()
