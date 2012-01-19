@@ -45,6 +45,7 @@ module dg2d_multigridsystem
   use paramlist
   use matrixio
   use multilevelprojection
+  use globalsystem
 
   implicit none
   
@@ -565,6 +566,10 @@ contains
   
   integer :: iloopCounter
   
+  character(len=SYS_STRLEN) :: sfilenumber
+  
+  type(t_matrixBlock) :: tempCond
+  
 
 
   ilvmin = rproblem%ilvmin
@@ -629,6 +634,7 @@ contains
                                      BILF_MATC_EDGEBASED)
     ! Calculate entries
     call bilf_buildMatrixScalar (rform,.true.,rmatrixMC(ilevel))
+
   end do
   
   
@@ -763,8 +769,23 @@ contains
                                       .false.,.false.,.true.,.false.)
       end do
       
+      
+          
+    
+    write(sfilenumber,'(i0)') ilevel
+    
+    call glsys_assembleGlobal (rproblem%RlevelInfo(ilevel)%rmatrix, tempCond, &
+                                   .true., .true.)
+    
+    ! Output system matrix for matlab
+    call matio_writeMatrixHR (tempCond%Rmatrixblock(1,1), 'sysmat',&
+                              .false., 0, './M'//trim(sfilenumber)//'.txt', '(E20.10)')
+    
+      
+      
     end do
     
+    pause
     
     !!! Create (rest of) multigrid solver and solve !!!
     ! Get our right hand side / solution / matrix on the finest
