@@ -1806,7 +1806,8 @@ contains
     ps = rhoi*(SL-ui)*(SS-ui)+pi
 
 
-    FX = 0.5_dp*(Euler_buildFlux(Qi,1)+Euler_buildFlux(Qa,1) -ui*Qi+(/ 0.0_dp,ps-pi,0.0_dp,ps*SS-pi*ui /) -ua*Qa+(/ 0.0_dp,ps-pa,0.0_dp,ps*SS-pa*ua /) )
+    FX = 0.5_dp*(Euler_buildFlux(Qi,1)+Euler_buildFlux(Qa,1) -ui*Qi+(/ 0.0_dp,ps-pi,0.0_dp,ps*SS-pi*ui /) &
+         -ua*Qa+(/ 0.0_dp,ps-pa,0.0_dp,ps*SS-pa*ua /) )
 
 
 

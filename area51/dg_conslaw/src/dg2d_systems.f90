@@ -799,7 +799,8 @@ contains
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
                 if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
-                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar),&
+                        rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
                 else
                    call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -881,7 +882,8 @@ contains
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
                 if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
-                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar),&
+                        rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
                 else
                    call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -957,7 +959,8 @@ contains
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
                 if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
-                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+                   call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar),&
+                        rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
                 else
                    call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -1753,13 +1756,13 @@ contains
           call linsol_initStructure (p_rsolverNode, ierror)
           if (ierror .ne. LINSOL_ERR_NOERROR) then
              write(*,*) 'linsol_initStructure',ierror
-             pause
+             ! pause
              stop
           end if
           call linsol_initData (p_rsolverNode, ierror)
           if (ierror .ne. LINSOL_ERR_NOERROR) then
              write(*,*) 'linsol_initData', ierror
-             pause
+             ! pause
              stop
           end if
 
@@ -2059,13 +2062,13 @@ contains
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initStructure',ierror
-                   pause
+                   ! pause
                    stop
                 end if
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initData', ierror
-                   pause
+                   ! pause
                    stop
                 end if
 
@@ -2359,13 +2362,13 @@ contains
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initStructure',ierror
-                   pause
+                   ! pause
                    stop
                 end if
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initData', ierror
-                   pause
+                   ! pause
                    stop
                 end if
 
@@ -2393,7 +2396,7 @@ contains
                 call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
                 sofile = './gmv/u2d_rhou'
                 call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-                pause
+                ! pause
 
 
 
@@ -2666,13 +2669,13 @@ contains
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initStructure',ierror
-                   pause
+                   ! pause
                    stop
                 end if
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initData', ierror
-                   pause
+                   ! pause
                    stop
                 end if
 
@@ -2945,13 +2948,13 @@ contains
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initStructure',ierror
-                   pause
+                   ! pause
                    stop
                 end if
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initData', ierror
-                   pause
+                   ! pause
                    stop
                 end if
 
@@ -3330,13 +3333,13 @@ contains
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initStructure',ierror
-                   pause
+                   ! pause
                    stop
                 end if
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) then
                    write(*,*) 'linsol_initData', ierror
-                   pause
+                   ! pause
                    stop
                 end if
 

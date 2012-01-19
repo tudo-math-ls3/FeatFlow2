@@ -2396,7 +2396,9 @@ contains
 
 
           ! No limiting of elements at boundary
-          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0)&
+              .or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.&
+              (p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
 
 
           ! Get number of corner vertices
@@ -6243,7 +6245,8 @@ contains
              ! Multiply the quadratic part of the solution vector with the correction factor
              do ivar = 1, nvar
                 !p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6))*Dalpha(ivar, iel)
-                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6)-1)*Dalpha(ivar, iel)
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6)-1) = &
+                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6)-1)*Dalpha(ivar, iel)
              end do
 
 
@@ -6252,7 +6255,8 @@ contains
              ! Multiply the linear part of the solution vector with the correction factor
              do ivar = 1, nvar
                 !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
-                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1)*Dalpha(ivar, iel)
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &
+                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1)*Dalpha(ivar, iel)
              end do
 
 
@@ -6758,7 +6762,8 @@ contains
              ! Get minimum of all correction factors of all vertices on this element
              do ivar = 1, nvar
                 Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
-                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)*Dalpha(ivar, iel)
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = &
+                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)*Dalpha(ivar, iel)
              end do
 
           case (3)
@@ -6766,7 +6771,8 @@ contains
              ! Get minimum of all correction factors of all vertices on this element
              do ivar = 1, nvar
                 Dalpha(ivar, iel) = max(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
-                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)*Dalpha(ivar, iel)
+                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = &
+                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)*Dalpha(ivar, iel)
              end do
 
           end select
@@ -7439,7 +7445,8 @@ contains
 
     real(dp), dimension(:), allocatable :: DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi, DQchar, DWc
 
-    real(dp), dimension(:,:), allocatable :: DLin, DtLin, Dalphaei, DL, DR, Dalpha, DL2, DR2, DlinearGradient, Dquadraticgradient, DmAlpha
+    real(dp), dimension(:,:), allocatable :: DLin, DtLin, Dalphaei, DL, DR, Dalpha, DL2, DR2, DlinearGradient,&
+                                             Dquadraticgradient, DmAlpha
 
     ! Array of pointers to the data of the blockvector to limit
     type(t_dpPointer), dimension(:), allocatable :: p_DoutputData
@@ -7535,9 +7542,12 @@ contains
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
     ! and limiting factors
-    allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar), DltIi(nvar), DlIi(nvar),DQchar(nvar),DWc(nvar))
+    allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar),&
+             DltIi(nvar), DlIi(nvar),DQchar(nvar),DWc(nvar))
     !allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
-    allocate(DLin(nvar,10), DtLin(nvar,10), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL), DL2(nvar,nvar), DR2(nvar,nvar),DlinearGradient(nvar,2), DquadraticGradient(nvar,3), DmAlpha(nvar,nvar))
+    allocate(DLin(nvar,10), DtLin(nvar,10), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar),&
+             Dalpha(nvar, NEL), DL2(nvar,nvar), DR2(nvar,nvar),DlinearGradient(nvar,2), DquadraticGradient(nvar,3),&
+             DmAlpha(nvar,nvar))
 
     !  ! Get the number of elements
     !  NEL = p_rspatialDiscr%RelementDistr(1)%NEL
@@ -8309,7 +8319,9 @@ contains
 
 
           ! No limiting of elements at boundary
-          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0)&
+             .or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.&
+             (p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
 
 
           ! Get number of corner vertices
@@ -8805,7 +8817,10 @@ contains
 
 
           ! No limiting of elements at boundary
-          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+          if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.&
+              (p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.&
+              (p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.&
+              (p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
 
 
           ! Get number of corner vertices
@@ -9050,7 +9065,9 @@ contains
 
 !!! Invert local matrix
           if (indof.eq.3) then
-             ddet = DlocMat(1,1)*(DlocMat(2,2)*DlocMat(3,3)-DlocMat(3,2)*DlocMat(2,3)) - DlocMat(2,2)*(DlocMat(1,2)*DlocMat(3,3)-DlocMat(3,2)*DlocMat(1,3)) + DlocMat(3,3)*(DlocMat(1,2)*DlocMat(2,3)-DlocMat(2,2)*DlocMat(1,3))
+             ddet = DlocMat(1,1)*(DlocMat(2,2)*DlocMat(3,3)-DlocMat(3,2)*DlocMat(2,3))&
+                    - DlocMat(2,2)*(DlocMat(1,2)*DlocMat(3,3)-DlocMat(3,2)*DlocMat(1,3))&
+                    + DlocMat(3,3)*(DlocMat(1,2)*DlocMat(2,3)-DlocMat(2,2)*DlocMat(1,3))
 
              DilocMat(1,1) = DlocMat(2,2) * DlocMat(3,3) - DlocMat(2,3) * DlocMat(3,2)
              DilocMat(1,2) = DlocMat(1,3) * DlocMat(3,2) - DlocMat(1,2) * DlocMat(3,3)
@@ -10228,13 +10245,16 @@ contains
 
                       ! Testfunction on the 'first' (i) side
                       p_Dentryii(jdofe,idofe,iel) = &
-                           p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,ialbet,icubp,iel)
+                           p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux1*p_Dside(1,ialbet,icubp,iel)
                       p_Dentryai(jdofe,idofe,iel) = &
-                           p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,ialbet,icubp,iel)
+                           p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux1*p_Dside(2,ialbet,icubp,iel)
 
                       ! Testfunction on the 'second' (a) side
                       p_Dentryia(jdofe,idofe,iel) = &
-                           p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,ialbet,icubp,iel)
+                           p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux2*p_Dside(1,ialbet,icubp,iel)
 
                       !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
                       !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
@@ -10251,7 +10271,8 @@ contains
                       !                      end if
 
                       p_Dentryaa(jdofe,idofe,iel) = &
-                           p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,ialbet,icubp,iel)
+                           p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux2*p_Dside(2,ialbet,icubp,iel)
 
                       !                write(*,*) 'ia',ia
                       !                write(*,*) 'daux1',daux1
@@ -11518,13 +11539,19 @@ contains
                       do iblock = 1, nvar
                          do jblock = 1, nvar
                             p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,1,ialbet,icubp,iel)
+                                 p_Dentryii(iblock,jblock,jdofe,idofe,iel)&
+                                 +db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)&
+                                 *p_Dside(iblock,jblock,1,ialbet,icubp,iel)
                             p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(iblock,jblock,2,ialbet,icubp,iel)
+                                 p_Dentryai(iblock,jblock,jdofe,idofe,iel)&
+                                 +db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)&
+                                 *p_Dside(iblock,jblock,2,ialbet,icubp,iel)
 
                             ! Testfunction on the 'second' (a) side
                             p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,1,ialbet,icubp,iel)
+                                 p_Dentryia(iblock,jblock,jdofe,idofe,iel)&
+                                 +db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)&
+                                 *p_Dside(iblock,jblock,1,ialbet,icubp,iel)
 
                             !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
                             !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
@@ -11541,7 +11568,9 @@ contains
                             !                      end if
 
                             p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
-                                 p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,2,ialbet,icubp,iel)
+                                 p_Dentryaa(iblock,jblock,jdofe,idofe,iel)&
+                                 +db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)&
+                                 *p_Dside(iblock,jblock,2,ialbet,icubp,iel)
                          end do
                       end do
                       !                write(*,*) 'ia',ia
@@ -12269,7 +12298,8 @@ contains
                             !JCOLB = Kentry(jdofe,idofe,iel)
                             !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
                             p_Dentry(jdofe,idofe,iblock,jblock,iel) = &
-                                 p_Dentry(jdofe,idofe,iblock,jblock,iel)+db*p_DbasTrial(jdofe,ia,icubp,iel)*domega*p_Dcoefficients(iblock,jblock,ialbet,icubp,iel)
+                                 p_Dentry(jdofe,idofe,iblock,jblock,iel)+db*p_DbasTrial(jdofe,ia,icubp,iel)&
+                                 *domega*p_Dcoefficients(iblock,jblock,ialbet,icubp,iel)
 
                          end do
 
@@ -13319,11 +13349,15 @@ contains
                                 ! Testfunction on the 'first' (i) side
                                 ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
                                 p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
+                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)&
+                                     +db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux1(iblock,jblock)*p_Dside(1,ialbet)
 
                                 ! Testfunction on the 'second' (a) side
                                 p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(1,ialbet)
+                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)&
+                                     +db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux2(iblock,jblock)*p_Dside(1,ialbet)
                              end do
                           end do
                           
@@ -13389,11 +13423,15 @@ contains
                                 ! Testfunction on the 'first' (i) side
                                 ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
                                 p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(2,ialbet)
+                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)&
+                                     +db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux1(iblock,jblock)*p_Dside(2,ialbet)
 
                                 ! Testfunction on the 'second' (a) side
                                 p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
+                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)&
+                                     +db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux2(iblock,jblock)*p_Dside(2,ialbet)
                              end do
                           end do
                           
@@ -13458,15 +13496,23 @@ contains
                                 ! Testfunction on the 'first' (i) side
                                 ! Attention: The p_DbasTest are really the trialfunctions (they are the same)
                                 p_Dentryii(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(1,ialbet)
+                                     p_Dentryii(iblock,jblock,jdofe,idofe,iel)&
+                                     +db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux1(iblock,jblock)*p_Dside(1,ialbet)
                                 p_Dentryai(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1(iblock,jblock)*p_Dside(2,ialbet)
+                                     p_Dentryai(iblock,jblock,jdofe,idofe,iel)&
+                                     +db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux1(iblock,jblock)*p_Dside(2,ialbet)
 
                                 ! Testfunction on the 'second' (a) side
                                 p_Dentryia(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(1,ialbet)
+                                     p_Dentryia(iblock,jblock,jdofe,idofe,iel)&
+                                     +db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux2(iblock,jblock)*p_Dside(1,ialbet)
                                 p_Dentryaa(iblock,jblock,jdofe,idofe,iel) = &
-                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(2,ialbet)
+                                     p_Dentryaa(iblock,jblock,jdofe,idofe,iel)&
+                                     +db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                                     *daux2(iblock,jblock)*p_Dside(2,ialbet)
                              end do
                           end do
                           
@@ -14700,17 +14746,20 @@ contains
 
                       ! Testfunction on the 'first' (i) side
                       p_Dentryii(jdofe,idofe,iel) = &
-                           p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,ialbet)
+                           p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux1*p_Dside(1,ialbet)
                            
                            
                       if (IelementList(2,IELset+iel-1).ne.0) then
                            
                       p_Dentryai(jdofe,idofe,iel) = &
-                           p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,ialbet)
+                           p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux1*p_Dside(2,ialbet)
 
                       ! Testfunction on the 'second' (a) side
                       p_Dentryia(jdofe,idofe,iel) = &
-                           p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,ialbet)
+                           p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux2*p_Dside(1,ialbet)
 
                       !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
                       !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
@@ -14727,7 +14776,8 @@ contains
                       !                      end if
 
                       p_Dentryaa(jdofe,idofe,iel) = &
-                           p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(2,ialbet)
+                           p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
+                           *daux2*p_Dside(2,ialbet)
 
                       !                write(*,*) 'ia',ia
                       !                write(*,*) 'daux1',daux1

@@ -3737,8 +3737,10 @@ contains
 
           ! Source term 2
           Dcoefficients (1,1,ipoint,iel) = 6.0_dp*(dx**4.0_dp+dy**4.0_dp)+2.0_dp
-          Dcoefficients (2,1,ipoint,iel) = 5.0_dp*dy**4.0_dp*dx+dx+dx**5.0_dp+6.0_dp*dx**5.0_dp+2.0_dp*dx+2.0_dp*dy**4.0_dp*dx+4.0_dp*dx**3.0_dp+4.0_dp*dx**7.0_dp+4.0_dp*dx**3.0_dp*dy**4.0_dp
-          Dcoefficients (3,1,ipoint,iel) = 5.0_dp*dx**4.0_dp*dy+dy+dy**5.0_dp+6.0_dp*dy**5.0_dp+2.0_dp*dy+2.0_dp*dx**4.0_dp*dy+4.0_dp*dy**3.0_dp+4.0_dp*dy**7.0_dp+4.0_dp*dy**3.0_dp*dx**4.0_dp
+          Dcoefficients (2,1,ipoint,iel) = 5.0_dp*dy**4.0_dp*dx+dx+dx**5.0_dp+6.0_dp*dx**5.0_dp&
+           +2.0_dp*dx+2.0_dp*dy**4.0_dp*dx+4.0_dp*dx**3.0_dp+4.0_dp*dx**7.0_dp+4.0_dp*dx**3.0_dp*dy**4.0_dp
+          Dcoefficients (3,1,ipoint,iel) = 5.0_dp*dx**4.0_dp*dy+dy+dy**5.0_dp+6.0_dp*dy**5.0_dp&
+           +2.0_dp*dy+2.0_dp*dx**4.0_dp*dy+4.0_dp*dy**3.0_dp+4.0_dp*dy**7.0_dp+4.0_dp*dy**3.0_dp*dx**4.0_dp
 
 
        end do
@@ -4977,7 +4979,8 @@ contains
           end if
 
 
-          DFlux(1) = (normal(1,iedge)*2.0_dp + normal(2,iedge)*1.0_dp)*0.5_dp*(DQi(1)+DQa(1)) + 0.5_dp*abs(normal(1,iedge)*2.0_dp + normal(2,iedge)*1.0_dp)*(DQi(1)-DQa(1))
+          DFlux(1) = (normal(1,iedge)*2.0_dp + normal(2,iedge)*1.0_dp)*0.5_dp*(DQi(1)+DQa(1)) + &
+                     0.5_dp*abs(normal(1,iedge)*2.0_dp + normal(2,iedge)*1.0_dp)*(DQi(1)-DQa(1))
 
 
 
@@ -6524,7 +6527,8 @@ contains
              !        DfluxValues(:,:,iterm,ipoint,ielement) = reshape( (/ normal(1,ielement)+normal(2,ielement), 0.0_dp, 0.001_dp*normal(2,ielement), 0.0_dp /), (/ 2, 2 /) )
              !        DfluxValues(1,1,iterm,ipoint,ielement) = 1.0_dp * normal(1,ielement)
              !        DfluxValues(:,:,iterm,ipoint,ielement) = reshape( (/ 0.0_dp, 1.0_dp*normal(1,ielement),1.0_dp*normal(2,ielement), dcx*normal(1,ielement), 0.0_dp, 0.0_dp, dcy*normal(2,ielement),0.0_dp,0.0_dp /), (/ 3, 3 /) )
-             DfluxValues(:,:,iterm,ipoint,ielement) = reshape( (/ normal(1,ielement),normal(2,ielement),dcx*normal(2,ielement),normal(1,ielement) /), (/ 2, 2 /) )
+             DfluxValues(:,:,iterm,ipoint,ielement) = reshape( (/ normal(1,ielement),normal(2,ielement),&
+                                                dcx*normal(2,ielement),normal(1,ielement) /), (/ 2, 2 /) )
              !        Dside(:,:,1,ipoint,ielement) = reshape( (/ 0.5_dp, 0.5_dp, 0.5_dp, 0.5_dp /), (/ 2, 2 /) )
              !        Dside(:,:,2,ipoint,ielement) = reshape( (/ 0.5_dp, 0.5_dp, 0.5_dp, 0.5_dp /), (/ 2, 2 /) )
 
