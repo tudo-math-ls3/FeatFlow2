@@ -366,7 +366,7 @@ module fparser
   use io
   use perfconfig
   use storage
-  use stack
+  use stackInt
   
   implicit none
   
@@ -2035,7 +2035,7 @@ contains
 !</subroutine>
     
     ! local avriables
-    type(t_stack) :: rstack
+    type(t_stackInt) :: rstack
     integer(is) :: n,iopSize
     character (LEN=1) :: c
     real(DP) :: dnumber
@@ -2047,7 +2047,7 @@ contains
     ifunctionIndex  = 1
     iparenthCount   = 0
     ifunctionLength = len_trim(sfunctionString)
-    call stack_create(rstack, max(5, int(ifunctionLength/4._DP)), ST_INT)
+    call stack_create(rstack, max(5, int(ifunctionLength/4._DP)))
 
     do
       if (ifunctionIndex .gt. ifunctionLength) then
@@ -2225,6 +2225,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
       call sys_halt()
     end if
+
     call stack_release(rstack)
 
   end subroutine CheckSyntax

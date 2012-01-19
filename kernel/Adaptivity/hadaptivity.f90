@@ -72,7 +72,6 @@ module hadaptivity
   use hadaptaux2d
 !!$  use hadaptaux3d
   use io
-  use list
   use octree
   use paramlist
   use quadtree

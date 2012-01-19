@@ -51,17 +51,14 @@
 
 module bloodflow
 
-  use bilinearformevaluation
   use boundary
-  use genoutput
+  use fsystem
   use hadaptaux
   use hadaptaux2d
   use hadaptivity
   use linearsystemscalar
-  use linearsystemblock
-  use list
+  use listInt
   use paramlist
-  use spatialdiscretisation
   use storage
   use triangulation
   use ucd
@@ -157,7 +154,7 @@ module bloodflow
     type(t_vectorScalar) :: rmarker
 
     ! List of elements intersected by object
-    type(t_list) :: relementList
+    type(t_listInt) :: relementList
 
   end type t_bloodflow
 
@@ -292,7 +289,7 @@ contains
       call lsyssc_releaseVector(rbloodflow%rmarker)
 
       ! Release list of elements
-      call list_releaseList(rbloodflow%relementList)
+      call list_release(rbloodflow%relementList)
 
     end if
 
@@ -704,7 +701,7 @@ contains
     call lsyssc_releaseVector(rbloodflow%rmarker)
 
     ! Release the list of elements (if any)
-    call list_releaseList(rbloodflow%relementList)
+    call list_release(rbloodflow%relementList)
     
     ! Create new marker array as integer array
     call lsyssc_createVector(rbloodflow%rmarker,&
@@ -713,8 +710,8 @@ contains
     
     ! Create linked list for storing the elements adjacent to the
     ! object; start with 10% of the total number of element
-    call list_createList(rbloodflow%relementList,&
-        ceiling(0.1*rbloodflow%rtriangulation%NEL), ST_INT, 0, 0, 0)
+    call list_create(rbloodflow%relementList,&
+        ceiling(0.1*rbloodflow%rtriangulation%NEL))
 
     ! Set pointers
     call storage_getbase_int2d(&
@@ -903,7 +900,7 @@ contains
               if (iand(p_Imarker(jel), BITFIELD_INLIST)&
                                      .ne. BITFIELD_INLIST) then
                 p_Imarker(jel) = ior(p_Imarker(jel), BITFIELD_INLIST)
-                call list_appendToList(rbloodflow%relementList, jel, ipos)
+                call list_append(rbloodflow%relementList, jel, ipos)
               end if
             end if
           end do
@@ -999,12 +996,12 @@ contains
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
-    ipos = list_getNextInList(rbloodflow%relementList, .true.)
+    ipos = list_next(rbloodflow%relementList, .true.)
     list: do while(ipos .ne. LNULL)
       
       ! Get element number and proceed to next position
-      call list_getByPosition(rbloodflow%relementList, ipos, iel)
-      ipos = list_getNextInList(rbloodflow%relementList, .false.)
+      call list_get(rbloodflow%relementList, ipos, iel)
+      ipos = list_next(rbloodflow%relementList, .false.)
       
       ! Set indicator for the current element
       if (iand(p_Imarker(iel), BITFIELD_EDGE_INTERSECTION) .ne. 0)&
@@ -1034,18 +1031,12 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DobjectCoords,&
-        p_DvertexCoords
-    integer, dimension(:,:), pointer :: p_IverticesAtElement,&
-        p_IneighboursAtElement
-    integer, dimension(:), pointer :: p_Imarker,&
-        p_IvertexAge, p_InodalProperty
-    real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords,&
-        DpointCoords, DpointCoordsAux
-    real(DP), dimension(TRIA_NVETRI2D) :: DedgeParam, DedgeParamAux,&
-        DbarycentricCoords
-    integer, dimension(TRIA_NVETRI2D) :: IcornerStatus, Iedgestatus,&
-        IedgestatusAux
+    real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
+    integer, dimension(:), pointer :: p_Imarker, p_IvertexAge, p_InodalProperty
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords, DpointCoords, DpointCoordsAux
+    real(DP), dimension(TRIA_NVETRI2D) :: DedgeParam, DedgeParamAux
+    integer, dimension(TRIA_NVETRI2D) :: Iedgestatus, IedgestatusAux
     integer, dimension(2) :: Isize
     integer :: ive,nve,iel,nel,ivt,nvt,i1,i2,i3,ipoint,ipos,istatus
     
@@ -1125,12 +1116,12 @@ contains
 !!$    !---------------------------------------------------------------------------
 !!$
 !!$    ! Loop over all elements adjacent to the object
-!!$    ipos = list_getNextInList(rbloodflow%relementList, .true.)
+!!$    ipos = list_next(rbloodflow%relementList, .true.)
 !!$    list1: do while(ipos .ne. LNULL)
 !!$
 !!$      ! Get element number and proceed to next position
-!!$      call list_getByPosition(rbloodflow%relementList, ipos, iel)
-!!$      ipos = list_getNextInList(rbloodflow%relementList, .false.)
+!!$      call list_get(rbloodflow%relementList, ipos, iel)
+!!$      ipos = list_next(rbloodflow%relementList, .false.)
 !!$
 !!$      ! Get number of vertices of current element
 !!$      nve = tria_getNVE(p_IverticesAtElement, iel)
@@ -1215,12 +1206,12 @@ contains
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
-    ipos = list_getNextInList(rbloodflow%relementList, .true.)
+    ipos = list_next(rbloodflow%relementList, .true.)
     list: do while(ipos .ne. LNULL)
       
       ! Get element number and proceed to next position
-      call list_getByPosition(rbloodflow%relementList, ipos, iel)
-      ipos = list_getNextInList(rbloodflow%relementList, .false.)
+      call list_get(rbloodflow%relementList, ipos, iel)
+      ipos = list_next(rbloodflow%relementList, .false.)
     
       ! Remove "in list" flag from marker
       p_Imarker(iel) = iand(p_Imarker(iel),not(BITFIELD_INLIST))

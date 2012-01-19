@@ -203,7 +203,6 @@ module cccallback
   use bcassembly
   use mprimitives
   use derivatives
-  use list
   
   use ccbasic
   
@@ -1779,32 +1778,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Linked list to store all mesh modifications
-    type(t_list), save :: rlist
-    integer, dimension(16) :: Idata
-    integer :: ipos
-
-!!$    ! What operation should be performed
-!!$    select case(iOperation)
-!!$
-!!$    case(HADAPT_OPR_INITCALLBACK)
-!!$      call list_createList(rlist,100,ST_INT,16,0,0,&
-!!$          LIST_UNORDERED,1.5_DP,LIST_DOUBLELINKED)
-!!$
-!!$    case(HADAPT_OPR_DONECALLBACK)
-!!$      call list_releaseList(rlist)
-!!$
-!!$    case default
-!!$
-!!$      ! Prepare auxiliary integer data
-!!$      Idata = 0
-!!$      Idata(1:size(Ivertices))   = Ivertices
-!!$      Idata(8:8+size(Ielements)) = Ielements
-!!$
-!!$      ! Append data to list
-!!$      call list_appendToList(rlist,iOperation,ipos,IData=Idata)
-!!$
-!!$    print *, iOperation
 
   end subroutine
 
