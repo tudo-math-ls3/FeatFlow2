@@ -731,8 +731,7 @@ contains
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
     
-    celement = rdiscretisationTrial%RelementDistr(&
-        max(1,rdomainIntSubset%ielementDistribution))%celement
+    celement = rdomainIntSubset%celement
     
     call fevl_evaluate_sim (p_rsubvector, &
         rdomainIntSubset%p_revalElementSet, &
@@ -881,8 +880,7 @@ contains
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
     
-    celement = rdiscretisationTrial%RelementDistr(&
-        rdomainIntSubset%ielementDistribution)%celement
+    celement = rdomainIntSubset%celement
     
     call fevl_evaluate_sim (p_rsubvector, &
         rdomainIntSubset%p_revalElementSet, &
@@ -4797,8 +4795,7 @@ contains
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
     
-    celement = rdiscretisation%RelementDistr(&
-        max(1,rdomainIntSubset%ielementDistribution))%celement
+    celement = rdomainIntSubset%celement
     
     call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
         rdomainIntSubset%p_revalElementSet, &
@@ -4914,8 +4911,7 @@ contains
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector we evaluate!
     
-    celement = rdiscretisation%RelementDistr(&
-        max(1,rdomainIntSubset%ielementDistribution))%celement
+    celement = rdomainIntSubset%celement
     
     call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
         rdomainIntSubset%p_revalElementSet, &
