@@ -885,9 +885,13 @@ contains
         if (cthetaschemetype .eq. 0) then
           ! Activate the old timestep scheme. The coupling to the dual must be
           ! weighted by 1-dtheta.
-          rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
-              (-dequationType) * (1.0_DP-dtheta) &
-                          / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+          !
+          ! Switch off if alpha <= 0.
+          if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
+            rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
+                (-dequationType) * (1.0_DP-dtheta) &
+                            / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+          end if
         end if
 
       else if (irelpos .eq. 0) then
@@ -951,9 +955,12 @@ contains
         
         ! No coupling to the dual in the first timestep.
         if (ieqTime .gt. 1) then
+          ! Switch off if alpha <= 0.
+          if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
           rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
               (-dequationType) * 1.0_DP &
                             / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+          end if
         end if
 
         select case (cthetaschemetype)
@@ -962,9 +969,13 @@ contains
           if (ieqTime .gt. 1) then
             ! Activate the old timestep scheme. The coupling to the dual must be
             ! weighted by dtheta.
-            rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
-                (-dequationType) * dtheta &
-                            / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+            !
+            ! Switch off if alpha <= 0.
+            if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
+              rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+                  (-dequationType) * dtheta &
+                              / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+            end if
           end if
 
           if (ieqTime .lt. neqTime) then

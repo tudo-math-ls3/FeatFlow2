@@ -842,20 +842,23 @@ contains
     type(t_vectorScalar), pointer :: p_rsubvector
     real(dp), dimension(:,:), allocatable :: Dfunc
     integer(I32) :: celement
-    real(DP) :: da, db, dalpha, dp1
+    real(DP) :: da, db, dalphaC, dp1
     integer :: ipt, iel
     integer :: nptsInactive
     integer, dimension(:), pointer :: p_IelementList
     
     ! Get the bounds and the multiplier from the collection
-    dalpha = rcollection%DquickAccess(3)
+    dalphaC = rcollection%DquickAccess(3)
     dp1 = rcollection%DquickAccess(4)
+    
+    ! Forget it if alpha<=0. Not possible.
+    if (dalphaC .le. 0.0_DP) return
     
     ! Scale the bounds by -alpha as we analyse lambda
     ! and not u. Change the role of min/max because of the "-"
     ! sign!
-    da = -rcollection%DquickAccess(2)*dalpha
-    db = -rcollection%DquickAccess(1)*dalpha
+    da = -rcollection%DquickAccess(2)*dalphaC
+    db = -rcollection%DquickAccess(1)*dalphaC
     
     ! Get a pointer to the FE solution from the collection.
     ! The routine below wrote a pointer to the vector T to the
@@ -961,6 +964,9 @@ contains
     integer :: i,nviolate
     real(dp) :: du
     
+    ! Cancel if distributed control not active
+    if (dalphaC .le. 0.0_DP) return
+    
     ! Get the vector data
     call lsyssc_getbase_double (rvector,p_Ddata)
     
@@ -1017,6 +1023,9 @@ contains
     integer :: i,nviolate
     real(dp) :: du
     
+    ! Cancel if distributed control not active
+    if (dalphaC .le. 0.0_DP) return
+
     ! Get the vector data
     call lsyssc_getbase_double (rvector,p_Ddata)
     call lsyssc_getbase_double (rvectorMin,p_DdataMin)
@@ -1109,6 +1118,9 @@ contains
     call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
     
     call lsyssc_clearMatrix (rmatrix)
+    
+    ! Cancel if distributed control not active
+    if (dalphaC .le. 0.0_DP) return
     
     ! Loop through the diagonal entries
     do i=1,rmatrix%NEQ
@@ -3779,6 +3791,9 @@ contains
         p_rdualSol => rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3
       end select
       
+      print *,"This was not updated to alpha <=0"
+      call sys_halt()
+      
       ! Calculate the velocity-dependent part of the system matrix.
       call conv_strdiffOptC2dgetDefect (&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
@@ -4720,6 +4735,9 @@ contains
     use domainintegration
     
   !<description>
+    ! For distributed control.
+    ! Coefficients in the bilinear form of the projection operator.
+    ! Constant constraints.
   !</description>
     
   !<input>
@@ -4830,6 +4848,9 @@ contains
     use domainintegration
     
   !<description>
+    ! For distributed control.
+    ! Coefficients in the bilinear form of the projection operator.
+    ! Variable constraints, given by a FEM function.
   !</description>
     
   !<input>
