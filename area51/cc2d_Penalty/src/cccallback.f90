@@ -39,12 +39,12 @@
 !# 4.) coeff_AnalyticSolution_X
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for setting up the initial solution.
-!#     -> In the basic implementation, this calls ffunction_TargetX.
+!#     -> In the basic implementation, this calls ffunction_TargetX. 
 !#
 !# 5.) coeff_AnalyticSolution_Y
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Is used for setting up the initial solution.
-!#     -> In the basic implementation, this calls ffunction_TargetY.
+!#     -> In the basic implementation, this calls ffunction_TargetY. 
 !#
 !# 6.) coeff_AnalyticSolution_P
 !#     -> Returns analytical values for the desired pressure.
@@ -85,7 +85,7 @@
 !#
 !# 13.) cc_doneCollectForAssembly
 !#      -> Is called after the assembly process.
-!#      -> Releases information stored in the collection by
+!#      -> Releases information stored in the collection by 
 !#         cc_initCollectForAssembly.
 !#
 !# 14.) getMovingFrameVelocity
@@ -98,12 +98,12 @@
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls cc_initCollectForAssembly to stores the current point
+!# framework calls cc_initCollectForAssembly to stores the current point 
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
 !#
-!# -> rcollection%IquickAccess(1)   = 0: stationary,
+!# -> rcollection%IquickAccess(1)   = 0: stationary, 
 !#                                    1: nonstationary with explicit time stepping
 !# -> rcollection%DquickAccess(1)   = current simulation time
 !# -> rcollection%DquickAccess(2)   = minimum simulation time
@@ -142,7 +142,7 @@
 !#     MFACCX = x-acceleration
 !#     MFACCY = y-acceleration
 !#
-!#   You can for example generate a simple fixed particle in a moving
+!#   You can for example generate a simple fixed particle in a moving 
 !#   bench1-channel by adding the following code to getMovingFrameVelocity:
 !#
 !#     Dvelocity(1) = 0.3_DP*(tanh(dtime))
@@ -154,31 +154,31 @@
 !#     [CC-DISCRETISATION]
 !#     ###################
 !#     imovingFrame = 1
-!#
+!#     
 !#     ##############
 !#     [BDEXPRESSIONS]
 !#     ##############
 !#     bdExpressions(2) =
 !#       'Dirichlet0'     0    0.0
 !#       'mpartx'        -1    '-MFVELX'
-!#
+!#   
 !#     ##############
 !#     [BDCONDITIONS]
 !#     ##############
 !#     bdComponent1(4)=
 !#        1.0  3  1  'Dirichlet0'  'Dirichlet0'
-!#        2.0  0  0
+!#        2.0  0  0                            
 !#        3.0  3  1  'Dirichlet0'  'Dirichlet0'
-!#        4.0  0  0
+!#        4.0  0  0                            
 !#     bdComponent2(1)=
 !#        4.0  3  1  'mpartx'  'Dirichlet0'
-!#
+!#   
 !#     #####################
 !#     [TIME-DISCRETISATION]
 !#     #####################
 !#     itimedependence = 1
 !#     dtimeMax = 10.0
-!#
+!#   
 !# </purpose>
 !##############################################################################
 
@@ -186,20 +186,27 @@ module cccallback
 
   use fsystem
   use storage
-  use linearsolver
+  use basicgeometry
+  use bcassembly
   use boundary
   use bilinearformevaluation
-  use linearformevaluation
-  use cubature
-  use matrixfilters
-  use vectorfilters
-  use discretebc
-  use bcassembly
-  use mprimitives
-  use derivatives
-  
   use ccbasic
-  
+  use collection
+  use cubature
+  use derivatives
+  use discretebc
+  use domainintegration
+  use io
+  use linearformevaluation
+  use linearsolver
+  use matrixfilters
+  use mprimitives
+  use triangulation
+  use scalarpde
+  use storage
+  use paramlist
+  use vectorfilters
+
   implicit none
 
 contains
@@ -224,7 +231,7 @@ contains
 
 !<input>
   ! Problem structure with all problem relevant data.
-  type(t_problem), intent(in) :: rproblem
+  type(t_problem), intent(in),target :: rproblem
 !</input>
 
 !<inputoutput>
@@ -249,6 +256,7 @@ contains
       rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
       rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
     end select
+    call collct_setvalue_parlst (rcollection, "PARLST", rproblem%rparamlist, .true.)
 
   end subroutine
   
@@ -263,7 +271,7 @@ contains
   ! and has usually not to be changed by the user.
   !
   ! After the assembly process, this subroutine is called to release temporary
-  ! information from the collection which was stored there by
+  ! information from the collection which was stored there by 
   ! cc_initCollectForAssembly.
 !</description>
   
@@ -281,7 +289,7 @@ contains
 
     ! Currently, this subroutine is empty as all information stored in
     ! the collection in cc_initCollectForAssembly is put to the quick-access
-    ! arrays -- which do not have to be cleaned up.
+    ! arrays -- which do not have to be cleaned up. 
     ! This might change in future...
 
   end subroutine
@@ -350,8 +358,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -435,8 +443,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -513,8 +521,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -550,7 +558,7 @@ contains
     dradius  = 0.05
 
     ! loop over the elements and cubature points
-    ! and assign the coefficients
+    ! and assign the coefficients 
     do iel=1,nelements
       do icup=1,npointsPerElement
         
@@ -625,8 +633,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -713,8 +721,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -815,8 +823,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -917,8 +925,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -978,7 +986,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing.
+  ! This subroutine is called during the postprocessing. 
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -1019,8 +1027,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional
-  ! information to the coefficient routine.
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1076,7 +1084,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing.
+  ! This subroutine is called during the postprocessing. 
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the Y-velocity.
@@ -1117,8 +1125,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional
-  ! information to the coefficient routine.
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1174,7 +1182,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing.
+  ! This subroutine is called during the postprocessing. 
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the pressure
@@ -1215,8 +1223,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional
-  ! information to the coefficient routine.
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1276,9 +1284,9 @@ contains
   ! The routine has to return a value which is used as the result of an
   ! expression, e.g. as Diichlet value on the boundary.
   !
-  ! The routine is allowed to return SYS_INFINITY_DP. The behaviour of this
+  ! The routine is allowed to return SYS_INFINITY. The behaviour of this
   ! value depends on the type of boundary conditions. For Dirichlet
-  ! boundary segments, all points where SYS_INFINITY_DP is returned are
+  ! boundary segments, all points where SYS_INFINITY is returned are
   ! treated as Neumann points.
 !</description>
   
@@ -1287,7 +1295,7 @@ contains
   ! DAT file for the boundary conditions.
   character(LEN=*), intent(in) :: sexpressionName
   
-  ! Solution component that is currently being processed.
+  ! Solution component that is currently being processed. 
   ! 1 = X-velocity, 2 = y-velocity,...
   integer, intent(in) :: icomponent
   
@@ -1303,13 +1311,13 @@ contains
   ! 0-1-parametrisation.
   real(DP), intent(in)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
 !</input>
 
 !<output>
-  ! Return value of the expression. May be SYS_INFINITY_DP.
+  ! Return value of the expression. May be SYS_INFINITY.
   real(DP), intent(out) :: dvalue
 !</output>
   
@@ -1348,8 +1356,8 @@ contains
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
-    ! conditions on fictitious boundary components. It calculates a special quantity
-    ! on the boundary, which is then used by the discretisation routines to
+    ! conditions on fictitious boundary components. It calculates a special quantity 
+    ! on the boundary, which is then used by the discretisation routines to 
     ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
     !
     ! The routine must calculate the values on all elements of the element
@@ -1361,10 +1369,10 @@ contains
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary:
+    ! For Dirichlet boundary: 
     !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-    !   the value should be calculated for
-    !   (e.g. 1=1st solution component, e.g. X-velocity,
+    !   the value should be calculated for 
+    !   (e.g. 1=1st solution component, e.g. X-velocity, 
     !         2=2nd solution component, e.g. Y-velocity,...,
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
@@ -1376,14 +1384,14 @@ contains
     ! analytic boundary boundary description etc.
     type(t_blockDiscretisation), intent(in)                     :: rdiscretisation
     
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
     type(t_collection), optional, intent(inout)                 :: rcollection
 
   !</input>
   
   !<inputoutput>
-    ! A t_discreteFBCevaluation structure array that defines what to evaluate,
+    ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
     ! where to evaluate and which accepts the return values.
     ! This callback routine must check out the cinfoNeeded-entry in this structure
     ! to find out what to evaluate.
@@ -1396,9 +1404,9 @@ contains
     ! For Dirichlet boundary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
-    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the
+    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
     !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values
+    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
     !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
     !
     type(t_discreteFBCevaluation), dimension(:), intent(inout) :: Revaluation
@@ -1406,7 +1414,7 @@ contains
     
   !</subroutine>
 
-    ! Note: the definition of (analytic) fictitious boundary components
+    ! Note: the definition of (analytic) fictitious boundary components 
     ! is performed in 'cc_parseFBDconditions'.
     !
     ! By default, fictitious boundary handling is switched off!
@@ -1431,7 +1439,7 @@ contains
                                 p_IverticesAtEdge)
 
     ! Definition of the circle
-    dxcenter = 0.6
+    dxcenter = 0.2
     dycenter = 0.2
     dradius  = 0.05
     
@@ -1471,37 +1479,37 @@ contains
 !    dxcenter = 1.1
 !    dycenter = 0.31
 !    dradius  = 0.05
-!
+!    
 !    ! Loop through the points where to evaluate:
 !    DO idx = 1,Revaluation(1)%nvalues
-!
+!    
 !      ! Get the number of the point to process; may also be number of an
 !      ! edge or element...
 !      ipoint = Revaluation(1)%p_Iwhere(idx)
-!
+!      
 !      ! Get x- and y-coordinate
 !      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
 !                       p_DvertexCoordinates,&
 !                       p_IverticesAtElement,p_IverticesAtEdge,&
 !                       p_rtriangulation%NVT,&
 !                       dx,dy)
-!
+!      
 !      ! Get the distance to the center
 !      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!
+!      
 !      ! Point inside?
 !      IF (ddistance .LE. dradius) THEN
-!
+!      
 !        ! Denote in the p_Iinside array that we prescribe a value here:
 !        Revaluation(1)%p_Iinside (idx) = 1
 !        Revaluation(2)%p_Iinside (idx) = 1
-!
+!        
 !        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
 !        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
 !        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!
+!      
 !      END IF
-!
+!      
 !    END DO
     
   contains
@@ -1605,8 +1613,8 @@ contains
 !</description>
     
 !<inputoutput>
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), optional, intent(inout) :: rcollection
 !</inputoutput>
 
@@ -1655,7 +1663,7 @@ contains
   use collection
   
 !<description>
-  ! This subroutine is called during the calculation of the SD operator.
+  ! This subroutine is called during the calculation of the SD operator. 
   ! It allows to calculate a user defined viscosity coefficient
   ! in case of a nonconstant viscosity.
   !
@@ -1700,8 +1708,8 @@ contains
   ! Current velocity vector.
   type(t_vectorBlock), intent(in) :: rvelocity
 
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1724,134 +1732,328 @@ contains
 
   end subroutine
   
-  ! ***************************************************************************
+!****************************************************************************************
+! 
+  subroutine cc_lambda(rdiscretisationtrial,rdiscretisationtest,rform, &
+                       nelements,npointsperelement,dpoints, &
+                       idofstrial,idofstest,rdomainintsubset, &
+                       dcoefficients,rcollection)
+!
+!****************************************************************************************
+    
+!<description>
+! this subroutine is called during the matrix assembly. It has to compute the coefficients 
+! in front of the terms of the bilinear form. The routine accepts a set of elements and a set
+! of points on these elements (cubature points) in real coordinates. According to the terms 
+! in the bilinear form, the routine has to compute simultaneously for all these points and all
+! the terms in the bilinear form the corresponding coefficients in front of the terms.
+!</description>
+    
+!<input>
+! the discretisation structure that defines the basic shape of the
+! triangulation with references to the underlying triangulation,
+! analytic boundary boundary description etc.; trial space.
+  type(t_spatialdiscretisation), intent(in)                   :: rdiscretisationtrial
+! the discretisation structure that defines the basic shape of the
+! triangulation with references to the underlying triangulation,
+! analytic boundary boundary description etc.; test space.
+  type(t_spatialdiscretisation), intent(in)                   :: rdiscretisationtest
+! the bilinear form which is currently being evaluated:
+  type(t_bilinearform), intent(in)                            :: rform
+! number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+! number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsperelement
+! this is an array of all points on all the elements where coefficients are needed.
+! remark: this usually coincides with rdomainsubset%p_dcubptsreal.
+! dimension(dimension,npointsperelement,nelements)
+  real(dp), dimension(:,:,:), intent(in)  :: dpoints
+! an array accepting the dof's on all elements trial in the trial space.
+! dimension(\#local dof's in trial space,nelements)
+  integer, dimension(:,:), intent(in) :: idofstrial
+! an array accepting the dof's on all elements trial in the trial space.
+! dimension(\#local dof's in test space,nelements)
+  integer, dimension(:,:), intent(in) :: idofstest
+! this is a t_domainintsubset structure specifying more detailed information
+! about the element set that is currently being integrated.
+! it's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainintsubset), intent(in)              :: rdomainintsubset
+! OPTIONAL: a collection structure to provide additional 
+! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+!</input>
   
-  subroutine cc_Lambda(rdiscretisationTrial,rdiscretisationTest,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
-        
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
+!<output>
+! a list of all coefficients in front of all terms in the bilinear form - for all given points 
+! on all given elements. dimension(itermcount,npointsperelement,nelements) with itermcount the
+! number of terms in the bilinear form.
+  real(dp), dimension(:,:,:), intent(out)                      :: dcoefficients
+!</output>
+!</subroutine>
 
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(IN)                            :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTrial
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!<local variables>
+  integer :: iel,ielreal,icup,ive,nve,iin,ipart,ivert,in,icount,i,ipenaltyact
+  real(dp) :: dxcenter, dycenter, dradius, ddist,dlambda,dx,dy,dLocAreea,dElAreea
+  real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
+  integer, dimension(:,:), pointer :: p_iverticesatelement
+  type(t_particlecollection), pointer :: p_rparticlecollection
+  type(t_geometryobject), pointer :: p_rgeometryobject
+  type(t_parlist), pointer :: p_rparlst
 
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-    integer :: iel,icup,ive,nve,iin,ipart
-    real(dp) :: dxcenter, dycenter, dradius, ddist,dlambda
-    type(t_particleCollection), pointer :: p_rparticleCollection
-    type(t_geometryObject), pointer :: p_rgeometryObject
-    
-    p_rparticleCollection => collct_getvalue_particles(rcollection,'particles')
-    !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
-    do ipart=1,p_rparticleCollection%nparticles
-    
-    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
 
-    ! loop over all elements and calculate the
-    ! values in the cubature points
-      do iel=1,nelements
-        do icup=1,npointsPerElement
-          ! Get the distance to the center
-          call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,icup,iel),Dpoints(2,icup,iel)/), iin)
-          ! check if it is inside
-          if(iin .eq. 1)then
-            Dcoefficients(1,icup,iel) = rform%Dcoefficients(1)
+!</local variables>
+
+! Get the parameter list.
+  p_rparlst => collct_getvalue_parlst (rcollection, "PARLST")
+
+! Get the triangulation array for the point coordinates
+    call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
+                                   p_dvertexcoordinates)
+    call storage_getbase_int2d (rdiscretisationtrial%p_rtriangulation%h_iverticesatelement,&
+                                   p_iverticesatelement)  
+    
+! Pointer to collect all variables about the object/s. We will get data about origin, shape,
+! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
+  p_rparticlecollection => collct_getvalue_particles(rcollection,'particles')
+
+! For multiple objects, we need to treat them in the same way, so loop over the number of 
+! particles. If we have only 1 particle, the loop has no effect.
+
+  do ipart=1,p_rparticlecollection%nparticles
+
+! Find the geometry of the object   
+  p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+
+! Which method is used to implement the penalty matrix? That is choosen in the .dat file and 
+! there only can be 2 ways at this moment: "full Lambda" and "fractional Lambda" methods.
+! "Full" method is the classical 0/1 for the outside/inside cubature points in one element.
+! "Fractional" method calculates an average Lambda as a fraction between element areea and 
+! common areea between element and particle, This fraction is always in the interval [0;1]
+
+  call parlst_getvalue_int (p_rparlst,'CC-DISCRETISATION','ipenaltyact',ipenaltyact,0)
+
+! Loop over all elements and calculate the corresponding Lambda value
+    do iel=1,nelements
+      
+    select case(ipenaltyact)
+    case (0)  
+      ! "Full Lambda" method
+        do icup=1,npointsperelement 
+          ! get the distance to the center
+          call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
+          ! check if it is inside      
+          if(iin .eq. 1)then 
+            dcoefficients(1,icup,iel) = rform%dcoefficients(1) 
           else
-            Dcoefficients(1,icup,iel) = 0.0_dp
+            dcoefficients(1,icup,iel) = 0.0_dp
           end if
         end do
+  
+    case (1)
+      !"Fractional Lambda" method
+      ! The real element
+      ielreal = rdomainintsubset%p_ielements(iel) 
+      ! A counter for the inside vertex of the element    
+      in = 0     
+      ! Get vertices coordinates and check how many are in the object
+      do ivert=1,rdiscretisationtrial%p_rtriangulation%nnve
+      ! Local node coordinate of an element
+        dx = p_dvertexcoordinates(1,p_iverticesatelement(ivert,ielreal))
+        dy = p_dvertexcoordinates(2,p_iverticesatelement(ivert,ielreal))
+
+      ! Check if the vertice is inside and count all inside points
+        call geom_isingeometry (p_rgeometryobject,(/dx,dy/), iin)
+      ! Count how many points are inside the object 
+        if (iin .eq. 1) then
+           in = in +1
+        end if
       end do
-    end do
-!
-!    ! Definition of the circle
-!    dxcenter = 0.2
-!    dycenter = 0.2
-!    dradius  = 0.05
-!    ! we get the penalty term lambda*alpha*u on the LHS. Alpha will define
-!    ! where we want the penalty term to be active.
-!
-!    ! loop over the elements and cubature points
-!    ! and assign the coefficients
-!    do iel=1,nelements
-!      do icup=1,npointsPerElement
-!
-!        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
-!        if(ddist .le. dradius)then
-!          Dcoefficients(1,icup,iel) = rform%Dcoefficients(1)
-!        else ! the penalty term is not active we the matrix coefficient to 0
-!          Dcoefficients(1,icup,iel) = 0.0_dp
-!        end if
-!      end do
-!    end do
+
+      ! For an element with at least one node inside the object, calculate the
+      ! intersections nodes between element edges and object. Calculate local areea,
+      ! element area and the fractional lambda value (default value:
+      ! dlambda=dcoefficients(1)
+      if (in .gt. 0) then
+        call conectelementobject(ielreal,rdiscretisationtrial%p_rtriangulation,p_rgeometryobject,dElAreea,&
+                                 dLocAreea)
+      ! calculate the equivalent lambda value
+        dlambda = rform%dcoefficients(1)*dLocAreea/dElAreea              
+      ! give to all cubature points same fractional lambda
+        do icup=1,npointsperelement 
+           dcoefficients(1,icup,iel) = dlambda
+        end do 
+      else !(for in > 0)
+        do icup=1,npointsperelement 
+           dcoefficients(1,icup,iel) = 0.0_dp
+        end do
+      end if    
+    end select 
+ 
+   end do !(loop over elements)
+  end do !(loop over particles)
     
   end subroutine
+
+!**********************************************************************************************************************
+!
+  subroutine conectElementObject(ielement,p_rtriangulation,p_rgeometryObject,ElAreea,LocAreea)
+!
+!**********************************************************************************************************************
+
+!<input>
+  integer, intent(IN) :: ielement
+  type(t_triangulation), intent(IN), pointer    :: p_rtriangulation
+  type(t_geometryObject),intent(IN), pointer  :: p_rgeometryObject  
+!<output>
+  real(DP),intent(OUT) :: ElAreea
+  real(DP),intent(OUT) :: LocAreea
   
-  ! ***************************************************************************
+! local variable
+  real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:,:), allocatable :: PolyPoints
   
+  integer  :: ivert,SlopeType,iin,icount,i
+  real(DP) :: dxmax,dymax,dxmin,dymin,dxs,dys,dxe,dye,dxi1,dxi2,dyi1,dyi2, &
+              dxcenter,dycenter,dradius,ddist,dslope,da,db,dc,ddiscr
+
+!**********************************************************************************************************************
+
+! Get the triangulation array for the point coordinates
+                                 
+  call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,p_DvertexCoordinates)
+  call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+
+! Get the parameters of the object (circle case)
+  dxcenter = p_rgeometryObject%rcoord2d%dorigin(1)
+  dycenter = p_rgeometryObject%rcoord2d%dorigin(2)
+  dradius = p_rgeometryObject%rcircle%dradius
+! Counter for polygon points
+  icount = 0
+! Initialise the array that saves the local polygon points
+  allocate(PolyPoints(2,16))   
+  PolyPoints(:,:)=0.0_dp    
+
+! Calculate total area of the real element
+  dxmax=maxval(p_DvertexCoordinates(1,p_IverticesAtElement(:,ielement)))
+  dxmin=minval(p_DvertexCoordinates(1,p_IverticesAtElement(:,ielement)))
+  dymax=maxval(p_DvertexCoordinates(2,p_IverticesAtElement(:,ielement)))
+  dymin=minval(p_DvertexCoordinates(2,p_IverticesAtElement(:,ielement)))
+  ElAreea=(dxmax-dxmin)*(dymax-dymin)
+
+  do ivert = 1,p_rtriangulation%NNEE
+  ! Pick up the values for start point and end point of an edge of the real element
+    dxs = p_DvertexCoordinates(1,p_IverticesAtElement(ivert,ielement))
+    dys = p_DvertexCoordinates(2,p_IverticesAtElement(ivert,ielement))
+    dxe = p_DvertexCoordinates(1,p_IverticesAtElement(mod(ivert,4)+1,ielement))
+    dye = p_DvertexCoordinates(2,p_IverticesAtElement(mod(ivert,4)+1,ielement))
+
+  ! Check wheter the start point of the edge is already in the object. In affirmative case,
+  ! save the point into the local polygon array and count the point. At the end we will have
+  ! a counter of how many points the polygon has together with the coordinates of these points
+    call geom_isInGeometry (p_rgeometryObject,(/dxs,dys/), iin)
+          
+    if (iin.eq.1) then
+        icount=icount+1 ! add one point to the polygon
+        PolyPoints(1,icount)=dxs ! x coordinate of the point
+        PolyPoints(2,icount)=dys ! y coordinate of the point
+    end if
+              
+  ! Check wheter the investigated edge is cutted by the object between start and end points
+  ! We can have 3 cases: vertical edge, horizontal edge and oblic. First 2 cases are treated
+  ! in here for a cartezian type mesh.
+    SlopeType=0
+    if (abs(dxe-dxs) .le. 1.0E-7) then
+        SlopeType=1 ! vertical edge case
+    else if (abs(dye-dys) .le. 1.0E-7) then
+        SlopeType=2 ! horizontal edge case
+    else
+        SlopeType=3 ! oblic edge case                 
+    end if
+             
+    select case (SlopeType)
+    case (1) ! vertical edge
+      ! First calculate the distance between the start point and center
+      ! point of the object. if this distance is smaller then the radius
+      ! then we may calculate conection points. otherwise, there is no 
+      ! conection possible between the actual edge and object
+      ddist=max(dxs,dxcenter)-min(dxs,dxcenter)
+      if (ddist.le.dradius) then
+          dyi1=dycenter-sqrt(dradius**2-(dxs-dycenter)**2)
+          dyi2=dycenter+sqrt(dradius**2-(dxs-dycenter)**2)
+        if ((dyi1.le.dymax).and.(dyi1.ge.dymin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxs        
+             PolyPoints(2,icount)=dyi1       
+        end if
+        if ((dyi2.le.dymax).and.(dyi2.ge.dymin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxs        
+             PolyPoints(2,icount)=dyi2        
+        end if
+      end if
+               
+    case (2) ! horizontal edge
+      ddist=max(dys,dycenter)-min(dys,dycenter)
+      if (ddist.le.dradius) then
+          dxi1=dxcenter-sqrt(dradius**2-(dys-dycenter)**2)
+          dxi2=dxcenter+sqrt(dradius**2-(dys-dycenter)**2)
+        if ((dxi1.le.dxmax).and.(dxi1.ge.dxmin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxi1        
+             PolyPoints(2,icount)=dys        
+        end if
+        if ((dxi2.le.dxmax).and.(dxi2.ge.dxmin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxi2        
+             PolyPoints(2,icount)=dys        
+        end if
+      end if
+               
+    case (3) ! oblic edge
+         dslope = (dye-dys)/(dxe-dxs)
+         da = 1+dslope**2
+         db = -2*dxcenter-2*dslope**2*dxs+2*dslope*(dys-dycenter)
+         dc = dxcenter**2+dslope**2*dxs**2-2*dslope*dxs*(dys-dycenter)+(dys-dycenter)**2-dradius**2
+         ddiscr = db**2-4*da*dc
+         if (ddiscr .ge. 1.0E-7) then
+           dxi1 = (-db + sqrt(ddiscr))/(2*da)
+           dxi2 = (-db - sqrt(ddiscr))/(2*da)
+           if ((dxi1.le.dxmax).and.(dxi1.ge.dxmin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxi1        
+             PolyPoints(2,icount)=dslope*(dxi1-dxs)+dys        
+           end if
+           if ((dxi2.le.dxmax).and.(dxi2.ge.dxmin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxi2        
+             PolyPoints(2,icount)=dslope*(dxi2-dxs)+dys        
+           end if
+         else if ((ddiscr .lt. 1.0E-7).and.(ddiscr .ge. 0.0_DP)) then  
+           dxi1 = -db/(2*da)  
+           if ((dxi1.le.dxmax).and.(dxi1.ge.dxmin)) then
+             icount=icount+1
+             PolyPoints(1,icount)=dxi1        
+             PolyPoints(2,icount)=dslope*(dxi1-dxs)+dys        
+           end if
+         else
+         end if
+        
+!      call output_line ('Unsupported edge slope type.')
+!      call sys_halt()
+             
+    end select
+  end do    
+
+! Calculate the local area determined by the saved polygon points 
+  LocAreea = 0.0_DP
+  do i = 1,icount
+     LocAreea = LocAreea + PolyPoints(1,i)*PolyPoints(2,mod(i,icount)+1)-PolyPoints(2,i)*PolyPoints(1,mod(i,icount)+1)
+  end do
+  LocAreea = 0.5*LocAreea
+  
+  deallocate (PolyPoints)              
+
+  end subroutine
+
 end module

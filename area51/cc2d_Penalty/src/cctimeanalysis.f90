@@ -6,8 +6,8 @@
 !# <purpose>
 !# This module contains routines to calculate the time error and time
 !# derivative of a solution. The time error is the value
-!# of a functional $||u_{n}-u*_{n}||$ in time for a solution
-!# $u_{n} = u(t_{n})$, and the norm of the time derivatice of a solution.
+!# of a functional $||u_{n}-u*_{n}||$ in time for a solution 
+!# $u_{n} = u(t_{n})$, and the norm of the time derivatice of a solution. 
 !# The value of this (unknown) error is approximated
 !# by a time error functional $J(.)$ which can be evaluated by different
 !# means, depending on the actual problem to solve.
@@ -35,7 +35,7 @@ module cctimeanalysis
 
 !<typeblock>
   
-  ! Time error analysis block. Contains values of different time
+  ! Time error analysis block. Contains values of different time 
   ! error functionals.
   type t_timeError
   
@@ -57,7 +57,7 @@ module cctimeanalysis
 
 !<typeblock>
   
-  ! Block for norms of the time derivative
+  ! Block for norms of the time derivative 
   type t_timeDerivatives
   
     ! $||rel. change in U||_{L2}$
@@ -84,7 +84,7 @@ module cctimeanalysis
 !<constantblock description="Identifiers for norms of time-dependent solutions.">
 
   ! $ ||u||_{l2} $
-  integer, parameter :: TNRM_L2U    = 1
+  integer, parameter :: TNRM_L2U    = 1  
 
   ! $ ||u||_{\max} $
   integer, parameter :: TNRM_LMAX   = 2
@@ -101,11 +101,11 @@ module cctimeanalysis
   ! $ \max ( ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_L2MAXPMAX  = 6
 
-  ! $ \max ( ||u||_{l2}   , ||p||_{l2} ,
+  ! $ \max ( ||u||_{l2}   , ||p||_{l2} , 
   !          ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_MAX        = 7
 
-  ! $ \min ( ||u||_{l2}   , ||p||_{l2} ,
+  ! $ \min ( ||u||_{l2}   , ||p||_{l2} , 
   !          ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_MIN        = 8
 
@@ -142,7 +142,7 @@ contains
 !</description>
 
 !<input>
-  ! Type of norm to use in space/time; former IEPSAD.
+  ! Type of normto use in space/time; former IEPSAD.
   ! =TNRM_L2U      : Calculate dtimeerror=drelUL2; standard
   ! =TNRM_LMAX     : Calculate dtimeerror=drelUmax
   ! =TNRM_P2U      : Calculate dtimeerror=drelPL2
@@ -150,7 +150,7 @@ contains
   ! =TNRM_L2UP2U   : Calculate dtimeerror=max(drelUL2,drelPL2)
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
-  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)
+  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
   integer                        :: ctimeErrorControl
   
   ! Solution vector u2.
@@ -208,7 +208,7 @@ contains
     Cnorms = LINALG_NORMMAX
     call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
     call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
-
+                                                  
     dtmp = max(Dnorms2(1),Dnorms2(2))
     if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
     rtimeErrorLocal%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtmp
@@ -239,7 +239,7 @@ contains
                        rtimeErrorLocal%drelUmax,rtimeErrorLocal%drelPmax)
     end select
     
-    if (present(rtimeError)) rtimeError = rtimeErrorLocal
+    if (present(rtimeError)) rtimeError = rtimeError
     
   end function
 
@@ -267,7 +267,7 @@ contains
   ! =TNRM_L2UP2U   : Calculate dtimeerror=max(drelUL2,drelPL2)
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
-  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)
+  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
   integer                        :: ctimeErrorControl
   
   ! Solution vector $u_{n+1}$ at the end of the time step.
@@ -286,7 +286,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: Time norm analysis block. Returns different norms of the
+  ! OPTIONAL: Time norm analysis block. Returns different norms of the 
   ! time derivative.
   type(t_timeDerivatives), intent(inout), target, optional :: rtimeDerivNorms
 !</output>
@@ -328,9 +328,6 @@ contains
     p_rtimeNorm%drelPL2 = Dnorms1(3) / (sqrt(real(neqp,DP)) * dtstep)
 
     ! ||d||_max / dtstep
-    Cnorms = LINALG_NORMMAX
-    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
-
     p_rtimeNorm%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtstep
     p_rtimeNorm%drelPmax = Dnorms1(3) / dtstep
     

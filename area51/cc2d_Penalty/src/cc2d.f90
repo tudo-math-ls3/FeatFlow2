@@ -7,7 +7,7 @@
 !# This program is a simple test program for discretising a simple
 !# stationary Navier-Stokes equation
 !#
-!#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
+!#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p +\Lambda u = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$ and a pressure $p$.
@@ -26,7 +26,7 @@ program cc2d
   
   character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sbenchlogfile
   
-  ! The very first thing in every application:
+  ! The very first thing in every application: 
   ! Initialise system-wide settings:
   call system_init()
   
@@ -43,14 +43,14 @@ program cc2d
   call output_init (slogfile,serrorfile,sbenchlogfile)
   
   ! Now we can really start!
-  !
-  ! Initialise the storage management:
+  ! 
+  ! Initialise the storage management: 
   call storage_init(999, 100)
   
   ! Initialise the parser
   call fparser_init ()
 
-  ! Call the problem to solve.
+  ! Call the problem to solve. 
   call output_lbrk ()
   call output_line ('Calculating cc2d-Problem')
   call output_separator (OU_SEP_MINUS)

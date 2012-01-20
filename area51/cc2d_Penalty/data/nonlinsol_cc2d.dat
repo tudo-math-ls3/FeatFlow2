@@ -9,18 +9,18 @@
 [CC2D-NONLINEAR]
 ################
 
-# minimum number of nonlinear iterations;
-# in nonstationary simulations: per time step;
+# minimum number of nonlinear iterations; 
+# in nonstationary simulations: per time step; 
 # 1=standard
 # Former NLMIN.
 
-nminIterations     = 1
+nminIterations     = 2
 
-# max number of nonlinear iterations;
+# max number of nonlinear iterations; 
 # in nonstationary simulations: per time step.
 # Former NLMAX
 
-nmaxIterations     = 10
+nmaxIterations     = 20
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
@@ -65,12 +65,12 @@ ioutputLevel       = 2
 #     switching. Forthermore, the adaptive Newton can be executed
 #     as inexact Newton iteration with automatic accuracy setting
 #     for the linear solver.
-# Note: Currently, Newton only works with quadratic convergence if
+# Note: Currently, Newton only works with quadratic convergence if 
 # the stabilisation is deactivated (iUpwind=0, dUpsam=0.0)!!!
 
 itypePreconditioning = 1
 
-# If itypePreconditioning = 1 or = 2: Name of the section in the file
+# If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
@@ -85,7 +85,7 @@ spreconditionerAdaptiveNewton = 'CC-ADAPTIVENEWTONITERATION'
 # Upper and lower bound for optimal damping parameter in nonlinear
 # defect correction. Set domegaMin=domegaMax=1.0 for no damping.
 
-# lower limit for opt. OMEGA in nonlinear defect correction,
+# lower limit for opt. OMEGA in nonlinear defect correction, 
 # <0: no rel. changes
 
 domegaMin          = 1.0
@@ -93,7 +93,7 @@ domegaMin          = 1.0
 # upper limit for opt. OMEGA in nonlinear defect correction,
 # <0: no rel. changes
 
-domegaMax          = 1.0
+domegaMax          = 2.0
 
 # initial value limit for opt. OMEGA in nonlinear defect correction
 
@@ -111,17 +111,17 @@ domegaIni          = 1.0
 [CC-ADAPTIVENEWTONITERATION]
 ############################
 
-# Minimum number of fix point iterations before switching to
+# Minimum number of usul fix point iteration before to switch to
 # preconditioning with the Newton matrix. (IFIXMIN)
 
 nminFixPointIterations = 0
 
-# Maximum number of fix point iterations before switching to
-# preconditioning with the Newton matrix. (IFIXMAX)
+# Maximum number of usul fix point iteration before to switch to
+# preconfitioning with the Newton matrix. (IFIXMAX)
 
 nmaxFixPointIterations = 5
 
-# Norm of absolute residuum before applying Newton.
+# Norm of absolute residuum before applying Newton. 
 # Newton is only applied
 # if   ||absolute residuum|| < depsAbsNewton
 # and  ||relative residuum|| < depsRelNewton.
@@ -130,7 +130,7 @@ nmaxFixPointIterations = 5
 
 depsAbsNewton = 1.0E99
 
-# Norm of relative residuum before applying Newton.
+# Norm of relative residuum before applying Newton. 
 # Newton is only applied
 # if   ||absolute residuum|| < depsAbsNewton
 # and  ||relative residuum|| < depsRelNewton.

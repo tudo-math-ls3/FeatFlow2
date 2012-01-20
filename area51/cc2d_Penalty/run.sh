@@ -1,3 +1,10 @@
+#!/bin/bash
+
+for NLMAX in 3 4 5;do
+for ilambda in 1000 1000000;do
+for imethod in 1 2; do
+
+cat >./data/discretisation.dat <<END_OF_DATA
 
 # ------------------------------------------------------------------------
 # Spatial discretization
@@ -73,7 +80,7 @@ ielementTypeInitialSolution = -1
 # solution to a sequence of files. The format of both files is the same,
 # both can be used as initial solution to be read with ctypeInitialSolution<>0.
 
-cwriteFinalSolution = 0
+cwriteFinalSolution = 1
 
 # Specifies the level where to write the final solution.
 # 0=don't write
@@ -88,23 +95,23 @@ iwriteSolutionLevel = 0
 
 # Name/path of file for writing the final solution
 
-swriteSolutionFilename = 'ns/solution'
+swriteSolutionFilename = 'ns/solution${NLMAX}${imethod}${ilambda}'
 
 # ------------------------------------------------------------------------
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 1
+NLMIN              = 2
 
-# maximum mg-level = levl of computation of nonlinear iteration
+# maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 2
+NLMAX              = ${NLMAX}
 
 # ------------------------------------------------------------------------
 
 # Activate FBM (0 = not active, 1 = active)
 
-ifbm = 1
+ifbm = 0
 
 # ipenaltyact decides which way is penalty term assembled 
 #   - 0 for "full Lambda"
@@ -215,12 +222,12 @@ ielementType       = 3
 # REMARK: To use Q2 with EOJ stabilisation and VANKA smoother, damp
 # the VANKA with domega=0.5.
 
-Upwind            = 0
+Upwind            = 3
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam             = 1.0
+dUpsam             = 0.1
 
 # Calculation of local H for Streamline Diffusion
 # 0= set local H to sqrt(area(T))
@@ -354,3 +361,333 @@ iintARIndicatorEX3YVel   = 1
 # standard = 20.0
 
 dintARboundEX3YVel       = 20.0
+
+END_OF_DATA
+
+cat >./data/postprocessing.dat <<END_OF_DATA
+# ------------------------------------------------------------------------
+# Postprocessing
+#
+# The parameters in this file specify the postprocessing of the solutions
+# that come from the stationary or nonstationary solver.
+# ------------------------------------------------------------------------
+
+###################
+[CC-POSTPROCESSING]
+###################
+
+# ------------------------------------------------------------------------
+# UCD output (GMV, AVS, Paraview...)
+
+# Type of output file to generate from solutions.
+# 0=disabled
+# 1=GMV
+# 2=AVS
+# 3=Paraview (VTK)
+# 4=Matlab
+
+ioutputUCD = 1
+
+# Level where to write UCD output. Standard=0 = maximum level.
+# =1,2,3,...  : Write on level ilevelUCD.
+# =0,-1,-2,...: Write on level NLMAX - |ilevelUCD|
+# Standard is =0 which writes the solution at the maximum level.
+# For a value <> 0, the solution is projected down to the desired
+# level and written out there (saves disc space).
+
+ilevelUCD = 0
+
+# Filename for UCD output.
+# In a nonstationary simulation, a number '.0001','.0002',... is appended
+# to this.
+sfilenameUCD = '%{spostdirectory}/u${NLMAX}${imethod}${ilambda}.gmv'
+
+# Activate / deactivate the output of a fake "velocity" vector
+# 0 = disabled
+# 1 = enabled
+
+ifakeoutput = 0
+
+# Filename for UCD output of a fake "velocity" vector obtained from the velocity blocks
+sfilenameUCD1 = '%{spostdirectory}/u.gmv1'
+
+# ------------------------------------------------------------------------
+# Nonstationary UCD output parameters
+
+# Start time for UCD output.
+
+dminTimeUCD = -1.0E100
+
+# End time for UCD output.
+
+dmaxTimeUCD = 1.0E100
+
+# Time difference for UCD output.
+# =0.0: generate UCD output for every timestep in the range 
+#       dminTimeUCD..dmaxTimeUCD
+
+dtimeDifferenceUCD = 0.0
+
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceUCD.
+# =0: Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Standard. Interpolate the solution linearly to get an equidistant 
+#     timestepping for the UCD export. (May lead to slight time interpolation
+#     errors due to linear time interpolation.)
+# If dtimeDifferenceUCD=0, the solutions are written out as they come.
+
+iinterpolateSolutionUCD = 1
+
+# Start number for file suffix when writing UCD files (1='.0001',...).
+# Whether this is used or not depends on the type of output
+# (e.g. GMV uses this)
+
+istartSuffixUCD = 0
+
+# ------------------------------------------------------------------------
+# Film output.
+# In a nonstationary simulation, this writes the raw solution vectors 
+# to a sequence of files. For stationary simulations, this has no effect.
+
+# Type of output file to generate from solutions.
+# 0=disabled (standard)
+# 1=formatted film output
+# 2=unformatted film output
+
+ioutputFilm = 0
+
+# Level where to write Film output. Standard = 0 = maximum level.
+# =1,2,3,...  : Write on level ilevelFilm.
+# =0,-1,-2,...: Write on level NLMAX - |ilevelFilm|
+# Standard is =0 which writes the solution at the maximum level.
+# For a value <> 0, the solution is projected down to the desired
+# level and written out there (saves disc space).
+
+ilevelFilm = 0
+
+# Basic filename for Film output. A number '.0001','.0002',... is appended
+# to this.
+sfilenameFilm = '%{ssolutiondirectory}/solution'
+
+# Start time for Film output.
+
+dminTimeFilm = -1.0E100
+
+# End time for Film output.
+
+dmaxTimeFilm = 1.0E100
+
+# Time difference for Film output.
+# =0.0: generate Film output for every timestep in the range 
+#       dminTimeFilm..dmaxTimeFilm
+
+dtimeDifferenceFilm = 0.0
+
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceFilm.
+# =0: Standard. Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Interpolate the solution linearly to get an equidistant timestepping
+#     for the film export. (May lead to slight time interpolation errors
+#     due to linear time interpolation.)
+# If dtimeDifferenceFilm=0, the solutions are written out as they come.
+
+iinterpolateSolutionFilm = 0
+
+# Start number for file suffix when writing Film files (1='.0001',...).
+
+istartSuffixFilm = 0
+
+# ------------------------------------------------------------------------
+# Error analysis
+
+# Calculate L2-error to reference solution.
+# =0: Don't calculate
+# =1: Calculate the error
+
+ierrorAnalysisL2 = 0
+
+# Calculate H1-error to reference solution.
+# =0: Don't calculate
+# =1: Calculate the error
+
+ierrorAnalysisH1 = 0
+
+# Calculate the kinetic energy.
+# =0: Don't calculate
+# =1: Calculate the energy
+
+icalcKineticEnergy = 1
+
+# Whether to write the L2/H1-error and/or kinetic energy to a file
+
+iwriteErrorAnalysisL2 = 0
+iwriteErrorAnalysisH1 = 0
+iwriteKineticEnergy = 0
+
+# Filename for the L2/H1-error/kinetic energy if iwriteerrorAnalysisXXXX = 1
+
+sfilenameErrorAnalysisL2 = '%{ssolutiondirectory}/error_L2'
+sfilenameErrorAnalysisH1 = '%{ssolutiondirectory}/error_H12'
+sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
+
+# ------------------------------------------------------------------------
+# Body forces
+
+# Calculate the body forces
+# =0: Don't calculate
+# =1: Calculate with standard FEAT-1 method. Constant viscosity.
+# =2: Calculate with extended method, supporting mixed meshes,
+#     general elements and nonlinear viscosity (standard)
+# =3: Calculate using volume forces, standard FEAT-1 method. 
+#     Constant viscosity.
+# =4: Calculate using volume forces with extended method, supporting mixed
+#     meshes, general elements and nonlinear viscosity.
+
+icalcBodyForces = 0
+
+# Specifies the tensor structure to use for the computation.
+# =-1: automatic
+# = 0: simple gradient tensor, constant nu
+# = 1: full gradient tensor, constant nu
+# = 2: deformation tensor, constant nu
+
+ibodyForcesFormulation = -1
+
+# Number of the boundary component where to calculate the body forces.
+# For flow around cylinder, this is =2 e.g.
+
+ibodyForcesBdComponent = 2
+
+# 1st coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 1/RE is assumed.
+
+# dbdForcesCoeff1 = 0.001
+
+# 2nd coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 0.004 is assumed (corresonds to flow 
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
+
+# dbdForcesCoeff2 = 0.004
+
+# Whether to write the body forces to a file
+
+iwriteBodyForces = 0
+
+# Filename for the body forces
+
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
+
+# ------------------------------------------------------------------------
+# Point values
+
+# Calculate the value of different quantities in a number of points
+# y evaluating the solution. The number in braces "(n)" defines the number
+# of points to evaluate. Afterwards follows a list of points in the
+# format
+#   "x y type der"
+# with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
+# der=derivative quantifier. Here:
+#   type=1: x-velocity, =2: y-velocity, =3: pressure
+#   der =0: function value, =1: x-derivative, =2: y-derivative
+#
+# Example: Don't evaluate anything:
+   cevaluatePointValues(0) =
+
+# Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
+#   cevaluatePointValues(2) =
+#     0.15 0.2 3 0
+#     0.25 0.2 3 0
+
+    cevaluatePointValues(0) =
+#      0.15 0.2 3 0
+#      0.25 0.2 3 0
+#      0.1375 0.2 3 0
+#      0.2625 0.2 3 0
+#      0.4 0.2 1 0
+#      0.4 0.2 2 0
+#      0.65 0.2 1 0
+#      0.65 0.2 2 0
+
+# Whether to write the point values to a file
+
+iwritePointValues = 0
+
+# Filename for the point values
+
+sfilenamePointValues = '%{ssolutiondirectory}/pv'
+
+# ------------------------------------------------------------------------
+# Output matrices blocks
+
+# 0 = no output (default)
+# 1 = output block matrix XXXX on the higher level
+
+iblockA11 = 0
+iblockA12 = 0
+iblockA22 = 0
+iblockA21 = 0
+
+# ------------------------------------------------------------------------
+# Polygonise penalty object
+
+# 0 = no output (default)
+# 1 = a polygon of penalty object will be outputed into gmv file
+
+ipenpolyg = 0
+
+
+END_OF_DATA
+
+cat >./data/penalty.dat <<END_OF_DATA
+
+############
+[CC-PENALTY]
+############
+
+# Penalty parameter (standard 1000)
+ilambda = ${ilambda}
+
+# itypePenaltyAssem indicates how to assemble Penalty matrix
+#   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
+#   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
+
+itypePenaltyAssem = ${imethod} 
+
+# Element type 
+#  0 = Q1~(E031) / Q1~(E031) / Q0
+#  1 = Q1~(E030) / Q1~(E030) / Q0
+#  2 = Q1~(EM31) / Q1~(EM31) / Q0
+#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+#  4 = Q2 (E013) / Q2 (E013) / QP1
+#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# ... (see discretisation.dat)
+
+ielementType_Penalty = 3
+
+# cubature formula for Penalty matrix. 
+# ="": use default cubature formula.
+
+scubPenalty = G3X3
+
+# adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
+# ="": use default cubature formula.
+
+scubPenalty_sum = TRZ
+
+# ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
+
+ilocalrefinement     = 5
+
+
+END_OF_DATA
+
+./cc2d_Penalty
+ 
+done
+done
+done

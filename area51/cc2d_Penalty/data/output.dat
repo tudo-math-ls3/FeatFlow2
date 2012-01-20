@@ -1,3 +1,4 @@
+
 # ------------------------------------------------------------------------
 # Output parameters
 # 
@@ -17,7 +18,7 @@ MSHOW_Initialisation = 2
 MT_OutputLevel = 2
 
 # Log file for messages. ='': No log file output.
-smsgLog = '%{slogdirectory}/output.log'
+smsgLog = '%{slogdirectory}/output.dat'
 
 # Log file for error messages; usually coincides with smsgLog to print
 # errors into the same log file as standard messages.
@@ -27,3 +28,4 @@ serrorLog = ''
 # Log file for messages used in regression test benchmarks.
 # ='': No benchmark output (standard)
 sbenchLog = ''
+

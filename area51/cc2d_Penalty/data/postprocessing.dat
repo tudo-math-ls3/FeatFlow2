@@ -35,6 +35,15 @@ ilevelUCD = 0
 # to this.
 sfilenameUCD = '%{spostdirectory}/u.gmv'
 
+# Activate / deactivate the output of a fake "velocity" vector
+# 0 = disabled
+# 1 = enabled
+
+ifakeoutput = 0
+
+# Filename for UCD output of a fake "velocity" vector obtained from the velocity blocks
+sfilenameUCD1 = '%{spostdirectory}/u.gmv1'
+
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
 
@@ -171,7 +180,7 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 # =4: Calculate using volume forces with extended method, supporting mixed
 #     meshes, general elements and nonlinear viscosity.
 
-icalcBodyForces = 2
+icalcBodyForces = 0
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic
@@ -220,14 +229,22 @@ sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 #   der =0: function value, =1: x-derivative, =2: y-derivative
 #
 # Example: Don't evaluate anything:
-#   cevaluatePointValues(0) =
-#
+   cevaluatePointValues(0) =
+
 # Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
 #   cevaluatePointValues(2) =
 #     0.15 0.2 3 0
 #     0.25 0.2 3 0
 
-cevaluatePointValues(0) =
+    cevaluatePointValues(0) =
+#      0.15 0.2 3 0
+#      0.25 0.2 3 0
+#      0.1375 0.2 3 0
+#      0.2625 0.2 3 0
+#      0.4 0.2 1 0
+#      0.4 0.2 2 0
+#      0.65 0.2 1 0
+#      0.65 0.2 2 0
 
 # Whether to write the point values to a file
 
@@ -235,4 +252,23 @@ iwritePointValues = 0
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+sfilenamePointValues = '%{ssolutiondirectory}/pv'
+
+# ------------------------------------------------------------------------
+# Output matrices blocks
+
+# 0 = no output (default)
+# 1 = output block matrix XXXX on the higher level
+
+iblockA11 = 0
+iblockA12 = 0
+iblockA22 = 0
+iblockA21 = 0
+
+# ------------------------------------------------------------------------
+# Polygonise penalty object
+
+# 0 = no output (default)
+# 1 = a polygon of penalty object will be outputed into gmv file
+
+ipenpolyg = 1

@@ -66,10 +66,12 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
 
 !</subroutine>
   ! locals
-  integer :: i
+  integer :: i, iparticle
   real(dp) :: dx,dy,drho,drad
-  
-  rPDescriptor%iparticles=1
+  type(t_parlist) :: rparlist
+
+ 
+  rPDescriptor%iparticles = 1
   
   allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
@@ -89,7 +91,7 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   
 end subroutine ! end cc_initParticleDescriptor
   
-  ! ***************************************************************************
+  ! ***************************************************************************  
 
 !<subroutine>
 
@@ -134,9 +136,10 @@ end subroutine ! end cc_initParticleDescriptor
       call parlst_readfromfile (rparlist, './data/output.dat')
     end if
     
-    ! Now the real initialisation of the output including log file stuff!
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'''''')
+    ! Now the real initialisation of the output including log file stuff
+
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT','smsgLog',sstring,'''''')
+                                
     read(sstring,*) slogfile
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
@@ -187,7 +190,7 @@ end subroutine ! end cc_initParticleDescriptor
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparamList, smaster)
     else
-      ! Each 'readfromfile' command adds the parameter of the specified file
+      ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
       call parlst_readfromfile (rparamList, './data/discretisation.dat')
       call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
@@ -321,8 +324,7 @@ end subroutine ! end cc_initParticleDescriptor
     ! Allocate memory for all the levels.
     allocate(rproblem%RlevelInfo(1:ilvmax))
     
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'lambda',rproblem%dLambda,0.0_DP)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','ilambda',rproblem%iLambda,1000)
     
 
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)

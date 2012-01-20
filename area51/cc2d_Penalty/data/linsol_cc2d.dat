@@ -51,7 +51,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # = 201: SP-SOR, full version
 # = 202: SP-SOR, diagonal version
 
-ismootherType = 3
+ismootherType = 5
 
 # Name of the section in this file which configures the smoother.
 
@@ -84,7 +84,7 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 10
+nmaxIterations     = 20
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -97,7 +97,7 @@ depsRel            = 1E-2
 # rel. error < depsRel
 # Not used if the inexact Newton is active.
 
-depsAbs            = 1E-5
+depsAbs            = 1E-2
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -117,7 +117,7 @@ domega             = 1.0
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 
-ioutputLevel       = -1
+ioutputLevel       = 0
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -130,7 +130,7 @@ iresNorm = 0
 #
 # Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
 
-icycle             = 0
+icycle             = 1
 
 # Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
 # parameter for the coarse grid correction.
@@ -138,7 +138,7 @@ icycle             = 0
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
 
-ccorrectionTypeAlpha = 0
+ccorrectionTypeAlpha = 1
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -160,7 +160,7 @@ dalphaMax          = 10.0
 
 # Number of pre- and postsmoothing steps
 
-nsmoothingSteps    = 4
+nsmoothingSteps    = 20
 
 # Relaxation parameter
 
@@ -184,11 +184,11 @@ ioutputLevel       = 0
 
 # Minimum number of steps
 
-nminIterations     = 1
+nminIterations     = 10
 
 # Maximum number of steps
 
-nmaxIterations     = 1000
+nmaxIterations     = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations

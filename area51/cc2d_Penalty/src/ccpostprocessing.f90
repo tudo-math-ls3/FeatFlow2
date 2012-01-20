@@ -165,7 +165,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure.
+  ! Postprocvessing structure. 
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -182,19 +182,22 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    if(rproblem%iParticles .gt. 0)then
+    if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
-      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+!      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+      call cc_calculateForces(rvector,rproblem)
+    else 
+      call cc_calculateBodyForces(rvector,rproblem)
     end if
-    
+
     ! Calculate point values
     call cc_evaluatePoints (rvector,rproblem)
     
     ! Calculate the divergence
-    call cc_calculateDivergence (rvector,rproblem)
+!    call cc_calculateDivergence (rvector,rproblem)
     
     ! Error analysis, comparison to reference function.
-    call cc_errorAnalysis (rvector,rproblem)
+!    call cc_errorAnalysis (rvector,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     call cc_writeUCD (rpostprocessing, rvector, rproblem)
@@ -222,7 +225,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure. Defines what to do with solution vectors.
+  ! Postprocvessing structure. Defines what to do with solution vectors.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -235,7 +238,7 @@ contains
   ! if there is no previous timestep.
   real(dp), intent(in) :: dtimePrev
 
-  ! Solution vector of the current timestep.
+  ! Solution vector of the current timestep. 
   type(t_vectorBlock), intent(in) :: rvector
 
   ! Time of the current timestep.
@@ -258,7 +261,7 @@ contains
     ! Write the raw solution
     call cc_writeSolution (rproblem,rvector,dtime)
     
-    if(rproblem%iParticles .gt. 0)then
+    if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
       call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
     end if
@@ -267,10 +270,10 @@ contains
     call cc_evaluatePoints (rvector,rproblem)
 
     ! Calculate the divergence
-    call cc_calculateDivergence (rvector,rproblem)
+!    call cc_calculateDivergence (rvector,rproblem)
 
     ! Error analysis, comparison to reference function.
-    call cc_errorAnalysis (rvector,rproblem)
+!    call cc_errorAnalysis (rvector,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     !
@@ -286,7 +289,7 @@ contains
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
-    
+
       ! Figure out if we have to write the solution. This is the case if
       ! 1.) Precious and current time is the same ot
       ! 2.) The solution crossed the next ucd timestep.
@@ -300,7 +303,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Probably we have to interpolate the solution to the point dtime in time.
+        ! Proably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONUCD', iinterpolateSolutionUCD,1)
         if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
@@ -332,7 +335,7 @@ contains
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
-    
+ 
       ! Figure out if we have to write the solution. This is the case if
       ! 1.) Precious and current time is the same ot
       ! 2.) The solution crossed the next ucd timestep.
@@ -346,7 +349,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Probably we have to interpolate the solution to the point dtime in time.
+        ! Proably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONFILM', iinterpolateSolutionFilm,1)
         if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
@@ -618,8 +621,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -677,12 +680,17 @@ contains
     integer :: ibodyForcesFormulation,icalcBodyForces,ibodyForcesBdComponent
     
     integer :: iwriteBodyForces
-    character(len=SYS_STRLEN) :: sfilenameBodyForces
+    character(len=SYS_STRLEN) :: sfilenameBodyForces, sfilename
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     integer :: cflag
     logical :: bfileExists
     type(t_vectorScalar) :: rcharfct
+    type(t_boundary) :: rboundary_circle
+
+
+    ! debug
+    real(dp), dimension(:), pointer :: p_Ddata,p_Ddata2
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'icalcBodyForces', icalcBodyForces, 1)
@@ -711,26 +719,30 @@ contains
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
       
-    
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
-    if ((rsolution%p_rblockDiscr%RspatialDiscr(1)% &
-         ccomplexity .eq. SPDISC_UNIFORM) .and. &
+    if ((rsolution%p_rblockDiscr%RspatialDiscr(1)%ccomplexity .eq. SPDISC_UNIFORM) .and. &
         (boundary_igetNBoundComp(rproblem%rboundary) .ge. ibodyForcesBdComponent)) then
-
+!    if (rsolution%p_rblockDiscr%RspatialDiscr(1)%ccomplexity .eq. SPDISC_UNIFORM) then
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
-      call boundary_createRegion (rproblem%rboundary, &
-          ibodyForcesBdComponent, 0, rregion)
+    
+!      stemp='pre/bench1.prm' 
+!      call boundary_read_prm(rboundary_circle, stemp)
+!
+     call boundary_createRegion (rproblem%rboundary,ibodyForcesBdComponent, 0, rregion)
+!      call boundary_createRegion (rboundary_circle, 2, 0, rregion)
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       
       select case (icalcBodyForces)
       case (1)
         ! Old implementation:
+!        call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
+!            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
-            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
-        
-      case (2)
+            dbdForcesCoeff1,dbdForcesCoeff2,1)
+                    
+      case (2)      
         ! Extended calculation method.
         !
         ! Select the tensor formulation to use.
@@ -750,7 +762,7 @@ contains
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
           
-        ! Prepare the collection. The "next" collection points to the user defined
+        ! Prepare the collection. The "next" collection points to the user defined 
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -798,7 +810,7 @@ contains
         ! Prepare a collection structure in the form necessary for
         ! the computation of a nonconstant viscosity.
         !
-        ! Prepare the collection. The "next" collection points to the user defined
+        ! Prepare the collection. The "next" collection points to the user defined 
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -882,7 +894,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector
+        ! Create a temporary vector 
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -905,7 +917,7 @@ contains
       
       end if
       
-    end if
+    end if    
     
   end subroutine
 
@@ -934,19 +946,21 @@ contains
     ! local variables
     integer :: npoints,i,iunit,iwritePointValues
     integer :: iderType, cflag
+    integer :: nlmax,lambda,iTypePenaltyAssem,ilocalrefinement,iPenalty,ifbm
     logical :: bfileExists
     real(dp), dimension(:), allocatable :: Dvalues
     real(dp), dimension(:,:), allocatable :: Dcoords
     integer, dimension(:), allocatable :: Itypes
     integer, dimension(:), allocatable :: Ider
-    character(LEN=SYS_STRLEN) :: sparam
-    character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues
+    character(LEN=SYS_STRLEN) :: sparam,stemp
+    character(LEN=SYS_STRLEN) :: sfile,sstr,sfilenamePointValues,lambdastr,nlmaxstr,ifbmstr, & 
+                                 scubPenalty_sum,scubPenalty,ilocalrefinementstr,iPenaltystr
     character(LEN=10), dimension(3,3), parameter :: Sfctnames = reshape (&
       (/ "       u1 ","     u1_x ","     u1_y " , &
          "       u2 ","     u2_x ","     u2_y " , &
          "        p ","      p_x ","      p_y " /) ,&
        (/ 3,3 /) )
-
+    
     ! Get the number of points to evaluate
     npoints = parlst_querysubstrings (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'CEVALUATEPOINTVALUES')
@@ -999,6 +1013,67 @@ contains
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'SFILENAMEPOINTVALUES', sstr, '''''')
     read(sstr,*) sfilenamePointValues
+    ! Create the actual filename
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                             'IFBM',ifbm,0)
+    ! Mesh level for identification
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                             'NLMAX',nlmax,2)
+    ! dlambda for identification
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                             'LAMBDA',lambda,0)
+
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                 'SCUBPENALTY', scubPenalty, '')            
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                 'SCUBPENALTY_SUM', scubPenalty_sum, '') 
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                             'ILOCALREFINEMENT',ilocalrefinement,1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                             'ITYPEPENALTYASSEM',iTypePenaltyAssem,1)       
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IPENALTY', iPenalty, 0)   
+                              
+    write(nlmaxstr,*) nlmax
+
+    if (lambda .gt. 0) then                          
+      if (iPenalty .eq. 0) then
+        write(iPenaltystr,*) 'voll'
+      else
+        write(iPenaltystr,*) 'hrz'
+      end if
+    
+      ! Transfor integer lambda and nlmax to string only from identification 
+      ! of the print file reasons.
+      write(lambdastr,*) lambda
+      write(ilocalrefinementstr,*) ilocalrefinement
+        
+      ! Actual name of the print file
+      if (iTypePenaltyAssem .eq. 1) then
+      
+        sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//& 
+                trim(adjustl(scubPenalty))//'_'//trim(adjustl(iPenaltystr))//'_L'//&
+                trim(adjustl(lambdastr))
+      else
+      
+        sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//& 
+                trim(adjustl(scubPenalty_sum))//''//trim(adjustl(ilocalrefinementstr))//'_'//&
+                trim(adjustl(iPenaltystr))//'_L'//trim(adjustl(lambdastr)) 
+      end if  
+      
+    elseif (ifbm .eq. 0) then
+
+      write(ifbmstr,*) 'cc2d'
+    
+      sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//&
+               trim(adjustl(ifbmstr))
+    else
+
+      write(ifbmstr,*) 'fbm'
+      sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//&
+              trim(adjustl(ifbmstr))
+    end if          
+     
     if (sfilenamePointValues .eq. "") iwritePointValues = 0
     
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -1008,23 +1083,25 @@ contains
     if (iwritePointValues .ne. 0) then
       ! Write the result to a text file.
       ! Format: timestep current-time value value value ...
-      call io_openFileForWriting(sfilenamePointValues, iunit, &
-          cflag, bfileExists,.true.)
+      call io_openFileForWriting(sfile, iunit, &
+                                 cflag, bfileExists,.true.)
       if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
         ! Write a headline
         write (iunit,'(A)') &
           '# timestep time x y type deriv value x y type deriv value ...'
       end if
-      write (iunit,ADVANCE='NO',FMT='(A)') &
+      stemp = &
           trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
           trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+      write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)          
       do i=1,npoints
-        write (iunit,ADVANCE='NO',FMT='(A)') ' ' //&
+        stemp = '' //&
             trim(sys_sdEL(Dcoords(1,i),5)) // ' ' // &
             trim(sys_sdEL(Dcoords(2,i),5)) // ' ' // &
             trim(sys_siL(Itypes(i),2)) // ' ' // &
             trim(sys_siL(Ider(i),2)) // ' ' // &
             trim(sys_sdEL(Dvalues(i),10))
+        write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)
       end do
       write (iunit,ADVANCE='YES',FMT='(A)') ""
       close (iunit)
@@ -1042,7 +1119,9 @@ contains
 !<subroutine>
 
   subroutine cc_writeUCD (rpostprocessing,rvector,rproblem,dtime)
-
+  
+  use domainintegration
+  
 !<description>
   ! Writes an UCD postprocessing file as configured in the DAT file.
   ! (-> GMV, AVS, Paraview,...)
@@ -1064,7 +1143,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
 !</inputoutput>
 
 !</subroutine>
@@ -1089,20 +1168,41 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    
+
     ! Backup of current simulation time.
     real(DP) :: dtimebackup
-    
+
     integer :: ioutputUCD,ilevelUCD
-    integer(I32) :: ieltype
-    
+    integer(I32) :: ieltype,i,j,ipart,ipolyhandle
+
+!   Parameters for conection polygon and Lambda output
+    integer  :: iel,ivert,iElReal,SlopeType,icount,ipenpolyg, iin
+    real(DP) :: ddist,dxcenter,dycenter,dradius,dxmax,dymax,dxmin,dymin,&
+                dx1,dy1,dxi1,dyi1,dxi2,dyi2,dxs,dys,dxe,dye,ElAreea,LocAreea,&
+                dlambda,dslope,da,db,dc,ddiscr 
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:,:),pointer :: p_DvertexCoordinates
+    real(DP), dimension(:,:), allocatable :: PolyPoints,PolyPoints1
+    integer, dimension(:,:), allocatable :: Elements_nodesin
+    real(DP), dimension(2)  :: Dcoords
+    real(DP), dimension(:), allocatable :: DcoeffLambda
+
     ! Parameters used for the moving frame formulation
     integer :: imovingFrame
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     
-    character(SYS_STRLEN) :: sfile,sfilename
+    character(SYS_STRLEN) :: sfile,sfilename,sfilepoly
     
-    ! Type of output:
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    type(t_geometryObject) :: rgeometryObject1
+    
+    real(DP), dimension(:,:), pointer :: p_Dvertices 
+    
+    integer, dimension(64) :: iconnect
+    
+    type(t_particleCollection), pointer :: p_rparticleCollection
+
+    ! Type of output:    
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -1124,7 +1224,7 @@ contains
     ! create a Q1/P1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
-    ! structure based on Q1/P1 by copying the main guiding block
+    ! structure based on Q1/P1 by copying the main guiding block 
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
     
@@ -1169,7 +1269,7 @@ contains
     ! Initialise the dynamic level information structure
     call cc_initDynamicLevelInfo (rdynamicInfo)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
@@ -1185,7 +1285,7 @@ contains
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC`s for fictitious
+    ! Filter the solution vector to implement discrete BC`s for fictitious 
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -1198,6 +1298,7 @@ contains
     
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
+    sfilepoly="gmv/polyfile.vtk"//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
                                  
     ! Now we have a Q1/Q1/Q0 solution in rprjVector -- on the level NLMAX.
     ! The next step is to project it down to level ilevelUCD.
@@ -1221,7 +1322,7 @@ contains
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
     case (3)
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile,sfilepoly)
           
     case DEFAULT
       call output_line ('Invalid UCD ooutput type.', &
@@ -1263,14 +1364,9 @@ contains
     end if
 
     ! Write the velocity field
-
-    ! CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, &
-    !     p_Ddata(1:p_rtriangulation%NVT))
-    ! CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, &
-    !     p_Ddata2(1:p_rtriangulation%NVT))
     call ucd_addVarVertBasedVec (rexport,'velocity',&
         p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
-    
+
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, &
@@ -1285,9 +1381,10 @@ contains
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
         call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
         call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
-            p_Ddata(1:p_rtriangulation%NEL))
+            p_Ddata(1:p_rtriangulation%NVT))
       end if
     end if
+
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
@@ -1307,7 +1404,67 @@ contains
       end if
       
     end if
-    
+
+!   Polygon in gmv output
+    if (rproblem%iParticles .gt. 0) then
+        p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+      do ipart=1,p_rparticleCollection%nparticles
+         p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+         call geom_polygonise(p_rgeometryObject,ipolyHandle)
+        
+         ! Get the vertices
+         call storage_getbase_double2D(ipolyHandle, p_Dvertices)
+         call ucd_addPolygon(rexport,p_Dvertices,ipart+1)
+         call storage_free(ipolyHandle)
+         ipolyHandle = ST_NOHANDLE
+      end do
+    end if
+
+! !   Polygon in gmv output at interface
+! !   Did we ask for a polygon of penalty object?
+!     call parlst_getvalue_int(rproblem%rparamList,'CC-POSTPROCESSING','ipenpolyg',ipenpolyg,0)
+!     if (ipenpolyg .eq. 1) then
+!       if (rproblem%iparticles .gt. 0) then
+!         call storage_getbase_double2d (p_rtriangulation%h_dvertexcoords,p_dvertexcoordinates)
+!         call storage_getbase_int2d (p_rtriangulation%h_iverticesatelement,p_iverticesatelement)
+!!         dxcenter = p_rgeometryObject%rcoord2d%dorigin(1)             
+!!         dycenter = p_rgeometryObject%rcoord2d%dorigin(2)
+!!         dradius = p_rgeometryObject%rcircle%dradius
+!
+!         allocate (Elements_nodesin(2,p_rtriangulation%NEL))
+!         do iel=1,p_rtriangulation%NEL
+!           icount = 0
+!           do ivert = 1,p_rtriangulation%NNEE
+!             Dcoords(1) = p_DvertexCoordinates(1,p_IverticesAtElement(ivert,iel))
+!             Dcoords(2) = p_DvertexCoordinates(2,p_IverticesAtElement(ivert,iel))
+!             call geom_isingeometry (p_rgeometryobject, Dcoords, iin)
+!             if (iin .gt. 0) then
+!               icount = icount + 1
+!             end if
+!           end do ! loop vertices
+!           if ((icount .gt. 0).and.(icount .lt. 4)) then
+!             Elements_nodesin(1,iel) = icount
+!             Elements_nodesin(2,iel) = iel
+!           end if
+!         end do ! loop iel
+!         
+!         
+!          
+!         deallocate (Elements_nodesin)
+!       end if ! (particles)
+!     end if ! (polygonise penalty object)
+
+!!   Write Lambda values 
+!!   Alocate the necessary size for the Lambda coeff array
+!    allocate (DcoeffLambda(p_rtriangulation%NEL))
+!    do iel=1,p_rtriangulation%NEL
+!      call conectElementObject(iel,p_rtriangulation,p_rgeometryObject,ElAreea,LocAreea) 
+!           DcoeffLambda(iel) = rproblem%ilambda*LocAreea/ElAreea
+!    end do ! loop over elements
+!    call ucd_addVariableElementBased (rexport,'lambda',UCD_VAR_STANDARD, &
+!                                      DcoeffLambda(1:p_rtriangulation%NEL))
+!    deallocate (DcoeffLambda)
+
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
@@ -1344,7 +1501,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the
+  ! Writes Film output (raw data vectors) to a file as configured in the 
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -1366,7 +1523,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
 !</inputoutput>
 
 !</subroutine>
@@ -1379,10 +1536,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection
+    type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
     
-    ! Type of output:
+    ! Type of output:    
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -1481,8 +1638,8 @@ contains
   type(t_problem), intent(in),target :: rproblem
 !</input>
 
-!<output>
-  ! Postprocessing structure.
+!<output>  
+  ! Postprocvessing structure.
   type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
 
@@ -1548,7 +1705,7 @@ contains
   type(t_c2d2postprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>
+!<inputoutput>  
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
@@ -1580,8 +1737,8 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>
-  ! Postprocessing structure.
+!<inputoutput>  
+  ! Postprocvessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -1616,7 +1773,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>
+!<inputoutput>  
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -1645,7 +1802,7 @@ contains
   !<inputoutput>
   type(t_problem), intent(INOUT) :: rproblem
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
-  !</inputoutput>
+  !</inputoutput>  
 
   !<input>
   type(t_vectorBlock), intent(IN) :: rvector
@@ -1654,8 +1811,8 @@ contains
   !</subroutine>
 
   ! Local variables
-  ! pointer to the entries of the alpha vector
-  real(DP), dimension(:), pointer :: p_Dvector
+  ! pointer to the entries of the alpha vector  
+  real(DP), dimension(:), pointer :: p_Dvector  
 
   ! pointer to the nodes of the grid
   real(DP), dimension(:,:), pointer :: p_Ddata
@@ -1667,37 +1824,45 @@ contains
   ! pointer to the triangulation structure
   type(t_triangulation), pointer :: p_rtriangulation
   
-  integer :: ive,NEL,ipart
-
+  integer :: ive,NEL,ipart,iel
   real(DP) :: mytime
-  
   type(t_particleCollection), pointer :: p_rparticleCollection
+  type(t_geometryObject), pointer :: p_rgeometryObject        
+  type(t_triangulation), pointer :: p_debug
+  integer, dimension(:), pointer :: p_IelementsAtBoundary
+  integer, dimension(:), pointer    :: p_IedgesAtBoundary
+  integer, dimension(:,:), pointer  :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  real(DP), dimension(:), pointer                 :: p_DvertexParameterValue
+  integer, dimension(:), pointer             :: p_IboundaryCpIdx
+  real(DP), dimension(:,:), pointer               :: p_DvertexCoordinates
+  type(t_boundaryRegion) :: rregion
+  character(len=SYS_STRLEN) :: stemp
+  type(t_boundary) :: rboundary_circle
+  type(t_vectorScalar), pointer :: p_rvector2
 
-  type(t_geometryObject), pointer :: p_rgeometryObject
 
   ! get the particle_collection out of the collection
   p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
   ! loop over all particles to calculate the hydrodynamic forces for
-  ! each particle
+  ! each particle  
   do ipart=1,p_rparticleCollection%nparticles
   
     ! if the vector contains data, we release it
     if (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB%NEQ .ne. 0) &
       call lsyssc_releaseVector (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB)
 
-    ! create the fictitious boundary fem-vector from the discretisation
+    ! create the fictitious boundary fem-vector from the discretisation 
     call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
     p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,.true.)
 
     ! get a pointer to the entries of the vector
     call lsyssc_getbase_double(p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,p_Dvector)
     
-    !print *,p_Dvector;
-    
-    
     ! get the pointer to the current geometry object
-    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
     
     ! get a pointer to the triangulation
     p_rtriangulation => &
@@ -1707,15 +1872,13 @@ contains
     ! calculate the fem-function by a l2-projection
     ! here for every particle this has to be evaluated individually
     call anprj_discrDirect (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,cc_Particle,&
-                            rproblem%rcollection,iorder=1)
-    
-    
-    
+                            rproblem%rcollection,iorder=1)  
     !print *,p_Dvector;
+
     call output_lbrk ()
     call output_separator(OU_SEP_EQUAL)
     call output_line ('Q1 Vector recalculated ')
-    call output_separator(OU_SEP_EQUAL)
+    call output_separator(OU_SEP_EQUAL)   
     
     ! get the center coordinates of the object
     ! to pass them to the forces function
@@ -1732,16 +1895,16 @@ contains
          rproblem%rphysics%dnu,0.1_dp*0.2_dp**2)
     
     call output_lbrk()
-    call output_line ('Drag forces')
-    call output_line ('-----------')
-    print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
-    p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
+!    call output_line ('Drag forces')
+!    call output_line ('-----------')  
+!    print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
+!    p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
     
   end do  ! end particles
   
   end subroutine
   
-! ***************************************************************************
+! ***************************************************************************  
 
 !<subroutine>
   subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,rpostprocessing,&
@@ -1754,8 +1917,8 @@ contains
 
   ! The body forces are defined as the integrals
   !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds
+  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
+  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
@@ -1787,8 +1950,8 @@ contains
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
 
   real(dp), dimension(2), intent(inout) :: DforceX
-  real(dp), dimension(2), intent(inout) :: DforceY
-  real(dp), dimension(2), intent(inout) :: Dtor
+  real(dp), dimension(2), intent(inout) :: DforceY  
+  real(dp), dimension(2), intent(inout) :: Dtor 
   type(t_problem), intent(INOUT) :: rproblem
 !</subroutine>
 
@@ -1796,7 +1959,8 @@ contains
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
     integer(I32) :: IEL, IELmax, IELset
     real(DP) :: OM, DN1, DN2, DN3,dpp,xtorque,ytorque,atq,atqy
-    real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx,Dfy,dalx,daly,dTorque
+    real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx,Dfy,dalx,daly,dTorque, &
+                ah1u,ah1p,ah2u,ah2p,Dfxu,Dfyu,Dfxp,Dfyp 
     
     ! Cubature point coordinates on the reference element
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
@@ -1824,7 +1988,7 @@ contains
     ! Arrays for saving Jacobian determinants and matrices
     real(DP), dimension(:,:), pointer :: p_Ddetj
     
-    ! Array for saving Jacobian
+    ! Array for saving Jacobian 
     real(DP), dimension(7) :: Dj
     
     ! Current element distribution
@@ -1858,7 +2022,7 @@ contains
     integer, dimension(:,:), allocatable, target :: IdofsFunc2
     
   
-    ! Type of transformation from the reference to the real element
+    ! Type of transformation from the reference to the real element 
     integer :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -1872,13 +2036,13 @@ contains
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     integer :: cflag
-    logical :: bfileExists
+    logical :: bfileExists    
     
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
-    if (present(df2)) dpf2 = df2
+    if (present(df2)) dpf2 = df2    
 
     ! make the l2 projection to get the normal vector
 
@@ -1913,7 +2077,7 @@ contains
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
       
-      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
+      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement) 
       
       indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
       
@@ -1923,7 +2087,7 @@ contains
       if (NVE .NE. elem_igetNVE(p_relementDistributionA%celement)) then
         print *,'cc_forcesIntegration: element spaces incompatible!'
         call sys_halt()
-      end if
+      end if      
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -1949,19 +2113,19 @@ contains
       
       allocate(IdofsFunc1(indofFunc1,nelementsPerBlock))
     
-      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))
+      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))      
 
       ! Allocate memory for the coefficients
       allocate(Dcoefficients(ncubp,nelementsPerBlock,13))
     
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag.
+      ! a combined evaluation tag. 
       cevaluationTag = elem_getEvaluationTag(p_relementDistributionU%celement)
       
       cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionP%celement))
       
-      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))     
                       
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
@@ -1979,11 +2143,18 @@ contains
       ! Initialize the forces of the element with zero
       Dfx     = 0.0_dp
       Dfy     = 0.0_dp
+
+      Dfxu     = 0.0_dp
+      Dfyu     = 0.0_dp
+
+      Dfxp     = 0.0_dp
+      Dfyp     = 0.0_dp
+
       dTorque = 0.0_dp
       
           
-      ! Prepare the call to the evaluation routine of the analytic function.
-      CALL elprep_init(rintSubset)
+      ! Prepare the call to the evaluation routine of the analytic function.    
+      CALL elprep_init(rintSubset)    
   
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, PPERR_NELEMSIM
@@ -2003,15 +2174,15 @@ contains
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(1), &
                                      p_IelementList(IELset:IELmax),IdofsTrial)
-        !--------------------------------------------------------------------------------
+        !--------------------------------------------------------------------------------                                     
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorAlpha%p_rspatialDiscr, &
                                      p_IelementList(IELset:IELmax),IdofsFunc1)
-        !--------------------------------------------------------------------------------
+        !--------------------------------------------------------------------------------                                     
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(3), &
                                      p_IelementList(IELset:IELmax),IdofsFunc2)
-        !--------------------------------------------------------------------------------
+        !--------------------------------------------------------------------------------                                     
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
@@ -2037,35 +2208,35 @@ contains
         !   | |       -p(x_i)      | + |...  you know this works  ...| + u^t | * | -dalpha/dy (x_i) |
         !    \                                                              /
         !
-        !
+        ! 
         ! Get the pressure in the cubature points
         ! Save the result to Dcoefficients(:,:,1)
 
         ! Build the p matrix
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(3), rintSubset, &
                 p_relementDistributionP%celement, &
-                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))                
 
         ! Build the jacobi matrix of this (u1,u2,u3)
         ! First Row -------------------------------
         ! Save the result to Dcoefficients(:,:,2:4)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))  
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))  
 
         ! Second Row -------------------------------
         ! Save the result to Dcoefficients(:,:,4:5)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))  
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))  
 
         ! Build the alpha vector
         ! Save the result to Dcoefficients(:,:,6:7)
@@ -2108,15 +2279,28 @@ contains
             ah1 = -dpp*dn1+dpf1*(du1x*dn1+du1y*dn2)
             ah2 = -dpp*dn2+dpf1*(du2x*dn1+du2y*dn2)
 
+            ah1u = dpf1*(du1x*dn1+du1y*dn2)
+            ah2u = dpf1*(du2x*dn1+du2y*dn2)
+
+            ah1p = -dpp*dn1
+            ah2p = -dpp*dn2
+
+
             ! deformation tensor
 !            ah1 = -dpp*dn1+dpf1*(2.0_dp*du1x*dn1+(du1y+du2x)*dn2)
 !            ah2 = -dpp*dn2+dpf1*((du1y+du2x)*dn1+2.0_dp*du2y*dn2)
             
-            Dfx = Dfx + ah1 * om
+            Dfx = Dfx + ah1 * om         
             Dfy = Dfy + ah2 * om
-            
+
+            Dfxu = Dfxu + ah1u * om         
+            Dfyu = Dfyu + ah2u * om
+
+            Dfxp = Dfxp + ah1p * om         
+            Dfyp = Dfyp + ah2p * om
+                                    
             ! for the torque calculate in 2d:
-            ! (x-x_i) .perpdot. (sigma * n)
+            ! (x-x_i) .perpdot. (sigma * n) 
             ! calculate the (x-x_i) part
             xtorque = rintSubset%p_DpointsReal(1,icubp,iel) - dcenterx
             ytorque = rintSubset%p_DpointsReal(2,icubp,iel) - dcentery
@@ -2131,7 +2315,7 @@ contains
             ! add up the forces
             dTorque = dTorque + atq * OM
 
-          end do ! ICUBP
+          end do ! ICUBP 
 
         end do ! IEL
         
@@ -2154,20 +2338,26 @@ contains
       Dfx = Dfx * 2.0_dp/dpf2
       Dfy = Dfy * 2.0_dp/dpf2
 
+      Dfxu = Dfxu * 2.0_dp/dpf2
+      Dfyu = Dfyu * 2.0_dp/dpf2
+
+      Dfxp = Dfxp * 2.0_dp/dpf2
+      Dfyp = Dfyp * 2.0_dp/dpf2
+
+ !    Print drag and lift
       sfilenameBodyForces='ns/DLBFMDT001'
-      cflag = SYS_APPEND
+      cflag = SYS_APPEND      
       ! Write the result to a text file.
       ! Format: timestep current-time value
       call io_openFileForWriting(sfilenameBodyForces, iunit, &
           cflag, bfileExists,.true.)
-
       write (iunit,'(A)')trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
           // trim(sys_sdEL(Dfx,10)) // ' '&
           // trim(sys_sdEL(Dfy,10))
       close (iunit)
       
       ! save the coefficients
-      rproblem%dCoefficientDrag = Dfx
+      rproblem%dCoefficientDrag = Dfx 
       rproblem%dCoefficientLift = Dfy
       
       ! Release memory
@@ -2183,13 +2373,13 @@ contains
     
   end subroutine
   
-! ***************************************************************************
-  
+!----------------------------------------------------------------------------------------------------------------------  
 !<subroutine>
   subroutine cc_Particle(cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Dvalues,rcollection)
+!----------------------------------------------------------------------------------------------------------------------  
   
   use basicgeometry
   use triangulation
@@ -2240,8 +2430,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional
-  ! information to the coefficient routine.
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -2265,26 +2455,26 @@ contains
   !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
   
   ipart=rcollection%DQuickaccess(7)
-  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
   select case (cderivative)
   case (DER_FUNC)
   
   ! loop over all elements and calculate the
   ! values in the cubature points
   do i=1,nelements
-    do j=1,npointsPerElement
+    do j=1,npointsPerElement 
       
       ! Get the distance to the center
       call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,j,i),Dpoints(2,j,i)/), iin)
-      ! check if it is inside
-      if(iin .eq. 1)then
-        Dvalues(j,i) =  1.0_DP
+      ! check if it is inside      
+      if(iin .eq. 1)then 
+        Dvalues(j,i) =  1.0_DP 
       else
         Dvalues(j,i) = 0.0_DP
       end if
       
     end do
-  end do
+  end do    
     
   case (DER_DERIV_X)
     ! Not really useful in the case at hand
@@ -2300,7 +2490,54 @@ contains
   
   end subroutine
 
-! ***************************************************************************
-  
+!!----------------------------------------------------------------------------------------------------------------------  
+!  subroutine cc_drli_elem ()
+!
+!!----------------------------------------------------------------------------------------------------------------------  
+!
+!!<description>
+!!  This routine is called during the calculation of Drag and Lift cowfficients.
+!!  The purpose is to select only those elements which interfears with the interface of the particle
+!!</description>
+!  
+!!<input>
+!  ! The discretisation structure that defines the basic shape of the
+!  ! triangulation with references to the underlying triangulation,
+!  ! analytic boundary boundary description etc.
+!  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!  ! Number of elements, where the coefficients must be computed.
+!  integer, intent(IN)                                         :: nelements
+!  
+!  ! Number of points per element, where the coefficients must be computed
+!  integer, intent(IN)                                         :: npointsPerElement
+!  
+!  ! This is an array of all points on all the elements where coefficients
+!  ! are needed.
+!  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+!
+!  ! An array accepting the DOF's on all elements trial in the trial space.
+!  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+!  integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!  ! This is a t_domainIntSubset structure specifying more detailed information
+!  ! about the element set that is currently being integrated.
+!  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!  ! Optional: A collection structure to provide additional 
+!  ! information to the coefficient routine. 
+!  type(t_collection), intent(INOUT), optional      :: rcollection
+!  
+!!</input>
+!  
+!
+!
+!
+!
+!
+!  end subroutine
+!!----------------------------------------------------------------------------------------------------------------------  
+ 
 
 end module

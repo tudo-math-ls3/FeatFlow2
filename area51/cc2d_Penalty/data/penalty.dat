@@ -1,0 +1,38 @@
+############
+[CC-PENALTY]
+############
+
+# Penalty parameter (standard 1000)
+ilambda = 1000
+
+# itypePenaltyAssem indicates how to assemble Penalty matrix
+#   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
+#   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
+
+itypePenaltyAssem = 2 
+
+# Element type 
+#  0 = Q1~(E031) / Q1~(E031) / Q0
+#  1 = Q1~(E030) / Q1~(E030) / Q0
+#  2 = Q1~(EM31) / Q1~(EM31) / Q0
+#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+#  4 = Q2 (E013) / Q2 (E013) / QP1
+#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# ... (see discretisation.dat)
+
+ielementType_Penalty = 3
+
+# cubature formula for Penalty matrix. 
+# ="": use default cubature formula.
+
+scubPenalty = G3X3
+
+# adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
+# ="": use default cubature formula.
+
+scubPenalty_sum = TRZ
+
+# ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
+
+ilocalrefinement     = 5
+

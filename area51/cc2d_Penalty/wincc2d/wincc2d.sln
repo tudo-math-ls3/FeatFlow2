@@ -1,5 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "wincc2d", "wincc2d.vfproj", "{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FBF2AF0D-36AF-4A8D-9EB1-10E13F72D950} = {FBF2AF0D-36AF-4A8D-9EB1-10E13F72D950}
@@ -11,19 +11,19 @@ Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "wincc2d", "wincc2d.vfproj",
 		{AB0D75C1-CDF4-4674-A977-D6280BE59A57} = {AB0D75C1-CDF4-4674-A977-D6280BE59A57}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibamd", "..\..\..\libraries\amd\winamd\libamd.vcproj", "{AB0D75C1-CDF4-4674-A977-D6280BE59A57}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibamd", "..\..\..\libraries\amd\winamd\libamd.vcxproj", "{AB0D75C1-CDF4-4674-A977-D6280BE59A57}"
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winblas", "..\..\..\libraries\blas\winblas\winblas.vfproj", "{DBF26343-133F-449F-966D-436DD8DDED89}"
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winlapack", "..\..\..\libraries\lapack\winlapack\winlapack.vfproj", "{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibumfpack4", "..\..\..\libraries\umfpack4\winumfpack4\libumfpack4.vcproj", "{87F5F117-504A-49A3-ABE6-882A88E6B8E9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibumfpack4", "..\..\..\libraries\umfpack4\winumfpack4\libumfpack4.vcxproj", "{87F5F117-504A-49A3-ABE6-882A88E6B8E9}"
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winsysutils", "..\..\..\libraries\sysutils\winsysutils\winsysutils.vfproj", "{FBF2AF0D-36AF-4A8D-9EB1-10E13F72D950}"
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winlibkernel", "..\..\..\libraries\kernel\winlibkernel\winlibkernel.vfproj", "{62BE3315-8E77-43C6-A799-E97FC8109EC5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibkernelc", "..\..\..\libraries\kernel\winlibkernelc\winlibkernelc.vcproj", "{37F73AB4-86A2-4DC6-8CEE-917A97BCBE05}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlibkernelc", "..\..\..\libraries\kernel\winlibkernelc\winlibkernelc.vcxproj", "{37F73AB4-86A2-4DC6-8CEE-917A97BCBE05}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
