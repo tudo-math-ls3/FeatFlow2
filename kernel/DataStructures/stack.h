@@ -42,13 +42,6 @@
 
 #include "template.h"
 
-module TEMPLATE(stack,T)
-
-!$use omp_lib
-  use fsystem
-  use genoutput
-  use storage
-
 #ifndef T_STORAGE
   __external_use__(T_MODULE)
 #endif
@@ -374,7 +367,5 @@ contains
     rstack%istackPosition = rstack%istackPosition-1
 
   end subroutine
-
-end module
 
 #endif

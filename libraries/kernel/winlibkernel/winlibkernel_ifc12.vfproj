@@ -5,7 +5,7 @@
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x86d.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -14,7 +14,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x86.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -23,7 +23,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x64d.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -32,7 +32,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x64.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -65,10 +65,20 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\geneticalgorithm.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\graph.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\list.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\list.h"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listbase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listDble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listInt.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listSngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\numbersets.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\stack.h"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\stackDble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\stackInt.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\stackSngl.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\template.h"/></Filter>
 		<Filter Name="DOFMaintenance">
 		<Filter Name="Interfaces">
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_bcassembly.inc"/>

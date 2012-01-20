@@ -70,14 +70,6 @@
 
 #include "template.h"
 
-module TEMPLATE_D(list,T,D)
-
-!$use omp_lib
-  use fsystem
-  use genoutput
-  use listbase
-  use storage
-
 #ifndef T_STORAGE
   __external_use__(T_MODULE)
 #endif
@@ -1515,7 +1507,5 @@ contains
 #endif
 
   end subroutine
-
-end module
 
 #endif
