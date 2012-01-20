@@ -94,11 +94,11 @@ swriteSolutionFilename = 'ns/solution'
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 1
+NLMIN              = 2
 
 # maximum mg-level = levl of computation of nonlinear iteration
 
-NLMAX              = 2
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
@@ -111,9 +111,6 @@ ifbm = 1
 #   - 1 for "fractional Lambda"
 
 iPenaltyAct          = 0
-
-# Generation of penalty matrix. 0=real mass,1=HRZ mass
-iPenalty              = 0
 
 # ------------------------------------------------------------------------
 
@@ -215,7 +212,7 @@ ielementType       = 3
 # REMARK: To use Q2 with EOJ stabilisation and VANKA smoother, damp
 # the VANKA with domega=0.5.
 
-Upwind            = 0
+Upwind            = 4
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01

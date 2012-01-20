@@ -409,9 +409,10 @@ ncubp = 1
       end if
     end do
 
-      call ucd_write (rexport)
-      call ucd_release (rexport)
+    call ucd_write (rexport)
+    call ucd_release (rexport)
     
+    call storage_free(h_IList)
     call storage_free(h_points)
     call storage_free(h_numpoints)
     call storage_free(h_pointsAtElement)

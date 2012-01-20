@@ -184,8 +184,8 @@ contains
 
     if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
-!      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
-      call cc_calculateForces(rvector,rproblem)
+      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+!      call cc_calculateForces(rvector,rproblem)
     else 
       call cc_calculateBodyForces(rvector,rproblem)
     end if

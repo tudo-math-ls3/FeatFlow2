@@ -200,6 +200,7 @@ end subroutine ! end cc_initParticleDescriptor
       call parlst_readfromfile (rparamList, './data/bdconditions.dat')
       call parlst_readfromfile (rparamList, './data/timediscr.dat')
       call parlst_readfromfile (rparamList, './data/postprocessing.dat')
+      call parlst_readfromfile (rparamList, './data/penalty.dat')
     end if
   
   end subroutine

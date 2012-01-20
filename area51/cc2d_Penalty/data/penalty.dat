@@ -9,7 +9,10 @@ ilambda = 1000
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
 #   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
 
-itypePenaltyAssem = 2 
+itypePenaltyAssem = 1
+
+# Generation of penalty matrix. 0=real mass,1=HRZ mass
+iPenalty = 0
 
 # Element type 
 #  0 = Q1~(E031) / Q1~(E031) / Q0

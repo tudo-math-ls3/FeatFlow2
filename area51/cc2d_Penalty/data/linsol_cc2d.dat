@@ -160,7 +160,7 @@ dalphaMax          = 10.0
 
 # Number of pre- and postsmoothing steps
 
-nsmoothingSteps    = 20
+nsmoothingSteps    = 4
 
 # Relaxation parameter
 

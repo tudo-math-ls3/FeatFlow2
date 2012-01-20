@@ -918,9 +918,6 @@ contains
     type(t_vectorBlock), target, optional :: rvelocityvector
   ! Weight for the velocity vector; standard = -1.
     real(DP), intent(in), optional :: dvectorWeight
-  ! OPTIONAL. Specify a curbature formula for assembling a matrix (2d Quad mesh)
-  ! If this information is not used, 
-    type(t_scalarCubatureInfo) :: rcubatureInfo
 !--------------------------------------------------------------------------------------------------
 
   ! local variables
@@ -934,7 +931,8 @@ contains
     integer, dimension(:), pointer :: p_IedgesDirichletBC
     type(t_matrixScalar) :: rMass1
     type(t_bilinearForm) :: rform
-!    type(t_spatialDiscretisation) :: rdiscretisation
+    ! Specify a curbature formula for assembling a matrix (2d Quad mesh)
+    type(t_scalarCubatureInfo) :: rcubatureInfo
 
   ! For Penalty term    
     integer :: icubPenalty,icubPenalty_Sum,ipart,iTypePenaltyAssem,iPenalty, ilocalrefinement,listsize
@@ -1047,8 +1045,7 @@ contains
 
 ! Which type of penalty matrix assembling?
 call parlst_getvalue_int(rproblem%rparamlist,'CC-PENALTY','iTypePenaltyAssem',iTypePenaltyAssem,1)  
-
-  call parlst_getvalue_int(rproblem%rparamlist,'CC-DISCRETISATION','iPenalty',iPenalty,1)  
+call parlst_getvalue_int(rproblem%rparamlist,'CC-PENALTY','iPenalty',iPenalty,1)  
 
 ! Check if there is need of pluging in the penalty term. (dlambda = 0 - no penalty)
 if (rproblem%ilambda .ne. 0.0_DP) then
@@ -1088,8 +1085,8 @@ if (rproblem%ilambda .ne. 0.0_DP) then
         else                                                 
           call bilf_buildMatrixScalar (rform,.true.,rMass1,cc_Lambda,rproblem%rcollection)
         end if                                         
-          call lsyssc_matrixLinearComb (rMass1,rmatrix%RmatrixBlock(1,1),1.0_dp, 1.0_dp, &
-                                        .false.,.false.,.true.,.true., rmatrix%RmatrixBlock(1,1))
+        call lsyssc_matrixLinearComb (rMass1,rmatrix%RmatrixBlock(1,1),1.0_dp, 1.0_dp, &
+                                      .false.,.false.,.true.,.true., rmatrix%RmatrixBlock(1,1))
       case (2) 
 
         ! For this case we use adaptive cubature formula, so we need the cubature rule and refinement level.
@@ -2167,8 +2164,7 @@ if (rproblem%ilambda .ne. 0.0_DP) then
     if (rproblem%ilambda .ne. 0.0_DP) then
       ! Which type of assembling?
       call parlst_getvalue_int(rproblem%rparamlist,'CC-PENALTY','iTypePenaltyAssem',iTypePenaltyAssem,1) 
-
-      call parlst_getvalue_int(rproblem%rparamlist,'CC-DISCRETISATION','iPenalty',iPenalty,1)
+      call parlst_getvalue_int(rproblem%rparamlist,'CC-PENALTY','iPenalty',iPenalty,1)
           
       ! Now set up a bilinearform 
       rform%itermCount = 1
