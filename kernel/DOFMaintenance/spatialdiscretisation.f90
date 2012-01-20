@@ -3495,7 +3495,7 @@ contains
 
 !<inputoutput>
   ! Cubature information structure to be modified.
-  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+  type(t_scalarCubatureInfo), intent(inout) :: rcubatureInfo
 !</inputoutput>
 
 !</subroutine>
