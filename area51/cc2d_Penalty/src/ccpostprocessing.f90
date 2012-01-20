@@ -2346,7 +2346,7 @@ contains
 
  !    Print drag and lift
       call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfilenameBodyForces)
-      cflag = SYS_APPEND      
+      cflag = SYS_REPLACE
       ! Write the result to a text file.
       ! Format: timestep current-time value
       call io_openFileForWriting(sfilenameBodyForces, iunit, &
