@@ -213,7 +213,7 @@ iwriteBodyForces = 0
 
 # Filename for the body forces
 
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_test'
 
 # ------------------------------------------------------------------------
 # Point values

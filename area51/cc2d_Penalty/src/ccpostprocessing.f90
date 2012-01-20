@@ -2345,7 +2345,7 @@ contains
       Dfyp = Dfyp * 2.0_dp/dpf2
 
  !    Print drag and lift
-      sfilenameBodyForces='ns/DLBFMDT001'
+      call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfilenameBodyForces)
       cflag = SYS_APPEND      
       ! Write the result to a text file.
       ! Format: timestep current-time value
