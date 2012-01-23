@@ -1,0 +1,13 @@
+
+# Name of the coarse mesh to be used, e.g. 'quad', 'bench1'
+sMesh = quad
+
+# Number of mesh refinement steps
+nLevel = 0
+
+# Dimensions of mesh box in millimeters
+dSizeX = 200
+dSizeY = 200
+
+# Line width in millimeters
+dLineWidth = 0.1
