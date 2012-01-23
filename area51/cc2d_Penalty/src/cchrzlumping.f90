@@ -40,7 +40,6 @@
     use storage
     use transformation
     use triangulation
-    use extstdassemblyinfo
     use perfconfig
   
   implicit none

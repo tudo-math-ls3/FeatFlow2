@@ -2035,7 +2035,6 @@ contains
     character(len=SYS_STRLEN) :: sfilenameBodyForces
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
-    integer :: cflag
     logical :: bfileExists    
     
     ! Prepare the weighting coefficients
@@ -2338,22 +2337,17 @@ contains
       Dfx = Dfx * 2.0_dp/dpf2
       Dfy = Dfy * 2.0_dp/dpf2
 
-      Dfxu = Dfxu * 2.0_dp/dpf2
-      Dfyu = Dfyu * 2.0_dp/dpf2
+      !    Print drag and lift
+      call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfilenameBodyForces,'''''')
+      read(sfilenameBodyForces,*) sfilenameBodyForces
+!      if (sfilenameBodyForces .eq. '') iwriteBodyForces = 0
 
-      Dfxp = Dfxp * 2.0_dp/dpf2
-      Dfyp = Dfyp * 2.0_dp/dpf2
-
- !    Print drag and lift
-      call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfilenameBodyForces)
-      cflag = SYS_REPLACE
       ! Write the result to a text file.
-      ! Format: timestep current-time value
-      call io_openFileForWriting(sfilenameBodyForces, iunit, &
-          cflag, bfileExists,.true.)
-      write (iunit,'(A)')trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
-          // trim(sys_sdEL(Dfx,10)) // ' '&
-          // trim(sys_sdEL(Dfy,10))
+
+      call io_openFileForWriting(sfilenameBodyForces, iunit, SYS_REPLACE,bfileExists,.true.)
+        write (iunit,'(A)') trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+                         // trim(sys_sdEL(Dfx,10)) // ' '&
+                         // trim(sys_sdEL(Dfy,10))
       close (iunit)
       
       ! save the coefficients
