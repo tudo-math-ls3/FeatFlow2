@@ -1,0 +1,37 @@
+
+# Name of the coarse mesh to be used, e.g. 'quad', 'bench1'
+sMesh = quad
+
+# Number of mesh refinement steps
+nLevel = 5
+
+# Specifies whether to dump the refined mesh
+# 0: no
+# 1: yes
+cDumpMesh = 1
+
+# Number of vertex coordinate digits
+nDigVertex = 8
+
+# Specifies what matrix to assemble
+# 0: do not assemble any matrix
+# 1: assemble Mass matrix
+# 2: assemble Laplace matrix
+cAsmMatrix = 2
+
+# Specifies the finite element to be used for matrix assembly
+# EL_Q1: Q1 element
+# EL_Q2: Q2 element
+sElement = EL_Q1
+
+# Cubature rule to be used for matrix assembly
+# AUTO_Gn: n x n Gauss rule (1 <= n <= 5)
+sCubature = AUTO_G3
+
+# Specifies whether to dump the assembled matrix (ignored for cAsmMatrix=0)
+# 0: no
+# 1: yes
+cDumpMatrix = 1
+
+# Number of matrix entry digits
+nDigMatrix = 8
