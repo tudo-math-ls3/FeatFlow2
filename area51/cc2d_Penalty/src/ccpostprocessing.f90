@@ -1038,7 +1038,7 @@ contains
             trim(sys_sdEL(Dcoords(2,i),5)) // ' ' // &
             trim(sys_siL(Itypes(i),2)) // ' ' // &
             trim(sys_siL(Ider(i),2)) // ' ' // &
-            trim(sys_sdEL(Dvalues(i),10))
+            trim(sys_sdEL(Dvalues(i),5))
         write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)
       end do
       write (iunit,ADVANCE='YES',FMT='(A)') ""
