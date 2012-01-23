@@ -1011,89 +1011,27 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IWRITEPOINTVALUES', iwritePointValues, 0)
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEPOINTVALUES', sstr, '''''')
-    read(sstr,*) sfilenamePointValues
-    ! Create the actual filename
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                             'IFBM',ifbm,0)
-    ! Mesh level for identification
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                             'NLMAX',nlmax,2)
-    ! dlambda for identification
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                             'LAMBDA',lambda,0)
-
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                 'SCUBPENALTY', scubPenalty, '')            
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                 'SCUBPENALTY_SUM', scubPenalty_sum, '') 
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                             'ILOCALREFINEMENT',ilocalrefinement,1)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                             'ITYPEPENALTYASSEM',iTypePenaltyAssem,1)       
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IPENALTY', iPenalty, 0)   
-                              
-    write(nlmaxstr,*) nlmax
-
-    if (lambda .gt. 0) then                          
-      if (iPenalty .eq. 0) then
-        write(iPenaltystr,*) 'voll'
-      else
-        write(iPenaltystr,*) 'hrz'
-      end if
-    
-      ! Transfor integer lambda and nlmax to string only from identification 
-      ! of the print file reasons.
-      write(lambdastr,*) lambda
-      write(ilocalrefinementstr,*) ilocalrefinement
-        
-      ! Actual name of the print file
-      if (iTypePenaltyAssem .eq. 1) then
-      
-        sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//& 
-                trim(adjustl(scubPenalty))//'_'//trim(adjustl(iPenaltystr))//'_L'//&
-                trim(adjustl(lambdastr))
-      else
-      
-        sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//& 
-                trim(adjustl(scubPenalty_sum))//''//trim(adjustl(ilocalrefinementstr))//'_'//&
-                trim(adjustl(iPenaltystr))//'_L'//trim(adjustl(lambdastr)) 
-      end if  
-      
-    elseif (ifbm .eq. 0) then
-
-      write(ifbmstr,*) 'cc2d'
-    
-      sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//&
-               trim(adjustl(ifbmstr))
-    else
-
-      write(ifbmstr,*) 'fbm'
-      sfile = trim(adjustl(sfilenamePointValues))//'_l'//trim(adjustl(nlmaxstr))//'_'//&
-              trim(adjustl(ifbmstr))
-    end if          
-     
+        'SFILENAMEPOINTVALUES', sfilenamePointValues, '''''')
+    read(sfilenamePointValues,*) sfilenamePointValues
     if (sfilenamePointValues .eq. "") iwritePointValues = 0
     
     ! When writing to a file is enabled, delete the file in the first timestep.
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
-    
+
     if (iwritePointValues .ne. 0) then
       ! Write the result to a text file.
       ! Format: timestep current-time value value value ...
-      call io_openFileForWriting(sfile, iunit, &
-                                 cflag, bfileExists,.true.)
+      call io_openFileForWriting(sfilenamePointValues,iunit,cflag,bfileExists,.true.)
       if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
         ! Write a headline
         write (iunit,'(A)') &
-          '# timestep time x y type deriv value x y type deriv value ...'
+          '# x y type deriv value x y type deriv value ...'
       end if
-      stemp = &
-          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
-          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
-      write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)          
+!      stemp = &
+!          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
+!          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+!      write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)          
       do i=1,npoints
         stemp = '' //&
             trim(sys_sdEL(Dcoords(1,i),5)) // ' ' // &
@@ -2340,7 +2278,6 @@ contains
       !    Print drag and lift
       call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfilenameBodyForces,'''''')
       read(sfilenameBodyForces,*) sfilenameBodyForces
-!      if (sfilenameBodyForces .eq. '') iwriteBodyForces = 0
 
       ! Write the result to a text file.
 
