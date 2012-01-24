@@ -134,8 +134,9 @@ contains
 
   integer :: h_IList,h_points,h_numpoints,h_pointsAtElement,iunit,cflag
   integer :: i,j,k,l,iel,ivert,iin,icount,ielind,inum,imaxdim,ipolyhandle,idfl
+             
   real(dp) :: dxcenter,dycenter,dradius,dm,da,db,dc,ddiscr,dxsol1,dxsol2,dysol1,dysol2, &
-              ddist1,ddist2,dmin,dmax,dabsmin,dabsmax,dpcont,dut
+              ddist1,ddist2,dmin,dmax,dabsmin,dabsmax,dpcont,dut,dbdForcesCoeff1,dbdForcesCoeff2
   real(dp) :: px1,px2,py1,py2,pxm,pym,dlh,dlen
   logical :: bfileExists
   real(dp), dimension(NDIM2D) :: dtangential, dnormal
@@ -148,7 +149,7 @@ contains
   integer, dimension(:,:), pointer :: p_pointsAtElement
   integer, dimension(:), pointer :: p_points
   real(dp) :: dfw, daw
-  integer, dimension(2) :: dpf
+  real, dimension(2) :: dpf
   ! Pointer to vector data of solution vector
   real(DP), dimension(:), pointer :: p_DdataUX,p_DdataUY,p_DdataP
 
@@ -198,8 +199,13 @@ contains
   dfw = 0.0_dp
   daw = 0.0_dp
   dlen = 0.0_dp
-  dpf(1) = 1
-  dpf(2) = 2
+
+  call parlst_getvalue_double (rproblem%rparamlist,'CC-POSTPROCESSING','DBDFORCESCOEFF1',dbdForcesCoeff1,1.0_dp)
+  call parlst_getvalue_double (rproblem%rparamlist,'CC-POSTPROCESSING','DBDFORCESCOEFF2',dbdForcesCoeff2,2.0_dp)
+
+  dpf(1) = dbdForcesCoeff1
+  dpf(2) = dbdForcesCoeff2
+
 
 ! Get U and P solution
 call lsyssc_getbase_double (rsolution%RvectorBlock(1),p_DdataUX)
