@@ -23,15 +23,8 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
-
   subroutine mmdump_2d(rparam)
   type(t_parlist), intent(inout) :: rparam
-  
-!<description>
-!</description>
-
-!</subroutine>
 
   ! Definitions of variables.
   type(t_boundary) :: rbnd
@@ -124,6 +117,12 @@ contains
     call output_line('Reading coarse mesh...')
     call boundary_read_prm(rbnd, './mesh/' // trim(smesh) // '.prm')
     call tria_readTriFile2D (rtria, './mesh/' // trim(smesh) // '.tri', rbnd)
+
+    ! Ensure that we use a quadrilateral mesh - triangular meshes are not supported.
+    if(rtria%NNVE .ne. 4) then
+      call output_line('ERROR: only quadrilateral meshes supported')
+      call sys_halt()
+    end if
 
     ! Refine up to desired level
     call output_line('Refining mesh...')
@@ -236,7 +235,7 @@ contains
     end if
 
     ! write header
-    write(iunit,'(A)') 'MESH'
+    write(iunit,'(A)') 'TMSH'
     write(iunit,'(A)') &
       trim(sys_sil(rtria%NVT,16)) // ' ' // &
       trim(sys_sil(rtria%NMT,16)) // ' ' // &
@@ -253,11 +252,22 @@ contains
         trim(sys_sdel(p_Dvtx(2,i), ndigits))
     end do
 
-    ! fetch vertex indices
+    ! fetch vertex-at-edge indices
+    call storage_getbase_int2d(rtria%h_IverticesAtEdge, p_Iidx)
+
+    ! dump vertex indices
+    write(iunit,'(A)') 'VERT_AT_EDGE'
+    do i = 1, rtria%NMT
+      write(iunit,'(A)') &
+        trim(sys_sil(p_Iidx(1,i)-1,16)) // ' ' // &
+        trim(sys_sil(p_Iidx(2,i)-1,16))
+    end do
+
+    ! fetch vertex-at-element indices
     call storage_getbase_int2d(rtria%h_IverticesAtElement, p_Iidx)
 
     ! dump vertex indices
-    write(iunit,'(A)') 'VERTEX_INDICES'
+    write(iunit,'(A)') 'VERT_AT_ELEM'
     do i = 1, rtria%NEL
       write(iunit,'(A)') &
         trim(sys_sil(p_Iidx(1,i)-1,16)) // ' ' // &
@@ -266,11 +276,11 @@ contains
         trim(sys_sil(p_Iidx(4,i)-1,16))
     end do
 
-    ! fetch edge indices
+    ! fetch edge-at-element indices
     call storage_getbase_int2d(rtria%h_IedgesAtElement, p_Iidx)
 
     ! dump vertex indices
-    write(iunit,'(A)') 'EDGE_INDICES'
+    write(iunit,'(A)') 'EDGE_AT_ELEM'
     do i = 1, rtria%NEL
       write(iunit,'(A)') &
         trim(sys_sil(p_Iidx(1,i)-1,16)) // ' ' // &
@@ -280,7 +290,7 @@ contains
     end do
 
     ! close file
-    write(iunit,'(A)') 'END'
+    write(iunit,'(A)') 'END_OF_FILE'
     close(iunit)
 
   end subroutine
@@ -292,15 +302,16 @@ contains
   character(len=*), intent(in) :: sfilename
 
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  integer, dimension(:,:), pointer :: p_IVertIdx, p_IEdgeIdx
+  integer, dimension(:,:), pointer :: p_IVertAtEdge, p_IVertAtElem, p_IEdgeAtElem
 
     ! fetch vertex coords and index arrays
     call storage_getbase_double2d(rtria%h_DvertexCoords, p_Dvtx)
-    call storage_getbase_int2d(rtria%h_IverticesAtElement, p_IVertIdx)
-    call storage_getbase_int2d(rtria%h_IedgesAtElement, p_IEdgeIdx)
+    call storage_getbase_int2d(rtria%h_IverticesAtEdge, p_IVertAtEdge)
+    call storage_getbase_int2d(rtria%h_IverticesAtElement, p_IVertAtElem)
+    call storage_getbase_int2d(rtria%h_IedgesAtElement, p_IEdgeAtElem)
 
     call mmaux_dumpmesh(sfilename, rtria%NVT, rtria%NMT, rtria%NEL, &
-        p_Dvtx, p_IVertIdx, p_IEdgeIdx)
+        p_Dvtx, p_IVertAtEdge, p_IVertAtElem, p_IEdgeAtElem)
 
   end subroutine
 
@@ -327,7 +338,7 @@ contains
     end if
 
     ! write header
-    write(iunit, '(A)') 'MATRIX'
+    write(iunit, '(A)') 'TMTX'
     write(iunit, '(A)') &
       trim(sys_sil(rmatrix%NEQ,16)) // ' ' // &
       trim(sys_sil(rmatrix%NA,16)) // ' ' // &
@@ -361,7 +372,7 @@ contains
     end do
 
     ! close file
-    write(iunit,'(A)') 'END'
+    write(iunit,'(A)') 'END_OF_FILE'
     close(iunit)
 
   end subroutine
