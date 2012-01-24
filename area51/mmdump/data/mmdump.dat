@@ -1,5 +1,5 @@
 
-# Name of the coarse mesh to be used, e.g. 'quad', 'bench1'
+# Name of the coarse mesh to be used, e.g. 'quad', 'bench1' (see 'mesh' directory)
 sMesh = quad
 
 # Number of mesh refinement steps
@@ -7,10 +7,12 @@ nLevel = 5
 
 # Specifies whether to dump the refined mesh
 # 0: no
-# 1: yes
-cDumpMesh = 1
+# 1: text dump only
+# 2: binary dump only
+# 3: both text and binary dump
+cDumpMesh = 0
 
-# Number of vertex coordinate digits
+# Number of vertex coordinate digits for text dump
 nDigVertex = 8
 
 # Specifies what matrix to assemble
@@ -30,8 +32,10 @@ sCubature = AUTO_G3
 
 # Specifies whether to dump the assembled matrix (ignored for cAsmMatrix=0)
 # 0: no
-# 1: yes
-cDumpMatrix = 1
+# 1: text dump only
+# 2: binary dump only
+# 3: both text and binary dump
+cDumpMatrix = 0
 
-# Number of matrix entry digits
+# Number of matrix entry digits for text dump
 nDigMatrix = 8

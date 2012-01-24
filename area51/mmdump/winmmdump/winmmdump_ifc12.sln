@@ -4,9 +4,12 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winmmdump_ifc12", "winmmdump_ifc12.vfproj", "{FD82B43F-CB64-4EC0-8E0D-D672D503CB6B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2765B112-ED3B-4C45-B84A-ACE4377C88CB} = {2765B112-ED3B-4C45-B84A-ACE4377C88CB}
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924} = {43A2D0FD-3F26-4F18-9043-07E584DCD924}
 	EndProjectSection
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winlibkernel_ifc12", "..\..\..\libraries\kernel\winlibkernel\winlibkernel_ifc12.vfproj", "{2765B112-ED3B-4C45-B84A-ACE4377C88CB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winmmaux", "winmmaux.vcxproj", "{43A2D0FD-3F26-4F18-9043-07E584DCD924}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +35,14 @@ Global
 		{2765B112-ED3B-4C45-B84A-ACE4377C88CB}.Release|Win32.Build.0 = Release|Win32
 		{2765B112-ED3B-4C45-B84A-ACE4377C88CB}.Release|Win64.ActiveCfg = Release|x64
 		{2765B112-ED3B-4C45-B84A-ACE4377C88CB}.Release|Win64.Build.0 = Release|x64
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Debug|Win32.ActiveCfg = Debug|Win32
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Debug|Win32.Build.0 = Debug|Win32
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Debug|Win64.ActiveCfg = Debug|x64
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Debug|Win64.Build.0 = Debug|x64
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Release|Win32.ActiveCfg = Release|Win32
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Release|Win32.Build.0 = Release|Win32
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Release|Win64.ActiveCfg = Release|x64
+		{43A2D0FD-3F26-4F18-9043-07E584DCD924}.Release|Win64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

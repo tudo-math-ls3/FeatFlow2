@@ -102,9 +102,9 @@ contains
     end select
 
     ! build dumping filenames
-    smeshName = trim(smesh) // '_lvl' // trim(sys_sil(nlevel,4)) // '_mesh.txt'
-    smatName = trim(smesh) // '_lvl' //  trim(sys_sil(nlevel,4)) // '_' // trim(sopName) &
-      // '_' // trim(selName) // '_' // trim(scuName) // '.txt'
+    smeshName = trim(smesh) // '_lvl' // trim(sys_sil(nlevel,4)) // '_mesh'
+    smatName = trim(smesh) // '_lvl' //  trim(sys_sil(nlevel,4)) // '_' // &
+      trim(sopName) // '_' // trim(selName) // '_' // trim(scuName)
 
     ! print what we have parsed onto the output stream
     call output_line('Parsed input from data file:')
@@ -141,11 +141,15 @@ contains
     call output_lbrk()
 
     ! Dump mesh if desired
-    if(cdumpMesh .ne. 0) then
-      call output_line('Dumping mesh to "' // trim(smeshName) // '"...')
-      call dumpMesh(rtria, './out/' // trim(smeshName), ndigVertex)
+    if(iand(cdumpMesh,1) .ne. 0) then
+      call output_line('Dumping mesh to "' // trim(smeshName) // '.txt" in text format...')
+      call dumpMeshText(rtria, './out/' // trim(smeshName) // '.txt', ndigVertex)
     end if
-    
+    if(iand(cdumpMesh,2) .ne. 0) then
+      call output_line('Dumping mesh to "' // trim(smeshName) // '.bin" in binary format...')
+      call dumpMeshBinary(rtria, './out/' // trim(smeshName) // '.bin')
+    end if
+
     ! Assemble matrix?
     if(casmMatrix .gt. 0) then
 
@@ -187,9 +191,13 @@ contains
       call output_line('Assembly Time: ' // trim(sys_sdl(dasmTime,12)) // ' seconds')
 
       ! Dump matrix if desired
-      if(cdumpMatrix .ne. 0) then
-        call output_line('Dumping matrix to "' // trim(smatName) // '"...')
-        call dumpMatrix(rmat, './out/' // trim(smatName), ndigMatrix, dasmTime)
+      if(iand(cdumpMatrix,1) .ne. 0) then
+        call output_line('Dumping matrix to "' // trim(smatName) // '.txt" in text format...')
+        call dumpMatrixText(rmat, './out/' // trim(smatName) // '.txt', ndigMatrix, dasmTime)
+      end if
+      if(iand(cdumpMatrix,2) .ne. 0) then
+        call output_line('Dumping matrix to "' // trim(smatName) // '.bin" in binary format...')
+        call dumpMatrixBinary(rmat, './out/' // trim(smatName) // '.bin', dasmTime)
       end if
 
     end if
@@ -208,7 +216,7 @@ contains
 
  ! ****************************************************************************
 
-  subroutine dumpMesh(rtria, sfilename, ndigits)
+  subroutine dumpMeshText(rtria, sfilename, ndigits)
   type(t_triangulation), intent(in) :: rtria
   character(len=*), intent(in) :: sfilename
   integer, intent(in) :: ndigits
@@ -277,9 +285,28 @@ contains
 
   end subroutine
 
+ ! ****************************************************************************
+
+  subroutine dumpMeshBinary(rtria, sfilename)
+  type(t_triangulation), intent(in) :: rtria
+  character(len=*), intent(in) :: sfilename
+
+  real(DP), dimension(:,:), pointer :: p_Dvtx
+  integer, dimension(:,:), pointer :: p_IVertIdx, p_IEdgeIdx
+
+    ! fetch vertex coords and index arrays
+    call storage_getbase_double2d(rtria%h_DvertexCoords, p_Dvtx)
+    call storage_getbase_int2d(rtria%h_IverticesAtElement, p_IVertIdx)
+    call storage_getbase_int2d(rtria%h_IedgesAtElement, p_IEdgeIdx)
+
+    call mmaux_dumpmesh(sfilename, rtria%NVT, rtria%NMT, rtria%NEL, &
+        p_Dvtx, p_IVertIdx, p_IEdgeIdx)
+
+  end subroutine
+
   ! ****************************************************************************
 
-  subroutine dumpMatrix(rmatrix, sfilename, ndigits, dasmTime)
+  subroutine dumpMatrixText(rmatrix, sfilename, ndigits, dasmTime)
   type(t_matrixScalar), intent(in) :: rmatrix
   character(len=*), intent(in) :: sfilename
   integer, intent(in) :: ndigits
@@ -336,6 +363,33 @@ contains
     ! close file
     write(iunit,'(A)') 'END'
     close(iunit)
+
+  end subroutine
+
+  ! ****************************************************************************
+
+  subroutine dumpMatrixBinary(rmatrix, sfilename, dasmTime)
+  type(t_matrixScalar), intent(in) :: rmatrix
+  character(len=*), intent(in) :: sfilename
+  real(DP), intent(in) :: dasmTime
+
+  real(DP), dimension(:), pointer :: p_DA
+  integer, dimension(:), pointer :: p_IrowPtr, p_IcolIdx
+  real(SP) :: fasmTime
+
+    ! convert time to float
+    fasmTime = real(dasmTime,SP)
+
+    ! fetch row pointer array
+    call lsyssc_getbase_Kld(rmatrix, p_IrowPtr)
+    ! fetch column index array
+    call lsyssc_getbase_Kcol(rmatrix, p_IcolIdx)
+    ! fetch data array
+    call lsyssc_getbase_double(rmatrix, p_DA)
+
+    ! dump matrix
+    call mmaux_dumpmatrix(sfilename, rmatrix%NEQ, rmatrix%NA, fasmTime, &
+        p_IrowPtr, p_IcolIdx, p_DA)
 
   end subroutine
 
