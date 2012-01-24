@@ -1111,11 +1111,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
           rcubatureInfo%p_RinfoBlocks(1)%h_IelementList = h_IelementList
           rcubatureInfo%p_RinfoBlocks(1)%NEL = listsize
           if (iPenalty .eq. 1) then
-            call bilf_buildMatrixScalar_hrz (rform,.true.,rMass1,rcubatureInfo,&
-		cc_Lambda,rproblem%rcollection)
+            call bilf_buildMatrixScalar_hrz (rform,.true.,rMass1,rcubatureInfo,cc_Lambda,rproblem%rcollection)
           else                                                 
-            call bilf_buildMatrixScalar (rform,.true.,rMass1,rcubatureInfo,&
-		cc_Lambda,rproblem%rcollection)
+            call bilf_buildMatrixScalar (rform,.true.,rMass1,rcubatureInfo,cc_Lambda,rproblem%rcollection)
           end if
           rcubatureInfo%p_RinfoBlocks(1)%h_IelementList = h_elListOld
           call spdiscr_releaseCubStructure (rcubatureInfo)

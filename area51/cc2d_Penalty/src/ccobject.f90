@@ -284,14 +284,6 @@ ncubp = 1
   BderP = .false.
   BderP(DER_FUNC) = .true.
 
-  sfile = 'drag_lift_penalty'
-  cflag = SYS_REPLACE
-  call io_openFileForWriting(sfile, iunit,cflag,bfileexists,.true.)
-  if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
-    ! Write a headline
-    write (iunit,'(A)') '# iel Ut P Drag Lift'
-  end if
-
   ! Calculate drag and lift
   do i = 1,p_rtriangulation%NEL
     if (p_points(i) .ne. 0) then
@@ -351,16 +343,6 @@ ncubp = 1
       DintP(1) = DintP(1) - dlh * dpcont * dnormal(1)
       DintP(2) = DintP(2) - dlh * dpcont * dnormal(2)
       
-      ! Write values to file
-      stemp = '' // &
-            trim(sys_siL(i,3)) // ' ' // &
-            trim(sys_sdEL(dut,4)) // ' ' // &
-            trim(sys_sdEL(dpcont,4)) // ' ' // &
-            trim(sys_sdEL(dlh*(dpf(1)*dut*dnormal(2)-dpcont*dnormal(1)),4)) // ' ' // &
-            trim(sys_sdEL(- dlh*(dpf(1)*dut*dnormal(1)+dpcont*dnormal(2)),4))
-
-      write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)
-
       dfw = dfw + dlh*(dpf(1)*dut*dnormal(2)-dpcont*dnormal(1))
       daw = daw - dlh*(dpf(1)*dut*dnormal(1)+dpcont*dnormal(2))
 
@@ -369,8 +351,12 @@ ncubp = 1
 
   dfw = 2D0*DFW/DPF(2)
   daw = 2D0*DAW/DPF(2)
-  write (iunit,ADVANCE='YES',FMT='(A)') '# DRAG LIFT'
-  write (iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdEL(dfw,4)) // ' ' // trim(sys_sdEL(daw,4))
+  call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfile,'')
+  read(sfile,*) sfile
+  call io_openFileForWriting(sfile,iunit,SYS_REPLACE,bfileExists,.true.)
+!    if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+      write (iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdEL(dfw,5)) // ' ' // trim(sys_sdEL(daw,5))
+!    end if
   close (iunit)
 
   sfile="gmv/u.gmv.poly"
