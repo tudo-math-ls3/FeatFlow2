@@ -354,9 +354,7 @@ ncubp = 1
   call parlst_getvalue_string (rproblem%rparamlist,'CC-POSTPROCESSING','sfilenameBodyForces',sfile,'')
   read(sfile,*) sfile
   call io_openFileForWriting(sfile,iunit,SYS_REPLACE,bfileExists,.true.)
-!    if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
       write (iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdEL(dfw,5)) // ' ' // trim(sys_sdEL(daw,5))
-!    end if
   close (iunit)
 
   sfile="gmv/u.gmv.poly"
