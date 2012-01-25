@@ -2779,8 +2779,9 @@ contains
 
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-          rsolverNode%rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-          rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+          rsolverNode%rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+          rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+          rsolverNode%rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
       if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .eq. "") then
       
@@ -3550,8 +3551,9 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+            rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+            rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
       
         ! Is there a previous timestep?
         if (iiterate .gt. 1) then
@@ -3810,8 +3812,9 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-            rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+            rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+            rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
       
         ! Is there a nect timestep?
         if (iiterate .lt. NEQtime) then
@@ -5058,7 +5061,7 @@ contains
     type(t_spatialMatrixNonlinearData) :: rnonlinearData
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_discreteFBC), pointer :: p_rdiscreteFBC
-    type(t_neumannBoundary), pointer :: p_rneumannBoundary
+    type(t_boundaryRegionList), pointer :: p_rneumannBoundary
 
     type(t_matrixBlock), pointer :: p_rblockTemp
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
@@ -5067,6 +5070,7 @@ contains
     integer :: idiag
     real(dp) :: dtimePrimal,dtimeDual,dtstep
     integer, dimension(2) :: Iidx
+    logical :: bassemblePointPrimal,bassemblePointDual
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
@@ -5122,8 +5126,9 @@ contains
     
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
-          rsupermatrix%p_rneumannBoundary%p_RneumannBoundary(isubstep),&
-          rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+          rsupermatrix%p_rneumannBoundary%p_RbdRegion(isubstep),&
+          rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+          rsupermatrix%p_rdirichletBCCBoundary%p_RbdRegion(isubstep))
       
       ! Current time step?
       call tdiscr_getTimestep(rsupermatrix%rdiscrData%p_rtimeDiscr,isubstep-1,dtimePrimal,dtstep)
@@ -5202,26 +5207,52 @@ contains
       ! Don't insert the matrix if there is already one! An existing matrix
       ! is always an identity matrix, as it happens to appear in the first
       ! and last time strep.
-      if ((p_rneumannBoundary%nregionsPrimal .eq. 0) .or. (p_rneumannBoundary%nregionsDual .eq. 0)) then
-        ! IF (isubstep .NE. 0) THEN
+      
+      bassemblePointPrimal = .false.
+      bassemblePointDual = .false.
+!      select case (rpreconditioner%chasNeumann)
+!      case (0)
+!        ! Enforce no Neumann
+!        bassemblePointPrimal = .false.
+!        bassemblePointDual = .false.
+!        
+!      case (1)
+!        ! Enforce Neumann
+!        bassemblePointPrimal = .true.
+!        bassemblePointDual = .true.
+!
+!      case default
+        ! Automatic detection      
+
+      ! IF (isubstep .NE. 0) THEN
         if (p_rneumannBoundary%nregionsPrimal .eq. 0) then
           if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+3,(isubstep-1)*6+3)) then
-            call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+3,(isubstep-1)*6+3),&
-                rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+            bassemblePointPrimal = .true.
           end if
         end if
         
         if (p_rneumannBoundary%nregionsDual .eq. 0) then
           if (.not. lsysbl_isSubmatrixPresent (rmatrix,(isubstep-1)*6+6,(isubstep-1)*6+6)) then
-            call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+6,(isubstep-1)*6+6),&
-                rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+            bassemblePointDual = .true.
           end if
         end if
+
+!      end select
+      
+      if (bassemblePointPrimal) then
+        call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+3,(isubstep-1)*6+3),&
+            rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+      end if
+      
+      if (bassemblePointDual) then
+        call createPointMatrix (rmatrix%RmatrixBlock((isubstep-1)*6+6,(isubstep-1)*6+6),&
+            rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEMPressure%NEQ,1)
+      end if
         
+      if (bassemblePointPrimal .or. bassemblePointDual) then
         ! Remember this timestep as "pure Dirichlet".
         npureDirichletTimesteps = npureDirichletTimesteps + 1
         IpureDirichletTimesteps(npureDirichletTimesteps) = isubstep
-        
       end if
       
       ! Cycle the solution vectors: 1 <- 2 <- 3

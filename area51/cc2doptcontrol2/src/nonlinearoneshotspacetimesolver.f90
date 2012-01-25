@@ -72,6 +72,7 @@ module nonlinearoneshotspacetimesolver
   use optcanalysis
   use timeboundaryconditions
   use spacetimeneumannbc
+  use spacetimedirichletbcc
     
   implicit none
   
@@ -180,8 +181,46 @@ contains
   
 !<subroutine>
 
+  subroutine nlstslv_assembleDirichletBCC (rsettings,RdirichletBCC)
+  
+!<description>
+  ! Sets up the Dirichlet boundary control boundary condition structures for all levels.
+!</description>
+
+!<input>
+  ! Settings structure with global parametes.
+  type(t_settings_optflow), intent(inout) :: rsettings
+!</input>
+
+!<inputoutput>
+  ! Array with Neumann boundary definitions for nonlinear boundary conditions,
+  ! for all levels.
+  type(t_sptiDirichletBCCBoundary), dimension(:), intent(inout), target :: RdirichletBCC
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev, nlevels
+    
+    ! How many levels do we have in the hierarchy?
+    nlevels = size(RdirichletBCC)
+    
+    ! Loop through all levels to set up the matrices.
+    do ilev = 1,nlevels
+      ! Create the Neumann boundary conditions
+      call stnm_assembleDirichletBCCBd (rsettings%roptcBDC,&
+          RdirichletBCC(ilev),rsettings%rglobalData)
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine nlstslv_initPrecMatrices (rsettings,ctypeNonlinearIteration,rmatrix,&
-      RprecMatrices,Rsolutions,RneumannBC)
+      RprecMatrices,Rsolutions,RneumannBC,RdirichletBCC)
   
 !<description>
   ! Sets up the preconditioner matrices on all levels according to
@@ -207,6 +246,10 @@ contains
   ! Array with Neumann boundary definitions for nonlinear boundary conditions,
   ! for all levels.
   type(t_sptiNeumannBoundary), dimension(:), intent(in), target :: RneumannBC
+
+  ! Array with Neumann boundary definitions for Dirichlet control boundary conditions,
+  ! for all levels.
+  type(t_sptiDirichletBCCBoundary), dimension(:), intent(in), target :: RdirichletBCC
 !</inputoutput>
 
 !<output>
@@ -247,7 +290,7 @@ contains
       ! Initialise the corresponding space-time matrix
       call stlin_initSpaceTimeMatrix (&
           RprecMatrices(ilev),cmatrixType,rdiscrData,&
-          Rsolutions(ilev),RneumannBC(ilev),&
+          Rsolutions(ilev),RneumannBC(ilev),RdirichletBCC(ilev),&
           rsettings%rglobalData,rsettings%rdebugFlags)
 
       ! Create a temp vector here for the interpolation
@@ -346,6 +389,7 @@ contains
     type(t_spaceTimeMatrixDiscrData) :: rdiscrData
     type(t_ccoptSpaceTimeMatrix) :: rmatrix
     type(t_sptiNeumannBoundary) :: rsptiNeumannBC
+    type(t_sptiDirichletBCCBoundary) :: rsptiDirichletBCC
 
     call stat_clearTimer (rnlstsolver%rtimeSmoothing)
     call stat_clearTimer (rnlstsolver%rtimeCoarseGridSolver)
@@ -369,11 +413,17 @@ contains
     call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
         rdiscrData%p_rstaticSpaceAsmTempl,rsptiNeumannBC)
     call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+
+    ! Initialise the Dirichlet boundary control boundary conditions on the maximum level.
+    ! Used for nonlinear boundary conditions.
+    call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        rdiscrData%p_rstaticSpaceAsmTempl,rsptiDirichletBCC)
+    call stnm_assembleDirichletBCCBd (rsettings%roptcBDC,rsptiDirichletBCC,rsettings%rglobalData)
     
     ! Initialise a space-time matrix of the corresponding system.
     ! The solution vector is our nonlinearity.
     call stlin_initSpaceTimeMatrix (&
-        rmatrix,MATT_OPTCONTROL,rdiscrData,rx,rsptiNeumannBC,&
+        rmatrix,MATT_OPTCONTROL,rdiscrData,rx,rsptiNeumannBC,rsptiDirichletBCC,&
         rsettings%rglobalData,rsettings%rdebugFlags)
     
     ! ---------------------------------------------------------------
@@ -412,18 +462,23 @@ contains
     
     ! Initialise Neumann boundary conditions.
     call nlstslv_assembleNeumannBC (rsettings,rnlstsolver%p_rsptiNeumannBC)
+
+    ! Initialise Dirichlet boundary control boundary conditions.
+    call nlstslv_assembleDirichletBCC (rsettings,rnlstsolver%p_rsptiDirichletBCC)
     
     ! Initialise the nonlinear matrices on all levels for the first iteration
     if (bnewtonAllowed .or. (rnlstsolver%ctypeNonlinearIteration .eq. 1)) then
       call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,&
+          rnlstsolver%p_rsptiNeumannBC,rnlstsolver%p_rsptiDirichletBCC)
     else
       ! Newton not allowed. Select fixed point.
       !if (rnlstsolver%ioutputLevel .ge. 1) then
       !  call output_line ("Adaptive Newton: Selecting fixed point iteration.")
       !end if
       call nlstslv_initPrecMatrices (rsettings,1,&
-          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
+          rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,&
+          rnlstsolver%p_rsptiNeumannBC,rnlstsolver%p_rsptiDirichletBCC)
     end if
     
     ! Pass the matrices to the linear solver.
@@ -553,7 +608,8 @@ contains
       call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
           rsettings%rsettingsOptControl%rconstraints,&
           rx,rsettings%rsettingsOptControl%rtargetFunction,&
-          rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
+          rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+          rsettings%rsettingsOptControl%dgammaC,&
           Derror)
       if (rnlstsolver%ioutputLevel .ge. 1) then
         call output_separator (OU_SEP_MINUS)
@@ -618,7 +674,8 @@ contains
         ! Standard fixed point iteraion
         call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
         call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-            rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
+            rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,&
+            rnlstsolver%p_rsptiNeumannBC,rnlstsolver%p_rsptiDirichletBCC)
 
         ! The structure of the matrices does not change,
         ! so we don't have to call sptils_initStructure again.
@@ -635,7 +692,8 @@ contains
 
           call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
           call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&
-              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,&
+              rnlstsolver%p_rsptiNeumannBC,rnlstsolver%p_rsptiDirichletBCC)
 
           ! Is Newton already active?
           if (.not. bnewtonAllowed) then
@@ -655,7 +713,8 @@ contains
           
           call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
           call nlstslv_initPrecMatrices (rsettings,1,&
-              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,rnlstsolver%p_rsptiNeumannBC)
+              rmatrix,rnlstsolver%p_RprecMatrices,rnlstsolver%p_Rsolutions,&
+              rnlstsolver%p_rsptiNeumannBC,rnlstsolver%p_rsptiDirichletBCC)
 
           ! Is Newton currently active?
           if (.not. bnewtonAllowed) then
@@ -818,6 +877,7 @@ contains
     
     ! Release other stuff
     call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+    call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
     call stlin_releaseSpaceTimeMatrix(rmatrix)
     
     ! Decrease rnlstsolver%nnonlinearIterations if the DO-loop was completely processed;
@@ -836,7 +896,8 @@ contains
     call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
         rsettings%rsettingsOptControl%rconstraints,&
         rx,rsettings%rsettingsOptControl%rtargetFunction,&
-        rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
+        rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+        rsettings%rsettingsOptControl%dgammaC,&
         Derror)
     if (rnlstsolver%ioutputLevel .ge. 1) then
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))

@@ -107,6 +107,7 @@ module spacematvecassembly
   use basicgeometry
   use boundary
   use cubature
+  use elementpreprocessing
   use element
   use derivatives
   use matrixfilters
@@ -121,6 +122,7 @@ module spacematvecassembly
   use linearsystemscalar
   use linearsystemblock
   use linearsolver
+  use transformation
   use bilinearformevaluation
   use linearformevaluation
   use linearsolverautoinitialise
@@ -137,6 +139,7 @@ module spacematvecassembly
   use spatialdiscretisation
   use timediscretisation
   use discretebc
+  use bcassembly
   use matrixfilters
   
   use constantsoptc
@@ -275,17 +278,20 @@ module spacematvecassembly
     ! Definition of the Neumann boundary conditions.
     ! WARNING: IMPLEMENTATION INCOMPLETE!!!!
     ! ACTUALLY, THERE HAS TO BE ONE NEUMANN BOUDNARY STRUCTURE FOR EVERY NONLINEAR
-    ! EVALUATIONVECTOR FROM ABOVE. THE ASSEMBLY ROUTINE FOR THE BOUNDARY INTEGRAL
+    ! EVALUATION VECTOR FROM ABOVE. THE ASSEMBLY ROUTINE FOR THE BOUNDARY INTEGRAL
     ! IN THE DUAL EQUATION MUST ACTUALLY BE ABLE TO INCORPORATE THE NEUMANN
     ! BOUNDARY DEFINITION ACCORDING TO THE TIME OF THE NONLINEARITY; REPRESENTED
     ! BY THE ABOVE VECTOR(S). AS LONG AS THE BC'S ARE CONSTANT IN TIME, THE NEUMENN
     ! BC'S ARE THE SAME FOR ALL TIMESTEPS AND THIS ONE AND ONLY STRUCTURE IS ENOGH!!!
-    type(t_neumannBoundary), pointer :: p_rneumannBoundary => null()
+    type(t_boundaryRegionList), pointer :: p_rneumannBoundary => null()
 
     ! Neumann boundary integral template matrix. This matrix contains the structure
     ! of an operator that works on the Neumann boundary.
     type(t_matrixScalar), pointer :: p_rneumannBoundaryOperator => null()
     
+    ! Definition of the Dirichlet control boundary conditions.
+    type(t_boundaryRegionList), pointer :: p_rdirichletBCCBoundary => null()
+
   end type
   
 !</typeblock>
@@ -338,14 +344,14 @@ module spacematvecassembly
 ! global matrix but provide coefficients always for a complete block of all dimensions
 ! for the primal as well as for the dual term.
 !
-! Example: The Dalpha, Deta and Dtau coefficients are used in the following way:
+! Example: The Dmass, DBmat and DBTmat coefficients are used in the following way:
 !
-!    ( Dalpha(1,1)*M   Dalpha(1,1)*M   Deta(1)*B1    Dalpha(1,2)*M   Dalpha(1,2)*M              )
-!    ( Dalpha(1,1)*M   Dalpha(1,1)*M   Deta(1)*B2    Dalpha(1,2)*M   Dalpha(1,2)*M              )
-!    (  Dtau(1)*B1^t    Dtau(1)*B2^t                                                            )
-!    ( Dalpha(2,1)*M   Dalpha(2,1)*M                 Dalpha(2,2)*M   Dalpha(2,2)*M   Deta(2)*B1 )
-!    ( Dalpha(2,1)*M   Dalpha(2,1)*M                 Dalpha(2,2)*M   Dalpha(2,2)*M   Deta(2)*B2 )
-!    (                                                Dtau(2)*B1^t    Dtau(2)*B2^t              )
+!    ( Dmass(1,1)*M   Dmass(1,1)*M   DBmat(1)*B1   Dmass(1,2)*M   Dmass(1,2)*M               )
+!    ( Dmass(1,1)*M   Dmass(1,1)*M   DBmat(1)*B2   Dmass(1,2)*M   Dmass(1,2)*M               )
+!    ( DBTmat(1)*B1^t DBTmat(1)*B2^t                                                         )
+!    ( Dmass(2,1)*M   Dmass(2,1)*M                 Dmass(2,2)*M   Dmass(2,2)*M   DBmat(2)*B1 )
+!    ( Dmass(2,1)*M   Dmass(2,1)*M                 Dmass(2,2)*M   Dmass(2,2)*M   DBmat(2)*B2 )
+!    (                                             DBTmat(2)*B1^t DBTmat(2)*B2^t             )
 !
 ! The use of the other parameters is similar.
 ! -->
@@ -356,41 +362,41 @@ module spacematvecassembly
   type t_nonlinearSpatialMatrix
   
     ! IOTA-parameters that switch the identity on/off.
-    real(DP), dimension(2,2) :: Diota = 0.0_DP
+    real(DP), dimension(2,2) :: DidentityY = 0.0_DP
   
     ! ALPHA-parameters that switch the mass matrix on/off.
-    real(DP), dimension(2,2) :: Dalpha = 0.0_DP
+    real(DP), dimension(2,2) :: Dmass = 0.0_DP
   
     ! THETA-parameters that switch the Stokes matrix on/off
-    real(DP), dimension(2,2) :: Dtheta = 0.0_DP
+    real(DP), dimension(2,2) :: Dstokes = 0.0_DP
     
     ! GAMMA-parameters that switch the nonlinearity (y*grad(.)) on/off
-    real(DP), dimension(2,2) :: Dgamma = 0.0_DP
+    real(DP), dimension(2,2) :: Dygrad = 0.0_DP
   
     ! NEWTON-parameters that switch the Newton term ((.)*grad(y)) on/off
-    real(DP), dimension(2,2) :: Dnewton = 0.0_DP
+    real(DP), dimension(2,2) :: Dgrady = 0.0_DP
 
     ! NEWTON-parameters that switch a 2nd Newton term ((.)*grad(y)) on/off
-    real(DP), dimension(2,2) :: Dnewton2 = 0.0_DP
+    real(DP), dimension(2,2) :: Dgrady2 = 0.0_DP
 
     ! GAMMAT-parameters that switch the transposed nonlinearity (y*grad(.)^T) on/off
-    real(DP), dimension(2,2) :: DgammaT = 0.0_DP
+    real(DP), dimension(2,2) :: DygradT = 0.0_DP
 
     ! GAMMAT-parameters that switch a 2nd transposed nonlinearity (y*grad(.)^T) on/off
-    real(DP), dimension(2,2) :: DgammaT2 = 0.0_DP
+    real(DP), dimension(2,2) :: DygradT2 = 0.0_DP
   
     ! NEWTONT-parameters that switch the transposed Newton term ((.)*grad(y)^T) on/off
-    real(DP), dimension(2,2) :: DnewtonT = 0.0_DP
+    real(DP), dimension(2,2) :: DgradyT = 0.0_DP
     
     ! ETA-parameters that switch the B-terms on/off.
-    real(DP), dimension(2,2) :: Deta = 0.0_DP
+    real(DP), dimension(2,2) :: DBmat = 0.0_DP
     
     ! TAU-parameters that switch the B^T-terms on/off
-    real(DP), dimension(2,2) :: Dtau = 0.0_DP
+    real(DP), dimension(2,2) :: DBTmat = 0.0_DP
     
     ! KAPPA-parameters that switch the I matrix in the continuity equation
     ! on/off.
-    real(DP), dimension(2,2) :: Dkappa = 0.0_DP
+    real(DP), dimension(2,2) :: DidentityP = 0.0_DP
     
     ! Weight for the boundary integral in the dual equation
     ! on the Neumann boundary: (y n)(.)
@@ -399,6 +405,15 @@ module spacematvecassembly
     ! Weight for the Newton boundary integral in the dual equation
     ! on the Neumann boundary: ((.)n) lambda
     real(DP), dimension(2,2) :: DdualBdIntegralNewton = 0.0_DP
+    
+    ! Weight in front of Y in the Dirichlet boundary control term 1.
+    real(DP), dimension(2,2) :: DdirichletBCCY = 0.0_DP
+    
+    ! Weight in front of n Dlambda in the Dirichlet boundary control term 2.
+    real(DP), dimension(2,2) :: DdirichletBCCLambda = 0.0_DP
+    
+    ! Weight in front of n xi in the Dirichlet boundary control term 3.
+    real(DP), dimension(2,2) :: DdirichletBCCXi = 0.0_DP
     
     ! When evaluating nonlinear terms, the evaluation routine accepts
     ! in timestep i three solution vectors -- one corresponding to
@@ -428,6 +443,14 @@ module spacematvecassembly
     ! from the dual variable $\lambda$ to the control $u$:
     ! $u=-1/\alpha \lambda$.
     real(DP) :: dalphaC = 0.0_DP
+    
+    ! Regularisation parameter ALPHA which controls the transformation
+    ! from the dual variable $\lambda$ to the control $u$ on the boundary:
+    ! $u=-1/\beta \lambda$.
+    real(DP) :: dbetaC = 0.0_DP
+    
+    ! Penalty parameter for the dirichlet boundary control
+    real(DP) :: ddirichletBCPenalty = 0.0_DP
     
     ! Type of this matrix. One of the MATT_xxxx constants.
     integer :: cmatrixType = 0
@@ -1275,12 +1298,19 @@ contains
       do j=1,2
         do i=1,2
           call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D+1,NDIM2D+1)
+          
+          ! The B-matrices in (4,6), (5,6) share their data with (1,3), (2,3),
+          ! so the do not have to be assembled.
+          
           call allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
-              rnonlinearSpatialMatrix%Diota(i,j),rnonlinearSpatialMatrix%Dalpha(i,j),&
-              rnonlinearSpatialMatrix%Dtheta(i,j),rnonlinearSpatialMatrix%Dgamma(i,j),&
-              rnonlinearSpatialMatrix%Dnewton(i,j),rnonlinearSpatialMatrix%DgammaT(i,j),&
-              rnonlinearSpatialMatrix%DnewtonT(i,j),rnonlinearSpatialMatrix%Deta(i,j),&
-              rnonlinearSpatialMatrix%Dtau(i,j),rnonlinearSpatialMatrix%Dkappa(i,j),&
+              rnonlinearSpatialMatrix%DidentityY(i,j),rnonlinearSpatialMatrix%Dmass(i,j),&
+              rnonlinearSpatialMatrix%Dstokes(i,j),rnonlinearSpatialMatrix%Dygrad(i,j),&
+              rnonlinearSpatialMatrix%Dgrady(i,j),rnonlinearSpatialMatrix%DygradT(i,j),&
+              rnonlinearSpatialMatrix%DgradyT(i,j),rnonlinearSpatialMatrix%DBmat(i,j),&
+              rnonlinearSpatialMatrix%DBTMat(i,j),rnonlinearSpatialMatrix%DidentityP(i,j),&
+              rnonlinearSpatialMatrix%DdirichletBCCY(i,j),&
+              rnonlinearSpatialMatrix%DdirichletBCCLambda(i,j),&
+              rnonlinearSpatialMatrix%DdirichletBCCXi(i,j),&
               (i .eq. 2) .and. (j .eq. 2))
           call lsysbl_updateMatStrucInfo(rtempMatrix)
           call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,(i-1)*3+1,(j-1)*3+1)
@@ -1297,8 +1327,8 @@ contains
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
-      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
+      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
+      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
 
     end if
    
@@ -1338,9 +1368,9 @@ contains
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
         call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,1,3)
         call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,&
-            rtempMatrix,rnonlinearSpatialMatrix%Diota(1,1),rnonlinearSpatialMatrix%Dalpha(1,1),&
-            rnonlinearSpatialMatrix%Dtheta(1,1),&
-            rnonlinearSpatialMatrix%Deta(1,1),rnonlinearSpatialMatrix%Dtau(1,1),.false.)
+            rtempMatrix,rnonlinearSpatialMatrix%DidentityY(1,1),rnonlinearSpatialMatrix%Dmass(1,1),&
+            rnonlinearSpatialMatrix%Dstokes(1,1),&
+            rnonlinearSpatialMatrix%DBmat(1,1),rnonlinearSpatialMatrix%DBTmat(1,1),.false.)
 
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
@@ -1350,33 +1380,33 @@ contains
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dtheta(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              rnonlinearSpatialMatrix%Dstokes(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dtheta(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              rnonlinearSpatialMatrix%Dstokes(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dtheta(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
+              rnonlinearSpatialMatrix%Dstokes(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
+              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         end select
@@ -1395,30 +1425,41 @@ contains
         case (1)
           call assembleProjectedMassBlocks (rnonlinearSpatialMatrix,rtempMatrix, &
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1, &
-              rnonlinearSpatialMatrix%Dalpha(1,2))
+              rnonlinearSpatialMatrix%Dmass(1,2))
         case (2)
           call assembleProjectedMassBlocks (rnonlinearSpatialMatrix,rtempMatrix, &
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2, &
-              rnonlinearSpatialMatrix%Dalpha(1,2))
+              rnonlinearSpatialMatrix%Dmass(1,2))
         case (3)
           call assembleProjectedMassBlocks (rnonlinearSpatialMatrix,rtempMatrix, &
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dalpha(1,2))
+              rnonlinearSpatialMatrix%Dmass(1,2))
         end select
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,1,4)
-
+        
+        ! Dirichlet boudary control operator.
+        call smva_assembleDirichletBCC (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+            rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2),&
+            rmatrix%RmatrixBlock(1,4),rmatrix%RmatrixBlock(2,5),&
+            rmatrix%RmatrixBlock(1,6),rmatrix%RmatrixBlock(2,6),&
+            rnonlinearSpatialMatrix%DdirichletBCCY(1,1),&
+            rnonlinearSpatialMatrix%DdirichletBCCLambda(1,2),&
+            rnonlinearSpatialMatrix%DdirichletBCCXi(1,2),&
+            rnonlinearSpatialMatrix%ddirichletBCPenalty,&
+            rnonlinearSpatialMatrix%p_rnonlinearity%p_rdirichletBCCBoundary)
+        
         ! Dual equation
         ! -------------
         ! In the first step, assemble the linear parts
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
         call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,4,6)
         call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
-            rnonlinearSpatialMatrix%Diota(2,2),rnonlinearSpatialMatrix%Dalpha(2,2),&
-            rnonlinearSpatialMatrix%Dtheta(2,2),&
-            rnonlinearSpatialMatrix%Deta(2,2),rnonlinearSpatialMatrix%Dtau(2,2),&
-            rnonlinearSpatialMatrix%Deta(1,1) .eq. rnonlinearSpatialMatrix%Deta(2,2))
+            rnonlinearSpatialMatrix%DidentityY(2,2),rnonlinearSpatialMatrix%Dmass(2,2),&
+            rnonlinearSpatialMatrix%Dstokes(2,2),&
+            rnonlinearSpatialMatrix%DBmat(2,2),rnonlinearSpatialMatrix%DBTmat(2,2),&
+            rnonlinearSpatialMatrix%DBmat(1,1) .eq. rnonlinearSpatialMatrix%DBmat(2,2))
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
@@ -1427,11 +1468,11 @@ contains
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dtheta(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              rnonlinearSpatialMatrix%Dstokes(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
@@ -1449,11 +1490,11 @@ contains
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dtheta(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              rnonlinearSpatialMatrix%Dstokes(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
@@ -1471,11 +1512,11 @@ contains
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dtheta(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+              rnonlinearSpatialMatrix%Dstokes(2,2),&
+              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
+              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
@@ -1507,9 +1548,9 @@ contains
         
         ! Assemble linear parts.
         call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
-            rnonlinearSpatialMatrix%Diota(2,1),rnonlinearSpatialMatrix%Dalpha(2,1),&
-            rnonlinearSpatialMatrix%Dtheta(2,1),&
-            rnonlinearSpatialMatrix%Deta(2,1),rnonlinearSpatialMatrix%Dtau(2,1),.false.)
+            rnonlinearSpatialMatrix%DidentityY(2,1),rnonlinearSpatialMatrix%Dmass(2,1),&
+            rnonlinearSpatialMatrix%Dstokes(2,1),&
+            rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
 
         ! Co stabilisation in the convective parts here.
         ! rstabilisation = t_convecStabilisation(&
@@ -1530,11 +1571,11 @@ contains
             
         call assembleConvection (&
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
-            rnonlinearSpatialMatrix%Dtheta(2,1),&
-            dweightConvection*rnonlinearSpatialMatrix%Dgamma(2,1),&
-            dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
-            dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
-            dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
+            rnonlinearSpatialMatrix%Dstokes(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
             rcubatureInfo,rstabilisation)
             
         if (rtempVector%NEQ .ne. 0) &
@@ -1557,8 +1598,8 @@ contains
             
         call assembleConvection (&
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,0.0_DP,&
-            dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
-            dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
             0.0_DP,rcubatureInfo,rstabilisation)
 
         if (rtempVector%NEQ .ne. 0) &
@@ -1570,13 +1611,13 @@ contains
         ! Switch the I-matrix in the continuity equation on/off.
         ! The matrix always exists -- but is usually filled with zeroes
         ! or switched off.
-        rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearSpatialMatrix%Dkappa(1,1)
-        if (rnonlinearSpatialMatrix%Dkappa(1,1) .ne. 0.0_DP) then
+        rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearSpatialMatrix%DidentityP(1,1)
+        if (rnonlinearSpatialMatrix%DidentityP(1,1) .ne. 0.0_DP) then
           call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(3,3))
         end if
         
-        rmatrix%RmatrixBlock(6,6)%dscaleFactor = rnonlinearSpatialMatrix%Dkappa(2,2)
-        if (rnonlinearSpatialMatrix%Dkappa(2,2) .ne. 0.0_DP) then
+        rmatrix%RmatrixBlock(6,6)%dscaleFactor = rnonlinearSpatialMatrix%DidentityP(2,2)
+        if (rnonlinearSpatialMatrix%DidentityP(2,2) .ne. 0.0_DP) then
           call lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(6,6))
         end if
 
@@ -1673,7 +1714,7 @@ contains
         !
         ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
         ! memory if necessary.
-        if (rnonlinearSpatialMatrix%Deta(1,1) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%DBmat(1,1) .ne. 0.0_DP) then
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
               rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
@@ -1683,7 +1724,7 @@ contains
               rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
         end if
         
-        if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%DBTmat(1,1) .ne. 0.0_DP) then
           ! Furthermore, put B1^T and B2^T to the block matrix.
           ! These matrices are always 'shared'.
           if (rflags%bvirtualTransposedD) then
@@ -1704,7 +1745,7 @@ contains
           end if
         end if
                                         
-        if (rnonlinearSpatialMatrix%Dtau(2,2) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%DBTmat(2,2) .ne. 0.0_DP) then
           if (rflags%bvirtualTransposedD) then
             call lsyssc_transposeMatrix (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
@@ -1723,17 +1764,17 @@ contains
           end if
         end if
 
-        rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearSpatialMatrix%Deta(1,1)
-        rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearSpatialMatrix%Deta(1,1)
+        rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(1,1)
+        rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(1,1)
 
-        rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
-        rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
+        rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
+        rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
         
-        rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearSpatialMatrix%Dtau(1,1)
-        rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearSpatialMatrix%Dtau(1,1)
+        rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearSpatialMatrix%DBTmat(1,1)
+        rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearSpatialMatrix%DBTmat(1,1)
 
-        rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearSpatialMatrix%Dtau(2,2)
-        rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearSpatialMatrix%Dtau(2,2)
+        rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearSpatialMatrix%DBTmat(2,2)
+        rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearSpatialMatrix%DBTmat(2,2)
 
         ! ---------------------------------------------------
         ! Now a slightly more advanced task for which we use a separate
@@ -1744,38 +1785,38 @@ contains
         roptcoperator%dupsamDual = rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam
         
         ! Timestep-weights
-        roptcoperator%dprimalAlpha = rnonlinearSpatialMatrix%Dalpha(1,1)
-        roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dalpha(2,2)
+        roptcoperator%dprimalAlpha = rnonlinearSpatialMatrix%Dmass(1,1)
+        roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dmass(2,2)
 
         ! Stokes operator
         roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-        roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dtheta(1,1)
-        roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dtheta(2,2)
+        roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dstokes(1,1)
+        roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dstokes(2,2)
         
         ! Nonlinearity
-        if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
-          roptcoperator%dprimalDelta = dweightConvection * rnonlinearSpatialMatrix%Dgamma(1,1)
-          roptcoperator%ddualDelta   = dweightDualConvection * rnonlinearSpatialMatrix%Dgamma(2,2)
-          roptcoperator%ddualNewtonTrans = dweightDualNewtonT * rnonlinearSpatialMatrix%DnewtonT(2,2)
+        if (rnonlinearSpatialMatrix%Dygrad(1,1) .ne. 0.0_DP) then
+          roptcoperator%dprimalDelta = dweightConvection * rnonlinearSpatialMatrix%Dygrad(1,1)
+          roptcoperator%ddualDelta   = dweightDualConvection * rnonlinearSpatialMatrix%Dygrad(2,2)
+          roptcoperator%ddualNewtonTrans = dweightDualNewtonT * rnonlinearSpatialMatrix%DgradyT(2,2)
           
           ! Whether or not Newton is active has no influence to the
           ! defect, so the following lines are commented out.
           ! if (rparams%bnewton) then
-          roptcoperator%dprimalNewton    = dweightConvection * rnonlinearSpatialMatrix%Dnewton(1,1)
-          roptcoperator%ddualRDeltaTrans = dweightConvection * rnonlinearSpatialMatrix%DgammaT(2,1)
-          roptcoperator%ddualRNewton     = dweightConvection * rnonlinearSpatialMatrix%Dnewton(2,1)
+          roptcoperator%dprimalNewton    = dweightConvection * rnonlinearSpatialMatrix%Dgrady(1,1)
+          roptcoperator%ddualRDeltaTrans = dweightConvection * rnonlinearSpatialMatrix%DygradT(2,1)
+          roptcoperator%ddualRNewton     = dweightConvection * rnonlinearSpatialMatrix%Dgrady(2,1)
           ! end if
           
         end if
         
         ! Coupling matrices
         !if (rparams%bdualcoupledtoprimal) then
-          roptcoperator%ddualRAlpha = rnonlinearSpatialMatrix%Dalpha(2,1)
+          roptcoperator%ddualRAlpha = rnonlinearSpatialMatrix%Dmass(2,1)
         !end if
 
         !if (rparams%bcontrolactive) then
           roptcoperator%dcontrolWeight = &
-              -rnonlinearSpatialMatrix%Dalpha(1,2)*rnonlinearSpatialMatrix%dalphaC
+              -rnonlinearSpatialMatrix%Dmass(1,2)*rnonlinearSpatialMatrix%dalphaC
           roptcoperator%dcontrolMultiplier = -1.0_DP/rnonlinearSpatialMatrix%dalphaC
         !end if
         
@@ -1841,6 +1882,7 @@ contains
     
     subroutine allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rsubmatrix,&
         diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa,&
+        ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi,&
         bignoreEta)
         
     ! Allocates memory for a submatrix of the system matrix.
@@ -1863,7 +1905,7 @@ contains
     ! Coefficients in front of all operators in the system matrix.
     ! Depending on which operators are 'active', memory is allocated.
     real(DP), intent(in) :: diota,dalpha,dtheta,dgamma,dnewton,&
-        dgammaT,dnewtonT,deta,dtau
+        dgammaT,dnewtonT,deta,dtau,ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi
         
     ! Coefficient in front of a pressure matrix at position (3,3).
     ! Switches that pressure-matrix on/off.
@@ -1879,12 +1921,13 @@ contains
       logical :: bdecoupled,bfulltensor
        
       ! Determine the shape of the matrix
-      bdecoupled = cmatrixType .eq. CCMASM_MTP_DECOUPLED
+      bdecoupled = (cmatrixType .eq. CCMASM_MTP_DECOUPLED) .or. &
+                   (ddirichletBCCLambda .ne. 0.0_DP)
       bfulltensor = cmatrixType .eq. CCMASM_MTP_FULLTENSOR
       
       if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
         ! Should we assemble Newton? If yes, we have a full-tensor matrix.
-        bfulltensor = dnewton .ne. 0.0_DP
+        bfulltensor = (dnewton .ne. 0.0_DP) .or. bfulltensor
       end if
     
       ! Let's consider the global system in detail. The standard matrix It has
@@ -1978,7 +2021,10 @@ contains
       ! block matrix, while we create empty space for the entries.
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      if ((deta .ne. 0.0_DP) .and. .not. bignoreEta) then
+      !
+      ! If cdirichletBCCXi>0, we may have boundary control and need that
+      ! matrix pair as well.
+      if ((deta*deta + ddirichletBCCXi*ddirichletBCCXi .ne. 0.0_DP) .and. .not. bignoreEta) then
         call lsyssc_duplicateMatrix (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rsubmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -3090,6 +3136,8 @@ contains
     real(DP) :: dweightConvection,dweightDualConvection,dweightNaturalBdcDual
     real(DP) :: dweightDualNewtonT
     type(t_scalarCubatureInfo) :: rcubatureInfo
+    integer :: ndofs
+    integer, dimension(:), pointer :: p_Idofs
     
     logical, parameter :: bnewmethod = .false.
     
@@ -3137,24 +3185,24 @@ contains
       !    (                    I       )
       !    (                            )
 
-      if (rnonlinearSpatialMatrix%Diota(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DidentityY(1,1) .ne. 0.0_DP) then
         call lsyssc_vectorLinearComb (&
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Diota(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DidentityY(1,1)*dcx, 1.0_DP)
 
         call lsyssc_vectorLinearComb (&
             rx%RvectorBlock(2), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Diota(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DidentityY(1,1)*dcx, 1.0_DP)
       end if
 
-      if (rnonlinearSpatialMatrix%Diota(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DidentityY(2,2) .ne. 0.0_DP) then
         call lsyssc_vectorLinearComb (&
             rx%RvectorBlock(4), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Diota(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DidentityY(2,2)*dcx, 1.0_DP)
 
         call lsyssc_vectorLinearComb (&
             rx%RvectorBlock(5), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Diota(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DidentityY(2,2)*dcx, 1.0_DP)
       end if
 
       ! ---------------------------------------------------
@@ -3165,43 +3213,43 @@ contains
       !    ( M             M            )
       !    (      M             M       )
       !    (                            )
-      if (rnonlinearSpatialMatrix%Dalpha(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%Dmass(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Dalpha(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(1,1)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(2), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Dalpha(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(1,1)*dcx, 1.0_DP)
       end if
 
-      if (rnonlinearSpatialMatrix%Dalpha(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%Dmass(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(4), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dalpha(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(2,2)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(5), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dalpha(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(2,2)*dcx, 1.0_DP)
       end if
 
-      if (rnonlinearSpatialMatrix%Dalpha(2,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%Dmass(2,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(1), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dalpha(2,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
             rx%RvectorBlock(2), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dalpha(2,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
       end if
       
-      ! Don't do anything with Dalpha(1,2) -- the mass matrices here
+      ! Don't do anything with Dmass(1,2) -- the mass matrices here
       ! are probably nonlinear! We assemble them later!
       
       ! ---------------------------------------------------
@@ -3212,31 +3260,31 @@ contains
       !    (               L            )
       !    (                    L       )
       !    (                            )
-      if (rnonlinearSpatialMatrix%Dtheta(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%Dstokes(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
             1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(2), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
             1.0_DP)
       end if
             
-      if (rnonlinearSpatialMatrix%Dtheta(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%Dstokes(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(4), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
             1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(5), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
             1.0_DP)
       end if
       
@@ -3249,28 +3297,28 @@ contains
       !    (                        B2  )
       !    (                            )
       
-      if (rnonlinearSpatialMatrix%Deta(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBmat(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rx%RvectorBlock(3), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Deta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(1,1)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB2, &
             rx%RvectorBlock(3), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Deta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(1,1)*dcx, 1.0_DP)
       end if
       
-      if (rnonlinearSpatialMatrix%Deta(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBmat(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rx%RvectorBlock(6), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Deta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(2,2)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB2, &
             rx%RvectorBlock(6), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Deta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -3282,28 +3330,28 @@ contains
       !    (                            )
       !    (              B1^T B2^T     )
       
-      if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBTmat(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD1, &
             rx%RvectorBlock(1), rd%RvectorBlock(3), &
-            -rnonlinearSpatialMatrix%Dtau(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(1,1)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD2, &
             rx%RvectorBlock(2), rd%RvectorBlock(3), &
-            -rnonlinearSpatialMatrix%Dtau(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(1,1)*dcx, 1.0_DP)
       end if
       
-      if (rnonlinearSpatialMatrix%Dtau(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBTmat(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD1, &
             rx%RvectorBlock(4), rd%RvectorBlock(6), &
-            -rnonlinearSpatialMatrix%Dtau(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(2,2)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD2, &
             rx%RvectorBlock(5), rd%RvectorBlock(6), &
-            -rnonlinearSpatialMatrix%Dtau(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -3389,11 +3437,11 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dtheta(1,1),&
-          dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1),&
-          dweightConvection*rnonlinearSpatialMatrix%DgammaT(1,1),&
-          dweightConvection*rnonlinearSpatialMatrix%Dnewton(1,1),&
-          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(1,1),&
+          rnonlinearSpatialMatrix%Dstokes(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
       
@@ -3414,11 +3462,11 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dtheta(2,2),&
-          dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2),&
-          dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,2),&
-          dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,2),&
-          dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2),&
+          rnonlinearSpatialMatrix%Dstokes(2,2),&
+          dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
+          dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
       
@@ -3449,11 +3497,11 @@ contains
 
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
-          rnonlinearSpatialMatrix%Dtheta(2,1),&
-          dweightConvection*rnonlinearSpatialMatrix%Dgamma(2,1),&
-          dweightConvection*rnonlinearSpatialMatrix%DgammaT(2,1),&
-          dweightConvection*rnonlinearSpatialMatrix%Dnewton(2,1),&
-          dweightConvection*rnonlinearSpatialMatrix%DnewtonT(2,1),&
+          rnonlinearSpatialMatrix%Dstokes(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
           rcubatureInfo,rstabilisation,dcx)
       
       ! There is probably a 2nd reactive term involved stemming from
@@ -3463,8 +3511,8 @@ contains
       
       call assembleConvectionDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
-          dweightConvection*rnonlinearSpatialMatrix%DgammaT2(2,1),&
-          dweightConvection*rnonlinearSpatialMatrix%Dnewton2(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
           0.0_DP,rcubatureInfo,rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
@@ -3487,11 +3535,11 @@ contains
 
         ! No, this is a standard matrix. That means, we just have to project
         ! the control u.
-        if (rnonlinearSpatialMatrix%Dalpha(1,2) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%Dmass(1,2) .ne. 0.0_DP) then
 
           ! Copy our solution vector \lambda. Scale it by -1/alpha.
           call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
-          call lsysbl_scaleVector(rtempVectorX,-rnonlinearSpatialMatrix%Dalpha(1,2))
+          call lsysbl_scaleVector(rtempVectorX,-rnonlinearSpatialMatrix%Dmass(1,2))
           
           ! Project that to the allowed range.
           select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints)
@@ -3611,7 +3659,7 @@ contains
 
       else
 
-        if (rnonlinearSpatialMatrix%Dalpha(1,2) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%Dmass(1,2) .ne. 0.0_DP) then
           ! Yes, that's a Newton matrix. That means, we have to multiply the
           ! vector with the derivative of the projection operator:
           ! b-(-P[a,b]'(-1/alpha lambda)).
@@ -3620,17 +3668,17 @@ contains
           case (1)
             call assemblePrimalUConstrMassDefect (&
                 rnonlinearSpatialMatrix,rx,&
-                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rd,dcx*rnonlinearSpatialMatrix%Dmass(1,2),&
                 rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1)
           case (2)
             call assemblePrimalUConstrMassDefect (&
                 rnonlinearSpatialMatrix,rx,&
-                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rd,dcx*rnonlinearSpatialMatrix%Dmass(1,2),&
                 rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2)
           case (3)
             call assemblePrimalUConstrMassDefect (&
                 rnonlinearSpatialMatrix,rx,&
-                rd,dcx*rnonlinearSpatialMatrix%Dalpha(1,2),&
+                rd,dcx*rnonlinearSpatialMatrix%Dmass(1,2),&
                 rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
           end select
         end if
@@ -3644,6 +3692,68 @@ contains
       call lsysbl_releaseVector (rvectorPrimal)
       call lsysbl_releaseMatrix (rtempMatrix)
 
+      ! 5.) Special processing: boundary control.
+      !
+      !    ( QM       v1D       v2M     )
+      !    (     QM       v1D   v2M     )
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !
+      ! with v1. v2 some constants. These matrices are only
+      ! applied on the Dirichlet control boundary. The contributions
+      ! replace the original lines in the matrices.
+      ! Therefore, the corresponding entries in the defect vector
+      ! have to be restored and replaced by the new contributions.
+      
+      ! Create a temporary matrix for the boundary control operator.
+      call lsysbl_createMatBlockByDiscr (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual,rtempMatrix)
+      
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rtempMatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rtempMatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateGradient,&
+          rtempMatrix%RmatrixBlock(1,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateGradient,&
+          rtempMatrix%RmatrixBlock(2,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+      call lsysbl_clearMatrix (rtempMatrix)
+      
+      ! Assemble the submatrices
+      call smva_assembleDirichletBCC (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+          rtempMatrix%RmatrixBlock(1,1),rtempMatrix%RmatrixBlock(2,2),&
+          rtempMatrix%RmatrixBlock(1,4),rtempMatrix%RmatrixBlock(2,5),&
+          rtempMatrix%RmatrixBlock(1,6),rtempMatrix%RmatrixBlock(2,6),&
+          rnonlinearSpatialMatrix%DdirichletBCCY(1,1),&
+          rnonlinearSpatialMatrix%DdirichletBCCLambda(1,2),&
+          rnonlinearSpatialMatrix%DdirichletBCCXi(1,2),&
+          rnonlinearSpatialMatrix%ddirichletBCPenalty,&
+          rnonlinearSpatialMatrix%p_rnonlinearity%p_rdirichletBCCBoundary)
+            
+        ! Substract
+        call lsysbl_blockMatVec (rtempmatrix, rx, rd, -dcx, 1.0_DP)
+
+        ! Release the temp matrix again        
+        call lsysbl_releaseMatrix (rtempMatrix)
+
     else
     
       ! ---------------------------------------------------
@@ -3655,28 +3765,28 @@ contains
       !    (                        B2  )
       !    (                            )
       
-      if (rnonlinearSpatialMatrix%Deta(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBmat(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rx%RvectorBlock(3), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Deta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(1,1)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB2, &
             rx%RvectorBlock(3), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Deta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(1,1)*dcx, 1.0_DP)
       end if
       
-      if (rnonlinearSpatialMatrix%Deta(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBmat(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rx%RvectorBlock(6), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Deta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(2,2)*dcx, 1.0_DP)
 
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB2, &
             rx%RvectorBlock(6), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Deta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBmat(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -3688,26 +3798,26 @@ contains
       !    (                            )
       !    (              B1^T B2^T     )
       
-      if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBTmat(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD1, &
             rx%RvectorBlock(1), rd%RvectorBlock(3), &
-            -rnonlinearSpatialMatrix%Dtau(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(1,1)*dcx, 1.0_DP)
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD2, &
             rx%RvectorBlock(2), rd%RvectorBlock(3), &
-            -rnonlinearSpatialMatrix%Dtau(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(1,1)*dcx, 1.0_DP)
       end if
       
-      if (rnonlinearSpatialMatrix%Dtau(2,2) .ne. 0.0_DP) then
+      if (rnonlinearSpatialMatrix%DBTmat(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD1, &
             rx%RvectorBlock(4), rd%RvectorBlock(6), &
-            -rnonlinearSpatialMatrix%Dtau(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(2,2)*dcx, 1.0_DP)
         call lsyssc_scalarMatVec (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD2, &
             rx%RvectorBlock(5), rd%RvectorBlock(6), &
-            -rnonlinearSpatialMatrix%Dtau(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%DBTmat(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -3719,22 +3829,22 @@ contains
       roptcoperator%dupsamDual = rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam
       
       ! Timestep-weights
-      roptcoperator%dprimalAlpha = rnonlinearSpatialMatrix%Dalpha(1,1)
-      roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dalpha(2,2)
+      roptcoperator%dprimalAlpha = rnonlinearSpatialMatrix%Dmass(1,1)
+      roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dmass(2,2)
 
       ! Stokes operator
       roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-      roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dtheta(1,1)
-      roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dtheta(2,2)
+      roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dstokes(1,1)
+      roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dstokes(2,2)
       
       ! Nonlinearity
-      if (rnonlinearSpatialMatrix%Dgamma(1,1) .ne. 0.0_DP) then
-        roptcoperator%dprimalDelta = dweightConvection*rnonlinearSpatialMatrix%Dgamma(1,1)
-        roptcoperator%ddualDelta   = dweightDualConvection*rnonlinearSpatialMatrix%Dgamma(2,2)
-        roptcoperator%ddualNewtonTrans = dweightDualNewtonT*rnonlinearSpatialMatrix%DnewtonT(2,2)
+      if (rnonlinearSpatialMatrix%Dygrad(1,1) .ne. 0.0_DP) then
+        roptcoperator%dprimalDelta = dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1)
+        roptcoperator%ddualDelta   = dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2)
+        roptcoperator%ddualNewtonTrans = dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2)
         
         ! Newton implies additional operators.
-        if (rnonlinearSpatialMatrix%Dnewton(1,1) .ne. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%Dgrady(1,1) .ne. 0.0_DP) then
           roptcoperator%dprimalNewton    = dweightConvection*1.0_DP
           roptcoperator%ddualRDeltaTrans = dweightConvection*1.0_DP
           roptcoperator%ddualRNewton     = dweightConvection*(-1.0_DP)
@@ -3744,11 +3854,11 @@ contains
       
       ! Coupling matrices
       !if (rparams%bdualcoupledtoprimal) then
-        roptcoperator%ddualRAlpha = rnonlinearSpatialMatrix%Dalpha(2,1)
+        roptcoperator%ddualRAlpha = rnonlinearSpatialMatrix%Dmass(2,1)
       !end if
 
       !if (rparams%bcontrolactive) then
-        roptcoperator%dcontrolWeight = -rnonlinearSpatialMatrix%Dalpha(1,2)*rnonlinearSpatialMatrix%dalphaC
+        roptcoperator%dcontrolWeight = -rnonlinearSpatialMatrix%Dmass(1,2)*rnonlinearSpatialMatrix%dalphaC
         roptcoperator%dcontrolMultiplier = -1.0_DP/rnonlinearSpatialMatrix%dalphaC
       !end if
       
@@ -4905,7 +5015,6 @@ contains
     real(dp), dimension(:), allocatable :: Dumin,Dumax
     integer, dimension(:), allocatable :: Ielements
     integer(I32) :: celement
-    real(DP) :: da, db
     integer :: ipt, iel
     
     ! Get a pointer to the FE solution from the collection.
@@ -5103,7 +5212,7 @@ contains
 !<subroutine>
 
   subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3,&
-      rneumannBoundary,rneumannBdOperator)
+      rneumannBoundary,rneumannBdOperator,rdirichletBCCBoundary)
 
 !<description>
   ! Initialises a nonlinear-data structure that defines the nonlinearity
@@ -5126,10 +5235,14 @@ contains
     type(t_vectorBlock), intent(in), target :: rvector3
     
     ! Specifies the Neumann boundary.
-    type(t_neumannBoundary), intent(in), target :: rneumannBoundary
+    type(t_boundaryRegionList), intent(in), target :: rneumannBoundary
     
     ! Template matrix for Neumann boundary integral operators
     type(t_matrixScalar), intent(in), target :: rneumannBdOperator
+
+    ! Specifies the Dirichlet control boundary.
+    type(t_boundaryRegionList), intent(in), target :: rdirichletBCCBoundary
+    
 !</input>
 
 !<inputoutput>
@@ -5145,6 +5258,7 @@ contains
     rnonlinearData%p_rvector3 => rvector3
     rnonlinearData%p_rneumannBoundary => rneumannBoundary
     rnonlinearData%p_rneumannBoundaryOperator => rneumannBdOperator
+    rnonlinearData%p_rdirichletBCCBoundary => rdirichletBCCBoundary
 
   end subroutine
 
@@ -5383,14 +5497,64 @@ contains
   end subroutine
 
   ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsyssc_vectorLinearCombIndexed (rx,ry,cx,cy,Iidx)
+
+!<description>
+  ! Applies a linear combination of parts of two vectors:
+  ! ry = cx * rx  +  cy * ry for all entries listed in Iidx
+!</description>
+
+  ! First source vector
+  type(t_vectorScalar), intent(in) :: rx
+  
+  ! Scaling factor for Dx
+  real(DP), intent(in) :: cx
+
+  ! Scaling factor for Dy
+  real(DP), intent(in) :: cy
+  
+  ! List of entries in rx/ry to process.
+  integer, dimension(:), intent(in) :: Iidx
+!</input>
+
+!<inputoutput>
+  ! Second source vector; also receives the result if rdest is not specified.
+  type(t_vectorScalar), intent(inout), target :: ry
+!</inputoutput>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dsource, p_Ddest
+    integer :: i
+
+    ! Get the pointers and copy the whole data array.
+    call lsyssc_getbase_double(rx,p_Dsource)
+    call lsyssc_getbase_double(ry,p_Ddest)
+    
+    do i=1,size(Iidx)
+      p_Ddest(Iidx(i)) = cx * p_Dsource(Iidx(i)) + cy * p_Ddest(Iidx(i))
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
 
   subroutine fcoeff_neumannbc (rdiscretisationTrial,&
                   rdiscretisationTest, rform, nelements, npointsPerElement,&
                   Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
                   rdomainIntSubset, Dcoefficients, rcollection)
   
+!<description>
   ! Calculates the operator
   !    $$ int_gamma (y n) phi_j phi_i $$
+  ! on the boundary.
+  ! Necessary term on the Neumann boundary in the dual equation,
+  ! otherwise the natural BDC would be wrong.
+!</description>
   
   type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
   type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
@@ -5408,9 +5572,10 @@ contains
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
+!</subroutine>
+
     ! local variables
     integer :: ipt,iel
-    real(DP) :: dn1,dn2
     real(DP), dimension(npointsPerElement,4) :: DtempVal
     type(t_boundary), pointer :: p_rboundary
     real(DP) :: dc
@@ -5455,6 +5620,8 @@ contains
   ! This routine assembles the term
   !    $$ int_gamma (y n) phi_j phi_i $$
   ! on all boundary edges.
+  ! Necessary term on the Neumann boundary in the dual equation,
+  ! otherwise the natural BDC would be wrong.
 !</description>
 
 !<input>
@@ -5466,7 +5633,7 @@ contains
   real(DP), intent(in) :: dc
   
   ! Defines the Neumann boundary segments.
-  type(t_neumannBoundary), intent(in) :: rneumannBoundary
+  type(t_boundaryRegionList), intent(in) :: rneumannBoundary
 !</input>
 
 !<inputoutput>
@@ -5480,7 +5647,7 @@ contains
     integer :: i
     type (t_collection) :: rcollection
     type(t_bilinearForm) :: rform
-    type(t_neumannBdRegion), pointer :: p_rdualNeumannBd
+    type(t_bdRegionEntry), pointer :: p_rdualNeumannBd
     
     !if (dc .eq. 0.0_DP) return
     
@@ -5497,15 +5664,1153 @@ contains
     rform%Dcoefficients(1:rform%itermCount)  = 1.0_DP
     
     ! Assemble the operator on all boundary components in rneumannBoundary.
-    p_rdualNeumannBd => rneumannBoundary%p_rdualNeumannBdHead
+    p_rdualNeumannBd => rneumannBoundary%p_rdualBdHead
     do i = 1,rneumannBoundary%nregionsDual
       ! Set up the matrix.
       call bilf_buildMatrixScalarBdr2D (rform, CUB_G4_1D, .false., &
           rmatrix,fcoeff_neumannbc,p_rdualNeumannBd%rboundaryRegion, rcollection)
 
       ! Next segment
-      p_rdualNeumannBd => p_rdualNeumannBd%p_nextNeumannRegion
+      p_rdualNeumannBd => p_rdualNeumannBd%p_nextBdRegion
     end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcc1 (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+!</subroutine>
+
+    ! local variables
+    integer :: ipt,iel
+    real(DP), dimension(npointsPerElement,2) :: DtempVal
+    type(t_boundary), pointer :: p_rboundary
+    real(DP) :: dc
+    
+    p_rboundary => rdiscretisationTrial%p_rboundary
+    dc = rcollection%DquickAccess(1)
+    
+    ! Evaluate the FEM functions in all the points.
+    do iel=1,nelements
+    
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          p_rboundary, ibct, DpointPar(:,iel), &
+          DtempVal(:,1),DtempVal(:,2),cparType=BDR_PAR_LENGTH)
+
+      do ipt = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(1,ipt,iel) = dc * DtempVal(ipt,1)
+        Dcoefficients(2,ipt,iel) = dc * DtempVal(ipt,2)
+      end do
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcc2 (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+!</subroutine>
+
+    ! local variables
+    integer :: ipt,iel, idim
+    real(DP), dimension(npointsPerElement,2) :: DtempVal
+    type(t_boundary), pointer :: p_rboundary
+    real(DP) :: dc
+    
+    p_rboundary => rdiscretisationTrial%p_rboundary
+    dc = rcollection%DquickAccess(1)
+    
+    ! Dimension. 1=X, 2=Y-direction.
+    idim = rcollection%IquickAccess(1)
+    
+    ! Evaluate the FEM functions in all the points.
+    do iel=1,nelements
+    
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          p_rboundary, ibct, DpointPar(:,iel), &
+          DtempVal(:,1),DtempVal(:,2), cparType=BDR_PAR_LENGTH)
+
+      do ipt = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(1,ipt,iel) = dc * DtempVal(ipt,idim)
+      end do
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcclf1 (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+    
+  !<input>
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    type(t_linearForm), intent(in) :: rform
+    integer, intent(in) :: nelements
+    integer, intent(in) :: npointsPerElement
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    integer, intent(in) :: ibct
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! local variables
+    integer :: ipt,iel
+    real(DP), dimension(npointsPerElement,2) :: DtempVal
+    type(t_boundary), pointer :: p_rboundary
+    real(DP) :: dc
+    
+    p_rboundary => rdiscretisation%p_rboundary
+    dc = rcollection%DquickAccess(1)
+    
+    ! Evaluate the FEM functions in all the points.
+    do iel=1,nelements
+    
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          p_rboundary, ibct, DpointPar(:,iel), &
+          DtempVal(:,1),DtempVal(:,2),cparType=BDR_PAR_LENGTH)
+
+      do ipt = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(1,ipt,iel) = dc * DtempVal(ipt,1)
+        Dcoefficients(2,ipt,iel) = dc * DtempVal(ipt,2)
+      end do
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcclf2 (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+    
+  !<input>
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    type(t_linearForm), intent(in) :: rform
+    integer, intent(in) :: nelements
+    integer, intent(in) :: npointsPerElement
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    integer, intent(in) :: ibct
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+!<subroutine>
+
+    ! local variables
+    integer :: ipt,iel, idim
+    real(DP), dimension(npointsPerElement,2) :: DtempVal
+    type(t_boundary), pointer :: p_rboundary
+    real(DP) :: dc
+    
+    p_rboundary => rdiscretisation%p_rboundary
+    dc = rcollection%DquickAccess(1)
+    
+    ! Dimension. 1=X, 2=Y-direction.
+    idim = rcollection%IquickAccess(1)
+    
+    ! Evaluate the FEM functions in all the points.
+    do iel=1,nelements
+    
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          p_rboundary, ibct, DpointPar(:,iel), &
+          DtempVal(:,1),DtempVal(:,2), cparType=BDR_PAR_LENGTH)
+
+      do ipt = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(1,ipt,iel) = dc * DtempVal(ipt,idim)
+      end do
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcc_primal (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j, iedge, iedgeidx, ivt1, ivt2
+    real(DP) :: dedgelength
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(npointsPerElement,2) :: Dnormal
+    
+    real(DP) :: dc, dnu, dpenalty
+    
+    ! Get parameters from the collection
+    dc = rcollection%DquickAccess(1)
+    dnu = rcollection%DquickAccess(2)
+    dpenalty = rcollection%DquickAccess(3)
+    
+    ! Access to the triangulation
+    call storage_getbase_int (&
+        rdiscretisationTrial%p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    call storage_getbase_int2d (&
+        rdiscretisationTrial%p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    call storage_getbase_double2d (&
+        rdiscretisationTrial%p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    do i=1,nelements
+      do j=1,npointsPerElement
+        ! For every parameter value, fetch the index of the edge in the edge list
+        call tria_searchBoundaryEdgePar2D (ibct,DpointPar(j,i),&
+            rdiscretisationTrial%p_rtriangulation,rdiscretisationTrial%p_rboundary,&
+            iedgeidx,BDR_PAR_LENGTH)
+        
+        ! Get the actual edge number and adjacent vertices
+        iedge = p_IedgesAtBoundary(iedgeidx)
+        ivt1 = p_IverticesAtEdge(1,iedge)
+        ivt2 = p_IverticesAtEdge(2,iedge)
+        
+        ! Calculate the length of the edge. this is our local h for the penalty term
+        dedgelength = &
+            sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 + &
+                  (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2)
+                  
+        ! 1st coefficient: Penalty term
+        Dcoefficients(1,j,i) = dc * dpenalty*dnu/dedgelength
+      end do
+      
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          rdiscretisationTrial%p_rboundary, ibct, DpointPar(:,i), &
+          Dnormal(:,1),Dnormal(:,2),cparType=BDR_PAR_LENGTH)
+
+      ! 2nd/3rd coefficient: normal derivative in the test function
+      do j = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(2,j,i) = dc * (-dnu) * Dnormal(j,1)
+        Dcoefficients(3,j,i) = dc * (-dnu) * Dnormal(j,2)
+      end do
+      
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcc_dual (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j, iedge, iedgeidx, ivt1, ivt2
+    real(DP) :: dedgelength
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(npointsPerElement,2) :: Dnormal
+    
+    real(DP) :: dc, dnu, dpenalty
+    
+    ! Get parameters from the collection
+    dc = rcollection%DquickAccess(1)
+    dnu = rcollection%DquickAccess(2)
+    dpenalty = rcollection%DquickAccess(3)
+    
+    ! Access to the triangulation
+    call storage_getbase_int (&
+        rdiscretisationTrial%p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    call storage_getbase_int2d (&
+        rdiscretisationTrial%p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    call storage_getbase_double2d (&
+        rdiscretisationTrial%p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    do i=1,nelements
+    
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          rdiscretisationTrial%p_rboundary, ibct, DpointPar(:,i), &
+          Dnormal(:,1),Dnormal(:,2),cparType=BDR_PAR_LENGTH)
+
+      do j=1,npointsPerElement
+        ! For every parameter value, fetch the index of the edge in the edge list
+        call tria_searchBoundaryEdgePar2D (ibct,DpointPar(j,i),&
+            rdiscretisationTrial%p_rtriangulation,rdiscretisationTrial%p_rboundary,&
+            iedgeidx,BDR_PAR_LENGTH)
+        
+        ! Get the actual edge number and adjacent vertices
+        iedge = p_IedgesAtBoundary(iedgeidx)
+        ivt1 = p_IverticesAtEdge(1,iedge)
+        ivt2 = p_IverticesAtEdge(2,iedge)
+        
+        ! Calculate the length of the edge. this is our local h for the penalty term
+        dedgelength = &
+            sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 + &
+                  (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2)
+                  
+        ! 1st coefficient: Penalty term
+        Dcoefficients(1,j,i) = dc*Dnormal(j,1) * dpenalty*dnu/dedgelength
+        Dcoefficients(4,j,i) = dc*Dnormal(j,2) * dpenalty*dnu/dedgelength
+      end do
+      
+      ! 2nd/3rd coefficient: normal derivative in the test function
+      do j = 1,npointsPerElement
+        ! c * n
+        Dcoefficients(2,j,i) = dc * Dnormal(j,1) * (-dnu) * Dnormal(j,1)
+        Dcoefficients(3,j,i) = dc * Dnormal(j,1) * (-dnu) * Dnormal(j,2)
+        Dcoefficients(5,j,i) = dc * Dnormal(j,2) * (-dnu) * Dnormal(j,1)
+        Dcoefficients(6,j,i) = dc * Dnormal(j,2) * (-dnu) * Dnormal(j,2)
+      end do
+      
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_dirichletbcc_xi (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+                  rdomainIntSubset, Dcoefficients, rcollection)
+  
+!<description>
+  ! Calculates the operator
+  !    $$ int_gamma c n grad (phi_j) phi_i $$
+  ! Used for Dirichlet boundary control.
+!</description>
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+  type(t_bilinearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, intent(in) :: ibct
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j, iedge, iedgeidx, ivt1, ivt2, idim
+    real(DP) :: dedgelength
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(npointsPerElement,2) :: Dnormal
+    
+    real(DP) :: dc, dnu, dpenalty
+    
+    ! Get parameters from the collection
+    dc = rcollection%DquickAccess(1)
+    dnu = rcollection%DquickAccess(2)
+    dpenalty = rcollection%DquickAccess(3)
+
+    ! Dimension. 1=X, 2=Y-direction.
+    idim = rcollection%IquickAccess(1)
+    
+    ! Access to the triangulation
+    call storage_getbase_int (&
+        rdiscretisationTrial%p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    call storage_getbase_int2d (&
+        rdiscretisationTrial%p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+    call storage_getbase_double2d (&
+        rdiscretisationTrial%p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    do i=1,nelements
+
+      ! Get the normal vector using the boundary object.
+      call boundary_getNormalVec2D_mult(&
+          rdiscretisationTrial%p_rboundary, ibct, DpointPar(:,i), &
+          Dnormal(:,1),Dnormal(:,2),cparType=BDR_PAR_LENGTH)
+
+      do j=1,npointsPerElement
+        ! For every parameter value, fetch the index of the edge in the edge list
+        call tria_searchBoundaryEdgePar2D (ibct,DpointPar(j,i),&
+            rdiscretisationTrial%p_rtriangulation,rdiscretisationTrial%p_rboundary,&
+            iedgeidx,BDR_PAR_LENGTH)
+        
+        ! Get the actual edge number and adjacent vertices
+        iedge = p_IedgesAtBoundary(iedgeidx)
+        ivt1 = p_IverticesAtEdge(1,iedge)
+        ivt2 = p_IverticesAtEdge(2,iedge)
+        
+        ! Calculate the length of the edge. this is our local h for the penalty term
+        dedgelength = &
+            sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 + &
+                  (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2)
+                  
+        ! 1st coefficient: Penalty term
+        Dcoefficients(1,j,i) = dc*Dnormal(j,idim) * dpenalty*dnu/dedgelength
+      
+        ! 2nd/3rd coefficient: normal derivative in the test function
+        
+        ! c * n
+        Dcoefficients(2,j,i) = dc*Dnormal(j,idim) * (-dnu) * Dnormal(j,1)
+        Dcoefficients(3,j,i) = dc*Dnormal(j,idim) * (-dnu) * Dnormal(j,2)
+      end do
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_assembleDirichletBCC (rphysics,rmatrixY1,rmatrixY2,&
+      rmatrixLambda1,rmatrixLambda2,rmatrixGrad1,rmatrixGrad2,dc1,dc2,dc3,&
+      dpenalty,rdirichletBCC)
+
+!<description>
+  ! This routine assembles the term
+  !    $$ int_gamma dc1 y + dc1 n grad(lambda) + dc2 n xi $$
+  ! on all boundary edges.
+  ! This term is crucial for the Dirichlet bonudary control.
+!</description>
+
+!<input>
+  ! Underlying physics
+  type(t_settings_physics) :: rphysics
+
+  ! Multiplier for the mass matrix
+  real(DP), intent(in) :: dc1
+
+  ! Multiplier for the lambda-matrix
+  real(DP), intent(in) :: dc2
+
+  ! Multiplier for the gradient matrix
+  real(DP), intent(in) :: dc3
+  
+  ! Penalty parameter for the Dirichlet boundary conditions
+  real(DP), intent(in) :: dpenalty
+  
+  ! Defines the Boundary segments where to assemble
+  type(t_boundaryRegionList), intent(in) :: rdirichletBCC
+!</input>
+
+!<inputoutput>
+  ! Primal velocity destination matrices
+  type(t_matrixScalar), intent(inout), target :: rmatrixY1,rmatrixY2
+
+  ! Dual velocity destination matrices
+  type(t_matrixScalar), intent(inout), target :: rmatrixLambda1,rmatrixLambda2
+
+  ! Gradient destination matrices (pressure)
+  type(t_matrixScalar), intent(inout), target :: rmatrixGrad1,rmatrixGrad2
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    type(t_bilinearForm) :: rform1,rform2,rform3
+    type(t_bilinearForm) :: rformweak1,rformweak2,rformweak3
+    type(t_linearForm) :: rlinform1,rlinform2,rlinform3
+    type(t_bdRegionEntry), pointer :: p_rdirichletBCCBd
+    type(t_collection) :: rcollection
+    type(t_matrixScalar) :: rmatrixY1temp,rmatrixY2temp
+    type(t_matrixScalar) :: rmatrixLambda1temp,rmatrixLambda2temp
+    type(t_matrixScalar) :: rmatrixGrad1temp,rmatrixGrad2temp
+    integer, dimension(:), allocatable :: Idofs
+    integer :: ndofs
+    
+    ! Cancel if there is nothing to assemble.
+    if ((dc1 .eq. 0.0_DP) .and. (dc2 .eq. 0.0_DP) .and. (dc3 .eq. 0.0_DP)) then
+      return
+    end if
+    
+    ! If any of the matrices is deactivated by its scaliing factor,
+    ! activate it and clear it in advance.
+    if (rmatrixY1%dscaleFactor .eq. 0.0_DP) then
+      rmatrixY1%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixY1)
+    end if
+
+    if (rmatrixY2%dscaleFactor .eq. 0.0_DP) then
+      rmatrixY2%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixY2)
+    end if
+
+    if (rmatrixLambda1%dscaleFactor .eq. 0.0_DP) then
+      rmatrixLambda1%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixLambda1)
+    end if
+
+    if (rmatrixLambda2%dscaleFactor .eq. 0.0_DP) then
+      rmatrixLambda2%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixLambda2)
+    end if
+
+    if (rmatrixGrad1%dscaleFactor .eq. 0.0_DP) then
+      rmatrixGrad1%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixGrad1)
+    end if
+
+    if (rmatrixGrad2%dscaleFactor .eq. 0.0_DP) then
+      rmatrixGrad2%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rmatrixGrad2)
+    end if
+    
+    ! Create temporary copies.
+    call lsyssc_duplicateMatrix (rmatrixY1,rmatrixY1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix (rmatrixY2,rmatrixY2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix (rmatrixLambda1,rmatrixLambda1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix (rmatrixLambda2,rmatrixLambda2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix (rmatrixGrad1,rmatrixGrad1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix (rmatrixGrad2,rmatrixGrad2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    
+!    call lsyssc_clearMatrix (rmatrixY1temp)
+!    call lsyssc_clearMatrix (rmatrixY2temp)
+!    call lsyssc_clearMatrix (rmatrixLambda1temp)
+!    call lsyssc_clearMatrix (rmatrixLambda2temp)
+!    call lsyssc_clearMatrix (rmatrixGrad1temp)
+!    call lsyssc_clearMatrix (rmatrixGrad2temp)
+    
+    ! Assemble the matrices
+    
+    ! Overwrite all rows by zero which do not correspond to
+    ! DOF's on the boundary (HACK!!!)
+    
+    ! Prepare a bilinear form for y
+    rform1%itermCount = 1
+    rform1%Idescriptors(1,1) = DER_FUNC2D
+    rform1%Idescriptors(2,1) = DER_FUNC2D
+    rform1%ballCoeffConstant = .true.
+    rform1%BconstantCoeff(1) = .true.
+    rform1%Dcoefficients(1:rform1%itermCount)  = dc1
+
+    ! Prepare a bilinear form for lambda
+    rform2%itermCount = 2
+    rform2%Idescriptors(1,1) = DER_DERIV2D_X
+    rform2%Idescriptors(2,1) = DER_FUNC2D
+    rform2%Idescriptors(1,2) = DER_DERIV2D_Y
+    rform2%Idescriptors(2,2) = DER_FUNC2D
+    rform2%ballCoeffConstant = .false.
+    rform2%BconstantCoeff(:) = .false.
+    rform2%Dcoefficients(1:rform2%itermCount)  = 1.0_DP
+    
+    ! Prepare a bilinear form for p
+    rform3%itermCount = 1
+    rform3%Idescriptors(1,1) = DER_FUNC2D
+    rform3%Idescriptors(2,1) = DER_FUNC2D
+    rform3%ballCoeffConstant = .false.
+    rform3%BconstantCoeff(1) = .false.
+    rform3%Dcoefficients(1:rform3%itermCount)  = 1.0_DP
+
+!    ! Prepare a linear form for y
+!    rlinform1%itermCount = 1
+!    rlinform1%Idescriptors(1) = DER_FUNC2D
+!    rlinform1%Dcoefficients(1:rlinform1%itermCount)  = dc1
+!
+!    ! Prepare a linear form for lambda
+!    rlinform2%itermCount = 2
+!    rlinform2%Idescriptors(1) = DER_DERIV2D_X
+!    rlinform2%Idescriptors(2) = DER_DERIV2D_Y
+!    rlinform2%Dcoefficients(1:rlinform2%itermCount)  = 1.0_DP
+!   
+!    ! Prepare a linear form for p
+!    rlinform3%itermCount = 1
+!    rlinform3%Idescriptors(1) = DER_FUNC2D
+!    rlinform3%Dcoefficients(1:rform3%itermCount)  = 1.0_DP
+
+    ! Prepare a bilinear form for y
+    rformweak1%itermCount = 3
+    rformweak1%Idescriptors(1,1) = DER_FUNC2D
+    rformweak1%Idescriptors(2,1) = DER_FUNC2D
+    rformweak1%Idescriptors(1,2) = DER_FUNC2D
+    rformweak1%Idescriptors(2,2) = DER_DERIV2D_X
+    rformweak1%Idescriptors(1,3) = DER_FUNC2D
+    rformweak1%Idescriptors(2,3) = DER_DERIV2D_Y
+    rformweak1%ballCoeffConstant = .false.
+    rformweak1%BconstantCoeff(1:rformweak1%itermCount) = .false.
+    rformweak1%Dcoefficients(1:rformweak1%itermCount)  = 1.0_DP
+
+    ! Prepare a bilinear form for lambda
+    rformweak2%itermCount = 6
+    rformweak2%Idescriptors(1,1) = DER_DERIV2D_X
+    rformweak2%Idescriptors(2,1) = DER_FUNC2D
+    
+    rformweak2%Idescriptors(1,2) = DER_DERIV2D_X
+    rformweak2%Idescriptors(2,2) = DER_DERIV2D_X
+    
+    rformweak2%Idescriptors(1,3) = DER_DERIV2D_X
+    rformweak2%Idescriptors(2,3) = DER_DERIV2D_Y
+    
+    rformweak2%Idescriptors(1,4) = DER_DERIV2D_Y
+    rformweak2%Idescriptors(2,4) = DER_FUNC2D
+    
+    rformweak2%Idescriptors(1,5) = DER_DERIV2D_Y
+    rformweak2%Idescriptors(2,5) = DER_DERIV2D_X
+    
+    rformweak2%Idescriptors(1,6) = DER_DERIV2D_Y
+    rformweak2%Idescriptors(2,6) = DER_DERIV2D_Y
+    
+    rformweak2%ballCoeffConstant = .false.
+    rformweak2%BconstantCoeff(1:rformweak2%itermCount) = .false.
+    rformweak2%Dcoefficients(1:rformweak2%itermCount)  = 1.0_DP
+
+    ! Prepare a bilinear form for p
+    rformweak3%itermCount = 3
+    rformweak3%Idescriptors(1,1) = DER_FUNC2D
+    rformweak3%Idescriptors(2,1) = DER_FUNC2D
+    rformweak3%Idescriptors(1,2) = DER_FUNC2D
+    rformweak3%Idescriptors(2,2) = DER_DERIV2D_X
+    rformweak3%Idescriptors(1,3) = DER_FUNC2D
+    rformweak3%Idescriptors(2,3) = DER_DERIV2D_Y
+    rformweak3%ballCoeffConstant = .false.
+    rformweak3%BconstantCoeff(1) = .false.
+    rformweak3%Dcoefficients(1:rformweak3%itermCount)  = 1.0_DP
+
+    ! Assemble the operator on all boundary components in rneumannBoundary.
+    p_rdirichletBCCBd => rdirichletBCC%p_rprimalBdHead
+    
+    do i = 1,rdirichletBCC%nregionsPrimal
+
+
+      ! Get the DOF's in that segment
+      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
+          p_rdirichletBCCBd%rboundaryRegion,ndofs=ndofs)
+      
+      ! Allocate memory if not done already.
+      if (.not. allocated(Idofs)) allocate (Idofs(ndofs))
+      if (size (Idofs) .lt. ndofs) then
+        deallocate (Idofs)
+        allocate (Idofs(ndofs))
+      end if
+
+      ! Calculate the DOF`s which are affected.          
+      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
+          p_rdirichletBCCBd%rboundaryRegion,IdofsArray=Idofs)
+
+!      ! ------------------------------
+!      ! Weak implementation of the BCC
+!      ! ------------------------------
+!      
+!      ! Set up the matrix. Primal velocity.
+!      
+!      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+!          rmatrixY1Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+!      
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        ! Second matrix if not identical to the first one.
+!        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+!            rmatrixY2Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+!      end if
+!      
+!      ! Dual velocity.
+!
+!      rcollection%DquickAccess(1) = dc2
+!
+!      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+!          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!          rcollection=rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        ! Second matrix if not identical to the first one.
+!        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+!            rmatrixLambda2Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!            rcollection=rcollection)
+!      end if
+!
+!      ! Pressure
+!      rcollection%DquickAccess(1) = dc3
+!
+!      ! X-derivative
+!      rcollection%IquickAccess(1) = 1
+!
+!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+!          rmatrixGrad1Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+!
+!      ! Y-derivative
+!      rcollection%IquickAccess(1) = 2
+!
+!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+!          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+
+!      ! --------------------------------
+!      ! Strong implementation of the BCC
+!      ! --------------------------------
+!
+!      ! Clear the rows in the matrix which are affected.
+!      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
+!
+!      ! Set up the matrix. Primal velocity.
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform1,rmatrixY1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        ! Second matrix if not identical to the first one.
+!        call linf_getBoundaryOperatorMatrix (&
+!            rlinform1,rmatrixY2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+!      end if
+!
+!      ! Dual velocity.
+!
+!      rcollection%DquickAccess(1) = dc2
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform2,rmatrixLambda1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf1,rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        ! Second matrix if not identical to the first one.
+!        call linf_getBoundaryOperatorMatrix (&
+!            rlinform2,rmatrixLambda2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!            fcoeff_dirichletbcclf1,rcollection)
+!      end if
+!
+!      ! Pressure
+!      rcollection%DquickAccess(1) = dc3
+!
+!      ! X-derivative
+!      rcollection%IquickAccess(1) = 1
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform3,rmatrixGrad1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf2,rcollection)
+!
+!      ! Y-derivative
+!      rcollection%IquickAccess(1) = 2
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf2,rcollection)
+
+      ! ------------------------------------------
+      ! Alternative Weak implementation of the BCC
+      ! ------------------------------------------
+      
+      ! Set up the matrix. Primal velocity.
+      
+      rcollection%DquickAccess(1) = dc1
+      rcollection%DquickAccess(2) = rphysics%dnu
+      rcollection%DquickAccess(3) = dpenalty
+      
+      call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .true., &
+          rmatrixY1Temp,fcoeff_dirichletbcc_primal,&
+          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+          rcollection=rcollection)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+        call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .true., &
+            rmatrixY2Temp,fcoeff_dirichletbcc_primal,&
+            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+            rcollection=rcollection)
+      end if
+
+      ! Set up the matrix. Dual velocity.
+      
+      rcollection%DquickAccess(1) = dc2
+      rcollection%DquickAccess(2) = rphysics%dnu
+      
+      call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .true., &
+          rmatrixLambda1Temp,fcoeff_dirichletbcc_dual,&
+          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+          rcollection=rcollection)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+        call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .true., &
+            rmatrixLambda2Temp,fcoeff_dirichletbcc_dual,&
+            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+            rcollection=rcollection)
+      end if
+
+      ! Pressure
+      rcollection%DquickAccess(1) = dc3
+
+      ! X-derivative
+      rcollection%IquickAccess(1) = 1
+
+      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .true., &
+          rmatrixGrad1Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+      ! Y-derivative
+      rcollection%IquickAccess(1) = 2
+
+      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .true., &
+          rmatrixGrad2Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+      ! ----------------------------------------
+      ! Imponsing of the control to the matrices
+      ! ----------------------------------------
+
+      ! Sum up the matrices
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP)!0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+
+
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixY1temp,rmatrixY1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixY2temp,rmatrixY2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+          
+      ! Next segment
+      p_rdirichletBCCBd => p_rdirichletBCCBd%p_nextBdRegion
+    end do
+
+    ! Release memory
+    if (allocated(Idofs)) deallocate (Idofs)
+
+    ! Release the temporary copies.
+    call lsyssc_releaseMatrix (rmatrixY1temp)
+    call lsyssc_releaseMatrix (rmatrixY2temp)
+    call lsyssc_releaseMatrix (rmatrixLambda1temp)
+    call lsyssc_releaseMatrix (rmatrixLambda2temp)
+    call lsyssc_releaseMatrix (rmatrixGrad1temp)
+    call lsyssc_releaseMatrix (rmatrixGrad2temp)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsyssc_matrixLinearCombIndexed (rmatrixA,rmatrixB,ca,cb,Irows)
+
+    !<description>
+    ! Performs a linear combination:
+    !   rmatrixB = ca*rmatrixA + cB*rmatrixB
+    !
+    ! Only those rows indexed by Irows are processed. 
+    ! Both matrices must have the same matrix format and structure.
+    ! </description>
+
+!<input>
+    ! Source matrix
+    type(t_matrixScalar), intent(in) :: rmatrixA
+
+    ! scaling factors
+    real(DP), intent(in) :: ca,cb
+
+    ! OPTIONAL: List of rows to be processed.
+    ! If not specified, all rows are processed.
+    integer, dimension(:), intent(in), optional :: Irows
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Destination matrix.
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrixB
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
+    integer, dimension(:), pointer :: p_Kld
+    integer :: i,j
+
+    ! Check if all matrices are compatible
+    if ((rmatrixA%NEQ   .ne. rmatrixB%NEQ) .or.&
+        (rmatrixA%NCOLS .ne. rmatrixB%NCOLS)) then
+      call output_line("Number of rows/columns is not compatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+
+    ! Matrices must have the same formatcmatrixFormat
+    if (rmatrixA%cmatrixFormat   .ne. rmatrixB%cmatrixFormat) then
+      call output_line("Matrices have different format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+
+    ! Check if all matrices have the same sorting
+    if (rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) then
+      call output_line("Sorting strategies are incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+
+    ! Check if destination matrix has compatible data type
+    if ((rmatrixA%cdatatype .ne. ST_DOUBLE) .or.&
+        (rmatrixB%cdatatype .ne. ST_DOUBLE)) then
+      call output_line("Data type of destination matrix not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+    
+    select case (rmatrixA%cmatrixFormat)
+    case (LSYSSC_MATRIX9)
+
+      select case (rmatrixA%cmatrixFormat)
+      case (LSYSSC_MATRIX9)
+      
+        ! Get the data pointers
+        call lsyssc_getbase_double (rmatrixA,p_Ddata1)
+        call lsyssc_getbase_double (rmatrixB,p_Ddata2)
+        call lsyssc_getbase_Kld (rmatrixA,p_Kld)
+        
+        ! Linear combination of the rows
+        if (present(Irows)) then
+          ! Subset of the rows
+          if ((ca .eq. 0.0_DP) .and. (cb .eq. 0.0_DP)) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i+1)-1)
+                p_Ddata2(j) = 0.0_DP
+              end do
+            end do
+          else if (ca .eq. 0.0_DP) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = cb * p_Ddata2(j)
+              end do
+            end do
+          else if (cb .eq. 0.0_DP) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = ca * p_Ddata1(j)
+              end do
+            end do
+          else
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = ca * p_Ddata1(j) + cb * p_Ddata2(j)
+              end do
+            end do
+          end if
+        
+        else
+        
+          ! All rows
+          if ((ca .eq. 0.0_DP) .and. (cb .eq. 0.0_DP)) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = 0.0_DP
+            end do
+          else if (ca .eq. 0.0_DP) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = cb * p_Ddata2(j)
+            end do
+          else if (cb .eq. 0.0_DP) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = ca * p_Ddata1(j)
+            end do
+          else
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = ca * p_Ddata1(j) + cb * p_Ddata2(j)
+            end do
+          end if
+        end if        
+      
+      case default
+        call output_line(&
+            "Combination of source and destination matrix format not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+        call sys_halt()
+      end select
+
+    case default
+      call output_line(&
+          "Combination of source and destination matrix format not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end select      
 
   end subroutine
 
@@ -5526,20 +6831,23 @@ contains
   
 !</subroutine>
 
-    rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dalpha(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtheta(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dgamma(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton2(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT2(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DnewtonT(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Deta(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtau(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%Dkappa(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DidentityY(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dmass(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dstokes(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dygrad(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgrady(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgrady2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradT2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DBmat(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DBTmat(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DidentityP(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCY(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCLambda(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCXi(:,:) = 0.0_DP
 
   end subroutine
 
@@ -5572,20 +6880,1423 @@ contains
 !</subroutine>
 
     ! Clear the coefficients
-    rnonlinearSpatialMatrix%Diota(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dalpha(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtheta(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dgamma(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dnewton2(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DgammaT2(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DnewtonT(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Deta(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dtau(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%Dkappa(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DidentityY(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dmass(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dstokes(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dygrad(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgrady(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgrady2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradT2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DBmat(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DBTmat(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DidentityP(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DdualBdIntegral(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DdualBdIntegralNewton(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCY(irow,icolumn)= 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCLambda(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DdirichletBCCXi(irow,icolumn) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine elem_getNodeFunctional (celement,idof,npoints,DrefCoords,Dweights)
+
+!<description>
+  ! This routine calculates for an element and a local degree of freedom
+  ! the so-called `node-functional`. A `node functional` is a set of points
+  ! and corresponding weights which allow to calculate a degree of freedom
+  ! by evaluation in special points.
+  !
+  ! In DrefCoords, the routine returns the coordinates of npoints points on
+  ! the reference element, in combination with npoints weights in Dweights.
+  ! Multiplying the function values at the coordinates DrefCoords with
+  ! the weights in Dweights and summing them up gives the value of the
+  ! degree of freedom idof.
+  !
+  ! Example: For Q1, the coordinates of the idof`th corner are returned,
+  ! the weights are 1.0.
+  ! For the integral mean value based element Q1tilde, the coordinates of
+  ! the 2-pt Gauss Formula on the idof`th edge are returned, the weights
+  ! are the cubature weights for the 2-point Gauss Formula on that line.
+!</description>
+
+!<input>
+  ! Element identifier
+  integer(I32), intent(in) :: celement
+  
+  ! Number of the degree of freedom which `node functional` should be calculated
+  integer, intent(in) :: idof
+  
+!</input>
+
+!<output>
+  ! Number of points that represent the `node functional`
+  integer, intent(out) :: npoints
+  
+  ! OPTIONAL: Coordinates of the points representing the `node functional`.
+  ! The array must be large rnough.
+  ! By calling this routine without DrefCoords and Dweights being specified,
+  ! the number of points representing the `node functional` can be obtained.
+  real(DP), dimension(:,:), intent(out), optional :: DrefCoords
+  
+  ! OPTIONAL: Weights representing the node functional.
+  ! Multiplying these weights with function values at the points in DrefCoords
+  ! gives the value of the degree of freedom idof.
+  ! Must be specified if DrefCoords is specified.
+  real(DP), dimension(:), intent(out), optional :: Dweights
+!</output>
+
+!</subroutine>
+
+    ! Position of cubature points for 2-point Gauss formula on an edge.
+    ! Used for Q2T.
+    real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
+    real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
+
+    select case (elem_getPrimaryElement(celement))
+    
+    ! -= 1D Line Elements =-
+    case (EL_P0_1D,EL_DG_T0_1D)
+    
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        DrefCoords(1,1) =  0.0_DP
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_P1_1D,EL_DG_T1_1D)
+
+      ! Point evaluation
+      npoints = 2
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,1) =  1.0_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_P2_1D,EL_DG_T2_1D)
+
+      ! Point evaluation
+      npoints = 3
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,1) =  1.0_DP
+        case (3)
+          DrefCoords(1,1) =  0.0_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_S31_1D)
+
+      ! Point evaluation
+      npoints = 4
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,1) =  1.0_DP
+        case (3)
+          DrefCoords(1,1) = -1.0_DP
+        case (4)
+          DrefCoords(1,1) =  1.0_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+      
+    ! -= 2D Triangle Elements =-
+    case (EL_P0)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        DrefCoords(1,1) = 1.0_DP/3.0_DP
+        DrefCoords(2,1) = 1.0_DP/3.0_DP
+        DrefCoords(3,1) = 1.0_DP/3.0_DP
+        Dweights(1) = 1.0_DP
+      end if
+
+    case (EL_P1)
+
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = 1.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (2)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 1.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (3)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 1.0_DP
+        end select
+
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_P2)
+
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = 1.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (2)
+          DrefCoords(1,2) = 0.0_DP
+          DrefCoords(2,1) = 1.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (3)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 1.0_DP
+        case (4)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (5)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.5_DP
+        case (6)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.5_DP
+        end select
+        Dweights(1) = 1.0_DP
+
+      end if
+      
+    case (EL_P3)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = 1.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (2)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 1.0_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (3)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 1.0_DP
+        case (4)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (5)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.5_DP
+        case (6)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.5_DP
+        case (7)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (8)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.5_DP
+        case (9)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.5_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_P1T)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.0_DP
+        case (2)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.5_DP
+          DrefCoords(3,1) = 0.5_DP
+        case (3)
+          DrefCoords(1,1) = 0.5_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.5_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+
+    ! -= 2D Quadrilateral Elements =-
+    case (EL_Q0)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        DrefCoords(1,1) = 0.0_DP
+        DrefCoords(2,1) = 0.0_DP
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_Q1,EL_DG_Q1_2D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,1) =  1.0_DP
+          DrefCoords(2,1) = -1.0_DP
+        case (3)
+          DrefCoords(1,1) =  1.0_DP
+          DrefCoords(2,1) =  1.0_DP
+        case (4)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) =  1.0_DP
+        end select
+        Dweights(1) = 1.0_DP
+      end if
+
+    case (EL_Q2,EL_DG_Q2_2D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,1) =  1.0_DP
+          DrefCoords(2,1) = -1.0_DP
+        case (3)
+          DrefCoords(1,1) =  1.0_DP
+          DrefCoords(2,1) =  1.0_DP
+        case (4)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) =  1.0_DP
+        case (5)
+          DrefCoords(1,1) =  0.0_DP
+          DrefCoords(2,1) = -1.0_DP
+        case (6)
+          DrefCoords(1,1) =  1.0_DP
+          DrefCoords(2,1) =  0.0_DP
+        case (7)
+          DrefCoords(1,1) =  0.0_DP
+          DrefCoords(2,1) =  1.0_DP
+        case (8)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) =  0.0_DP
+        case (9)
+          DrefCoords(1,1) =  0.0_DP
+          DrefCoords(2,1) =  0.0_DP
+        end select
+        
+        Dweights(1) = 1.0_DP
+      end if
+        
+    case (EL_QP1)
+      DrefCoords      = 0.0_DP
+      
+      ! Not yet implemented
+      call sys_halt()      
+      
+    case (EL_Q1T)
+      if (iand(celement,int(2**16,I32)) .eq. 0) then
+        ! Conformal element.
+        !
+        ! Point evaluation
+        npoints = 1
+        if (present(DrefCoords)) then
+          select case (idof)
+          case (1)
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) = -1.0_DP
+          case (2)
+            DrefCoords(1,1) =  1.0_DP
+            DrefCoords(2,1) =  0.0_DP
+          case (3)
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) =  1.0_DP
+          case (4)
+            DrefCoords(1,1) = -1.0_DP
+            DrefCoords(2,1) =  0.0_DP
+          end select
+          
+          Dweights(1) = 1.0_DP
+        end if
+
+      else 
+      
+        ! Nonconformal element.
+        !
+        ! Use 2-point Gauss formula which calculated the integral mean value.
+        npoints = 2
+        if (present(DrefCoords)) then
+          select case (idof)
+          case (1)
+            DrefCoords(1,1) =  Q2G1
+            DrefCoords(2,1) = -1.0_DP
+            DrefCoords(1,2) =  Q2G2
+            DrefCoords(2,2) = -1.0_DP
+          case (2)
+            DrefCoords(1,1) =  1.0_DP
+            DrefCoords(2,1) =  Q2G1
+            DrefCoords(1,2) =  1.0_DP
+            DrefCoords(2,2) =  Q2G2
+          case (3)
+            DrefCoords(1,1) =  Q2G2
+            DrefCoords(2,1) =  1.0_DP
+            DrefCoords(1,2) =  Q2G1
+            DrefCoords(2,2) =  1.0_DP
+          case (4)
+            DrefCoords(1,1) = -1.0_DP
+            DrefCoords(2,1) =  Q2G2
+            DrefCoords(1,2) = -1.0_DP
+            DrefCoords(2,2) =  Q2G1
+          end select
+          
+          Dweights(1) = 0.5_DP
+          Dweights(2) = 0.5_DP
+        end if
+      end if
+      
+    case (EL_Q1TB)
+      if (iand(celement,int(2**16,I32)) .eq. 0) then
+        ! Conformal element.
+        !
+        ! Point evaluation
+        npoints = 1
+        if (present(DrefCoords)) then
+          select case (idof)
+          case (1)
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) = -1.0_DP
+          case (2)
+            DrefCoords(1,1) =  1.0_DP
+            DrefCoords(2,1) =  0.0_DP
+          case (3)
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) =  1.0_DP
+          case (4)
+            DrefCoords(1,1) = -1.0_DP
+            DrefCoords(2,1) =  0.0_DP
+          case (5)
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) =  0.0_DP
+          end select
+          
+          Dweights(1) = 1.0_DP
+        end if
+
+      else 
+      
+        ! Nonconformal element.
+        !
+        ! Use 2-point Gauss formula which calculated the integral mean value.
+        npoints = 2
+        if (present(DrefCoords)) then
+          select case (idof)
+          case (1)
+            DrefCoords(1,1) =  Q2G1
+            DrefCoords(2,1) = -1.0_DP
+            DrefCoords(1,2) =  Q2G2
+            DrefCoords(2,2) = -1.0_DP
+
+            Dweights(1) = 0.5_DP
+            Dweights(2) = 0.5_DP
+          case (2)
+            DrefCoords(1,1) =  1.0_DP
+            DrefCoords(2,1) =  Q2G1
+            DrefCoords(1,2) =  1.0_DP
+            DrefCoords(2,2) =  Q2G2
+
+            Dweights(1) = 0.5_DP
+            Dweights(2) = 0.5_DP
+          case (3)
+            DrefCoords(1,1) =  Q2G2
+            DrefCoords(2,1) =  1.0_DP
+            DrefCoords(1,2) =  Q2G1
+            DrefCoords(2,2) =  1.0_DP
+
+            Dweights(1) = 0.5_DP
+            Dweights(2) = 0.5_DP
+          case (4)
+            DrefCoords(1,1) = -1.0_DP
+            DrefCoords(2,1) =  Q2G2
+            DrefCoords(1,2) = -1.0_DP
+            DrefCoords(2,2) =  Q2G1
+
+            Dweights(1) = 0.5_DP
+            Dweights(2) = 0.5_DP
+          case (5)
+            ! Centre: Point value
+            npoints = 1
+            DrefCoords(1,1) =  0.0_DP
+            DrefCoords(2,1) =  0.0_DP
+
+            Dweights(1) = 1.0_DP
+          end select
+          
+        end if
+      end if
+      
+    ! -= 3D Tetrahedron Elements =-
+    case (EL_P0_3D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        DrefCoords(1,1) = 1.0_DP/3.0_DP
+        DrefCoords(2,1) = 1.0_DP/3.0_DP
+        DrefCoords(3,1) = 1.0_DP/3.0_DP
+        
+        DrefCoords(4,1) = 1.0_DP/3.0_DP
+        Dweights(1) = 1.0_DP
+      end if
+      
+    case (EL_P1_3D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = 1.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.0_DP
+          DrefCoords(4,1) = 0.0_DP
+        case (2)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 1.0_DP
+          DrefCoords(3,1) = 0.0_DP
+          DrefCoords(4,1) = 0.0_DP
+        case (3)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 1.0_DP
+          DrefCoords(4,1) = 0.0_DP
+        case (4)
+          DrefCoords(1,1) = 0.0_DP
+          DrefCoords(2,1) = 0.0_DP
+          DrefCoords(3,1) = 0.0_DP
+          DrefCoords(4,1) = 1.0_DP
+        end select
+        
+        Dweights(1) = 1.0_DP
+      end if
+          
+    ! -= 3D Hexahedron Elements =-
+    case (EL_Q0_3D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        DrefCoords(1,1) = 0.0_DP
+        DrefCoords(2,1) = 0.0_DP
+        DrefCoords(3,1) = 0.0_DP
+        Dweights(1) = 1.0_DP
+      end if
+
+    case (EL_Q1_3D)
+      ! Point evaluation
+      npoints = 1
+      if (present(DrefCoords)) then
+        select case (idof)
+        case (1)
+          DrefCoords(1,1) = -1.0_DP
+          DrefCoords(2,1) = -1.0_DP
+          DrefCoords(3,1) = -1.0_DP
+        case (2)
+          DrefCoords(1,2) =  1.0_DP
+          DrefCoords(2,2) = -1.0_DP
+          DrefCoords(3,2) = -1.0_DP
+        case (3)
+          DrefCoords(1,3) =  1.0_DP
+          DrefCoords(2,3) =  1.0_DP
+          DrefCoords(3,3) = -1.0_DP
+        case (4)
+          DrefCoords(1,4) = -1.0_DP
+          DrefCoords(2,4) =  1.0_DP
+          DrefCoords(3,4) = -1.0_DP
+        case (5)
+          DrefCoords(1,5) = -1.0_DP
+          DrefCoords(2,5) = -1.0_DP
+          DrefCoords(3,5) =  1.0_DP
+        case (6)
+          DrefCoords(1,6) =  1.0_DP
+          DrefCoords(2,6) = -1.0_DP
+          DrefCoords(3,6) =  1.0_DP
+        case (7)
+          DrefCoords(1,7) =  1.0_DP
+          DrefCoords(2,7) =  1.0_DP
+          DrefCoords(3,7) =  1.0_DP
+        case (8)
+          DrefCoords(1,8) = -1.0_DP
+          DrefCoords(2,8) =  1.0_DP
+          DrefCoords(3,8) =  1.0_DP
+        end select
+        
+        Dweights(1) = 1.0_DP
+      end if
+
+    ! -= 3D Pyramid Elements =-
+    
+    ! -= 3D Prism Elements =-
+      
+    case default
+      call output_line ("Unsupported element.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"elem_getNodeFunctional")
+        call sys_halt()
+    end select
+
+  end subroutine
+
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine linf_getBoundaryOperatorMatrix (rlinform,rmatrix,bclear,rboundaryRegion,&
+      fcoeff_buildVectorScBdr2D_sim,rcollection)
+
+!<description>
+  ! For a given set of degrees of freedom, this routine calculates the matrix
+  ! of an operator rlinform if being applied to a finite element vector:
+  ! Multiplying the matrix rmatrix with a finite element vector x realises
+  ! the application of the operator rlinform to the underlying finite element
+  ! function in strong form in the boundary refion rboundaryRegion.
+!</description>
+
+!<input>
+  ! The operator to be realised in matrix form
+  type(t_linearForm), intent(in) :: rlinform
+
+  ! Whether or not to clear the matrix in advance.
+  logical, intent(in) :: bclear
+  
+  ! Boundary region where the operator is applied.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+  
+  ! OPTIONAL: Coefficient function
+  include 'intf_coefficientVectorScBdr2D.inc'
+  optional :: fcoeff_buildVectorScBdr2D_sim
+  
+  ! OPTIONAL: Collection passed to the coefficient function
+  type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<inputoutput>
+  ! Matrix to be modified.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! lcoal variables
+    integer, dimension(:), allocatable :: IdofsAtBoundary
+    integer :: ndofs, idofidx
+    
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    
+    integer(I32) :: celementTrial,celementTest
+    integer :: iderType
+    real(DP), dimension(2,2,1) :: DrefCoords,DrealCoords
+    real(DP), dimension(2) :: Dweights
+    real(DP), dimension(2,2,1) :: Dcoefficients
+    integer, dimension(32,1), target :: IdofGlobTrial,IdofGlobTest
+    real(DP), dimension(2,1) :: DpointPar
+    integer :: ndofLocTrial,ndofLocTest,idoflocTrial,idofLocTest,npoints,nve,ipoint
+    
+    integer :: nel,ielidx,iel,i,i1,ia
+    integer, dimension(:), allocatable, target :: Ielements, Iedges
+
+    ! Transformation
+    integer(I32) :: ctrafoType
+    real(DP), dimension(TRAFO_MAXDIMREFCOORD) :: DparPoint
+    real(DP) :: dpar1, dpar2
+    
+    ! Triangulation
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer :: nvt, iedge
+    
+    ! Values of basis functions and DOF`s
+    real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+    logical, dimension(EL_MAXNDER) :: Bder
+
+    ! Evaluation structure and tag
+    type(t_evalElement) :: revalElement
+    integer(I32) :: cevaluationTag
+    type(t_domainIntSubset) :: rintSubset
+
+      ! Probably clear the matrix
+      if (bclear) then
+        call lsyssc_clearMatrix (rmatrix)
+      end if
+
+      ! Get information about the matrix.
+      
+      ! Matrix format 9.
+      call lsyssc_getbase_double (rmatrix,p_Ddata)
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld)
+      
+      ! Information from the triangulation
+      call storage_getbase_int2d (&
+          rmatrix%p_rspatialDiscrTrial%p_rtriangulation%h_IedgesAtElement,&
+          p_IedgesAtElement)
+      call storage_getbase_double (&
+          rmatrix%p_rspatialDiscrTrial%p_rtriangulation%h_DvertexParameterValue,&
+          p_DvertexParameterValue)
+      nvt = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NVT
+      
+      ! Which derivatives of basis functions are needed?
+      ! Check the descriptors of the linear form and set BDERxxxx
+      ! according to these.
+      Bder(:) = .false.
+      
+      ! Loop through the additive terms
+      do i = 1,rlinform%itermCount
+        ! The desriptor Idescriptors gives directly the derivative
+        ! which is to be computed! Build templates for BDER.
+        ! We do not compute the actual BDER here, as there might be some special
+        ! processing if trial/test functions are identical!
+        !
+        ! At first build the descriptors for the trial functions
+        i1 = rlinform%Idescriptors(i)
+        
+        if ((i1 .le.0) .or. (i1 .gt. DER_MAXNDER)) then
+          call output_line ("Invalid descriptor!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"linf_getBoundaryOperatorMatrix")
+          call sys_halt()
+        endif
+        
+        Bder(i1)=.true.
+      end do
+      
+      ! Allocate memory if not done already.
+      ! Calculate the DOF`s which are affected.
+      call bcasm_getDOFsInBDRegion (rmatrix%p_rspatialDiscrTest,&
+          rboundaryRegion,ndofs=ndofs)
+
+      allocate (IdofsAtBoundary(ndofs))
+      call bcasm_getDOFsInBDRegion (rmatrix%p_rspatialDiscrTest,&
+          rboundaryRegion,ndofs=ndofs,IdofsArray=IdofsAtBoundary)
+
+      ! Get a list of cells in the boundary region
+      call bcasm_getElementsInBdRegion (&
+          rmatrix%p_rspatialDiscrTrial%p_rtriangulation,rboundaryRegion,nel)
+      allocate (Ielements(nel))
+      allocate (Iedges(nel))
+      call bcasm_getElementsInBdRegion (&
+          rmatrix%p_rspatialDiscrTrial%p_rtriangulation,rboundaryRegion,nel,&
+          Ielements,IedgeLocal=Iedges)
+      
+      do i = 1,nel
+        ! Calculate the actual edge numbers
+        iedge = p_IedgesAtElement(Iedges(i),Ielements(i))
+        
+        ! Find the position of the edge on the boundary.
+        call tria_searchBoundaryEdge(iedge, &
+            rmatrix%p_rspatialDiscrTrial%p_rtriangulation, Iedges(i))
+      end do
+      
+      ! Get information about the FEM space
+      celementTrial = rmatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
+      celementTest = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+      ndofLocTrial = elem_igetNDofLoc(celementTrial)
+      ndofLocTest = elem_igetNDofLoc(celementTest)
+      nve = elem_igetNVE(celementTrial)
+      ctrafoType = elem_igetTrafoType(celementTrial)
+      cevaluationTag = elem_getEvaluationTag(celementTrial)
+     
+      ! The weights are =1 by default, only changed if
+      ! the coefficients are nonconstant.
+      Dcoefficients(:,:,:) = 1.0_DP
+     
+      ! Simultaneously loop over the DOF`s and the cells on the boundary
+      idofidx = 1
+      ielidx = 1
+      do
+        ! Stop if there is no call or DOF available anymore
+        if ((idofidx .gt. ndofs) .or. (ielidx .gt. nel)) exit
+        
+        ! Get the DOF`s of the test element. These are the columns in
+        ! the matrix to be modified.
+        call dof_locGlobMapping(rmatrix%p_rspatialDiscrTrial, &
+            Ielements(ielidx), IdofGlobTrial(:,1))
+        
+        ! Get the DOF`s of the test element. These are the rows in
+        ! the matrix to be modified.
+        call dof_locGlobMapping(rmatrix%p_rspatialDiscrTest, &
+            Ielements(ielidx), IdofGlobTest(:,1))
+        
+        ! Figure out the local DOF of the current global DOF
+        ! on the boundary.
+        do idoflocTest = 1,ndoflocTest
+          if (IdofGlobTest(idoflocTest,1) .eq. IdofsAtBoundary(idofidx)) exit
+        end do
+        
+        ! Not found -> next element, repeat
+        if (idoflocTest .gt. ndoflocTest) then
+          ielidx = ielidx + 1
+          cycle
+        end if
+        
+        ! Otherwise, the local DOF is found.
+        !
+        ! Calculate the node functional of that point.
+        ! The test space specifies the way to evaluate.
+        call elem_getNodeFunctional (celementTest,idoflocTest,npoints,DrefCoords(:,:,1),Dweights)
+        
+        ! If a callback function is given, calculate the weights in the points.
+        if (present(fcoeff_buildVectorScBdr2D_sim)) then
+          ! Approximate the parameter values of the points.
+          ! Take the start parameter value of the edge of the current element
+          ! and add the position of the point to get an approximate parameter value.
+          
+          ! Start/end parameter value of the edge
+          dpar1 = p_DvertexParameterValue(Iedges(ielidx))
+          if (Iedges(ielidx) .lt. size (p_DvertexParameterValue)) then
+            dpar2 = p_DvertexParameterValue(Iedges(ielidx)+1)
+          else
+            dpar2 = boundary_dgetMaxParVal(&
+                rmatrix%p_rspatialDiscrTrial%p_rboundary,rboundaryRegion%iboundCompIdx)
+          end if
+          
+          ! Quad element
+          do ipoint=1,npoints
+          
+            ! Determine the edge
+            if (DrefCoords(2,ipoint,1) .eq. -1.0_DP) then
+              ! Bottom edge
+              call mprim_linearRescale(DrefCoords(1,ipoint,1),&
+                  -1.0_DP,1.0_DP,dpar1,dpar2,DpointPar(ipoint,1))
+            else if (DrefCoords(1,ipoint,1) .eq. 1.0_DP) then
+              ! Right edge
+              call mprim_linearRescale(DrefCoords(2,ipoint,1),&
+                  -1.0_DP,1.0_DP,dpar1,dpar2,DpointPar(ipoint,1))
+            else if (DrefCoords(2,ipoint,1) .eq. 1.0_DP) then
+              ! Top edge
+              call mprim_linearRescale(DrefCoords(1,ipoint,1),&
+                  1.0_DP,-1.0_DP,dpar1,dpar2,DpointPar(ipoint,1))
+            else  if (DrefCoords(1,ipoint,1) .eq. -1.0_DP) then
+              ! Left edge
+              call mprim_linearRescale(DrefCoords(2,ipoint,1),&
+                  1.0_DP,-1.0_DP,dpar1,dpar2,DpointPar(ipoint,1))
+            else
+              call output_line ("Evaluation point not on the boundary!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"linf_getBoundaryOperatorMatrix")
+              call sys_halt()
+            end if
+            
+          end do
+        
+          ! Prepare the call of the callback routine
+          rintSubset%ielementStartIdx      =  ielidx
+          rintSubset%p_Ielements           => Ielements
+          rintSubset%p_IdofsTrial          => IdofGlobTrial
+          rintSubset%celement = celementTrial
+          call fcoeff_buildVectorScBdr2D_sim (rmatrix%p_rspatialDiscrTrial, rlinform, &
+                  1, npoints, DrefCoords, rboundaryRegion%iboundCompIdx, DpointPar,&
+                  IdofGlobTest(:,:), rintSubset, Dcoefficients, rcollection)
+        end if
+        
+        ! Multiplying a FE function in the npoints points DrefCoords, weighted
+        ! by Dweights gives the value of the DOF. This summation has to be emulated by
+        ! the matrix.
+        
+        ! We need the values of the basis functions in the above coordinates 
+        ! DrefCoords. Multiplied by Dweights, these values define the content
+        ! of the matrix.
+          
+        ! Loop over the points
+        do ipoint = 1,npoints
+        
+          ! Get the element shape information in that point
+          call elprep_prepareForEvaluation (revalElement, &
+              cevaluationTag, &
+              rmatrix%p_rspatialDiscrTrial%p_rtriangulation, Ielements(ielidx), &
+              ctrafoType, DrefCoords(:,ipoint,1))
+          
+          ! Call the element to calculate the values of the basis functions
+          ! in the point.
+          call elem_generic2 (celementTrial, revalElement, Bder, Dbas)
+          
+          ! Loop over the terms.
+          do ia = 1,rlinform%itermCount
+          
+            ! Current derivative to be applied to the basis function
+            iderType = rlinform%Idescriptors(ia)
+          
+            ! Sum up Dbas and Dweights to the matrix entries.
+            ! The row is given by IdofsAtBoundary(idofidx) which is the global DOF to calculate.
+            ! The columns are given by IdofGlob and must be found in Kcol.
+            idofloop: do idoflocTrial = 1,ndoflocTrial
+            
+              ! Find the position in the matrix to be modified.
+              do i = p_Kld(IdofsAtBoundary(idofidx)), p_Kld(IdofsAtBoundary(idofidx)+1)-1
+              
+                if (p_Kcol(i) .eq. IdofGlobTrial(idoflocTrial,1)) then
+                  ! Position in the matrix to be modified is i.
+                  ! Sum up the weights.
+                  p_Ddata(i) = p_Ddata(i) + Dcoefficients(ia,ipoint,1) * rlinform%Dcoefficients(ia) * &
+                      Dweights(ipoint) * Dbas(idoflocTrial,iderType)
+                  
+                  ! Next DOF
+                  cycle idofloop
+                end if
+              
+              end do
+              
+            end do idofloop 
+          
+          end do
+          
+        end do
+        
+        ! All points processed, matrix entries calculating the DOF IdofsAtBoundary(idofidx)
+        ! calculated. Proceed with the next DOF (=next row in the matrix)
+        idofidx = idofidx + 1
+        
+      end do
+      
+      ! Release memory
+      deallocate (Ielements)
+      deallocate (IdofsAtBoundary)
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine tria_searchBoundaryEdgePar2D(ibct, dpar, &
+      rtriangulation, rboundary, iindex, cpartype)
+
+!<description>
+  ! Searches for the first edge on the boundary which contains
+  ! the parameter value dpar on boundary component ibct.
+!</description>
+
+!<input>
+  ! Number of the boundary component
+  integer, intent(in) :: ibct
+  
+  ! Parameter value.
+  real(DP), intent(in) :: dpar
+
+  ! The triangulation structure where to search the boundary node.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! Boundary object
+  type(t_boundary), intent(in) :: rboundary
+  
+  ! OPTIONAL: Type of parametrisation, the parameters refer to.
+  ! One of the BDR_PAR_xxxx constants.
+  ! If not specified, BDR_PAR_01 is assumed.
+  integer, intent(in), optional :: cparType
+!</input>
+
+!<output>
+  ! The index of the inode in IboundaryEdgePos.
+  ! =0 if inode was not found.
+  integer, intent(out) :: iindex
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer :: ipos,ileft,iright
+    integer :: cparam
+    real(DP) :: dparSearch
+
+    call storage_getbase_double (&
+        rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+    
+    ! Parametrisation
+    cparam = BDR_PAR_01
+    if (present(cparType)) cparam = cparType
+    
+    ! If necessary, switch the parametrisation to 0-1.
+    ! rtriangulation is set up like this.
+    dparSearch = dpar
+    if (cparam .ne. BDR_PAR_01) then
+      dparSearch = boundary_convertParameter(rboundary, ibct, dpar, &
+          cparam, BDR_PAR_01)
+    end if
+    
+    ! Search in the IboundaryEdgePos array
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Use bisection search to find the node in the array.
+    ileft = p_IboundaryCpIdx(ibct)
+    iright = p_IboundaryCpIdx(ibct+1)-1
+    
+    if (dparSearch .gt. p_DvertexParameterValue(iright)) then
+      ! Behind the last vertex parameter value
+      iindex = iright
+    else
+      ! Binary search. Find the edge with dpar being an element
+      ! of its parameter region.
+      do while (ileft .lt. iright-1)
+        ipos = (ileft+iright)/2
+        if (dparSearch .lt. p_DvertexParameterValue(ipos)) then
+          iright = ipos
+        else
+          ileft = ipos
+        end if
+      end do
+
+      ! We found the node. Return the index in the node array.
+      iindex = ileft
+    end if
+    
+  end subroutine tria_searchBoundaryEdgePar2D
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bcasm_getDOFsOnRealBd2d (rspatialDiscr,rboundaryRegion,&
+      ncount, IdofList)
+  
+!<description>
+  ! For a given discretisation and boundary region on the real boundary,
+  ! this routine returns a list of all degrees of freedom which are
+  ! associated to the boundary.
+  ! If specified, the degrees of freedom are returned in IdofList,
+  ! which must be large enough to accept all DOF's.
+  ! The size of the array can be calculated, e.g., by a preceding call
+  ! in order to compute ncount.
+  !
+  ! Note that the degrees of freedom on the boundary are element dependent.
+  ! E.g., Q2 has vertices and edge midpoints.
+!</description>
+
+!<input>
+  ! Spatial discretisation structure which defines the discretisation
+  ! of the domain.
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+!</input>
+
+!<output>
+  ! Number of DOF?`s on the boundary.
+  integer, intent(out) :: ncount
+!</output>
+
+!<inputoutput>
+  ! List which accepts the degrees of freedom on the boundary.
+  ! The provided memory must be large enough.
+  integer, dimension(:), intent(inout), optional :: IdofList
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j,ilocalEdge,icount,ielidx
+    integer(I32) :: celement
+    integer :: ielement
+    integer :: iedge,ipoint1,ipoint2,NVT
+    type(t_triangulation), pointer              :: p_rtriangulation
+    integer, dimension(:), pointer              :: p_IelementDistr
+    integer, dimension(:,:), allocatable        :: Idofs
+    real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
+    integer, dimension(:,:), pointer            :: p_IedgesAtElement
+    integer, dimension(:,:), pointer            :: p_IverticesAtElement
+    integer, dimension(:), pointer              :: p_IboundaryCpIdx
+    integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable          :: IelementsAtBoundary
+    integer, dimension(:), allocatable          :: IelementsAtBoundaryIdx
+    
+    integer :: nve,nnve
+    
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+    ! For easier access:
+    p_rtriangulation => rspatialDiscr%p_rtriangulation
+    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+
+    p_RelementDistribution => rspatialDiscr%RelementDistr
+    
+    ! The parameter value arrays may not be initialised.
+    if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
+      call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
+          p_DedgeParameterValue)
+    else
+      nullify(p_DedgeParameterValue)
+    end if
+
+    if (p_rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) then
+      call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
+          p_DvertexParameterValue)
+    else
+      nullify(p_DvertexParameterValue)
+    end if
+
+    NVT = p_rtriangulation%NVT
+    nnve = p_rtriangulation%NNVE
+
+    if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+      ! Every element can be of different type.
+      call storage_getbase_int(rspatialDiscr%h_IelementDistr,&
+          p_IelementDistr)
+    else
+      ! All elements are of the samne type. Get it in advance.
+      celement = rspatialDiscr%RelementDistr(1)%celement
+      nve = elem_igetNVE (celement)
+    end if
+    
+    ! We have to deal with all DOF`s on the boundary. This is highly element
+    ! dependent and therefore a little bit tricky :(
+    !
+    ! As we are in 2D, we can use parameter values at first to figure out,
+    ! which points and which edges are on the boundary.
+    ! What we have is a boundary segment. Now ask the boundary-index routine
+    ! to give us the vertices and edges on the boundary that belong to
+    ! this boundary segment.
+    
+    allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
+    allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
+    allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
+    allocate(IelementsAtBoundaryIdx(p_rtriangulation%NVBD))
+    
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
+        icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
+        IverticesAtBoundaryIdx,IedgesAtBoundaryIdx)
+                                   
+    if (icount .eq. 0) then
+      deallocate(IverticesAtBoundaryIdx)
+      deallocate(IedgesAtBoundaryIdx)
+      deallocate(IelementsAtBoundary)
+      deallocate(IelementsAtBoundaryIdx)
+      return
+    end if
+                                   
+    ! Reserve some memory to save temporarily all DOF`s of all boundary
+    ! elements.
+    ! We handle all boundary elements simultaneously - let us hope that there are
+    ! never so many elements on the boundary that our memory runs out :-)
+    allocate (Idofs(EL_MAXNBAS,icount))
+    
+    ! Initialise by 0
+    Idofs(:,:) = 0
+    
+    ! Now the elements with indices iminidx..imaxidx in the ItrialElements
+    ! of the triangulation are on the boundary. Some elements may appear
+    ! twice (on edges e.g.) but we do not care.
+    !
+    ! Ask the DOF-mapping routine to get us those DOF`s belonging to elements
+    ! on the boundary.
+    !
+    ! The 'mult' call only works on uniform discretisations. We cannot assume
+    ! that and have to call dof_locGlobMapping for every element separately.
+    if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      call dof_locGlobMapping_mult(rspatialDiscr, &
+                IelementsAtBoundary(1:icount), Idofs)
+    else
+      do ielement = 1,icount
+        call dof_locGlobMapping(rspatialDiscr, IelementsAtBoundary(ielement),&
+            Idofs(:,ielement))
+      end do
+    end if
+                   
+    ! Loop through the elements
+    do ielidx = 1,icount
+
+      ! Get the element and information about it.
+      ielement = IelementsAtBoundary (ielidx)
+      
+      ! Index in the boundary arrays.
+      I = IelementsAtBoundaryIdx (ielidx)
+      
+      ! Get the element type in case we do not have a uniform triangulation.
+      ! Otherwise, celement was set to the trial element type above.
+      if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+        celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+        nve = elem_igetNVE (celement)
+      end if
+        
+      ilocaledge = 0
+      
+      if (IverticesAtBoundaryIdx(ielidx) .ne. 0) then
+        ! Get the local index of the edge -- it coincides with the local index
+        ! of the vertex.
+        ilocaledge = IverticesAtBoundaryIdx(ielidx)
+        ipoint1 = p_IverticesAtElement(IverticesAtBoundaryIdx(ielidx),ielement)
+        ipoint2 = p_IverticesAtElement(mod(IverticesAtBoundaryIdx(ielidx),nve)+1,ielement)
+      else
+        ipoint1 = 0
+        ipoint2 = 0
+      end if
+
+      if (IedgesAtBoundaryIdx(ielidx) .ne. 0) then
+        ! Get the local index of the edge -- it coincides with the local index
+        ! of the vertex.
+        ilocaledge = IedgesAtBoundaryIdx(ielidx)
+
+        ! Get the edge
+        iedge = p_IedgesAtElement(IedgesAtBoundaryIdx(ielidx),ielement)
+      else
+        iedge = 0
+      end if
+      
+      ! Now the element-dependent part. For each element type, we have to
+      ! figure out which DOF`s are on the boundary!
+      !
+      ! We proceed as follows: We figure out, which DOF is on the
+      ! boundary. Then, we ask our computation routine to calculate
+      ! the necessary value and translate them into a DOF value.
+      ! All DOF values are collected later.
+      select case (elem_getPrimaryElement(celement))
+      
+      case (EL_P0,EL_Q0,EL_DG_T0_2D)
+        ! Nice element, only one DOF :-)
+        ! Either the edge or an adjacent vertex is on the boundary.
+        
+        ! Set the DOF number < 0 to indicate that it is Dirichlet
+        Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
+        
+      case (EL_P1,EL_Q1)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        
+        
+        case (EL_DG_P1_2D,EL_DG_Q1_2D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! Right point inside? -> Corresponding DOF must be computed
+        if ( ipoint2 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          Idofs(mod(ilocalEdge,NNVE)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,NNVE)+1,ielidx))
+        end if
+
+
+      case (EL_P2,EL_Q2)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge, corresponding
+          ! to the local DOF ilocalEdge+4, as the first four elements
+          ! in this array correspond to the values in the corners.
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+              
+          ! The element midpoint does not have to be considered, as it cannot
+          ! be on the boundary.
+        end if
+        
+      case (EL_DG_Q2_2D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+        ! Right point inside? -> Corresponding DOF must be computed
+        if ( ipoint2 .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          Idofs(mod(ilocalEdge,NNVE)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,NNVE)+1,ielidx))
+        end if
+        
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          ! ilocalEdge is the number of the local edge, corresponding
+          ! to the local DOF ilocalEdge+4, as the first four elements
+          ! in this array correspond to the values in the corners.
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+        end if
+
+      case (EL_QP1,EL_DG_T1_2D)
+        ! Three DOF`s: Function value in the element midpoint
+        ! and derivatives.
+        ! Either the edge or an adjacent vertex is on the boundary.
+
+        ! Set the DOF numbers < 0 to indicate that it is inside.
+        Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
+        
+      case (EL_DG_T2_2D)
+        ! Six DOF`s: Function value in the element midpoint
+        ! and first and second derivatives.
+        ! Either the edge or an adjacent vertex is on the boundary.
+        
+        ! Set the DOF numbers < 0 to indicate that it is inside.
+        Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
+        
+      case (EL_P1T)
+
+        ! Edge midpoint based element.
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+        
+      case (EL_Q1T,EL_Q1TB)
+        
+        ! Q1~ element.      
+
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is inside.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+      
+      case (EL_Q2T,EL_Q2TB)
+      
+        ! The Q2T-element is only integral mean value based.
+        ! On the one hand, we have integral mean values over the edges.
+        ! On the other hand, we have integral mean values of function*parameter
+        ! value on the edge.
+        
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+          ! Set the DOF number < 0 to indicate that it is Dirichlet
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+
+          ! Set the DOF number < 0 to indicate that it is Dirichlet
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+        end if
+
+      case default
+      
+        call output_line ("Unsupported element!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_getDOFsOnRealBd2d")
+        call sys_halt()
+      
+      end select
+      
+    end do
+
+    ! Temp arrays no more necessary
+    deallocate(IverticesAtBoundaryIdx)
+    deallocate(IedgesAtBoundaryIdx)
+    deallocate(IelementsAtBoundary)
+    deallocate(IelementsAtBoundaryIdx)
+    
+    ! Now count how many values we actually have.
+    ncount = 0
+    do J=1,size(Idofs,2)
+      do I=1,size(Idofs,1)
+        if (Idofs(I,J) < 0) ncount = ncount + 1
+      end do
+    end do
+    
+    if ((ncount .gt. 0) .and. (present(IdofList))) then
+    
+      ! Check that the memory is large enough.
+      if (ncount .gt. size(IdofList)) then
+        call output_line ("Not enough memory, IdofList too small!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_getDOFsOnRealBd2d")
+        call sys_halt()
+      end if
+      
+      ! Transfer the DOF`s and their values to these arrays.
+      ncount = 0
+      do J=1,size(Idofs,2)
+        do I=1,size(Idofs,1)
+          if (Idofs(I,J) < 0) then
+            ncount = ncount + 1
+            IdofList(ncount) = abs(Idofs(I,J))
+          end if
+        end do
+      end do
+    
+    end if
+    
+    ! Remove temporary memory, finish.
+    deallocate (Idofs)
 
   end subroutine
 

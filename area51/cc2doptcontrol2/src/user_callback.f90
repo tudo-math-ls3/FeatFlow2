@@ -231,6 +231,7 @@ contains
     rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
     rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
+    rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
 
   end subroutine
   
@@ -295,6 +296,7 @@ contains
     rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
     rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
+    rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
 
   end subroutine
   

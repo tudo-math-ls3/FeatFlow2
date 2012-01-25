@@ -87,6 +87,7 @@ module initsolver
   use spacetimeinterlevelprojection
   use nonlinearoneshotspacetimesolver
   use spacetimeneumannbc
+  use spacetimedirichletbcc
   use timeboundaryconditions
   use timerhsevaluation
   
@@ -1081,8 +1082,6 @@ contains
     ! local variables
     type(t_collection) :: rcollection
     integer :: icubM
-    integer :: i,j,k
-    integer(I32) :: celement
     
     select case (rphysics%cequation)
     case (0,1)
@@ -1363,7 +1362,13 @@ contains
 
     ! Alpha/Gamma parameters
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dalphaC',roptcontrol%dalphaC,1.0_DP)
+        'dalphaC',roptcontrol%dalphaC,-1.0_DP)
+        
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dbetaC',roptcontrol%dbetaC,-1.0_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'ddirichletBCPenalty',roptcontrol%ddirichletBCPenalty,100.0_DP)
         
     call parlst_getvalue_double (rparlist,ssectionOptC,&
         'dgammaC',roptcontrol%dgammaC,0.0_DP)
@@ -2870,6 +2875,7 @@ contains
     type(t_optcBDC) :: rboudaryConditions
     type(t_matrixBlock) :: rmassMatrix
     type(t_sptiNeumannBoundary) :: rsptiNeumannBC
+    type(t_sptiDirichletBCCBoundary) :: rsptiDirichletBCC
 
     ! Get the definition of the start vector
     call parlst_getvalue_int (rparlist, ssection, &
@@ -2983,11 +2989,15 @@ contains
         call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+
+        ! Set up empty Dirichlet boundary control conditions.
+        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
             
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,rsptiDirichletBCC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
@@ -3012,6 +3022,7 @@ contains
         call fbsim_done (rsimsolver)
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3060,10 +3071,14 @@ contains
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
         
+        ! Set up empty Dirichlet boundary control conditions.
+        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,rsptiDirichletBCC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3132,6 +3147,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3200,10 +3216,14 @@ contains
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
+        ! Set up empty Dirichlet boundary control conditions.
+        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+      
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,rsptiDirichletBCC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3247,6 +3267,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3298,11 +3319,15 @@ contains
         call stnm_createNeumannBoundary (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
+
+        ! Set up empty Dirichlet boundary control conditions.
+        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
         
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,rsptiDirichletBCC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3399,6 +3424,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3467,10 +3493,14 @@ contains
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiNeumannBC)
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
+        ! Set up empty Dirichlet boundary control conditions.
+        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
         call stlin_initSpaceTimeMatrix (&
-            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,rsptiNeumannBC,rsptiDirichletBCC,&
             rsettings%rglobalData,rsettings%rdebugFlags)
 
         ! Get the boundary conditions
@@ -3542,6 +3572,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
+        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3887,7 +3918,8 @@ contains
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
     real(dp), dimension(:), pointer :: p_DdataB,p_DdataX
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
-    type(t_neumannBoundary), target:: rneumannBoundary
+    type(t_boundaryRegionList), target:: rneumannBoundary,rdirichletBCC
+    type(t_matrixScalar) :: remptyTempMatrix
 
   !    ! If the following constant is set from 1.0 to 0.0, the primal system is
   !    ! decoupled from the dual system!
@@ -3929,7 +3961,8 @@ contains
       ! care about the Neumann boundary as it just cares about the initial condition
       ! in the primal equation. Neumann BC is only necessary for the dual eqn!
       call smva_initNonlinearData (rnonlinearity,rx,rx,rx,rneumannBoundary,&
-          rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM)
+          rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rdirichletBCC)
       
       ! The initial condition is implemented as:
       !
@@ -3956,15 +3989,15 @@ contains
       bconvectionExplicit = rsettings%rsettingsOptControl%iconvectionExplicit .ne. 0
 
       call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
-      rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-      rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
+      rnonlinearSpatialMatrix%Dmass(1,1) = dtimeCoupling * 1.0_DP/dtstep
+      rnonlinearSpatialMatrix%Dstokes(1,1) = dtheta
       
       if (.not. bconvectionExplicit) then
-        rnonlinearSpatialMatrix%Dgamma(1,1) = dtheta*real(1-rsettings%rphysicsPrimal%cequation,DP)
+        rnonlinearSpatialMatrix%Dygrad(1,1) = dtheta*real(1-rsettings%rphysicsPrimal%cequation,DP)
       end if
 
-      rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
-      rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
+      rnonlinearSpatialMatrix%DBmat(1,1) = 1.0_DP
+      rnonlinearSpatialMatrix%DBTmat(1,1) = 1.0_DP
           
       ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1.
       ! Clear the primal RHS for that purpose.

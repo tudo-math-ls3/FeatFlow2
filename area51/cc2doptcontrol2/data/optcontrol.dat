@@ -20,10 +20,19 @@ srhs = RIGHTHANDSIDE
 # Name of the section defining the physics
 ssectionPhysics = "CC-PHYSICSPRIMAL"
 
-# Penalty parameter ALPHA for the ||u||-term in the optimal-control problem.
+# Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
+# -1.0 = no distributed control
 dalphaC = 0.01 # 1.0
 
-# Penalty parameter for the terminal condition ||y(T)-z(T)|| in the
+# Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem
+# on the boundary (Dirichlet boundary control).
+# -1.0 = no boudary control control
+dbetaC = 0.01 # 1.0
+
+# Penalty parameter for the dirichlet boundary control
+ddirichletBCPenalty = 4.0
+
+# Regularisation parameter for the terminal condition ||y(T)-z(T)|| in the
 # nonstationary optimal control problem.
 dgammaC = 0.0  # 1.0
 

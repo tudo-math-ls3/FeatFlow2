@@ -200,6 +200,7 @@ module spacetimelinearsystem
   use spacetimehierarchy
   
   use spacetimeneumannbc
+  use spacetimedirichletbcc
 
   !use spacepreconditioner
   !use spacepreconditionerinit
@@ -329,8 +330,12 @@ module spacetimelinearsystem
     ! is specified in their input parameters.
     type(t_spacetimeVector), pointer :: p_rsolution => null()
     
-    ! A t_sptiNeumannBC structure defining the Neumann boundary
+    ! A t_sptiNeumannBoundary structure defining the Neumann boundary
     type(t_sptiNeumannBoundary), pointer :: p_rneumannBoundary => null()
+
+    ! A t_sptiDirichletBCCBoundary structure defining the Dirichlet 
+    ! boundary control
+    type(t_sptiDirichletBCCBoundary), pointer :: p_rdirichletBCCBoundary => null()
 
   end type
 
@@ -616,7 +621,8 @@ contains
 !<subroutine>
 
   subroutine stlin_initSpaceTimeMatrix (&
-      rspaceTimeMatrix,cmatrixType,rdiscrData,rsolution,rneumannBoundary,rglobalData,rdebugFlags)
+      rspaceTimeMatrix,cmatrixType,rdiscrData,rsolution,&
+      rneumannBoundary,rdirichletBCCBoundary,rglobalData,rdebugFlags)
 
 !<description>
   ! Initialises a space-time matrix.
@@ -636,6 +642,10 @@ contains
   ! Definition of the Neumann boundary conditions for all timesteps.
   ! Used for nonlinear boundary conditions.
   type(t_sptiNeumannBoundary), intent(in), target :: rneumannBoundary
+
+  ! Definition of the Dirichlet boundary control boundary conditions for all timesteps.
+  ! Used for nonlinear boundary conditions.
+  type(t_sptiDirichletBCCBoundary), intent(in), target :: rdirichletBCCBoundary
 
   ! Global data for callback routines.
   type(t_globalData), intent(in), target :: rglobalData
@@ -666,6 +676,7 @@ contains
     rspaceTimeMatrix%rdiscrData = rdiscrData
     rspaceTimeMatrix%p_rsolution => rsolution
     rspaceTimeMatrix%p_rneumannBoundary => rneumannBoundary
+    rspaceTimeMatrix%p_rdirichletBCCBoundary => rdirichletBCCBoundary
     rspaceTimeMatrix%p_rdebugFlags => rdebugFlags
     rspaceTimeMatrix%p_rglobalData => rglobalData
 
@@ -783,7 +794,7 @@ contains
     
     ! other local variables
     real(DP) :: dnewton
-    real(DP) :: dtstep,dtheta
+    real(DP) :: dtstep,dtheta,dtmp
     integer :: ipressureFullyImplicit,cthetaschemetype
     logical :: bconvectionExplicit
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -856,28 +867,28 @@ contains
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dmass(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(1,1) = dtimeCoupling * (1.0_DP-dtheta)
+        rnonlinearSpatialMatrix%Dstokes(1,1) = dtimeCoupling * (1.0_DP-dtheta)
         
         if (ipressureFullyImplicit .eq. 0) then
-          rnonlinearSpatialMatrix%Deta(1,1) = dtimeCoupling * (1.0_DP-dtheta)
+          rnonlinearSpatialMatrix%DBmat(1,1) = dtimeCoupling * (1.0_DP-dtheta)
         end if
 
         if (.not. bconvectionExplicit) then
 
-          rnonlinearSpatialMatrix%Dgamma(1,1) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dygrad(1,1) = dtimeCoupling * &
               (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
-          rnonlinearSpatialMatrix%Dnewton(1,1) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dgrady(1,1) = dtimeCoupling * &
               (1.0_DP-dtheta) * dnewton
 
         else
         
-          rnonlinearSpatialMatrix%Dgamma(1,1) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dygrad(1,1) = dtimeCoupling * &
               dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
-          rnonlinearSpatialMatrix%Dnewton(1,1) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dgrady(1,1) = dtimeCoupling * &
               dtheta * dnewton
         
         end if
@@ -888,7 +899,7 @@ contains
           !
           ! Switch off if alpha <= 0.
           if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
-            rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
+            rnonlinearSpatialMatrix%Dmass(1,2) = dtimeCoupling * dprimalDualCoupling * &
                 (-dequationType) * (1.0_DP-dtheta) &
                             / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
           end if
@@ -916,50 +927,68 @@ contains
           rnonlinearSpatialMatrix%idualSol2 = 2
         end if
 
-        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dmass(1,1) = dtimeCoupling * 1.0_DP/dtstep
 
         if (ieqTime .lt. neqTime) then
           ! Not the last row. Probably deactivate the time coupling.
-          rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
+          rnonlinearSpatialMatrix%Dmass(2,2) = dtimeCoupling * 1.0_DP/dtstep
         else
           ! Last row. The mass matrix must be there.
-          rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP/dtstep
+          rnonlinearSpatialMatrix%Dmass(2,2) = 1.0_DP/dtstep
         end if
         
-        rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
-        rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
+        rnonlinearSpatialMatrix%Dstokes(1,1) = dtheta
+        rnonlinearSpatialMatrix%Dstokes(2,2) = dtheta
 
         if (.not. bconvectionExplicit) then
 
-          rnonlinearSpatialMatrix%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dygrad(1,1) = &
               dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
-          rnonlinearSpatialMatrix%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dygrad(2,2) = &
               - dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
-            rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
-            rnonlinearSpatialMatrix%DnewtonT(2,2) = &
+            rnonlinearSpatialMatrix%Dgrady(1,1) = dtheta * dnewton
+            rnonlinearSpatialMatrix%DgradyT(2,2) = &
                   dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
                 
         end if
 
-        rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
-        rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%DBmat(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%DBmat(2,2) = 1.0_DP
 
         if (ipressureFullyImplicit .eq. 0) then
-          rnonlinearSpatialMatrix%Deta(1,1) = dtheta
-          rnonlinearSpatialMatrix%Deta(2,2) = dtheta
+          rnonlinearSpatialMatrix%DBmat(1,1) = dtheta
+          rnonlinearSpatialMatrix%DBmat(2,2) = dtheta
         end if
         
-        rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
-        rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%DBTmat(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%DBTmat(2,2) = 1.0_DP
         
         ! No coupling to the dual in the first timestep.
         if (ieqTime .gt. 1) then
           ! Switch off if alpha <= 0.
           if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
-          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
-              (-dequationType) * 1.0_DP &
-                            / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+            rnonlinearSpatialMatrix%Dmass(1,2) = dprimalDualCoupling * &
+                (-dequationType) * 1.0_DP &
+                              / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+          end if
+        end if
+        
+        ! Dirichlet boundary control
+        if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC .gt. 0.0_DP) then
+          ! Active.
+          ! Multiply all weigths by the penalty parameter.
+          dtmp = 1.0_DP !rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ddirichletBCPenalty
+          rnonlinearSpatialMatrix%DdirichletBCCY(1,1) = dtmp
+          
+          ! In the first timestep, the dual equation is not connected to the primal one.
+          ! Initial condition...
+          if (ieqTime .gt. 1) then
+            rnonlinearSpatialMatrix%DdirichletBCCLambda(1,2) = &
+                (-dequationType) * (-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%dnu * &
+                dtmp/rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC)
+            rnonlinearSpatialMatrix%DdirichletBCCXi(1,2) = &
+                (-dequationType) * (dtmp/rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC)
           end if
         end if
 
@@ -972,7 +1001,7 @@ contains
             !
             ! Switch off if alpha <= 0.
             if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
-              rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+              rnonlinearSpatialMatrix%Dmass(1,2) = dprimalDualCoupling * &
                   (-dequationType) * dtheta &
                               / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
             end if
@@ -980,11 +1009,11 @@ contains
 
           if (ieqTime .lt. neqTime) then
             ! Not the last row. Standard coupling between primal and dual
-            rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta
           else
             ! Last row. Realise the terminal condition.
-            rnonlinearSpatialMatrix%Dalpha(2,1) = dterminalCondDecoupled * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = dterminalCondDecoupled * &
                 ( dequationType) * &
                 (1.0_DP + rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dgammaC / dtstep)
           end if
@@ -992,23 +1021,23 @@ contains
         case (1)
           ! New 1-step scheme, solutions located inbetween the timesteps
           if (ieqTime .eq. 1) then
-            rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * (1.0_DP - dtheta)
                 
           else if (ieqTime .lt. neqTime-1) then
             ! Row inbetween. Standard coupling between primal and dual
-            rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * 1.0_DP
                 
           else if (ieqTime .eq. neqTime-1) then
             ! Last but one row. The terminal condition has influence here.
-            rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * (1.0_DP+dterminalCondDecoupled*(1.0_DP-dtheta)*&
                 rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dgammaC/dtstep)
                 
           else
             ! Last row. Realise the terminal condition.
-            rnonlinearSpatialMatrix%Dalpha(2,1) = dterminalCondDecoupled * &
+            rnonlinearSpatialMatrix%Dmass(2,1) = dterminalCondDecoupled * &
                 ( dequationType) * &
                 (dtheta + dtheta*rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dgammaC / dtstep)
           end if
@@ -1019,21 +1048,21 @@ contains
           if (.not. bconvectionExplicit) then
 
             if (dnewton .ne. 0.0_DP) then
-              rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * dtheta
-              rnonlinearSpatialMatrix%Dnewton(2,1) = -ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%DygradT(2,1) = ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%Dgrady(2,1) = -ddualPrimalCoupling * dtheta
 
               ! For Crank-Nicolson there appears a 2nd reactive term
               ! stemming from the next timestep.
 
-              rnonlinearSpatialMatrix%DgammaT2(2,1) = ddualPrimalCoupling * (1.0_DP-dtheta)
-              rnonlinearSpatialMatrix%Dnewton2(2,1) = -ddualPrimalCoupling * (1.0_DP-dtheta)
+              rnonlinearSpatialMatrix%DygradT2(2,1) = ddualPrimalCoupling * (1.0_DP-dtheta)
+              rnonlinearSpatialMatrix%Dgrady2(2,1) = -ddualPrimalCoupling * (1.0_DP-dtheta)
             end if
             
           else
           
             if (dnewton .ne. 0.0_DP) then
-              rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * dtheta
-              rnonlinearSpatialMatrix%Dnewton(2,1) = -ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%DygradT(2,1) = ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%Dgrady(2,1) = -ddualPrimalCoupling * dtheta
             end if
           
           end if
@@ -1045,8 +1074,8 @@ contains
             ! Weight the mass matrix by GAMMA instead of delta(T).
             ! That's the only difference to the implementation above!
             if (dnewton .ne. 0.0_DP) then
-              rnonlinearSpatialMatrix%DgammaT(2,1) = dterminalCondDecoupled * dtheta
-              rnonlinearSpatialMatrix%Dnewton(2,1) = -dterminalCondDecoupled * dtheta
+              rnonlinearSpatialMatrix%DygradT(2,1) = dterminalCondDecoupled * dtheta
+              rnonlinearSpatialMatrix%Dgrady(2,1) = -dterminalCondDecoupled * dtheta
             end if
 
           end if
@@ -1077,28 +1106,28 @@ contains
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dmass(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(2,2) = dtimeCoupling * (1.0_DP-dtheta)
+        rnonlinearSpatialMatrix%Dstokes(2,2) = dtimeCoupling * (1.0_DP-dtheta)
         
         if (ipressureFullyImplicit .eq. 0) then
-          rnonlinearSpatialMatrix%Deta(2,2) = dtimeCoupling * (1.0_DP-dtheta)
+          rnonlinearSpatialMatrix%DBmat(2,2) = dtimeCoupling * (1.0_DP-dtheta)
         end if
         
         if (.not. bconvectionExplicit) then
 
-          rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dygrad(2,2) = dtimeCoupling * &
               (- (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP))
           
-          rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%DgradyT(2,2) = dtimeCoupling * &
               (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
               
         else
         
-          rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%Dygrad(2,2) = dtimeCoupling * &
               (- dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP))
           
-          rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
+          rnonlinearSpatialMatrix%DgradyT(2,2) = dtimeCoupling * &
                 dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
         
         end if
@@ -1106,7 +1135,7 @@ contains
         if (cthetaschemetype .eq. 0) then
           ! Activate the old timestep scheme. The coupling to the dual must be
           ! weighted by 1-dtheta.
-          rnonlinearSpatialMatrix%Dalpha(2,1) = dtimeCoupling * ddualPrimalCoupling * &
+          rnonlinearSpatialMatrix%Dmass(2,1) = dtimeCoupling * ddualPrimalCoupling * &
               ( dequationType) * (1.0_DP-dtheta)
         end if
             
@@ -1115,9 +1144,9 @@ contains
           ! DON'T KNOW IF THIS IS CORRECT!!!
         
           if (dnewton .ne. 0.0_DP) then
-            rnonlinearSpatialMatrix%DgammaT(2,1) = dtimeCoupling * ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DygradT(2,1) = dtimeCoupling * ddualPrimalCoupling * &
                 (1.0_DP-dtheta)
-            rnonlinearSpatialMatrix%Dnewton(2,1) = -dtimeCoupling * ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dgrady(2,1) = -dtimeCoupling * ddualPrimalCoupling * &
                 (1.0_DP-dtheta)
           end if
           
@@ -1152,11 +1181,14 @@ contains
     
     ! General parameters.
     rnonlinearSpatialMatrix%dalphaC = rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+    rnonlinearSpatialMatrix%dbetaC = rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC
+    rnonlinearSpatialMatrix%ddirichletBCPenalty = &
+        rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ddirichletBCPenalty
     rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
     
     ! The boundary integral in the dual equation has exactly the same weigt
-    ! as Dgamma -- but with a negative sign, it stems from a partial integration!
-    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dgamma(2,2)
+    ! as Dygrad -- but with a negative sign, it stems from a partial integration!
+    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dygrad(2,2)
 
     ! If Newton is active, we have to activate the Newton term on the boundary!
     ! Value and sign are the same as for DdualBdIntegral.
@@ -1169,30 +1201,38 @@ contains
     if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%csystemScaling .ne. 0) then
     
       ! Do not scale identity matrices.
-      ! rnonlinearSpatialMatrix%Diota(:,:)    = dtstep * rnonlinearSpatialMatrix%Diota(:,:)
+      ! rnonlinearSpatialMatrix%DidentityY(:,:)    = dtstep * rnonlinearSpatialMatrix%DidentityY(:,:)
       
-      rnonlinearSpatialMatrix%Dalpha(:,:)   = dtstep * rnonlinearSpatialMatrix%Dalpha(:,:)
-      rnonlinearSpatialMatrix%Dtheta(:,:)   = dtstep * rnonlinearSpatialMatrix%Dtheta(:,:)
-      rnonlinearSpatialMatrix%Dgamma(:,:)   = dtstep * rnonlinearSpatialMatrix%Dgamma(:,:)
-      rnonlinearSpatialMatrix%Dnewton(:,:)  = dtstep * rnonlinearSpatialMatrix%Dnewton(:,:)
-      rnonlinearSpatialMatrix%DgammaT(:,:)  = dtstep * rnonlinearSpatialMatrix%DgammaT(:,:)
-      rnonlinearSpatialMatrix%Dnewton2(:,:) = dtstep * rnonlinearSpatialMatrix%Dnewton2(:,:)
-      rnonlinearSpatialMatrix%DgammaT2(:,:) = dtstep * rnonlinearSpatialMatrix%DgammaT2(:,:)
-      rnonlinearSpatialMatrix%DnewtonT(:,:) = dtstep * rnonlinearSpatialMatrix%DnewtonT(:,:)
-      rnonlinearSpatialMatrix%Deta(:,:)     = dtstep * rnonlinearSpatialMatrix%Deta(:,:)
-      rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = dtstep * rnonlinearSpatialMatrix%DdualBdIntegral(:,:)
-      rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = dtstep * rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:)
+      rnonlinearSpatialMatrix%Dmass(:,:)   = dtstep * rnonlinearSpatialMatrix%Dmass(:,:)
+      rnonlinearSpatialMatrix%Dstokes(:,:)   = dtstep * rnonlinearSpatialMatrix%Dstokes(:,:)
+      rnonlinearSpatialMatrix%Dygrad(:,:)   = dtstep * rnonlinearSpatialMatrix%Dygrad(:,:)
+      rnonlinearSpatialMatrix%Dgrady(:,:)  = dtstep * rnonlinearSpatialMatrix%Dgrady(:,:)
+      rnonlinearSpatialMatrix%DygradT(:,:)  = dtstep * rnonlinearSpatialMatrix%DygradT(:,:)
+      rnonlinearSpatialMatrix%Dgrady2(:,:) = dtstep * rnonlinearSpatialMatrix%Dgrady2(:,:)
+      rnonlinearSpatialMatrix%DygradT2(:,:) = dtstep * rnonlinearSpatialMatrix%DygradT2(:,:)
+      rnonlinearSpatialMatrix%DgradyT(:,:) = dtstep * rnonlinearSpatialMatrix%DgradyT(:,:)
+      rnonlinearSpatialMatrix%DBmat(:,:)     = dtstep * rnonlinearSpatialMatrix%DBmat(:,:)
+      rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = &
+          dtstep * rnonlinearSpatialMatrix%DdualBdIntegral(:,:)
+      rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = &
+          dtstep * rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:)
+      rnonlinearSpatialMatrix%DdirichletBCCY(:,:) = &
+          dtstep * rnonlinearSpatialMatrix%DdirichletBCCY(:,:)
+      rnonlinearSpatialMatrix%DdirichletBCCLambda(:,:) = &
+          dtstep * rnonlinearSpatialMatrix%DdirichletBCCLambda(:,:)
+      rnonlinearSpatialMatrix%DdirichletBCCXi(:,:) = &
+          dtstep * rnonlinearSpatialMatrix%DdirichletBCCXi(:,:)
       
       ! Do not scale the pressure block.
-      ! rnonlinearSpatialMatrix%Dkappa(:,:)   = dtstep * rnonlinearSpatialMatrix%Dkappa(:,:)
+      ! rnonlinearSpatialMatrix%DidentityP(:,:)   = dtstep * rnonlinearSpatialMatrix%DidentityP(:,:)
 
       ! Do not scale the divergence equation.
-      ! rnonlinearSpatialMatrix%Dtau(:,:)     = dtstep * rnonlinearSpatialMatrix%Dtau(:,:)
+      ! rnonlinearSpatialMatrix%DBTmat(:,:)     = dtstep * rnonlinearSpatialMatrix%DBTmat(:,:)
       
     end if
     
     ! DEBUG!!!
-    !rnonlinearSpatialMatrix%DnewtonT(:,:)  = 0.0_DP
+    !rnonlinearSpatialMatrix%DgradyT(:,:)  = 0.0_DP
     
 
   end subroutine
@@ -1233,26 +1273,30 @@ contains
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
 
-      rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP   ! A velocity block
-      rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP     ! A gradient block
-      rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP     ! A divergence block
-      rnonlinearSpatialMatrix%Dkappa(1,1) = 1.0_DP   ! Pressure block
+      rnonlinearSpatialMatrix%Dstokes(1,1) = 1.0_DP   ! A velocity block
+      rnonlinearSpatialMatrix%DBmat(1,1) = 1.0_DP     ! A gradient block
+      rnonlinearSpatialMatrix%DBTmat(1,1) = 1.0_DP     ! A divergence block
+      rnonlinearSpatialMatrix%DidentityP(1,1) = 1.0_DP   ! Pressure block
       ! A Newton block, if we have Navier-Stokes. For the case
       ! that we use Newton
-      rnonlinearSpatialMatrix%Dnewton(1,1) = real(1-rphysics%cequation,DP)
+      rnonlinearSpatialMatrix%Dgrady(1,1) = real(1-rphysics%cequation,DP)
       
-      rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP   ! A velocity block
-      rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP     ! A gradient block
-      rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP     ! A divergence block
+      rnonlinearSpatialMatrix%Dstokes(2,2) = 1.0_DP   ! A velocity block
+      rnonlinearSpatialMatrix%DBmat(2,2) = 1.0_DP     ! A gradient block
+      rnonlinearSpatialMatrix%DBTmat(2,2) = 1.0_DP     ! A divergence block
       ! A Newton block, if we have Navier-Stokes
-      rnonlinearSpatialMatrix%Dnewton(2,2) = real(1-rphysics%cequation,DP)
-      rnonlinearSpatialMatrix%Dkappa(2,2) = 1.0_DP   ! Pressure block
+      rnonlinearSpatialMatrix%Dgrady(2,2) = real(1-rphysics%cequation,DP)
+      rnonlinearSpatialMatrix%DidentityP(2,2) = 1.0_DP   ! Pressure block
       
-      rnonlinearSpatialMatrix%Dalpha(1,1) = 1.0_DP
-      rnonlinearSpatialMatrix%Dalpha(2,1) = 1.0_DP
-      rnonlinearSpatialMatrix%Dalpha(1,2) = 1.0_DP
-      rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP
-      rnonlinearSpatialMatrix%Dnewton(2,1) = real(1-rphysics%cequation,DP)
+      rnonlinearSpatialMatrix%Dmass(1,1) = 1.0_DP
+      rnonlinearSpatialMatrix%Dmass(2,1) = 1.0_DP
+      rnonlinearSpatialMatrix%Dmass(1,2) = 1.0_DP
+      rnonlinearSpatialMatrix%Dmass(2,2) = 1.0_DP
+      rnonlinearSpatialMatrix%Dgrady(2,1) = real(1-rphysics%cequation,DP)
+      
+      ! For Dirichlet boundary control, coupling matrix to xi
+      ! in the primal equation.
+      rnonlinearSpatialMatrix%DdirichletBCCXi(1,2) = 1.0_DP
       
     end select
       
@@ -1441,8 +1485,9 @@ contains
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
       call smva_initNonlinearData (rnonlinearity,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
-          rspaceTimeMatrix%p_rneumannBoundary%p_rneumannBoundary(ieqTime),&
-          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+          rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime),&
+          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+          rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime))
       
       if (ieqTime .ne. neqTime) then
       

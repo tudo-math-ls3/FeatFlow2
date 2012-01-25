@@ -565,7 +565,7 @@ contains
     integer :: isubstep
     type(t_vectorBlock) :: rtempVector
     type(t_discreteBC) :: rdiscreteBC
-    type(t_neumannBoundary) :: rneumannBoundary
+    type(t_boundaryRegionList) :: rneumannBoundary
     real(dp) :: dtimePrimal,dtimeDual,dtstep
     real(DP), dimension(:), pointer :: p_Dx
 
@@ -611,7 +611,7 @@ contains
         call sptivec_setTimestepData(rx, isubstep, rtempVector)
       end if
       
-      call sbc_releaseNeumannBoundary(rneumannBoundary)
+      call sbc_releaseBoundaryList(rneumannBoundary)
       
     end do
   

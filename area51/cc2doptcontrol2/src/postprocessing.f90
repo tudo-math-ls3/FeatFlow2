@@ -840,7 +840,7 @@ contains
       end if
 
       ! -------------------------------------------------------------------------
-      ! Writing out of the final coptrol. Note that we have to calculate it
+      ! Writing out of the final cotrol. Note that we have to calculate it
       ! from the final dual solution.
       ! -------------------------------------------------------------------------
       
@@ -853,7 +853,8 @@ contains
             rcontrolVector,.true.)
       
         call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
-            roptControl%dalphaC,dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+            roptControl%dalphaC,roptControl%dbetaC,&
+            dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
       
         ! Write the current solution to disc as it is.
         sfilename = rpostproc%sfinalControlFileName
@@ -1056,7 +1057,7 @@ contains
 
           ! Control u = P[min/max](-1/alpha lambda)
           call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
-              roptControl%dalphaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+              roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
           
           call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
           call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
@@ -1260,7 +1261,7 @@ contains
         call output_lbrk()
         call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
             roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
-            roptControl%dalphaC,roptControl%dgammaC,Derror)
+            roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror)
         call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
         call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
         call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
@@ -1368,8 +1369,8 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_calcControl (rphysics,rvectorSol,rconstraints,dalpha,dtimeDual,&
-      ispacetimeFormulation,rvectorControl)
+  subroutine optcpp_calcControl (rphysics,rvectorSol,rconstraints,dalphaC,dbetaC,&
+      dtimeDual,ispacetimeFormulation,rvectorControl)
   
 !<description>
   ! Uses the dual solution in rvectorSol to calculate the discrete
@@ -1384,7 +1385,10 @@ contains
   type(t_optcconstraintsSpaceTime), intent(in) :: rconstraints
 
   ! Regularisation parameter $\alpha$.
-  real(DP), intent(in) :: dalpha
+  real(DP), intent(in) :: dalphaC
+  
+  ! Regularisation parameter $\betaa$.
+  real(DP), intent(in) :: dbetaC
   
   ! Time corresponding to the dual solution
   real(DP), intent(in) :: dtimeDual
@@ -1415,76 +1419,81 @@ contains
       ! Stokes, Navier-Stokes, 2D
 
       ! Copy, scale and impose constraints if necessary.
-      if (present(rvectorControl)) then
-        call lsyssc_copyVector (rvectorSol%RvectorBlock(4),rvectorControl%RvectorBlock(1))
-        call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
-        select case (ispaceTimeFormulation)
-        case (0)
-          call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),1.0_DP/dalpha)
-          call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),1.0_DP/dalpha)
-        case (1)
-          call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
-          call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
-        end select
-        
-        if (rconstraints%ccontrolConstraints .ne. 0) then
-          select case (rconstraints%cconstraintsType)
+      if (dalphaC .gt. 0.0_DP) then
+        ! Distributed control active
+        if (present(rvectorControl)) then
+          call lsyssc_copyVector (rvectorSol%RvectorBlock(4),rvectorControl%RvectorBlock(1))
+          call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
+          
+          select case (ispaceTimeFormulation)
           case (0)
-            call smva_projectControlTstepConst (rvectorControl%RvectorBlock(1),&
-                rconstraints%dumin1,rconstraints%dumax1)
-            call smva_projectControlTstepConst (rvectorControl%RvectorBlock(2),&
-                rconstraints%dumin2,rconstraints%dumax2)
+            call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),1.0_DP/dalphaC)
+            call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),1.0_DP/dalphaC)
           case (1)
-            ! Initialise the space constraints.
-            call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
-                rvectorSol%p_rblockDiscr,rconstrSpace)
-            
-            ! Implement the constraints
-            call smva_projectControlTstepVec (rvectorControl%RvectorBlock(1),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(1),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(1))
-            call smva_projectControlTstepVec (rvectorControl%RvectorBlock(2),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(2),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(2))
-            
-            ! Done.
-            call stlin_doneSpaceConstraints (rconstrSpace)
+            call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalphaC)
+            call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalphaC)
           end select
-        end if
-      else
-        select case (ispaceTimeFormulation)
-        case (0)
-          call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),1.0_DP/dalpha)
-          call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),1.0_DP/dalpha)
-        case (1)
-          call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
-          call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
-        end select
-        
-        if (rconstraints%ccontrolConstraints .ne. 0) then
-          select case (rconstraints%cconstraintsType)
+          
+          if (rconstraints%ccontrolConstraints .ne. 0) then
+            select case (rconstraints%cconstraintsType)
+            case (0)
+              call smva_projectControlTstepConst (rvectorControl%RvectorBlock(1),&
+                  rconstraints%dumin1,rconstraints%dumax1)
+              call smva_projectControlTstepConst (rvectorControl%RvectorBlock(2),&
+                  rconstraints%dumin2,rconstraints%dumax2)
+            case (1)
+              ! Initialise the space constraints.
+              call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
+                  rvectorSol%p_rblockDiscr,rconstrSpace)
+              
+              ! Implement the constraints
+              call smva_projectControlTstepVec (rvectorControl%RvectorBlock(1),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(1),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(1))
+              call smva_projectControlTstepVec (rvectorControl%RvectorBlock(2),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(2),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(2))
+              
+              ! Done.
+              call stlin_doneSpaceConstraints (rconstrSpace)
+            end select
+          end if
+        else
+          select case (ispaceTimeFormulation)
           case (0)
-            call smva_projectControlTstepConst (rvectorSol%RvectorBlock(4),&
-                rconstraints%dumin1,rconstraints%dumax1)
-            call smva_projectControlTstepConst (rvectorSol%RvectorBlock(5),&
-                rconstraints%dumin2,rconstraints%dumax2)
+            call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),1.0_DP/dalphaC)
+            call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),1.0_DP/dalphaC)
           case (1)
-            ! Initialise the space constraints.
-            call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
-                rvectorSol%p_rblockDiscr,rconstrSpace)
-            
-            ! Implement the constraints
-            call smva_projectControlTstepVec (rvectorSol%RvectorBlock(4),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(1),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(1))
-            call smva_projectControlTstepVec (rvectorSol%RvectorBlock(5),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(2),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(2))
-            
-            ! Done.
-            call stlin_doneSpaceConstraints (rconstrSpace)
+            call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalphaC)
+            call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalphaC)
           end select
+          
+          if (rconstraints%ccontrolConstraints .ne. 0) then
+            select case (rconstraints%cconstraintsType)
+            case (0)
+              call smva_projectControlTstepConst (rvectorSol%RvectorBlock(4),&
+                  rconstraints%dumin1,rconstraints%dumax1)
+              call smva_projectControlTstepConst (rvectorSol%RvectorBlock(5),&
+                  rconstraints%dumin2,rconstraints%dumax2)
+            case (1)
+              ! Initialise the space constraints.
+              call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
+                  rvectorSol%p_rblockDiscr,rconstrSpace)
+              
+              ! Implement the constraints
+              call smva_projectControlTstepVec (rvectorSol%RvectorBlock(4),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(1),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(1))
+              call smva_projectControlTstepVec (rvectorSol%RvectorBlock(5),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(2),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(2))
+              
+              ! Done.
+              call stlin_doneSpaceConstraints (rconstrSpace)
+            end select
+          end if
         end if
+        
       end if
       
     end select

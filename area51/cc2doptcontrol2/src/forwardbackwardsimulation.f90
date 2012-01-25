@@ -436,7 +436,19 @@ module forwardbackwardsimulation
     type(t_discreteFBC), dimension(:), pointer :: p_RdiscreteFBC => null()
     
     ! Definition of the Neumann boundary conditions on all levels.
-    type(t_neumannBoundary), dimension(:), pointer :: p_RneumannBoundary => null()
+    type(t_boundaryRegionList), dimension(:), pointer :: p_RneumannBoundary => null()
+    
+    ! Neumann boundary integral template matrix on all levels.
+    type(t_matrixScalar), dimension(:), pointer :: p_RneumannBoudaryOperator => null()
+    
+    ! Definition of the Dirichlet boundary control boundary on all levels.
+    type(t_boundaryRegionList), dimension(:), pointer :: p_RdirichletBCC => null()
+    
+    ! Boundary control template matrix for the primal/dual velocity on all levels.
+    type(t_matrixScalar), dimension(:), pointer :: p_RboudaryOperatorVel => null()
+
+    ! Boundary control template matrix for the dual pressure on all levels.
+    type(t_matrixScalar), dimension(:), pointer :: p_RboudaryOperatorGradient => null()
     
     ! An array of 3x#levels temp vectors.
     ! Note: The temp vectors on the maximum level are created but
@@ -1226,6 +1238,11 @@ contains
     allocate(rpreconditioner%p_RdiscreteBC(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
     allocate(rpreconditioner%p_RdiscreteFBC(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
     allocate(rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    allocate(rpreconditioner%p_RneumannBoudaryOperator(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    allocate(rpreconditioner%p_RdirichletBCC(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    allocate(rpreconditioner%p_RboudaryOperatorVel(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    allocate(rpreconditioner%p_RboudaryOperatorGradient(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
+    
     do ilev=rpreconditioner%NLMIN,rpreconditioner%NLMAX
       call bcasm_initDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_initDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
@@ -1932,12 +1949,14 @@ contains
 
     ! local variables
     integer :: ilev
+    logical :: bfilterNeumannPrimal,bfilterNeumannDual
+    type(t_boundaryRegionList), pointer :: p_rneumannBoundary
 
     ! Clear the BC`s and reassemble on all levels.
     do ilev = rpreconditioner%NLMIN,rpreconditioner%NLMAX
       call bcasm_clearDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_clearDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
-      call sbc_releaseNeumannBoundary(rpreconditioner%p_RneumannBoundary(ilev))
+      call sbc_releaseBoundaryList(rpreconditioner%p_RneumannBoundary(ilev))
       
       call sbc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtimePrimal,dtimeDual,&
           rpreconditioner%cspace,rglobalData,SBC_ALL,&
@@ -1960,33 +1979,64 @@ contains
     rpreconditioner%bneedPressureDiagBlockDual = .false.
     rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
     rpreconditioner%RfilterChain(6)%ifilterType = FILTER_DONOTHING
+    
+    ! Determine whether or not to filter the pressure.
+    ! If the boundary conditions are pure Dirichlet, the pressure
+    ! is indefinite and has to be filtered.
+    bfilterNeumannPrimal = .false.
+    bfilterNeumannDual = .false.
+!    select case (rpreconditioner%chasNeumann)
+!    case (0)
+!      ! Enforce no Neumann
+!      bfilterNeumannPrimal = .false.
+!      bfilterNeumannDual = .false.
+!      
+!    case (1)
+!      ! Enforce Neumann
+!      bfilterNeumannPrimal = .true.
+!      bfilterNeumannDual = .true.
+!
+!    case default
+      ! Automatic detection      
+      p_rneumannBoundary => rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)
+
+      if (p_rneumannBoundary%nregionsPrimal .eq. 0) then
+        bfilterNeumannPrimal = .true.
+      end if
+      
+      if (p_rneumannBoundary%nregionsDual .eq. 0) then
+        bfilterNeumannDual = .true.
+      end if
+
+!    end select
+    
+    ! Initiate the filtering
     select case (rpreconditioner%cspace)
     case (CCSPACE_PRIMAL)
-      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+      if (bfilterNeumannPrimal) then
         rpreconditioner%bneedPressureDiagBlockPrimal = .true.
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
       end if
     case (CCSPACE_DUAL)
-      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+      if (bfilterNeumannDual) then
         rpreconditioner%bneedPressureDiagBlockDual = .true.
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
       end if
     case (CCSPACE_PRIMALDUAL)
-      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+      if (bfilterNeumannPrimal) then
         rpreconditioner%bneedPressureDiagBlockPrimal = .true.
         rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(3)%itoL20component = 3
       end if
 
-      if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+      if (bfilterNeumannDual) then
         rpreconditioner%bneedPressureDiagBlockDual = .true.
         rpreconditioner%RfilterChain(6)%ifilterType = FILTER_TOL20
         rpreconditioner%RfilterChain(6)%itoL20component = 6
       end if
     end select
-    
 
   end subroutine
 
@@ -2036,7 +2086,7 @@ contains
 
     ! Release boundary condition structures
     do ilev = rpreconditioner%NLMAX,rpreconditioner%NLMIN,-1
-      call sbc_releaseNeumannBoundary(rpreconditioner%p_RneumannBoundary(ilev))
+      call sbc_releaseBoundaryList(rpreconditioner%p_RneumannBoundary(ilev))
       call bcasm_releaseDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
       call bcasm_releaseDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
     end do
@@ -2253,8 +2303,9 @@ contains
       ! analytically!
       call smva_initNonlinearData (rlocalNonlinearity,&
           p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
-          rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(ieqTime+ioffdiag),&
-          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+          rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime+ioffdiag),&
+          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+          rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime+ioffdiag))
 
       ! Create a nonlinear matrix on the current level.
       call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -2305,7 +2356,7 @@ contains
         ! the primal equation -- as long as there is not a full identity
         ! matrix in the pressure matrix (what would be the case for
         ! the initial condition).
-        if (rnonlinearSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%DidentityP(1,1) .eq. 0.0_DP) then
           ! Switch the pressure matrix on and clear it; we don't know what is inside.
           p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
           call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -2332,7 +2383,7 @@ contains
           ! the primal equation -- as long as there is not a full identity
           ! matrix in the pressure matrix (what would be the case for
           ! the initial condition).
-          if (rnonlinearSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
+          if (rnonlinearSpatialMatrix%DidentityP(1,1) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
             p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
             call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -2365,7 +2416,7 @@ contains
         ! the dual equation -- as long as there is not a full identity
         ! matrix in the pressure matrix (what would be the case for
         ! the initial condition).
-        if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
+        if (rnonlinearSpatialMatrix%DidentityP(2,2) .eq. 0.0_DP) then
           ! Switch the pressure matrix on and clear it; we don't know what is inside.
           p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
           call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
@@ -2392,7 +2443,7 @@ contains
           ! the dual equation -- as long as there is not a full identity
           ! matrix in the pressure matrix (what would be the case for
           ! the initial condition).
-          if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
+          if (rnonlinearSpatialMatrix%DidentityP(2,2) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
             p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
             call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
@@ -2522,6 +2573,7 @@ contains
     integer :: ierror
     type(t_linsolNode), pointer :: p_rsolverNode
     type(t_timer) :: rtimer
+    logical :: bfilterNeumannPrimal,bfilterNeumannDual
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_def
@@ -2592,21 +2644,48 @@ contains
         call vecfil_discreteFBCdef (rd,rpreconditioner%p_RdiscreteFBC(rpreconditioner%NLMAX))
         
         ! Probably filter the pressure
+
+        bfilterNeumannPrimal = .false.
+        bfilterNeumannDual = .false.
+!        select case (rpreconditioner%chasNeumann)
+!        case (0)
+!          ! Enforce no Neumann
+!          bfilterNeumannPrimal = .false.
+!          bfilterNeumannDual = .false.
+!          
+!        case (1)
+!          ! Enforce Neumann
+!          bfilterNeumannPrimal = .true.
+!          bfilterNeumannDual = .true.
+!
+!        case default
+          ! Automatic detection      
+
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+            bfilterNeumannPrimal = .true.
+          end if
+          
+          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+            bfilterNeumannDual = .true.
+          end if
+
+!        end select
+
         select case (rpreconditioner%cspace)
         case (CCSPACE_PRIMAL)
-          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+          if (bfilterNeumannPrimal) then
             call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
           end if
         case (CCSPACE_DUAL)
-          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+          if (bfilterNeumannDual) then
             ! Dual pressure in component 3 in this case!
             call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
           end if
         case (CCSPACE_PRIMALDUAL)
-          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsPrimal .eq. 0) then
+          if (bfilterNeumannPrimal) then
             call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
           end if
-          if (rpreconditioner%p_RneumannBoundary(rpreconditioner%NLMAX)%nregionsDual .eq. 0) then
+          if (bfilterNeumannDual) then
             call vecfil_normaliseToL20Sca (rd%RvectorBlock(6))
           end if
         end select
@@ -3707,8 +3786,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! RHS.
           call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
@@ -3743,8 +3823,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! Current RHS
           call lsysbl_copyVector (p_rcurrentrhs,rrhs)
@@ -4105,8 +4186,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
           
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4139,8 +4221,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
           
           ! There is no previous timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)
@@ -4325,8 +4408,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
@@ -4362,8 +4446,9 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
-              p_rspaceTimeMatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator)
+              p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+              p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! There is next timestep. Load the RHS into the defect vector
           call lsysbl_copyVector (p_rcurrentrhs,rdefect)

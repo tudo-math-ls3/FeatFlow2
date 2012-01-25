@@ -133,6 +133,12 @@ module structuresoptc
     ! $\alpha$ parameter of the optimal control functional
     real(DP) :: dalphaC = 1.0_DP
     
+    ! $\alpha$ parameter of the optimal control functional via boundary control
+    real(DP) :: dbetaC = 1.0_DP
+    
+    ! Penalty parameter for the dirichlet boundary control
+    real(DP) :: ddirichletBCPenalty = 100.0_DP
+    
     ! $\gamma$ parameter of the nonstationary optimal control functional
     real(DP) :: dgammaC = 0.0_DP
   

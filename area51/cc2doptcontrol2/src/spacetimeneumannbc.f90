@@ -88,7 +88,7 @@ module spacetimeneumannbc
     integer :: NEQtime = 0
     
     ! Analytical definition of the Neumann boundary segments
-    type(t_neumannBoundary), dimension(:), pointer :: p_RneumannBoundary => null()
+    type(t_boundaryRegionList), dimension(:), pointer :: p_RbdRegion => null()
     
     ! Neumann boundary integral template matrix. This matrix contains the structure
     ! of an operator that works on the Neumann boundary. To save time, it is
@@ -143,7 +143,7 @@ contains
     rsptiNeumannBC%p_rspaceDiscr => rspaceDiscr
     rsptiNeumannBC%p_rasmTemplates => rasmTemplates
     rsptiNeumannBC%NEQtime = rtimeDiscr%nintervals+1
-    allocate(rsptiNeumannBC%p_RneumannBoundary(rsptiNeumannBC%NEQtime))
+    allocate(rsptiNeumannBC%p_RbdRegion(rsptiNeumannBC%NEQtime))
   
   end subroutine
 
@@ -165,7 +165,7 @@ contains
 !</subroutine>
 
     ! Initialise the structure.
-    deallocate(rsptiNeumannBC%p_RneumannBoundary)
+    deallocate(rsptiNeumannBC%p_RbdRegion)
     rsptiNeumannBC%NEQtime = 0
     nullify(rsptiNeumannBC%p_rtimeDiscr)
     nullify(rsptiNeumannBC%p_rspaceDiscr)
@@ -197,7 +197,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Structure to release.
+  ! Structure to assemble.
   type(t_sptiNeumannBoundary), intent(inout) :: rsptiNeumannBC
 !</inputoutput>
 
@@ -207,7 +207,7 @@ contains
     integer :: i,j
     real(DP) :: dtimePrimal, dtimeDual, dtstep
     type(t_bilinearForm) :: rform
-    type(t_neumannBdRegion), pointer :: p_rdualNeumannBd
+    type(t_bdRegionEntry), pointer :: p_rdualNeumannBd
     type(t_matrixScalar) :: rneumannBoudaryOperator
     
     ! Prepare a bilinear form.
@@ -234,15 +234,15 @@ contains
       dtimeDual = dtimePrimal - (1.0_DP-rsptiNeumannBC%p_rtimeDiscr%dtheta)*dtstep
     
       ! Calculate the Neumann BC's.
-      call sbc_releaseNeumannBoundary(rsptiNeumannBC%p_RneumannBoundary(i))
+      call sbc_releaseBoundaryList(rsptiNeumannBC%p_RbdRegion(i))
       call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
             CCSPACE_PRIMALDUAL,rglobalData,SBC_NEUMANN,&
             rsptiNeumannBC%p_rtimediscr,rsptiNeumannBC%p_rspacediscr,&
-            rneumannBoundary=rsptiNeumannBC%p_RneumannBoundary(i))
+            rneumannBoundary=rsptiNeumannBC%p_RbdRegion(i))
             
       ! Assemble the operator on all boundary components in rneumannBoundary.
-      p_rdualNeumannBd => rsptiNeumannBC%p_RneumannBoundary(i)%p_rdualNeumannBdHead
-      do j = 1,rsptiNeumannBC%p_RneumannBoundary(i)%nregionsDual
+      p_rdualNeumannBd => rsptiNeumannBC%p_RbdRegion(i)%p_rdualBdHead
+      do j = 1,rsptiNeumannBC%p_RbdRegion(i)%nregionsDual
         ! Discretise a mass-operator on the boundary to mark the rows which may contain
         ! boundary integrals.
         call bilf_buildMatrixScalarBdr2D (rform, CUB_G2_1D, .false., &
@@ -250,7 +250,7 @@ contains
             rboundaryRegion=p_rdualNeumannBd%rboundaryRegion)
 
         ! Next segment
-        p_rdualNeumannBd => p_rdualNeumannBd%p_nextNeumannRegion
+        p_rdualNeumannBd => p_rdualNeumannBd%p_nextBdRegion
       end do
     end do
     

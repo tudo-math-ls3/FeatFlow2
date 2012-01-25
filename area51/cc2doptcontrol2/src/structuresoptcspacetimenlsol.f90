@@ -45,6 +45,7 @@ module structuresoptcspacetimenlsol
   use spacetimelinearsolver
   
   use spacetimeneumannbc
+  use spacetimedirichletbcc
   
   implicit none
   
@@ -174,8 +175,11 @@ module structuresoptcspacetimenlsol
     ! Evaluation points of the nonlinearities on all levels
     type(t_spacetimeVector), dimension(:), pointer :: p_Rsolutions => null()
 
-    ! Neumann boundary conditions on all levels; for nonlinear boundarty conditions
+    ! Neumann boundary conditions on all levels; for nonlinear boundary conditions
     type(t_sptiNeumannBoundary), dimension(:), pointer :: p_rsptiNeumannBC => null()
+
+    ! Dirichlet boundary control boundary conditions on all levels.
+    type(t_sptiDirichletBCCBoundary), dimension(:), pointer :: p_rsptiDirichletBCC => null()
   
     ! <!-- Output -->
 
@@ -270,6 +274,7 @@ contains
     allocate(rsolver%p_RprecMatrices(ispaceTimeLevel))
     allocate(rsolver%p_Rsolutions(ispaceTimeLevel))
     allocate(rsolver%p_rsptiNeumannBC(ispaceTimeLevel))
+    allocate(rsolver%p_rsptiDirichletBCC(ispaceTimeLevel))
 
     ! Allocate temp vectors on all levels for the nonlinearity
     do ilev = 1,ispaceTimeLevel
@@ -288,6 +293,11 @@ contains
           p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
           rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
           rsolver%p_rsptiNeumannBC(ilev))
+    
+      ! Create arrays for Dirichlet boundary control      
+      call stnm_createDirichletBCCBd (p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
+          rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
+          rsolver%p_rsptiDirichletBCC(ilev))
     
     end do
         
@@ -332,6 +342,7 @@ contains
 
     ! Release temp vectors and Neumann BC's.
     do ilev = 1,size(rsolver%p_Rsolutions)
+      call stnm_releaseDirichletBCCBd (rsolver%p_rsptiDirichletBCC(ilev))
       call stnm_releaseNeumannBoundary (rsolver%p_rsptiNeumannBC(ilev))
       call sptivec_releaseVector(rsolver%p_Rsolutions(ilev))
     end do
@@ -339,6 +350,7 @@ contains
     ! Release preconditioner matrices
     deallocate(rsolver%p_Rsolutions)
     deallocate(rsolver%p_rsptiNeumannBC)
+    deallocate(rsolver%p_rsptiDirichletBCC)
     deallocate(rsolver%p_RprecMatrices)
 
   end subroutine

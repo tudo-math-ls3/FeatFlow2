@@ -230,7 +230,7 @@ contains
 !<subroutine>
 
   subroutine optcana_nonstatFunctional (rglobalData,rphysics,rconstraints,rsolution,rreference,&
-      dalpha,dgamma,Derror)
+      dalphaC,dbetaC,dgammaC,Derror)
 
 !<description>
   ! This function calculates the value of the functional which is to be
@@ -261,10 +261,13 @@ contains
   type(t_optcconstraintsSpaceTime), intent(in) :: rconstraints
   
   ! Regularisation parameter $\alpha$.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(IN) :: dalphaC
+
+  ! Regularisation parameter $\beta$.
+  real(DP), intent(IN) :: dbetaC
 
   ! Regularisation parameter $\gamma$.
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(IN) :: dgammaC
 
   ! Global settings for callback routines.
   type(t_globalData), intent(inout), target :: rglobalData
@@ -376,35 +379,41 @@ contains
           Derror(3) = 0.5_DP*(Derr(1)**2+Derr(2)**2)
         end if
         
-        ! Compute:
-        ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
-        ! For that purpose, scale the lambda part and project it if necessary.
-        call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalpha)
-        call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
-        
-        if (rconstraints%ccontrolConstraints .ne. 0) then
-          select case (rconstraints%cconstraintsType)
-          case (0)
-            call smva_projectControlTstepConst (rtempVector%RvectorBlock(4),&
-                rconstraints%dumin1,rconstraints%dumax1)
-            call smva_projectControlTstepConst (rtempVector%RvectorBlock(5),&
-                rconstraints%dumin2,rconstraints%dumax2)
-          case (1)
-            ! Initialise the space constraints.
-            call stlin_initSpaceConstraints (rconstraints,dtime,&
-                rsolution%p_rspaceDiscr,rconstrSpace)
-            
-            ! Implement the constraints
-            call smva_projectControlTstepVec (rtempVector%RvectorBlock(4),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(1),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(1))
-            call smva_projectControlTstepVec (rtempVector%RvectorBlock(5),&
-                rconstrSpace%p_rvectorumin%RvectorBlock(2),&
-                rconstrSpace%p_rvectorumax%RvectorBlock(2))
-            
-            ! Done.
-            call stlin_doneSpaceConstraints (rconstrSpace)
-          end select
+        if (dalphaC .gt. 0.0_DP) then
+          ! Compute:
+          ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
+          ! For that purpose, scale the lambda part and project it if necessary.
+          call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalphaC)
+          call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalphaC)
+          
+          if (rconstraints%ccontrolConstraints .ne. 0) then
+            select case (rconstraints%cconstraintsType)
+            case (0)
+              call smva_projectControlTstepConst (rtempVector%RvectorBlock(4),&
+                  rconstraints%dumin1,rconstraints%dumax1)
+              call smva_projectControlTstepConst (rtempVector%RvectorBlock(5),&
+                  rconstraints%dumin2,rconstraints%dumax2)
+            case (1)
+              ! Initialise the space constraints.
+              call stlin_initSpaceConstraints (rconstraints,dtime,&
+                  rsolution%p_rspaceDiscr,rconstrSpace)
+              
+              ! Implement the constraints
+              call smva_projectControlTstepVec (rtempVector%RvectorBlock(4),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(1),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(1))
+              call smva_projectControlTstepVec (rtempVector%RvectorBlock(5),&
+                  rconstrSpace%p_rvectorumin%RvectorBlock(2),&
+                  rconstrSpace%p_rvectorumax%RvectorBlock(2))
+              
+              ! Done.
+              call stlin_doneSpaceConstraints (rconstrSpace)
+            end select
+          end if
+        else
+          ! No distributed control.
+          call lsyssc_clearVector (rtempVector%RvectorBlock(4))
+          call lsyssc_clearVector (rtempVector%RvectorBlock(5))
         end if
         
         !das hier gibt ein falsches Ergebnis1!
@@ -429,15 +438,15 @@ contains
     ! Derror(2) = Derror(2) / REAL(rsolution%NEQtime,DP)
     
     ! Calculate J(.)
-    Derror(4) = 0.5_DP * Derror(1)  +  0.5_DP * dgamma * Derror(3)
+    Derror(4) = 0.5_DP * Derror(1)  +  0.5_DP * dgammaC * Derror(3)
     
-    if (dalpha .ne. 0.0_DP) then
+    if (dalphaC .gt. 0.0_DP) then
       ! Calculate:
       !    alpha/2 ||u||^2 = 1/2 ||P(lambda)||^2
       Derror(4) = Derror(4) + 0.5_DP * Derror(2)
       
       ! Calculate ||u|| = 1/alpha ||P(lambda)||
-      Derror(2) = 1.0_DP/dalpha * sqrt(Derror(2))
+      Derror(2) = 1.0_DP/dalphaC * sqrt(Derror(2))
     else
       Derror(2) = 0.0_DP
     end if

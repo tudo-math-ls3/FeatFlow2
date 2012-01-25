@@ -96,9 +96,12 @@ module spatialbcdef
 
   ! Assembles Neumann boundary conditions.
   integer, parameter, public :: SBC_NEUMANN = 2
+
+  ! Assembles Dirichlet boudnary control boundary conditions.
+  integer, parameter, public :: SBC_DIRICHLETBCC = 4
   
   ! Assembles all boundary conditions.
-  integer, parameter, public :: SBC_ALL = SBC_BDC + SBC_NEUMANN
+  integer, parameter, public :: SBC_ALL = SBC_BDC + SBC_NEUMANN + SBC_DIRICHLETBCC
 !</constantblock>
 
 
@@ -128,13 +131,13 @@ module spatialbcdef
   
   ! Encapsules a region on the boundary where Neumann boundary conditions
   ! are present.
-  type t_neumannBdRegion
+  type t_bdRegionEntry
   
     ! The boundary region where there are Neumann boudary conditions
     type(t_boundaryRegion) :: rboundaryRegion
     
     ! Pointer to the next Neumann boundaty region
-    type(t_neumannBdRegion), pointer :: p_nextNeumannRegion
+    type(t_bdRegionEntry), pointer :: p_nextBdRegion
   
   end type
   
@@ -143,7 +146,7 @@ module spatialbcdef
 !<typeblock>
 
   ! Encapsules all Neumann boundary parts in the domain
-  type t_neumannBoundary
+  type t_boundaryRegionList
   
     ! Number of Neumann boundary regions in the primal equation
     integer :: nregionsPrimal = 0
@@ -152,16 +155,16 @@ module spatialbcdef
     integer :: nregionsDual = 0
   
     ! Pointer to the head of a list of Neumann boundary regions, primal equation
-    type(t_neumannBdRegion), pointer :: p_rprimalNeumannBdHead => null()
+    type(t_bdRegionEntry), pointer :: p_rprimalBdHead => null()
 
     ! Pointer to the head of a list of Neumann boundary regions, dual equation
-    type(t_neumannBdRegion), pointer :: p_rdualNeumannBdHead => null()
+    type(t_bdRegionEntry), pointer :: p_rdualBdHead => null()
 
     ! Pointer to the tail of a list of Neumann boundary regions, primal equation
-    type(t_neumannBdRegion), pointer :: p_rprimalNeumannBdTail => null()
+    type(t_bdRegionEntry), pointer :: p_rprimalBdTail => null()
 
     ! Pointer to the tail of a list of Neumann boundary regions, dual equation
-    type(t_neumannBdRegion), pointer :: p_rdualNeumannBdTail => null()
+    type(t_bdRegionEntry), pointer :: p_rdualBdTail => null()
   
   end type
 
@@ -169,11 +172,11 @@ module spatialbcdef
 
 !<types>
 
-  public :: t_neumannBdRegion
-  public :: t_neumannBoundary
+  public :: t_bdRegionEntry
+  public :: t_boundaryRegionList
   public :: sbc_assembleBDconditions
   public :: sbc_assembleFBDconditions
-  public :: sbc_releaseNeumannBoundary
+  public :: sbc_releaseBoundaryList
 
 contains
 
@@ -181,7 +184,7 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_addNeumannBoundaryRegion (rboundaryRegion,rneumannBoundary,cprimaldual)
+  subroutine sbc_addBoundaryRegion (rboundaryRegion,rneumannBoundary,cprimaldual)
   
 !<description>
   ! Adds a Neumann boundary region to the list of Neumann boundary regions.
@@ -198,7 +201,7 @@ contains
 
 !<inputoutput>
   ! List of Neumann boundary regions
-  type(t_neumannBoundary), intent(inout), target :: rneumannBoundary
+  type(t_boundaryRegionList), intent(inout), target :: rneumannBoundary
 !</inputoutput>
 
 !</subroutine>
@@ -208,18 +211,18 @@ contains
       ! Add to primal Neumann boundary
       if (rneumannBoundary%nregionsPrimal .eq. 0) then
         ! Create the structure if it does not exist.
-        allocate (rneumannBoundary%p_rprimalNeumannBdTail)
-        rneumannBoundary%p_rprimalNeumannBdHead => &
-            rneumannBoundary%p_rprimalNeumannBdTail
+        allocate (rneumannBoundary%p_rprimalBdTail)
+        rneumannBoundary%p_rprimalBdHead => &
+            rneumannBoundary%p_rprimalBdTail
       else
         ! Attach a new tail.
-        allocate (rneumannBoundary%p_rprimalNeumannBdTail%p_nextNeumannRegion)
-        rneumannBoundary%p_rprimalNeumannBdTail => &
-            rneumannBoundary%p_rprimalNeumannBdTail%p_nextNeumannRegion
+        allocate (rneumannBoundary%p_rprimalBdTail%p_nextBdRegion)
+        rneumannBoundary%p_rprimalBdTail => &
+            rneumannBoundary%p_rprimalBdTail%p_nextBdRegion
       end if
       
       ! Put the boundary region to there.
-      rneumannBoundary%p_rprimalNeumannBdTail%rboundaryRegion = rboundaryRegion
+      rneumannBoundary%p_rprimalBdTail%rboundaryRegion = rboundaryRegion
       
       rneumannBoundary%nregionsPrimal = rneumannBoundary%nregionsPrimal + 1
       
@@ -227,18 +230,18 @@ contains
       ! Add to dual Neumann boundary
       if (rneumannBoundary%nregionsDual .eq. 0) then
         ! Create the structure if it does not exist.
-        allocate (rneumannBoundary%p_rdualNeumannBdTail)
-        rneumannBoundary%p_rdualNeumannBdHead => &
-            rneumannBoundary%p_rdualNeumannBdTail
+        allocate (rneumannBoundary%p_rdualBdTail)
+        rneumannBoundary%p_rdualBdHead => &
+            rneumannBoundary%p_rdualBdTail
       else
         ! Attach a new tail.
-        allocate (rneumannBoundary%p_rdualNeumannBdTail%p_nextNeumannRegion)
-        rneumannBoundary%p_rdualNeumannBdTail => &
-            rneumannBoundary%p_rdualNeumannBdTail%p_nextNeumannRegion
+        allocate (rneumannBoundary%p_rdualBdTail%p_nextBdRegion)
+        rneumannBoundary%p_rdualBdTail => &
+            rneumannBoundary%p_rdualBdTail%p_nextBdRegion
       end if
       
       ! Put the boundary region to there.
-      rneumannBoundary%p_rdualNeumannBdTail%rboundaryRegion = rboundaryRegion
+      rneumannBoundary%p_rdualBdTail%rboundaryRegion = rboundaryRegion
       
       rneumannBoundary%nregionsDual = rneumannBoundary%nregionsDual + 1
     end select
@@ -249,7 +252,7 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_releaseNeumannBoundary (rneumannBoundary)
+  subroutine sbc_releaseBoundaryList (rneumannBoundary)
   
 !<description>
   ! Releases a rneumannBoundary structure that was allocated in
@@ -258,27 +261,27 @@ contains
 
 !<inputoutput>
   ! Structure to release
-  type(t_neumannBoundary), intent(inout), target :: rneumannBoundary
+  type(t_boundaryRegionList), intent(inout), target :: rneumannBoundary
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_neumannBdRegion), pointer :: p_rneumannRegion1,p_rneumannRegion2
+    type(t_bdRegionEntry), pointer :: p_rneumannRegion1,p_rneumannRegion2
     integer :: i
     
     ! Release the entries
-    p_rneumannRegion1 => rneumannBoundary%p_rprimalNeumannBdHead
+    p_rneumannRegion1 => rneumannBoundary%p_rprimalBdHead
     do i=1,rneumannBoundary%nregionsPrimal
       p_rneumannRegion2 => p_rneumannRegion1
-      p_rneumannRegion1 => rneumannBoundary%p_rprimalNeumannBdHead
+      p_rneumannRegion1 => rneumannBoundary%p_rprimalBdHead
       deallocate(p_rneumannRegion1)
     end do
 
-    p_rneumannRegion1 => rneumannBoundary%p_rdualNeumannBdHead
+    p_rneumannRegion1 => rneumannBoundary%p_rdualBdHead
     do i=1,rneumannBoundary%nregionsDual
       p_rneumannRegion2 => p_rneumannRegion1
-      p_rneumannRegion1 => rneumannBoundary%p_rdualNeumannBdHead
+      p_rneumannRegion1 => rneumannBoundary%p_rdualBdHead
       deallocate(p_rneumannRegion1)
     end do
     
@@ -294,7 +297,7 @@ contains
 
   subroutine sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
       cbctype,rglobalData,casmFlags,rtimediscr,rspaceDiscr,&
-      rdiscreteBC,rneumannBoundary)
+      rdiscreteBC,rneumannBoundary,rdirichletControlBoundary)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -349,9 +352,14 @@ contains
 !</input>
 
 !<output>
-  ! OPTIONAL: Returns a structure defining the Neumann boundary components.
-  ! Must be released by the caller using sbc_releaseNeumannBoundary!
-  type(t_neumannBoundary), intent(out), optional :: rneumannBoundary
+  ! OPTIONAL: Returns a structure defining the Neumann boundary segments.
+  ! Must be released by the caller using sbc_releaseBoundaryList!
+  type(t_boundaryRegionList), intent(out), optional :: rneumannBoundary
+
+  ! OPTIONAL: Returns a structure defining a list of boundary segments
+  ! where boundary control is to be applied.
+  ! Must be released by the caller using sbc_releaseBoundaryList!
+  type(t_boundaryRegionList), intent(out), optional :: rdirichletControlBoundary
 !</output>
 
 !</subroutine>
@@ -542,7 +550,7 @@ contains
                 select case (ibctyp)
                 
                 case (0)
-                  if ((casmFlags .eq. 2) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
                     ! Usually there's Neumann boundary in this region, but we can't be
                     ! sure. Check if, on the highest level, there's at least one edge
                     ! of the triangulation belonging to the boundary. If yes, we
@@ -556,13 +564,13 @@ contains
                     if (present(rneumannBoundary)) then
                       ! Add the bondary region to the Neumann boundary regions
                       ! if there is a structure present.
-                      call sbc_addNeumannBoundaryRegion(&
+                      call sbc_addBoundaryRegion(&
                           rboundaryRegion,rneumannBoundary,iprimaldual)
                     end if
                   end if
                 
                 case (1)
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     ! Simple Dirichlet boundary.
                     ! Prescribed primal velocity; dual velocity os always zero.
                     ! Read the line again, get the expressions for X- and Y-velocity
@@ -752,7 +760,7 @@ contains
                   
                 case (2)
                 
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     ! Pressure drop boundary conditions.
                     ! Read the line again to get the actual parameters
                     read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
@@ -803,7 +811,7 @@ contains
                   
                 case (3)
                   
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     ! Nonlinear slip boundary conditions.
                     IvelComp = (/1,2/)
                     call bcasm_newSlipBConRealBd (&
@@ -811,7 +819,7 @@ contains
                   end if
                 
                 case (4)
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     ! Simple Dirichlet boundary, separate definition for all
                     ! solution components.
                     ! Read the line again, get the expressions for X- and Y-velocity
@@ -1051,7 +1059,7 @@ contains
                   !
                   rcoll%IquickAccess(1) = ibctyp
                   
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     
                     if (iprimaldual .eq. 1) then
                     
@@ -1151,7 +1159,7 @@ contains
                   
                   end if
                                  
-                  if ((casmFlags .eq. 2) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
                     ! Neumann boundary for the dual.
                     if (iprimaldual .eq. 2) then
                       !call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
@@ -1161,7 +1169,7 @@ contains
                       if (present(rneumannBoundary)) then
                         ! Add the bondary region to the Neumann boundary regions
                         ! if there is a structure present.
-                        call sbc_addNeumannBoundaryRegion(&
+                        call sbc_addBoundaryRegion(&
                             rboundaryRegion,rneumannBoundary,iprimaldual)
                       end if
                     end if
@@ -1186,7 +1194,7 @@ contains
                   !
                   rcoll%IquickAccess(1) = ibctyp
                   
-                  if ((casmFlags .eq. 2) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
                     ! Neumann boundary for the primal.
                     if (iprimaldual .eq. 1) then
                       !call bcasm_getEdgesInBCregion (p_rtriangulation,rboundary,&
@@ -1196,13 +1204,13 @@ contains
                       if (present(rneumannBoundary)) then
                         ! Add the bondary region to the Neumann boundary regions
                         ! if there is a structure present.
-                        call sbc_addNeumannBoundaryRegion(&
+                        call sbc_addBoundaryRegion(&
                             rboundaryRegion,rneumannBoundary,iprimaldual)
                       end if
                     end if
                   end if
 
-                  if ((casmFlags .eq. 1) .or. (casmFlags .eq. 3)) then
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
                     if (iprimaldual .eq. 2) then
                     
                       ! Dual BC's
@@ -1306,6 +1314,88 @@ contains
                       
                     end if
                     
+                  end if
+                  
+                case (7)
+                  
+                  ! Dirichlet boundary control.
+                  !
+                  ! This is treated like Neumann boundary conditions here
+                  ! but leads to a different implementation.
+                  ! The corresponding region is added to the Neumann boundary
+                  ! structure as well as to the Dirichlet boundary control
+                  ! structure.
+                  ! Adding it to the Neumann boundary conditions structure
+                  ! is important, otherwise the components detect the problem
+                  ! as pure Dirichlet and start filtering the pressure... 
+!                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+!                    if (present(rneumannBoundary)) then
+!                      call sbc_addBoundaryRegion(&
+!                          rboundaryRegion,rneumannBoundary,iprimaldual)
+!                    end if
+!                  end if
+
+                  ! For the primal equation, there is a special coupling
+                  ! to the dual equation.
+                  !
+                  ! For the dual equation, we have Dirichlet-0 boundary conditions here.
+
+                  if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
+                  
+                    if (iprimaldual .eq. 1) then
+                      if (present(rdirichletControlBoundary)) then
+                        ! Add the bondary region to the Dirichlet BCC boundary regions
+                        ! if there is a structure present.
+                        call sbc_addBoundaryRegion(&
+                            rboundaryRegion,rdirichletControlBoundary,iprimaldual)
+                      end if
+                    end if
+                    
+                  end if
+                  
+                  if (iand(casmFlags,SBC_BDC) .ne. 0) then
+                    if (iprimaldual .eq. 2) then
+                    
+                      ! Dual BC's
+                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
+
+                        ! dual X-velocity if primal X-velocity exists
+                        
+                        ! Ditichlet-0 boundary
+                        iexptyp = BDC_VALDOUBLE
+                        rcoll%Dquickaccess(4) = 0.0_DP
+                        rcoll%IquickAccess(3) = iexptyp
+                        rcoll%SquickAccess(1) = ''
+                        iid = 0
+                        
+                        rcoll%Dquickaccess(1) = dtimeDual
+                        call user_initCollectForVecAssembly (rglobalData,iid,4,dtimeDual,rcallbackcollection)
+
+                        ! Assemble the BC's.
+                        ! The 2nd element in IquickAccess saves the component number.
+                        ! If we only assemble dual BC's and there are 3 solution components,
+                        ! we assume the vector to specify exactly the dual solution.
+
+                        rcoll%IquickAccess(2) = 4
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+
+                        call user_initCollectForVecAssembly (rglobalData,iid,5,dtimeDual,rcallbackcollection)
+
+                        rcoll%IquickAccess(2) = 5
+                        call bcasm_newDirichletBConRealBD (&
+                            rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
+                            cc_getBDconditionsNavSt2D,rcoll)
+                            
+                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+                            
+                      end if
+                      
+                    end if
+                  
                   end if
 
                 case default
