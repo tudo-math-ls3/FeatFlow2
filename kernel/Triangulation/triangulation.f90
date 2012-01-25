@@ -82,8 +82,8 @@
 !#         (EPS) which e.g. can be imported into a LaTeX document using
 !#         the \includegraphics{} command.
 !#
-!# 19.) tria_searchBoundaryNode
-!#      -> Search for the position of a boundary vertex / edge on the boundary.
+!# 19.) tria_searchBoundaryVertex / tria_searchBoundaryEdge
+!#      -> Search for the position of a boundary vertex/edge on the boundary.
 !#
 !# 20.) tria_generateSubdomain
 !#      -> Extract cells from a mesh and generate a subdomain from them
@@ -124,6 +124,9 @@
 !#
 !# 30.) tria_getVerticesAtFaceDirect
 !#      -> Calculates the vertices on a face in 3D
+!#
+!# 31.) tria_searchBoundaryEdgePar2D
+!#      -> Search for an edge on the boundary which contains a parameter value
 !#
 !# Auxiliary routines:
 !#
@@ -1594,7 +1597,9 @@ module triangulation
   public :: tria_infoStatistics
   public :: tria_exportTriFile
   public :: tria_exportPostScript
-  public :: tria_searchBoundaryNode
+  public :: tria_searchBoundaryVertex
+  public :: tria_searchBoundaryEdge
+  public :: tria_searchBoundaryEdgePar2D
   public :: tria_generateSubdomain
   public :: tria_attachCells
   public :: tria_cellGroupGreedy
@@ -1651,6 +1656,12 @@ module triangulation
   public :: tria_sortElements3DInt
   public :: tria_mergesort
   public :: tria_merge
+
+  ! DEPRECATED: tria_searchBoundaryNode replaced by tria_searchBoundaryVertex/Edge
+  public :: tria_searchBoundaryNode
+  interface tria_searchBoundaryNode
+    module procedure tria_searchBoundaryVertex
+  end interface
 
 contains
 
@@ -5768,7 +5779,7 @@ contains
         do ivt = 1, rtriangulation%NVT
           if (p_InodalProperty(ivt) .gt. 0) then
             ! Get the index of the vertex in the IverticesAtBoundary array.
-            call tria_searchBoundaryNode(ivt,rtriangulation,ivbd)
+            call tria_searchBoundaryVertex(ivt,rtriangulation,ivbd)
             
             ! Write the parameter value. 2nd entry is =0.
             write (iunit,*) p_Ddata(ivbd),0.0_DP
@@ -6097,7 +6108,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_searchBoundaryNode(inode, rtriangulation, iindex)
+  subroutine tria_searchBoundaryVertex(inode, rtriangulation, iindex)
 
 !<description>
   ! This routine accepts as inode a vertex or an edge number of a boundary
@@ -6107,9 +6118,7 @@ contains
 !</description>
 
 !<input>
-  ! The boundary node to search for. A node number 1..NVT will search for
-  ! a boundary vertex. A boundary node number NVT+1..NVT+NMT will search
-  ! for boundary edges.
+  ! The boundary vertex to search for. In the range 1..NVT.
   integer, intent(in) :: inode
 
   ! The triangulation structure where to search the boundary node.
@@ -6118,7 +6127,6 @@ contains
 
 !<output>
   ! If inode is a boundary vertex: The index of the inode in IboundaryVertexPos.
-  ! If inode is a boundary edge: The index of the inode in IboundaryEdgePos.
   ! =0 if inode was not found (e.g. because inode is not on the boundary e.g.).
   integer, intent(out) :: iindex
 !</output>
@@ -6149,6 +6157,11 @@ contains
     else
       ! Search in the IboundaryEdgePos array
       call storage_getbase_int2d (rtriangulation%h_IboundaryEdgePos,p_InodePos)
+
+#if WARN_DEPREC
+      call output_line ("Using deprecated feature. Please update your code.", &
+          OU_CLASS_WARNING,OU_MODE_STD,"tria_searchBoundaryVertex")
+#endif
     end if
 
     call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
@@ -6178,7 +6191,83 @@ contains
       end do
     end if
     
-  end subroutine tria_searchBoundaryNode
+  end subroutine tria_searchBoundaryVertex
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine tria_searchBoundaryEdge(inode, rtriangulation, iindex)
+
+!<description>
+  ! This routine accepts as inode an edge number of a boundary
+  ! edge (1..NMT) and determines the appropriate index of that 
+  ! vertex in the IverticesAtBoundary/IedgesAtBoundary-array.
+!</description>
+
+!<input>
+  ! The boundary edge to search for. In the range 1..NMT.
+  integer, intent(in) :: inode
+
+  ! The triangulation structure where to search the boundary node.
+  type(t_triangulation), intent(in) :: rtriangulation
+!</input>
+
+!<output>
+  ! The index of the inode in IboundaryEdgePos.
+  ! =0 if inode was not found (e.g. because inode is not on the boundary e.g.).
+  integer, intent(out) :: iindex
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ibct
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:,:), pointer :: p_InodePos
+    integer :: ipos,ileft,iright
+    
+    ! Get the boundary component of the vertex
+    call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
+    ibct = p_InodalProperty(inode+rtriangulation%NVT)
+
+    ! We can quit if ibct=0: The node is not on the boundary.
+    if (ibct .eq. 0) then
+      iindex = 0
+      return
+    end if
+    
+    ! Search in the IboundaryEdgePos array
+    call storage_getbase_int2d (rtriangulation%h_IboundaryEdgePos,p_InodePos)
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Use bisection search to find the node in the array.
+    ileft = p_IboundaryCpIdx(ibct)
+    iright = p_IboundaryCpIdx(ibct+1)-1
+    
+    if (p_InodePos(1,ileft) .eq. inode) then
+      ! Return the index in the node array.
+      iindex = p_InodePos(2,ileft)
+    elseif (p_InodePos(1,iright) .eq. inode) then
+      ! Return the index in the node array.
+      iindex = p_InodePos(2,iright)
+    else
+      do while (ileft .lt. iright)
+        ipos = (ileft+iright)/2
+        if (p_InodePos(1,ipos) .gt. inode) then
+          iright = ipos
+        elseif (p_InodePos(1,ipos) .lt. inode) then
+          ileft = ipos
+        else
+          ! We found the node. Return the index in the node array.
+          iindex = p_InodePos(2,ipos)
+          exit
+        end if
+      end do
+    end if
+    
+  end subroutine tria_searchBoundaryEdge
 
   ! ***************************************************************************
 
@@ -6468,7 +6557,7 @@ contains
           if (p_InodalPropertyDest(ivt) .le. rtriaDest%NBCT) then
         
             ! Search the vertex position
-            call tria_searchBoundaryNode(p_IdataInverse(ivt),rtriangulation,ivtpos)
+            call tria_searchBoundaryVertex(p_IdataInverse(ivt),rtriangulation,ivtpos)
             
             ! Get the parameter value.
             p_DvertexParDest(ivt2) = p_DvertexParSrc(ivtpos)
@@ -7091,7 +7180,7 @@ contains
           if (ivt .le. NVT) then
       
             ! Search the vertex position
-            call tria_searchBoundaryNode(ivt,rtriangulation,ivtpos)
+            call tria_searchBoundaryVertex(ivt,rtriangulation,ivtpos)
             
             ! Get the parameter value.
             p_DvertexParDest(ivt2) = p_DvertexParSrc(ivtpos)
@@ -17041,4 +17130,94 @@ contains
 
   end subroutine
   
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine tria_searchBoundaryEdgePar2D(ibct, dpar, &
+      rtriangulation, rboundary, iindex, cpartype)
+
+!<description>
+  ! Searches for the first edge on the boundary which contains
+  ! the parameter value dpar on boundary component ibct.
+!</description>
+
+!<input>
+  ! Number of the boundary component
+  integer, intent(in) :: ibct
+  
+  ! Parameter value.
+  real(DP), intent(in) :: dpar
+
+  ! The triangulation structure where to search the boundary node.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! Boundary object
+  type(t_boundary), intent(in) :: rboundary
+  
+  ! OPTIONAL: Type of parametrisation, the parameters refer to.
+  ! One of the BDR_PAR_xxxx constants.
+  ! If not specified, BDR_PAR_01 is assumed.
+  integer, intent(in), optional :: cparType
+!</input>
+
+!<output>
+  ! The index of the inode in IboundaryEdgePos.
+  ! =0 if inode was not found.
+  integer, intent(out) :: iindex
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer :: ipos,ileft,iright
+    integer :: cparam
+    real(DP) :: dparSearch
+
+    call storage_getbase_double (&
+        rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+    
+    ! Parametrisation
+    cparam = BDR_PAR_01
+    if (present(cparType)) cparam = cparType
+    
+    ! If necessary, switch the parametrisation to 0-1.
+    ! rtriangulation is set up like this.
+    dparSearch = dpar
+    if (cparam .ne. BDR_PAR_01) then
+      dparSearch = boundary_convertParameter(rboundary, ibct, dpar, &
+          cparam, BDR_PAR_01)
+    end if
+    
+    ! Search in the IboundaryEdgePos array
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Use bisection search to find the node in the array.
+    ileft = p_IboundaryCpIdx(ibct)
+    iright = p_IboundaryCpIdx(ibct+1)-1
+    
+    if (dparSearch .gt. p_DvertexParameterValue(iright)) then
+      ! Behind the last vertex parameter value
+      iindex = iright
+    else
+      ! Binary search. Find the edge with dpar being an element
+      ! of its parameter region.
+      do while (ileft .lt. iright-1)
+        ipos = (ileft+iright)/2
+        if (dparSearch .lt. p_DvertexParameterValue(ipos)) then
+          iright = ipos
+        else
+          ileft = ipos
+        end if
+      end do
+
+      ! We found the node. Return the index in the node array.
+      iindex = ileft
+    end if
+    
+  end subroutine tria_searchBoundaryEdgePar2D
+
 end module triangulation

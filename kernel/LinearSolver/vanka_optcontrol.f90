@@ -169,6 +169,12 @@ module vanka_optcontrol
     ! Pointer to the entries of the B2-matrix
     real(DP), dimension(:), pointer :: p_DB2 => null()
 
+    ! Pointer to the entries of the B1_6-matrix
+    real(DP), dimension(:), pointer :: p_DB1_6 => null()
+
+    ! Pointer to the entries of the B2_6-matrix
+    real(DP), dimension(:), pointer :: p_DB2_6 => null()
+
     ! Pointer to the entries of the B4-matrix
     real(DP), dimension(:), pointer :: p_DB4 => null()
 
@@ -215,6 +221,7 @@ module vanka_optcontrol
     logical :: bhaveA41 = .false.
     logical :: bhaveA15 = .false.
     logical :: bhaveA51 = .false.
+    logical :: bhaveB16 = .false.
     logical :: bhaveC = .false.
     
     ! Spatial discretisation structure for velocity
@@ -358,6 +365,13 @@ contains
 
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),rvanka%p_Db1)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,3),rvanka%p_Db2)
+    
+    ! B-matrices in row 1/2 column 6 available?
+    rvanka%bhaveB16 = lsysbl_isSubmatrixPresent(rmatrix,1,6)
+    if (rvanka%bhaveB16) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,6),rvanka%p_Db1_6)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,6),rvanka%p_Db2_6)
+    end if
 
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,1),rvanka%p_Dd1)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,2),rvanka%p_Dd2)
@@ -679,6 +693,7 @@ contains
   real(DP), dimension(:), pointer :: p_DA41,p_DA42,p_DA51,p_DA52
   real(DP), dimension(:), pointer :: p_DA44,p_DA45,p_DA54,p_DA55
   real(DP), dimension(:), pointer :: p_DB1,p_DB2,p_DD1,p_DD2
+  real(DP), dimension(:), pointer :: p_DB1_6,p_DB2_6
   real(DP), dimension(:), pointer :: p_DB4,p_DB5,p_DD4,p_DD5
   real(DP), dimension(:), pointer :: p_DC1, p_DC2
 
@@ -697,9 +712,9 @@ contains
                                      p_DvecU2,p_DvecV2,p_DvecP2
   
   ! local variables
-  logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bHaveC
+  logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bhaveB16,bHaveC
   integer :: idxu,idxp,idxp2,idofp,idofu,i,j,id1,id2,ndofu,ndofp,info,ielidx,iter
-  real(DP) :: daux1,daux2,daux4,daux5
+  real(DP) :: daux1,daux2,daux4,daux5,daux16,daux26
   real(DP) :: dp1,dp2
   
     ! Get the pointers to the vector data
@@ -725,6 +740,7 @@ contains
     bhaveA15 = rvanka%bhaveA15
     bhaveA41 = rvanka%bhaveA41
     bhaveA51 = rvanka%bhaveA51
+    bhaveB16 = rvanka%bhaveB16
     
     ! Get the pointers from the Vanka structure for faster access
     p_KldA11   => rvanka%p_KldA11
@@ -742,6 +758,8 @@ contains
     p_KcolD    => rvanka%p_KcolD
     p_Db1      => rvanka%p_Db1
     p_Db2      => rvanka%p_Db2
+    p_Db1_6    => rvanka%p_Db1_6
+    p_Db2_6    => rvanka%p_Db2_6
     p_Dd1      => rvanka%p_Dd1
     p_Dd2      => rvanka%p_Dd2
     p_Da44     => rvanka%p_Da44
@@ -863,52 +881,117 @@ contains
         end if
           
         ! Create: f_u = f_u - A u - B p
-        do idxu = 1,ndofu
         
-          ! The column index gives us the index of a velocity DOF which is
-          ! adjacent to the current pressure dof - so get its index.
-          idofu = IdofsU(idxu)
+        if (.not. bhaveB16) then
+        
+          do idxu = 1,ndofu
           
-          ! Subtract A*u from the local RHS
-          ! f_u := f_u - A11*u
-          ! f_v := f_v - A22*v
-          daux1 = 0.0_DP
-          daux2 = 0.0_DP
-          daux4 = 0.0_DP
-          daux5 = 0.0_DP
-          do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
-            j = p_KcolA11(i)
-            daux1 = daux1 + p_DA11(i)*p_DvecU1(j)
-            daux2 = daux2 + p_DA22(i)*p_DvecV1(j)
-            daux4 = daux4 + p_DA44(i)*p_DvecU2(j)
-            daux5 = daux5 + p_DA55(i)*p_DvecV2(j)
-          end do
-          DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,1)*daux1
-          DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,2)*daux2
-          DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,4)*daux4
-          DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,5)*daux5
+            ! The column index gives us the index of a velocity DOF which is
+            ! adjacent to the current pressure dof - so get its index.
+            idofu = IdofsU(idxu)
+            
+            ! Subtract A*u from the local RHS
+            ! f_u := f_u - A11*u
+            ! f_v := f_v - A22*v
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
+              j = p_KcolA11(i)
+              daux1 = daux1 + p_DA11(i)*p_DvecU1(j)
+              daux2 = daux2 + p_DA22(i)*p_DvecV1(j)
+              daux4 = daux4 + p_DA44(i)*p_DvecU2(j)
+              daux5 = daux5 + p_DA55(i)*p_DvecV2(j)
+            end do
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,1)*daux1
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,2)*daux2
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,4)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,5)*daux5
 
-          ! Subtract the pressure stuff.
-          ! f_u := f_u - B1*p
-          ! f_v := f_v - B2*p
-          daux1 = 0.0_DP
-          daux2 = 0.0_DP
-          daux4 = 0.0_DP
-          daux5 = 0.0_DP
-          do i = p_KldB(idofu), p_KldB(idofu+1)-1
-            dp1 = p_DvecP1(p_KcolB(i))
-            dp2 = p_DvecP2(p_KcolB(i))
-            daux1 = daux1 + p_DB1(i)*dp1
-            daux2 = daux2 + p_DB2(i)*dp1
-            daux4 = daux4 + p_DB4(i)*dp2
-            daux5 = daux5 + p_DB5(i)*dp2
-          end do
-          DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,3)*daux1
-          DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,3)*daux2
-          DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,6)*daux4
-          DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,6)*daux5
+            ! Subtract the pressure stuff.
+            ! f_u := f_u - B1*p
+            ! f_v := f_v - B2*p
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldB(idofu), p_KldB(idofu+1)-1
+              dp1 = p_DvecP1(p_KcolB(i))
+              dp2 = p_DvecP2(p_KcolB(i))
+              daux1 = daux1 + p_DB1(i)*dp1
+              daux2 = daux2 + p_DB2(i)*dp1
+              daux4 = daux4 + p_DB4(i)*dp2
+              daux5 = daux5 + p_DB5(i)*dp2
+            end do
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,3)*daux1
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,3)*daux2
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,6)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,6)*daux5
 
-        end do
+          end do
+          
+        else
+        
+          ! Special matrices at position 1/6, 2/6.
+          ! May come in dur to boundary control. Coupling to xi.
+
+          do idxu = 1,ndofu
+          
+            ! The column index gives us the index of a velocity DOF which is
+            ! adjacent to the current pressure dof - so get its index.
+            idofu = IdofsU(idxu)
+            
+            ! Subtract A*u from the local RHS
+            ! f_u := f_u - A11*u
+            ! f_v := f_v - A22*v
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
+              j = p_KcolA11(i)
+              daux1 = daux1 + p_DA11(i)*p_DvecU1(j)
+              daux2 = daux2 + p_DA22(i)*p_DvecV1(j)
+              daux4 = daux4 + p_DA44(i)*p_DvecU2(j)
+              daux5 = daux5 + p_DA55(i)*p_DvecV2(j)
+            end do
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,1)*daux1
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,2)*daux2
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,4)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,5)*daux5
+
+            ! Subtract the pressure stuff.
+            ! f_u := f_u - B1*p
+            ! f_v := f_v - B2*p
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+
+            ! Create: f_u = ... - B~ xi
+            daux16 = 0.0_DP
+            daux26 = 0.0_DP
+            
+            do i = p_KldB(idofu), p_KldB(idofu+1)-1
+              dp1 = p_DvecP1(p_KcolB(i))
+              dp2 = p_DvecP2(p_KcolB(i))
+              daux1 = daux1 + p_DB1(i)*dp1 
+              daux2 = daux2 + p_DB2(i)*dp1 
+              daux4 = daux4 + p_DB4(i)*dp2
+              daux5 = daux5 + p_DB5(i)*dp2
+              daux16 = daux16 + p_DB1_6(i)*dp2
+              daux26 = daux26 + p_DB2_6(i)*dp2
+            end do
+
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,3)*daux1 - Dmult(1,6)*daux16
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,3)*daux2 - Dmult(2,6)*daux26
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,6)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,6)*daux5
+
+          end do
+
+        end if
         
         ! Create the defect in the divergence space.
         do idxp = 1, ndofp
@@ -1252,6 +1335,7 @@ contains
   real(DP), dimension(:), pointer :: p_DA41,p_DA42,p_DA51,p_DA52
   real(DP), dimension(:), pointer :: p_DA44,p_DA45,p_DA54,p_DA55
   real(DP), dimension(:), pointer :: p_DB1,p_DB2,p_DD1,p_DD2
+  real(DP), dimension(:), pointer :: p_DB1_6,p_DB2_6
   real(DP), dimension(:), pointer :: p_DB4,p_DB5,p_DD4,p_DD5
   real(DP), dimension(:), pointer :: p_DC1, p_DC2
 
@@ -1270,7 +1354,7 @@ contains
                                      p_DvecU2,p_DvecV2,p_DvecP2
   
   ! local variables
-  logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bHaveC
+  logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bhaveB16,bHaveC
   integer :: idxu,idxp,idofp,idofu,i,j,id1,ndofu,ndofp,info,ielidx,iter
   integer :: idxprimal,idxdual,ndofslocal,idxu1,idxv1,idxp1,idxu2,idxv2,idxp2
   
@@ -1297,6 +1381,7 @@ contains
     bhaveA15 = rvanka%bhaveA15
     bhaveA41 = rvanka%bhaveA41
     bhaveA51 = rvanka%bhaveA51
+    bhaveB16 = rvanka%bhaveB16
     
     ! Get the pointers from the Vanka structure for faster access
     p_KldA11   => rvanka%p_KldA11
@@ -1314,6 +1399,8 @@ contains
     p_KcolD    => rvanka%p_KcolD
     p_Db1      => rvanka%p_Db1
     p_Db2      => rvanka%p_Db2
+    p_Db1_6    => rvanka%p_Db1_6
+    p_Db2_6    => rvanka%p_Db2_6
     p_Dd1      => rvanka%p_Dd1
     p_Dd2      => rvanka%p_Dd2
     p_Da44     => rvanka%p_Da44
@@ -1422,6 +1509,18 @@ contains
         call fetchsubmatrices (DaFull,KentryLocalA11,p_Da44,p_Da55,p_KcolA11,p_KldA11,ndofu,ndofu,&
             idxu2,idxu2,idxv2,idxv2)
 
+        ! The B-matrices
+        call fetchsubmatrices (DaFull,KentryLocalB,p_DB1,p_DB2,p_KcolB,p_KldB,ndofu,ndofp,&
+            idxu1,idxp1,idxv1,idxp1)
+        call fetchsubmatrices (DaFull,KentryLocalB,p_DB4,p_DB5,p_KcolB,p_KldB,ndofu,ndofp,&
+            idxu2,idxp2,idxv2,idxp2)
+
+        ! The D-matrices
+        call fetchsubmatrices (DaFull,KentryLocalD,p_DD1,p_DD2,p_KcolD,p_KldD,ndofp,ndofu,&
+            idxp1,idxu1,idxp1,idxv1)
+        call fetchsubmatrices (DaFull,KentryLocalD,p_DD4,p_DD5,p_KcolD,p_KldD,ndofp,ndofu,&
+            idxp2,idxu2,idxp2,idxv2)
+
         ! A14/A25
         if (bhaveA14) then
           call fetchsubmatrices (DaFull,KentryLocalA11,p_Da14,p_Da25,p_KcolA11,p_KldA11,ndofu,ndofu,&
@@ -1456,6 +1555,12 @@ contains
         if (bhaveA12) then
           call fetchsubmatrices (DaFull,KentryLocalA12,p_Da15,p_Da24,p_KcolA12,p_KldA12,ndofu,ndofu,&
               idxu1,idxv2,idxv1,idxu2)
+        end if
+        
+        ! B16/B26
+        if (bhaveB16) then
+          call fetchsubmatrices (DaFull,KentryLocalB,p_DB1_6,p_DB2_6,p_KcolB,p_KldB,ndofu,ndofp,&
+              idxu1,idxp2,idxv1,idxp2)
         end if
 
         ! C1/C2
@@ -1496,11 +1601,22 @@ contains
         ! f_u := f_u - B1*p
         ! f_v := f_v - B2*p
         call localmatvec2 (p_DB1, p_DvecP1, Ddefect(idxu1:), -Dmult(1,3), &
-                           p_DB2, p_DvecP2, Ddefect(idxv1:), -Dmult(2,3), &
+                           p_DB2, p_DvecP1, Ddefect(idxv1:), -Dmult(2,3), &
                            p_KcolB, p_KldB, IdofsU, ndofu)
-        call localmatvec2 (p_DB1, p_DvecP1, Ddefect(idxu2:), -Dmult(1,6), &
-                           p_DB2, p_DvecP2, Ddefect(idxv2:), -Dmult(2,6), &
+        call localmatvec2 (p_DB4, p_DvecP2, Ddefect(idxu2:), -Dmult(4,6), &
+                           p_DB5, p_DvecP2, Ddefect(idxv2:), -Dmult(5,6), &
                            p_KcolB, p_KldB, IdofsU, ndofu)
+                           
+        if (bhaveB16) then
+
+          ! Subtract the pressure stuff.
+          ! f_u := f_u - B1~*xi
+          ! f_v := f_v - B2~*xi
+          call localmatvec2 (p_DB1_6, p_DvecP2, Ddefect(idxu1:), -Dmult(1,6), &
+                             p_DB2_6, p_DvecP2, Ddefect(idxv1:), -Dmult(2,6), &
+                             p_KcolB, p_KldB, IdofsU, ndofu)
+
+        end if
 
         ! Does the C matrix exist? If yes, then update the local RHS:
         ! f_p := f_p - C*p

@@ -775,10 +775,11 @@ module linearsystemscalar
     integer :: h_Kld = ST_NOHANDLE
     
     ! Format-9ROWC: Handle to an array saving the nonzero row indices.
-    ! KrowIdx(1:NNZROWS) saves for every row in the 'parent' matrix the corresponding
-    ! row number in the compressed matrix -- or 0 if the row does not exist.
-    ! KrowIdx(NNZROWS+1:NEQ+NNZROWS) saves for every row in the compressed
+    ! KrowIdx(1:NNZROWS) saves for every row in the compressed
     ! matrix the corresponding row in the 'parent' matrix.
+    ! KrowIdx(NNZROWS+1:NEQ+NNZROWS) saves for every row in the 'parent' 
+    ! matrix the corresponding row number in the compressed matrix -- 
+    ! or 0 if the row does not exist in the compressed matrix.
     integer :: h_KrowIdx = ST_NOHANDLE
     
     ! Format-9: Similar to row structure. Handle top array of length NEQ.
