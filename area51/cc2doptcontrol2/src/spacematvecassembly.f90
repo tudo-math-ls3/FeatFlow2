@@ -6352,7 +6352,7 @@ contains
     rform1%Idescriptors(2,1) = DER_FUNC2D
     rform1%ballCoeffConstant = .true.
     rform1%BconstantCoeff(1) = .true.
-    rform1%Dcoefficients(1:rform1%itermCount)  = dc1
+    rform1%Dcoefficients(1:rform1%itermCount)  = dc1 * dpenalty
 
     ! Prepare a bilinear form for lambda
     rform2%itermCount = 2
@@ -6361,7 +6361,7 @@ contains
     rform2%Idescriptors(1,2) = DER_DERIV2D_Y
     rform2%Idescriptors(2,2) = DER_FUNC2D
     rform2%ballCoeffConstant = .false.
-    rform2%BconstantCoeff(:) = .false.
+    rform2%BconstantCoeff(1:rform2%itermCount) = .false.
     rform2%Dcoefficients(1:rform2%itermCount)  = 1.0_DP
     
     ! Prepare a bilinear form for p
@@ -6369,24 +6369,24 @@ contains
     rform3%Idescriptors(1,1) = DER_FUNC2D
     rform3%Idescriptors(2,1) = DER_FUNC2D
     rform3%ballCoeffConstant = .false.
-    rform3%BconstantCoeff(1) = .false.
+    rform3%BconstantCoeff(1:rform3%itermCount) = .false.
     rform3%Dcoefficients(1:rform3%itermCount)  = 1.0_DP
 
-!    ! Prepare a linear form for y
-!    rlinform1%itermCount = 1
-!    rlinform1%Idescriptors(1) = DER_FUNC2D
-!    rlinform1%Dcoefficients(1:rlinform1%itermCount)  = dc1
-!
-!    ! Prepare a linear form for lambda
-!    rlinform2%itermCount = 2
-!    rlinform2%Idescriptors(1) = DER_DERIV2D_X
-!    rlinform2%Idescriptors(2) = DER_DERIV2D_Y
-!    rlinform2%Dcoefficients(1:rlinform2%itermCount)  = 1.0_DP
-!   
-!    ! Prepare a linear form for p
-!    rlinform3%itermCount = 1
-!    rlinform3%Idescriptors(1) = DER_FUNC2D
-!    rlinform3%Dcoefficients(1:rform3%itermCount)  = 1.0_DP
+    ! Prepare a linear form for y
+    rlinform1%itermCount = 1
+    rlinform1%Idescriptors(1) = DER_FUNC2D
+    rlinform1%Dcoefficients(1:rlinform1%itermCount)  = dc1
+
+    ! Prepare a linear form for lambda
+    rlinform2%itermCount = 2
+    rlinform2%Idescriptors(1) = DER_DERIV2D_X
+    rlinform2%Idescriptors(2) = DER_DERIV2D_Y
+    rlinform2%Dcoefficients(1:rlinform2%itermCount)  = 1.0_DP
+   
+    ! Prepare a linear form for p
+    rlinform3%itermCount = 1
+    rlinform3%Idescriptors(1) = DER_FUNC2D
+    rlinform3%Dcoefficients(1:rform3%itermCount)  = 1.0_DP
 
     ! Prepare a bilinear form for y
     rformweak1%itermCount = 3
@@ -6474,7 +6474,7 @@ contains
 !      
 !      ! Dual velocity.
 !
-!      rcollection%DquickAccess(1) = dc2
+!      rcollection%DquickAccess(1) = dc2 * dpenalty
 !
 !      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
 !          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
@@ -6488,7 +6488,7 @@ contains
 !      end if
 !
 !      ! Pressure
-!      rcollection%DquickAccess(1) = dc3
+!      rcollection%DquickAccess(1) = dc3 * dpenalty
 !
 !      ! X-derivative
 !      rcollection%IquickAccess(1) = 1
@@ -6617,40 +6617,69 @@ contains
       ! ----------------------------------------
 
       ! Sum up the matrices
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP)!0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
 
-
+      ! Only the entries on the boundary, replacing the old entries
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixY1temp,rmatrixY1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+        call lsyssc_matrixLinearCombIndexed (&
+            rmatrixY2temp,rmatrixY2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+      end if
+      
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+      
+      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+        call lsyssc_matrixLinearCombIndexed (&
+            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+      end if
+      
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+      call lsyssc_matrixLinearCombIndexed (&
+          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+          
+!      ! Only the entries on the boundary, summing up to the old entries
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixY1temp,rmatrixY1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP)!0.0_DP,Idofs(1:ndofs))
 !      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
 !        call lsyssc_matrixLinearCombIndexed (&
-!            rmatrixY2temp,rmatrixY2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!            rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
 !      end if
 !      
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,0.0_DP,Idofs(1:ndofs))
-!      
+!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
 !      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
 !        call lsyssc_matrixLinearCombIndexed (&
-!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
 !      end if
 !      
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,0.0_DP,Idofs(1:ndofs))
-          
+!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+
+!      ! All entries from the integral, summing up
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP)
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP)
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP)
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP)
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP)
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP)
+
+
       ! Next segment
       p_rdirichletBCCBd => p_rdirichletBCCBd%p_nextBdRegion
     end do
