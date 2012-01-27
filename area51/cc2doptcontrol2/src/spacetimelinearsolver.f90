@@ -8439,6 +8439,18 @@ contains
             
               ! Perform the pre-smoothing with the current solution vector
               if (associated(p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother)) then
+
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpacePrecond)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly)
+
                 call stat_startTimer (p_rsubnode%rtimeSmoothing)
                 call sptils_smoothCorrection (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother,&
@@ -8748,6 +8760,18 @@ contains
                                             
               ! Perform the post-smoothing with the current solution vector
               if (associated(p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother)) then
+
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpacePrecond)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly)
+                call stat_clearTimer (&
+                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly)
+
                 call stat_startTimer (p_rsubnode%rtimeSmoothing)
                 call sptils_smoothCorrection (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother,&

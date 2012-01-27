@@ -1879,13 +1879,14 @@ contains
       ! Get a dummy structure for a full matrix.
       call stlin_getFullMatrixDummy(rsettings%rphysicsPrimal,rnonlinearSpatialMatrix)
       
-        ! Probably deactivate the offdiagonal submatrices, we don't need them.
-        ! Saves some memory.
-      select case (cspace)
-      case (CCSPACE_PRIMAL,CCSPACE_DUAL)
-        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-      end select
+!      ! Probably deactivate the offdiagonal submatrices, we don't need them.
+!      ! Saves some memory.
+!      select case (cspace)
+!      case (CCSPACE_PRIMAL)
+!        call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+!      case (CCSPACE_DUAL)
+!        call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+!      end select
       
       ! Allocate memory.
       call smva_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,rassemblyFlags,&
