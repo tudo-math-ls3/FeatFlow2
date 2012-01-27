@@ -2126,8 +2126,13 @@ contains
 
     ! Status reset
     rsolverNode%iresult = 0
-    
+
+    ! Reset the timings
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+
     rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
@@ -2168,10 +2173,7 @@ contains
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
     p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
 
-    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
-    
-    call stat_clearTimer (rsolverNode%rtimeTotal)
+    ! Stop the time needed for the computation    
     call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! rd is our RHS. p_rx points to a new vector which will be our
@@ -2696,7 +2698,12 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Dsol
     
+    ! Reset the timings
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+
     rsolverNode%niteLinSolveSpace = 0
     
     ! Get a pointer to our preconditioner
@@ -2730,10 +2737,6 @@ contains
     p_rdiscreteBC => p_rpreconditioner%p_RdiscreteBC(p_rpreconditioner%nlmax)
     p_rdiscreteFBC => p_rpreconditioner%p_RdiscreteFBC(p_rpreconditioner%nlmax)
         
-    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
-
-    call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! ----------------------------------------------------------------------
@@ -3216,7 +3219,11 @@ contains
     type(t_spaceTimeVector) :: rtempVector
     real(dp) :: dnorm
     
+    ! Reset the timings
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
     rsolverNode%niteLinSolveSpace = 0
     
     ! Get a pointer to our preconditioner
@@ -3230,10 +3237,6 @@ contains
     drelaxSOR = rsolverNode%drelax
     drelaxGS = rsolverNode%p_rsubnodeBlockFBSOR%drelaxGS
     
-    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
-    
-    call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
     
     if (rsolverNode%ioutputLevel .ge. 2) then
@@ -5569,7 +5572,12 @@ contains
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
     
+    ! Reset the timings
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     call stat_clearTimer (rsolverNode%rtimeTotal)
+
     call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! Copy the RHS rd to the temp vector; it will be overwritten
@@ -6040,9 +6048,14 @@ contains
   
     ! Solve the system!
   
+    ! Reset the timings
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+
     ! Status reset
     rsolverNode%iresult = 0
-    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
@@ -6084,10 +6097,7 @@ contains
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
 
-    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
-    
-    call stat_clearTimer (rsolverNode%rtimeTotal)
+    ! Stop the time needed for the computation    
     call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! rd is our RHS. p_rx points to a new vector which will be our
@@ -6963,9 +6973,14 @@ contains
   
     ! Solve the system!
   
+    ! Reset the timings
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
+    call stat_clearTimer (rsolverNode%rtimeTotal)
+
     ! Status reset
     rsolverNode%iresult = 0
-    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
@@ -7005,6 +7020,9 @@ contains
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
+    
+    ! Stop the time needed for the computation    
+    call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
@@ -7278,6 +7296,8 @@ contains
     end if
     
     call sptivec_scaleVector (rd,rsolverNode%domega)
+      
+    call stat_stopTimer (rsolverNode%rtimeTotal)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -8235,10 +8255,12 @@ contains
     p_rsubnode%niteLinSolveSpaceSmoothFine = 0
     p_rsubnode%niteLinSolveCoarse = 0
     
+    ! Reset the timings
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
     call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
     call stat_clearTimer (rsolverNode%rtimeTotal)
+
     call stat_clearTimer (rsolverNode%rtimeFiltering)
 
     ! Get the system matrix on the finest level:
@@ -8446,10 +8468,6 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly)
                 call stat_clearTimer (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly)
-                call stat_clearTimer (&
-                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly)
-                call stat_clearTimer (&
-                    p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly)
 
                 call stat_startTimer (p_rsubnode%rtimeSmoothing)
                 call sptils_smoothCorrection (&
@@ -8648,9 +8666,11 @@ contains
             call stat_addTimers (&
                 p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpacePrecond,&
                 rsolverNode%rtimeSpacePrecond)
-            call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+            call stat_addTimers (&
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
                 rsolverNode%rtimeSpaceDefectAssembly)
-            call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+            call stat_addTimers (&
+                p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
                 rsolverNode%rtimeSpaceMatrixAssembly)
             call stat_addTimers (&
                 p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
@@ -8763,10 +8783,6 @@ contains
 
                 call stat_clearTimer (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpacePrecond)
-                call stat_clearTimer (&
-                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly)
-                call stat_clearTimer (&
-                    p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly)
                 call stat_clearTimer (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly)
                 call stat_clearTimer (&
@@ -9553,6 +9569,8 @@ contains
     real(dp) :: dres
 
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     rsolverNode%niteLinSolveSpace = 0
 
     call stat_clearTimer (rsolverNode%rtimeTotal)

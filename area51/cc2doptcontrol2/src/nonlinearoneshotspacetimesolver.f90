@@ -391,6 +391,7 @@ contains
     type(t_sptiNeumannBoundary) :: rsptiNeumannBC
     type(t_sptiDirichletBCCBoundary) :: rsptiDirichletBCC
 
+    ! Reset the timings
     call stat_clearTimer (rnlstsolver%rtimeSmoothing)
     call stat_clearTimer (rnlstsolver%rtimeCoarseGridSolver)
     call stat_clearTimer (rnlstsolver%rtimeLinearAlgebra)
@@ -400,7 +401,7 @@ contains
     
     call stat_clearTimer (rnlstsolver%rtimerPreconditioner)
     call stat_clearTimer (rnlstsolver%rtimerNonlinear)
-
+    
     ! Total number of available levels. The solution is computed
     ! on the topmost level.
     nlevels = rsettings%rspaceTimeHierPrimalDual%nlevels
@@ -517,14 +518,14 @@ contains
                  (ddefNorm .ge. rnlstsolver%depsAbs)) .and. &
                 (abs(ddefNorm-dlastDefNorm) .ge. rnlstsolver%depsDiff*dlastDefNorm)) &
               .and. (rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nmaxIterations)))
-    
-      ! Measure time for the current iterate.
+
+      ! Reset the timings    
       call stat_clearTimer (rtimerIterate)
+      call stat_clearTimer (rtimerPostproc)
+
+      ! Measure time for the current iterate.
       call stat_startTimer (rtimerIterate)
     
-      ! Time for postprocessing in this iterate.
-      call stat_clearTimer (rtimerPostproc)
-         
       if (rnlstsolver%cpostprocessIterates .ne. 1) then
         ! Postprocessing of the current iterate.
         call stat_startTimer (rtimerPostproc)
