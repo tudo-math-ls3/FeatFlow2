@@ -6334,13 +6334,6 @@ contains
     call lsyssc_duplicateMatrix (rmatrixGrad1,rmatrixGrad1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
     call lsyssc_duplicateMatrix (rmatrixGrad2,rmatrixGrad2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
     
-!    call lsyssc_clearMatrix (rmatrixY1temp)
-!    call lsyssc_clearMatrix (rmatrixY2temp)
-!    call lsyssc_clearMatrix (rmatrixLambda1temp)
-!    call lsyssc_clearMatrix (rmatrixLambda2temp)
-!    call lsyssc_clearMatrix (rmatrixGrad1temp)
-!    call lsyssc_clearMatrix (rmatrixGrad2temp)
-    
     ! Assemble the matrices
     
     ! Overwrite all rows by zero which do not correspond to
@@ -6457,6 +6450,24 @@ contains
       call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
           p_rdirichletBCCBd%rboundaryRegion,IdofsArray=Idofs)
 
+#ifdef DEBUG
+      ! Clear the matrices
+      call lsyssc_clearMatrix (rmatrixY1temp)
+      call lsyssc_clearMatrix (rmatrixY2temp)
+      call lsyssc_clearMatrix (rmatrixLambda1temp)
+      call lsyssc_clearMatrix (rmatrixLambda2temp)
+      call lsyssc_clearMatrix (rmatrixGrad1temp)
+      call lsyssc_clearMatrix (rmatrixGrad2temp)
+#else
+      ! Clear the rows in the matrix which are later added to the global matrix.
+      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
+      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
+      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
+      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
+      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
+      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
+#endif
+
 !      ! ------------------------------
 !      ! Weak implementation of the BCC
 !      ! ------------------------------
@@ -6568,13 +6579,13 @@ contains
       rcollection%DquickAccess(2) = rphysics%dnu
       rcollection%DquickAccess(3) = dpenalty
       
-      call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .true., &
+      call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
           rmatrixY1Temp,fcoeff_dirichletbcc_primal,&
           rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
           rcollection=rcollection)
 
       if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-        call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .true., &
+        call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
             rmatrixY2Temp,fcoeff_dirichletbcc_primal,&
             rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
             rcollection=rcollection)
@@ -6585,13 +6596,13 @@ contains
       rcollection%DquickAccess(1) = dc2
       rcollection%DquickAccess(2) = rphysics%dnu
       
-      call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .true., &
+      call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
           rmatrixLambda1Temp,fcoeff_dirichletbcc_dual,&
           rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
           rcollection=rcollection)
 
       if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-        call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .true., &
+        call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
             rmatrixLambda2Temp,fcoeff_dirichletbcc_dual,&
             rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
             rcollection=rcollection)
@@ -6603,13 +6614,13 @@ contains
       ! X-derivative
       rcollection%IquickAccess(1) = 1
 
-      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .true., &
+      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
           rmatrixGrad1Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
       ! Y-derivative
       rcollection%IquickAccess(1) = 2
 
-      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .true., &
+      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
           rmatrixGrad2Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
       ! ----------------------------------------
