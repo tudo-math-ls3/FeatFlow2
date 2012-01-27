@@ -975,6 +975,10 @@ module spacetimelinearsolver
     
     ! STATISTICS OUTPUT: Total time needed for smoothing operations
     type(t_timer) :: rtimeSmoothing
+
+    ! STATISTICS OUTPUT: Total time needed for smoothing operations.
+    ! Finest mesh.
+    type(t_timer) :: rtimeSmoothingFinest
         
     ! STATISTICS OUTPUT: Total time needed for the coarse grid solver
     type(t_timer) :: rtimeCoarseGridSolver
@@ -1001,6 +1005,14 @@ module spacetimelinearsolver
     ! STATISTICS OUTPUT: Time for assembling matrices in space.
     ! All fine grid meshes.
     type(t_timer) :: rtimeSpaceMatrixAssemblyFine
+
+    ! STATISTICS OUTPUT: Time for assembling defect vectors in space.
+    ! Finest mesh.
+    type(t_timer) :: rtimeSpaceDefectAssemblyFinest
+
+    ! STATISTICS OUTPUT: Time for assembling matrices in space.
+    ! Finest mesg.
+    type(t_timer) :: rtimeSpaceMatrixAssemblyFinest
 
     ! STATISTICS OUTPUT: Total number of iterations, the linear space-time solver
     ! needed for all coarse mesh solutions.
@@ -8242,6 +8254,7 @@ contains
     
     ! Initialise timers and statistics
     call stat_clearTimer (p_rsubnode%rtimeSmoothing)
+    call stat_clearTimer (p_rsubnode%rtimeSmoothingFinest)
     call stat_clearTimer (p_rsubnode%rtimeCoarseGridSolver)
     call stat_clearTimer (p_rsubnode%rtimeLinearAlgebra)
     call stat_clearTimer (p_rsubnode%rtimeProlRest)
@@ -8249,6 +8262,8 @@ contains
     call stat_clearTimer (p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
     call stat_clearTimer (p_rsubnode%rtimeSpaceDefectAssemblyFine)
     call stat_clearTimer (p_rsubnode%rtimeSpaceMatrixAssemblyFine)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceDefectAssemblyFinest)
+    call stat_clearTimer (p_rsubnode%rtimeSpaceMatrixAssemblyFinest)
     
     p_rsubnode%niteLinSolveSpaceCoarse = 0
     p_rsubnode%niteLinSolveSpaceSmooth = 0
@@ -8326,6 +8341,14 @@ contains
           p_rsubnode%rtimeSpaceDefectAssemblyCoarse)
       call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
           p_rsubnode%rtimeSpaceMatrixAssemblyCoarse)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+          p_rsubnode%rtimeSpaceDefectAssemblyFine)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+          p_rsubnode%rtimeSpaceMatrixAssemblyFine)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceDefectAssembly,&
+          p_rsubnode%rtimeSpaceDefectAssemblyFinest)
+      call stat_addTimers (p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%rtimeSpaceMatrixAssembly,&
+          p_rsubnode%rtimeSpaceMatrixAssemblyFinest)
           
       ! Total time
       call stat_addTimers (&
@@ -8470,6 +8493,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly)
 
                 call stat_startTimer (p_rsubnode%rtimeSmoothing)
+                if (ilev .eq. nlmax) call stat_startTimer (p_rsubnode%rtimeSmoothingFinest)
                 call sptils_smoothCorrection (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother,&
                     p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
@@ -8477,6 +8501,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
                 call stat_stopTimer (p_rsubnode%rtimeSmoothing)
+                if (ilev .eq. nlmax) call stat_stopTimer (p_rsubnode%rtimeSmoothingFinest)
 
                 ! For the max. level, count the #smoothing steps separately.
                 if (ilev .lt. nlmax) then
@@ -8502,6 +8527,15 @@ contains
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
                     p_rsubnode%rtimeSpaceMatrixAssemblyFine)
+
+                if (ilev .eq. nlmax) then
+                  call stat_addTimers (&
+                      p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceDefectAssembly,&
+                      p_rsubnode%rtimeSpaceDefectAssemblyFinest)
+                  call stat_addTimers (&
+                      p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpaceMatrixAssembly,&
+                      p_rsubnode%rtimeSpaceMatrixAssemblyFinest)
+                end if
 
               end if
             
@@ -8789,6 +8823,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly)
 
                 call stat_startTimer (p_rsubnode%rtimeSmoothing)
+                if (ilev .eq. nlmax) call stat_startTimer (p_rsubnode%rtimeSmoothingFinest)
                 call sptils_smoothCorrection (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother,&
                     p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
@@ -8796,6 +8831,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
                 call stat_stopTimer (p_rsubnode%rtimeSmoothing)
+                if (ilev .eq. nlmax) call stat_stopTimer (p_rsubnode%rtimeSmoothingFinest)
 
                 ! For the max. level, count the #smoothing steps separately.
                 if (ilev .lt. nlmax) then
@@ -8821,6 +8857,15 @@ contains
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly,&
                     p_rsubnode%rtimeSpaceMatrixAssemblyFine)
+    
+                if (ilev .eq. nlmax) then
+                  call stat_addTimers (&
+                      p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceDefectAssembly,&
+                      p_rsubnode%rtimeSpaceDefectAssemblyFinest)
+                  call stat_addTimers (&
+                      p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpaceMatrixAssembly,&
+                      p_rsubnode%rtimeSpaceMatrixAssemblyFinest)
+                end if
 
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &

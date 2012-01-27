@@ -393,6 +393,7 @@ contains
 
     ! Reset the timings
     call stat_clearTimer (rnlstsolver%rtimeSmoothing)
+    call stat_clearTimer (rnlstsolver%rtimeSmoothingFinest)
     call stat_clearTimer (rnlstsolver%rtimeCoarseGridSolver)
     call stat_clearTimer (rnlstsolver%rtimeLinearAlgebra)
     call stat_clearTimer (rnlstsolver%rtimeProlRest)
@@ -783,6 +784,8 @@ contains
       if (associated(rnlstsolver%p_rmgSolver)) then
         call stat_addtimers (rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothing,&
             rnlstsolver%rtimeSmoothing)
+        call stat_addtimers (rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothingFinest,&
+            rnlstsolver%rtimeSmoothingFinest)
         call stat_addtimers (rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver,&
             rnlstsolver%rtimeCoarseGridSolver)
         call stat_addtimers (rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeLinearAlgebra,&
@@ -800,6 +803,8 @@ contains
                       rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
           call output_line ("Time for smoothing          : "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
+          call output_line ("Time for smoothing finest g.: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothingFinest%delapsedReal,10))
           call output_line ("Time for coarse grid solving: "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
           call output_line ("Time for linear algebra     : "//&
@@ -814,6 +819,10 @@ contains
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceDefectAssemblyFine%delapsedReal,10))
           call output_line ("Time for mat. asm. fine grid: "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceMatrixAssemblyFine%delapsedReal,10))
+          call output_line ("Time for def. asm. finest g.: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceDefectAssemblyFinest%delapsedReal,10))
+          call output_line ("Time for mat. asm. finest g.: "//&
+              sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSpaceMatrixAssemblyFinest%delapsedReal,10))
           call output_lbrk ()
         end if
       end if

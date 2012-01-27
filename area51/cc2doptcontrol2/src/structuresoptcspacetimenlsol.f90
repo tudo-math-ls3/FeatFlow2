@@ -203,6 +203,9 @@ module structuresoptcspacetimenlsol
   
     ! STATISTICS: Total time needed for smoothing operations
     type(t_timer) :: rtimeSmoothing
+
+    ! STATISTICS: Total time needed for smoothing operations on the finest mesh.
+    type(t_timer) :: rtimeSmoothingFinest
         
     ! STATISTICS: Total time needed for the coarse grid solver
     type(t_timer) :: rtimeCoarseGridSolver
@@ -402,6 +405,8 @@ contains
                 rsolver%rtimePostprocessing%delapsedReal,10))
     call output_line ("Total time for smoothing           = "//&
         sys_sdL(rsolver%rtimeSmoothing%delapsedReal,10))
+    call output_line ("Total time for smoothing finest g. = "//&
+        sys_sdL(rsolver%rtimeSmoothingFinest%delapsedReal,10))
     call output_line ("Total time for coarse grid solving = "//&
         sys_sdL(rsolver%rtimeCoarseGridSolver%delapsedReal,10))
     call output_line ("Total time for linear algebra      = "//&
