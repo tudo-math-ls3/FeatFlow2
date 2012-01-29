@@ -356,10 +356,14 @@ contains
           
       if (i .lt. rspaceTimeHierarchy%nlevels) then
 
-        ! The restriction matrices have to be divided by 2 as they are
-        ! finite difference restrictions, not finite element restrictions!
-        call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatPrimal(i),0.5_DP)
-        call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatDual(i),0.5_DP)
+        if (rprojHier%p_RrestrictionMatPrimal(i)%neq .ne. rprojHier%p_RrestrictionMatPrimal(i)%ncols) then
+          ! The restriction matrices have to be divided by 2 as they are
+          ! finite difference restrictions, not finite element restrictions!
+          ! Exception: In case of the identity matrix (pure restriction in space),
+          ! no division must be applied.
+          call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatPrimal(i),0.5_DP)
+          call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatDual(i),0.5_DP)
+        end if
         
   !      call lsyssc_getbase_double (rprojHier%p_RrestrictionMatPrimal(i),p_Da)
   !      call lsyssc_getbase_Kcol (rprojHier%p_RrestrictionMatPrimal(i),p_Kcol)
@@ -496,7 +500,33 @@ contains
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
-        
+    
+    if (ndofCoarse .eq. ndofFine) then
+      ! No time prolongation, identity matrix.
+      rprolMatrix%NA = ndofFine
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+      call lsyssc_getbase_double (rprolMatrix,p_Da)
+      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+      
+      ! Fill KLD, KCOL and DA
+      do icol = 1,ndofFine
+        p_Da(icol) = 1.0_DP
+        p_Kcol(icol) = icol
+        p_Kld(icol) = icol
+      end do
+      
+      p_Kld(ndofFine+1) = ndofFine+1
+      
+      return
+    end if
+    
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
     
@@ -830,7 +860,33 @@ contains
     end if
 
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
-        
+
+    if (ndofCoarse .eq. ndofFine) then
+      ! No time prolongation, identity matrix.
+      rprolMatrix%NA = ndofFine
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+      call lsyssc_getbase_double (rprolMatrix,p_Da)
+      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+      
+      ! Fill KLD, KCOL and DA
+      do icol = 1,ndofFine
+        p_Da(icol) = 1.0_DP
+        p_Kcol(icol) = icol
+        p_Kld(icol) = icol
+      end do
+      
+      p_Kld(ndofFine+1) = ndofFine+1
+      
+      return
+    end if
+            
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
 
@@ -1018,7 +1074,33 @@ contains
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
-        
+
+    if (ndofCoarse .eq. ndofFine) then
+      ! No time prolongation, identity matrix.
+      rprolMatrix%NA = ndofFine
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+      call lsyssc_getbase_double (rprolMatrix,p_Da)
+      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+      
+      ! Fill KLD, KCOL and DA
+      do icol = 1,ndofFine
+        p_Da(icol) = 1.0_DP
+        p_Kcol(icol) = icol
+        p_Kld(icol) = icol
+      end do
+      
+      p_Kld(ndofFine+1) = ndofFine+1
+      
+      return
+    end if
+            
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
     case (0,1,2,3,4,6)
@@ -1124,7 +1206,33 @@ contains
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
-        
+
+    if (ndofCoarse .eq. ndofFine) then
+      ! No time prolongation, identity matrix.
+      rprolMatrix%NA = ndofFine
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+      call lsyssc_getbase_double (rprolMatrix,p_Da)
+      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+      
+      ! Fill KLD, KCOL and DA
+      do icol = 1,ndofFine
+        p_Da(icol) = 1.0_DP
+        p_Kcol(icol) = icol
+        p_Kld(icol) = icol
+      end do
+      
+      p_Kld(ndofFine+1) = ndofFine+1
+      
+      return
+    end if
+            
     ! Now depending on the order, create the matrix.
     select case (ctimeProjection)
 
