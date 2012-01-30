@@ -216,6 +216,11 @@ module ucd
   ! not specified.
   integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES     = 2**4
 
+  ! Can be specified additionally to UCD_FLAG_USEEDGEMIDPOINTS and/or
+  ! UCD_FLAG_USEELEMENTMIDPOINTS. Automatically interpolates missing
+  ! nodes.
+  integer(I32), parameter, public :: UCD_FLAG_AUTOINTERPOLATE     = 2**5
+
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
@@ -416,6 +421,9 @@ module ucd
     ! A pointer to the underlying triangulation
     type(t_triangulation), pointer :: p_rtriangulation => null()
     
+    ! A mesh refinement. This defines the additional data for a once refined mesh.
+    type(t_ucdRefine), pointer :: p_rrefineData => null()
+    
     ! A pointer to an array with specification flags. p_IvariableSpec(I)
     ! is a bitfield for variable I that specifies the type of the variable
     ! and how to handle it.
@@ -597,6 +605,11 @@ contains
   ! This routine calculates the mesh refinement of a given triangulation
   ! and a combination of UCD_FLAG_XXXX flags.
   ! This routine is not meant to be called from outside this module.
+  !
+  ! If rrefine%nvertices/ncells=0, no new cells/vertices are created.
+  ! rrefine%nvertices counts the number of vertices additional to those in
+  ! the triangulation. rrefine%ncells is =0 or the total number of cells
+  ! in the refined triangulation.
 !</description>
 
 !<input>
@@ -615,7 +628,7 @@ contains
 !</subroutine>
 
     ! Some local variables
-    integer :: i,j,k,ivt,off,numNewElem
+    integer :: i,j,k,ivt,off
     real(DP) :: dx
     real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DnewVerts
     integer, dimension(:,:), pointer :: p_IvertsAtEdge
@@ -727,11 +740,11 @@ contains
     ! refinement...
     ! Since we work in 2D here, every refinement takes 4 new elements...
     ! TODO: This code may need to be replaced for 3D grids...
-    numNewElem = rtria%NEL * 4
+    rrefine%ncells = rtria%NEL * 4
     
     ! Allocate elements
     I_dim(1) = 4
-    I_dim(2) = numNewElem
+    I_dim(2) = rrefine%ncells
     call storage_new("ucd_refine", "p_DnewVertsAtElement", I_dim, &
         ST_INT, rrefine%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
 
@@ -899,6 +912,10 @@ contains
       end if
     end if
   
+    ! Calculate grid refinement
+    allocate (rexport%p_rrefineData)
+    call ucd_refine(rexport%p_rrefineData, rexport%p_rtriangulation, rexport%cflags)
+  
   end subroutine
 
   !************************************************************************
@@ -961,6 +978,10 @@ contains
         rexport%ncells = rtriangulation%NEL*8
       end if
     end if
+  
+    ! Calculate grid refinement
+    allocate (rexport%p_rrefineData)
+    call ucd_refine(rexport%p_rrefineData, rexport%p_rtriangulation, rexport%cflags)
   
   end subroutine
   
@@ -1025,6 +1046,10 @@ contains
         rexport%ncells = rtriangulation%NEL*8
       end if
     end if
+
+    ! Calculate grid refinement
+    allocate (rexport%p_rrefineData)
+    call ucd_refine(rexport%p_rrefineData, rexport%p_rtriangulation, rexport%cflags)
   
   end subroutine
 
@@ -1105,6 +1130,10 @@ contains
       end if
     end if
   
+      ! Calculate grid refinement
+    allocate (rexport%p_rrefineData)
+    call ucd_refine(rexport%p_rrefineData, rexport%p_rtriangulation, rexport%cflags)
+
   end subroutine
 
   !************************************************************************
@@ -1127,6 +1156,21 @@ contains
     
     ! Release all memory
     
+    if (associated (rexport%p_rrefineData)) then
+      
+      ! We do not need the mesh refinement anymore, so destroy it
+      if (rexport%p_rrefineData%h_DvertexCoords .ne. ST_NOHANDLE) then
+        call storage_free(rexport%p_rrefineData%h_DvertexCoords)
+      end if
+      
+      if (rexport%p_rrefineData%h_IverticesAtElement .ne. ST_NOHANDLE) then
+        call storage_free(rexport%p_rrefineData%h_IverticesAtElement)
+      end if
+
+      deallocate (rexport%p_rrefineData)
+      
+    end if   
+    
     if (associated(rexport%p_SvariableNames)) deallocate(rexport%p_SvariableNames)
     if (associated(rexport%p_SvarVecNames)) deallocate(rexport%p_SvarVecNames)
     if (associated(rexport%p_IvariableSpec)) deallocate(rexport%p_IvariableSpec)
@@ -1137,9 +1181,7 @@ contains
     if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
     if (associated(rexport%p_Scomments))      deallocate(rexport%p_Scomments)
     
-    if(rexport%hpolygonMaterial .ne. ST_NOHANDLE) call storage_free(rexport%hpolygonMaterial)
-    
-    
+    if (rexport%hpolygonMaterial .ne. ST_NOHANDLE) call storage_free(rexport%hpolygonMaterial)
     
     if (associated(rexport%p_Hvariables)) then
       do i=1,rexport%nvariables
@@ -3585,28 +3627,24 @@ contains
     integer, dimension(:), pointer :: p_IcellMaterial
     real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
-    type(t_ucdRefine) :: rrefine
       
       ! Get file unit and export format
       mfile = rexport%iunit
       sdl = rexport%sdataFormat
       
-      ! Calculate grid refinement
-      call ucd_refine(rrefine, rexport%p_rtriangulation, rexport%cflags)
-      
       ! Get refined vertices
-      if (rrefine%h_DvertexCoords .ne. ST_NOHANDLE) then
-        call storage_getbase_double2d (rrefine%h_DvertexCoords, p_DvertexRefined)
+      if (rexport%p_rrefineData%h_DvertexCoords .ne. ST_NOHANDLE) then
+        call storage_getbase_double2d (rexport%p_rrefineData%h_DvertexCoords, p_DvertexRefined)
       else
         p_DvertexRefined => null()
       end if
 
       ! If the mesh is to be refined, then we take the refined elements,
       ! otherwise we use the elements from the triangulation
-      if (rrefine%h_IverticesAtElement .ne. ST_NOHANDLE) then
-        call storage_getbase_int2d (rrefine%h_IverticesAtElement, &
+      if (rexport%p_rrefineData%h_IverticesAtElement .ne. ST_NOHANDLE) then
+        call storage_getbase_int2d (rexport%p_rrefineData%h_IverticesAtElement, &
             p_IverticesAtElement)
-        ncells = rrefine%ncells
+        ncells = rexport%p_rrefineData%ncells
       else
         call storage_getbase_int2d (rexport%p_rtriangulation%h_IverticesAtElement,&
             p_IverticesAtElement)
@@ -3616,7 +3654,7 @@ contains
       ! Get corner vertices
       call storage_getbase_double2d (rexport%p_Rtriangulation%h_DvertexCoords,&
           p_DvertexCoords)
-      nverts = rexport%p_rtriangulation%NVT + rrefine%nvertices
+      nverts = rexport%p_rtriangulation%NVT + rexport%p_rrefineData%nvertices
       
       ! Get cell materials, if specified
       if(rexport%hIcellMaterial .ne. ST_NOHANDLE) then
@@ -3657,7 +3695,7 @@ contains
         
         ! Write refined vertices
         j = rexport%p_Rtriangulation%NVT
-        do i=1, rrefine%nvertices
+        do i=1, rexport%p_rrefineData%nvertices
           write(mfile, '(I10,3E16.7)') j+i, p_DvertexRefined(1:3, i)
         end do
         
@@ -3671,7 +3709,7 @@ contains
 
         ! Write refined vertices
         j = rexport%p_Rtriangulation%NVT
-        do i=1, rrefine%nvertices
+        do i=1, rexport%p_rrefineData%nvertices
           write(mfile, '(I10,3E16.7)') j+i, p_DvertexRefined(1:2, i), 0.0_DP
         end do
         
@@ -3710,14 +3748,6 @@ contains
         end select
         
       end do
-      
-      ! We do not need the mesh refinement anymore, so destroy it
-      if (rrefine%h_DvertexCoords .ne. ST_NOHANDLE) then
-        call storage_free(rrefine%h_DvertexCoords)
-      end if
-      if (rrefine%h_IverticesAtElement .ne. ST_NOHANDLE) then
-        call storage_free(rrefine%h_IverticesAtElement)
-      end if
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Write node variable info
@@ -4009,28 +4039,24 @@ contains
     real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
     logical :: bQuadratic, bVec2Sc
-    type(t_ucdRefine) :: rrefine
       
       ! Get file unit and export format
       mfile = rexport%iunit
       sdl = rexport%sdataFormat
           
-      ! Calculate grid refinement
-      call ucd_refine(rrefine, rexport%p_rtriangulation, rexport%cflags)
-      
       ! Get refined vertices
-      if (rrefine%h_DvertexCoords .ne. ST_NOHANDLE) then
-        call storage_getbase_double2d (rrefine%h_DvertexCoords, p_DvertexRefined)
+      if (rexport%p_rrefineData%h_DvertexCoords .ne. ST_NOHANDLE) then
+        call storage_getbase_double2d (rexport%p_rrefineData%h_DvertexCoords, p_DvertexRefined)
       else
         p_DvertexRefined => null()
       end if
       
       ! If the mesh is to be refined, then we take the refined elements,
       ! otherwise we use the elements from the triangulation
-      if (rrefine%h_IverticesAtElement .ne. ST_NOHANDLE) then
-        call storage_getbase_int2d (rrefine%h_IverticesAtElement, &
+      if (rexport%p_rrefineData%h_IverticesAtElement .ne. ST_NOHANDLE) then
+        call storage_getbase_int2d (rexport%p_rrefineData%h_IverticesAtElement, &
             p_IverticesAtElement)
-        ncells = rrefine%ncells
+        ncells = rexport%p_rrefineData%ncells
       else
         call storage_getbase_int2d (rexport%p_rtriangulation%h_IverticesAtElement,&
             p_IverticesAtElement)
@@ -4040,7 +4066,7 @@ contains
       ! Get corner vertices
       call storage_getbase_double2d (rexport%p_rtriangulation%h_DvertexCoords,&
           p_DvertexCoords)
-      nverts = rexport%p_rtriangulation%NVT + rrefine%nvertices
+      nverts = rexport%p_rtriangulation%NVT + rexport%p_rrefineData%nvertices
       
       ! Get edges of elements (needed for quadratic cells)
       if (rexport%p_rtriangulation%h_IedgesAtElement .ne. ST_NOHANDLE) then
@@ -4098,7 +4124,7 @@ contains
         end do
         
         ! Write refined vertices
-        do i=1, rrefine%nvertices
+        do i=1, rexport%p_rrefineData%nvertices
           write(mfile, '(3E16.7)') p_DvertexRefined(1:3, i)
         end do
         
@@ -4111,7 +4137,7 @@ contains
         end do
 
         ! Write refined vertices
-        do i=1, rrefine%nvertices
+        do i=1, rexport%p_rrefineData%nvertices
           write(mfile, '(3E16.7)') p_DvertexRefined(1:2, i), 0.0_DP
         end do
         
@@ -4124,7 +4150,7 @@ contains
         end do
 
         ! Write refined vertices
-        do i=1, rrefine%nvertices
+        do i=1, rexport%p_rrefineData%nvertices
           write(mfile, '(3E16.7)') p_DvertexRefined(1, i), 0.0_DP, 0.0_DP
         end do
 
@@ -4277,14 +4303,6 @@ contains
       
       ! Now we do not need the vertice counts anymore
       deallocate(p_InumVertsPerCell)
-      
-      ! We also do not need the mesh refinement anymore, so destroy it
-      if (rrefine%h_DvertexCoords .ne. ST_NOHANDLE) then
-        call storage_free(rrefine%h_DvertexCoords)
-      end if
-      if (rrefine%h_IverticesAtElement .ne. ST_NOHANDLE) then
-        call storage_free(rrefine%h_IverticesAtElement)
-      end if
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Write vertex variables
@@ -4707,12 +4725,6 @@ contains
     ! local varables
     real(DP), dimension(:), pointer :: p_Ddata
 
-    if (present(DdataElem) .and. .not. present(DdataMid)) then
-      call output_line ('Error in the parameters!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased2')
-      call sys_halt()
-    end if
-    
     if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
       call output_line ('Export structure not initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVariableVertexBased2')
@@ -4756,9 +4768,21 @@ contains
             DdataMid(1:rexport%p_rtriangulation%NMT), &
             p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
                                                    rexport%p_rtriangulation%NMT))
-      else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
-        call output_line ('Warning. No edge midpoint data available!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+      else 
+        if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
+          call output_line ('Warning. No edge midpoint data available!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+        end if
+
+        if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
+          ! Automatically interpolate the edge midpoints
+          call ucd_refineToEdgeMidpoints (&
+              rexport%p_rtriangulation,&
+              p_Ddata(1:rexport%p_rtriangulation%NVT),&
+              p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
+                                                   rexport%p_rtriangulation%NMT))
+        end if
+
       end if
     end if
     
@@ -4771,11 +4795,113 @@ contains
             p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
                     rexport%p_rtriangulation%NEL))
-      else if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
-        call output_line ('Warning. No element midpoint data available!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+      else 
+
+        if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
+          call output_line ('Warning. No element midpoint data available!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+        end if
+
+        if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
+          ! Automatically interpolate the element midpoints
+          call ucd_refineToElementMidpoints (&
+              rexport%p_rtriangulation,&
+              p_Ddata(1:rexport%p_rtriangulation%NVT),&
+              p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
+                                                   rexport%p_rtriangulation%NMT),&
+              p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
+                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
+                    rexport%p_rtriangulation%NEL))
+        end if
+
       end if
     end if
+    
+  contains
+  
+    ! Refinement to edge midpoints
+    subroutine ucd_refineToEdgeMidpoints (rtriangulation,DdataVerts,DdataEdgeMids)
+    
+    ! Interpolates the data in the edge midpoints from those in the corners
+    ! of the elements. DdataVerts defines the values in the corners, DdataEdgeMids
+    ! the target array in the edge midpoints to be calculated.
+    
+    type(t_triangulation), intent(in) :: rtriangulation
+    real(DP), dimension(:), intent(in) :: DdataVerts
+    real(DP), dimension(:), intent(out) :: DdataEdgeMids
+    
+      ! local variables
+      integer, dimension(:,:), pointer :: p_IedgesAtElement
+      integer, dimension(:,:), pointer :: p_IverticesAtEdge
+      integer :: i,j,ivt1,ivt2
+      
+      ! Get triangulation data
+      call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+      
+      ! Loop through the edges
+      do i=1,rtriangulation%NMT
+        ! Get the adjacent vertices
+        ivt1 = p_IverticesAtEdge(1,i)
+        ivt2 = p_IverticesAtEdge(2,i)
+        
+        ! Interpolate the data
+        DdataEdgeMids(i) = 0.5*DdataVerts(ivt1) + 0.5*DdataVerts(ivt2)
+      end do
+    
+    end subroutine
+
+    ! Refinement to element midpoints
+    subroutine ucd_refineToElementMidpoints (rtriangulation,DdataVerts,DdataEdgeMids,DdataElemMids)
+    
+    ! Interpolates the data in the element midpoints from those in the corners+edge midpoints
+    ! of the elements. DdataVerts defines the values in the corners, DdataEdgeMids the data
+    ! in the edge midpoints and DdataElemMids the target array in the edge midpoints.
+    
+    type(t_triangulation), intent(in) :: rtriangulation
+    real(DP), dimension(:), intent(in) :: DdataVerts,DdataEdgeMids
+    real(DP), dimension(:), intent(out) :: DdataElemMids
+    
+      ! local variables
+      integer, dimension(:,:), pointer :: p_IverticesAtElement
+      integer, dimension(:,:), pointer :: p_IedgesAtElement
+      integer :: i,j,k
+      
+      ! Get triangulation data
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+      call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+      
+      ! Loop through the elements and sum up
+      do i=1,rtriangulation%NEL
+        
+        DdataElemMids(i) = 0.0_DP
+        
+        ! Vertex data
+        do j=1,ubound(p_IverticesAtElement,1)
+          if (p_IverticesAtElement(j,i) .eq. 0) then
+            ! Triangle in a quad mesh or similar
+            exit
+          end if
+          
+          DdataElemMids(i) = DdataElemMids(i) + DdataVerts(p_IverticesAtElement(j,i))
+        end do
+
+        ! Edge data
+        do k=1,ubound(p_IedgesAtElement,1)
+          if (p_IedgesAtElement(k,i) .eq. 0) then
+            ! Triangle in a quad mesh or similar
+            exit
+          end if
+          
+          DdataElemMids(i) = DdataElemMids(i) + DdataEdgeMids(p_IedgesAtElement(k,i))
+        end do
+        
+        ! Divide by the number of summed items
+        DdataElemMids(i) = DdataElemMids(i) / real(j-1+k-1)
+      
+      end do
+    
+    end subroutine
 
   end subroutine
 
@@ -5198,7 +5324,7 @@ contains
     rexport%p_SvariableNames(rexport%nvariables) = sname
     
     ! Allocate a new vector for the data
-    call storage_new ('ucd_addVariableVertexBased2','hvariable',&
+    call storage_new ('ucd_addVariableElementBased2','hvariable',&
         rexport%ncells,ST_DOUBLE,&
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
