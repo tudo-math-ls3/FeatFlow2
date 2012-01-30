@@ -2991,7 +2991,7 @@ contains
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
 
         ! Set up empty Dirichlet boundary control conditions.
-        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
             
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3022,7 +3022,7 @@ contains
         call fbsim_done (rsimsolver)
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+        call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3072,7 +3072,7 @@ contains
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
         
         ! Set up empty Dirichlet boundary control conditions.
-        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
 
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3147,7 +3147,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+        call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3217,7 +3217,7 @@ contains
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
         ! Set up empty Dirichlet boundary control conditions.
-        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
       
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3267,7 +3267,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+        call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3321,7 +3321,7 @@ contains
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
 
         ! Set up empty Dirichlet boundary control conditions.
-        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
         
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3424,7 +3424,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+        call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then
@@ -3494,7 +3494,7 @@ contains
         call stnm_assembleNeumannBoundary (rsettings%roptcBDC,rsptiNeumannBC,rsettings%rglobalData)
       
         ! Set up empty Dirichlet boundary control conditions.
-        call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+        call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
             rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
 
         ! Create a nonlinear space-time matrix that resembles the current
@@ -3572,7 +3572,7 @@ contains
         ! Release the matrix.
         call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
         call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-        call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+        call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
       
         ! Probably print some statistical data
         if (ioutputLevel .ge. 1) then

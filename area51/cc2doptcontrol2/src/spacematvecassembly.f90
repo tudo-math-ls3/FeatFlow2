@@ -6468,50 +6468,50 @@ contains
       call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
 #endif
 
-!      ! ------------------------------
-!      ! Weak implementation of the BCC
-!      ! ------------------------------
-!      
-!      ! Set up the matrix. Primal velocity.
-!      
-!      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
-!          rmatrixY1Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
-!      
-!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-!        ! Second matrix if not identical to the first one.
-!        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
-!            rmatrixY2Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
-!      end if
-!      
-!      ! Dual velocity.
-!
-!      rcollection%DquickAccess(1) = dc2 * dpenalty
-!
-!      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
-!          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-!          rcollection=rcollection)
-!
-!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-!        ! Second matrix if not identical to the first one.
-!        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
-!            rmatrixLambda2Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-!            rcollection=rcollection)
-!      end if
-!
-!      ! Pressure
-!      rcollection%DquickAccess(1) = dc3 * dpenalty
-!
-!      ! X-derivative
-!      rcollection%IquickAccess(1) = 1
-!
-!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
-!          rmatrixGrad1Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
-!
-!      ! Y-derivative
-!      rcollection%IquickAccess(1) = 2
-!
-!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
-!          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+      ! ------------------------------
+      ! Weak implementation of the BCC
+      ! ------------------------------
+      
+      ! Set up the matrix. Primal velocity.
+      
+      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+          rmatrixY1Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+      
+      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+        ! Second matrix if not identical to the first one.
+        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+            rmatrixY2Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+      end if
+      
+      ! Dual velocity.
+
+      rcollection%DquickAccess(1) = dc2 * dpenalty
+
+      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+          rcollection=rcollection)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+        ! Second matrix if not identical to the first one.
+        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+            rmatrixLambda2Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+            rcollection=rcollection)
+      end if
+
+      ! Pressure
+      rcollection%DquickAccess(1) = dc3 * dpenalty
+
+      ! X-derivative
+      rcollection%IquickAccess(1) = 1
+
+      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+          rmatrixGrad1Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+      ! Y-derivative
+      rcollection%IquickAccess(1) = 2
+
+      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
 
 !      ! --------------------------------
@@ -6569,59 +6569,59 @@ contains
 !          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
 !          fcoeff_dirichletbcclf2,rcollection)
 
-      ! ------------------------------------------
-      ! Alternative Weak implementation of the BCC
-      ! ------------------------------------------
-      
-      ! Set up the matrix. Primal velocity.
-      
-      rcollection%DquickAccess(1) = dc1
-      rcollection%DquickAccess(2) = rphysics%dnu
-      rcollection%DquickAccess(3) = dpenalty
-      
-      call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
-          rmatrixY1Temp,fcoeff_dirichletbcc_primal,&
-          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-          rcollection=rcollection)
-
-      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-        call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
-            rmatrixY2Temp,fcoeff_dirichletbcc_primal,&
-            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-            rcollection=rcollection)
-      end if
-
-      ! Set up the matrix. Dual velocity.
-      
-      rcollection%DquickAccess(1) = dc2
-      rcollection%DquickAccess(2) = rphysics%dnu
-      
-      call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
-          rmatrixLambda1Temp,fcoeff_dirichletbcc_dual,&
-          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-          rcollection=rcollection)
-
-      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-        call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
-            rmatrixLambda2Temp,fcoeff_dirichletbcc_dual,&
-            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-            rcollection=rcollection)
-      end if
-
-      ! Pressure
-      rcollection%DquickAccess(1) = dc3
-
-      ! X-derivative
-      rcollection%IquickAccess(1) = 1
-
-      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
-          rmatrixGrad1Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
-
-      ! Y-derivative
-      rcollection%IquickAccess(1) = 2
-
-      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
-          rmatrixGrad2Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+!      ! ------------------------------------------
+!      ! Alternative Weak implementation of the BCC
+!      ! ------------------------------------------
+!      
+!      ! Set up the matrix. Primal velocity.
+!      
+!      rcollection%DquickAccess(1) = dc1
+!      rcollection%DquickAccess(2) = rphysics%dnu
+!      rcollection%DquickAccess(3) = dpenalty
+!      
+!      call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
+!          rmatrixY1Temp,fcoeff_dirichletbcc_primal,&
+!          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!          rcollection=rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        call bilf_buildMatrixScalarBdr2D (rformweak1, CUB_G4_1D, .false., &
+!            rmatrixY2Temp,fcoeff_dirichletbcc_primal,&
+!            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!            rcollection=rcollection)
+!      end if
+!
+!      ! Set up the matrix. Dual velocity.
+!      
+!      rcollection%DquickAccess(1) = dc2
+!      rcollection%DquickAccess(2) = rphysics%dnu
+!      
+!      call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
+!          rmatrixLambda1Temp,fcoeff_dirichletbcc_dual,&
+!          rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!          rcollection=rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        call bilf_buildMatrixScalarBdr2D (rformweak2, CUB_G4_1D, .false., &
+!            rmatrixLambda2Temp,fcoeff_dirichletbcc_dual,&
+!            rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!            rcollection=rcollection)
+!      end if
+!
+!      ! Pressure
+!      rcollection%DquickAccess(1) = dc3
+!
+!      ! X-derivative
+!      rcollection%IquickAccess(1) = 1
+!
+!      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
+!          rmatrixGrad1Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+!
+!      ! Y-derivative
+!      rcollection%IquickAccess(1) = 2
+!
+!      call bilf_buildMatrixScalarBdr2D (rformweak3, CUB_G4_1D, .false., &
+!          rmatrixGrad2Temp,fcoeff_dirichletbcc_xi,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
       ! ----------------------------------------
       ! Imponsing of the control to the matrices

@@ -73,6 +73,7 @@ module nonlinearoneshotspacetimesolver
   use timeboundaryconditions
   use spacetimeneumannbc
   use spacetimedirichletbcc
+  use timerhsevaluation
     
   implicit none
   
@@ -209,7 +210,7 @@ contains
     ! Loop through all levels to set up the matrices.
     do ilev = 1,nlevels
       ! Create the Neumann boundary conditions
-      call stnm_assembleDirichletBCCBd (rsettings%roptcBDC,&
+      call stdbcc_assembleDirichletBCCBd (rsettings%roptcBDC,&
           RdirichletBCC(ilev),rsettings%rglobalData)
     end do
     
@@ -418,9 +419,9 @@ contains
 
     ! Initialise the Dirichlet boundary control boundary conditions on the maximum level.
     ! Used for nonlinear boundary conditions.
-    call stnm_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
+    call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
         rdiscrData%p_rstaticSpaceAsmTempl,rsptiDirichletBCC)
-    call stnm_assembleDirichletBCCBd (rsettings%roptcBDC,rsptiDirichletBCC,rsettings%rglobalData)
+    call stdbcc_assembleDirichletBCCBd (rsettings%roptcBDC,rsptiDirichletBCC,rsettings%rglobalData)
     
     ! Initialise a space-time matrix of the corresponding system.
     ! The solution vector is our nonlinearity.
@@ -432,8 +433,9 @@ contains
     ! Create the initial defect
     call output_line ('NLST-Solver: Assembling the initial defect...')
 
-    ! Assemble the defect.
+    ! Create the actual RHS (including the BC's) in rd and assemble the defect.
     call sptivec_copyVector (rb,rd)
+    call trhsevl_implementBDCRHS (rsettings%rglobalData, rd, rsettings%roptcBDC)
     
     ! DEBUG!!!
     call stlin_spaceTimeMatVec (rmatrix, rx, rd, &
@@ -887,7 +889,7 @@ contains
     
     ! Release other stuff
     call stnm_releaseNeumannBoundary (rsptiNeumannBC)
-    call stnm_releaseDirichletBCCBd (rsptiDirichletBCC)
+    call stdbcc_releaseDirichletBCCBd (rsptiDirichletBCC)
     call stlin_releaseSpaceTimeMatrix(rmatrix)
     
     ! Decrease rnlstsolver%nnonlinearIterations if the DO-loop was completely processed;

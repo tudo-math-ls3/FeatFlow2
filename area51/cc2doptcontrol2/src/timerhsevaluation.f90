@@ -12,6 +12,9 @@
 !# 1.) trhsevl_assembleRHS
 !#     -> Assemble a space-time RHS vector
 !#
+!# 2.) trhsevl_implementBDCRHS
+!#     -> Implement boundary conditions into a space-time RHS vector.
+!#
 !# Auxiliary routines:
 !#
 !# 1.) trhsevl_assembleThetaRHS
@@ -76,7 +79,6 @@ module timerhsevaluation
   use spacetimelinearsystem
   use forwardbackwardsimulation
   use spacetimeinterlevelprojection
-  use nonlinearoneshotspacetimesolver
   use timeboundaryconditions
 
   implicit none
@@ -84,6 +86,7 @@ module timerhsevaluation
   private
   
   public :: trhsevl_assembleRHS
+  public :: trhsevl_implementBDCRHS
 
 contains
 
@@ -605,7 +608,8 @@ contains
       ! Implement the boundary conditions into the RHS vector
       if (present(roptcBDC)) then
         call tbc_implementSpatialBCtoRHS (roptcBDC, &
-            dtimePrimal, dtimeDual, rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
+            dtimePrimal, dtimeDual, CCSPACE_PRIMALDUAL,&
+            rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
       end if
       
       ! Check the debug flags. Does the RHS to be disturbed?
@@ -934,8 +938,10 @@ contains
       rcubatureInfoU, rcubatureInfoP, roptimalControl, rrhsDiscrete)
   
 !<description>
-  ! Generate the RHS vector at the time dtime. isubstep may specify the
-  ! timestep where to generate the RHS.
+  ! Generate the RHS vector. isubstep may specify the
+  ! timestep where to generate the RHS. dtimePrimal specifies the
+  ! time where to assemble the primal RHS and dtimeDual the time
+  ! where to assemble the dual RHS.
 !</description>
  
 !<input>
@@ -1183,4 +1189,87 @@ contains
   
   end subroutine
     
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine trhsevl_implementBDCRHS (rglobalData, rrhsDiscrete, roptcBDC)
+
+!<description>
+  ! Implements the boundary conditions into the discrete RHS.
+!</description>
+
+!<input>
+  ! Global settings for callback routines.
+  type(t_globalData), intent(inout), target :: rglobalData
+  
+  ! OPTIONAL: Boundary conditions in the problem. If present, they are implemented
+  ! to the RHS.
+  type(t_optcBDC), intent(in) :: roptcBDC
+!</input>
+
+!<inputoutput>
+  ! A space-time vector that receives the RHS.
+  ! If this is undefined, a new space-time vector is created.
+  type(t_spacetimeVector), intent(inout) :: rrhsDiscrete
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: iiterate,nintervals
+    real(DP) :: dtimePrimal,dtimeDual
+    integer :: ithetaschemetype
+    real(DP) :: dtheta
+    
+    ! Temporary space.
+    type(t_spaceTimeVectorAccess) :: raccessPool
+    type(t_vectorBlock), pointer :: p_rvecCurrent
+    
+    ! Type of the theta scheme.
+    ! =0: Dual points in time located inbetween primal points in time.
+    ! =1: Dual points in time located on primal points in time.
+    !     This does not correspond to any known analytical minimisation problem.
+    ithetaschemetype = rrhsDiscrete%p_rtimeDiscr%itag
+    dtheta = rrhsDiscrete%p_rtimeDiscr%dtheta
+    
+    ! ----------------------------------------------------------------------
+    ! Generate the global RHS vector
+    
+    ! Temporary space, ring buffer. Initialise large enough to hold all
+    ! temporary data: Last, current and next vector.
+    call sptivec_createAccessPool(rrhsDiscrete,raccessPool,3)
+
+    do iiterate = 1,rrhsDiscrete%p_rtimeDiscr%nintervals+1
+    
+      ! Current time
+      call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,iiterate-1,dtimePrimal)
+      dtimeDual = dtimePrimal
+    
+      ! Get the current RHS vector
+      call sptivec_getVectorFromPool (raccessPool,iiterate,p_rvecCurrent)
+
+      ! Implement the boundary conditions into the RHS vector.
+      ! In the first timestep, do not implement BC`s to the RHS;
+      ! these are the initial conditions.
+      if (iiterate .eq. 1) then
+        call tbc_implementSpatialBCtoRHS (roptcBDC, &
+            dtimePrimal, dtimeDual, CCSPACE_DUAL,rrhsDiscrete%p_rtimeDiscr, &
+            p_rvecCurrent, rglobalData)
+      else
+        call tbc_implementSpatialBCtoRHS (roptcBDC, &
+            dtimePrimal, dtimeDual, CCSPACE_PRIMALDUAL,rrhsDiscrete%p_rtimeDiscr, &
+            p_rvecCurrent, rglobalData)
+      end if
+      
+      ! Save the RHS.
+      call sptivec_setTimestepData(rrhsDiscrete, iiterate, p_rvecCurrent)
+      
+    end do
+    
+    ! Release the temp vectors.
+    call sptivec_releaseAccessPool (raccessPool)
+    
+  end subroutine
+
 end module

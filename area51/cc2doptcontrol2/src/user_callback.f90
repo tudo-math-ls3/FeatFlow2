@@ -297,6 +297,7 @@ contains
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
     rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
     rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
+    rcollection%Dquickaccess(6) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
 
   end subroutine
   

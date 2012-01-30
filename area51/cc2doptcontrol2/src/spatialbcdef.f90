@@ -36,7 +36,13 @@ module spatialbcdef
   use spatialdiscretisation
   use paramlist
   use mprimitives
+  use derivatives
+  use cubature
   use fparser
+  use linearsystemblock
+  use scalarpde
+  use linearformevaluation
+  use linearsystemscalar
   
   use collection
   use convection
@@ -297,7 +303,8 @@ contains
 
   subroutine sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,&
       cbctype,rglobalData,casmFlags,rtimediscr,rspaceDiscr,&
-      rdiscreteBC,rneumannBoundary,rdirichletControlBoundary)
+      rdiscreteBC,rneumannBoundary,rdirichletControlBoundary,&
+      rvectorDirichletBCCRHS)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -348,6 +355,11 @@ contains
   ! be empty; new BC's are simply added to the structure.
   ! Can be omitted if only Neumann boundary is to be created.
   type(t_discreteBC), intent(inout), optional :: rdiscreteBC
+  
+  ! OPTIONAL: A right-hand-side vector. If SBC_DIRICHLETBCC is specified,
+  ! this RHS vector is modified according to the boundary conditions
+  ! specified for the Dirichlet boundary control.
+  type(t_vectorBlock), intent(inout), optional :: rvectorDirichletBCCRHS
 
 !</input>
 
@@ -375,6 +387,7 @@ contains
     integer, dimension(NDIM2D) :: IvelEqns
     type(t_collection) :: rlocalCollection
     type(t_boundary), pointer :: p_rboundary
+    type(t_linearForm) :: rlinformRhs
     
     ! A local collection we use for storing named parameters during the
     ! parsing process.
@@ -387,7 +400,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
 
     ! A set of variables describing the analytic boundary conditions.
-    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion), target :: rboundaryRegion
     
     ! A pointer to the section with the expressions and the boundary conditions
     type(t_parlstSection), pointer :: p_rsection,p_rbdcond
@@ -1349,6 +1362,138 @@ contains
                         call sbc_addBoundaryRegion(&
                             rboundaryRegion,rdirichletControlBoundary,iprimaldual)
                       end if
+                      
+                      if (present(rvectorDirichletBCCRHS)) then
+                        ! Modify the RHS according to the Dirichlet boundary control
+                        ! conditions. Use a penalty approach to implement the Dirichlet
+                        ! values. A linear form has to be applied to the RHS vector
+                        ! in each component which incorporates the basic Dirichlet value.
+                        ! The control then acts relative to the incoroprated value.
+                        
+                        ! Prepare the linear form.
+                        rlinformRhs%itermCount = 1
+                        rlinformRhs%Idescriptors(1) = DER_FUNC2D
+                        rlinformRhs%Dcoefficients(1:rlinformRhs%itermCount)  = 1.0_DP
+                        
+                        ! Read the boundary data specification and prepare the callback routine
+                        read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                        
+                        ! For any string <> '', create the appropriate Dirichlet boundary
+                        ! condition and add it to the list of boundary conditions.
+                        !
+                        ! The IquickAccess array is set up as follows:
+                        !  IquickAccess(1) = Type of boundary condition
+                        !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
+                        !  IquickAccess(3) = expression type
+                        !  IquickAccess(4) = expression identifier
+                        !
+                        ! The SquickAccess array is set up as follows:
+                        !  SquickAccess(1) = Name of the expression
+                        !
+                        rcoll%IquickAccess(1) = ibctyp
+                        
+                        ! The current boundary region is put to the collection
+                        call collct_setvalue_bdreg (rcoll, "BDREG", rboundaryRegion, .true.)
+                        
+                        ! Primal BC's
+                        if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
+                        
+                          ! If the type is a double precision value, set the DquickAccess(4)
+                          ! to that value so it can quickly be accessed.
+                          if (sbdex1 .ne. '') then
+                            ! X-velocity
+                            !
+                            ! The 2nd element in IquickAccess saves the component number.
+                            rcoll%IquickAccess(2) = 1
+                            
+                            ! IquickAccess(3) saves the type of the expression
+                            iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                            rcoll%IquickAccess(3) = iexptyp
+                            
+                            ! The 1st element in the sting quick access array is
+                            ! the name of the expression to evaluate.
+                            rcoll%SquickAccess(1) = sbdex1
+                            
+                            ! Dquickaccess(3) / IquickAccess(3) saves information
+                            ! about the expression.
+                            select case (iexptyp)
+                            case (BDC_USERDEFID)
+                              iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                            case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                              ! Constant or parabolic profile
+                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty * &
+                                  collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                            case (BDC_EXPRESSION)
+                              ! Expression. Write the identifier for the expression
+                              ! as itag into the boundary condition structure.
+                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
+                              rcoll%IquickAccess(4) = &
+                                  collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
+                            end select
+                          
+                            rcoll%Dquickaccess(1) = dtimePrimal
+                            call user_initCollectForVecAssembly (&
+                                rglobalData,iid,1,dtimePrimal,rcallbackcollection)
+                            
+                            call linf_buildVectorScalarBdr2D (rlinformRhs, CUB_G4_1D, .false., &
+                                rvectorDirichletBCCRHS%RvectorBlock(1),&
+                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
+                                
+                            call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+                                
+                          end if
+                          
+                          if (sbdex2 .ne. '') then
+                          
+                            ! Y-velocity
+                            !
+                            ! The 1st element in IquickAccess saves the component number.
+                            rcoll%IquickAccess(2) = 2
+                            
+                            ! IquickAccess(3) saves the type of the expression
+                            iexptyp = collct_getvalue_int (rcoll, sbdex2)
+                            rcoll%IquickAccess(3) = iexptyp
+                            
+                            ! The 1st element in the sting quick access array is
+                            ! the name of the expression to evaluate.
+                            rcoll%SquickAccess(1) = sbdex2
+                            
+                            ! Dquickaccess(4) / IquickAccess(4) saves information
+                            ! about the expression.
+                            select case (iexptyp)
+                            case (BDC_USERDEFID)
+                              iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                            case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+                              ! Constant or parabolic profile
+                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty * &
+                                  collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                            case (BDC_EXPRESSION)
+                              ! Expression. Write the identifier for the expression
+                              ! as itag into the boundary condition structure.
+                              rcoll%IquickAccess(4) = &
+                                  collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
+                            end select
+                          
+                            rcoll%Dquickaccess(1) = dtimePrimal
+                            call user_initCollectForVecAssembly (&
+                                rglobalData,iid,2,dtimePrimal,rcallbackcollection)
+
+                            ! Assemble the BC's.
+                            call linf_buildVectorScalarBdr2D (rlinformRhs, CUB_G4_1D, .false., &
+                                rvectorDirichletBCCRHS%RvectorBlock(1),&
+                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
+
+                            call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+
+                          end if
+                          
+                        end if
+                        
+                        ! Delete the boundary region again
+                        call collct_deletevalue (rcoll,"BDREG")
+                        
+                      end if
+
                     end if
                     
                   end if
@@ -1434,6 +1579,124 @@ contains
 
     end select
         
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcoeff_buildBCCRHS (rdiscretisation, rform, &
+                nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+  
+  use basicgeometry
+  use collection
+  use domainintegration
+  use fsystem
+  use scalarpde
+  use spatialdiscretisation
+  use triangulation
+  
+!<description>
+  ! This subroutine is called during the vector assembly. It has to compute
+  ! the coefficients in front of the terms of the linear form.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points and all the terms in the linear form
+  ! the corresponding coefficients in front of the terms.
+!</description>
+  
+!<input>
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! The linear form which is currently to be evaluated:
+  type(t_linearForm), intent(in) :: rform
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  ! DIMENSION(dimension,npointsPerElement,nelements)
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! This is the number of the boundary component that contains the
+  ! points in Dpoint. All points are on the same boundary component.
+  integer, intent(in) :: ibct
+
+  ! For every point under consideration, this specifies the parameter
+  ! value of the point on the boundary component. The parameter value
+  ! is calculated in LENGTH PARAMETRISATION!
+  ! DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+
+  ! An array accepting the DOF`s on all elements in the test space.
+  ! DIMENSION(\#local DOF`s in test space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! A list of all coefficients in front of all terms in the linear form -
+  ! for all given points on all given elements.
+  !   DIMENSION(itermCount,npointsPerElement,nelements)
+  ! with itermCount the number of terms in the linear form.
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+  
+!</subroutine>
+  
+    ! local variables
+    integer, dimension(1) :: Icomponents
+    real(DP), dimension(1) :: Dvalues
+    integer :: i,j
+    type(t_boundaryRegion), pointer :: p_rboundaryRegion
+    real(DP) :: dpar, ddirichletBCPenalty
+
+    ! Penalty parameter
+    ddirichletBCPenalty = rcollection%Dquickaccess(4)
+
+    ! Get the boundary region from the collection
+    p_rboundaryRegion => collct_getvalue_bdreg (rcollection, "BDREG")
+
+    ! Loop through all points and calculate the values.
+    do i=1,nelements
+      do j=1,npointsPerElement
+        ! Current component
+        Icomponents(1) = rcollection%IquickAccess(2)
+        
+        ! Calculate the parameter value in 0-1 parametrisation
+        dpar = boundary_convertParameter(rdiscretisation%p_rboundary, ibct, &
+            DpointPar(j,i), BDR_PAR_LENGTH, BDR_PAR_01)
+        
+        call cc_getBDconditionsNavSt2D(Icomponents,rdiscretisation,&
+            p_rboundaryRegion,0,DISCBC_NEEDFUNC,ibct,dpar,&
+            Dvalues,rcollection)
+            
+        ! Value must be mutiplied by the penalty parameter
+        Dcoefficients(1,j,i) = ddirichletBCPenalty*Dvalues(1)
+      end do
+    end do
+
   end subroutine
 
   ! ***************************************************************************
@@ -1583,7 +1846,7 @@ contains
       ! Note: The information about the BC's can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
       select case (rcollection%IquickAccess(1))
-      case (1,4,5,6)
+      case (1,4,5,6,7)
         ! Simple Dirichlet BC's for either primal or primal/dual equation.
         ! Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rspaceDiscr, rboundaryRegion, &

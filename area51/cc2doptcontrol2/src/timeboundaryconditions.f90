@@ -824,7 +824,8 @@ contains
   
 !<subroutine>
   
-  subroutine tbc_implementSpatialBCtoRHS (roptcBDC, dtimePrimal,dtimeDual, rtimeDiscr, rvector, rglobalData)
+  subroutine tbc_implementSpatialBCtoRHS (roptcBDC, dtimePrimal,dtimeDual, &
+      cbcType,rtimeDiscr, rvector, rglobalData)
   
 !<description>
   ! Implements the spatial boundary conditions into the spatial RHS vector
@@ -839,6 +840,14 @@ contains
   ! Must not necessarily coincide with the start/end time of the timestep.
   real(DP), intent(IN) :: dtimePrimal
   real(DP), intent(IN) :: dtimeDual
+  
+  ! Type of boundary condition to assemble.
+  ! CCSPACE_PRIMAL: BC for the primal space.
+  ! CCSPACE_DUAL: BC for the dual space. If there are only 3 components
+  !    in rspaceDiscr, the BC`s are assembled for a vector with 3 components
+  !    which is assumed to be the dual space.
+  ! CCSPACE_PRIMALDUAL: BC for primal and dual space.
+  integer, intent(in) :: cbctype
   
   ! Time discretisation, dtime refers to.
   type(t_timeDiscretisation), intent(in) :: rtimeDiscr
@@ -866,12 +875,12 @@ contains
     call bcasm_initDiscreteFBC(rdiscreteFBC)
 
     ! Assemble the BC's.
-    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,CCSPACE_PRIMALDUAL,&
-        rglobalData,SBC_BDC,&
-        rtimeDiscr,rvector%p_rblockDiscr,rdiscreteBC)
+    call sbc_assembleBDconditions (roptcBDC,dtimePrimal,dtimeDual,cbctype,&
+        rglobalData,SBC_BDC+SBC_DIRICHLETBCC,&
+        rtimeDiscr,rvector%p_rblockDiscr,rdiscreteBC,rvectorDirichletBCCRHS=rvector)
     call sbc_assembleFBDconditions (dtimePrimal,&
         rvector%p_rblockDiscr,rtimeDiscr,&
-        CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
+        cbcType,rdiscreteFBC,rglobalData)
 
     ! Implement the boundary conditions into the RHS.
     ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,

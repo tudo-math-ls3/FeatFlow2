@@ -638,8 +638,10 @@ contains
   logical :: bfileexists
 
   ! We need some more variables for postprocessing - i.e. writing
-  ! a GMV file.
+  ! a VT file.
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
+  real(DP), dimension(:), pointer :: p_Ddata3,p_Ddata4
+  real(DP), dimension(:), pointer :: p_Ddata5,p_Ddata6
 
   ! A pointer to the triangulation.
   type(t_triangulation), pointer :: p_rtriangulation
@@ -976,15 +978,20 @@ contains
           select case (rpostproc%ioutputUCD)
           case (1)
             call ucd_startGMV (rexport,&
-                UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
+                UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
 
           case (2)
             call ucd_startAVS (rexport,&
-                UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
+                UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
                 
           case (3)
             call ucd_startVTK (rexport,&
-                UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
+                UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfilename)
+
+          case (4)
+            call ucd_startVTK (rexport,&
+                UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES+&
+                UCD_FLAG_ONCEREFINED+UCD_FLAG_AUTOINTERPOLATE,p_rtriangulation,sfilename)
                 
           case default
             call output_line ('Invalid UCD ooutput type.', &
@@ -999,70 +1006,249 @@ contains
           call ucd_addParameterList (rexport,rsettings%p_rparlist)
           call ucd_addCommentLine (rexport,'---------------')
 
-          ! Write velocity field
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
-          
-          call ucd_addVarVertBasedVec (rexport,'velocity_p',&
-              p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
-          
-          ! Write out cell based or node based pressure.
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-          celement = rprjVector%p_rblockDiscr%RspatialDiscr(3)% &
-                    RelementDistr(1)%celement
-                    
-          if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
-              ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
-            call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
-                p_Ddata(1:p_rtriangulation%NVT))
-          else
+          ! The next things are a bit depending on the underlying finite element.
+          select case (rsettings%rsettingsSpaceDiscr%ielementType)
+          case (0,1,2,3,5,6)
+            ! Q1~/Q0 discretisation
+
+            ! Vertex values from the projected vector
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+            
+            ! Edge midpoint values from the original vector
+            call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata3)
+            call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata4)
+            
+            call ucd_addVarVertBasedVec (rexport,'velocity_p',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NMT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NMT))
+            
+            ! Write out cell based or node based pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
             call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NEL))
-                
+                  
             ! Project pressure to Q1 in the vertices.
             nullify(p_Ddata)
             call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata)
             call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NVT))
             deallocate(p_Ddata)
-          end if
-          
-          ! Dual velocity field
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+            
+            ! Dual velocity field
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
 
-          call ucd_addVarVertBasedVec (rexport,'velocity_d',&
-              p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
-          
-          ! Write out cell based or node based dual pressure.
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-          celement = rprjVector%p_rblockDiscr%RspatialDiscr(6)% &
-                    RelementDistr(1)%celement
-                    
-          if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
-              ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
-            call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
-                p_Ddata(1:p_rtriangulation%NVT))
-          else
+            ! Edge midpoint values from the orifinal vector
+            call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata3)
+            call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata4)
+
+            call ucd_addVarVertBasedVec (rexport,'velocity_d',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NMT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NMT))
+            
+            ! Write out cell based or node based dual pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
             call ucd_addVariableElementBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NEL))
-           
+             
             ! Project pressure to Q1 in the vertices.
             nullify(p_Ddata)
             call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata)
             call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
                 p_Ddata(1:p_rtriangulation%NVT))
             deallocate(p_Ddata)
-          end if
 
-          ! Control u = P[min/max](-1/alpha lambda)
-          call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
-              roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+            ! Control u = P[min/max](-1/alpha lambda)
+            call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
+                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+            
+            ! Do the projection into a vector in the discretisation
+            ! if the primal space.
+            call lsysbl_createVecBlockByDiscr (rpostproc%p_rspaceDiscrPrimal,&
+                rcontrolVector,.true.)
           
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-          call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
-          call ucd_addVarVertBasedVec (rexport,'control',&
-              p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
+            call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
+                roptControl%dalphaC,roptControl%dbetaC,&
+                dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+
+            call lsyssc_getbase_double (rcontrolVector%RvectorBlock(1),p_Ddata3)
+            call lsyssc_getbase_double (rcontrolVector%RvectorBlock(2),p_Ddata4)
+
+            call ucd_addVarVertBasedVec (rexport,'control',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NVT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NVT))
+            
+            ! Release the temp vector
+            call lsysbl_releaseVector (rcontrolVector)
+            
+          case (4)
+            ! Q2/QP1
+            
+            ! All values from the orifinal vector
+            call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
+            call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
+            p_Ddata3 => p_Ddata (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata4 => p_Ddata2 (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata5 => p_Ddata (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+            p_Ddata6 => p_Ddata2 (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+            
+            call ucd_addVarVertBasedVec (rexport,'velocity_p',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NMT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NMT),&
+                DdataElem_X=p_Ddata5(1:p_rtriangulation%NEL),&
+                DdataElem_Y=p_Ddata6(1:p_rtriangulation%NEL))
+            
+            ! Write out cell based or node based pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+            call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                p_Ddata(1:p_rtriangulation%NEL))
+                  
+            ! Project pressure to Q1 in the vertices.
+            nullify(p_Ddata2)
+            call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata2)
+            call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                p_Ddata2(1:p_rtriangulation%NVT),DdataElem=p_Ddata(1:p_rtriangulation%NEL))
+            deallocate(p_Ddata2)
+            
+            ! All values from the orifinal vector
+            call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
+            call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata2)
+            p_Ddata3 => p_Ddata (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata4 => p_Ddata2 (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata5 => p_Ddata (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+            p_Ddata6 => p_Ddata2 (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+
+            call ucd_addVarVertBasedVec (rexport,'velocity_d',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NMT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NMT),&
+                DdataElem_X=p_Ddata5(1:p_rtriangulation%NEL),&
+                DdataElem_Y=p_Ddata6(1:p_rtriangulation%NEL))
+            
+            ! Write out cell based or node based dual pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+            call ucd_addVariableElementBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                p_Ddata(1:p_rtriangulation%NEL))
+             
+            ! Project pressure to Q1 in the vertices.
+            nullify(p_Ddata2)
+            call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata2)
+            call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                p_Ddata2(1:p_rtriangulation%NVT),DdataElem=p_Ddata(1:p_rtriangulation%NEL))
+            deallocate(p_Ddata2)
+
+            ! Control u = P[min/max](-1/alpha lambda)
+            call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
+                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+            
+            ! Do the projection into a vector in the discretisation
+            ! if the primal space.
+            call lsysbl_createVecBlockByDiscr (rpostproc%p_rspaceDiscrPrimal,&
+                rcontrolVector,.true.)
+          
+            call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
+                roptControl%dalphaC,roptControl%dbetaC,&
+                dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+
+            call lsyssc_getbase_double (rcontrolVector%RvectorBlock(1),p_Ddata)
+            call lsyssc_getbase_double (rcontrolVector%RvectorBlock(2),p_Ddata2)
+            p_Ddata3 => p_Ddata (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata4 => p_Ddata2 (p_rtriangulation%NVT+1:p_rtriangulation%NVT+p_rtriangulation%NMT)
+            p_Ddata5 => p_Ddata (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+            p_Ddata6 => p_Ddata2 (p_rtriangulation%NVT+p_rtriangulation%NMT+1:)
+
+            call ucd_addVarVertBasedVec (rexport,'control',&
+                DdataVert_X=p_Ddata(1:p_rtriangulation%NVT),&
+                DdataVert_Y=p_Ddata2(1:p_rtriangulation%NVT),&
+                DdataMid_X=p_Ddata3(1:p_rtriangulation%NMT),&
+                DdataMid_Y=p_Ddata4(1:p_rtriangulation%NMT),&
+                DdataElem_X=p_Ddata5(1:p_rtriangulation%NEL),&
+                DdataElem_Y=p_Ddata6(1:p_rtriangulation%NEL))
+            
+            ! Release the temp vector
+            call lsysbl_releaseVector (rcontrolVector)
+            
+          case default
+
+            ! Write velocity field
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+            
+            call ucd_addVarVertBasedVec (rexport,'velocity_p',&
+                p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
+            
+            ! Write out cell based or node based pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+            celement = rprjVector%p_rblockDiscr%RspatialDiscr(3)% &
+                      RelementDistr(1)%celement
+                      
+            if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
+                ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
+              call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NVT))
+            else
+              call ucd_addVariableElementBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NEL))
+                  
+              ! Project pressure to Q1 in the vertices.
+              nullify(p_Ddata)
+              call spdp_projectToVertices (rvector%RvectorBlock(3), p_Ddata)
+              call ucd_addVariableVertexBased (rexport,'pressure_p',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NVT))
+              deallocate(p_Ddata)
+            end if
+            
+            ! Dual velocity field
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+
+            call ucd_addVarVertBasedVec (rexport,'velocity_d',&
+                p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
+            
+            ! Write out cell based or node based dual pressure.
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+            celement = rprjVector%p_rblockDiscr%RspatialDiscr(6)% &
+                      RelementDistr(1)%celement
+                      
+            if ((elem_getPrimaryElement(celement) .eq. EL_Q1) .or. &
+                ((elem_getPrimaryElement(celement) .eq. EL_P1))) then
+              call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NVT))
+            else
+              call ucd_addVariableElementBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NEL))
+             
+              ! Project pressure to Q1 in the vertices.
+              nullify(p_Ddata)
+              call spdp_projectToVertices (rvector%RvectorBlock(6), p_Ddata)
+              call ucd_addVariableVertexBased (rexport,'pressure_d',UCD_VAR_STANDARD, &
+                  p_Ddata(1:p_rtriangulation%NVT))
+              deallocate(p_Ddata)
+            end if
+
+            ! Control u = P[min/max](-1/alpha lambda)
+            call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
+                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+            
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+            call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+            call ucd_addVarVertBasedVec (rexport,'control',&
+                p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
+                
+          end select
           
           ! If we have a simple Q1~ discretisation, calculate the streamfunction.
           if (rvector%p_rblockDiscr%RspatialDiscr(1)%ccomplexity .eq. SPDISC_UNIFORM) then

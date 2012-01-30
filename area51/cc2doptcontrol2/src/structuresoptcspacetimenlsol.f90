@@ -298,7 +298,7 @@ contains
           rsolver%p_rsptiNeumannBC(ilev))
     
       ! Create arrays for Dirichlet boundary control      
-      call stnm_createDirichletBCCBd (p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
+      call stdbcc_createDirichletBCCBd (p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
           rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
           rsolver%p_rsptiDirichletBCC(ilev))
     
@@ -345,7 +345,7 @@ contains
 
     ! Release temp vectors and Neumann BC's.
     do ilev = 1,size(rsolver%p_Rsolutions)
-      call stnm_releaseDirichletBCCBd (rsolver%p_rsptiDirichletBCC(ilev))
+      call stdbcc_releaseDirichletBCCBd (rsolver%p_rsptiDirichletBCC(ilev))
       call stnm_releaseNeumannBoundary (rsolver%p_rsptiNeumannBC(ilev))
       call sptivec_releaseVector(rsolver%p_Rsolutions(ilev))
     end do
