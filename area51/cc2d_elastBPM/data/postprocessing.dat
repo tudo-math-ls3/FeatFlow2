@@ -30,7 +30,7 @@ ipostprocTimeInterpSolution = 1
 # 4=Matlab
 # 5=binary GMV
 
-ioutputUCD = 1
+ioutputUCD = 0
 
 # Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
@@ -143,13 +143,13 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 1
+ierrorAnalysisL2 = 0
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisH1 = 1
+ierrorAnalysisH1 = 0
 
 # Calculate the kinetic energy.
 # =0: Don't calculate

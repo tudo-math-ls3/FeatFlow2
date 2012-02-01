@@ -48,13 +48,15 @@
 # boundary! Thus by defining an expression relative to a parameter
 # value and the time, it's possible to create moving boundary conditions.
 
-bdExpressions(6) =
-  'AnalyticBC'    -2    ''
-  'Umax'           0    0.3
-  'Dirichlet0'     0    0.0
-  'Dirichlet1'     0    1.0
+bdExpressions(7) =
+  'A'     -2    ''
+  'Umax'   0    0.3
+  'D0'     0    0.0
+  'D2'     0    2
+  'D1'     0    1.0E-5
   'ParProfile'     2    0.3 # 'Umax * 4.0*r*(1-r)'
   'ParProfExpr'   -1    '4.0*0.3*L*(1.0-L)'
+
   
 
 ##############
@@ -131,5 +133,6 @@ ineumannBoundary = -1
 #   3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-1/0 boundary
 #   4.0  0  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
-bdComponent1(1)=
-   4.0  3  1  'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC'
+#bdComponent1(1)=
+#   4.0  3  1  'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC'
+

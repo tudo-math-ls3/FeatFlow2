@@ -151,7 +151,7 @@ contains
 !</subroutine>
 
     ! local variables
-    logical :: bNeumann,isNeumann,isDirichlet
+    logical :: bNeumann
     integer :: i,k,n,ityp,ivalue,ibdComponent,isegment,iintervalEnds
     integer, dimension(6) :: ibctyp ! 6: nblocks-1
     integer :: icount,iexptyp
@@ -329,17 +329,9 @@ contains
             rboundaryRegion%dmaxParamBC = &
               boundary_dgetMaxParVal(p_rboundary, ibdComponent)
             rboundaryRegion%iproperties = iintervalEnds
-	    read(cstr,*) dvalue,iintervalEnds,(ibctyp(n),n=1,6)
-	    isNeumann =   .false.
-	    isDirichlet = .false.
-	    Do n=1,6  !/***/ by obaid
-              if (ibctyp(n).eq. 0) isNeumann   = .true.
-	      if (ibctyp(n).eq. 1) isDirichlet = .true.
-            end do
             
 !             ! Now, which type of BC is to be created?
 !             select case (ibctyp(1))
-             if (isNeumann) then  !/***/ by obaid
 !             
 !             case (0)
 !               ! Usually there is Neumann boundary in this region, but we can not be
@@ -348,13 +340,10 @@ contains
 !               ! have found Neumann boundary. If no, the segment is just too
 !               ! small to be considered as Neumann boundary.
 !               
-              call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
-                                            rboundaryRegion, &
-                                            IminIndex,ImaxIndex,icount)
-              if (icount .gt. 0) bNeumann = .true.
-              end if !/***/ isNeumann
-
-              if (isDirichlet) then
+!               call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
+!                                             rboundaryRegion, &
+!                                             IminIndex,ImaxIndex,icount)
+!               if (icount .gt. 0) bNeumann = .true.
 !             
 !             case (1)
               ! Simple Dirichlet boundary
@@ -439,7 +428,6 @@ contains
                 end if
  	      end if
 	      end do ! over k
-	      end if !/***/isDirichlet
               
 !             case (2)
 !             

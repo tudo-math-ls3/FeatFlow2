@@ -52,7 +52,7 @@ program cc2d
 
   ! Call the problem to solve.
   call output_lbrk ()
-  call output_line ('Calculating cc2d-Problem')
+  call output_line ('Calculating cc2d_elastBPM-Problem')
   call output_separator (OU_SEP_MINUS)
   
   call cc2dmain ()

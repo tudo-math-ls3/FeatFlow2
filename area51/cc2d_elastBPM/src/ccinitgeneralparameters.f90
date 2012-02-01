@@ -211,7 +211,7 @@ contains
 
 !</subroutine>
 
-    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
+    ! is the convective terms in fluid balance of momentum to be ignored ?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',rproblem%rphysics%iequation,0)
 
@@ -243,12 +243,13 @@ contains
                               'mu',rproblem%rphysics%dmu,1000.0_DP)
 
     ! Shall we include the pore fluid shear stress effect
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'IncShear',rproblem%rphysics%IncShear,1)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'IncShear',rproblem%rphysics%IncShear,1.0_DP)
 
 
 
-    ! Type of subproblem (gradient tensor, deformation tensor,...)
+    ! Type of subproblem (gradient tensor, deformation tensor,...) 
+    ! see ffunctionViscoModel in ccmatvecassembly.f90
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'isubEquation',rproblem%rphysics%isubEquation,0)
 
@@ -272,7 +273,7 @@ contains
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',rproblem%rphysics%dnu,1000.0_DP)
     
-    rproblem%rphysics%dnu = 1.0_DP/rproblem%rphysics%dnu
+    rproblem%rphysics%dnu = 1.0_DP/rproblem%rphysics%dnu*rproblem%rphysics%IncShear
     
   end subroutine
 

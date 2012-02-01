@@ -155,38 +155,12 @@ module ccbasic
 
     ! A prolongation matrix for all the blocks except the pressure.
     type(t_matrixScalar) :: rmatrixProlVelocity
-
-!     ! if the displacement and the 2 velocities have different FE spaces
-!     ! then we need to create three prolongation matrices
-
-!     ! A prolongation matrix for the solid skeleton displacement.
-!     type(t_matrixScalar) :: rmatrixProlDisplacementSolid
-! 
-!     ! A prolongation matrix for the solid skeleton velocity.
-!     type(t_matrixScalar) :: rmatrixProlVelocitySolid
-!     
-!     ! A prolongation matrix for the pore fluid velocity.
-!     type(t_matrixScalar) :: rmatrixProlVelocityFluid
     
     ! A prolongation matrix for the pressure.
     type(t_matrixScalar) :: rmatrixProlPressure
 
-
     ! An interpolation matrix for all the spaces except the pressure
     type(t_matrixScalar) :: rmatrixInterpVelocity
-    
-
-!     ! if the displacement and the 2 velocities have different FE spaces
-!     ! then we need to create three interpolation matrices
-
-!     ! An interpolation matrix for the solid skeleton displacement.
-!     type(t_matrixScalar) :: rmatrixInterpDisplacementSolid
-! 
-!     ! An interpolation matrix for the solid skeleton velocity.
-!     type(t_matrixScalar) :: rmatrixInterpVelocitySolid
-!     
-!     ! An interpolation matrix for the pore fluid velocity.
-!     type(t_matrixScalar) :: rmatrixInterpVelocityFluid
 
     ! An interpolation matrix for the pressure.
     type(t_matrixScalar) :: rmatrixInterpPressure
@@ -275,6 +249,10 @@ module ccbasic
     
     ! Number of edges with Dirichlet boudary conditions.
     integer :: nedgesDirichletBC = 0
+
+!     ! definition of boundary conditions (BC_NEUMANN: 2  ,  BC_DIRICHLET:1)
+!     ! (dimension  nblocks x max. number segments x nboundaries)
+!     integer, dimension(:,:,:), pointer :: Cbc
     
   end type
   
@@ -368,7 +346,7 @@ module ccbasic
 
 
     ! Fluid Shear Stress to be included? 1:yes, 0:No
-    integer :: IncShear
+    real(DP) :: IncShear
 
     ! Lamme constants for solid skeleton
     real(DP) :: dlambda
@@ -377,18 +355,16 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
-    ! Type of problem.
-    ! =0: Stokes.
-    ! =1: Navier-Stokes.
+    ! Is the convective term to be included ?.
+    ! =0: NO
+    ! =1: YES
     integer :: iequation
-    
-    ! Type of subproblem of the main problem. Depending on iequationType.
-    ! If iequationType=0 or =1:
-    ! =0: (Navier-)Stokes with gradient tensor
-    ! =1: (Navier-)Stokes with deformation tensor
+
+    ! The isubEquation defines the shape of the tensor    
+    ! see ffunctionViscoModel in ccmatvecassembly.f90
     integer :: isubEquation
     
-    ! Model for the viscosity.
+    ! Model for the pore fluid viscosity.
     ! =0: Constant viscosity.
     ! =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
     ! =2: Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE

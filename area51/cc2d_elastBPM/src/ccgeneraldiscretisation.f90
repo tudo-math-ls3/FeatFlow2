@@ -2042,13 +2042,13 @@ contains
       ! simulation is nonstationary.
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
-      ! Discretise the X-displacement part of the solid skeleton:
+      ! Discretise the f_uS1 part of the solid skeleton:
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
                 rrhs%RvectorBlock(1),coeff_RHS_uSx,&
                 rproblem%rcollection)
 
-      ! The Y-displacement part of the solid skeleton:
+      ! The f_uS2 part of the solid skeleton:
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
                 rrhs%RvectorBlock(2),coeff_RHS_uSy,&
@@ -2084,61 +2084,61 @@ contains
                 rrhs%RvectorBlock(7),coeff_RHS_p,&
                 rproblem%rcollection)
                              
-      ! Is the moving-frame formulatino active?
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-          'imovingFrame',imovingFrame,0)
-          
-      if (imovingFrame .ne. 0) then
-      
-        ! Get the velocity and acceleration from the callback routine.
-        call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
-              
-        ! Assemble a constant RHS with the returned acceleration using the
-        ! above coeff_RHS_const, this realises the moving frame in the
-        ! inner of the domain. We pass the constant function in DquickAccess(1).
-        
-        ! Discretise the X-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(1)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
-                  rrhs%RvectorBlock(1),coeff_RHS_const,&
-                  rlocalcoll)
-
-        ! And the Y-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(2)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
-                  rrhs%RvectorBlock(2),coeff_RHS_const,&
-                  rlocalcoll)
-
-! .....
-        rlocalColl%DquickAccess(1) = Dacceleration(3)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(3),rlinform,.false.,&
-                  rrhs%RvectorBlock(3),coeff_RHS_const,&
-                  rlocalcoll)
-
-        ! And the Y-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(4)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
-                  rrhs%RvectorBlock(4),coeff_RHS_const,&
-                  rlocalcoll)
-! ....      
-        rlocalColl%DquickAccess(1) = Dacceleration(5)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
-                  rrhs%RvectorBlock(5),coeff_RHS_const,&
-                  rlocalcoll)
-
-        ! And the Y-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(6)
-        call linf_buildVectorScalar (&
-                  p_rdiscretisation%RspatialDiscr(6),rlinform,.false.,&
-                  rrhs%RvectorBlock(6),coeff_RHS_const,&
-                  rlocalcoll)
-
-      end if
+!       ! Is the moving-frame formulatino active?
+!       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+!           'imovingFrame',imovingFrame,0)
+!           
+!       if (imovingFrame .ne. 0) then
+!       
+!         ! Get the velocity and acceleration from the callback routine.
+!         call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+!               
+!         ! Assemble a constant RHS with the returned acceleration using the
+!         ! above coeff_RHS_const, this realises the moving frame in the
+!         ! inner of the domain. We pass the constant function in DquickAccess(1).
+!         
+!         ! Discretise the X-velocity part:
+!         rlocalColl%DquickAccess(1) = Dacceleration(1)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
+!                   rrhs%RvectorBlock(1),coeff_RHS_const,&
+!                   rlocalcoll)
+! 
+!         ! And the Y-velocity part:
+!         rlocalColl%DquickAccess(1) = Dacceleration(2)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
+!                   rrhs%RvectorBlock(2),coeff_RHS_const,&
+!                   rlocalcoll)
+! 
+! ! .....
+!         rlocalColl%DquickAccess(1) = Dacceleration(3)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(3),rlinform,.false.,&
+!                   rrhs%RvectorBlock(3),coeff_RHS_const,&
+!                   rlocalcoll)
+! 
+!         ! And the Y-velocity part:
+!         rlocalColl%DquickAccess(1) = Dacceleration(4)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
+!                   rrhs%RvectorBlock(4),coeff_RHS_const,&
+!                   rlocalcoll)
+! ! ....      
+!         rlocalColl%DquickAccess(1) = Dacceleration(5)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
+!                   rrhs%RvectorBlock(5),coeff_RHS_const,&
+!                   rlocalcoll)
+! 
+!         ! And the Y-velocity part:
+!         rlocalColl%DquickAccess(1) = Dacceleration(6)
+!         call linf_buildVectorScalar (&
+!                   p_rdiscretisation%RspatialDiscr(6),rlinform,.false.,&
+!                   rrhs%RvectorBlock(6),coeff_RHS_const,&
+!                   rlocalcoll)
+! 
+!       end if
                                 
       ! Clean up the collection (as we are done with the assembly, that is it.
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)

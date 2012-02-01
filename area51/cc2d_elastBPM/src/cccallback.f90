@@ -890,9 +890,10 @@ contains
     else
       dtime = 0.0_DP
     end if
-!      Dcoefficients(:,:,:) = 5.25_DP
+!        Dcoefficients(:,:,:) = 0.0_DP
 
-     Dcoefficients(1,:,:) = 21.0_DP/4.0_DP-9.81_DP*Dpoints(2,:,:)**2
+
+       Dcoefficients(1,:,:) = 21.0_DP/4.0_DP - 9.81_DP*Dpoints(1,:,:)
     
 
   end subroutine
@@ -981,8 +982,9 @@ contains
       dtime = 0.0_DP
     end if
 
-!        Dcoefficients(:,:,:) = 5.25_DP
-     Dcoefficients(1,:,:) = 21.0_DP/4.0_DP-9.81_DP*Dpoints(1,:,:)**2
+!          Dcoefficients(:,:,:) = 0.0_DP
+
+       Dcoefficients(1,:,:) = 9.81_DP*Dpoints(2,:,:) - 6.0_DP
 
   end subroutine
 
@@ -1249,9 +1251,9 @@ contains
       dtime = 0.0_DP
     end if
 
-!     Dcoefficients(:,:,:) = -2.25_DP
-! (981*y^2)/100 - 9/4
-       Dcoefficients(1,:,:) = 9.81_DP*Dpoints(2,:,:)**2-9.0_DP/4.0_DP
+!       Dcoefficients(:,:,:) = 0.0_DP
+
+         Dcoefficients(1,:,:) = 9.81_DP*Dpoints(1,:,:) - 0.25_DP
 
   end subroutine
 
@@ -1339,8 +1341,10 @@ contains
     else
       dtime = 0.0_DP
     end if
+
+!        Dcoefficients(:,:,:) =0.0_DP
     
-    Dcoefficients(1,:,:) = 9.81_DP*Dpoints(1,:,:)**2-9.0_DP/4.0_DP
+      Dcoefficients(1,:,:) = -9.81_DP*Dpoints(2,:,:)
 
   end subroutine
 
@@ -2451,12 +2455,12 @@ contains
 !     Dvalues(:,:) = 0.0_DP
 
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:)**2
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 2.0_DP*Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 2.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  1.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
       end select
     
   end subroutine
@@ -2551,13 +2555,13 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-!     Dvalues(:,:) = 0.0_DP
+!      Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  1.0_DP - 2.0_DP*Dpoints(2,:,:)
+      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(2,:,:)**2
+      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP*Dpoints(2,:,:)
       case (DER_DERIV_X);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = -2.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  2.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
       end select
@@ -2760,12 +2764,12 @@ contains
     !Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)**2
-      case (DER_DERIV_X);  Dvalues(:,:) = 2.0_DP*Dpoints(1,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 2.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(2,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  -1.0_DP
+      case (DER_DERIV_X);  Dvalues(:,:) =   0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =   0.0_DP
+      case (DER_DERIV_XY); Dvalues(:,:) =   0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =   0.0_DP
       end select
 
   end subroutine
@@ -2863,9 +2867,9 @@ contains
     !Dvalues(:,:) = 0.0_DP
     
       select case (cderivative)
-      case (DER_FUNC);     Dvalues(:,:) = 1.0_DP-Dpoints(1,:,:)-Dpoints(2,:,:)
+      case (DER_FUNC);     Dvalues(:,:) = 0.5_DP-Dpoints(1,:,:)
       case (DER_DERIV_X);  Dvalues(:,:) = -1.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = -1.0_DP
+      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
@@ -2905,7 +2909,7 @@ contains
   character(LEN=*), intent(in) :: sexpressionName
   
   ! Solution component that is currently being processed.
-  ! 1 = X-velocity, 2 = y-velocity,...
+  ! 1 = uS1, 2 = uS2, 3 = vS1, 4 = vS2, 5 = vF1, 6 = vF2, 
   integer, intent(in) :: icomponent
   
   ! The discretisation structure that defines the basic shape of the
@@ -2950,17 +2954,17 @@ contains
      if (icomponent .EQ. 1) then
        dvalue =  dx*(1.0_DP-dx)
      elseif (icomponent .EQ. 2) then
-      dvalue  =  dy*(1.0_DP-dy)
+       dvalue  =  dy**2
      elseif (icomponent .EQ. 3) then
       dvalue = 0.0_DP
      elseif (icomponent .EQ. 4) then
        dvalue = 0.0_DP
      elseif (icomponent .EQ. 5) then
-       dvalue = dy**2
+       dvalue = dx
      elseif (icomponent .EQ. 6) then
-       dvalue = dx**2
+        dvalue = -dy
      else
-      dvalue = 1.0_DP-dx-dy
+      !dvalue = 0.5_DP-dx
     end if
 
   end subroutine
@@ -3221,12 +3225,13 @@ contains
     end subroutine
 
   end subroutine
-
-  ! ***************************************************************************
+! 
+!   ! ***************************************************************************
+!!\***\ should be removed
   ! Moving frame formulation.
 
 !<subroutine>
-
+!
   subroutine getMovingFrameVelocity (Dvelocity,Dacceleration,rcollection)
 
 !<description>

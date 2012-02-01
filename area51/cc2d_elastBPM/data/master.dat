@@ -60,10 +60,12 @@ simportdatafiles(8) =
 ###############
 [GENERALOUTPUT]
 ###############
-smsgLog = '%{slogdirectory}/Q2QP1_dtime_5.log'
+smsgLog = '%{slogdirectory}/quad.log'
 #####################
  [CC-DISCRETISATION]
 #####################
+iequation    = 1
+IncShear = 1
 iMass= 1
 iMassLumpType= 0 
 ielementType = 4
@@ -81,48 +83,54 @@ ctypeInitialSolution = 0
 #################
 [CC-LINEARSOLVER]
 #################
-isolverType = 0
+isolverType = 1
 ismootherType = 1
 icoarseGridSolverType = 0
 ####################
 [CC-MULTIGRIDSOLVER]
 ####################
-nmaxIterations     = 20
+nmaxIterations     = 30
 depsRel            = 1E-10
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 1                      # ISTAT
+itimedependence = 0                     # ISTAT
 dtimeInit = 0.0 
-dtimeMax  = 200
-dtimeStep = 5
+dtimeMax  = 500
+dtimeStep = 1.0
 dtimeStepTheta = 1
-dminTimeDerivative = 1.0E-18
+dminTimeDerivative = 1.0E-13
 ipressureFullyImplicit = 1
 ################
 [CC2D-NONLINEAR]
 ################
-nmaxIterations     = 16
-depsD_u     = 1.0E-12
-depsD_vS    = 1.0E-8
-depsD_vF    = 1.0E-8
-depsDiv     = 1.0E-8
-depsUR      = 1.0E-8
-depsVSR     = 1.0E-8
-depsVFR     = 1.0E-8
-depsPR      = 1.0E-8
+nmaxIterations     = 5
+depsD_u     = 1.0E-3
+depsD_vS    = 1.0E-3
+depsD_vF    = 1.0E-3
+depsDiv     = 1.0E-3
+depsUR      = 1.0E-3
+depsVSR     = 1.0E-3
+depsVFR     = 1.0E-3
+depsPR      = 1.0E-3
 ###################
 [CC-POSTPROCESSING]
 ###################
-ioutputUCD = 0
+ioutputUCD = 1
+ierrorAnalysisL2 = 1
+ierrorAnalysisH1 = 1
 #############
 [PARAMTRIANG]
 #############
-sParametrisation = '%{spredirectory}/QUAD.prm'
-sMesh = '%{spredirectory}/QUAD.tri'
+sParametrisation = '%{spredirectory}/quadhighdegree.prm'
+sMesh = '%{spredirectory}/quadhighdegree.tri'
 ##############
 [BDCONDITIONS]
 ##############
-bdComponent1(1)=
-   4.0  3  1  'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC' 'AnalyticBC'
+ineumannBoundary = -1
+bdComponent1(4)=
+   1.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   2.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   3.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   4.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
 

@@ -102,7 +102,7 @@ contains
     ! Set up all the weights in the core equation according to the current timestep.
     rnonlinearIteration%dalpha = 0.0_DP
     rnonlinearIteration%dtheta = 1.0_DP
-    rnonlinearIteration%dgamma = real(1-rproblem%rphysics%iequation,DP)*0.0_DP
+    rnonlinearIteration%dgamma = real(1-rproblem%rphysics%iequation,DP)
     rnonlinearIteration%deta   = 1.0_DP
     rnonlinearIteration%dtau   = 1.0_DP
 

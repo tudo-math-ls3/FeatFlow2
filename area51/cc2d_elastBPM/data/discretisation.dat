@@ -146,10 +146,10 @@ lambda = 1
 mu = 1
 # ......................................................
 # ......................................................
-# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
-iequation    = 1
+# Is the convective term in fluid momentum balance to be ignored: 1:YES, 0:NO
+iequation    = 0
 
-# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+# The isubEquation defines the shape of the tensor (see see ffunctionViscoModel in ccmatvecassembly.f90)
 # A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
 
 isubEquation = 0
