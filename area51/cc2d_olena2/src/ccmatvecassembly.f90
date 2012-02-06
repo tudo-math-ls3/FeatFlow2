@@ -1761,29 +1761,45 @@ contains
 
     ! Standard problem structure that defines all underlying parameters.
     type(t_problem), intent(inout), target :: rproblem
-
+      !local variables:
+      type(t_bilinearForm) :: rform
+      type(t_spatialDiscretisation) :: rdiscretisation
+      type(t_collection) :: rcollection
+      
       real(DP) :: dweight1
       
       ! Get the weight of the mass matrix from the physics-structure
       dweight1 = rproblem%rphysics%dmuWeight
-
+      
       ! For the moment, there cannot be found much in P.
       ! If the matrix exists (scale factor <> 0), we clear the
       ! content, otherwise we ignore it.
       if (rmatrix%RmatrixBlock(3,3)%dscaleFactor .ne. 0.0_DP) then
       
-        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
-        
         ! rnonlinearCCMatrix%dmu defines the weight for the timestepping!
 
         ! TO BE MODIFIED!
-        call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rasmTempl%rmatrixMassPressure,&
-              rnonlinearCCMatrix%dmu*dweight1*rmatrix%RmatrixBlock(3,3)%dscaleFactor,&
-              rmatrix%RmatrixBlock(3,3),1.0_DP,&
-              rmatrix%RmatrixBlock(3,3),&
-              .false.,.false.,.true.,.true.)
-      
+
+!        call lsyssc_matrixLinearComb (&
+!              rnonlinearCCMatrix%p_rasmTempl%rmatrixMassPressure,&
+!              rnonlinearCCMatrix%dmu*dweight1*rmatrix%RmatrixBlock(3,3)%dscaleFactor,&
+!              rmatrix%RmatrixBlock(3,3),1.0_DP,&
+!              rmatrix%RmatrixBlock(3,3),&
+!              .false.,.false.,.true.,.true.)          
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0
+        
+        ! Matrix weight
+        rcollection%DquickAccess(1) = rnonlinearCCMatrix%dmu*dweight1
+        
+        call bilf_buildMatrixScalar (rform, .true., rmatrix%RmatrixBlock(3,3),&
+                coeff_Domain_features,rcollection)  
+        
       else
         
         call output_line ("No mass matrix?!?", &
@@ -1813,6 +1829,11 @@ contains
 
     ! Solution vector
     type(t_vectorBlock), intent(in), optional :: rvector
+    
+    !local variables:
+      type(t_bilinearForm) :: rform
+      type(t_spatialDiscretisation) :: rdiscretisation
+      type(t_collection) :: rcollection
 
       real(DP) :: dweight2
       
@@ -1829,10 +1850,23 @@ contains
         ! rnonlinearCCMatrix%dkappa defines the weight for the timestepping!
       
         ! TO BE MODIFIED!
-        call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(3,4),&
-            DER_FUNC,DER_FUNC,&
-            rnonlinearCCMatrix%dkappa*dweight2*rmatrix%RmatrixBlock(3,4)%dscaleFactor,&
-            bclear=.false.)
+!        call stdop_assembleSimpleMatrix (rmatrix%RmatrixBlock(3,4),&
+!            DER_FUNC,DER_FUNC,&
+!            rnonlinearCCMatrix%dkappa*dweight2*rmatrix%RmatrixBlock(3,4)%dscaleFactor,&
+!            bclear=.false.)
+        
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0
+        
+        rcollection%DquickAccess(1) = &
+                rnonlinearCCMatrix%dkappa*dweight2*rmatrix%RmatrixBlock(3,4)%dscaleFactor
+        call bilf_buildMatrixScalar (rform, .true., rmatrix%RmatrixBlock(3,4),&
+                coeff_Domain_features,rcollection)     
         
       else
         
@@ -1880,12 +1914,26 @@ contains
         ! Mass for time-dependent problems!
         call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixMassConcentration,&
-              rnonlinearCCMatrix%dalpha &
-              + rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
+              rnonlinearCCMatrix%dalpha, &
+              !+ rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
               rmatrix%RmatrixBlock(4,4),1.0_DP,&
               rmatrix%RmatrixBlock(4,4),&
-              .false.,.false.,.true.,.true.)
-
+              .false.,.false.,.true.,.true.)   
+        !For the position dependend domain
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff = .false.
+        rform%Dcoefficients(1)  = 1.0
+        
+        rcollection%DquickAccess(1) = &
+                rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight
+                
+        call bilf_buildMatrixScalar (rform, .FALSE., rmatrix%RmatrixBlock(4,4),&
+                coeff_Domain_features,rcollection)  
+                             
         ! Assemble convection+Laplace
         call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixLaplaceConcentration,&
@@ -1930,7 +1978,7 @@ contains
             rform%Dcoefficients(1)  = 1.0
             rform%Dcoefficients(2)  = 1.0
             
-            rcollection%DquickAccess(1) = &
+            rcollection%DquickAccess(2) = &
                 rnonlinearCCMatrix%djota * rproblem%rphysics%dconvectionWeight
             rcollection%p_rvectorQuickAccess1 => rvector
             
@@ -2785,6 +2833,8 @@ contains
     type(t_problem), intent(inout), target :: rproblem
 
       type(t_matrixScalar) :: rmatrixTemp
+      type(t_bilinearForm) :: rform
+      type(t_collection) :: rcollection
 
       real(DP) :: dweight1, dweight2
       
@@ -2797,19 +2847,23 @@ contains
       call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(3,3),&
           rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
-      call lsyssc_clearMatrix (rmatrixTemp)
-      
       ! Pressure mass matrix
-      call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rasmTempl%rmatrixMassPressure,&
-                rnonlinearCCMatrix%dmu*dweight1,&
-            rmatrixTemp,0.0_DP,&
-            rmatrixTemp,&
-            .false.,.false.,.true.,.true.)
+      rform%itermCount = 1
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
 
+      rform%ballCoeffConstant = .false.
+      rform%BconstantCoeff = .false.
+      rform%Dcoefficients(1)  = 1.0
+      
+      rcollection%DquickAccess(1) = 1.0_DP
+
+      call bilf_buildMatrixScalar (rform, .true., rmatrixTemp,&
+              coeff_Domain_features,rcollection)  
+      
       call lsyssc_scalarMatVec (rmatrixTemp, &
           rvector%RvectorBlock(3), rdefect%RvectorBlock(3), &
-          -1.0_DP, 1.0_DP)
+          -rnonlinearCCMatrix%dmu*dweight1, 1.0_DP)
           
       call lsyssc_releaseMatrix (rmatrixTemp)
 
@@ -2822,12 +2876,26 @@ contains
       call lsyssc_clearMatrix (rmatrixTemp)
           
       ! K-matrix
-      call stdop_assembleSimpleMatrix (rmatrixTemp,&
-          DER_FUNC,DER_FUNC,rnonlinearCCMatrix%dkappa*dweight2,bclear=.false.)
+      
+       ! Kappa mass matrix
+      rform%itermCount = 1
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+
+      rform%ballCoeffConstant = .false.
+      rform%BconstantCoeff = .false.
+      rform%Dcoefficients(1)  = 1.0
+
+      rcollection%DquickAccess(1) = 1.0_DP
+
+      call bilf_buildMatrixScalar (rform, .true., rmatrixTemp,&
+              coeff_Domain_features,rcollection)
+!      call stdop_assembleSimpleMatrix (rmatrixTemp,&
+!          DER_FUNC,DER_FUNC,rnonlinearCCMatrix%dkappa*dweight2,bclear=.false.)
 
       call lsyssc_scalarMatVec (rmatrixTemp, &
           rvector%RvectorBlock(4), rdefect%RvectorBlock(3), &
-          -1.0_DP, 1.0_DP)
+          -rnonlinearCCMatrix%dkappa*dweight2, 1.0_DP)
           
       call lsyssc_releaseMatrix (rmatrixTemp)
 
@@ -2894,12 +2962,26 @@ contains
       ! Mass for time-dependent problems!
       call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMassConcentration,&
-            rnonlinearCCMatrix%dalpha &
-            + rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
+            rnonlinearCCMatrix%dalpha, &
+            !+ rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight,&
             rmatrixTemp,0.0_DP,&
             rmatrixTemp,&
             .false.,.false.,.true.,.true.)
-          
+      
+      !For the position dependend domain
+      rform%itermCount = 1
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      
+      rform%ballCoeffConstant = .false.
+      rform%BconstantCoeff = .false.
+      rform%Dcoefficients(1)  = 1.0
+      
+      rcollection%DquickAccess(1) = rnonlinearCCMatrix%djota*rproblem%rphysics%dreactionWeight
+              
+      call bilf_buildMatrixScalar (rform, .FALSE., rmatrixTemp,&
+              coeff_Domain_features,rcollection)      
+              
       ! Generate Laplace+convection operator
       call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixLaplaceConcentration,&
@@ -2907,7 +2989,7 @@ contains
             rmatrixTemp,1.0_DP,&
             rmatrixTemp,&
             .false.,.false.,.true.,.true.)
-
+      
       ! Constant convection
       call stdop_assembleSimpleMatrix (rmatrixTemp,&
           DER_DERIV_X,DER_FUNC,&

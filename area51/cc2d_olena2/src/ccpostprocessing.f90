@@ -1301,6 +1301,7 @@ contains
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
+    real(DP), dimension(:), allocatable :: p_DRefX,p_DRefY
 
     ! A pointer to the triangulation.
     type(t_triangulation), pointer :: p_rtriangulation
@@ -1324,11 +1325,12 @@ contains
     integer(I32) :: ieltype
     
     ! Parameters used for the moving frame formulation
-    integer :: imovingFrame
+    integer :: imovingFrame,ive
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords    
     
     character(SYS_STRLEN) :: sfile,sfilename
-    
+
     ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
@@ -1441,6 +1443,9 @@ contains
     ! of that level
     p_rtriangulation => rproblem%RlevelInfo(ilevelUCD)%rtriangulation
     
+    allocate(p_DRefX(p_rtriangulation%NVT))
+    allocate(p_DRefY(p_rtriangulation%NVT))
+    
     ! Start UCD export to GMV file:
     call output_lbrk ()
     call output_line ('Writing visualisation file: '//sfile)
@@ -1508,6 +1513,17 @@ contains
     !     p_Ddata2(1:p_rtriangulation%NVT))
     call ucd_addVarVertBasedVec (rexport,'velocity',&
         p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
+
+    call storage_getbase_double2d(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+        
+    do ive=1,p_rtriangulation%NVT
+        p_DRefX(ive)=p_DvertexCoords(1,ive)**2
+        p_DRefY(ive)=p_DvertexCoords(2,ive)**2
+    end do
+
+    call ucd_addVarVertBasedVec (rexport,'reference',&
+        p_DRefX(1:p_rtriangulation%NVT),p_DRefY(1:p_rtriangulation%NVT))
     
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)

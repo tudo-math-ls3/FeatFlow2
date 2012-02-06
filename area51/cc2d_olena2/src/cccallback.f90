@@ -394,7 +394,118 @@ contains
 
   end subroutine
 
+
+
+
 ! ***************************************************************************
+
+subroutine coeff_Domain_features(rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
+        
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(IN)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in trial space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+    integer :: iel,icup,ive,nve,iin
+    ! here we store the values of u and rho
+    real(dp), dimension(:,:,:), allocatable :: Dvalues
+    real(dp) :: dx, dy, dweight
+    !real(dp), dimension(:), allocatable :: DrhoElement
+    
+    ! get the weight of the operator
+    dweight = rcollection%DquickAccess(1)
+
+    Dcoefficients(1,:,:) = dweight
+    return
+    
+    ! loop over the elements and cubature points
+    ! and assign the coefficients 
+    do iel=1,nelements
+      do icup=1,npointsPerElement
+      
+         dx = Dpoints(1,icup,iel)
+         dy = Dpoints(2,icup,iel)
+
+        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
+          Dcoefficients(1,icup,iel) = 0.0_DP
+        else
+          Dcoefficients(1,icup,iel) = dweight
+        end if
+      end do
+    end do
+    
+  end subroutine
+
+  ! ***************************************************************************
   !<subroutine>
 
   subroutine coeff_Pressure (rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -557,6 +668,13 @@ contains
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
     
+       integer :: iel,icup,ive,nve,iin
+    ! here we store the values of u and rho
+    real(dp), dimension(:,:,:), allocatable :: Dvalues
+    real(dp) :: dx, dy
+  
+    
+    
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (rcollection%Iquickaccess(1) .eq. 1) then
@@ -578,9 +696,12 @@ contains
     
     ! Time-dependent reference:
     !
-    ! dtime*(1.0_DP - 2.0_DP * dnu) + dtimedep * Dpoints(1,:,:)**2
-    
-    Dcoefficients(1,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = dtime*(1.0_DP - 2.0_DP * dnu) + dtimedep * Dpoints(1,:,:)**2
+ 
+ 
+   
+    Dcoefficients(1,:,:) = 1.0_DP - 2.0_DP * dnu + 2.0_DP*Dpoints(1,:,:)**3
+    !Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -661,6 +782,11 @@ contains
     real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
+    integer :: iel,icup,ive,nve,iin
+    ! here we store the values of u and rho
+    real(dp), dimension(:,:,:), allocatable :: Dvalues
+    real(dp) :: dx, dy
+    
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -683,9 +809,9 @@ contains
     
     ! Time-dependent reference
     !
-    ! dtime * (1.0_DP - 2.0_DP * dnu) + dtimedep*Dpoints(2,:,:)**2
-    
-    Dcoefficients(1,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = dtime * (1.0_DP - 2.0_DP * dnu) + dtimedep*Dpoints(2,:,:)**2
+    Dcoefficients(1,:,:) = 1.0_DP - 2.0_DP * dnu + 2.0_DP*Dpoints(2,:,:)**3
+    !Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -766,7 +892,14 @@ contains
     real(DP) :: dtime
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
+    integer :: iel,icup,ive,nve,iin
+    ! here we store the values of u and rho
+    real(dp), dimension(:,:,:), allocatable :: Dvalues
+    real(dp) :: dx, dy
     
+    
+
+      
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (rcollection%Iquickaccess(1) .eq. 1) then
@@ -786,10 +919,29 @@ contains
 
     ! Time-dependent reference:
     !
-    !   dtime* ( (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
-    !   dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) )
-    
-    Dcoefficients(1,:,:) = 0.0_DP
+!    Dcoefficients(1,:,:)=dtime* ( (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
+!    dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) )
+ 
+    ! loop over the elements and cubature points
+    ! and assign the coefficients 
+!    do iel=1,nelements
+!      do icup=1,npointsPerElement
+!      
+!         dx = Dpoints(1,icup,iel)
+!         dy = Dpoints(2,icup,iel)
+!
+!        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
+!          Dcoefficients(1,icup,iel) = (dx + dy) * 2.0_DP 
+!        else
+!          Dcoefficients(1,icup,iel) = (dx + dy) * (2.0_DP + dmuWeight) + &
+!      dkappaWeight * (dx**2 + dy**2)
+!        end if
+!      end do
+!    end do
+
+    Dcoefficients(1,:,:)= (Dpoints(1,:,:) + Dpoints(2,:,:)) * (2.0_DP + dmuWeight) + &
+     dkappaWeight * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+    !Dcoefficients(1,:,:) = 0.0_DP
 
   end subroutine
 
@@ -870,7 +1022,11 @@ contains
     real(DP) :: dtime,dtimedep
     real(DP) :: ddiffusionWeight,dconvectionWeight,dconvectionBeta1,dconvectionBeta2
     real(DP) :: dreactionWeight,dmuWeight,dkappaWeight,dnu
-    
+    integer :: iel,icup,ive,nve,iin
+    ! here we store the values of u and rho
+    real(dp), dimension(:,:,:), allocatable :: Dvalues
+    real(dp) :: dx, dy
+           
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (rcollection%Iquickaccess(1) .eq. 1) then
@@ -891,13 +1047,34 @@ contains
     dnu = rcollection%Dquickaccess(11)
 
     ! Time-dependent reference:
-    !
-    !   dconvectionWeight * 2.0_DP * dtime**2 * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
-    !   dreactionWeight * dtime * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
-    !   (-4.0_DP) * ddiffusionWeight * dtime + &
-    !   dtimedep * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+!       Dcoefficients(1,:,:)= dconvectionWeight * 2.0_DP * dtime**2 * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
+!      dreactionWeight * dtime * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
+!       (-4.0_DP) * ddiffusionWeight * dtime + &
+!       dtimedep * (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
+
+
+
+    ! loop over the elements and cubature points
+    ! and assign the coefficients 
+!    do iel=1,nelements
+!      do icup=1,npointsPerElement
+!      
+!         dx = Dpoints(1,icup,iel)
+!         dy = Dpoints(2,icup,iel)
+!
+!        if(dx .ge. 0.25_DP .and. dx .le. 0.75_DP .and. dy .ge. 0.25_DP .and. dy .le. 0.75_DP)then
+!          Dcoefficients(1,icup,iel) = dconvectionWeight * 2.0_DP * (dx**3 + dy**3) + (-4.0_DP) * ddiffusionWeight
+!        else
+!          Dcoefficients(1,icup,iel) = dconvectionWeight * 2.0_DP * (dx**3 + dy**3) + &
+!              dreactionWeight *(dx**2 + dy**2) + (-4.0_DP) * ddiffusionWeight
+!        end if
+!      end do
+!    end do
     
-    Dcoefficients(1,:,:) = 0.0
+    Dcoefficients(1,:,:)= dconvectionWeight * 2.0_DP * (Dpoints(1,:,:)**3 + Dpoints(2,:,:)**3) + &
+      dreactionWeight *(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2) + &
+       (-4.0_DP) * ddiffusionWeight
+    !Dcoefficients(1,:,:) = 0.0
 
   end subroutine
 
@@ -1402,7 +1579,7 @@ contains
     !
     !   dtime*Dpoints(1,:,:)**2
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(1,:,:)**2
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1504,7 +1681,7 @@ contains
     !
     !   dtime*Dpoints(2,:,:)**2
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = Dpoints(2,:,:)**2
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1606,8 +1783,8 @@ contains
     !
     !   dtime*(Dpoints(1,:,:)+Dpoints(2,:,:))
 
-    Dvalues(:,:) = 0.0_DP
-
+    !Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)-1.0_DP
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
     !   ...
@@ -1708,8 +1885,8 @@ contains
     !
     !    dtime*(Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
 
-    Dvalues(:,:) = 0.0_DP
-
+    !Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
     !   ...
@@ -1927,43 +2104,6 @@ contains
       end if
       
     end do
-
-!    ! Definition of a 2nd circle
-!    dxcenter = 1.1
-!    dycenter = 0.31
-!    dradius  = 0.05
-!
-!    ! Loop through the points where to evaluate:
-!    DO idx = 1,Revaluation(1)%nvalues
-!
-!      ! Get the number of the point to process; may also be number of an
-!      ! edge or element...
-!      ipoint = Revaluation(1)%p_Iwhere(idx)
-!
-!      ! Get x- and y-coordinate
-!      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-!                       p_DvertexCoordinates,&
-!                       p_IverticesAtElement,p_IverticesAtEdge,&
-!                       p_rtriangulation%NVT,&
-!                       dx,dy)
-!
-!      ! Get the distance to the center
-!      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!
-!      ! Point inside?
-!      IF (ddistance .LE. dradius) THEN
-!
-!        ! Denote in the p_Iinside array that we prescribe a value here:
-!        Revaluation(1)%p_Iinside (idx) = 1
-!        Revaluation(2)%p_Iinside (idx) = 1
-!
-!        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
-!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!
-!      END IF
-!
-!    END DO
     
   contains
   
