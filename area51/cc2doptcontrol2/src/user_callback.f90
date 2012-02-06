@@ -60,6 +60,9 @@
 !#     -> Releases information stored in the collection by
 !#        user_initCollectForAssembly.
 !#
+!# 10.) user_getNonconstantViscosity
+!#      -> If nonconstant viscosity is activated, this routine calculates
+!#         the viscosity.
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
 !# framework calls user_initCollectForAssembly to stores the current point
@@ -92,6 +95,8 @@ module user_callback
   use boundary
   use triangulation
   use collection
+  use linearsystemscalar
+  use linearsystemblock
   
   use structuresoptc
   use structuresoptflow
@@ -126,6 +131,7 @@ module user_callback
 !  public :: user_ffunction_TargetY
   public :: user_getBoundaryValues
   public :: user_getBoundaryValuesFBC_2D
+  public :: user_getNonconstantViscosity
 
 contains
 
@@ -212,7 +218,7 @@ contains
 
 !<inputoutput>
   ! Global data.
-  type(t_globalData), intent(inout) :: rglobalData
+  type(t_globalData), intent(in) :: rglobalData
 
   ! Collection structure which is passed to the callback routines.
   type(t_collection), intent(inout) :: rcollection
@@ -232,6 +238,7 @@ contains
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
     rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
     rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
+    rcollection%Dquickaccess(6) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
 
   end subroutine
   
@@ -318,7 +325,7 @@ contains
   
 !<inputoutput>
   ! Global data.
-  type(t_globalData), intent(inout) :: rglobalData
+  type(t_globalData), intent(in) :: rglobalData
 
   ! Collection structure which is passed to the callback routines.
   type(t_collection), intent(inout) :: rcollection
@@ -2425,6 +2432,92 @@ contains
       end select
       
     end subroutine
+
+  end subroutine
+
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine user_getNonconstantViscosity (cterm,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset, &
+                Dcoefficients,rvelocity,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! This subroutine is called during the calculation of the SD operator.
+  ! It allows to calculate a user defined viscosity coefficient
+  ! in case of a nonconstant viscosity.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! Term which is to be computed.
+  ! =0: Calculate the $\nu$ values in front of the Laplace.
+  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  integer, intent(in) :: cterm
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! Current velocity vector.
+  type(t_vectorBlock), intent(in) :: rvelocity
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the coefficients
+  ! in all the points specified in Dpoints.
+  ! cterm specifies what to evaluate.
+  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!</output>
+  
+!</subroutine>
+
+    ! Add a viscolity here. The parameter [CC-DISCRETISATION].cviscoModel
+    ! decides on whether this coefficient is evaluated or not.
+    !
+    ! WARNING: For a nonconstant coefficient, the extended assembly
+    ! method must be activated!!! (Parameter [CC-DISCRETISATION].iupwind)
+    Dcoefficients(:,:) = 0.0_DP
 
   end subroutine
 

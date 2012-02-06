@@ -1,3 +1,23 @@
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Directory for visualisation files
+spostdirectory = %{sappdirectory}/gmv
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = %{sappdirectory}/ns
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/pre
+
+# Files to import
+
 simportdatafiles(12) = 
   "main.dat"
   "bdconditions.dat"
@@ -11,142 +31,247 @@ simportdatafiles(12) =
   "postprocessing.dat"
   "spacetimesolver.dat"
   "timediscr.dat"
+#  "./data/master_testflow2.dat"
+#  "./data/master_ANALYT_016_nonstvergleich.dat"
 
-#####################################################################
-# reference configuration with full coupling for Navier-Stokes
-#
-# lambda := (t-1)^2 (-x1,x2)
-#      y := t^2 (-x1,x2)
-#      p := 0
-#     xi := 0
-#
-# =>
-#
-# y\grad(y) = t^4 (x1,x2)
-#####################################################################
+[CC-PHYSICSPRIMAL]
+iequation = 0
+RE = 100
+cviscoModel = 1
+dviscoexponent = 2.0
+dviscoEps = 0.01
+dviscoyield = 1.0
 
+[CC-DISCRETISATION]
+NLMIN              = 3
+NLMAX              = 4
+iElementType       = 4
+iUpwind1           = 3
+iUpwind2           = 3
+
+[OPTIMALCONTROL]
+dalphaC = -0.01 # 1.0
+dbetaC = 0.1
+ddirichletBCPenalty = 4000.0
+
+[TIME-DISCRETISATION]
+TIMENLMIN = 1
+TIMENLMAX = 2
+dtimeStepTheta = 0.5
+niterations = 8 #16
+dtimeInit = 0.0
+dtimeMax = 0.5
+
+[TIME-MULTIGRID]
+nmaxIterations = 1 #5 #5
+
+[TIME-POSTPROCESSING]
+ioutputUCD = 4
+sfilenameUCD = 'gmv/u4_3_navst.vtk'
+
+[TIME-SOLVER]
+nminIterations = 1
+nmaxIterations = 4 #4 #4 #10 #10
+cpreconditioner = 2
+ctypeNonlinearIteration = 2
+ioutputlevel = 2
+depsRel = 1E-4
+depsAbs = 1E-10
+
+[TIME-SMOOTHER]
+cspaceTimeSmoother = 10
+ioutputlevel = 2
+nsmpre = 0
+nsmpost = 4
+
+[TIME-SMOOTHERPRECOND]
+domega = 0.1
+ioutputlevel = 0
+
+[TIME-SINGLEGRIDSOLVER]
+ctypeSolver = 10 #3 #6
+nminIterations     = 1
+nmaxIterations     = 250
+ioutputlevel = 2
+depsRel = 1E-2
+depsAbs = 1E-14
+
+[TIME-SINGLEGRIDPRECOND]
+domega = 0.1
+ioutputlevel = 0
+
+[CC-LINEARSOLVER]
+icoarseGridSolverType = 3
+
+[CC-MULTIGRIDSOLVER]
+depsRel            = 1E-2
+ioutputlevel = 0
+
+[CC-COARSEGRIDSOLVER]
+ioutputlevel = 0
+
+[TIME-PREPROCESSING]
+ctypeStartVector = 1
+
+[SPACETIME-REFINEMENT]
+ispacelevelcoupledtotimelevel = 0
+
+##################
+[INITIALCONDITION]
+##################
+
+ctype = 0
+
+ielementType = 4
+ilevel = 8
+sfunctionFile = 'ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol'
+
+###############
+[RIGHTHANDSIDE]
+###############
+
+# Type of function.
+# =-1: analytically given as callback function using iid
+# =0: zero function
+# =3: analytically given in expression sexpression(1..ncomponents)
+
+ctype = 0
+
+# =======================================================================================
+# Section that defines the target function in the optimal control problem.
+
+####################
+[OPTCTARGETFUNCTION]
+####################
+
+# Type of the function.
+# =-1: analytically given as callback function
+# =0: zero function
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: nonstationary function as prescribed by a sequence of files on the 
+#     hard disc. stargetFunction is the basic filename target. A number
+#     '.0000','.0001',... is appended to this to form the filename of the
+#     solution vector in every timestep. There must be exactly as many
+#     files present on the hard disc as prescribed by the 
+#     time discretisation!
+# =3: analytically given in expression sexpression(1..ncomponents)
+# =4: Created by a forward simulation. NOTE: NOT YET SUPPORTED!
+
+#ctype = 1
+#ielementType = 4
+#ilevel = 8
+#sfunctionFile = 'ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol'
+
+ctype = 3
+sexpression(3) =
+  "MAX(0,4*4*Y*(0.5-Y))"
+  "0"
+  "0"
+
+  
+################
+[INITIALITERATE]
+################
+
+# Type of function.
+# =-1: analytically given as callback function using iid
+# =0: zero function
+# =3: analytically given in expression sexpression(1..ncomponents)
+
+ctype = 0
+
+####################
+[REFERENCE-FUNCTION]
+####################
+
+# Type of the function.
+# =-1: zero function
+# =0: analytically given as callback function
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: nonstationary function as prescribed by a sequence of files on the 
+#     hard disc. stargetFunction is the basic filename target. A number
+#     '.0000','.0001',... is appended to this to form the filename of the
+#     solution vector in every timestep. There must be exactly as many
+#     files present on the hard disc as prescribed by the 
+#     time discretisation!
+# =3: analytically given in expression sexpression(1..ncomponents)
+
+ctype = -1
+
+####################
+[BDEXPRESSIONS]
+####################
+bdExpressions(3) =
+  'Dirichlet0'    -1    '0.0'
+  'Dirichlet1'    -1    '1.0'
+  'DirichletY'    -1    "MAX(0,4*4*Y*(0.5-Y))"
+
+####################
+[BDCONDITIONS]
+####################
+ineumannBoundary = 1
+bdComponent1(4)=
+#  1.0  3  4  'Dirichlet0'  'Dirichlet0' 'Dirichlet0' 'Dirichlet0'
+#  2.0  1  4  'Dirichlet0'  'Dirichlet0' 'Dirichlet0' 'Dirichlet0'
+#  3.0  3  7
+#  4.0  2  4  'Dirichlet0'  'Dirichlet0' 'Dirichlet0' 'Dirichlet0'
+  1.0  3  1  'Dirichlet0'  'Dirichlet0' 
+  2.0  0  0
+  3.0  3  1  'Dirichlet0'  'Dirichlet0' 
+  4.0  3  7  'DirichletY'  'Dirichlet0' 
+
+####################
 [PARAMTRIANG]
+####################
 sParametrisation = './pre/QUAD.prm'
 sMesh = './pre/QUAD.tri'
 
-[CC-PHYSICSPRIMAL]
-iequation          = 0
-RE                 = 1.0
-
-[CC-DISCRETISATION]
-NLMIN              = 2
-NLMAX              = 3
-iElementType       = 6
-
-[TIME-PREPROCESSING]
-ctypeStartVector   = 0
-
-[RIGHTHANDSIDE]
-ctype = 3
-sflowExpressionY1 = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)+TIME^4*X'
-sflowExpressionY2 = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y+TIME^4*Y'
-sflowExpressionP = '0'
-
-[INITIALITERATE]
-ctype = 0
-
-[INITIALCONDITION]
-ctype = 3
-sflowExpressionY1 = '%{REFERENCE-FUNCTION.sflowExpressionY1}'
-sflowExpressionY2 = '%{REFERENCE-FUNCTION.sflowExpressionY2}'
-sflowExpressionP = '%{REFERENCE-FUNCTION.sflowExpressionP}'
-
-[BDEXPRESSIONS]
-bdExpressions(4) =
-  'yx1'           -1    %{REFERENCE-FUNCTION.sflowExpressionY1}
-  'yx2'           -1    %{REFERENCE-FUNCTION.sflowExpressionY2}
-  'lambdax1'      -1    '(TIME-1)^2*(-X)'
-  'lambdax2'      -1    '(TIME-1)^2*(Y)'
-
-[BDCONDITIONS]
-bdComponent1(1)=
-  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
-
-[TIME-DISCRETISATION]
-niterations = 2
-TIMENLMIN = 2
-TIMENLMAX = 2
-dtimeStepTheta = 0.5
-
-[REFERENCE-FUNCTION]
-ctype = 3
-sflowExpressionY1 = 'TIME^2*(-X)'
-sflowExpressionY2 = 'TIME^2*(Y)'
-sflowExpressionP = '0'
-sflowExpressionL1 = '(TIME-1)^2*(-X)'
-sflowExpressionL2 = '(TIME-1)^2*(Y)'
-sflowExpressionXI = '0'
-
-[OPTCTARGETFLOW]
-ctype = 3
-sflowExpressionY1 = '2*(TIME-1)*(-X)+TIME^2*(-X)'
-sflowExpressionY2 = '2*(TIME-1)*(Y)+TIME^2*(Y)'
-
 [TIME-POSTPROCESSING]
-sfilenameUCD = 'gmv/utest2quad.gmv' 
-sfinalSolutionFileName = 'ns/solution'
-icalcError = 1
+icalcError = 0
+sfinalSolutionFileName = ''
 
-[TIME-SOLVER]
-nminIterations         = 1
-nmaxIterations         = 100
-depsRel                = 1E-13
-cpreconditioner        = 2
-ctypeNonlinearIteration = 2
-ioutputLevel = 2
+#######
+[DEBUG]
+#######
 
-[SPACETIME-REFINEMENT]
-ispacelevelcoupledtotimelevel = 1
+# DEBUG-Flags. Only change if you know what you do!!!
 
-[TIME-MULTIGRID]
-nmaxIterations     = 100
-depsRel            = 1E-2
+# If the following constant is set from 1.0 to 0.0, the primal system is
+# decoupled from the dual system!
+dprimalDualCoupling = 1.0
 
-[TIME-SMOOTHER]
-cspaceTimeSmoother = 9
-domega = 1.0
-nsmPre = 0
-nsmPost = 1
-ioutputLevel = 1
+# If the following constant is set from 1.0 to 0.0, the dual system is
+# decoupled from the primal system!
+ddualPrimalCoupling = 1.0
 
-[TIME-SMOOTHERPRECOND]
-ioutputLevel = 1
-nmaxIterations = 1
-domega = 1.0
+# If the following parameter is set from 1.0 to 0.0, the terminal
+# condition between the primal and dual equation is decoupled, i.e.
+# the dual equation gets independent from the primal one.
+dterminalCondDecoupled = 1.0
 
-[TIME-SINGLEGRIDSOLVER]
-ctypeSolver = 8
-nmaxIterations = 100
-depsRel = 1E-5
-depsAbs = 1E-15
-depsdiff = 1E-10
-domega = 1.0
-drelax = 0.0
-ioutputlevel = 2
+# If the following parameter is set from 1.0 to 0.0, the time coupling
+# is disabled, resulting in a stationary simulation in every timestep.
+dtimeCoupling = 1.0
 
-[TIME-SINGLEGRIDPRECOND]
-domega = 1.0
-drelax = 1.0
-nmaxIterations = 1
-ioutputlevel = 1
+# Tell the space-time UMFPACK (if present in the lienar solver) to write 
+# out the global matrix.
+cumfpackWriteMatrix = 0
 
-[CC-LINEARSOLVER]
-ismootherType = 0
-icoarseGridSolverType = 6
-#nmaxiterations = 0
+# Filename of the file in which UMFPACK should write the global matrix
+sumfpackMatrixFilename = "./matrix.txt"
 
-[CC-MULTIGRIDSOLVER]
-depsRel            = 1E-10
-#nminiterations=5
-ioutputlevel=0
+# Timestep-scheme for the pressure.
+# =0: Use the same timestep scheme as for the velocity.
+# =1: Calculate the pressure fully implicitely (standard)
+# No effect if Implicit-Euler is used.
+# Difference can only be seen for higher order time-discretisation.
 
-[CC-COARSEGRIDSOLVER]
-ioutputLevel       = 0
-depsAbs            = 1E-15
-istoppingCriterion = 1
-ioutputlevel = 0
+# ipressureFullyImplicit = 1
+
+# Additional weight for the convective operator. May be used to
+# switch off the convection.
+# Standard value = 1.0
+
+# dweightConvection = 1.0

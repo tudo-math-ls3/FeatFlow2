@@ -1873,7 +1873,7 @@ contains
     
       ! Initialise the matrix. Specify a 'dummy' nonlinearity (empty rnonlinearity)
       ! because there is no nonlinearity during memory allocation.
-      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rsettings%rglobalData,&
           rpreconditioner%p_RassemblyData(ilev),rnonlinearity)
 
       ! Get a dummy structure for a full matrix.
@@ -2223,6 +2223,7 @@ contains
     type(t_matrixAssemblyFlags) :: rassemblyFlags
     type(t_spatialMatrixNonlinearData), target :: rlocalNonlinearity
     integer, dimension(1), parameter :: Irows = (/1/)
+    real(DP) :: dtimePrimal, dtimeDual, dtstep
 
     ! DEBUG!!!
     !real(dp), dimension(:), pointer :: p_Da,p_vec,p_def
@@ -2230,6 +2231,10 @@ contains
     ! DEBUG!!!
     !call lsysbl_getbase_double (rd,p_def)
     !call lsysbl_getbase_double (rx,p_vec)
+    
+    ! Get the current time.
+    call tdiscr_getTimestep(rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,ieqTime-1,dtimePrimal, dtstep)
+    dtimeDual = dtimePrimal - (1.0_DP-rspaceTimeMatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
     
     ! On all levels, we have to set up the nonlinear system matrix,
     ! so that the linear solver can be applied to it.
@@ -2304,12 +2309,13 @@ contains
       ! analytically!
       call smva_initNonlinearData (rlocalNonlinearity,&
           p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
+          dtimePrimal,dtimeDual,&
           rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime+ioffdiag),&
           rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime+ioffdiag))
 
       ! Create a nonlinear matrix on the current level.
-      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceTimeMatrix%p_rglobalData,&
           rpreconditioner%p_RassemblyData(ilev),rlocalNonlinearity)
     
       ! Initialise the weights according to the diagonal block of the global
@@ -3018,7 +3024,8 @@ contains
 
     ! Prepare subtraction of A*primal/dual solution from the rhs to
     ! create the primal defect.
-    call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
+    call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+        rspaceTimeMatrix%p_rglobalData,rdiscrData,rnonlinearData)
     call stlin_setupMatrixWeights (rspaceTimeMatrix,&
         ieqTime,0,rnonlinearSpatialMatrix)
 
@@ -3787,6 +3794,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -3804,6 +3812,7 @@ contains
           !! If we are not in the first step...
           ! ... subtract the offdiagonal, corresponding to the previous timestep.
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rsimsolver%p_rsettings%rglobalData,&
               rsimsolver%rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,-1,rnonlinearSpatialMatrix)
@@ -3824,6 +3833,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -4187,6 +4197,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -4199,6 +4210,7 @@ contains
         
           ! ... subtract the offdiagonal, corresponding to the previous timestep.
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rsimsolver%p_rsettings%rglobalData,&
               rsimsolver%rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,-1,rnonlinearSpatialMatrix)
@@ -4222,6 +4234,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -4233,6 +4246,7 @@ contains
 
         ! Subtract A*primal/dual solution from the rhs to create the primal defect.
         call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rsimsolver%p_rsettings%rglobalData,&
             rsimsolver%rdiscrData,rnonlinearData)
         call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
             iiterate,0,rnonlinearSpatialMatrix)
@@ -4409,6 +4423,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -4421,6 +4436,7 @@ contains
 
           ! ... subtract the offdiagonal, corresponding to the next timestep.
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rsimsolver%p_rsettings%rglobalData,&
               rsimsolver%rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,1,rnonlinearSpatialMatrix)
@@ -4447,6 +4463,7 @@ contains
           ! of nonlinear matrices. the evaluation point is given by the three vectors
           ! roseensolX.
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
+              dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
               p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -4464,6 +4481,7 @@ contains
 
         ! Subtract A*primal/dual solution from the rhs to create the primal defect.
         call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rsimsolver%p_rsettings%rglobalData,&
             rsimsolver%rdiscrData,rnonlinearData)
         call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
             iiterate,0,rnonlinearSpatialMatrix)

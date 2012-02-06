@@ -2794,6 +2794,7 @@ contains
 
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+          dtimePrimal,dtimeDual,&
           rsolverNode%rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
           rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rsolverNode%rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -3566,6 +3567,7 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+            dtimePrimal,dtimeDual,&
             rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
             rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
             rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -3588,7 +3590,8 @@ contains
           call sptivec_getTimestepData (rb, iiterate, rtempVectorD)
           
           ! Subtract drelaxGS M ( drelaxGS x1^new + (1-drelaxGS) x1).
-          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
+          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rmatrix%p_rglobalData,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
           
           call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
@@ -3611,7 +3614,8 @@ contains
           call sptivec_getTimestepData (rb, iiterate, rtempVectorD)
 
           ! There is a next timestep. Subtract Ml3.
-          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
+          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rmatrix%p_rglobalData,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,1,rnonlinearSpatialMatrix)
           call sptivec_getTimestepData (rx, iiterate+1, rtempVectorX)
 
@@ -3827,6 +3831,7 @@ contains
       
         ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+            dtimePrimal,dtimeDual,&
             rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
             rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
             rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
@@ -3849,7 +3854,8 @@ contains
           call sptivec_getTimestepData (rb, iiterate, rtempVectorD)
           
           ! Subtract drelaxGS M ( drelaxGS l3^new + (1-drelaxGS) l3).
-          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
+          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rmatrix%p_rglobalData,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,1,rnonlinearSpatialMatrix)
 
           call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
@@ -3873,7 +3879,8 @@ contains
           call sptivec_getTimestepData (rb, iiterate, rtempVectorD)
 
           ! There is a next timestep. Subtract Mx1.
-          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
+          call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+              rmatrix%p_rglobalData,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
           call sptivec_getTimestepData (rx, iiterate-1, rtempVectorX)
 
@@ -5141,6 +5148,7 @@ contains
     
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
+          dtimePrimal,dtimeDual,&
           rsupermatrix%p_rneumannBoundary%p_RbdRegion(isubstep),&
           rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rsupermatrix%p_rdirichletBCCBoundary%p_RbdRegion(isubstep))

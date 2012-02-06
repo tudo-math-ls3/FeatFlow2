@@ -96,6 +96,12 @@
 !#
 !# 8.) smva_clearMatrix
 !#     -> Sets all weights in a matrix to zero
+!#
+!# 3.) smva_prepareViscoAssembly
+!#     -> Prepare a collection for the use in ffunctionViscoModel
+!#
+!# 4.) ffunctionViscoModel
+!#     -> Auxiliary function that defines the nonconstant viscosity
 !# </purpose>
 !##############################################################################
 
@@ -148,6 +154,7 @@ module spacematvecassembly
   use structuresoptc
   
   use structuresoptflow
+  use user_callback
 
   use spatialbcdef
 
@@ -253,6 +260,8 @@ module spacematvecassembly
   public :: smva_addBdEOJOperator
   public :: smva_disableSubmatrix
   public :: smva_clearMatrix
+  public :: smva_prepareViscoAssembly
+  public :: ffunctionViscoModel
 
 !<types>
 
@@ -275,6 +284,10 @@ module spacematvecassembly
     ! like in the last timestep), the vector can be undefined.
     type(t_vectorBlock), pointer :: p_rvector3 => null()
     
+    ! Point in time associated to this matrix.
+    real(DP) :: dassociatedTimePrimalVel = 0.0_DP
+    real(DP) :: dassociatedTimeDualVel = 0.0_DP
+
     ! Definition of the Neumann boundary conditions.
     ! WARNING: IMPLEMENTATION INCOMPLETE!!!!
     ! ACTUALLY, THERE HAS TO BE ONE NEUMANN BOUDNARY STRUCTURE FOR EVERY NONLINEAR
@@ -457,6 +470,9 @@ module spacematvecassembly
 
     ! Discretisation related data.
     type(t_spatialMatrixDiscrData) :: rdiscrData
+    
+    ! Pointer to global data.
+    type(t_globalData), pointer :: p_rglobalData => null()
 
     ! Pointer to a structure specifying all nonlinearities.
     ! May point to NULL if there is no nonlinearity.
@@ -562,17 +578,20 @@ contains
 
 !<subroutine>
 
-  subroutine smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearity)
+  subroutine smva_initNonlinMatrix (rnonlinearSpatialMatrix,rglobalData,rdiscrData,rnonlinearity)
 
 !<description>
   ! Initialises the rnonlinearCCMatrix structure.
 !</description>
 
 !<input>
+  ! Global program data
+  type(t_globalData), target :: rglobalData
+
   ! Discretisation related data with information about the level, the
   ! matrix acts on.
   type(t_spatialMatrixDiscrData) :: rdiscrData
-
+  
   ! Structure specifying the nonlinearity evaluation points of the matrix.
   type(t_spatialMatrixNonlinearData), target :: rnonlinearity
 !</input>
@@ -608,6 +627,9 @@ contains
         
     ! Remember the evaluation point of the nonlinearity.
     rnonlinearSpatialMatrix%p_rnonlinearity => rnonlinearity
+    
+    ! Global program data
+    rnonlinearSpatialMatrix%p_rglobalData => rglobalData
     
   end subroutine
 
@@ -1377,7 +1399,7 @@ contains
         ! u*grad(.)+grad(u)*(.) to the velocity.
         select case (rnonlinearSpatialMatrix%iprimalSol)
         case (1)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
               rnonlinearSpatialMatrix%Dstokes(1,1),&
@@ -1388,7 +1410,7 @@ contains
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (2)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
               rnonlinearSpatialMatrix%Dstokes(1,1),&
@@ -1399,7 +1421,7 @@ contains
               rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
         case (3)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
               rnonlinearSpatialMatrix%Dstokes(1,1),&
@@ -1465,7 +1487,7 @@ contains
         ! u*grad(.)+grad(u)*(.) to the velocity.
         select case (rnonlinearSpatialMatrix%iprimalSol)
         case (1)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
               rnonlinearSpatialMatrix%Dstokes(2,2),&
@@ -1487,7 +1509,7 @@ contains
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         case (2)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
               rnonlinearSpatialMatrix%Dstokes(2,2),&
@@ -1509,7 +1531,7 @@ contains
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         case (3)
-          call assembleConvection (&
+          call assembleNonlinearity (&
               rnonlinearSpatialMatrix,rtempMatrix,&
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
               rnonlinearSpatialMatrix%Dstokes(2,2),&
@@ -1555,7 +1577,7 @@ contains
         ! Co stabilisation in the convective parts here.
         ! rstabilisation = t_convecStabilisation(&
         !    rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
-        rstabilisation = t_settings_stabil(0,0.0_DP,1,1,1)
+        rstabilisation = t_settings_stabil(3,0.0_DP,1,1,1)
 
         select case (rnonlinearSpatialMatrix%idualSol)
         case (1)
@@ -1569,7 +1591,7 @@ contains
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rtempVector, 4,6,.true.)
         end select
             
-        call assembleConvection (&
+        call assembleNonlinearity (&
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
             rnonlinearSpatialMatrix%Dstokes(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
@@ -1596,7 +1618,7 @@ contains
               rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rtempVector, 4,6,.true.)
         end select
             
-        call assembleConvection (&
+        call assembleNonlinearity (&
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,0.0_DP,&
             dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
@@ -1789,7 +1811,7 @@ contains
         roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dmass(2,2)
 
         ! Stokes operator
-        roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+        roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
         roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dstokes(1,1)
         roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dstokes(2,2)
         
@@ -2191,19 +2213,27 @@ contains
         ! ---------------------------------------------------
         ! Plug in the Stokes matrix?
         if (dtheta .ne. 0.0_DP) then
-          call lsyssc_matrixLinearComb (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
-              rmatrix%RmatrixBlock(1,1),&
-              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,1.0_DP,&
-              .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
-              
-          if (.not. bshared) then
+          ! Plug in the Stokes matrix in case of the gradient tensor.
+          ! In case of the deformation tensor or nonconstant viscosity,
+          ! that is done during the assembly of the nonlinearity.
+          if ((rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .eq. 0) .and. &
+              (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .eq. 0)) then
+        
             call lsyssc_matrixLinearComb (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
-                rmatrix%RmatrixBlock(2,2),&
-                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,1.0_DP,&
-                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+                rmatrix%RmatrixBlock(1,1),&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst * dtheta,1.0_DP,&
+                .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+                
+            if (.not. bshared) then
+              call lsyssc_matrixLinearComb (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
+                  rmatrix%RmatrixBlock(2,2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst * dtheta,1.0_DP,&
+                  .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+            end if
           end if
+          
         end if
         
       end if
@@ -2270,7 +2300,7 @@ contains
     
     ! -----------------------------------------------------
 
-    subroutine assembleConvection (&
+    subroutine assembleNonlinearity (&
         rnonlinearSpatialMatrix,rmatrix,rvector,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
         rcubatureInfo,rstabilisation,rmatrixEOJ)
         
@@ -2329,6 +2359,7 @@ contains
     integer, dimension(:), pointer :: p_Idofs
     integer :: h_Idofs
     type(t_matrixBlock) :: rmatrixtemp
+    type(t_collection), target :: rcollection, ruserCollection
     
       ! Is A11=A22 physically?
       bshared = lsyssc_isMatrixContentShared(&
@@ -2345,7 +2376,15 @@ contains
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Ddata2)
              
       if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
-          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
+          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP) .or. &
+          (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) .or. &
+          (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0)) then
+                  
+        ! Prepare a user defined collection structure for the
+        ! callback routines
+        call collct_init (ruserCollection)
+        call user_initCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,&
+            rnonlinearSpatialMatrix%p_rnonlinearity%dassociatedTimePrimalVel,ruserCollection)
                       
         ! Switch on the offdiagonal matrices if necessary
         if ((dgammaT .ne. 0.0_DP) .or. &
@@ -2369,9 +2408,18 @@ contains
                       
         select case (rstabilisation%cupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
+        
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
@@ -2383,7 +2431,7 @@ contains
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           if (rstabilisation%dupsam .ne. 0) then
-            call output_line ("assembleConvection: Warning. Please use the")
+            call output_line ("assembleNonlinearity: Warning. Please use the")
             call output_line ("alternative SD method for setting up the stabilised operator!!!")
           end if
           
@@ -2398,9 +2446,9 @@ contains
                               rmatrix,rcubatureInfo=rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+        
+          ! Set up the SD structure.
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
@@ -2410,19 +2458,46 @@ contains
           rstreamlineDiffusion2%ddeltaT = dgammaT
           rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
           
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
+
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
-          
+              rstreamlineDiffusion2,rmatrix,rvector,&
+              ffunctionViscoModel,rcollection,rcubatureInfo)
+
         case (CCMASM_STAB_UPWIND)
-        
+
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter
           rstreamlineDiffusion2%dupsam = 0.0_DP
@@ -2432,20 +2507,48 @@ contains
           rstreamlineDiffusion2%ddeltaT = dgammaT
           rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+                    
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
           
           ! Call the SD method to calculate the nonlinearity for everything except
           ! for the convection. As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
+              rstreamlineDiffusion2,rmatrix,rvector,&
+              ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
           ! Note: Stabilisation weight is actually wrong, but it is not possible
           ! to specify in rupwindStabil%dupsam whether the stabilisation
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
-          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           rupwindStabil%dtheta = dgamma
           
           ! Apply the upwind operator.
@@ -2467,16 +2570,25 @@ contains
           !call conv_streamDiff2Blk2dMat (rstreamlineDiffusion3,rmatrix,rvector)
           
           !call output_line ('Upwind not supported.', &
-          !                  OU_CLASS_ERROR,OU_MODE_STD,'assembleConvection')
+          !                  OU_CLASS_ERROR,OU_MODE_STD,'assembleNonlinearity')
           !call sys_halt()
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
+
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
           rstreamlineDiffusion%dupsam = 0.0_DP
@@ -2531,26 +2643,54 @@ contains
           ! Jump stabilisation.
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+
+          ! Set up the SD structure.
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+                    
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
-                              
+              rstreamlineDiffusion2,rmatrix,rvector,&
+              ffunctionViscoModel,rcollection,rcubatureInfo)
+
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -2582,20 +2722,48 @@ contains
 
         case (CCMASM_STAB_EDGEORIENTED3)
           ! Jump stabilisation.
+          
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+
+          ! Set up the SD structure.
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+                    
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2604,8 +2772,9 @@ contains
           call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
           call lsyssc_getbase_double (rmatrixEOJ, p_Ddata2)
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,rcubatureInfo=rcubatureInfo)
-                              
+              rstreamlineDiffusion2,rmatrix,rvector,&
+              ffunctionViscoModel,rcollection,rcubatureInfo)
+
           ! We use the precomputed EOJ matrix and sum it up to the
           ! existing matrix.
           ! Matrix weight. Compensate for any "-" sign in dgamma!
@@ -2625,18 +2794,76 @@ contains
           stop
         
         end select
+
+        ! Release the collection stuff
+        call user_doneCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,ruserCollection)
+        call collct_done (ruserCollection)
         
       else
       
         ! That's the Stokes-case. Jump stabilisation is possible...
       
         if ((rstabilisation%dupsam .ne. 0.0_DP)  .and. (dtheta .ne. 0.0_DP)) then
+
+          ! Prepare a user defined collection structure for the
+          ! callback routines
+          call collct_init (ruserCollection)
+          call user_initCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,&
+              rnonlinearSpatialMatrix%p_rnonlinearity%dassociatedTimePrimalVel,ruserCollection)
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            ! Set up the SD structure for the creation of the defect.
+            rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
+            
+            ! Set stabilisation parameter
+            rstreamlineDiffusion2%dupsam = 0.0_DP
+            
+            ! Matrix weights
+            rstreamlineDiffusion2%ddelta  = 0.0_DP
+            rstreamlineDiffusion2%ddeltaT = dgammaT
+            rstreamlineDiffusion2%dnewton = dnewton
+            rstreamlineDiffusion2%dnewtonT = dnewtonT
+  
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+            ! Assemble the deformation tensor?
+            if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+              rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+              rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+            end if
+          
+            ! Call the SD method to calculate the nonlinearity for everything except
+            ! for the convection. As velocity vector, specify rvector!
+            ! Therefore, the primal velcity is always used for assembling
+            ! that thing!
+            call conv_streamDiff2Blk2dMat (&
+                rstreamlineDiffusion2,rmatrix,rvector,&
+                ffunctionViscoModel,rcollection,rcubatureInfo)
+
+          end if
+
           select case (rstabilisation%cupwind)
           case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
             
             ! Set up the jump stabilisation structure.
             ! There's not much to do, only initialise the viscosity...
-            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
             
             ! Set stabilisation parameter
             rjumpStabil%dgamma = abs(rstabilisation%dupsam)
@@ -2682,8 +2909,12 @@ contains
             ! No stabilisation
           
           end select
+
+          ! Release the collection stuff
+          call user_doneCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,ruserCollection)
+          call collct_done (ruserCollection)
         end if
-        
+
       end if
       
       if (rstabilisation%cconvectionOnBoundaryMatrix .eq. 0) then
@@ -3261,31 +3492,45 @@ contains
       !    (                    L       )
       !    (                            )
       if (rnonlinearSpatialMatrix%Dstokes(1,1) .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
-            rx%RvectorBlock(1), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
-            1.0_DP)
+        ! In case of the deformation tensor or nonconstant viscosity,
+        ! the defect assembly is done during the assembly of the nonlinearity.
+        if ((rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .eq. 0) .and. &
+            (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .eq. 0)) then
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
+              rx%RvectorBlock(1), rd%RvectorBlock(1), &
+              -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst,&
+              1.0_DP)
 
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
-            rx%RvectorBlock(2), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
-            1.0_DP)
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
+              rx%RvectorBlock(2), rd%RvectorBlock(2), &
+              -rnonlinearSpatialMatrix%Dstokes(1,1)*dcx*&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst,&
+              1.0_DP)
+        end if
       end if
             
       if (rnonlinearSpatialMatrix%Dstokes(2,2) .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
-            rx%RvectorBlock(4), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
-            1.0_DP)
+        ! In case of the deformation tensor or nonconstant viscosity,
+        ! the defect assembly is done during the assembly of the nonlinearity.
+        if ((rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .eq. 0) .and. &
+            (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .eq. 0)) then
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
+              rx%RvectorBlock(4), rd%RvectorBlock(4), &
+              -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst,&
+              1.0_DP)
 
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
-            rx%RvectorBlock(5), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
-            1.0_DP)
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
+              rx%RvectorBlock(5), rd%RvectorBlock(5), &
+              -rnonlinearSpatialMatrix%Dstokes(2,2)*dcx*&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst,&
+              1.0_DP)
+        end if
       end if
       
       ! ---------------------------------------------------
@@ -3435,7 +3680,7 @@ contains
       call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,1,2,.true.)
 
-      call assembleConvectionDefect (&
+      call assembleNonlinearityDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
@@ -3460,7 +3705,7 @@ contains
       call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
 
-      call assembleConvectionDefect (&
+      call assembleNonlinearityDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,2),&
           dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
@@ -3471,7 +3716,7 @@ contains
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
       
       ! 2a) Dual equation, natural boundary condition.
-      call assembleConvectionDefectDualBd (&
+      call assembleNonlinearityDefectDualBd (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)
       
@@ -3490,12 +3735,12 @@ contains
       ! No stabilisation here
       ! rstabilisation = t_convecStabilisation(&
       !     rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
-      rstabilisation = t_settings_stabil(0,0.0_DP,1,1,1)
+      rstabilisation = t_settings_stabil(3,0.0_DP,1,1,1)
       
       call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
 
-      call assembleConvectionDefect (&
+      call assembleNonlinearityDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
@@ -3507,9 +3752,9 @@ contains
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
 
-      rstabilisation = t_settings_stabil(0,0.0_DP,1,1,1)
+      rstabilisation = t_settings_stabil(3,0.0_DP,1,1,1)
       
-      call assembleConvectionDefect (&
+      call assembleNonlinearityDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
           dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
@@ -3833,7 +4078,7 @@ contains
       roptcoperator%ddualAlpha   = rnonlinearSpatialMatrix%Dmass(2,2)
 
       ! Stokes operator
-      roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+      roptcoperator%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
       roptcoperator%dprimalBeta = rnonlinearSpatialMatrix%Dstokes(1,1)
       roptcoperator%ddualBeta   = rnonlinearSpatialMatrix%Dstokes(2,2)
       
@@ -3915,7 +4160,7 @@ contains
 
     ! -----------------------------------------------------
 
-    subroutine assembleConvectionDefectDualBd (&
+    subroutine assembleNonlinearityDefectDualBd (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dweightBdIntegral,dcx)
         
     ! Assembles the convection defect for the dual on the boundary.
@@ -3970,7 +4215,7 @@ contains
 
     ! -----------------------------------------------------
 
-    subroutine assembleConvectionDefect (&
+    subroutine assembleNonlinearityDefect (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
         rcubatureInfo,rstabilisation,dcx,rmatrixEOJ)
         
@@ -4036,6 +4281,7 @@ contains
     type(t_vectorBlock) :: rbtemp
     integer :: h_Idofs
     integer, dimension(:), pointer :: p_Idofs
+    type(t_collection), target :: rcollection, ruserCollection
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
@@ -4053,12 +4299,31 @@ contains
       end if
                     
       if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
-          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
+          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP) .or. &
+          (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) .or. &
+          (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0)) then
+          
+        ! Prepare a user defined collection structure for the
+        ! callback routines
+        call collct_init (ruserCollection)
+        call user_initCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,&
+            rnonlinearSpatialMatrix%p_rnonlinearity%dassociatedTimePrimalVel,ruserCollection)
+
+        ! Type of assembly routine?                      
         select case (rstabilisation%cupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
+        
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion%dtheta = dcx
                     
@@ -4082,9 +4347,10 @@ contains
                               rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
+        
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion2%dtheta = dcx
                     
@@ -4097,18 +4363,45 @@ contains
           rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+          
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
+          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
+              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
               
         case (CCMASM_STAB_UPWIND)
         
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion2%dtheta = dcx
                     
@@ -4121,19 +4414,46 @@ contains
           rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
+          
           ! Call the SD method to calculate the nonlinearity except for the
           ! convection part. As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
+              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
           ! Note: Stabilisation weight is actually wrong, but it is not possible
           ! to specify in rupwindStabil%dupsam whether the stabilisation
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
-          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           rupwindStabil%dtheta = dcx*dgamma
           
           ! Set stabilisation parameter
@@ -4155,11 +4475,20 @@ contains
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
+
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion%dtheta = dcx
           
@@ -4214,7 +4543,7 @@ contains
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion2%dtheta = dcx
           
@@ -4227,12 +4556,39 @@ contains
           rstreamlineDiffusion2%dnewton  = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
+          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
+              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4264,7 +4620,7 @@ contains
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
           
           rstreamlineDiffusion2%dtheta = dcx
           
@@ -4277,12 +4633,39 @@ contains
           rstreamlineDiffusion2%dnewton  = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+          end if
+
+          ! Assemble the deformation tensor?
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+            rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+          end if
+          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,rcubatureInfo=rcubatureInfo)
+              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
                               
           ! Just do some mat-vec's to compute the defect.
           !
@@ -4302,17 +4685,75 @@ contains
         
         end select
 
+        ! Release the collection stuff
+        call user_doneCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,ruserCollection)
+        call collct_done (ruserCollection)
+
       else
       
         ! That's the Stokes-case. Jump stabilisation is possible...
         
         if ((rstabilisation%dupsam .ne. 0.0_DP) .and. (dtheta .ne. 0.0_DP)) then
+          
+          ! Prepare a user defined collection structure for the
+          ! callback routines
+          call collct_init (ruserCollection)
+          call user_initCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,&
+              rnonlinearSpatialMatrix%p_rnonlinearity%dassociatedTimePrimalVel,ruserCollection)
+
+          ! Probably, we have nonconstant viscosity.
+          ! In that case, init a collection structure for a callback
+          ! routine that specifies the viscosity
+          if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0) then
+          
+            ! Set up the SD structure for the creation of the defect.
+            rstreamlineDiffusion2%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
+            
+            ! Set stabilisation parameter
+            rstreamlineDiffusion2%dupsam = 0.0_DP
+            
+            ! Matrix weights
+            rstreamlineDiffusion2%ddelta  = 0.0_DP
+            rstreamlineDiffusion2%ddeltaT = dgammaT
+            rstreamlineDiffusion2%dnewton = dnewton
+            rstreamlineDiffusion2%dnewtonT = dnewtonT
+  
+            rstreamlineDiffusion2%bconstnu = .false.
+            
+            ! Assemble at least the Stokes matrix.
+            ! For a more complicated formulation, dbeta/dbetaT
+            ! may be changed later.
+            rstreamlineDiffusion2%dbeta = dtheta
+            
+            ! Prepare the collection. The "next" collection points to the user defined
+            ! collection.
+            rcollection%p_rnextCollection => ruserCollection
+            call smva_prepareViscoAssembly (&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
+                rcollection,rvector)
+            
+            ! Assemble the deformation tensor?
+            if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
+              rstreamlineDiffusion2%dbeta = 0.5_DP * dtheta
+              rstreamlineDiffusion2%dbetaT = 0.5_DP * dtheta
+            end if
+          
+            ! Call the SD method to calculate the nonlinearity for everything except
+            ! for the convection. As velocity vector, specify rvector!
+            ! Therefore, the primal velcity is always used for assembling
+            ! that thing!
+            call conv_streamDiff2Blk2dMat (&
+                rstreamlineDiffusion2,rmatrix,rvector,&
+                ffunctionViscoModel,rcollection,rcubatureInfo)
+
+          end if
+                    
           select case (rstabilisation%cupwind)
           case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
             
             ! Set up the jump stabilisation structure.
             ! There's not much to do, only initialise the viscosity...
-            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
+            rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
             
             ! Set stabilisation parameter
             rjumpStabil%dgamma = abs(rstabilisation%dupsam)
@@ -4355,6 +4796,11 @@ contains
             ! No stabilisation
           
           end select
+
+          ! Release the collection stuff
+          call user_doneCollectForAssembly (rnonlinearSpatialMatrix%p_rglobalData,ruserCollection)
+          call collct_done (ruserCollection)
+
         end if
         
       end if
@@ -5212,6 +5658,7 @@ contains
 !<subroutine>
 
   subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3,&
+      dassociatedTimePrimalVel,dassociatedTimeDualVel,&
       rneumannBoundary,rneumannBdOperator,rdirichletBCCBoundary)
 
 !<description>
@@ -5233,6 +5680,10 @@ contains
     ! for the 'next' timestep. If there is no next timestep (e.g.
     ! like in the last timestep), the vector can be undefined.
     type(t_vectorBlock), intent(in), target :: rvector3
+
+    ! Point in time associated to this matrix.
+    real(DP), intent(in) :: dassociatedTimePrimalVel
+    real(DP), intent(in) :: dassociatedTimeDualVel
     
     ! Specifies the Neumann boundary.
     type(t_boundaryRegionList), intent(in), target :: rneumannBoundary
@@ -7832,4 +8283,278 @@ contains
 
   end subroutine
 
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine smva_prepareViscoAssembly (rphysics,rcollection,rvelocityvector)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! Based on the the input parameters, this routine prepares a collection
+  ! structure rcollection for being used with ffunctionViscoModel.
+  ! The structure realises the following setting:
+  !
+  ! IquickAccess(1) = cviscoModel
+  ! IquickAccess(2) = type of the tensor
+  ! DquickAccess(1) = nu
+  ! DquickAccess(2) = dviscoexponent
+  ! DquickAccess(3) = dviscoEps
+  ! DquickAccess(4) = dviscoYield
+  ! p_rvectorQuickAccess1 => evaluation velocity vector
+  !
+!</description>
+  
+!<input>
+  ! Physics of the problem
+  type(t_settings_physics), intent(in), target :: rphysics
+  
+  ! OPTIONAL: The current velocity/pressure vector. May not be present.
+  type(t_vectorBlock), intent(in), target, optional :: rvelocityvector
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be prepared.
+  type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! IquickAccess(1) = cviscoModel
+    rcollection%IquickAccess(1) = rphysics%cviscoModel
+    
+    ! IquickAccess(2) = type of the tensor
+    rcollection%IquickAccess(2) = rphysics%isubequation
+    
+    ! DquickAccess(1) = nu
+    rcollection%DquickAccess(1) = rphysics%dnuConst
+    
+    ! DquickAccess(2) = dviscoexponent
+    ! DquickAccess(3) = dviscoEps
+    ! DquickAccess(4) = dviscoYield
+    rcollection%DquickAccess(2) = rphysics%dviscoexponent
+    rcollection%DquickAccess(3) = rphysics%dviscoEps
+    rcollection%DquickAccess(4) = rphysics%dviscoYield
+    
+    ! The first quick access array specifies the evaluation point
+    ! of the velocity -- if it exists.
+    nullify(rcollection%p_rvectorQuickAccess1)
+    if (present(rvelocityvector)) &
+        rcollection%p_rvectorQuickAccess1 => rvelocityvector
+
+  end subroutine
+    
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine ffunctionViscoModel (cterm,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset, &
+                Dcoefficients,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! This subroutine is called during the calculation of the SD operator. It has to
+  ! compute the coefficients in front of the terms.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+  !
+  ! The following data must be passed to this routine in the collection in order
+  ! to work correctly:
+  !
+  ! IquickAccess(1) = cviscoModel
+  ! IquickAccess(2) = type of the tensor
+  ! DquickAccess(1) = nu
+  ! DquickAccess(2) = dviscoexponent
+  ! DquickAccess(3) = dviscoEps
+  ! p_rvectorQuickAccess1 => evaluation velocity vector
+  ! p_rnextCollection => user defined collection structure
+  !
+!</description>
+  
+!<input>
+  ! Term which is to be computed.
+  ! =0: Calculate the $\nu$ values in front of the Laplace.
+  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  integer, intent(in) :: cterm
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+    ! This array has to receive the values of the coefficients
+    ! in all the points specified in Dpoints.
+    ! cterm specifies what to evaluate.
+    real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: cviscoModel,i,j,isubEquation
+    real(DP) :: dnu,dviscoexponent,dviscoEps,dviscoYield
+    type(t_vectorBlock), pointer :: p_rvector
+    integer, dimension(2) :: Ibounds
+    real(DP), dimension(:,:,:), allocatable :: Ddata
+    
+    if (.not. present(rcollection)) then
+      Dcoefficients(:,:) = 0.0_DP
+      return
+    end if
+    
+    ! Get the parameters from the collection,
+    ! as specified in the call to the SD assembly routine.
+    cviscoModel = rcollection%IquickAccess(1)
+    isubEquation = rcollection%IquickAccess(2)
+    dnu = rcollection%DquickAccess(1)
+    dviscoexponent = rcollection%DquickAccess(2)
+    dviscoEps = rcollection%DquickAccess(3)
+    dviscoYield = rcollection%DquickAccess(4)
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    
+    ! p_rvector may point to NULL if there is no nonlinearity
+    
+    ! If we have a nonlinear viscosity, calculate
+    !    z := D(u):D(u) = ||D(u)||^2
+    ! The isubEquation defines the shape of the tensor, which may me
+    !    D(u) = grad(u)
+    ! or D(u) = 1/2 ( grad(u) + grad(u)^T )
+    select case (cviscoModel)
+    case (0)
+      ! Constant viscosity. This is actually not used as the routine is
+      ! not called if nu is constant.
+      Dcoefficients(:,:) = dnu
+      
+    case (1,2,3)
+    
+      ! Allocate memory do calculate D(u) in all points
+      Ibounds = ubound(Dcoefficients)
+      allocate(Ddata(Ibounds(1),Ibounds(2),5))
+      
+      ! Evaluate D(u).
+      call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,2))
+      call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,3))
+      call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
+                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,4))
+      call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
+                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,5))
+                         
+      ! Calculate ||D(u)||^2 to Ddata(:,:,1):
+      select case (isubequation)
+      case (0)
+        ! D(u) = grad(u)
+        do i=1,Ibounds(2)
+          do j=1,Ibounds(1)
+            Ddata(j,i,1) = Ddata(j,i,2)**2 + Ddata(j,i,3)**2 + &
+                           Ddata(j,i,4)**2 + Ddata(j,i,5)**2
+          end do
+        end do
+        
+      case (1)
+        ! D(u) = 1/2 ( grad(u) + grad(u)^T )
+        do i=1,Ibounds(2)
+          do j=1,Ibounds(1)
+            Ddata(j,i,1) = (Ddata(j,i,2)**2 + &
+                            0.5_DP * (Ddata(j,i,3) + Ddata(j,i,4))**2 + &
+                            Ddata(j,i,5)**2)
+          end do
+        end do
+        
+      case default
+      
+        Ddata(:,:,:) = 0.0_DP
+        
+      end select
+      
+      ! Calculate the viscosity.
+      ! (WARNING: This inner select-case builds upon the outer select case above.
+      !  Be careful that all cviscoModel cases here also appear above!!!)
+      select case (cviscoModel)
+      case (1)
+        ! Power law:
+        !   nu = nu_0 * z^(dviscoexponent/2 - 1),
+        !   nu_0 = 1/RE,
+        !   z = ||D(u)||^2+dviscoEps
+        Dcoefficients(:,:) = dnu * (Ddata(:,:,1)+dviscoEps)**(0.5_DP*dviscoexponent-1.0_DP)
+
+      case (2)
+        ! Bingham fluid:
+        !   nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2),
+        !   nu_0 = 1/RE
+        Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
+            dviscoyield / sqrt(Ddata(:,:,1) + dviscoEps**2)
+        
+      case (3)
+        ! General viscoplastic fluid:
+        !   nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1),
+        !   nu_0 = 1/RE,
+        !   z = ||D(u)||^2 + dviscoEps^2
+        Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
+            dviscoyield * ( Ddata(:,:,1) + dviscoEps**2 )**( 0.5_DP * dviscoexponent - 1.0_DP)
+
+      end select
+      
+      ! Deallocate needed memory.
+      deallocate(Ddata)
+
+    case default
+    
+      ! Viscosity specified by the callback function getNonconstantViscosity.
+      ! Call it and pass the user-defined collection.
+      call user_getNonconstantViscosity (cterm,rdiscretisation, &
+          nelements,npointsPerElement,Dpoints, &
+          IdofsTest,rdomainIntSubset, &
+          Dcoefficients,p_rvector,rcollection%p_rnextCollection)
+    
+    end select
+
+  end subroutine
+  
 end module

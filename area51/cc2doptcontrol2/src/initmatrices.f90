@@ -525,7 +525,7 @@ contains
     
       ! Set up the jump stabilisation structure.
       ! There's not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rphysicsPrimal%dnu
+      rjumpStabil%dnu = rphysicsPrimal%dnuConst
       
       ! Set stabilisation parameter
       rjumpStabil%dgamma = rstabilPrimal%dupsam
@@ -564,7 +564,7 @@ contains
 
         ! Set up the jump stabilisation structure.
         ! There's not much to do, only initialise the viscosity...
-        rjumpStabil%dnu = rphysicsPrimal%dnu
+        rjumpStabil%dnu = rphysicsPrimal%dnuConst
         
         ! Set stabilisation parameter
         rjumpStabil%dgamma = rstabilDual%dupsam

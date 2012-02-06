@@ -139,7 +139,9 @@ ineumannBoundary = -1
 #                0-boundary conditions are assumed.
 #          = 5 : Dirichlet-conditions for primal equation, do-nothing conditions for dual eqn.
 #          = 6 : Dirichlet-conditions for dual equation, do-nothing conditions for primal eqn.
-#          = 7 : Dirichlet boundary control boundary conditions
+#          = 7 : Dirichlet boundary control boundary conditions, relative to a
+#                given inflow.
+#                Example:  1.0  7  1  'Dirichlet0'  'Dirichlet0'  
 
 #bdComponent1(4)=
 #  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary

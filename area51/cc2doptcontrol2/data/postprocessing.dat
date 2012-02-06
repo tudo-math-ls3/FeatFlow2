@@ -13,6 +13,7 @@
 # 1=GMV
 # 2=AVS
 # 3=Paraview (VTK)
+# 4=Paraview (VTK), one level refined
 
 ioutputUCD = 3
 

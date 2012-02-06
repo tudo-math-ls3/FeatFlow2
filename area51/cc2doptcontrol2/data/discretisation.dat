@@ -16,6 +16,30 @@ iequation = 0
 
 isubEquation = 0
 
+# Model to use for the viscosity.
+# A value > 0 requires to set iupwind >= 4 to activate the extended assembly!
+# =0: Constant viscosity NU = 1/RE (standard)
+# =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+# =2: Bingham fluid: nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+# =3: General viscoplastic fluid: nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1), 
+#     nu_0 = 1/RE, z = ||D(u)||^2 + dviscoEps^2
+# >3: User defined viscosity defined in the callback function 
+#     cccallback.f90: getNonconstantViscosity
+
+cviscoModel = 0
+
+# Exponent parameter for the viscosity model
+
+dviscoexponent = 2.0
+
+# Epsilon regularisation for the viscosity model
+
+dviscoEps = 0.01
+
+# Yield stress constant for Bingham fluid
+
+dviscoyield = 1.0
+
 # Viscosity parmeter 1/NU
 
 RE = 1000

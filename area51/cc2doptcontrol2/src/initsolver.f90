@@ -554,12 +554,6 @@ contains
 
 !</subroutine>
 
-    ! Get the viscosity parameter.
-    ! Note that the parameter in the DAT file is 1/nu !
-    call parlst_getvalue_double (rparlist,ssection,&
-        'RE',rphysics%dnu,1000.0_DP)
-    rphysics%dnu = 1E0_DP/rphysics%dnu
-
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rparlist,ssection,&
         'iequation',rphysics%cequation,0)
@@ -567,6 +561,26 @@ contains
     ! Type of subproblem (gradient tensor, deformation tensor,...)
     call parlst_getvalue_int (rparlist,ssection,&
         'isubEquation',rphysics%isubEquation,0)
+
+    ! Get the viscosity model
+    ! Standard = 0 = constant viscosity
+    call parlst_getvalue_int (rparlist,ssection,&
+        'cviscoModel',rphysics%cviscoModel,0)
+                                 
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dviscoexponent',rphysics%dviscoexponent,2.0_DP)
+                                 
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dviscoEps',rphysics%dviscoEps,0.01_DP)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dviscoYield',rphysics%dviscoYield,1.0_DP)
+
+    ! Get the viscosity parameter.
+    ! Note that the parameter in the DAT file is 1/nu !
+    call parlst_getvalue_double (rparlist,ssection,&
+        'RE',rphysics%dnuConst,1000.0_DP)
+    rphysics%dnuConst = 1E0_DP/rphysics%dnuConst
 
   end subroutine
   
@@ -3715,7 +3729,7 @@ contains
         "ibodyForcesBdComponent",rpostproc%ibodyForcesBdComponent,2)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnu)
+        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnuConst)
 
     call parlst_getvalue_double (rparlist,ssection,&
         "dbdForcesCoeff2",rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
@@ -3960,8 +3974,9 @@ contains
       ! Pass an empty Neumann bonudary structure. The initial condition does not
       ! care about the Neumann boundary as it just cares about the initial condition
       ! in the primal equation. Neumann BC is only necessary for the dual eqn!
-      call smva_initNonlinearData (rnonlinearity,rx,rx,rx,rneumannBoundary,&
-          rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
+      call smva_initNonlinearData (rnonlinearity,rx,rx,rx,&
+          rtimediscr%dtimeInit,rtimediscr%dtimeInit,&
+          rneumannBoundary,rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
           rdirichletBCC)
       
       ! The initial condition is implemented as:
@@ -3972,7 +3987,8 @@ contains
       ! (Navier--)Stokes equation and what we receive is the RHS for the
       ! terminal condition. We only have to take care of bondary conditions.
 
-      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
+      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+          rsettings%rglobalData,rmatrixDiscr,rnonlinearity)
       
       rnonlinearSpatialMatrix%iprimalSol = 2
 

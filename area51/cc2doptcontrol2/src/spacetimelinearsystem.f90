@@ -11,7 +11,7 @@
 !#
 !# The routines in this module form the basic set of routines:
 !#
-!# 1.) stlin_initSpaceAssembly / stlin_donreSpaceAssembly
+!# 1.) stlin_initSpaceAssembly / stlin_doneSpaceAssembly
 !#     -> Create/release a space assembly structure for space-time matrices
 !#
 !# 2.) stlin_initSpaceTimeMatrix
@@ -546,11 +546,12 @@ contains
   
 !<subroutine>
 
-  subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,rdebugFlags,dconstrainsTime,rspaceDiscr)
+  subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,rdebugFlags,&
+      dconstrainsTime,rspaceDiscr)
 
 !<description>
   ! Creates a space-assembly data structure from the space-time assembly
-  ! data structure. If analytical constraints are actuve, the routine
+  ! data structure. If analytical constraints are active, the routine
   ! invokes an L2 projection to discretise the comnstraints!
 !</description>
 
@@ -572,10 +573,6 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    type(t_collection), target :: rcollection
-    integer :: idim
-
     ! Transfer all possible parameters.
     rspaceDiscr%rphysicsPrimal = rspaceTimeDiscr%p_rphysicsPrimal
     rspaceDiscr%rstabilPrimal = rspaceTimeDiscr%p_rstabilPrimal
@@ -588,7 +585,7 @@ contains
     rspaceDiscr%p_rstaticAsmTemplatesOptC => rspaceTimeDiscr%p_rstaticSpaceAsmTemplOptC
 
     rspaceDiscr%p_rdebugFlags => rdebugFlags
-
+    
     ! Initialise the constraints.
     call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,dconstrainsTime,&
         rspaceTimeDiscr%p_rdiscrPrimal,rspaceDiscr%rconstraints)
@@ -985,7 +982,7 @@ contains
           ! Initial condition...
           if (ieqTime .gt. 1) then
             rnonlinearSpatialMatrix%DdirichletBCCLambda(1,2) = &
-                (-dequationType) * (-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%dnu * &
+                (-dequationType) * (-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%dnuConst * &
                 dtmp/rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC)
             rnonlinearSpatialMatrix%DdirichletBCCXi(1,2) = &
                 (-dequationType) * (dtmp/rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC)
@@ -1484,7 +1481,9 @@ contains
       
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
-      call smva_initNonlinearData (rnonlinearity,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
+      call smva_initNonlinearData (rnonlinearity,&
+          rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
+          dtimePrimal,dtimeDual,&
           rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime),&
           rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime))
@@ -1530,7 +1529,8 @@ contains
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,0,rnonlinearSpatialMatrix)
           
@@ -1544,7 +1544,8 @@ contains
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,1,rnonlinearSpatialMatrix)
 
@@ -1575,7 +1576,8 @@ contains
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,-1,rnonlinearSpatialMatrix)
             
@@ -1594,7 +1596,8 @@ contains
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,0,rnonlinearSpatialMatrix)
 
@@ -1608,7 +1611,8 @@ contains
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,1,rnonlinearSpatialMatrix)
           
@@ -1637,7 +1641,8 @@ contains
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,-1,rnonlinearSpatialMatrix)
           
@@ -1653,7 +1658,8 @@ contains
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
-        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+        call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+            rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
         call stlin_setupMatrixWeights (rspaceTimeMatrix,&
           ieqTime,0,rnonlinearSpatialMatrix)
 

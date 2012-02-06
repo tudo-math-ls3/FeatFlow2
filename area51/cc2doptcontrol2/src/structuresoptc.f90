@@ -186,9 +186,6 @@ module structuresoptc
   ! viscosity parameter etc.
   type t_settings_physics
   
-    ! Viscosity parameter nu = 1/Re
-    real(DP) :: dnu
-    
     ! Type of problem.
     ! =0: Navier-Stokes 2D.
     ! =1: Stokes 2D.
@@ -200,7 +197,25 @@ module structuresoptc
     ! =1: (Navier-)Stokes with deformation tensor
     integer :: isubEquation
     
-  
+    ! Model for the viscosity.
+    ! =0: Constant viscosity.
+    ! =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+    ! =2: Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+    integer :: cviscoModel
+        
+    ! Exponent parameter for the viscosity model
+    real(DP) :: dviscoexponent
+
+    ! Epsilon regularisation for the viscosity model
+    real(DP) :: dviscoEps
+    
+    ! Yield stress for Bingham fluid
+    real(DP) :: dviscoYield
+
+    ! Viscosity parameter nu = 1/Re if cviscoModel=0 (constant viscosity).
+    ! Otherwise not used.
+    real(DP) :: dnuConst
+      
   end type
 
 !</typeblock>

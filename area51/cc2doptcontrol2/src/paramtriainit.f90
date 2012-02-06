@@ -122,7 +122,7 @@ contains
                                  'RE',dnu,1000.0_DP)
 
     dnu = 1E0_DP/dnu
-    rproblem%rphysicsPrimal%dnu = dnu
+    rproblem%rphysicsPrimal%dnuConst = dnu
     
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rproblem%rparamList,'CC-PHYSICSPRIMAL',&
