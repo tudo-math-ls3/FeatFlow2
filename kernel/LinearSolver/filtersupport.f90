@@ -258,27 +258,27 @@ contains
         ! Do nothing
         
       case (FILTER_DISCBCSOLREAL)
-        ! Impose Dirichlet boundary contitions into the solution vector rx
+        ! Impose Dirichlet boundary conditions into the solution vector rx
         call vecfil_discreteBCsol (rx)
       
       case (FILTER_DISCBCRHSREAL)
-        ! Impose Dirichlet boundary contitions into the RHS vector rx
+        ! Impose Dirichlet boundary conditions into the RHS vector rx
         call vecfil_discreteBCrhs (rx)
       
       case (FILTER_DISCBCDEFREAL)
-        ! Impose Dirichlet boundary contitions into the defect vector rx
+        ! Impose Dirichlet boundary conditions into the defect vector rx
         call vecfil_discreteBCdef (rx)
 
       case (FILTER_DISCBCSOLFICT)
-        ! Impose Dirichlet fictitious boundary contitions into the solution vector rx
+        ! Impose Dirichlet fictitious boundary conditions into the solution vector rx
         call vecfil_discreteFBCsol (rx)
       
       case (FILTER_DISCBCRHSFICT)
-        ! Impose Dirichlet fictitious boundary contitions into the RHS vector rx
+        ! Impose Dirichlet fictitious boundary conditions into the RHS vector rx
         call vecfil_discreteFBCrhs (rx)
       
       case (FILTER_DISCBCDEFFICT)
-        ! Impose Dirichlet fictitious boundary contitions into the defect vector rx
+        ! Impose Dirichlet fictitious boundary conditions into the defect vector rx
         call vecfil_discreteFBCdef (rx)
 
       case (FILTER_TOL20)
@@ -354,14 +354,14 @@ contains
         
       case (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL, &
             FILTER_DISCBCDEFREAL,FILTER_DISCBCMATREAL)
-        ! Impose Dirichlet boundary contitions into the matrix rmatrix.
+        ! Impose Dirichlet boundary conditions into the matrix rmatrix.
         ! The filter is the same for both, solution and defect filter,
         ! as the matrix modification is teh same (for now).
         call matfil_discreteBC (rmatrix)
       
       case (FILTER_DISCBCSOLFICT,FILTER_DISCBCRHSFICT, &
             FILTER_DISCBCDEFFICT,FILTER_DISCBCMATFICT)
-        ! Impose Dirichlet fictitious boundary contitions into the matrix rmatrix.
+        ! Impose Dirichlet fictitious boundary conditions into the matrix rmatrix.
         ! The filter is the same for both, solution and defect filter,
         ! as the matrix modification is teh same (for now).
         call matfil_discreteFBC (rmatrix)
