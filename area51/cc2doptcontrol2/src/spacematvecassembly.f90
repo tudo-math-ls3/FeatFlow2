@@ -7993,7 +7993,7 @@ contains
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
   
   ! OPTIONAL: Coefficient function
-  include 'intf_coefficientVectorScBdr2D.inc'
+  include '../../kernel/DOFMaintenance/intf_coefficientVectorScBdr2D.inc'
   optional :: fcoeff_buildVectorScBdr2D_sim
   
   ! OPTIONAL: Collection passed to the coefficient function
