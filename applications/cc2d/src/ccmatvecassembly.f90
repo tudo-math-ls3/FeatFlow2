@@ -1018,14 +1018,21 @@ contains
       
       ! If the submatrices A12 and A21 exist, fill them with zero.
       ! If they do not exist, we do not have to do anything.
-      if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
-          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0)) then
-        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-      else
-        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
-        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
-      end if
+      
+      ! Note: The following code speeds up the computation by switching
+      ! off some submatrices. However, this does not work with UMFPACK
+      ! since it would change the structure of the matrix. So
+      ! it is commented out here until a better solution is found.
+      ! Probably, it makes sense to pass a flag that specifies whether
+      ! or not structural changes in the matrix are allowed or not.
+!      if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
+!          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0)) then
+!        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+!        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+!      else
+!        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+!        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+!      end if
       
       if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
