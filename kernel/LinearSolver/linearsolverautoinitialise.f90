@@ -743,6 +743,24 @@ contains
     ! Now comes a biiig select for all the different types of solvers
     ! that are supported by this routine.
     select case (csolver)
+
+    case (LINSOL_ALG_UMFPACK4)
+      ! UMFPACK4 solver
+      !
+      ! Init the debug matrix output.
+      ! Parameters:
+      !  imatrixDebugOutput = 2   -> Write the matrix in Maple output
+      !                     = 1   -> Write the matrix in text output
+      !                     = 0   -> Do not write out the matrix
+      call parlst_getvalue_int (p_rsection, 'imatrixDebugOutput', i1, -1)
+      if (i1 .ne. -1) then
+        rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = i1
+      end if
+      
+      call parlst_getvalue_string (p_rsection, "smatrixName", sstring, "", bdequote=.true.)
+      if (sstring .ne. "") then
+        rsolverNode%p_rsubnodeUMFPACK4%smatrixName = sstring
+      end if
       
     case (LINSOL_ALG_SSOR)
       ! SSOR solver

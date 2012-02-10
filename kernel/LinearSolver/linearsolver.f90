@@ -1538,11 +1538,12 @@ module linearsolver
     integer :: imatrixDebugOutput = 0
     
     ! Name of the matrix in the matrix file when using imatrixDebugOutput<>0.
-    character(LEN=SYS_NAMELEN) :: smatrixName = "matrixA";
+    ! If "" is used here, a matrix name is automatically chosen.
+    character(LEN=SYS_NAMELEN) :: smatrixName = ""
   
     ! Accuracy string for text output of matrix entries
     ! if imatrixDebugOutput <> 0.
-    character(LEN=SYS_NAMELEN) :: saccuracy = '(E15.5)'
+    character(LEN=SYS_NAMELEN) :: saccuracy = "(E15.5)"
   
     ! Control structure for UMFPACK4; contains parameter for the solver
     real(DP), dimension(20) :: Dcontrol
@@ -6641,6 +6642,7 @@ contains
   type(t_matrixBlock), target :: rmatrixLocal
   type(t_matrixScalar) :: rtempMatrix
   real(DP), dimension(:), pointer :: p_DA
+  character(LEN=SYS_STRLEN) :: smatrixname
 
 !  integer(I32), dimension(:), pointer :: p_Kld32
 !  integer(I32), dimension(:), pointer :: p_Kcol32
@@ -6724,22 +6726,30 @@ contains
         call output_line ('Writing matrix to a text file.',&
             OU_CLASS_WARNING,OU_MODE_STD,'linsol_initDataUMFPACK4')
       end if
+      
       call lsyssc_getbase_double (rtempMatrix,p_DA)
       where (abs(p_Da) .lt. 1.0E-12_DP) p_Da = 0.0_DP
+      
+      ! Matrix name
+      smatrixname = rsolverNode%p_rsubnodeUMFPACK4%smatrixName
+
+      ! Create a matrix name if there is none.
+      if (smatrixname .ne. "") then
+        smatrixname = "matrix"//&
+          trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
+          ".txt"
+      end if
+      
       select case (rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput)
       case (2)
         call matio_writeMatrixMaple (p_rmatrix, &
             trim(rsolverNode%p_rsubnodeUMFPACK4%smatrixName),&
-            0, 'matrix'//&
-            trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
-            '.txt', &
+            0, smatrixname, &
             trim(rsolverNode%p_rsubnodeUMFPACK4%saccuracy))
       case default
         call matio_writeMatrixHR (p_rmatrix, &
             trim(rsolverNode%p_rsubnodeUMFPACK4%smatrixName),&
-            .true., 0, 'matrix'//&
-            trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
-            '.txt', &
+            .true., 0, smatrixname, &
             trim(rsolverNode%p_rsubnodeUMFPACK4%saccuracy))
       end select
     end if
@@ -14859,17 +14869,27 @@ contains
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
-        call linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+        call linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,ierror,isubgroup)
       end if
+      
+      ! Cancel in case of an error
+      if (ierror .ne. LINSOL_ERR_NOERROR) return
+      
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) then
-        call linsol_initStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+        call linsol_initStructure(p_rcurrentLevel%p_rpostSmoother,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
-        call linsol_initStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+        call linsol_initStructure(p_rcurrentLevel%p_rcoarseGridSolver,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
 
     end do
@@ -15053,18 +15073,27 @@ contains
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
-        call linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
+        call linsol_initData(p_rcurrentLevel%p_rpreSmoother,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
       
       ! Pre- and postsmoother may be identical!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) then
-        call linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
+        call linsol_initData(p_rcurrentLevel%p_rpostSmoother,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
       
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
-        call linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
+        call linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
 
     end do
