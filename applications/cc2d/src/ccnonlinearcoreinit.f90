@@ -518,6 +518,10 @@ contains
       case (0)
         ! UMFPACK coarse grid solver. Easy.
         call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
       case (1)
         ! Defect correction with diagonal VANKA preconditioning.

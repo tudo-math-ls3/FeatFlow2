@@ -752,8 +752,8 @@ contains
       if (.not. associated(p_rmatrixTemplateFEM)) &
         p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes
       if (.not. associated(p_rmatrixTemplateFEM)) then
-        call output_line ('Cannot set up A matrices in system matrix!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
+        call output_line ("Cannot set up A matrices in system matrix!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"allocMatrix")
         call sys_halt()
       end if
 
@@ -1036,7 +1036,7 @@ contains
       ! Plug in the Stokes matrix?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
         ! Plug in the Stokes matrix in case of the gradient tensor.
-        ! In case of the deformation tensor ir nonconstant viscosity,
+        ! In case of the deformation tensor or nonconstant viscosity,
         ! that is done during the assembly of the nonlinearity.
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
@@ -1059,14 +1059,23 @@ contains
           (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
         if (.not. present(rvelocityvector)) then
-          call output_line ('Velocity vector not present!', &
-                             OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
+          call output_line ("Velocity vector not present!", &
+                             OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
           call sys_halt()
         end if
       
         select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
+        
           ! Streamline diffusion.
+
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
 
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
@@ -1192,6 +1201,14 @@ contains
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
 
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
+
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
@@ -1276,6 +1293,14 @@ contains
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Jump stabilisation with precomputed matrix.
+
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
 
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -1977,6 +2002,15 @@ contains
         ! Type of stablilisation?
         select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
+        
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
+            call sys_halt()
+          end if
+
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
@@ -2095,13 +2129,22 @@ contains
           call spdiscr_releaseCubStructure (rcubatureInfo)
                               
           if (.not. bshared) then
-            call output_line ('Upwind does not support independent A11/A22!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+            call output_line ("Upwind does not support independent A11/A22!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
             call sys_halt()
           end if
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
+          
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
+            call sys_halt()
+          end if
+          
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
@@ -2180,8 +2223,8 @@ contains
 
           if (.not. bshared) then
             call output_line (&
-                'Edge oriented stabilisation does not support independent A11/A22!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+                "Edge oriented stabilisation does not support independent A11/A22!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
             call sys_halt()
           end if
           
@@ -2305,8 +2348,8 @@ contains
 
           if (.not. bshared) then
             call output_line (&
-                'Edge oriented stabilisation does not support independent A11/A22!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+                "Edge oriented stabilisation does not support independent A11/A22!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
             call sys_halt()
           end if
 
@@ -2332,6 +2375,14 @@ contains
           
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
+          
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
+            ! Not supported by this SD method.
+            call output_line (&
+                "This assembly method does not support nonconstant viscosity!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
+            call sys_halt()
+          end if
           
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
@@ -2413,8 +2464,8 @@ contains
           end if
 
         case default
-          call output_line ('Don''t know how to set up nonlinearity!?!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
+          call output_line ("Don't know how to set up nonlinearity!?!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityDefect")
           call sys_halt()
         
         end select
