@@ -3225,6 +3225,9 @@ contains
             ! with a summed cubature formula.
             ! Note: Up to now, this works only for uniform meshes!
             if (rcollection%IquickAccess(3) .gt. 0) then
+              ! Forget the matrix we just assembled. Reassemble.
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+              
               celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
               ccubType = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
               call storage_getbase_int(ielemhandle,p_IelementList)
@@ -3252,6 +3255,9 @@ contains
               ! with a summed cubature formula.
               ! Note: Up to now, this works only for uniform meshes!
               if (rcollection%IquickAccess(3) .gt. 0) then
+                ! Forget the matrix we just assembled. Reassemble.
+                call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+
                 celement = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
                 ccubType = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
                 call storage_getbase_int(ielemhandle,p_IelementList)
@@ -5117,6 +5123,9 @@ contains
           ! with a summed cubature formula.
           ! Note: Up to now, this works only for uniform meshes!
           if (rcollection%IquickAccess(3) .gt. 0) then
+            ! Forget the matrix we just assembled. Reassemble.
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+
             celement = &
               rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
             ccubType = &
@@ -5144,6 +5153,9 @@ contains
           ! with a summed cubature formula.
           ! Note: Up to now, this works only for uniform meshes!
           if (rcollection%IquickAccess(3) .gt. 0) then
+            ! Forget the matrix we just assembled. Reassemble.
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+
             celement = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
             ccubType = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
             call storage_getbase_int(ielemhandle,p_IelementList)
