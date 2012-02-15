@@ -198,14 +198,14 @@ ibodyForcesBdComponent = 2
 # 1st coefficient in the boundary integral of the drag coefficient.
 # If this is commented out, 1/RE is assumed.
 
-# dbdForcesCoeff1 = 0.001
+dbdForcesCoeff1 = 0.001
 
 # 2nd coefficient in the boundary integral of the drag coefficient.
 # If this is commented out, 0.004 is assumed (corresonds to flow 
 # around cylinder with RE=1000: Umean=0.2, len=0.1
 # -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
 
-# dbdForcesCoeff2 = 0.004
+dbdForcesCoeff2 = 0.004
 
 # Whether to write the body forces to a file
 
@@ -236,23 +236,23 @@ sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 #     0.15 0.2 3 0
 #     0.25 0.2 3 0
 
-    cevaluatePointValues(0) =
-#      0.15 0.2 3 0
-#      0.25 0.2 3 0
-#      0.1375 0.2 3 0
-#      0.2625 0.2 3 0
-#      0.4 0.2 1 0
-#      0.4 0.2 2 0
-#      0.65 0.2 1 0
-#      0.65 0.2 2 0
+    cevaluatePointValues(8) =
+      0.15 0.2 3 0
+      0.25 0.2 3 0
+      0.1375 0.2 3 0
+      0.2625 0.2 3 0
+      0.4 0.2 1 0
+      0.4 0.2 2 0
+      0.65 0.2 1 0
+      0.65 0.2 2 0
 
 # Whether to write the point values to a file
 
-iwritePointValues = 0
+iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pv'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 
 # ------------------------------------------------------------------------
 # Output matrices blocks

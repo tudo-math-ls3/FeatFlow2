@@ -94,17 +94,17 @@ swriteSolutionFilename = 'ns/solution'
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 5
 
 # maximum mg-level = levl of computation of nonlinear iteration
 
-NLMAX              = 2
+NLMAX              = 5
 
 # ------------------------------------------------------------------------
 
 # Activate FBM (0 = not active, 1 = active)
 
-ifbm = 1
+ifbm = 0
 
 # ipenaltyact decides which way is penalty term assembled 
 #   - 0 for "full Lambda"

@@ -292,6 +292,7 @@ ncubp = 1
 
   ! Calculate drag and lift
   do i = 1,p_rtriangulation%NEL
+    if (i .eq. 15364) then
     if (p_points(i) .ne. 0) then
 
       px1 = p_coords(1,p_pointsAtElement(1,i))
@@ -353,6 +354,7 @@ ncubp = 1
       daw = daw - dlh*(dpf(1)*dut*dnormal(1)+dpcont*dnormal(2))
 
     end if
+    end if
   end do
 
   dfw = 2D0*DFW/DPF(2)
@@ -362,6 +364,7 @@ ncubp = 1
   call io_openFileForWriting(sfile,iunit,SYS_REPLACE,bfileExists,.true.)
       write (iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdEL(dfw,5)) // ' ' // trim(sys_sdEL(daw,5))
   close (iunit)
+
 
   sfile="gmv/u.gmv.poly"
   call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
@@ -435,14 +438,14 @@ ncubp = 1
              isemiplan1,isemiplan2,icase
   integer, dimension(2) :: Isiz
   logical :: bcalc
-  real(dp) :: ddist1,ddist2,dtol,dxsol1,dxsol2,dysol1,dysol2,dm,da,db,dc,ddiscr, &
-              dmax,dmin,dradius,dxcenter,dycenter,test_value,iin,teta0,dchange1,dchange2
+  real(dp) :: ddist1,ddist2,ddist3,dtol,dxsol1,dxsol2,dysol1,dysol2,dm,da,db,dc,ddiscr, &
+              dmax,dmin,dradius,dxcenter,dycenter,test_value,iin,dchange1,dchange2
   real(dp),dimension(4) :: Dcoord
   real(dp),dimension(2,20), target :: polyPoints, locarray
   real(dp), dimension(:,:), pointer :: p_Coords
   integer, dimension(:,:), pointer :: p_pointsAtElement
   integer, dimension(:), pointer :: p_points
-  real(dp), dimension(:),allocatable :: teta
+!  real(dp), dimension(:),allocatable :: teta
   integer, dimension(:), allocatable :: index_value
 
   !</local>
@@ -475,6 +478,7 @@ ncubp = 1
   dtol = 10e-7
 ! Indexing the intersection points
   index_points = 1
+  total_points = 0
 ! Calculate for each element the intersection points
   do i = 1,p_rtriangulation%NEL
     iel = i
@@ -605,21 +609,23 @@ ncubp = 1
             end if
           end if
         end if
-      end if
+      end if ! bcalc
     end do ! j
+
+    if (inum .gt.2 ) then
+      
+    end if
 
     if (inum .gt. 1) then
       index = i
       p_points(index) = inum
-      total_points = sum(p_points(:))
+      total_points = total_points + inum
       if (total_points .gt. 0) then
         call storage_realloc ("intersection_points", total_points, h_points,ST_NEWBLOCK_ZERO, .true.)
         call storage_getbase_double2D (h_points,p_coords)
       end if
 
       if (inum .ge. 2) then
-!        allocate(teta(inum))
-!        allocate(index_value(inum))
         isemiplan1 = 1
         isemiplan2 = 1
         if (polypoints(2,1)-dycenter .lt. 0.0_dp) isemiplan1 = 2
@@ -668,45 +674,9 @@ ncubp = 1
              end if
         end select
 
-!        do j = 1,inum 
-!          if ((polypoints(1,j) .gt. dxcenter) .and. (polypoints(2,j) .gt. dycenter)) then
-!            teta0 = 0.0_dp
-!          end if
-!          if ((polypoints(1,j) .lt. dxcenter) .and. (polypoints(2,j) .gt. dycenter)) then
-!             teta0 = 90.0_dp
-!          end if
-!          if ((polypoints(1,j) .lt. dxcenter) .and. (polypoints(2,j) .lt. dycenter)) then
-!            teta0 = 180.0_dp
-!          end if
-!          if ((polypoints(1,j) .gt. dxcenter) .and. (polypoints(2,j) .lt. dycenter)) then
-!            teta0 = 270.0_dp
-!          end if
-!          
-!          write(*,*) 180.0_dp*asin(((polypoints(2,j)-dycenter)/dradius))/SYS_PI
-!          teta(j) = teta0 + 180.0_dp*asin(abs(polypoints(2,j)-dycenter)/dradius)/SYS_PI
-!        end do
-!
-!        dmin = minval(teta)
-!        dmax = maxval(teta)
-!        do j=1,inum
-!          if (teta(j) .eq. dmin) then
-!            test_value = j
-!            locarray(1,2) = polypoints(1,test_value) 
-!            locarray(2,2) = polypoints(2,test_value)
-!          end if
-!          if (teta(j) .eq. dmax) then
-!            test_value = j
-!            locarray(1,1) = polypoints(1,test_value) 
-!            locarray(2,1) = polypoints(2,test_value)
-!          end if
-!        end do
-        
         if (inum .gt. 2) inum =  inum - 1
-!        polypoints(:,:) = locarray(:,:)
         p_points(index) = inum
       
-!        deallocate(index_value)
-!        deallocate(teta)
       end if
       do j=1,inum
         p_pointsAtElement(j,iel) = index_points
