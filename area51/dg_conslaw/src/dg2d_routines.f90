@@ -1541,6 +1541,91 @@ contains
     deallocate(dnodeValues)
 
   end subroutine dg2vtk
+  
+    ! ***************************************************************************
+
+!<subroutine>
+  subroutine dg_writeMatrix (rmatrix)!, sfile)
+  
+  
+    use globalsystem  
+  !<description>
+    ! This routine writes a block matrix into three text file.
+    ! It is wirtten in format 9 (sparse).
+    ! Note that for this purpose, a new matrix is temporarily created in memory!
+    ! Can be loaded in matlab by
+    
+!    load data.txt
+!    load kcol.txt
+!    load kld.txt
+!
+!    A = sparse(size(kld,1)-1,size(kld,1)-1);
+!
+!    for i = 1:(size(kld,1)-1)
+!    for j = kld(i):(kld(i+1)-1)
+!        A(i,kcol(j)) = data(j);
+!    end
+!    end
+!
+!    condest(A)
+
+
+  !</description>
+    
+  !<input>
+    ! The matrix to be written out
+    type(t_matrixBlock), intent(in) :: rmatrix
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    !character(len=*), intent(in) :: sfile
+  !</input>
+    
+!</subroutine>
+
+
+
+    ! local variables
+    type(t_matrixBlock) :: rtempMatrix
+    integer :: iunit, i
+    integer, dimension(:), pointer :: p_I
+    real(dp), dimension(:), pointer :: p_D
+
+    ! We have to create a global matrix first!
+    call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
+                    
+
+    ! Write Kld
+    iunit = sys_getFreeUnit()
+    open(iunit, file='kld.txt')
+    call lsyssc_getbase_Kld(rtempMatrix%RmatrixBlock(1,1),p_I)
+    do i = 1, size(p_I,1)
+      write(iunit,'(I10)') p_I(i)
+    end do
+    close(iunit)
+    
+    ! Write Kcol
+    iunit = sys_getFreeUnit()
+    open(iunit, file='kcol.txt')
+    call lsyssc_getbase_Kcol(rtempMatrix%RmatrixBlock(1,1),p_I)
+    do i = 1, size(p_I,1)
+      write(iunit,'(I10)') p_I(i)
+    end do
+    close(iunit)
+    
+    
+    ! Write Data
+    iunit = sys_getFreeUnit()
+    open(iunit, file='data.txt')
+    call lsyssc_getbase_double(rtempMatrix%RmatrixBlock(1,1),p_D)
+    do i = 1, size(p_D,1)
+      write(iunit,'(E16.7)') p_D(i)
+    end do
+    close(iunit)
+
+    ! Release the temporary matrix
+    call lsysbl_releaseMatrix (rtempMatrix)
+
+  end subroutine
 
 
 

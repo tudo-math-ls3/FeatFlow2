@@ -566,10 +566,6 @@ contains
   
   integer :: iloopCounter
   
-  character(len=SYS_STRLEN) :: sfilenumber
-  
-  type(t_matrixBlock) :: tempCond
-  
 
 
   ilvmin = rproblem%ilvmin
@@ -599,15 +595,9 @@ contains
   ! is missing, create it
   do ilevel = 2,nlmax
     ! Initialise the projection structure
-!<<<<<<< .mine
-!    call linsol_initProjMG2LvByDiscr (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
-!                                      rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
-!                                      rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
-!=======
     call linsol_initProjMultigrid2Level (p_rsolverNode1%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
                                          rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
                                          rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
-!>>>>>>> .r9854
 
   end do
   
@@ -769,23 +759,8 @@ contains
                                       .false.,.false.,.true.,.false.)
       end do
       
-      
-          
-    
-    write(sfilenumber,'(i0)') ilevel
-    
-    call glsys_assembleGlobal (rproblem%RlevelInfo(ilevel)%rmatrix, tempCond, &
-                                   .true., .true.)
-    
-    ! Output system matrix for matlab
-    call matio_writeMatrixHR (tempCond%Rmatrixblock(1,1), 'sysmat',&
-                              .false., 0, './M'//trim(sfilenumber)//'.txt', '(E20.10)')
-    
-      
-      
     end do
     
-    pause
     
     !!! Create (rest of) multigrid solver and solve !!!
     ! Get our right hand side / solution / matrix on the finest
@@ -867,6 +842,15 @@ contains
                                    Rmatrices(i),LSYSSC_DUP_SHARE,&
                                    LSYSSC_DUP_SHARE)
     end do
+    
+    
+    
+    
+!    ! Write system matrix to file
+!    call dg_writeMatrix (rproblem%RlevelInfo(ilvmax)%rmatrix)
+!    pause
+    
+    
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     

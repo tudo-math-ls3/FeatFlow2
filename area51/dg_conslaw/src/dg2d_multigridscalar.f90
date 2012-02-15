@@ -46,6 +46,7 @@ module dg2d_multigridscalar
   use paramlist
   use matrixio
   use multilevelprojection
+  use multileveloperators
 
   implicit none
   
@@ -72,6 +73,12 @@ module dg2d_multigridscalar
 
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
+    
+    ! A scalar matrix that will recieve the prolongation matrix for this level.
+    type(t_matrixScalar) :: rmatProl
+    
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock) :: rprojection
   
   end type
   
@@ -416,6 +423,7 @@ contains
        call lsyssc_releaseVector (rvectorSolTemp)
 
     end do
+    
 
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
@@ -536,6 +544,80 @@ contains
     
     ! Create a temporary vector we need that for some preparation.
     call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up prolongation matrices for Multigrid
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! Loop over all levels except for the coarse-most one
+    do i = ilvmin+1,ilvmax
+    
+      ! Create the matrix structure of the prolongation matrix.
+      call mlop_create2LvlMatrixStruct(&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! And assemble the entries of the prolongation matrix.
+      call mlop_build2LvlProlMatrix (&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          .true., rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! Now set up an interlevel projecton structure for this level
+      ! based on the Laplace matrix on this level.
+      call mlprj_initProjectionMat (rproblem%RlevelInfo(i)%rprojection,&
+                                    rproblem%RlevelInfo(i)%rmatrix)
+      
+      ! And initialise the matrix-based projection
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,1),&
+          rproblem%RlevelInfo(i)%rmatProl)
+      
+    end do
+
+    ! And set up an interlevel projecton structure for the coarse-most level.
+    call mlprj_initProjectionMat (rproblem%RlevelInfo(ilvmin)%rprojection,&
+                                  rproblem%RlevelInfo(ilvmin)%rmatrix)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Prolongation matrices for Multigrid are set up now
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+ 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     ! Now we have to build up the level information for multigrid.
     !
@@ -575,7 +657,7 @@ contains
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
         call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-        call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
+        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
         
         
 !        nullify(p_rpreconditioner)
@@ -595,10 +677,18 @@ contains
       p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
+      
+      ! Attach our user-defined projection to the level.
+      call linsol_initProjMultigrid2Level(p_rlevelInfo, &
+                                          rproblem%RlevelInfo(i)%rprojection)
+      
     end do
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
+    
+    ! Set to W-cycle
+    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
 
     ! Attach the system matrices to the solver.
     !
@@ -984,6 +1074,23 @@ contains
 
   ! local variables
   integer :: i
+  
+  
+  
+    ! Release the prolongation matrices
+    do i = rproblem%ilvmax, rproblem%ilvmin+1, -1
+
+      ! Release the projection structure itself
+      call mlprj_doneProjection(rproblem%RlevelInfo(i)%rprojection)
+      
+      ! Release the prolongation matrix
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatProl)
+
+    end do
+
+    ! Release the projection structure on the coarse mesh
+    call mlprj_doneProjection(rproblem%RlevelInfo(rproblem%ilvmin)%rprojection)
+  
 
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Delete the block discretisation together with the associated

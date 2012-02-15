@@ -60,18 +60,18 @@ program dg
 !  call output_line ('----------------------------------------------------------')
 !  call dg2d_sys
   
-!  ! Call the problem to solve. Linear scalar equation, multigrid solver:
-!  call output_lbrk ()
-!  call output_line ('Linear scalar equation, multigrid solver')
-!  call output_line ('----------------------------------------')
-!  call dg2d_mgsc
-  
-    ! Call the problem to solve. Linear scalar equation, multigrid solver:
+  ! Call the problem to solve. Linear scalar equation, multigrid solver:
   call output_lbrk ()
-  call output_line ('Calculating hyperbolic system conservation problem')
-  call output_line ('with implicit DG discretisation and multigrid solver')
-  call output_line ('----------------------------------------------------')
-  call dg2d_mgsys
+  call output_line ('Linear scalar equation, multigrid solver')
+  call output_line ('----------------------------------------')
+  call dg2d_mgsc
+  
+!  ! Call the problem to solve. Hyperbolic system conservation problem, multigrid solver:
+!  call output_lbrk ()
+!  call output_line ('Calculating hyperbolic system conservation problem')
+!  call output_line ('with implicit DG discretisation and multigrid solver')
+!  call output_line ('----------------------------------------------------')
+!  call dg2d_mgsys
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
