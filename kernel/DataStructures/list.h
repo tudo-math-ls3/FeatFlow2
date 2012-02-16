@@ -2545,7 +2545,6 @@ contains
 
 !<description>
     ! This subroutine restores an list from a previous backup.
-    ! The format and ordering of both lists must be the same.
 !</description>
 
 !<input>
