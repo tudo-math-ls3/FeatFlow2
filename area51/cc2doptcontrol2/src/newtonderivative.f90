@@ -28,6 +28,7 @@ module newtonderivative
 
   use fsystem
   use genoutput
+  use storage
   
   use spatialdiscretisation
   use linearsystemscalar
@@ -38,6 +39,7 @@ module newtonderivative
   use feevaluation
   use scalarpde
   use bilinearformevaluation
+  use matrixmodification
   
   implicit none
   
@@ -727,11 +729,11 @@ contains
 
     ! Release memory
     if (present(rfunctionMin)) then
-      call lsysbl_releaseVectorBlock (rvecMin)
+      call lsysbl_releaseVector (rvecMin)
     end if
 
     if (present(rfunctionMax)) then
-      call lsysbl_releaseVectorBlock (rvecMax)
+      call lsysbl_releaseVector (rvecMax)
     end if
     
   end subroutine

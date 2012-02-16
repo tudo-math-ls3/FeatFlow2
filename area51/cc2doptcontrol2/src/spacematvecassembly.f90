@@ -328,6 +328,10 @@ module spacematvecassembly
     ! Structure defining constraints of the problem.
     type(t_optcConstraintsSpace) :: rconstraints
 
+    ! Pointer to the observation area or null(), if the complete
+    ! area is to be observed.
+    real(DP), dimension(:), pointer :: p_DobservationArea => null()
+    
     ! Discretisation of the level, primal space.
     type(t_blockDiscretisation), pointer :: p_rdiscrPrimal => null()
 
@@ -422,10 +426,10 @@ module spacematvecassembly
     ! Weight in front of Y in the Dirichlet boundary control term 1.
     real(DP), dimension(2,2) :: DdirichletBCCY = 0.0_DP
     
-    ! Weight in front of n Dlambda in the Dirichlet boundary control term 2.
+    ! Weight in front of Dlambda in the Dirichlet boundary control term 2.
     real(DP), dimension(2,2) :: DdirichletBCCLambda = 0.0_DP
     
-    ! Weight in front of n xi in the Dirichlet boundary control term 3.
+    ! Weight in front of xi in the Dirichlet boundary control term 3.
     real(DP), dimension(2,2) :: DdirichletBCCXi = 0.0_DP
     
     ! When evaluating nonlinear terms, the evaluation routine accepts
@@ -571,6 +575,8 @@ contains
         rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ilevel)
 
     rdiscrData%p_rdebugFlags => rsettings%rdebugFlags
+    
+    rdiscrData%p_DobservationArea => rsettings%rsettingsOptControl%p_DobservationArea
 
   end subroutine
   
@@ -1181,6 +1187,162 @@ contains
 
   end subroutine
 
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine coeff_boxIdentity (rdiscretisationTrial,rdiscretisationTest,rform, &
+      nelements,npointsPerElement,Dpoints, IdofsTrial,IdofsTest,rdomainIntSubset, &
+      Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form
+    ! that assembles the projective mass matrix.
+    !
+    ! Assembles the box-constrained identity, i.e., returns
+    ! =1 for all points in a defined box coming from the collection.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(IN)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                        :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in trial space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    integer :: iel,ipt
+    real(DP) :: dx1, dy1, dx2, dy2, dweight
+    
+    ! Get the box
+    dx1 = rcollection%DquickAccess(1)
+    dy1 = rcollection%DquickAccess(2)
+    dx2 = rcollection%DquickAccess(3)
+    dy2 = rcollection%DquickAccess(4)
+    dweight = rcollection%DquickAccess(5)
+
+    ! Loop through the elements and cubature points.
+    ! Set everything to zero which is out of our bounds.
+    do iel = 1,nelements
+      do ipt = 1,npointsPerElement
+        if ( (Dpoints(1,ipt,iel) .lt. dx1) .or. (Dpoints(1,ipt,iel) .gt. dx2) .or. &
+              (Dpoints(2,ipt,iel) .lt. dy1) .or. (Dpoints(2,ipt,iel) .gt. dy2) ) then
+          Dcoefficients (1,ipt,iel) = 0.0_DP
+        else
+          Dcoefficients (1,ipt,iel) = dweight
+        end if
+      end do
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine assembleBoxIdentity (Dbox,dweight,rmatrix,rcubatureInfo)
+
+!<description>
+  ! Assembles the characteristic function of a box.
+!</description>  
+  
+!<input>
+  ! The box. Format: (x1, y1, x2, y2)
+  real(DP), dimension(:), intent(in) :: Dbox
+  
+  ! Weight for the operator
+  real(DP), intent(in) :: dweight
+  
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+!</input>
+
+!<inputoutput>
+  ! Matrix which receives the operator.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_bilinearForm) :: rform
+    type(t_collection) :: rcollection
+    
+    ! Prepare a bilinear form.
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+
+    ! In this case, we have nonconstant coefficients.
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff(:) = .false.
+
+    ! Prepare a collection structure with the box.
+    rcollection%DquickAccess(1) = Dbox(1)
+    rcollection%DquickAccess(2) = Dbox(2)
+    rcollection%DquickAccess(3) = Dbox(3)
+    rcollection%DquickAccess(4) = Dbox(4)
+    rcollection%DquickAccess(5) = dweight
+
+    ! Now we can build the matrix entries.
+    call bilf_buildMatrixScalar (rform,.true.,rmatrix,&
+        rcubatureInfo,coeff_boxIdentity,rcollection)
+
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>
@@ -1569,10 +1731,25 @@ contains
         call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,4,6,1,3)
         
         ! Assemble linear parts.
-        call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
-            rnonlinearSpatialMatrix%DidentityY(2,1),rnonlinearSpatialMatrix%Dmass(2,1),&
-            rnonlinearSpatialMatrix%Dstokes(2,1),&
-            rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
+        if (.not. associated(rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea)) then
+          ! No specific observation area
+          call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
+              rnonlinearSpatialMatrix%DidentityY(2,1),rnonlinearSpatialMatrix%Dmass(2,1),&
+              rnonlinearSpatialMatrix%Dstokes(2,1),&
+              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
+        else
+          ! A special observation area. Two steps. In the second, assemble the
+          ! nonlinear mass matrix.
+          call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
+              rnonlinearSpatialMatrix%DidentityY(2,1),0.0_DP,&
+              rnonlinearSpatialMatrix%Dstokes(2,1),&
+              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
+              
+          call assembleBoxIdentity (rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea,&
+              rnonlinearSpatialMatrix%Dmass(2,1),rtempMatrix%RmatrixBlock(1,1),rcubatureInfo)
+          call assembleBoxIdentity (rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea,&
+              rnonlinearSpatialMatrix%Dmass(2,1),rtempMatrix%RmatrixBlock(2,2),rcubatureInfo)
+        end if
 
         ! Co stabilisation in the convective parts here.
         ! rstabilisation = t_convecStabilisation(&
@@ -3364,6 +3541,7 @@ contains
     ! local variables
     real(DP) :: dcx
     type(t_matrixBlock) :: rtempmatrix
+    type(t_matrixScalar) :: rtempMassMat
     type(t_vectorBlock) :: rtempVectorX,rtempVectorB
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual,rvectorDual2
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
@@ -3475,15 +3653,50 @@ contains
       end if
 
       if (rnonlinearSpatialMatrix%Dmass(2,1) .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-            rx%RvectorBlock(1), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
+        if (.not. associated(rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea)) then
+          
+          ! No specific observation area.
+          ! Observe the complete domain.
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+              rx%RvectorBlock(1), rd%RvectorBlock(4), &
+              -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
 
-        call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-            rx%RvectorBlock(2), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
+          call lsyssc_scalarMatVec (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
+              rx%RvectorBlock(2), rd%RvectorBlock(5), &
+              -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
+              
+        else
+          ! A box as observation area. Only assemble the defect in
+          ! this box. For that purpose, assemble a mass matrix corresponding
+          ! to the characteristic function of the box.
+          call lsyssc_duplicateMatrix (&
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+            rtempMassMat,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          call lsyssc_clearMatrix (rtempMassMat)
+
+          call spdiscr_createDefCubStructure (&
+              rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+              rcubatureInfo, rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass)
+          
+          call assembleBoxIdentity (rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea,&
+              1.0_DP,rtempMassMat,rcubatureInfo)
+
+          call spdiscr_releaseCubStructure (rcubatureInfo)
+          
+          ! Now apply the defect with this matrix.
+          call lsyssc_scalarMatVec (rtempMassMat, &
+              rx%RvectorBlock(1), rd%RvectorBlock(4), &
+              -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
+
+          call lsyssc_scalarMatVec (rtempMassMat, &
+              rx%RvectorBlock(2), rd%RvectorBlock(5), &
+              -rnonlinearSpatialMatrix%Dmass(2,1)*dcx, 1.0_DP)
+
+          ! Release memory
+          call lsyssc_releaseMatrix (rtempMassMat)
+        end if
       end if
       
       ! Don't do anything with Dmass(1,2) -- the mass matrices here
@@ -3754,7 +3967,7 @@ contains
           dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
           rcubatureInfo,rstabilisation,dcx)
-      
+          
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
 
@@ -5124,7 +5337,7 @@ contains
           ! Note: Up to now, this works only for uniform meshes!
           if (rcollection%IquickAccess(3) .gt. 0) then
             ! Forget the matrix we just assembled. Reassemble.
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+            call lsyssc_clearMatrix (rtempmatrix%RmatrixBlock(1,1))
 
             celement = &
               rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
@@ -5154,7 +5367,7 @@ contains
           ! Note: Up to now, this works only for uniform meshes!
           if (rcollection%IquickAccess(3) .gt. 0) then
             ! Forget the matrix we just assembled. Reassemble.
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+            call lsyssc_clearMatrix (rtempmatrix%RmatrixBlock(2,2))
 
             celement = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
             ccubType = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm

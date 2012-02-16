@@ -239,7 +239,7 @@ contains
     rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
     rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
     rcollection%Dquickaccess(6) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
-
+    
   end subroutine
   
 ! ***************************************************************************
@@ -293,8 +293,7 @@ contains
     !
     ! IquickAccess(1) = equation type
     ! IquickAccess(2) = component to assemble
-    ! IquickAccess(3) = type of the function
-    ! IquickAccess(4) = id of the function
+    ! IquickAccess(3) = id of the function
     
     rcollection%IquickAccess(1) = rglobalData%p_rphysics%cequation
     rcollection%IquickAccess(2) = icomponent

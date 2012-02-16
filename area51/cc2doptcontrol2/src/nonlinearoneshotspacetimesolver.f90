@@ -119,6 +119,7 @@ contains
     rdiscrData%p_rstabilPrimal => rsettings%rstabilPrimal
     rdiscrData%p_rstabilDual => rsettings%rstabilDual
     rdiscrData%p_rconstraints => rsettings%rsettingsOptControl%rconstraints
+    rdiscrData%p_DobservationArea => rsettings%rsettingsOptControl%p_DobservationArea
     
     call sth_getLevel (rsettings%rspaceTimeHierPrimal,ilevel,&
         p_rfeSpaceLevel)

@@ -83,3 +83,13 @@ dumax2 = 0.5 #5 #1E10 #0.01
 
 ssectionumin2 = 
 ssectionumax2 = 
+
+# Area of observation.
+# This defines an observation box in the format
+#   DobservationArea = x1 y1 x2 y2
+# For example
+#   DobservationArea = -0.5 -0.4 0.4 0.5
+# defines the box [-0.4,0.4] x [-0.5,0.5].
+# If not specified, the whole domain is observed.
+
+dobservationArea = 

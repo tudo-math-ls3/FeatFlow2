@@ -76,7 +76,7 @@ module structuresoptc
     ! Time used for the evaluation of the analytical constraints
     ! p_rumin1/2, p_rumax1/2.
     real(DP) :: dconstrainsTime = 0.0_DP
-  
+    
   end type
   
 !</types>
@@ -172,6 +172,18 @@ module structuresoptc
   
     ! Possible constraints in the problem.
     type(t_optcconstraintsSpaceTime) :: rconstraints
+
+    !<!-- ---------------- -->
+    !<!-- OBSERVATION AREA -->
+    !<!-- ---------------- -->
+    
+    ! Observation area. If this points to NULL(), the whole
+    ! domain is observed. Otherwise, this is an array with four entries
+    ! in the form
+    !   p_DobservationArea = (x1 y1 x2 y2)
+    ! specifying the area to be observed.
+    real(DP), dimension(:), pointer :: p_DobservationArea => null()
+    
     
   end type
 

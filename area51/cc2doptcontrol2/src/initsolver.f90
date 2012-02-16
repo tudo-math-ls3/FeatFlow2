@@ -1373,47 +1373,64 @@ contains
 !</inputoutput>
 
 !</subroutine>
+    
+    character(len=SYS_STRLEN) :: sstring
 
     ! Alpha/Gamma parameters
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dalphaC',roptcontrol%dalphaC,-1.0_DP)
+        "dalphaC",roptcontrol%dalphaC,-1.0_DP)
         
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dbetaC',roptcontrol%dbetaC,-1.0_DP)
+        "dbetaC",roptcontrol%dbetaC,-1.0_DP)
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'ddirichletBCPenalty',roptcontrol%ddirichletBCPenalty,100.0_DP)
+        "ddirichletBCPenalty",roptcontrol%ddirichletBCPenalty,100.0_DP)
         
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dgammaC',roptcontrol%dgammaC,0.0_DP)
+        "dgammaC",roptcontrol%dgammaC,0.0_DP)
         
     ! Type of the formulation
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'ispaceTimeFormulation',roptcontrol%ispaceTimeFormulation,0)
+        "ispaceTimeFormulation",roptcontrol%ispaceTimeFormulation,0)
     
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'iconvectionExplicit',roptcontrol%iconvectionExplicit,0)
+        "iconvectionExplicit",roptcontrol%iconvectionExplicit,0)
 
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'csystemScaling',roptcontrol%csystemScaling,0)
+        "csystemScaling",roptcontrol%csystemScaling,0)
     
     ! Parameters defining the constraints
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'ccontrolConstraints',roptcontrol%rconstraints%ccontrolConstraints,0)
+        "ccontrolConstraints",roptcontrol%rconstraints%ccontrolConstraints,0)
 
     roptcontrol%rconstraints%cconstraintsType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumin1',roptcontrol%rconstraints%dumin1,-1.0E10_DP)
+        "dumin1",roptcontrol%rconstraints%dumin1,-1.0E10_DP)
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumax1',roptcontrol%rconstraints%dumax1,1.0E10_DP)
+        "dumax1",roptcontrol%rconstraints%dumax1,1.0E10_DP)
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumin2',roptcontrol%rconstraints%dumin2,-1.0E10_DP)
+        "dumin2",roptcontrol%rconstraints%dumin2,-1.0E10_DP)
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumax2',roptcontrol%rconstraints%dumax2,1.0E10_DP)
+        "dumax2",roptcontrol%rconstraints%dumax2,1.0E10_DP)
+        
+    ! Observation area
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "DobservationArea",sstring,"")
+        
+    if (sstring .ne. "") then
+      ! Read the observation area. This is a box, the parameters
+      ! have the format "x1, y1, x2, y2".
+      allocate (roptcontrol%p_DobservationArea(4))
+      read (sstring,*) &
+          roptcontrol%p_DobservationArea(1), &
+          roptcontrol%p_DobservationArea(2), &
+          roptcontrol%p_DobservationArea(3), &
+          roptcontrol%p_DobservationArea(4)
+    end if
 
   end subroutine
 
@@ -1621,6 +1638,11 @@ contains
 
     ! Release the target function.
     call ansol_done(roptcontrol%rtargetFunction)
+    
+    ! Release the observation area
+    if (associated(roptcontrol%p_DobservationArea)) then
+      deallocate(roptcontrol%p_DobservationArea)
+    end if
 
   end subroutine
   

@@ -930,6 +930,200 @@ contains
 !  end subroutine
   
   ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine coeff_Target_fromUser (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! For the assembly of the target function in the RHS.
+    ! Calls the user defined evaluation routine and restricts it
+    ! to the observation area if necessary.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    real(DP) :: dx1, dy1, dx2, dy2
+    integer :: iel,ipt
+  
+    ! Call the user defined routine
+    call user_coeff_Target (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection%p_rnextCollection)
+                  
+    ! Do we have to restrict that?
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      ! Loop through the elements and cubature points.
+      ! Set everything to zero which is out of our bounds.
+      dx1 = rcollection%DquickAccess(1)
+      dy1 = rcollection%DquickAccess(2)
+      dx2 = rcollection%DquickAccess(3)
+      dy2 = rcollection%DquickAccess(4)
+      
+      do iel = 1,nelements
+        do ipt = 1,npointsPerElement
+          if ( (Dpoints(1,ipt,iel) .lt. dx1) .or. (Dpoints(1,ipt,iel) .gt. dx2) .or. &
+               (Dpoints(2,ipt,iel) .lt. dy1) .or. (Dpoints(2,ipt,iel) .gt. dy2) ) then
+            Dcoefficients (1,ipt,iel) = 0.0_DP
+          end if
+        end do
+      end do
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine coeff_Target_fromDiscrete (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! For the assembly of the target function in the RHS.
+    ! Calls the user defined evaluation routine and restricts it
+    ! to the observation area if necessary.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    real(DP) :: dx1, dy1, dx2, dy2
+    integer :: iel,ipt
+  
+    ! Call the user defined routine
+    call trhsevl_evalFunction (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection%p_rnextCollection)
+                  
+    ! Do we have to restrict that?
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      ! Loop through the elements and cubature points.
+      ! Set everything to zero which is out of our bounds.
+      dx1 = rcollection%DquickAccess(1)
+      dy1 = rcollection%DquickAccess(2)
+      dx2 = rcollection%DquickAccess(3)
+      dy2 = rcollection%DquickAccess(4)
+      
+      do iel = 1,nelements
+        do ipt = 1,npointsPerElement
+          if ( (Dpoints(1,ipt,iel) .lt. dx1) .or. (Dpoints(1,ipt,iel) .gt. dx2) .or. &
+               (Dpoints(2,ipt,iel) .lt. dy1) .or. (Dpoints(2,ipt,iel) .gt. dy2) ) then
+            Dcoefficients (1,ipt,iel) = 0.0_DP
+          end if
+        end do
+      end do
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
   
 !<subroutine>
   
@@ -980,8 +1174,8 @@ contains
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_linearForm) :: rlinform
     
-    ! A collection structure for the callback routines.
-    type(t_collection) :: rcollection
+    ! Collection structures for the callback routines.
+    type(t_collection), target :: rcollection, rlocalCollection
     
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
@@ -1079,6 +1273,23 @@ contains
         call ansol_doneEval (rcollection,"RHS")
         
       end if
+
+      ! Prepare a local collection for the assembly of the target function.      
+      if (associated(rglobalData%p_rsettingsOptControl%p_DobservationArea)) then
+        ! There is an observation area defined where the assembly
+        ! has to be restricted to.
+        rlocalCollection%IquickAccess(1) = 1
+        rlocalCollection%DquickAccess(1) = roptimalControl%p_DobservationArea(1)
+        rlocalCollection%DquickAccess(2) = roptimalControl%p_DobservationArea(2)
+        rlocalCollection%DquickAccess(3) = roptimalControl%p_DobservationArea(3)
+        rlocalCollection%DquickAccess(4) = roptimalControl%p_DobservationArea(4)
+      else
+        ! No observation area.
+        rlocalCollection%IquickAccess(4) = 0
+      end if
+      
+      ! Link to the user defined collection
+      rlocalCollection%p_rnextCollection => rcollection
       
       if (roptimalControl%rtargetFunction%ctype .eq. ANSOL_TP_ANALYTICAL) then
       
@@ -1091,9 +1302,10 @@ contains
         ! the desired 'target' function plus the coefficients of the
         ! dual RHS -- which are normally zero.
         !
-        ! Discretise the X-velocity part:
+        ! Discretise the X-velocity part.
+        ! Pass rlocalcollection -- and implicitely rcollection.
         call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(4),&
-            rcubatureInfoU,user_coeff_Target,rcollection)
+            rcubatureInfoU,coeff_Target_fromUser,rlocalCollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
 
@@ -1102,7 +1314,7 @@ contains
         
         ! And the Y-velocity part:
         call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(5),&
-            rcubatureInfoU,user_coeff_Target,rcollection)
+            rcubatureInfoU,coeff_Target_fromUser,rlocalCollection)
 
         call user_doneCollectForAssembly (rglobalData,rcollection)
         
@@ -1111,15 +1323,16 @@ contains
         ! Evaluate the target function using the analytical definition.
         call ansol_prepareEval (roptimalControl%rtargetFunction,rcollection,"RHS",dtimeDual)
         
-        ! Discretise the X-velocity part:
+        ! Discretise the X-velocity part.
+        ! Pass rlocalcollection -- and implicitely rcollection.
         rcollection%IquickAccess(1) = 1
         call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(4),&
-            rcubatureInfoU,trhsevl_evalFunction,rcollection)
+            rcubatureInfoU,coeff_Target_fromDiscrete,rlocalCollection)
 
         ! And the Y-velocity part:
         rcollection%IquickAccess(1) = 2
         call linf_buildVectorScalar (rlinform,bclear,rrhsDiscrete%RvectorBlock(5),&
-            rcubatureInfoU,trhsevl_evalFunction,rcollection)
+            rcubatureInfoU,coeff_Target_fromDiscrete,rlocalCollection)
 
         call ansol_doneEval (rcollection,"RHS")
       

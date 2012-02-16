@@ -264,6 +264,10 @@ module spacetimelinearsystem
     ! no constraints.
     type(t_optcconstraintsSpaceTime), pointer :: p_rconstraints => null()
     
+    ! Pointer to the observation area or null(), if the complete
+    ! area is to be observed.
+    real(DP), dimension(:), pointer :: p_DobservationArea => null()
+    
     ! Discretisation of the level, primal space.
     type(t_blockDiscretisation), pointer :: p_rdiscrPrimal => null()
 
@@ -336,7 +340,7 @@ module spacetimelinearsystem
     ! A t_sptiDirichletBCCBoundary structure defining the Dirichlet 
     ! boundary control
     type(t_sptiDirichletBCCBoundary), pointer :: p_rdirichletBCCBoundary => null()
-
+    
   end type
 
 !</typeblock>
@@ -585,6 +589,7 @@ contains
     rspaceDiscr%p_rstaticAsmTemplatesOptC => rspaceTimeDiscr%p_rstaticSpaceAsmTemplOptC
 
     rspaceDiscr%p_rdebugFlags => rdebugFlags
+    rspaceDiscr%p_DobservationArea => rspaceTimeDiscr%p_DobservationArea
     
     ! Initialise the constraints.
     call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,dconstrainsTime,&
@@ -1193,7 +1198,7 @@ contains
       rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = &
           rnonlinearSpatialMatrix%DdualBdIntegral(2,2)
     end if
-
+    
     ! Probably scale the system entries.
     if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%csystemScaling .ne. 0) then
     
