@@ -1719,8 +1719,6 @@ contains
     integer, dimension(:), intent(out) :: Ipermutation
 
       ! local variables
-      integer, dimension(:), pointer :: p_IrefinementPatch
-      integer, dimension(:), pointer :: p_IrefinementPatchIdx
       type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
       integer :: NEQ
       integer :: hmarker
