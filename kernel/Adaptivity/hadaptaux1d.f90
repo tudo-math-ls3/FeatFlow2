@@ -890,7 +890,7 @@ contains
         elements: do while(.not.alst_isNull(ralstIter))
           
           ! Check if element number corresponds to the replaced element
-          call alst_get(rhadapt%rElementsAtVertex, ralstIter, p_iel)
+          call alst_getbase_key(rhadapt%rElementsAtVertex, ralstIter, p_iel)
           if (p_iel .eq. ielReplace) then
             p_iel = iel
             exit elements

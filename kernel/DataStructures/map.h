@@ -56,42 +56,46 @@
 !#      -> Decreases the (reverse) iterator
 !#
 !# 11.) map_get (no equivalence in STL)
-!#      -> Gets key and value at given position in a map
+!#      -> Gets key value at given position in a map
 !#
-!# 12.) map_insert (insert in STL)
+!# 12.) map_getbase_data (no equivalence in STL)
+!#      -> Gets pointer to auxiliary data value
+!#         at given position in a map
+!#
+!# 13.) map_insert (insert in STL)
 !#      -> Inserts data into a map
 !#
-!# 13.) map_erase (erase in STL)
+!# 14.) map_erase (erase in STL)
 !#     -> Deletes data from a map
 !#
-!# 14.) map_size (size in STL)
+!# 15.) map_size (size in STL)
 !#      -> Returns the size of a map
 !#
-!# 15.) map_max_size (max_size in STL)
+!# 16.) map_max_size (max_size in STL)
 !#      -> Returns the maximum size of a map
 !#
-!# 16.) map_empty (empty in STL)
+!# 17.) map_empty (empty in STL)
 !#      -> Tests if the map is empty
 !#
-!# 17.) map_find (find in STL)
+!# 18.) map_find (find in STL)
 !#      -> Searches for data in a map
 !#
-!# 18.) map_print (no equivalence in STL)
+!# 19.) map_print (no equivalence in STL)
 !#      -> Prints content of a map
 !#
-!# 19.) map_info (no equivalence in STL)
+!# 20.) map_info (no equivalence in STL)
 !#      -> Outpus statistical information about a map
 !#
-!# 20.) map_duplicate (no equivalence in STL)
+!# 21.) map_duplicate (no equivalence in STL)
 !#      -> Create a duplicate / backup of a map
 !#
-!# 21.) map_restore (no equivalence in STL)
+!# 22.) map_restore (no equivalence in STL)
 !#      -> Restore a map from a previous backup
 !#
-!# 22.) map_isNull
+!# 23.) map_isNull
 !#      -> Tests if the iterator is NULL
 !#
-!# 23.) map_hasSpec
+!# 24.) map_hasSpec
 !#      -> Tests if the iterator has specification flags
 !#
 !#
@@ -132,6 +136,9 @@
   public :: map_next
   public :: map_prior
   public :: map_get
+#ifdef D
+  public :: map_getbase_data
+#endif
   public :: map_insert
   public :: map_erase
   public :: map_size
@@ -206,11 +213,14 @@
   end interface
 
   interface map_get
-#ifdef D
-    module procedure template_TD(map_get1,T,D)
-#endif
-    module procedure template_TD(map_get2,T,D)
+    module procedure template_TD(map_get,T,D)
   end interface
+
+#ifdef D
+  interface map_getbase_data
+    module procedure template_TD(map_getbase_data,T,D)
+  end interface
+#endif
 
   interface map_insert
     module procedure template_TD(map_insert1,T,D)
@@ -1403,7 +1413,7 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_get1,T,D)(rmap, rposition, p_data)
+  subroutine template_TD(map_getbase_data,T,D)(rmap, rposition, p_data)
 
 !<description>
     ! This subroutine returns pointers to the data stored at the
@@ -1435,7 +1445,7 @@ contains
 
 !<function>
 
-  function template_TD(map_get2,T,D)(rmap, rposition) result(key)
+  function template_TD(map_get,T,D)(rmap, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -1632,7 +1642,7 @@ contains
       key = map_get(riterator%p_rmap, riterator)
       
 #ifdef D
-      call map_get(riterator%p_rmap, riterator, p_data)
+      call map_getbase_data(riterator%p_rmap, riterator, p_data)
       riterator1 = map_insert(rmap, key, p_data)
 #else
       riterator1 = map_insert(rmap, key)
@@ -1654,7 +1664,7 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: rposition
+    type(template_TD(it_map,T,D)), intent(in) :: rposition
 !</input>
 
 !<inputoutput>
@@ -2711,11 +2721,8 @@ contains
 
     recursive function consistency(ipos) result(bisConsistent)
       integer, intent(in) :: ipos
-      integer :: bisConsistent
+      logical :: bisConsistent
 
-      ! local variable
-      type(template_TD(it_map,T,D)) :: rposition
-      
       ! Initialisation
       bisConsistent = .true.
       

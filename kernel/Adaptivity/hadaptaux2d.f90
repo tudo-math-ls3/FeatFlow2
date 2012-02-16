@@ -4228,7 +4228,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
         else
-          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
           dvbdp1 = p_Ddata(1)
         end if
 
@@ -4238,7 +4238,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
         else
-          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
           dvbdp2 = p_Ddata(1)
         end if
         
@@ -4417,7 +4417,7 @@ contains
         call sys_halt()
       else
         ! Get the two boundary neighbors: I1 <- IVT -> I2        
-        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
         i1 = int(p_Ddata(2))
         i2 = int(p_Ddata(3))
       end if
@@ -4430,7 +4430,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       else
-        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
         p_Ddata(3) = real(i2,DP)
       end if
       
@@ -4441,7 +4441,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       else
-        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
         p_Ddata(2) = real(i1,DP)
       end if
       
@@ -4478,7 +4478,7 @@ contains
           call sys_halt()
         else
           ! Insert IVT into the boundary vector
-          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
           rmapIter = map_insert(rhadapt%rBoundary(ibct), ivt, p_Ddata)
         end if
         
@@ -4494,7 +4494,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         else
-          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
           p_Ddata(3) = real(ivt,DP)
         end if
         
@@ -4505,7 +4505,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         else
-          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
           p_Ddata(2) = real(ivt,DP)
         end if
         
@@ -4778,7 +4778,7 @@ contains
         elements: do while(.not.alst_isNull(ralstIter))
           
           ! Check if element number corresponds to the replaced element
-          call alst_get(rhadapt%rElementsAtVertex, ralstIter, p_iel)
+          call alst_getbase_key(rhadapt%rElementsAtVertex, ralstIter, p_iel)
           if (p_iel .eq. ielReplace) then
             p_iel = iel
             exit elements

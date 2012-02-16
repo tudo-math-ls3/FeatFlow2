@@ -88,67 +88,71 @@
 !# 11.) list_get (no equivalence in STL)
 !#      -> Gets key and value at given position in a list
 !#
-!# 12.) list_assign (assign in STL)
+!# 12.) list_getbase_key / list_getbase_data (no equivalence in STL)
+!#      -> Gets pointer to key value / auxiliary data value
+!#         at given position in list
+!#
+!# 13.) list_assign (assign in STL)
 !#      -> Assigns key and value data to a list dropping existing content
 !#
-!# 13.) list_push_front (push_front in STL)
+!# 14.) list_push_front (push_front in STL)
 !#      -> Pushes data to the front of a list
 !#
-!# 14.) list_push_back (push_back in STL)
+!# 15.) list_push_back (push_back in STL)
 !#      -> Pushes data to the back of a list
 !#
-!# 15.) list_pop_front (pop_front in STL)
+!# 16.) list_pop_front (pop_front in STL)
 !#      -> Removes the first element from a list
 !#
-!# 16.) list_pop_back (pop_back in STL)
+!# 17.) list_pop_back (pop_back in STL)
 !#      -> Removes the last element from a list
 !#
-!# 17.) list_front (front in STL)
+!# 18.) list_front (front in STL)
 !#      -> Gets key and value of the first element in a list
 !#
-!# 18.) list_back (front in STL)
+!# 19.) list_back (front in STL)
 !#      -> Gets key and value of the last element in a list
 !#
-!# 19.) list_insert (insert in STL)
+!# 20.) list_insert (insert in STL)
 !#      -> Inserts data into a list
 !#
-!# 20.) list_erase (erase in STL)
+!# 21.) list_erase (erase in STL)
 !#      -> Deletes data from a list
 !#
-!# 21.) list_size (size in STL)
+!# 22.) list_size (size in STL)
 !#      -> Returns the size of a list
 !#
-!# 22.) list_max_size (max_size in STL)
+!# 23.) list_max_size (max_size in STL)
 !#      -> Returns the maximum size of a list
 !#
-!# 23.) list_empty (empty in STL)
+!# 24.) list_empty (empty in STL)
 !#      -> Tests if the list is empty
 !#
-!# 24.) list_find (no equivalence in STL)
+!# 25.) list_find (no equivalence in STL)
 !#      -> Searches for data in a list
 !#
-!# 25.) list_print (no equivalence in STL)
+!# 26.) list_print (no equivalence in STL)
 !#      -> Prints content of a list
 !#
-!# 26.) list_info (no equivalence in STL)
+!# 27.) list_info (no equivalence in STL)
 !#      -> Prints information about a list
 !#
-!# 27.) list_duplicate (no equivalence in STL)
+!# 28.) list_duplicate (no equivalence in STL)
 !#      -> Creates a backup of a list
 !#
-!# 28.) list_restore (no equivalence in STL)
+!# 29.) list_restore (no equivalence in STL)
 !#      -> Restores a list from a previous backup
 !#
-!# 29.) list_reverse (reverse in STL)
+!# 30.) list_reverse (reverse in STL)
 !#      -> Reverses the order of elements in a list
 !#
-!# 30.) list_sort (sort in STL)
+!# 31.) list_sort (sort in STL)
 !#      -> Sorts the entries in a list
 !#
-!# 31.) list_isNull
+!# 32.) list_isNull
 !#      -> Tests if the iterator is NULL
 !#
-!# 32.) list_hasSpec
+!# 33.) list_hasSpec
 !#      -> Tests if the iterator has specification flags
 !#
 !#
@@ -183,16 +187,16 @@
 !# ! Perform forward iteration through list items
 !# rit = list_begin(rlist)
 !# do while (rit /= list_end(rlist))
-!#   call list_get(rlist, rit, p_key)
-!#   print *, "key=",p_key
+!#   key = list_get(rlist, rit)
+!#   print *, "key=",key
 !#   call list_next(rit)
 !# end do
 !# 
 !# ! Perform reverse iteration through list items
 !# rit = list_rbegin(rlist)
 !# do while (rit /= list_rend(rlist))
-!#   call list_get(rlist, rit, p_key)
-!#   print *, "key=",p_key
+!#   key = list_get(rlist, rit, key)
+!#   print *, "key=",key
 !#   call list_next(rit)
 !# end do
 !#
@@ -222,6 +226,10 @@
   public :: list_next
   public :: list_prior
   public :: list_get
+  public :: list_getbase_key
+#ifdef D
+  public :: list_getbase_data
+#endif
   public :: list_assign
   public :: list_push_front
   public :: list_push_back
@@ -304,9 +312,18 @@
   end interface
 
   interface list_get
-    module procedure template_TD(list_get1,T,D)
-    module procedure template_TD(list_get2,T,D)
+    module procedure template_TD(list_get,T,D)
   end interface
+
+interface list_getbase_key
+    module procedure template_TD(list_getbase_key,T,D)
+  end interface
+
+#ifdef D
+  interface list_getbase_data
+    module procedure template_TD(list_getbase_data,T,D)
+  end interface
+#endif
 
   interface list_assign
     module procedure template_TD(list_assign1,T,D)
@@ -1338,14 +1355,10 @@ contains
 
 !<subroutine>
 
-#ifdef D
-  subroutine template_TD(list_get1,T,D)(rlist, rposition, p_key, p_data)
-#else
-  subroutine template_TD(list_get1,T,D)(rlist, rposition, p_key)
-#endif
+  subroutine template_TD(list_getbase_key,T,D)(rlist, rposition, p_key)
 
 !<description>
-    ! This subroutine returns pointers to the key and data stored at
+    ! This subroutine returns pointers to the key value stored at
     ! the position addressed by the iterator.
 !</description>
 
@@ -1360,35 +1373,55 @@ contains
 !<output>
     ! Pointer to the key value
     TTYPE(T_TYPE), pointer :: p_key
-
-#ifdef D
-    ! OPTIONAL: Pointer to the data
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
-#endif
 !</output>
 !</subroutine>
     
     ! Get key
     p_key => rlist%p_key(rposition%ipos)
 
+  end subroutine
+
+  !************************************************************************
+
 #ifdef D
+!<subroutine>
+
+  subroutine template_TD(list_getbase_data,T,D)(rlist, rposition, p_data)
+
+!<description>
+    ! This subroutine returns pointers to the auxiliary data value
+    ! stored at the position addressed by the iterator.
+!</description>
+
+!<input>
+    ! The linked list
+    type(template_TD(t_list,T,D)), intent(in) :: rlist
+
+    ! The iterator
+    type(template_TD(it_list,T,D)), intent(in) :: rposition
+!</input>
+
+!<output>
+    ! Pointer to the data
+    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+!</output>
+!</subroutine>
+
     ! Get data
-    if (present(p_data)) then
-      if (rlist%isizeData > 0) then
-        p_data => rlist%p_Data(:,rposition%ipos)
-      else
-        nullify(p_data)
-      end if
+    if (rlist%isizeData > 0) then
+      p_data => rlist%p_Data(:,rposition%ipos)
+    else
+      nullify(p_data)
     end if
-#endif
 
   end subroutine
+#endif
 
   !************************************************************************
 
 !<function>
 
-  function template_TD(list_get2,T,D)(rlist, rposition) result(key)
+  function template_TD(list_get,T,D)(rlist, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -1506,10 +1539,11 @@ contains
     do while(riterator /= rlast)
 
 #ifdef D
-      call list_get(riterator%p_rlist, riterator, p_key, p_data)
+      call list_getbase_key(riterator%p_rlist, riterator, p_key)
+      call list_getbase_data(riterator%p_rlist, riterator, p_data)
       call list_push_back(rlist, p_key, p_data)
 #else
-      call list_get(riterator%p_rlist, riterator, p_key)
+      call list_getbase_key(riterator%p_rlist, riterator, p_key)
       call list_push_back(rlist, p_key)
 #endif
       call list_next(riterator)
@@ -1769,9 +1803,10 @@ contains
       riterator = list_begin(rlist)
 
 #ifdef D
-      call list_get(rlist, riterator, p_key, p_data)
+      call list_getbase_key(rlist, riterator, p_key)
+      call list_getbase_data(rlist, riterator, p_data)
 #else
-      call list_get(rlist, riterator, p_key)
+      call list_getbase_key(rlist, riterator, p_key)
 #endif
 
     end if
@@ -1857,9 +1892,10 @@ contains
       riterator = list_rbegin(rlist)
 
 #ifdef D
-      call list_get(rlist, riterator, p_key, p_data)
+      call list_getbase_key(rlist, riterator, p_key)
+      call list_getbase_data(rlist, riterator, p_data)
 #else
-      call list_get(rlist, riterator, p_key)
+      call list_getbase_key(rlist, riterator, p_key)
 #endif
 
     end if
@@ -2109,10 +2145,11 @@ contains
     do while(riterator /= rlast)
 
 #ifdef D
-      call list_get(riterator%p_rlist, riterator, p_key, p_data)
+      call list_getbase_key(riterator%p_rlist, riterator, p_key)
+      call list_getbase_data(riterator%p_rlist, riterator, p_data)
       riter1 = list_insert(rlist, rposition, p_key, p_data)
 #else
-      call list_get(riterator%p_rlist, riterator, p_key)
+      call list_getbase_key(riterator%p_rlist, riterator, p_key)
       riter1 = list_insert(rlist, rposition, p_key)
 #endif
       call list_next(riterator)
@@ -2724,10 +2761,11 @@ contains
     do while (riterator /= list_end(rlist))
 
 #ifdef D
-      call list_get(rlist, riterator, p_key, p_data)
+      call list_getbase_key(rlist, riterator, p_key)
+      call list_getbase_data(rlist, riterator, p_data)
       call list_push_front(rlist, p_key, p_data)
 #else
-      call list_get(rlist, riterator, p_key)
+      call list_getbase_key(rlist, riterator, p_key)
       call list_push_front(rlist, p_key)
 #endif
       riterator = list_erase(rlist, riterator)
@@ -2776,9 +2814,11 @@ contains
 #ifdef D
         if (rlist%isizeData > 0) then
 
-          call list_get(rlist,riterator,p_key1,p_data1)
+          call list_getbase_key(rlist,riterator,p_key1)
+          call list_getbase_data(rlist,riterator,p_data1)
           call list_next(riterator)
-          call list_get(rlist,riterator,p_key2,p_data2)
+          call list_getbase_key(rlist,riterator,p_key2)
+          call list_getbase_data(rlist,riterator,p_data2)
           if (p_key1 > p_key2) then
             key    = p_key2
             p_key2 = p_key1
@@ -2791,9 +2831,9 @@ contains
 
         else
 
-          call list_get(rlist,riterator,p_key1)
+          call list_getbase_key(rlist,riterator,p_key1)
           call list_next(riterator)
-          call list_get(rlist,riterator,p_key2)
+          call list_getbase_key(rlist,riterator,p_key2)
           if (p_key1 > p_key2) then
             key    = p_key2
             p_key2 = p_key1
@@ -2803,9 +2843,9 @@ contains
 
         end if
 #else
-        call list_get(rlist,riterator,p_key1)
+        call list_getbase_key(rlist,riterator,p_key1)
         call list_next(riterator)
-        call list_get(rlist,riterator,p_key2)
+        call list_getbase_key(rlist,riterator,p_key2)
         if (p_key1 > p_key2) then
           key    = p_key2
           p_key2 = p_key1

@@ -563,7 +563,7 @@ contains
   
 !<function>
   
-  function template_T(otree_insert,T)(roctree, Data, ivt, inode) result(iresult)
+  function template_T(otree_insert,T)(roctree, data, ivt, inode) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the octree. The
@@ -610,7 +610,7 @@ contains
       jnode = inode
     else
       ! Search potential candidate for insertion
-      iresult = otree_find(roctree, Data, jnode, jpos, jvt)
+      iresult = otree_find(roctree, data, jnode, jpos, jvt)
       if (iresult .eq. OTREE_FOUND) then
         ivt = jvt
         return
@@ -782,7 +782,7 @@ contains
       elseif (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
 
         ! Proceed to correcponding sub-tree
-        jnode = -roctree%p_Knode(otree_getDirection(roctree, Data, inode), inode)
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
         iresult = insert(ivt, jnode)
 
       else
@@ -800,7 +800,7 @@ contains
   
 !<function>
   
-  function template_T(otree_delete1,T)(roctree, Data, ivt) result(iresult)
+  function template_T(otree_delete1,T)(roctree, data, ivt) result(iresult)
 
 !<description>
     ! This function deletes an item from the octree.
@@ -858,7 +858,7 @@ contains
       case (OTREE_SUBDIV)   ! Node is subdivided
         
         ! Compute child INODE which to look recursively.
-        jnode = -roctree%p_Knode(otree_getDirection(roctree, Data, inode), inode)
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
         iresult = delete(jnode, ivt)
 
         ! Save values from current node
@@ -1019,7 +1019,7 @@ contains
     if (ivt .le. roctree%NVT) then
       ! Get coordinates and invoke deletion routine
       data   = roctree%p_Data(:,ivt)
-      iresult = otree_delete(roctree, Data, ivtReplace)
+      iresult = otree_delete(roctree, data, ivtReplace)
     else
       iresult = OTREE_FAILED
     end if
@@ -1030,7 +1030,7 @@ contains
 
 !<function>
   
-  function template_T(otree_find,T)(roctree, Data, inode, ipos, ivt) result(iresult)
+  function template_T(otree_find,T)(roctree, data, inode, ipos, ivt) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the octree.
@@ -1091,7 +1091,7 @@ contains
       case (OTREE_SUBDIV)   ! Node is subdivided
         
         ! Compute child INODE which to look recursively.
-        inode = -roctree%p_Knode(otree_getDirection(roctree, Data, inode), inode)
+        inode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
         iresult =  search(inode, ipos, ivt)
 
         
@@ -1138,7 +1138,7 @@ contains
   
 !<function>
   
-  pure function template_T(otree_getDirection,T)(roctree, Data, inode) result(idirection)
+  pure function template_T(otree_getDirection,T)(roctree, data, inode) result(idirection)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Data.
@@ -1644,7 +1644,7 @@ contains
       
       ! local variables
       TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
-      integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3,imid4,imid5,imid6,imid7
+      integer :: i,isize,jnode,nnode,imid1,imid2,imid3,imid4,imid5,imid6,imid7
 
       
       ! Check if istart > iend then the node is empty
@@ -1876,7 +1876,6 @@ contains
       integer :: isplit
 
       ! local variables
-      TTYPE(T_TYPE), dimension(2) :: Daux
       TTYPE(T_TYPE) :: dpivot
       integer :: i, j, iaux
       

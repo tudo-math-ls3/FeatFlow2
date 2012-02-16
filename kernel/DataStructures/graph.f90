@@ -544,7 +544,7 @@ contains
         if (.not.map_isNull(rmapIter)) then
           
           ! Get auxiliary data
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
 
           ! Restore row from table
@@ -632,7 +632,7 @@ contains
         ikey = map_get(rgraph%rVertices,rmapIter)
 
         ! Get auxiliary data value
-        call map_get(rgraph%rVertices,rmapIter,p_Idata)
+        call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
         itable = p_Idata(1)
 
         ! Print neighbours of vertex IKEY
@@ -1000,7 +1000,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
         
@@ -1012,7 +1012,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
           else
-            call map_get(rgraph%rVertices,rmapIter,p_Idata)
+            call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
             ireplaceTable = p_Idata(1)
           end if
         else
@@ -1065,7 +1065,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
           else
-            call map_get(rgraph%rVertices,rmapIter,p_Idata)
+            call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
             jtable = p_Idata(1)
           end if
 
@@ -1119,7 +1119,7 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
             else
-              call map_get(rgraph%rVertices,rmapIter,p_Idata)
+              call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
               jtable = p_Idata(1)
             end if
             
@@ -1238,7 +1238,7 @@ contains
         bexists = .false.
         return
       else
-        call map_get(rgraph%rVertices,rmapIter,p_Idata)
+        call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
         itable = p_Idata(1)
       end if
     end if
@@ -1304,7 +1304,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
 
@@ -1338,7 +1338,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
         
@@ -1379,7 +1379,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
 
@@ -1397,7 +1397,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
 
@@ -1475,7 +1475,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
         
@@ -1516,7 +1516,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
         
@@ -1534,7 +1534,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
         else
-          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
 

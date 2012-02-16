@@ -59,72 +59,76 @@
 !#      -> Decreases the (reverse) iterator
 !#
 !# 11.) alst_get (no equivalence in STL)
-!#      -> Gets key and value at given position in arraylist
+!#      -> Gets key value at given position in arraylist
 !#
-!# 12.) alst_assign (assign in STL)
+!# 12.) alst_getbase_key / alst_getbase_data (no equivalence in STL)
+!#      -> Gets pointer to key value / auxiliary data value
+!#         at given position in arraylist
+!#
+!# 13.) alst_assign (assign in STL)
 !#      -> Assigns key and value data to an arraylist dropping existing content
 !#
-!# 13.) alst_push_front (push_front in STL)
+!# 14.) alst_push_front (push_front in STL)
 !#     -> Pushes data to the front of an arraylist
 !#
-!# 14.) alst_push_back (push_back in STL)
+!# 15.) alst_push_back (push_back in STL)
 !#      -> Pushes data to the back of an arraylist
 !#
-!# 15.) alst_pop_front (pop_front in STL)
+!# 16.) alst_pop_front (pop_front in STL)
 !#      -> Removes the first element from an arraylist
 !#
-!# 16.) alst_pop_back (pop_back in STL)
+!# 17.) alst_pop_back (pop_back in STL)
 !#      -> Removes the last element from an arraylist
 !#
-!# 17.) alst_front (front in STL)
+!# 18.) alst_front (front in STL)
 !#      -> Gets key and value of the first element in an arraylist
 !#
-!# 18.) alst_back (front in STL)
+!# 19.) alst_back (front in STL)
 !#      -> Gets key and value of the last element in an arraylist
 !#
-!# 19.) alst_insert (insert in STL)
+!# 20.) alst_insert (insert in STL)
 !#      -> Inserts data into an arraylist
 !#
-!# 20.) alst_erase (erase in STL)
+!# 21.) alst_erase (erase in STL)
 !#      -> Deletes data from an arraylist
 !#
-!# 21.) alst_size (size in STL)
+!# 22.) alst_size (size in STL)
 !#      -> Returns the size of an arraylist
 !#
-!# 22.) alst_max_size (max_size in STL)
+!# 23.) alst_max_size (max_size in STL)
 !#      -> Returns the maximum size of an arraylist
 !#
-!# 23.) alst_ntable (no equivalence in STL)
+!# 24.) alst_ntable (no equivalence in STL)
 !#      -> Returns the number of tables of an arraylist
 !#
-!# 24.) alst_empty / alst_emptyTbl (empty in STL)
+!# 25.) alst_empty / alst_emptyTbl (empty in STL)
 !#      -> Tests if the arraylist is empty
 !#
-!# 25.) alst_find (no equivalence in STL)
+!# 26.) alst_find (no equivalence in STL)
 !#      -> Searches for data in arraylist
 !#
-!# 26.) alst_print (no equivalence in STL)
+!# 27.) alst_print (no equivalence in STL)
 !#      -> Prints content of arraylist
 !#
-!# 27.) alst_info (no equivalence in STL)
+!# 28.) alst_info (no equivalence in STL)
 !#      -> Prints information about arraylist
 !#
-!# 28.) alst_duplicate (no equivalence in STL)
+!# 29.) alst_duplicate (no equivalence in STL)
 !#      -> Creates a backup of an arraylist
 !#
-!# 29.) alst_restore (no equivalence in STL)
+!# 30.) alst_restore (no equivalence in STL)
 !#      -> Restores an arraylist from a previous backup
 !#
-!# 30.) alst_reverse alst_reverseTbl (reverse in STL)
+!# 31.) alst_reverse alst_reverseTbl (reverse in STL)
 !#      -> Reverses the order of elements in a list
 !#
-!# 31.) alst_sort / alst_sortTbl (sort in STL)
+!# 32.) alst_sort / alst_sortTbl (sort in STL)
 !#      -> Sorts the entries in an arraylist
 !#
-!# 32.) alst_isNull
+!# 33.) alst_isNull
 !#      -> Tests if the iterator is NULL
 !#
-!# 33.) alst_hasSpec
+!# 34.) alst_hasSpec
 !#      -> Tests if the iterator has specification flag
 !#
 !#
@@ -165,6 +169,10 @@
   public :: alst_next
   public :: alst_prior
   public :: alst_get
+  public :: alst_getbase_key
+#ifdef D
+  public :: alst_getbase_data
+#endif
   public :: alst_assign
   public :: alst_push_front
   public :: alst_push_back
@@ -279,9 +287,18 @@
   end interface
 
   interface alst_get
-    module procedure template_TD(alst_get1,T,D)
-    module procedure template_TD(alst_get2,T,D)
+    module procedure template_TD(alst_get,T,D)
   end interface
+
+  interface alst_getbase_key
+    module procedure template_TD(alst_getbase_key,T,D)
+  end interface
+
+#ifdef D
+  interface alst_getbase_data
+    module procedure template_TD(alst_getbase_data,T,D)
+  end interface
+#endif
   
   interface alst_assign
     module procedure template_TD(alst_assign1,T,D)
@@ -2058,14 +2075,10 @@ contains
 
 !<subroutine>
 
-#ifdef D
-  subroutine template_TD(alst_get1,T,D)(rarraylist, rposition, p_key, p_data)
-#else
-  subroutine template_TD(alst_get1,T,D)(rarraylist, rposition, p_key)
-#endif
+  subroutine template_TD(alst_getbase_key,T,D)(rarraylist, rposition, p_key)
 
 !<description>
-    ! This subroutine returns pointers to the key and data stored at
+    ! This subroutine returns pointers to the key value stored at
     ! the position addressed by the iterator.
 !</description>
 
@@ -2080,35 +2093,54 @@ contains
 !<output>
     ! Pointer to the key value
     TTYPE(T_TYPE), pointer :: p_key
-
-#ifdef D
-    ! OPTIONAL: Pointer to the data
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
-#endif
 !</output>
 !</subroutine>
     
     ! Get key
     p_key => rarraylist%p_key(rposition%ipos)
 
+  end subroutine
+
+  !************************************************************************
+
 #ifdef D
-    ! Get data
-    if (present(p_data)) then
-      if(rarraylist%isizeData > 0) then
-        p_data => rarraylist%p_Data(:,rposition%ipos)
-      else
-        nullify(p_data)
-      end if
+!<subroutine>
+
+  subroutine template_TD(alst_getbase_data,T,D)(rarraylist, rposition, p_data)
+
+!<description>
+    ! This subroutine returns pointers to the key value stored at
+    ! the position addressed by the iterator.
+!</description>
+
+!<input>
+    ! The arraylist
+    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+
+    ! The iterator
+    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+!</input>
+
+!<output>
+    ! Pointer to the auxiliary data value
+    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+!</output>
+!</subroutine>
+    
+    if(rarraylist%isizeData > 0) then
+      p_data => rarraylist%p_Data(:,rposition%ipos)
+    else
+      nullify(p_data)
     end if
-#endif
 
   end subroutine
+#endif
 
   !************************************************************************
 
 !<function>
 
-  function template_TD(alst_get2,T,D)(rarraylist, rposition) result(key)
+  function template_TD(alst_get,T,D)(rarraylist, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -2233,10 +2265,11 @@ contains
     do while(riterator /= rlast)
 
 #ifdef D
-      call alst_get(riterator%p_rarraylist, riterator, p_key, p_data)
+      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
+      call alst_getbase_data(riterator%p_rarraylist, riterator, p_data)
       call alst_push_back(rarraylist, itable, p_key, p_data)
 #else
-      call alst_get(riterator%p_rarraylist, riterator, p_key)
+      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
       call alst_push_back(rarraylist, itable, p_key)
 #endif
       call alst_next(riterator)
@@ -2537,9 +2570,10 @@ contains
       riterator = alst_begin(rarraylist, itable)
 
 #ifdef D
-      call alst_get(rarraylist, riterator, p_key, p_data)
+      call alst_getbase_key(rarraylist, riterator, p_key)
+      call alst_getbase_data(rarraylist, riterator, p_data)
 #else
-      call alst_get(rarraylist, riterator, p_key)
+      call alst_getbase_key(rarraylist, riterator, p_key)
 #endif
 
     end if
@@ -2632,9 +2666,10 @@ contains
       riterator = alst_rbegin(rarraylist, itable)
 
 #ifdef D
-      call alst_get(rarraylist, riterator, p_key, p_data)
+      call alst_getbase_key(rarraylist, riterator, p_key)
+      call alst_getbase_data(rarraylist, riterator, p_data)
 #else
-      call alst_get(rarraylist, riterator, p_key)
+      call alst_getbase_key(rarraylist, riterator, p_key)
 #endif
 
     end if
@@ -2897,10 +2932,11 @@ contains
     do while(riterator /= rlast)
 
 #ifdef D
-      call alst_get(riterator%p_rarraylist, riterator, p_key, p_data)
+      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
+      call alst_getbase_data(riterator%p_rarraylist, riterator, p_data)
       riter1 = alst_insert(rarraylist, rposition, p_key, p_data)
 #else
-      call alst_get(riterator%p_rarraylist, riterator, p_key)
+      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
       riter1 = alst_insert(rarraylist, rposition, p_key)
 #endif
       call alst_next(riterator)
@@ -3671,10 +3707,11 @@ contains
     do while (riterator /= alst_end(rarraylist, itable))
 
 #ifdef D
-      call alst_get(rarraylist, riterator, p_key, p_data)
+      call alst_getbase_key(rarraylist, riterator, p_key)
+      call alst_getbase_data(rarraylist, riterator, p_data)
       call alst_push_front(rarraylist, itable, p_key, p_data)
 #else
-      call alst_get(rarraylist, riterator, p_key)
+      call alst_getbase_key(rarraylist, riterator, p_key)
       call alst_push_front(rarraylist, itable, p_key)
 #endif
       riterator = alst_erase(rarraylist, riterator)
@@ -3754,9 +3791,11 @@ contains
 #ifdef D
         if (rarraylist%isizeData > 0) then
 
-          call alst_get(rarraylist,riterator,p_key1,p_data1)
+          call alst_getbase_key(rarraylist,riterator,p_key1)
+          call alst_getbase_data(rarraylist,riterator,p_data1)
           call alst_next(riterator)
-          call alst_get(rarraylist,riterator,p_key2,p_data2)
+          call alst_getbase_key(rarraylist,riterator,p_key2)
+          call alst_getbase_data(rarraylist,riterator,p_data2)
           if (p_key1 > p_key2) then
             key    = p_key2
             p_key2 = p_key1
@@ -3769,9 +3808,9 @@ contains
 
         else
 
-          call alst_get(rarraylist,riterator,p_key1)
+          call alst_getbase_key(rarraylist,riterator,p_key1)
           call alst_next(riterator)
-          call alst_get(rarraylist,riterator,p_key2)
+          call alst_getbase_key(rarraylist,riterator,p_key2)
           if (p_key1 > p_key2) then
             key    = p_key2
             p_key2 = p_key1
@@ -3781,9 +3820,9 @@ contains
 
         end if
 #else
-        call alst_get(rarraylist,riterator,p_key1)
+        call alst_getbase_key(rarraylist,riterator,p_key1)
         call alst_next(riterator)
-        call alst_get(rarraylist,riterator,p_key2)
+        call alst_getbase_key(rarraylist,riterator,p_key2)
         if (p_key1 > p_key2) then
           key    = p_key2
           p_key2 = p_key1

@@ -1482,7 +1482,7 @@ contains
         p_IverticesAtBoundary(ivbd) = map_get(rhadapt%rBoundary(ibct), rmapIter)
 
         ! Get auxiliary data
-        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        call map_getbase_data(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
         p_DvertexParameterValue(ivbd) = p_Ddata(1)
 
         ! Increase iterators
