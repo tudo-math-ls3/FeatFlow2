@@ -28,7 +28,7 @@
 !# - a stabilisation structure
 !# - a linked list
 !# - an arraylist
-!# - a binary search tree
+!# - a map
 !# - a graph structure
 !# - a group finite element set and block type
 !#
@@ -292,7 +292,7 @@ module collection
   use statistics, only: t_timer
   use list, only: t_list
   use arraylist, only: t_arraylist
-  use binarytree, only: t_btree
+  use map, only: t_map
   use graph, only: t_graph
   use meshhierarchy, only: t_meshHierarchy
   use timescalehierarchy, only: t_timescaleHierarchy
@@ -431,8 +431,8 @@ module collection
   ! Array list
   integer, parameter, public :: COLLCT_ARRAYLIST    = 30
 
-  ! Binary search tree
-  integer, parameter, public :: COLLCT_BTREE        = 31
+  ! Map
+  integer, parameter, public :: COLLCT_MAP          = 31
 
   ! Graph structure
   integer, parameter, public :: COLLCT_GRAPH        = 32
@@ -590,8 +590,8 @@ module collection
     ! Pointer to an array list
     type(t_arraylist), pointer                  :: p_rarraylist => null()
 
-    ! Pointer to a binary search tree
-    type(t_btree), pointer                      :: p_rbtree => null()
+    ! Pointer to a map
+    type(t_map), pointer                        :: p_rmap => null()
 
     ! Pointer to a graph structure
     type(t_graph), pointer                      :: p_rgraph => null()
@@ -841,7 +841,7 @@ module collection
   public :: collct_setvalue_timer
   public :: collct_setvalue_list
   public :: collct_setvalue_arraylist
-  public :: collct_setvalue_btree
+  public :: collct_setvalue_map
   public :: collct_setvalue_mshh
   public :: collct_setvalue_fesp
   public :: collct_setvalue_feh
@@ -897,7 +897,7 @@ module collection
   public :: collct_getvalue_timer
   public :: collct_getvalue_list
   public :: collct_getvalue_arraylist
-  public :: collct_getvalue_btree
+  public :: collct_getvalue_map
   public :: collct_getvalue_graph
   public :: collct_getvalue_mshh
   public :: collct_getvalue_fesp
@@ -4730,10 +4730,10 @@ contains
   
 !<function>
 
-  function collct_getvalue_btree (rcollection, sparameter, &
-                                  ilevel, ssectionName, bexists) result(value)
+  function collct_getvalue_map (rcollection, sparameter, &
+                                ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a binary search tree.
+  ! Returns the the parameter sparameter as pointer to a map.
   ! An error is thrown if the value is of the wrong type.
 !</description>
   
@@ -4741,7 +4741,7 @@ contains
 
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  type(t_btree), pointer :: value
+  type(t_map), pointer :: value
 
 !</result>
 
@@ -4777,17 +4777,17 @@ contains
     type(t_collctValue), pointer :: p_rvalue
     
     ! Get the pointer to the parameter
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BTREE,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MAP,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Return the quantity
     if (associated(p_rvalue)) then
-      value => p_rvalue%p_rbtree
+      value => p_rvalue%p_rmap
     else
       nullify(value)
     end if
     
-  end function collct_getvalue_btree
+  end function collct_getvalue_map
 
   ! ***************************************************************************
   
@@ -7216,8 +7216,8 @@ contains
   
 !<subroutine>
 
-  subroutine collct_setvalue_btree (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName)
+  subroutine collct_setvalue_map (rcollection, sparameter, value, badd, &
+                                  ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the
@@ -7241,7 +7241,7 @@ contains
   character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_btree), intent(in), target :: value
+  type(t_map), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
@@ -7265,13 +7265,13 @@ contains
     logical :: bexists
     
     ! Get the pointer to the parameter. Add the parameter if necessary
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BTREE,&
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_MAP,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
     
     ! Set the value
-    p_rvalue%p_rbtree => value
+    p_rvalue%p_rmap => value
     
-  end subroutine collct_setvalue_btree
+  end subroutine collct_setvalue_map
 
   ! ***************************************************************************
   
