@@ -75,10 +75,10 @@
 module hadaptaux1d
 
 !$use omp_lib
+  use collection
   use fsystem
   use hadaptaux
   use linearsystemscalar
-  use collection
   
   implicit none
   
@@ -507,10 +507,9 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer,  dimension(:), pointer :: p_Imarker
-    integer, dimension(1) :: Ielements
-    integer, dimension(2) :: Ivertices
-    integer :: iel,jel,ivt,ivtReplace,ipos,ive
+    integer :: iel,ive,ivt,ivtReplace,jel
 
     ! Check if dynamic data structures are o.k. and if
     ! cells are marked for refinement
@@ -551,32 +550,35 @@ contains
     end do element
 
 
-    ! Loop over all vertices 1...NVT0 present in the triangulation before
-    ! refinement and check if they are free for vertex removal.
+    ! Loop over all vertices 1...NVT0 present in the triangulation
+    ! before refinement and check if they are free for vertex removal.
     vertex: do ivt = rhadapt%NVT0, 1, -1
       
       ! If the vertex is locked, then skip this vertex
       if (rhadapt%p_IvertexAge(ivt) .le. 0) cycle vertex
       
-      ! Remove vertex physically. Note that this vertex is no longer associated
-      ! to any element. All associations have been removed in the above element
-      ! coarsening/conversion step. In order to prevent "holes" in the vertex list,
-      ! vertex IVT is replaced by the last vertex if it is not the last one itself.
+      ! Remove vertex physically. Note that this vertex is no longer
+      ! associated to any element. All associations have been removed
+      ! in the above element coarsening/conversion step. In order to
+      ! prevent "holes" in the vertex list, vertex IVT is replaced by
+      ! the last vertex if it is not the last one itself.
       call remove_vertex1D(rhadapt, ivt, ivtReplace)
       
-      ! If vertex IVT was not the last one, update the "elements-meeting-at-vertex" list
+      ! If vertex IVT was not the last one, update the
+      ! "elements-meeting-at-vertex" list
       if (ivtReplace .ne. 0) then
         
-        ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .true.)
+        ! Start with first element in "elements-meeting-at-vertex"
+        ! list of the replaced vertex
+        ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivtReplace)
 
-        update: do while(ipos .gt. ARRLST_NULL)
+        update: do while(.not.alst_isNull(ralstIter))
           
-          ! Get element number JEL
-          call alst_get(rhadapt%rElementsAtVertex, ipos, jel)
+          ! Get element number JEL from arraylist
+          jel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
           
           ! Proceed to next element
-          ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .false.)
+          call alst_next(ralstIter)
           
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           do ive = 1, TRIA_NVELINE1D
@@ -659,8 +661,6 @@ contains
     ! local variables
     real(DP) :: x1,x2,x12
     integer :: ivt
-    integer, dimension(3) :: Ivertices
-    integer, dimension(1) :: Ielements
 
     ! Get coordinates of vertices
     x1 = rhadapt%p_DvertexCoords1D(1,i1)
@@ -856,7 +856,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ivt,jel,ive,jve,ipos,iel1
+    type(it_arrayListInt) :: ralstIter
+    integer, pointer :: p_iel
+    integer :: ivt,jel,ive,jve
 
     ! Replace element by the last element and delete last element
     ielReplace = rhadapt%NEL
@@ -884,18 +886,18 @@ contains
         ivt = rhadapt%p_IverticesAtElement(ive, ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
-        elements: do while(ipos .gt. ARRLST_NULL)
+        ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
+        elements: do while(.not.alst_isNull(ralstIter))
           
           ! Check if element number corresponds to the replaced element
-          call alst_get(rhadapt%rElementsAtVertex, ipos, iel1)
-          if (iel1 .eq. ielReplace) then
-            call alst_assign(rhadapt%rElementsAtVertex, ipos, iel)
+          call alst_get(rhadapt%rElementsAtVertex, ralstIter, p_iel)
+          if (p_iel .eq. ielReplace) then
+            p_iel = iel
             exit elements
           end if
           
           ! Proceed to next element in list
-          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
+          call alst_next(ralstIter)
         end do elements
 
                 
@@ -1006,7 +1008,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: jel,ive,jve
+    integer :: ive,jel,jve
 
     ! Check if the old element is still present in the triangulation
     if (iel0 .gt. rhadapt%NEL) return
@@ -1078,9 +1080,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(1) :: Ielements
-    integer, dimension(3) :: Ivertices
-    integer :: nel0,e1,e2,i1,i2,i3,ipos
+    type(it_arrayListInt) :: ralstIter
+    integer :: e1,e2,i1,i2,i3,nel0
 
     ! Store vertex- and element-values of the current element
     i1 = rhadapt%p_IverticesAtElement(1, iel)
@@ -1091,8 +1092,6 @@ contains
 
     ! Store total number of elements before refinement
     nel0 = rhadapt%NEL
-
-
 
     ! Add new vertex I3 at the midpoint of edge (I1,I2)
     call add_vertex1D(rhadapt, i1, i2, i3,&
@@ -1106,16 +1105,18 @@ contains
     call update_ElementNeighbors1D(rhadapt, e2, iel, nel0+1)
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Line2Line')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
     
     ! Optionally, invoke callback routine
     if (present(fcb_hadaptCallback) .and. present(rcollection)) then
@@ -1174,9 +1175,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(3) :: Ivertices
-    integer, dimension(1) :: Ielements
-    integer :: i1,i2,i3,e1,e2,jel,iel1,ielRemove,ielReplace,ipos
+    type(it_arraylistInt) :: ralstIter
+    integer :: e1,e2,i1,i2,i3,iel1,ielRemove,ielReplace,jel
 
     select case(imarker)
     case (MARK_CRS_LINE_RIGHT)
@@ -1219,27 +1219,31 @@ contains
       if (ielRemove .eq. iel1) then
 
         ! Remove element IELREMOVE from right endpoint
-        if (alst_erase(rhadapt%relementsAtVertex, i2, ielRemove)&
-            .eq. ARRAYLIST_NOT_FOUND) then
+        ralstIter = alst_find(rhadapt%relementsAtVertex, i2, ielRemove)
+        if (alst_isNull(ralstIter)) then
           call output_line('Unable to delete element from vertex list!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
           call sys_halt()
+        else
+          ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
         end if
 
         ! Add new element JEL to right endpoint
-        call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
+        call alst_push_back(rhadapt%relementsAtVertex, i2, jel)
       else
 
         ! Remove element IELREMOVE from left endpoint
-        if (alst_erase(rhadapt%relementsAtVertex, i1, ielRemove)&
-            .eq. ARRAYLIST_NOT_FOUND) then
+        ralstIter = alst_find(rhadapt%relementsAtVertex, i1, ielRemove)
+        if (alst_isNull(ralstIter)) then
           call output_line('Unable to delete element from vertex list!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
           call sys_halt()
+        else
+          ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
         end if
 
         ! Add new element JEL to left endpoint
-        call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
+        call alst_push_back(rhadapt%relementsAtVertex, i1, jel)
       end if
 
       ! Optionally, invoke callback function

@@ -73,12 +73,12 @@
 module hadaptaux
 
 !$use omp_lib
-  use arraylistInt
+  use arraylist
   use basicgeometry
-  use binarytree
   use fsystem
   use genoutput
   use linearalgebra
+  use map
   use octree
   use quadtree
   use sort
@@ -114,7 +114,7 @@ module hadaptaux
   ! Parameters of adaptivity structure are initialised
   integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
 
-  ! Btree/quadtree/octree for vertex coordinates is generated
+  ! Map/quadtree/octree for vertex coordinates is generated
   integer(I32), parameter, public :: HADAPT_HAS_COORDS       = 2**2
 
   ! Array for IverticesAtElement is generated
@@ -278,20 +278,6 @@ module hadaptaux
   
   ! Operation identifier for coarsening: 2-line : 1-line
   integer, parameter, public :: HADAPT_OPR_CRS_2LINE1LINE   = 33
-
-!</constantblock>
-
-
-!<constantblock description="Constants for grid adaptation">
-  
-  ! Array position of the boundary
-  integer, parameter, public :: BdrValue = 1
-  
-  ! Array position of the previous boundary vertex
-  integer, parameter, public :: BdrPrev  = 1
-
-  ! Array position of the next boundary vertex
-  integer, parameter, public :: BdrNext  = 2
 
 !</constantblock>
 
@@ -495,14 +481,14 @@ module hadaptaux
     real(DP), dimension(:,:), pointer :: p_DvertexCoords1D => null()
     
     ! Quadtree storing the nodal coordinates in 2D
-    type(t_quadtree) :: rVertexCoordinates2D
+    type(t_quadtreeDble) :: rVertexCoordinates2D
 
     ! Octree storing the nodal coordinates in 2D
-    type(t_octree) :: rVertexCoordinates3D
+    type(t_octreeDble) :: rVertexCoordinates3D
     
-    ! Array of binary search trees storing the boundary data
+    ! Array of maps storing the boundary data
     ! p_IboundaryCpIdx and p_IverticesAtBoundary
-    type(t_btree), dimension(:), pointer :: rBoundary => null()
+    type(t_mapInt_Dble), dimension(:), pointer :: rBoundary => null()
 
     ! Arraylist for elements-meeting-at-vertex structure
     type(t_arraylistInt) :: rElementsAtVertex
@@ -603,7 +589,7 @@ contains
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
     ! h_DvertexCoords that points to the two-dimensional array
-    ! p_DvertexCoords and stores them in the binary-search-tree.
+    ! p_DvertexCoords and stores them in the map.
 !</description>
 
 !<input>
@@ -627,7 +613,7 @@ contains
       call sys_halt()
     end if
 
-    ! Check if quadtree is already generated, then remove old quadtree/octree first
+    ! Check if structure is already generated, then remove old structure first
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq.&
                             HADAPT_HAS_COORDS) then
       if (rhadapt%h_DvertexCoords1D .ne. ST_NOHANDLE)&
@@ -639,7 +625,7 @@ contains
     call storage_getbase_double2D(rhadapt%h_DvertexCoords1D,&
                                   rhadapt%p_DvertexCoords1D)
 
-    ! Set specifier for quadtree
+    ! Set specifier for structure
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
 
     ! Set dimensions
@@ -654,7 +640,7 @@ contains
   subroutine hadapt_getVertexCoords1D(rhadapt, h_DvertexCoords, nvt, ndim)
 
 !<description>
-    ! This subroutine gets the vertex coordinates from the binary tree
+    ! This subroutine gets the vertex coordinates from the structure
     ! and stores them in the two-dimensional array associated to the
     ! handle h_DvertexCoords. Note that the allocated memory will
     ! be reallocated if is does not provide the correct dimensions.
@@ -687,7 +673,7 @@ contains
     ! Check if coordinates exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .ne.&
                             HADAPT_HAS_COORDS) then
-      call output_line('Binary tree does not exist!',&
+      call output_line('Coords do not exist!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords1D')
       call sys_halt()
     end if
@@ -772,7 +758,7 @@ contains
     ! Check if quadtree is already generated, then remove old quadtree/octree first
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq.&
                             HADAPT_HAS_COORDS) then
-      call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
+      call qtree_release(rhadapt%rVertexCoordinates2D)
     end if
     
     ! Set pointer
@@ -788,11 +774,11 @@ contains
     nnode = int(0.5_DP*nvt)
 
     ! Create quadtree for vertices
-    call qtree_createQuadtree(rhadapt%rVertexCoordinates2D, nvt,&
-                              nnode, xmin, ymin, xmax, ymax)
+    call qtree_create(rhadapt%rVertexCoordinates2D, nvt,&
+                      nnode, xmin, ymin, xmax, ymax)
     
     ! Copy vertex coordinates to quadtree
-    call qtree_copyToQuadtree(p_DvertexCoords, rhadapt%rVertexCoordinates2D)
+    call qtree_copy(p_DvertexCoords, rhadapt%rVertexCoordinates2D)
 
     ! Set specifier for quadtree
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
@@ -850,7 +836,7 @@ contains
     end if
 
     ! Copy quadtree to handle h_DvertexCoords
-    call qtree_copyFromQuadtree(rhadapt%rVertexCoordinates2D, h_DvertexCoords)
+    call qtree_copy(rhadapt%rVertexCoordinates2D, h_DvertexCoords)
 
     ! Set dimension
     if (present(ndim)) ndim = rhadapt%ndim
@@ -898,7 +884,7 @@ contains
     ! Check if quadtree is already generated, then remove old quadtree/octree first
     if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq.&
                             HADAPT_HAS_COORDS) then
-      call otree_releaseOctree(rhadapt%rVertexCoordinates3D)
+      call otree_release(rhadapt%rVertexCoordinates3D)
     end if
     
     ! Set pointer
@@ -916,11 +902,11 @@ contains
     nnode = int(0.5_DP*nvt)
 
     ! Create octree for vertices
-    call otree_createOctree(rhadapt%rVertexCoordinates3D, nvt,&
+    call otree_create(rhadapt%rVertexCoordinates3D, nvt,&
                             nnode, xmin, ymin, zmin, xmax, ymax, zmax)
     
     ! Copy vertex coordinates to octree
-    call otree_copyToOctree(p_DvertexCoords, rhadapt%rVertexCoordinates3D)
+    call otree_copy(p_DvertexCoords, rhadapt%rVertexCoordinates3D)
 
     ! Set specifier for quadtree
     rhadapt%iSpec=ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
@@ -978,7 +964,7 @@ contains
     end if
 
     ! Copy octree to handle h_DvertexCoords
-    call otree_copyFromOctree(rhadapt%rVertexCoordinates3D, h_DvertexCoords)
+    call otree_copy(rhadapt%rVertexCoordinates3D, h_DvertexCoords)
 
     ! Set dimension
     if (present(ndim)) ndim = rhadapt%ndim
@@ -1279,13 +1265,12 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DvertexParameterValue2D
+    type(it_mapInt_Dble) :: rmapIter
     real(DP), dimension(:), pointer   :: p_DvertexParameterValue
     integer, dimension(:), pointer    :: p_IboundaryCpIdx
     integer, dimension(:), pointer    :: p_IverticesAtBoundary
-    integer, dimension(:,:), pointer  :: p_IneighboursAtBoundary
-    integer, dimension(2) :: Isize
-    integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
+    real(DP), dimension(3) :: Ddata
+    integer :: ibct,ioff,ivbd,ivbdEnd,ivbdStart,lvbd
     
     ! Check if handle are not empty
     if ((h_IboundaryCpIdx .eq. ST_NOHANDLE) .or.&
@@ -1299,54 +1284,61 @@ contains
     ! Check if boundary structure exists and remove it
     if (associated(rhadapt%rBoundary)) then
       do ibct = 1, size(rhadapt%rBoundary,1)
-        call btree_releaseTree(rhadapt%rBoundary(ibct))
+        call map_release(rhadapt%rBoundary(ibct))
       end do
       deallocate(rhadapt%rBoundary)
     end if
 
     ! Set pointers
-    call storage_getbase_double(h_DvertexParameterValue, p_DvertexParameterValue, nvbd)
-    call convert_pointer(nvbd,p_DvertexParameterValue, p_DvertexParameterValue2D)
-    call storage_getbase_int(h_IboundaryCpIdx, p_IboundaryCpIdx, nbct+1)
-    call storage_getbase_int(h_IverticesAtBoundary, p_IverticesAtBoundary, nvbd)
+    call storage_getbase_double(h_DvertexParameterValue,&
+                                p_DvertexParameterValue, nvbd)
+    call storage_getbase_int(h_IboundaryCpIdx,&
+                             p_IboundaryCpIdx, nbct+1)
+    call storage_getbase_int(h_IverticesAtBoundary,&
+                             p_IverticesAtBoundary, nvbd)
     
-    ! Allocate array of search trees
+    ! Allocate array of maps
     allocate(rhadapt%rBoundary(nbct))
     
-    ! Create auxiliary array
-    Isize = (/2,nvbd/)
-    call storage_new('hadapt_setBoundary', 'IData', Isize, ST_INT,&
-                     h_IneighboursAtBoundary, ST_NEWBLOCK_NOINIT)
-    call storage_getbase_int2D(h_IneighboursAtBoundary, p_IneighboursAtBoundary)
-
     ! Initialization
     ioff = 0
 
     do ibct = 1, nbct
 
-      ! Create a separate search tree for each boundary component
+      ! Create a separate map for each boundary component
       lvbd = p_IboundaryCpIdx(ibct+1)-p_IboundaryCpIdx(ibct)
-      call btree_createTree(rhadapt%rBoundary(ibct), lvbd, ST_INT, 1, 0, 2)
+      call map_create(rhadapt%rBoundary(ibct), lvbd, 3)
 
       ! Set subdimensions
       ivbdStart = ioff+1
       ivbdEnd   = ioff+lvbd
       ioff      = ioff+lvbd
 
-      ! Fill auxiliary working array p_IneighboursAtBoundary
-      ! For each item ivbd we have:
-      !   p_IneighboursAtBoundary(BdrPrev,ivbd) -> previous neighbour of ivbd
-      !   p_IneighboursAtBoundary(BdrNext,ivbd) -> following neighbour of ivbd
-      p_IneighboursAtBoundary(BdrPrev,ivbdStart)           = p_IverticesAtBoundary(ivbdEnd)
-      p_IneighboursAtBoundary(BdrPrev,ivbdStart+1:ivbdEnd) = p_IverticesAtBoundary(ivbdStart:ivbdEnd-1)
-      p_IneighboursAtBoundary(BdrNext,ivbdStart:ivbdEnd-1) = p_IverticesAtBoundary(ivbdStart+1:ivbdEnd)
-      p_IneighboursAtBoundary(BdrPrev,ivbdEnd)             = p_IverticesAtBoundary(ivbdStart)
+      ! Insert first element into map
+      Ddata(1) =      p_DvertexParameterValue(ivbdStart)
+      Ddata(2) = real(p_IverticesAtBoundary(ivbdEnd),DP)
+      Ddata(3) = real(p_IverticesAtBoundary(ivbdStart+1),DP)
 
-      ! Fill search tree
-      call btree_copyToTree(p_IverticesAtBoundary(ivbdStart:ivbdEnd),&
-                            rhadapt%rBoundary(ibct),&
-                            p_DData=p_DvertexParameterValue2D(:,ivbdStart:ivbdEnd),&
-                            p_IData=p_IneighboursAtBoundary(:,ivbdStart:ivbdEnd))
+      rmapIter = map_insert(rhadapt%rBoundary(ibct),&
+                            p_IverticesAtBoundary(ivbdStart), Ddata)
+
+      ! Insert second to last but one element into map
+      do ivbd = ivbdStart+1, ivbdEnd-1
+        Ddata(1) =      p_DvertexParameterValue(ivbd)
+        Ddata(2) = real(p_IverticesAtBoundary(ivbd-1),DP)
+        Ddata(3) = real(p_IverticesAtBoundary(ivbd+1),DP)
+        
+        rmapIter = map_insert(rhadapt%rBoundary(ibct),&
+                              p_IverticesAtBoundary(ivbd), Ddata)
+      end do
+
+      ! Insert last element into map
+      Ddata(1) =      p_DvertexParameterValue(ivbdEnd)
+      Ddata(2) = real(p_IverticesAtBoundary(ivbdEnd-1),DP)
+      Ddata(3) = real(p_IverticesAtBoundary(ivbdStart),DP)
+
+      rmapIter = map_insert(rhadapt%rBoundary(ibct),&
+                            p_IverticesAtBoundary(ivbdEnd), Ddata)
     end do
     
     ! Set dimensions
@@ -1354,24 +1346,9 @@ contains
     rhadapt%NVBD  = nvbd
     rhadapt%NVBD0 = nvbd
 
-    ! Free auxiliary storage
-    call storage_free(h_IneighboursAtBoundary)
-
     ! Set specifier for boundary
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_BOUNDARY)
 
-  contains
-    
-    ! ****************************************
-    ! The convertion routine 1D -> 2D
-    
-    subroutine convert_pointer(isize, ptr_1d, ptr_2d)
-      integer, intent(in)                 :: isize
-      real(DP), dimension(1,isize), intent(in), target :: ptr_1d
-      real(DP), dimension(:,:), pointer                :: ptr_2d
-      
-      ptr_2d => ptr_1d
-    end subroutine convert_pointer
   end subroutine hadapt_setBoundary
   
   ! ***************************************************************************
@@ -1412,11 +1389,11 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    type(it_mapInt_Dble) :: rmapIter
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue, p_Ddata
     integer, dimension(:), pointer  :: p_IboundaryCpIdx
     integer, dimension(:), pointer  :: p_IverticesAtBoundary
-    integer :: isize
-    integer :: ioff,lvbd,ivbdStart,ivbdEnd,ibct
+    integer :: ibct,ioff,isize,ivbd,ivbdEnd,ivbdStart,lvbd
 
     ! Check if boundary data exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_BOUNDARY) .ne.&
@@ -1426,10 +1403,10 @@ contains
       call sys_halt()
     end if
 
-    ! Due to the fact, that the boundary data may be stored in multiple
-    ! binary search trees (one for each component) the static arrays
-    ! are pre-allocated and filled step-by-step from the dynamic data
-    ! in the boundary search tree(s).
+    ! Due to the fact, that the boundary data may be stored in
+    ! multiple maps (one for each component) the static arrays are
+    ! pre-allocated and filled step-by-step from the dynamic data in
+    ! the boundary map(s).
 
     ! Check if the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and
     ! p_DvertexParameterValue have correct dimension
@@ -1480,11 +1457,12 @@ contains
     ! Initialization
     p_IboundaryCpIdx(1) = 1
     ioff = 0
+    ivbd = 0
 
     do ibct = 1, rhadapt%NBCT
       
       ! Set subdimensions
-      lvbd      = rhadapt%rBoundary(ibct)%NA
+      lvbd      = map_size(rhadapt%rBoundary(ibct))
       ivbdStart = ioff+1
       ivbdEnd   = ioff+lvbd
       ioff      = ioff+lvbd
@@ -1492,11 +1470,31 @@ contains
       ! Set index for next boundary component
       p_IboundaryCpIdx(ibct+1) = ioff+1
 
-      ! Get static boundary data from tree
-      call btree_copyFromTreeKey(rhadapt%rBoundary(ibct),&
-                                 p_IverticesAtBoundary(ivbdStart:ivbdEnd))
-      call btree_copyFromTreeDble(rhadapt%rBoundary(ibct),&
-                                  p_DvertexParameterValue(ivbdStart:ivbdEnd), 1)
+      ! Get static boundary data from map
+      rmapIter = map_begin(rhadapt%rBoundary(ibct))
+      
+      do while(.not.map_isNull(rmapIter))
+        
+        ! Increase counter
+        ivbd = ivbd+1
+
+        ! Get key value
+        p_IverticesAtBoundary(ivbd) = map_get(rhadapt%rBoundary(ibct), rmapIter)
+
+        ! Get auxiliary data
+        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        p_DvertexParameterValue(ivbd) = p_Ddata(1)
+
+        ! Increase iterators
+        call map_next(rmapIter)        
+      end do
+
+      ! Consistency check
+      if (ivbd .ne. ivbdEnd) then
+        call output_line('An internal error occured!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getBoundary')
+        call sys_halt()
+      end if
 
       ! Sort array w.r.t. increasing parameter values
       call sort_dp(p_DvertexParameterValue(ivbdStart:ivbdEnd),&
@@ -1601,7 +1599,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    integer :: ipos,iel,ive
+    ! local variables
+    integer :: iel,ive
 
     ! Check if "vertices-at-element" list exists
     if (iand(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .ne.&
@@ -1612,14 +1611,13 @@ contains
     end if
 
     ! Create arraylist
-    call alst_create(rhadapt%relementsAtVertex,&
-                       2*rhadapt%NVT, 8*rhadapt%NEL, ARRAYLIST_UNORDERED)
+    call alst_create(rhadapt%relementsAtVertex, 2*rhadapt%NVT, 8*rhadapt%NEL)
 
     ! Fill arraylist
     do iel = 1, rhadapt%NEL
       do ive = 1, hadapt_getNVE(rhadapt,iel)
         call alst_push_back(rhadapt%relementsAtVertex,&
-                           rhadapt%p_IverticesAtElement(ive,iel), iel, ipos)
+                            rhadapt%p_IverticesAtElement(ive,iel), iel)
       end do
     end do
     

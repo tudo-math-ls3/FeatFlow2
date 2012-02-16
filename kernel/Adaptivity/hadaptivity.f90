@@ -4,21 +4,25 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains all routines which are required to perform h-adaptivity,
-!# namely, grid refinement and grid coarsening.
-!# In order to apply h-adaptivity, the initial mesh must be conforming,
-!# that is, it is allowed to contain a mixture of triangular and quadrilateral
-!# elements without 'hanging' nodes. After one grid adaptivity step, the
-!# resulting mesh is also conforming without 'hanging' nodes.
 !#
-!# This module makes extensive use of dynamic data structures such as quadtrees,
-!# binary search trees and so-called arraylists which need to be generated from
-!# the static mesh structure. After grid adaptivity, the dynamic data needs to
-!# be reconverted to the static structures required for the simulation.
+!# This module contains all routines which are required to perform
+!# h-adaptivity, namely, grid refinement and grid coarsening.  In
+!# order to apply h-adaptivity, the initial mesh must be conforming,
+!# that is, it is allowed to contain a mixture of triangular and
+!# quadrilateral elements without 'hanging' nodes. After one grid
+!# adaptivity step, the resulting mesh is also conforming without
+!# 'hanging' nodes.
 !#
-!# Note that this module is implemented as a 'black-box' tool for grid adaptivity.
-!# One of the building blocks is the t_hadapt data structure which provides all
-!# required information.
+!# This module makes extensive use of dynamic data structures such as
+!# quadtrees, octrees, maps and so-called arraylists which need to be
+!# generated from the static mesh structure. After grid adaptivity,
+!# the dynamic data needs to be reconverted to the static structures
+!# required for the simulation.
+!#
+!# Note that this module is implemented as a 'black-box' tool for grid
+!# adaptivity.  One of the building blocks is the t_hadapt data
+!# structure which provides all required information.
+!#
 !#
 !# The following routines are available:
 !#
@@ -62,23 +66,23 @@
 module hadaptivity
 
 !$use omp_lib
-  use arraylistInt
-  use binarytree
+  use arraylist
   use boundary
   use collection
   use fsystem
   use hadaptaux
   use hadaptaux1d
   use hadaptaux2d
-!!$  use hadaptaux3d
+  use hadaptaux3d
   use io
+  use linearsystemscalar
+  use map
   use octree
   use paramlist
   use quadtree
   use sort
   use storage
   use triangulation
-  use linearsystemscalar
 
   implicit none
 
@@ -287,7 +291,7 @@ contains
                               rtriangulation%h_DvertexParameterValue,&
                               rtriangulation%NVBD, rtriangulation%NBCT)
     end if
-                            
+
     ! Generate extended raw mesh information for edge (and face)
     ! numbering.
     call tria_initExtendedRawMesh (rtriangulation)
@@ -326,10 +330,10 @@ contains
         nullify(rhadapt%p_DvertexCoords1D)
 
       case(NDIM2D)
-        call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
+        call qtree_release(rhadapt%rVertexCoordinates2D)
         
       case(NDIM3D)
-        call otree_releaseOctree(rhadapt%rVertexCoordinates3D)
+        call otree_release(rhadapt%rVertexCoordinates3D)
 
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
@@ -341,7 +345,7 @@ contains
     ! Check if boundary structure exists
     if (associated(rhadapt%rBoundary)) then
       do ibct = 1, size(rhadapt%rBoundary, 1)
-        call btree_releaseTree(rhadapt%rBoundary(ibct))
+        call map_release(rhadapt%rBoundary(ibct))
       end do
       deallocate(rhadapt%rBoundary)
       nullify(rhadapt%rBoundary)
@@ -573,10 +577,10 @@ contains
         call storage_getbase_double2D(rhadaptBackup%h_DvertexCoords1D,&
                                       rhadaptBackup%p_DvertexCoords1D)
       case(NDIM2D)
-        call qtree_duplicateQuadtree(rhadapt%rVertexCoordinates2D,&
-                                     rhadaptBackup%rVertexCoordinates2D)
+        call qtree_duplicate(rhadapt%rVertexCoordinates2D,&
+                             rhadaptBackup%rVertexCoordinates2D)
       case(NDIM3D)
-        call otree_duplicateOctree(rhadapt%rVertexCoordinates3D,&
+        call otree_duplicate(rhadapt%rVertexCoordinates3D,&
                                    rhadaptBackup%rVertexCoordinates3D)
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
@@ -591,15 +595,15 @@ contains
       
       if (associated(rhadaptBackup%rBoundary)) then
         do ibct = 1, size(rhadaptBackup%rBoundary,1)
-          call btree_releaseTree(rhadaptBackup%rBoundary(ibct))
+          call map_release(rhadaptBackup%rBoundary(ibct))
         end do
         deallocate(rhadaptBackup%rBoundary)
       end if
 
       allocate(rhadaptBackup%rBoundary(size(rhadapt%rBoundary,1)))
       do ibct = 1, size(rhadapt%rBoundary,1)
-        call btree_duplicateTree(rhadapt%rBoundary(ibct),&
-                                 rhadaptBackup%rBoundary(ibct))
+        call map_duplicate(rhadapt%rBoundary(ibct),&
+                           rhadaptBackup%rBoundary(ibct))
       end do
     end if
     
@@ -607,7 +611,7 @@ contains
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
                        HADAPT_SHARE_RELEMENTSATVERTEX) then
       call alst_duplicate(rhadapt%rElementsAtVertex,&
-                            rhadaptBackup%rElementsAtVertex)
+                          rhadaptBackup%rElementsAtVertex)
     end if
 
   contains
@@ -741,10 +745,10 @@ contains
         call storage_getbase_double2D(rhadapt%h_DvertexCoords1D,&
                                       rhadapt%p_DvertexCoords1D)
       case(NDIM2D)
-        call qtree_restoreQuadtree(rhadaptBackup%rVertexCoordinates2D,&
-                                   rhadapt%rVertexCoordinates2D)
+        call qtree_restore(rhadaptBackup%rVertexCoordinates2D,&
+                           rhadapt%rVertexCoordinates2D)
       case(NDIM3D)
-        call otree_restoreOctree(rhadaptBackup%rVertexCoordinates3D,&
+        call otree_restore(rhadaptBackup%rVertexCoordinates3D,&
                                  rhadapt%rVertexCoordinates3D)
       case DEFAULT
         call output_line('Invalid spatial dimension!',&
@@ -763,8 +767,8 @@ contains
         call sys_halt()
       end if
       do ibct = 1, size(rhadapt%rBoundary,1)
-        call btree_restoreTree(rhadaptBackup%rBoundary(ibct),&
-                               rhadapt%rBoundary(ibct))
+        call map_restore(rhadaptBackup%rBoundary(ibct),&
+                         rhadapt%rBoundary(ibct))
       end do
     end if
     
@@ -773,7 +777,7 @@ contains
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
                        HADAPT_SHARE_RELEMENTSATVERTEX) then
       call alst_restore(rhadaptBackup%rElementsAtVertex,&
-                          rhadapt%rElementsAtVertex)
+                        rhadapt%rElementsAtVertex)
     end if
   
   contains
@@ -1184,9 +1188,9 @@ contains
       call output_line('NNVT:              '//trim(sys_siL(Isize(2),15)))
       call output_line('h_DvertexCoords1D: '//trim(sys_siL(rhadapt%h_DvertexCoords1D,15)))
     case(NDIM2D)
-      call qtree_infoQuadtree(rhadapt%rVertexCoordinates2D)
+      call qtree_info(rhadapt%rVertexCoordinates2D)
     case(NDIM3D)
-      call otree_infoOctree(rhadapt%rVertexCoordinates3D)
+      call otree_info(rhadapt%rVertexCoordinates3D)
     end select
     call output_lbrk
     
@@ -1195,7 +1199,7 @@ contains
     do ibct=1,rhadapt%NBCT
       call output_line('Boundary component '//trim(sys_siL(ibct,3))//":")
       call output_line('------------------------')
-      call btree_infoTree(rhadapt%rBoundary(ibct))
+      call map_info(rhadapt%rBoundary(ibct))
     end do
     call output_lbrk
 
@@ -1282,34 +1286,34 @@ contains
       do ivt = 1, rhadapt%NVT
         write(UNIT=iunit,FMT=10) rhadapt%p_DvertexCoords1D(1,ivt)
       end do
-      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+      do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) 0._DP
       end do
-      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+      do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) 0._DP
       end do
       
     case (NDIM2D)
       write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
-      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+      do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D, ivt)
       end do
-      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+      do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D, ivt)
       end do
-      do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+      do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) 0._DP
       end do
 
     case (NDIM3D)
       write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
-      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+      do ivt = 1, otree_getSize(rhadapt%rVertexCoordinates3D)
         write(UNIT=iunit,FMT=10) otree_getX(rhadapt%rVertexCoordinates3D, ivt)
       end do
-      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+      do ivt = 1, otree_getSize(rhadapt%rVertexCoordinates3D)
         write(UNIT=iunit,FMT=10) otree_getY(rhadapt%rVertexCoordinates3D, ivt)
       end do
-      do ivt = 1, otree_getsize(rhadapt%rVertexCoordinates3D)
+      do ivt = 1, otree_getSize(rhadapt%rVertexCoordinates3D)
         write(UNIT=iunit,FMT=10) otree_getZ(rhadapt%rVertexCoordinates3D, ivt)
       end do
 
@@ -1407,9 +1411,10 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx
     integer, dimension(:), pointer :: p_IelementsAtVertex
-    integer :: ipos,ivt,idx,iel,jel,jelmid,ive,jve,nve,mve
+    integer :: ivt,idx,iel,jel,jelmid,ive,jve,nve,mve
     integer :: h_IelementsAtVertexIdx,h_IelementsAtVertex
     logical :: btest,bfound
 
@@ -1633,16 +1638,16 @@ contains
       do ivt = 1, rhadapt%NVT
         
         ! Get first entry in array list
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
+        ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
         
         ! Repeat until there is no entry left in the array list
-        do while(ipos .gt. ARRLST_NULL)
+        do while (.not.alst_isNull(ralstIter))
           
           ! Get element number IEL
-          call alst_get(rhadapt%rElementsAtVertex, ipos, iel)
+          iel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
 
           ! Proceed to next entry in array list
-          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
+          call alst_next(ralstIter)
 
           ! Look for element IEL in temporal elements-meeting-at-vertex list
           ! If it does exist, multiply its value by minus one so that it cannot

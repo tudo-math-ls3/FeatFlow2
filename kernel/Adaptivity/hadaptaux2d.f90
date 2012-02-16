@@ -282,11 +282,12 @@
 module hadaptaux2d
 
 !$use omp_lib
+  use collection
   use fsystem
   use hadaptaux
-  use linearsystemscalar
   use io
-  use collection
+  use linearsystemscalar
+  use quadtree
 
   implicit none
 
@@ -3310,8 +3311,9 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer,  dimension(:), pointer :: p_Imarker
-    integer :: ipos,iel,jel,ivt,ivtReplace,ive
+    integer :: iel,jel,ivt,ivtReplace,ive
 
     ! Check if dynamic data structures are o.k. and
     ! if  cells are marked for coarsening
@@ -3427,25 +3429,28 @@ contains
       ! If the vertex is locked, then skip this vertex
       if (rhadapt%p_IvertexAge(ivt) .le. 0) cycle vertex
       
-      ! Remove vertex physically. Note that this vertex is no longer associated
-      ! to any element. All associations have been removed in the above element
-      ! coarsening/conversion step. In order to prevent "holes" in the vertex list,
-      ! vertex IVT is replaced by the last vertex if it is not the last one itself.
+      ! Remove vertex physically. Note that this vertex is no longer
+      ! associated to any element. All associations have been removed
+      ! in the above element coarsening/conversion step. In order to
+      ! prevent "holes" in the vertex list, vertex IVT is replaced by
+      ! the last vertex if it is not the last one itself.
       call remove_vertex2D(rhadapt, ivt, ivtReplace)
       
-      ! If vertex IVT was not the last one, update the "elements-meeting-at-vertex" list
+      ! If vertex IVT was not the last one, update the
+      ! "elements-meeting-at-vertex" list
       if (ivtReplace .ne. 0) then
         
-        ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .true.)
+        ! Start with first element in "elements-meeting-at-vertex"
+        ! list of the replaced vertex
+        ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivtReplace)
 
-        update: do while(ipos .gt. ARRLST_NULL)
+        update: do while(.not.alst_isNull(ralstIter))
           
           ! Get element number JEL
-          call alst_get(rhadapt%rElementsAtVertex, ipos, jel)
+          jel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
           
           ! Proceed to next element
-          ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .false.)
+          call alst_next(ralstIter)
           
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           do ive = 1, hadapt_getNVE(rhadapt, jel)
@@ -3455,14 +3460,15 @@ contains
             end if
           end do
           
-          ! If the replaced vertex ivtReplace could not be found in element JEL
-          ! something is wrong and we stop the simulation
+          ! If the replaced vertex ivtReplace could not be found in
+          ! element JEL something is wrong and we stop the simulation
           call output_line('Unable to find replacement vertex in element',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen2D')
           call sys_halt()
         end do update
         
-        ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
+        ! Swap tables IVT and ivtReplace in arraylist and release
+        ! table ivtReplace
         call alst_swapTbl(rhadapt%rElementsAtVertex, ivt, ivtReplace)
         call alst_releaseTbl(rhadapt%rElementsAtVertex, ivtReplace)
         
@@ -3526,11 +3532,12 @@ contains
     character(LEN=*), parameter :: font_family = "Arial"
     
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     real(DP), dimension(2*NDIM2D) :: bbox
     real(DP) :: x0,y0,xdim,ydim,dscale
     
     integer, dimension(:), pointer :: p_Imarker
-    integer :: ivt,iel,ipos,xsize,ysize,iunit,ive,nve
+    integer :: ivt,iel,xsize,ysize,iunit,ive,nve
     integer, save :: iout=0
     
     ! Check if dynamic data structures generated
@@ -3997,7 +4004,7 @@ contains
     end if
          
     ! Loop over all vertices
-    do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
+    do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
       xdim = qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
       ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
       
@@ -4020,18 +4027,18 @@ contains
           trim(sys_siL(rhadapt%p_IvertexAge(ivt),5))//''','''
       
       ! Generate list of elements meeting at vertex
-      ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
-      do while(ipos .gt. ARRLST_NULL)
+      ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
+      do while(.not.alst_isNull(ralstIter))
         ! Get element number IEL
-        call alst_get(rhadapt%rElementsAtVertex, ipos, iel)
+        iel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
         
         ! Proceed to next entry in array list
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
-
-        if (ipos .gt. ARRLST_NULL) then
-          write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))//','
-        else
+        call alst_next(ralstIter)
+        
+        if (alst_isNull(ralstIter)) then
           write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))
+        else          
+          write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))//','
         end if
       end do
       write(iunit,FMT='(A)') ''')"'
@@ -4159,11 +4166,12 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_mapInt_Dble) :: rmapIter
+    real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM2D) :: Dcoord
-    real(DP), dimension(1) :: Ddata
+    real(DP), dimension(3) :: Ddata
     real(DP) :: x1,y1,x2,y2,dvbdp1,dvbdp2
-    integer, dimension(2) :: Idata
-    integer :: inode,ipred,ipos,ibct
+    integer :: ibct,inode,ipos
     
     ! Get coordinates of edge vertices
     x1 = qtree_getX(rhadapt%rVertexCoordinates2D, i1)
@@ -4178,12 +4186,12 @@ contains
     ! exists, e.g., it was added when the adjacent element was
     ! refined, then nothing needs to be done for this vertex
 
-    if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
-                               Dcoord, inode, ipos, i12) .eq. QTREE_NOT_FOUND) then
+    if (qtree_find(rhadapt%rVertexCoordinates2D,&
+                   Dcoord, inode, ipos, i12) .eq. QTREE_NOT_FOUND) then
       
       ! Add new entry to vertex coordinates
-      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
-                                   Dcoord, i12, inode) .ne. QTREE_INSERTED) then
+      if (qtree_insert(rhadapt%rVertexCoordinates2D,&
+                       Dcoord, i12, inode) .ne. QTREE_INSERTED) then
         call output_line('An error occured while inserting coordinate to quadtree!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
@@ -4214,30 +4222,33 @@ contains
         ibct = rhadapt%p_InodalProperty(i1)
         
         ! Get parameter values of the boundary nodes
-        if (btree_searchInTree(rhadapt%rBoundary(ibct), i1, ipred) .eq. BTREE_NOT_FOUND) then
+        rmapIter = map_find(rhadapt%rBoundary(ibct), i1)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to find first vertex in boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
+        else
+          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          dvbdp1 = p_Ddata(1)
         end if
-        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT, BTRIGHT, ipred .lt. 0), abs(ipred))
-        dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
-        
-        if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
+
+        rmapIter = map_find(rhadapt%rBoundary(ibct), i2)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to find second vertex in boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
+        else
+          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          dvbdp2 = p_Ddata(1)
         end if
-        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT, BTRIGHT, ipred .lt. 0), abs(ipred))
-        dvbdp2 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
         
-        ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
+        ! If I2 is last(=first) node on boundary component IBCT round
+        ! DVBDP2 to next integer
         if (dvbdp2 .le. dvbdp1) dvbdp2 = ceiling(dvbdp1)
         
         ! Add new entry to boundary structure
-        Idata = (/i1, i2/)
-        Ddata = (/0.5_DP*(dvbdp1+dvbdp2)/)
-        call btree_insertIntoTree(rhadapt%rBoundary(ibct), i12,&
-                                 Idata=Idata, Ddata=Ddata)
+        Ddata = (/0.5_DP*(dvbdp1+dvbdp2), real(i1,DP), real(i2,DP)/)
+        rmapIter = map_insert(rhadapt%rBoundary(ibct), i12, Ddata)
       else
         ! Set nodal property
         rhadapt%p_InodalProperty(i12) = 0
@@ -4307,12 +4318,12 @@ contains
     Dcoord = 0.25_DP * (/x1+x2+x3+x4, y1+y2+y3+y4/)
 
     ! Search for vertex coordinates in quadtree
-    if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D, Dcoord,&
-                               inode, ipos, i5) .eq. QTREE_NOT_FOUND) then
+    if (qtree_find(rhadapt%rVertexCoordinates2D, Dcoord,&
+                   inode, ipos, i5) .eq. QTREE_NOT_FOUND) then
       
       ! Add new entry to vertex coordinates
-      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
-                                   Dcoord, i5, inode) .ne. QTREE_INSERTED) then
+      if (qtree_insert(rhadapt%rVertexCoordinates2D,&
+                       Dcoord, i5, inode) .ne. QTREE_INSERTED) then
         call output_line('An error occured while inserting coordinate to quadtree!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atElementCenter2D')
         call sys_halt()
@@ -4376,13 +4387,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i1,i2
-    integer :: ipred,ipos
-    integer :: ibct
+    type(it_mapInt_Dble) :: rmapIter
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: i1,i2,ibct
 
     ! Remove vertex from coordinates and get number of replacement vertex
-    if (qtree_deleteFromQuadtree(rhadapt%rVertexCoordinates2D,&
-                                 ivt, ivtReplace) .ne. QTREE_DELETED) then
+    if (qtree_delete(rhadapt%rVertexCoordinates2D,&
+                     ivt, ivtReplace) .ne. QTREE_DELETED) then
       call output_line('Unable to delete vertex coordinates!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
       call sys_halt()
@@ -4399,45 +4410,49 @@ contains
     if (ibct .ne. 0) then
       
       ! Find position of vertex IVT in boundary array
-      if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                             ivt, ipred) .eq. BTREE_NOT_FOUND) then
+      rmapIter = map_find(rhadapt%rBoundary(ibct), ivt)
+      if (map_isNull(rmapIter)) then
         call output_line('Unable to find vertex in boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
+      else
+        ! Get the two boundary neighbors: I1 <- IVT -> I2        
+        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        i1 = int(p_Ddata(2))
+        i2 = int(p_Ddata(3))
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-      
-      ! Get the two boundary neighbors: I1 <- IVT -> I2
-      i1 = rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos)
-      i2 = rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos)
       
       ! Connect the boundary neighbors with each other: I1 <=> I2
       ! First, set I2 as next neighboring of I1
-      if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                             i1, ipred) .eq. BTREE_NOT_FOUND) then
+      rmapIter = map_find(rhadapt%rBoundary(ibct), i1)
+      if (map_isNull(rmapIter)) then
         call output_line('Unable to find left neighboring vertex in boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
+      else
+        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        p_Ddata(3) = real(i2,DP)
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-      rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = i2
       
       ! Second, set I1 as previous neighbor of I2
-      if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                             i2, ipred) .eq. BTREE_NOT_FOUND) then
+      rmapIter = map_find(rhadapt%rBoundary(ibct), i2)
+      if (map_isNull(rmapIter)) then
         call output_line('Unable to find right neighboring vertex in boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
+      else
+        call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+        p_Ddata(2) = real(i1,DP)
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-      rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = i1
       
       ! And finally, delete IVT from the boundary
-      if (btree_deleteFromTree(rhadapt%rBoundary(ibct),&
-                               ivt) .eq. BTREE_NOT_FOUND) then
+      rmapIter = map_find(rhadapt%rBoundary(ibct), ivt)
+      if (map_isNull(rmapIter)) then
         call output_line('Unable to delete vertex from boundary data structure!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
+      else
+        call map_erase(rhadapt%rBoundary(ibct), rmapIter)
       end if
 
       ! Decrease number of boundary nodes
@@ -4456,50 +4471,52 @@ contains
       ! Are we at the boundary?
       if (ibct .ne. 0) then
 
-        if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                               ivtReplace, ipred) .eq. BTREE_NOT_FOUND) then
+        rmapIter = map_find(rhadapt%rBoundary(ibct), ivtReplace)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to find replacement vertex in boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
+        else
+          ! Insert IVT into the boundary vector
+          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          rmapIter = map_insert(rhadapt%rBoundary(ibct), ivt, p_Ddata)
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-        
-        ! Insert IVT into the boundary vector
-        call btree_insertIntoTree(rhadapt%rBoundary(ibct), ivt,&
-                                  Idata=rhadapt%rBoundary(ibct)%p_IData(:, ipos),&
-                                  Ddata=rhadapt%rBoundary(ibct)%p_DData(:, ipos))
         
         ! Get the two boundary neighbors: I1 <- IVTREPLACE -> I2
-        i1 = rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos)
-        i2 = rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos)
+        i1 = int(p_Ddata(2))
+        i2 = int(p_Ddata(3))
         
         ! Connect the boundary neighbors with IVT: I1 <- IVT -> I2
         ! First, set IVT as next neighbor of I1
-        if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                               i1, ipred) .eq. BTREE_NOT_FOUND) then
+        rmapIter = map_find(rhadapt%rBoundary(ibct), i1)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to find left neighboring vertex in boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
+        else
+          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          p_Ddata(3) = real(ivt,DP)
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-        rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = ivt
         
         ! Second, set IVT as previous neighbor of I2
-        if (btree_searchInTree(rhadapt%rBoundary(ibct),&
-                               i2, ipred) .eq. BTREE_NOT_FOUND) then
+        rmapIter = map_find(rhadapt%rBoundary(ibct), i2)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to find right neighboring vertex in boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
+        else
+          call map_get(rhadapt%rBoundary(ibct), rmapIter, p_Ddata)
+          p_Ddata(2) = real(ivt,DP)
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
-        rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = ivt
         
         ! Finally, delete IVTREPLACE from the boundary
-        if (btree_deleteFromTree(rhadapt%rBoundary(ibct),&
-                                 ivtReplace) .eq. BTREE_NOT_FOUND) then
+        rmapIter = map_find(rhadapt%rBoundary(ibct), ivtReplace)
+        if (map_isNull(rmapIter)) then
           call output_line('Unable to delete vertex from the boundary data structure!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
+        else
+          call map_erase(rhadapt%rBoundary(ibct), rmapIter)
         end if
       end if
       
@@ -4709,7 +4726,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos,ivt,jel,jelmid,ive,jve,iel1
+    type(it_arraylistInt) :: ralstIter
+    integer, pointer :: p_iel
+    integer :: ivt,jel,jelmid,ive,jve
     logical :: bfound
 
     ! Which kind of element are we?
@@ -4732,38 +4751,41 @@ contains
     ! Check if we are the last element
     if (iel .ne. ielReplace) then
       
-      ! Element is not the last one. Then the element that should be removed must
-      ! have a smaller element number. If this is not the case, something is wrong.
+      ! Element is not the last one. Then the element that should be
+      ! removed must have a smaller element number. If this is not the
+      ! case, something is wrong.
       if (iel .gt.ielReplace) then
-        call output_line('Number of replacement element must not be smaller than that of' // &
-                         ' the removed elements!',&
+        call output_line('Number of replacement element must not be' //&
+                         ' smaller than that of the removed elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
         call sys_halt()
       end if
 
-      ! The element which formally was labeled ielReplace is now labeled IEL.
-      ! This modification must be updated in the list of adjacent element
-      ! neighbors of all surrounding elements. Moreover, the modified element
-      ! number must be updated in the "elements-meeting-at-vertex" lists of the
-      ! corner nodes of element IEL. Both operations are performed below.
+      ! The element which formally was labeled ielReplace is now
+      ! labeled IEL. This modification must be updated in the list of
+      ! adjacent element neighbors of all surrounding
+      ! elements. Moreover, the modified element number must be
+      ! updated in the "elements-meeting-at-vertex" lists of the
+      ! corner nodes of element IEL. Both operations are performed
+      ! below.
       update: do ive = 1, hadapt_getNVE(rhadapt, ielReplace)
         
         ! Get vertex number of corner node
         ivt = rhadapt%p_IverticesAtElement(ive, ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
-        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
-        elements: do while(ipos .gt. ARRLST_NULL)
+        ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
+        elements: do while(.not.alst_isNull(ralstIter))
           
           ! Check if element number corresponds to the replaced element
-          call alst_get(rhadapt%rElementsAtVertex, ipos, iel1)
-          if (iel1 .eq. ielReplace) then
-            call alst_assign(rhadapt%rElementsAtVertex, ipos, iel)
+          call alst_get(rhadapt%rElementsAtVertex, ralstIter, p_iel)
+          if (p_iel .eq. ielReplace) then
+            p_iel = iel
             exit elements
           end if
           
           ! Proceed to next element in list
-          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
+          call alst_next(ralstIter)
         end do elements
 
                 
@@ -4776,11 +4798,12 @@ contains
         ! Do we have different neighbours along the first part and the
         ! second part of the common edge?
         if (jel .ne. jelmid) then
-          ! There are two elements sharing the common edge with ielReplace.
-          ! We have to find the position of element ielReplace in the lists
-          ! of (mid-)adjacent elements for both element JEL and JELMID
-          ! seperately. If we are at the boundary of ir element IEL to be
-          ! removed is adjacent to element ielReplace, the skip this edge.
+          ! There are two elements sharing the common edge with
+          ! ielReplace. We have to find the position of element
+          ! ielReplace in the lists of (mid-)adjacent elements for
+          ! both element JEL and JELMID seperately. If we are at the
+          ! boundary of ir element IEL to be removed is adjacent to
+          ! element ielReplace, the skip this edge.
           bfound = .false.
           
           ! Find position of replacement element in adjacency list of
@@ -4814,18 +4837,21 @@ contains
           end if
 
         else
-          ! There is only one element sharing the common edge with ielReplace.
-          ! If we are at the boundary or if element IEL to be removed is
-          ! adjacent to element ielReplace, then skip this edge.
+          ! There is only one element sharing the common edge with
+          ! ielReplace. If we are at the boundary or if element IEL
+          ! to be removed is adjacent to element ielReplace, then skip
+          ! this edge.
           if (jel .eq. 0 .or. jel .eq. iel) cycle update
 
-          ! We have to consider two possible situations. The neighbouring element
-          ! JEL can be completely aligned with element ielReplace so that the
-          ! element number must be updated in the list of adjacent and mid-
-          ! adjacent elements. On the other hand, element JEL can share one
-          ! half of the common edge with element ielReplace and the other half-
-          ! edge with another element. In this case, the number ielReplace can
-          ! only be found in either the list of adjacent or mid-adjacent elements.
+          ! We have to consider two possible situations. The
+          ! neighbouring element JEL can be completely aligned with
+          ! element ielReplace so that the element number must be
+          ! updated in the list of adjacent and mid- adjacent
+          ! elements. On the other hand, element JEL can share one
+          ! half of the common edge with element ielReplace and the
+          ! other half- edge with another element. In this case, the
+          ! number ielReplace can only be found in either the list of
+          ! adjacent or mid-adjacent elements.
           bfound = .false.
           adjacent3: do jve = 1, hadapt_getNVE(rhadapt, jel)
             if (rhadapt%p_IneighboursAtElement(jve, jel) .eq. ielReplace) then
@@ -5181,9 +5207,10 @@ contains
   subroutine update_AllElementNeighbors2D(rhadapt, iel0, iel)
 
 !<description>
-    ! This subroutine updates the list of elements adjacent to another elements.
-    ! For all elements jel which are adjacent to the old element iel0 the new
-    ! value iel is stored in the neighbours-at-element structure.
+    ! This subroutine updates the list of elements adjacent to another
+    ! elements. For all elements jel which are adjacent to the old
+    ! element iel0 the new value iel is stored in the
+    ! neighbours-at-element structure.
 !</description>
 
 !<input>
@@ -5255,15 +5282,16 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into two triangular
-    ! elements by subdividing one edge. The local number of the edge that is
-    ! subdivided can be uniquely determined from the element marker.
+    ! This subroutine subdivides one triangular element into two
+    ! triangular elements by subdividing one edge. The local number of
+    ! the edge that is subdivided can be uniquely determined from the
+    ! element marker.
     !
-    ! In the illustration, i1,i2,i3 and i4 denote the vertices whereby i4
-    ! is the new vertex. Moreover, (e1)-(e6) stand for the element numbers
-    ! which are adjecent and mid-adjacent to the current element.
-    ! The new element is assigned the total number of elements currently
-    ! present in the triangulation increased by one.
+    ! In the illustration, i1,i2,i3 and i4 denote the vertices whereby
+    ! i4 is the new vertex. Moreover, (e1)-(e6) stand for the element
+    ! numbers which are adjecent and mid-adjacent to the current
+    ! element. The new element is assigned the total number of
+    ! elements currently present in the triangulation increased by one.
     !
     ! <verb>
     !    initial triangle           subdivided triangle
@@ -5305,7 +5333,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4
     integer :: loc1,loc2,loc3
@@ -5362,17 +5390,19 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria2Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, iel)
 
 
     ! Optionally, invoke callback function
@@ -5392,16 +5422,18 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into three triangular
-    ! elements by subdividing the longest edge and connecting the new vertex
-    ! with the opposite midpoint. The local numbers of the two edges that are
-    ! subdivided can be uniquely determined from the element marker.
+    ! This subroutine subdivides one triangular element into three
+    ! triangular elements by subdividing the longest edge and
+    ! connecting the new vertex with the opposite midpoint. The local
+    ! numbers of the two edges that are subdivided can be uniquely
+    ! determined from the element marker.
     !
-    ! In the illustration, i1,i2,i3,i4 and i5 denote the vertices whereby i4 and
-    ! i5 are the new vertices. Moreover, (e1)-(e6) stand for the element numbers
-    ! which are adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently present
-    ! in the triangulation increased by one and two, respectively.
+    ! In the illustration, i1,i2,i3,i4 and i5 denote the vertices
+    ! whereby i4 and i5 are the new vertices. Moreover, (e1)-(e6)
+    ! stand for the element numbers which are adjecent and
+    ! mid-adjacent to the current element. The new elements are
+    ! assigned the total number of elements currently present in the
+    ! triangulation increased by one and two, respectively.
     !
     ! <verb>
     !    initial triangle           subdivided triangle
@@ -5443,7 +5475,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4,i5
     integer :: loc1,loc2,loc3
@@ -5483,7 +5515,8 @@ contains
     nel0 = rhadapt%NEL
     
 
-    ! Add two new vertices I4 and I5 at the midpoint of edges (I1,I2) and (I2,I3).
+    ! Add two new vertices I4 and I5 at the midpoint of 
+    ! edges (I1,I2) and (I2,I3).
     call add_vertex2D(rhadapt, i1, i2, e1, i4,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i2, i3, e2, i5,&
@@ -5506,7 +5539,8 @@ contains
       
       ! 1st CASE: longest edge is (I1,I2)
       
-      ! Replace element IEL and add two new elements numbered NEL0+1 and NEL0+2
+      ! Replace element IEL and add two new elements numbered NEL0+1
+      ! and NEL0+2
       call replace_element2D(rhadapt, iel, i1, i4, i3,&
                              e1, nel0+2, e3, e1, nel0+2, e6)
       call add_element2D(rhadapt, i2, i5, i4,&
@@ -5521,19 +5555,21 @@ contains
 
             
       ! Update list of elements meeting at vertices
-      if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
       
-      call alst_push_back(rhadapt%relementsAtVertex, i2, iel,    ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, iel,    ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, iel)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, iel)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2)
 
 
       ! Optionally, invoke callback function
@@ -5547,7 +5583,8 @@ contains
       
       ! 2nd CASE: longest edge is (I2,I3)
       
-      ! Replace element IEL and add two new elements numbered NEL0+1 and NEL0+2
+      ! Replace element IEL and add two new elements numbered NEL0+1
+      ! and NEL0+2
       call replace_element2D(rhadapt, iel, i1, i5, i3,&
                              nel0+2, e5, e3, nel0+2, e5, e6)
       call add_element2D(rhadapt, i2, i5, i4,&
@@ -5562,20 +5599,22 @@ contains
       
       
       ! Update list of elements meeting at vertices
-      if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+2)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2)
 
 
       ! Optionally, invoke callback function
@@ -5595,14 +5634,16 @@ contains
   subroutine refine_Tria4Tria(rhadapt, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into four similar
-    ! triangular elements by connecting the three edge midpoints.
+    ! This subroutine subdivides one triangular element into four
+    ! similar triangular elements by connecting the three edge
+    ! midpoints.
     !
-    ! In the illustration, i1-i6 denote the vertices whereby i4-i6 are the
-    ! new vertices. Moreover, (e1)-(e6) stand for the element numbers which
-    ! are adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently present
-    ! in the triangulation increased by one, two and three, respectively.
+    ! In the illustration, i1-i6 denote the vertices whereby i4-i6 are
+    ! the new vertices. Moreover, (e1)-(e6) stand for the element
+    ! numbers which are adjecent and mid-adjacent to the current
+    ! element. The new elements are assigned the total number of
+    ! elements currently present in the triangulation increased by
+    ! one, two and three, respectively.
     !
     ! <verb>
     !    initial triangle           subdivided triangle
@@ -5641,7 +5682,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4,i5,i6
 
@@ -5662,8 +5703,8 @@ contains
     nel0 = rhadapt%NEL
 
 
-    ! Add three new vertices I4,I5 and I6 at the midpoint of
-    ! edges (I1,I2), (I2,I3) and (I1,I3), respectively.
+    ! Add three new vertices I4,I5 and I6 at the midpoint of edges
+    ! (I1,I2), (I2,I3) and (I1,I3), respectively.
     call add_vertex2D(rhadapt, i1, i2, e1, i4,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i2, i3, e2, i5,&
@@ -5672,7 +5713,8 @@ contains
                       rcollection, fcb_hadaptCallback)
     
 
-    ! Replace element IEL and add three new elements NEL0+1, NEL0+2 and NEL0+3
+    ! Replace element IEL and add three new elements NEL0+1, NEL0+2
+    ! and NEL0+3
     call replace_element2D(rhadapt, iel, i4, i5, i6,&
                            nel0+2, nel0+3, nel0+1, nel0+2, nel0+3, nel0+1)
     call add_element2D(rhadapt, i1, i4, i6, e1, iel, e6, e1, iel, e6)
@@ -5687,37 +5729,45 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i1, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
    
-    call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, iel   , ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, iel   , ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, iel   , ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3)
 
 
     ! Optionally, invoke callback function
@@ -5737,15 +5787,16 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one quadrilateral element into two quadrilateral
-    ! elements. The local number of the edge that is subdivided can be uniquely
-    ! determined from the element marker.
+    ! This subroutine subdivides one quadrilateral element into two
+    ! quadrilateral elements. The local number of the edge that is
+    ! subdivided can be uniquely determined from the element marker.
     !
     ! In the illustration, i1-i6 denote the vertices whereby i5 and i6
-    ! are the new vertices. Moreover, (e1)-(e8) stand for the element numbers
-    ! which are adjecent and mid-adjacent to the current element.
-    ! The new element is assigned the total number of elements currently present
-    ! in the triangulation increased by one.
+    ! are the new vertices. Moreover, (e1)-(e8) stand for the element
+    ! numbers which are adjecent and mid-adjacent to the current
+    ! element. The new element is assigned the total number of
+    ! elements currently present in the triangulation increased by
+    ! one.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -5787,7 +5838,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6
     integer :: loc1,loc2,loc3,loc4
@@ -5825,8 +5876,8 @@ contains
     ! Store total number of elements before refinement
     nel0 = rhadapt%NEL
     
-    ! Add two new vertices I5 and I6 at the midpoint of edges (I1,I2) and
-    ! (I3,I4), respectively.
+    ! Add two new vertices I5 and I6 at the midpoint of edges (I1,I2)
+    ! and (I3,I4), respectively.
     call add_vertex2D(rhadapt, i1, i2, e1, i5,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i3, i4, e3, i6,&
@@ -5847,25 +5898,30 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
     
 
     ! Optionally, invoke callback function
@@ -5885,15 +5941,16 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one quadrilateral element into three triangular
-    ! elements. The local number of the edge that is
+    ! This subroutine subdivides one quadrilateral element into three
+    ! triangular elements. The local number of the edge that is
     ! subdivided can be uniquely determined from the element marker.
     !
-    ! In the illustration, i1-i5 denote the vertices whereby i5 is the new
-    ! vertex. Moreover, (e1)-(e8) stand for the element numbers which are
-    ! adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently
-    ! present in the triangulation increased by one and two, respectively.
+    ! In the illustration, i1-i5 denote the vertices whereby i5 is the
+    ! new vertex. Moreover, (e1)-(e8) stand for the element numbers
+    ! which are adjecent and mid-adjacent to the current element. The
+    ! new elements are assigned the total number of elements currently
+    ! present in the triangulation increased by one and two,
+    ! respectively.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -5935,7 +5992,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5
     integer :: loc1,loc2,loc3,loc4
@@ -6003,26 +6060,31 @@ contains
     
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2)
 
 
     ! Adjust number of elements
@@ -6047,15 +6109,16 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one quadrilateral element into four triangular
-    ! elements. The local numbers of the edges that are subdivided can be
-    ! uniquely determined from the element marker.
+    ! This subroutine subdivides one quadrilateral element into four
+    ! triangular elements. The local numbers of the edges that are
+    ! subdivided can be uniquely determined from the element marker.
     !
-    ! In the illustration, i1-i6 denote the vertices whereby i5 and i6 are the
-    ! new vertices. Moreover, (e1)-(e8) stand for the element numbers which are
-    ! adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently
-    ! present in the triangulation increased by one, two an three, respectively.
+    ! In the illustration, i1-i6 denote the vertices whereby i5 and i6
+    ! are the new vertices. Moreover, (e1)-(e8) stand for the element
+    ! numbers which are adjecent and mid-adjacent to the current
+    ! element. The new elements are assigned the total number of
+    ! elements currently present in the triangulation increased by
+    ! one, two an three, respectively.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -6097,7 +6160,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6
     integer :: loc1,loc2,loc3,loc4
@@ -6168,29 +6231,34 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
     
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3)
 
 
     ! Adjust number of elements
@@ -6215,14 +6283,15 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one quadrilateral element four similar
-    ! quadrilateral elements.
+    ! This subroutine subdivides one quadrilateral element four
+    ! similar quadrilateral elements.
     !
-    ! In the illustration, i1-i9 denote the vertices whereby i5-i9 are the new
-    ! vertices. Moreover, (e1)-(e8) stand for the element numbers which are
-    ! adjacent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently present
-    ! in the triangulation increased by one, two and three, respectively.
+    ! In the illustration, i1-i9 denote the vertices whereby i5-i9 are
+    ! the new vertices. Moreover, (e1)-(e8) stand for the element
+    ! numbers which are adjacent and mid-adjacent to the current
+    ! element. The new elements are assigned the total number of
+    ! elements currently present in the triangulation increased by
+    ! one, two and three, respectively.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -6261,7 +6330,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     
@@ -6285,8 +6354,9 @@ contains
     nel0 = rhadapt%NEL
     
     
-    ! Add five new vertices I5,I6,I7,I8 and I9 at the midpoint of edges
-    ! (I1,I2), (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
+    ! Add five new vertices I5,I6,I7,I8 and I9 at the midpoint of
+    ! edges (I1,I2), (I2,I3), (I3,I4) and (I1,I4) and at the center of
+    ! element IEL
     call add_vertex2D(rhadapt, i1, i2, e1, i5,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i2, i3, e2, i6,&
@@ -6318,40 +6388,48 @@ contains
 
         
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
     
-    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+3)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+3)
 
 
     ! Optionally, invoke callback function
@@ -6371,11 +6449,12 @@ contains
                                rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines two neighboring triangles into one triangle
-    ! and performs regular refinement into four similar triangles afterwards.
-    ! The local orientation of both elements can be uniquely determined
-    ! from the elemental states so that the first node of each triangle
-    ! is located at the midpoint of the bisected edge.
+    ! This subroutine combines two neighboring triangles into one
+    ! triangle and performs regular refinement into four similar
+    ! triangles afterwards. The local orientation of both elements
+    ! can be uniquely determined from the elemental states so that the
+    ! first node of each triangle is located at the midpoint of the
+    ! bisected edge.
     !
     ! <verb>
     !    initial triangle           subdivided triangle
@@ -6417,7 +6496,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: i1,i2,i3,i4,i5,i6
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
 
@@ -6449,7 +6528,8 @@ contains
                       rcollection, fcb_hadaptCallback)
 
 
-    ! Replace elements IEL and JEL and add two new elements NEL0+1 and NEL0+2
+    ! Replace elements IEL and JEL and add two new elements NEL0+1 and
+    ! NEL0+2
     call replace_element2D(rhadapt, iel, i1, i4, i6,&
                            e1, nel0+2, e6, e7, nel0+2, e6)
     call replace_element2D(rhadapt, jel, i2, i5, i4,&
@@ -6466,27 +6546,32 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, jel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, jel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, jel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2)
 
 
     ! Optionally, invoke callback function
@@ -6507,11 +6592,11 @@ contains
 
 !<description>
     ! This subroutine combines two neighboring quadrilaterals into one
-    ! and performs regular refinement into four similar quadrilaterals.
-    ! The local orientation of both elements can be uniquely determined
-    ! from the elemental states so that the first node of each
-    ! Depending on the given state of the element, the corresponding
-    ! neighboring element is given explicitly.
+    ! and performs regular refinement into four similar
+    ! quadrilaterals. The local orientation of both elements can be
+    ! uniquely determined from the elemental states so that the first
+    ! node of each Depending on the given state of the element, the
+    ! corresponding neighboring element is given explicitly.
     !
     ! <verb>
     !     initial quadrilateral      subdivided quadrilateral
@@ -6553,7 +6638,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e3,e4,e5,e7,e8,f1,f3,f4,f5,f7,f8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
 
@@ -6583,8 +6668,8 @@ contains
     nel0 = rhadapt%NEL
 
     
-    ! Add two new vertices I6, I8, and I9 at the midpoint of edges (I2,I3),
-    ! (I1,I4) and (I1,I2), respectively.
+    ! Add two new vertices I6, I8, and I9 at the midpoint of edges
+    ! (I2,I3), (I1,I4) and (I1,I2), respectively.
     call add_vertex2D(rhadapt, i2, i3, f4, i6,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i4, i1, e4, i8,&
@@ -6593,7 +6678,8 @@ contains
                       rcollection, fcb_hadaptCallback)
 
 
-    ! Replace element IEL and JEL and add two new elements NEL0+1 and NEL0+2
+    ! Replace element IEL and JEL and add two new elements NEL0+1 and
+    ! NEL0+2
     call replace_element2D(rhadapt, iel, i1, i5, i9, i8,&
                            e1, jel, nel0+2, e8, e5, jel, nel0+2, e8)
     call replace_element2D(rhadapt, jel, i2, i6, i9, i5,&
@@ -6612,43 +6698,54 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i3, jel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, jel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i7, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i7, jel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, jel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, jel,    ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i7, iel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i7, jel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+2)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2)
 
 
     ! Optionally, invoke callback function
@@ -6668,9 +6765,9 @@ contains
                                rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines three neighboring triangles which result
-    ! from a Quad4Tria refinement into one quadrilateral and performs
-    ! regular refinement into four quadrilaterals afterwards.
+    ! This subroutine combines three neighboring triangles which
+    ! result from a Quad4Tria refinement into one quadrilateral and
+    ! performs regular refinement into four quadrilaterals afterwards.
     ! This subroutine is based on the convention that IEL1 denotes the
     ! left element, IEL2 denots the right element and IEL3 stands for
     ! the triangle which connects IEL1 and IEL2.
@@ -6718,7 +6815,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
 
@@ -6775,42 +6872,53 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i5, iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i5, iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
     
-    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, iel2,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i6, iel3,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3,   ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel2)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel3)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1)
 
     ! Finally, adjust numbers of triangles/quadrilaterals
     rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-3
@@ -6836,11 +6944,11 @@ contains
 !<description>
     ! This subroutine combines four neighboring triangles which result
     ! from a Quad4Tria refinement into one quadrilateral and performs
-    ! regular refinement into four quadrilaterals afterwards.
-    ! This subroutine is based on the convention, that all four elements
-    ! are given in couterclockwise order. More precisely, IEL2 and IEL3
-    ! make up the inner "diamond" of the refinement, whereas IEL1 and IEL4
-    ! are the right and left outer triangles, respectively.
+    ! regular refinement into four quadrilaterals afterwards. This
+    ! subroutine is based on the convention, that all four elements
+    ! are given in couterclockwise order. More precisely, IEL2 and
+    ! IEL3 make up the inner "diamond" of the refinement, whereas IEL1
+    ! and IEL4 are the right and left outer triangles, respectively.
     !
     ! <verb>
     !    initial quadrilateral         subdivided quadrilateral
@@ -6888,7 +6996,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
+    type(it_arraylistInt) :: ralstIter
     integer :: e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     
@@ -6942,39 +7050,50 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (alst_erase(rhadapt%relementsAtVertex, i5, iel4)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i5, iel4)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i6, iel4)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i6, iel4)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
     
-    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i7, iel4, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i8, iel4, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i9, iel4, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel4)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel4)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel4)
 
 
     ! Finally, adjust numbers of triangles/quadrilaterals
@@ -6998,19 +7117,20 @@ contains
   subroutine coarsen_2Tria1Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines two triangles resulting from a 1-tria : 2-tria
-    ! green refinement into the original macro triangle. Note that element IEL
-    ! must(!) be the left triangle which is combined with its right neighbour.
-    ! This is not checked in the routine since this check is already performed
-    ! in the marking routine.
+    ! This subroutine combines two triangles resulting from a 1-tria :
+    ! 2-tria green refinement into the original macro triangle. Note
+    ! that element IEL must(!) be the left triangle which is combined
+    ! with its right neighbour. This is not checked in the routine
+    ! since this check is already performed in the marking routine.
     !
     ! Due to the numbering convention used in the refinement procedure
-    ! the "second" element neighbor is the other green triangle that is removed.
-    ! In order to restore the original orientation the outcome of the resulting
-    ! triangle is considered. If the macro element belongs to the inital
-    ! triangulation of if it is an inner red triangle, an arbitrary orientation
-    ! is adopted. If the macro element is an outer red triangle, then the states
-    ! 2 and 8 are trapped and converted into state 4.
+    ! the "second" element neighbor is the other green triangle that
+    ! is removed. In order to restore the original orientation the
+    ! outcome of the resulting triangle is considered. If the macro
+    ! element belongs to the inital triangulation of if it is an inner
+    ! red triangle, an arbitrary orientation is adopted. If the macro
+    ! element is an outer red triangle, then the states 2 and 8 are
+    ! trapped and converted into state 4.
     !
     ! <verb>
     !     initial triangle           subdivided triangle
@@ -7052,10 +7172,10 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(3) :: ImacroVertices
     integer, dimension(TRIA_NVETRI2D) :: IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,e1,e2,e3,e4,e5,e6,jel,ielRemove,ielReplace
+    integer :: iel1,e1,e2,e3,e4,e5,e6,jel,ielRemove,ielReplace,istate
     integer :: i1,i2,i3,i4
     
           
@@ -7093,11 +7213,13 @@ contains
     end if
 
     
-    ! The resulting triangle will possess one of the states STATE_TRIA_OUTERINNERx, whereby
-    ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
-    ! should not appear, that is, local numbering of the resulting triangle starts at the
-    ! vertex which is opposite to the inner red triangle. To this end, we check the state of
-    ! the provisional triangle (I1,I2,I3) and transform the orientation accordingly.
+    ! The resulting triangle will possess one of the states
+    ! STATE_TRIA_OUTERINNERx, whereby x can be blank, 1 or 2. Due to
+    ! our refinement convention, the two states x=1 and x=2 should not
+    ! appear, that is, local numbering of the resulting triangle
+    ! starts at the vertex which is opposite to the inner red
+    ! triangle. To this end, we check the state of the provisional
+    ! triangle (I1,I2,I3) and transform the orientation accordingly.
     ImacroVertices = (/i1, i2, i3/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate     = redgreen_getstateTria(IvertexAge)
@@ -7142,37 +7264,47 @@ contains
     ! Update list of elements meeting at vertices
     if (ielRemove .eq. iel1) then
       
-      if (alst_erase(rhadapt%relementsAtVertex, i2, ielRemove)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, ielRemove)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i3, ielRemove)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i3, ielRemove)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel)
       
     else
       
-      if (alst_erase(rhadapt%relementsAtVertex, i1, ielRemove)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i1, ielRemove)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i3, ielRemove)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i3, ielRemove)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel)
       
     end if
     
@@ -7236,11 +7368,11 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
     integer, dimension(3) :: ImacroVertices
     integer, dimension(TRIA_NVETRI2D) :: IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel,ielReplace
+    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel,ielReplace,istate
     integer :: i1,i2,i3,i4,i5,i6
     
     ! Retrieve patch of elements
@@ -7279,12 +7411,14 @@ contains
     call update_ElementNeighbors2D(rhadapt, e3, e6, iel1, iel3, jel, jel)
 
     
-    ! The resulting triangle will posses one of the states STATE_TRIA_REDINNER or
-    ! STATE_TRIA_OUTERINNERx, whereby x can be blank, 1 or 2. Due to our refinement
-    ! convention, the two states x=1 and x=2 should not appear, that is, local
-    ! numbering of the resulting triangle starts at the vertex which is opposite
-    ! to the inner red triangle. To this end, we check the state of the provisional
-    ! triangle (I1,I2,I3) and transform the orientation accordingly.
+    ! The resulting triangle will posses one of the states
+    ! STATE_TRIA_REDINNER or STATE_TRIA_OUTERINNERx, whereby x can be
+    ! blank, 1 or 2. Due to our refinement convention, the two states
+    ! x=1 and x=2 should not appear, that is, local numbering of the
+    ! resulting triangle starts at the vertex which is opposite to the
+    ! inner red triangle. To this end, we check the state of the
+    ! provisional triangle (I1,I2,I3) and transform the orientation
+    ! accordingly.
     ImacroVertices = (/i1,i2,i3/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate     = redgreen_getstateTria(IvertexAge)
@@ -7344,31 +7478,39 @@ contains
     end if
 
 
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, jel, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel2)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel3)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i1, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, jel)
 
 
     ! Optionally, invoke callback function
@@ -7388,19 +7530,20 @@ contains
                                 rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines four triangles resulting from a
-    ! 1-tria : 4-tria refinement into two green triangle.
-    ! The local position (node 1,2,3 of the interior element) of the midpoint
-    ! vertex that should be kept is identified by the marker.
-    ! By definition, iel is the number of the inner red triangle.
-    ! Be warned, this numbering convention is not checked since the
-    ! routine is only called internally and cannot be used from outside.
+    ! This subroutine combines four triangles resulting from a 1-tria
+    ! : 4-tria refinement into two green triangle. The local position
+    ! (node 1,2,3 of the interior element) of the midpoint vertex that
+    ! should be kept is identified by the marker. By definition, iel
+    ! is the number of the inner red triangle. Be warned, this
+    ! numbering convention is not checked since the routine is only
+    ! called internally and cannot be used from outside.
     !
     ! Due to the numbering convention used in the refinement procedure
-    ! the "third" element neighbor of the inner triangle has the number
-    ! of the original macro element which will be used for the first resulting
-    ! triangle. The number of the second triangle will be the number of the
-    ! "first" element neighbor of the inner triangle.
+    ! the "third" element neighbor of the inner triangle has the
+    ! number of the original macro element which will be used for the
+    ! first resulting triangle. The number of the second triangle will
+    ! be the number of the "first" element neighbor of the inner
+    ! triangle.
     !
     ! <verb>
     !    initial triangle           subdivided triangle
@@ -7442,8 +7585,8 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
-    integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel1,jel2,ielReplace
     integer :: i1,i2,i3,i4,i5,i6
     
@@ -7469,8 +7612,8 @@ contains
     e5 = rhadapt%p_IneighboursAtElement(3, iel3)
 
 
-    ! Sort the four elements according to their number and
-    ! determine the two elements withthe smallest element numbers
+    ! Sort the four elements according to their number and determine
+    ! the two elements withthe smallest element numbers
     IsortedElements=(/iel,iel1,iel2,iel3/)
     call sort_I32(IsortedElements, SORT_INSERT)
     jel1 = IsortedElements(1)
@@ -7514,54 +7657,70 @@ contains
       end if
 
       
-      ! Update list of elements meeting at vertices.
-      ! Note that all elements are removed in the first step. Afterwards,
-      ! element JEL is appended to the list of elements meeting at each vertex
-      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ! Update list of elements meeting at vertices. Note that all
+      ! elements are removed in the first step. Afterwards, element
+      ! JEL is appended to the list of elements meeting at each vertex
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel1)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel2)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel3)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i4, iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i4, jel2, ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel2)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, jel2)
 
 
       ! Optionally, invoke callback function
@@ -7608,51 +7767,67 @@ contains
 
 
       ! Update list of elements meeting at vertices
-      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel1)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel2)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel3)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (alst_erase(rhadapt%relementsAtVertex, i5, iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i5, iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i5, iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i5, iel2)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i5, iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i5, iel3)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
       
-      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i5, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, jel2)
 
 
       ! Optionally, invoke callback function
@@ -7698,54 +7873,70 @@ contains
       end if
 
 
-      ! Update list of elements meeting at vertices.
-      ! Note that all elements are removed in the first step. Afterwards,
-      ! element JEL is appended to the list of elements meeting at each vertex
-      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ! Update list of elements meeting at vertices. Note that all
+      ! elements are removed in the first step. Afterwards, element
+      ! JEL is appended to the list of elements meeting at each vertex
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel1)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel2)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel3)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (alst_erase(rhadapt%relementsAtVertex, i6, iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i6, iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i6, iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex, i6, iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i6, jel1, ipos)
-      call alst_push_back(rhadapt%relementsAtVertex, i6, jel2, ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i6, iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex, i6, iel3)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i6, jel1)
+      call alst_push_back(rhadapt%relementsAtVertex, i6, jel2)
       
 
       ! Optionally, invoke callback function
@@ -7772,13 +7963,14 @@ contains
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
-    ! 1-quad : 4-quad refinement into the original macro quadrilateral.
-    ! The remaining element JEL is labeled by the smallest element number
-    ! of the four neighboring elements. Due to the numbering convention
-    ! all elements can be determined by visiting neighbors along the
-    ! second edge starting at the given element IEL. The resulting element
-    ! JEL is oriented such that local numbering starts at the vertex of the
-    ! macro element, that is, such that the first vertex is the oldest one.
+    ! 1-quad : 4-quad refinement into the original macro
+    ! quadrilateral. The remaining element JEL is labeled by the
+    ! smallest element number of the four neighboring elements. Due to
+    ! the numbering convention all elements can be determined by
+    ! visiting neighbors along the second edge starting at the given
+    ! element IEL. The resulting element JEL is oriented such that
+    ! local numbering starts at the vertex of the macro element, that
+    ! is, such that the first vertex is the oldest one.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -7819,10 +8011,10 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
+    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace,istate
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
 
 
@@ -7853,8 +8045,8 @@ contains
     e7 = rhadapt%p_IneighboursAtElement(4, iel3)
 
 
-    ! Sort the four elements according to their number and
-    ! determine the element with the smallest element number
+    ! Sort the four elements according to their number and determine
+    ! the element with the smallest element number
     IsortedElements = (/iel,iel1,iel2,iel3/)
     call sort_I32(IsortedElements, SORT_INSERT)
     jel = IsortedElements(1)
@@ -7867,11 +8059,12 @@ contains
     call update_ElementNeighbors2D(rhadapt, e4, e8, iel, iel3, jel, jel)
 
 
-    ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
-    ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
-    ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the
-    ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
+    ! The resulting quadrilateral will posses one of the states
+    ! STATES_QUAD_REDx, whereby x can be 1,2,3 and 4. Due to our
+    ! refinement convention, x=1,2,3 should not appear, that is, local
+    ! numbering of the resulting quadrilateral starts at the oldest
+    ! vertex. to this end, we check the state of the provisional
+    ! quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate     = redgreen_getstateQuad(IvertexAge)
@@ -7935,38 +8128,49 @@ contains
     end if
 
 
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex, i1, iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i1, iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i2, iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i3, iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i3, jel, ipos)
-    call alst_push_back(rhadapt%relementsAtVertex, i4, jel, ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i2, iel1)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i3, iel2)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex, i4, iel3)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex, i1, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, jel)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, jel)
 
 
     ! Optionally, invoke callback function
@@ -7986,13 +8190,14 @@ contains
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
-    ! 1-quad : 4-quad refinement into two green quadrilaterals.
-    ! The remaining elements JEL1 and JEL2 are labeled by the  two smallest
-    ! element numbers of the four neighboring elements. Due to the numbering
-    ! convention all elements can be determined by visiting neighbors along
-    ! the second edge starting at the given element IEL. The resulting elements
-    ! JEL1 and JEL2 are oriented such that local numbering starts at the vertices
-    ! of the macro element, that is, such that the first vertex is the oldest one.
+    ! 1-quad : 4-quad refinement into two green quadrilaterals. The
+    ! remaining elements JEL1 and JEL2 are labeled by the two smallest
+    ! element numbers of the four neighboring elements. Due to the
+    ! numbering convention all elements can be determined by visiting
+    ! neighbors along the second edge starting at the given element
+    ! IEL. The resulting elements JEL1 and JEL2 are oriented such that
+    ! local numbering starts at the vertices of the macro element,
+    ! that is, such that the first vertex is the oldest one.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -8033,8 +8238,8 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
-    integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel1,jel2,ielReplace
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
 
@@ -8106,66 +8311,89 @@ contains
     end if
     
 
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i5,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i5,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i5,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i5,iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i7,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i7,iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i7,iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i7,iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex, ralstIter)
     end if
    
-    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i7,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i7,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i7,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i7,jel2)
 
 
     ! Optionally, invoke callback function
@@ -8185,13 +8413,14 @@ contains
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
-    ! 1-quad : 4-quad refinement into three green triangles.
-    ! The elements remaining JEL1,JEL2, and JEL3 are the ones with
-    ! the smallest element number, that is, only the largest element is
+    ! 1-quad : 4-quad refinement into three green triangles. The
+    ! elements remaining JEL1,JEL2, and JEL3 are the ones with the
+    ! smallest element number, that is, only the largest element is
     ! removed. The numbering convention follows the strategy used for
-    ! refinement, that is, the local numbering of the two outer triangles
-    ! starts at the vertices of the macro element and the local numbering
-    ! numbering of the interior triangle starts at the edge midpoint.
+    ! refinement, that is, the local numbering of the two outer
+    ! triangles starts at the vertices of the macro element and the
+    ! local numbering numbering of the interior triangle starts at the
+    ! edge midpoint.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -8232,8 +8461,8 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
-    integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: jel1,jel2,jel3,ielReplace
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -8281,7 +8510,8 @@ contains
     call update_ElementNeighbors2D(rhadapt,e4,e8,iel,iel3,jel1,jel1)
 
 
-    ! Update elements JEL1 = (I1,I5,I4), JEL2 = (I2,I3,I5), and JEL3 = (I5,I3,I4)
+    ! Update elements JEL1 = (I1,I5,I4), JEL2 = (I2,I3,I5), and 
+    ! JEL3 = (I5,I3,I4)
     call replace_element2D(rhadapt,jel1,i1,i5,i4,e1,jel3,e4,e1,jel3,e8)
     call replace_element2D(rhadapt,jel2,i2,i3,i5,e2,jel3,e5,e6,jel3,e5)
     call replace_element2D(rhadapt,jel3,i5,i3,i4,jel2,e3,jel1,jel2,e7,jel1)
@@ -8298,55 +8528,72 @@ contains
     end if
 
 
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i5,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
-      call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i5,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
 
-    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,jel3,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,jel3,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,jel3,ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel3)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i5,iel)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i5,iel1)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel3)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel3)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel3)
 
 
     ! Adjust number of elements
@@ -8371,15 +8618,16 @@ contains
 
 !<description>
     ! This subroutine combines four quadrilaterals resulting from a
-    ! 1-quad : 4-quad refinement into four green triangles. At first glance
-    ! this "coarsening" does not make sense since the number of elements
-    ! is not reduced. However, the number of vertices is decreased by one.
-    ! Moreover, the removal of this vertex may lead to further coarsening
-    ! starting at the elements which meet at the deleted vertex.
-    ! The numbering convention follows the strategy used for
-    ! refinement, that is, the local numbering of the two outer triangles
-    ! starts at the vertices of the macro element and the local numbering
-    ! numbering of the interior triangle starts at the edge midpoint.
+    ! 1-quad : 4-quad refinement into four green triangles. At first
+    ! glance this "coarsening" does not make sense since the number of
+    ! elements is not reduced. However, the number of vertices is
+    ! decreased by one. Moreover, the removal of this vertex may lead
+    ! to further coarsening starting at the elements which meet at the
+    ! deleted vertex. The numbering convention follows the strategy
+    ! used for refinement, that is, the local numbering of the two
+    ! outer triangles starts at the vertices of the macro element and
+    ! the local numbering numbering of the interior triangle starts at
+    ! the edge midpoint.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -8420,7 +8668,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     
@@ -8463,13 +8710,13 @@ contains
     call replace_element2D(rhadapt,iel3,i4,i8,i3,e4,iel2,e3,e4,iel2,e7)
 
 
-    ! Update list of elements meeting at vertices. Note that we only have to
-    ! add some elements to the vertices since all four elements are already
-    ! "attached" to one of the four corner nodes
-    call alst_push_back(rhadapt%relementsAtVertex,i3,iel1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,iel3,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,iel2,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i8,iel2,ipos)
+    ! Update list of elements meeting at vertices. Note that we only
+    ! have to add some elements to the vertices since all four
+    ! elements are already "attached" to one of the four corner nodes
+    call alst_push_back(rhadapt%relementsAtVertex,i3,iel1)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,iel3)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,iel2)
+    call alst_push_back(rhadapt%relementsAtVertex,i8,iel2)
     
     ! Adjust number of elements
     rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+4
@@ -8492,13 +8739,14 @@ contains
 
 !<description>
     ! This subroutine combines two quadrilaterals resulting from a
-    ! 1-quad : 2-quad refinement into the macro quadrilateral.
-    ! The remaining element JEL is labeled by the smallest element number
-    ! of the four neighboring elements. Due to the numbering convention
-    ! all elements can be determined by visiting neighbors along the
-    ! second edge starting at the given element IEL. The resulting element
-    ! JEL is oriented such that local numbering starts at the vertex of the
-    ! macro element, that is, such that the first vertex is the oldest one.
+    ! 1-quad : 2-quad refinement into the macro quadrilateral. The
+    ! remaining element JEL is labeled by the smallest element number
+    ! of the four neighboring elements. Due to the numbering
+    ! convention all elements can be determined by visiting neighbors
+    ! along the second edge starting at the given element IEL. The
+    ! resulting element JEL is oriented such that local numbering
+    ! starts at the vertex of the macro element, that is, such that
+    ! the first vertex is the oldest one.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -8539,9 +8787,9 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices, IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,e1,e2,e3,e4,e5,e6,e7,e8,ielReplace
+    integer :: iel1,e1,e2,e3,e4,e5,e6,e7,e8,ielReplace,istate
     integer :: i1,i2,i3,i4,i5,i7
     
     ! Retrieve neighboring element
@@ -8576,11 +8824,13 @@ contains
       call update_ElementNeighbors2D(rhadapt,e3,e7,iel,iel1,iel,iel)
 
 
-      ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
-      ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
-      ! should not appear, that is, local numbering of the resulting quadrilateral
-      ! starts at the oldest vertex. to this end, we check the state of the
-      ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
+      ! The resulting quadrilateral will posses one of the states
+      ! STATES_QUAD_REDx, whereby x can be 1,2,3 and 4. Due to our
+      ! refinement convention, x=1,2,3 should not appear, that is,
+      ! local numbering of the resulting quadrilateral starts at the
+      ! oldest vertex. to this end, we check the state of the
+      ! provisional quadrilateral (I1,I2,I3,I4) and transform the
+      ! orientation.
       ImacroVertices = (/i1,i2,i3,i4/)
       IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
       istate = redgreen_getstateQuad(IvertexAge)
@@ -8621,21 +8871,26 @@ contains
 
 
       ! Update list of elements meeting at vertices.
-      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i3,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex,i2,iel,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i3,iel,ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex,i2,iel)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,iel)
 
     else
 
@@ -8644,11 +8899,13 @@ contains
       call update_ElementNeighbors2D(rhadapt,e3,e7,iel,iel1,iel1,iel1)
       call update_ElementNeighbors2D(rhadapt,e4,e8,iel,iel1,iel1)
       
-      ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
-      ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
-      ! should not appear, that is, local numbering of the resulting quadrilateral
-      ! starts at the oldest vertex. to this end, we check the state of the
-      ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
+      ! The resulting quadrilateral will posses one of the states
+      ! STATES_QUAD_REDx, whereby x can be 1,2,3 and 4. Due to our
+      ! refinement convention, x=1,2,3 should not appear, that is,
+      ! local numbering of the resulting quadrilateral starts at the
+      ! oldest vertex. to this end, we check the state of the
+      ! provisional quadrilateral (I1,I2,I3,I4) and transform the
+      ! orientation.
       ImacroVertices = (/i1,i2,i3,i4/)
       IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
       istate = redgreen_getstateQuad(IvertexAge)
@@ -8689,21 +8946,26 @@ contains
       
 
       ! Update list of elements meeting at vertices.
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i4,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex,i1,iel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i4,iel1,ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex,i1,iel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,iel1)
 
     end if
 
@@ -8725,15 +8987,16 @@ contains
 
 !<description>
     ! This subroutine combines two quadrilaterals resulting from a
-    ! 1-quad : 2-quad refinement into three green triangles. At first glance
-    ! this "coarsening" does not make sense since the number of elements
-    ! is even increased. However, the number of vertices is decreased by one.
-    ! Moreover, the removal of this vertex may lead to further coarsening
-    ! starting at the elements which meet at the deleted vertex.
-    ! The numbering convention follows the strategy used for
-    ! refinement, that is, the local numbering of the two outer triangles
-    ! starts at the vertices of the macro element and the local numbering
-    ! numbering of the interior triangle starts at the edge midpoint.
+    ! 1-quad : 2-quad refinement into three green triangles. At first
+    ! glance this "coarsening" does not make sense since the number of
+    ! elements is even increased. However, the number of vertices is
+    ! decreased by one. Moreover, the removal of this vertex may lead
+    ! to further coarsening starting at the elements which meet at the
+    ! deleted vertex. The numbering convention follows the strategy
+    ! used for refinement, that is, the local numbering of the two
+    ! outer triangles starts at the vertices of the macro element and
+    ! the local numbering numbering of the interior triangle starts at
+    ! the edge midpoint.
     !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
@@ -8774,7 +9037,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos
     integer :: iel1,nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i7
 
@@ -8815,13 +9077,13 @@ contains
 
 
     ! Update list of elements meeting at vertices.
-    call alst_push_back(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,nel0+1)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,nel0+1)
 
 
     ! Adjust number of elements
-    rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+2
+    rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)+2
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-2
 
     ! Optionally, invoke callback function
@@ -8882,10 +9144,10 @@ contains
 !</subroutine>
     
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(3) :: IsortedElements
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,iel2,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
+    integer :: iel1,iel2,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace,istate
     integer :: i1,i2,i3,i4,i5
 
     ! Retrieve neighboring element
@@ -8923,11 +9185,12 @@ contains
     call update_ElementNeighbors2D(rhadapt,e3,e7,iel,jel,jel)
     call update_ElementNeighbors2D(rhadapt,e4,e8,iel1,jel,jel)
 
-    ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
-    ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
-    ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the
-    ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
+    ! The resulting quadrilateral will posses one of the states
+    ! STATES_QUAD_REDx, whereby x can be 1,2,3 and 4. Due to our
+    ! refinement convention, x=1,2,3 should not appear, that is, local
+    ! numbering of the resulting quadrilateral starts at the oldest
+    ! vertex. to this end, we check the state of the provisional
+    ! quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate = redgreen_getstateQuad(IvertexAge)
@@ -8976,50 +9239,67 @@ contains
     end if
 
 
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i2,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i3,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i4,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
-    end if
-    if (alst_erase(rhadapt%relementsAtVertex,i4,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
-      call output_line('Unable to delete element from vertex list!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
-      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
     
-    call alst_push_back(rhadapt%relementsAtVertex,i1,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i2,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,jel,ipos)
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel1)
+    if (alst_isNull(ralstIter)) then
+      call output_line('Unable to delete element from vertex list!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
+      call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+    end if
+    
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel)
 
 
     ! Adjust number of elements
@@ -9043,10 +9323,11 @@ contains
   subroutine coarsen_4Tria1Quad(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines four triangles resulting from a
-    ! 1-quad : 4-tria refinement into the macro quadrilateral.
-    ! The remaining element JEL is the ones with the smallest element number.
-    ! The numbering convention follows the strategy used for refinement.
+    ! This subroutine combines four triangles resulting from a 1-quad
+    ! : 4-tria refinement into the macro quadrilateral. The remaining
+    ! element JEL is the ones with the smallest element number. The
+    ! numbering convention follows the strategy used for refinement.
+    !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
@@ -9086,10 +9367,10 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
-    integer :: ipos,istate
-    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
+    integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace,istate
     integer :: i1,i2,i3,i4,i6,i7
 
     ! Retrieve patch of elements
@@ -9117,8 +9398,8 @@ contains
     e8 = rhadapt%p_ImidneighboursAtElement(1,iel3)
 
     
-    ! Sort the four elements according to their number and
-    ! determine the elements with the smallest element numbers
+    ! Sort the four elements according to their number and determine
+    ! the elements with the smallest element numbers
     IsortedElements=(/iel,iel1,iel2,iel3/)
     call sort_I32(IsortedElements,SORT_INSERT)
     jel=IsortedElements(1)
@@ -9131,11 +9412,12 @@ contains
     call update_ElementNeighbors2D(rhadapt,e4,e8,iel3,jel,jel)
 
 
-    ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
-    ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
-    ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the
-    ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
+    ! The resulting quadrilateral will posses one of the states
+    ! STATES_QUAD_REDx, whereby x can be 1,2,3 and 4. Due to our
+    ! refinement convention, x=1,2,3 should not appear, that is, local
+    ! numbering of the resulting quadrilateral starts at the oldest
+    ! vertex. to this end, we check the state of the provisional
+    ! quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate = redgreen_getstateQuad(IvertexAge)
@@ -9194,54 +9476,71 @@ contains
     end if
 
     
-    ! Update list of elements meeting at vertices.
-    ! Note that all elements are removed in the first step. Afterwards,
-    ! element JEL is appended to the list of elements meeting at each vertex
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+    ! Update list of elements meeting at vertices. Note that all
+    ! elements are removed in the first step. Afterwards, element JEL
+    ! is appended to the list of elements meeting at each vertex
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
-    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
-        .eq. ARRAYLIST_NOT_FOUND) then
+
+    ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel3)
+    if (alst_isNull(ralstIter)) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
+    else
+      ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
     end if
         
-    call alst_push_back(rhadapt%relementsAtVertex,i1,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i2,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i3,jel,ipos)
-    call alst_push_back(rhadapt%relementsAtVertex,i4,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel)
     
     
     ! Adjust number of elements
-    rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)-1
+    rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-1
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
     
 
@@ -9261,10 +9560,12 @@ contains
   subroutine coarsen_4Tria3Tria(rhadapt, Imarker, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines four triangles resulting from a
-    ! 1-quad : 4-tria refinement into three green triangles. The remaining
-    ! elements JEL1, JEL2 and JEL3 are the ones with the smallest element number.
-    ! The numbering convention follows the strategy used for refinement.
+    ! This subroutine combines four triangles resulting from a 1-quad
+    ! : 4-tria refinement into three green triangles. The remaining
+    ! elements JEL1, JEL2 and JEL3 are the ones with the smallest
+    ! element number. The numbering convention follows the strategy
+    ! used for refinement.
+    !
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
@@ -9304,8 +9605,8 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_arraylistInt) :: ralstIter
     integer, dimension(4) :: IsortedElements
-    integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: jel1,jel2,jel3,ielReplace
     integer :: i1,i2,i3,i4,i6,i7
@@ -9335,8 +9636,8 @@ contains
     e8 = rhadapt%p_ImidneighboursAtElement(1,iel3)
 
 
-    ! Sort the four elements according to their number and
-    ! determine the elements with the smallest element numbers
+    ! Sort the four elements according to their number and determine
+    ! the elements with the smallest element numbers
     IsortedElements=(/iel,iel1,iel2,iel3/)
     call sort_I32(IsortedElements,SORT_INSERT)
     jel1=IsortedElements(1)
@@ -9371,73 +9672,99 @@ contains
       end if
 
 
-      ! Update list of elements meeting at vertices.
-      ! Note that all elements are removed in the first step. Afterwards,
-      ! element JEL is appended to the list of elements meeting at each vertex
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ! Update list of elements meeting at vertices. Note that all
+      ! elements are removed in the first step. Afterwards, element
+      ! JEL is appended to the list of elements meeting at each vertex
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel1)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel3)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i6,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i6,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i6,iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i4,jel3,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i6,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i6,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i6,jel3,ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel3)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i6,iel)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i6,iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+      
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i6,iel2)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel3)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel3)
 
       
       ! Optionally, invoke callback function
@@ -9474,73 +9801,99 @@ contains
       end if
 
 
-      ! Update list of elements meeting at vertices.
-      ! Note that all elements are removed in the first step. Afterwards,
-      ! element JEL is appended to the list of elements meeting at each vertex
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
+      ! Update list of elements meeting at vertices. Note that all
+      ! elements are removed in the first step. Afterwards, element
+      ! JEL is appended to the list of elements meeting at each vertex
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel)
+      if (alst_isNull(ralstIter)) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i7,iel)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i7,iel2)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
-      end if
-      if (alst_erase(rhadapt%relementsAtVertex,i7,iel3)&
-          .eq. ARRAYLIST_NOT_FOUND) then
-        call output_line('Unable to delete element from vertex list!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
-        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
       end if
 
-      call alst_push_back(rhadapt%relementsAtVertex,i1,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i2,jel3,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i3,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i7,jel1,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i7,jel2,ipos)
-      call alst_push_back(rhadapt%relementsAtVertex,i7,jel3,ipos)
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i1,iel3)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i2,iel1)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i3,iel2)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i4,iel3)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i7,iel)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i7,iel2)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      ralstIter = alst_find(rhadapt%relementsAtVertex,i7,iel3)
+      if (alst_isNull(ralstIter)) then
+        call output_line('Unable to delete element from vertex list!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
+        call sys_halt()
+      else
+        ralstIter = alst_erase(rhadapt%relementsAtVertex,ralstIter)
+      end if
+
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel3)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel1)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel2)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel3)
 
       ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
@@ -9643,30 +9996,33 @@ contains
     ! Reset state
     istate = 0
     
-    ! Check if triangle belongs to the initial triangulation. Then nothing
-    ! needs to be done. Otherwise, perform additional checks
+    ! Check if triangle belongs to the initial triangulation. Then
+    ! nothing needs to be done. Otherwise, perform additional checks
     if (sum(abs(IvertexAge)) .ne. 0) then
       
-      ! Check if any two vertices have the same age and mark that edge.
-      ! In addition, determine the largest age and its position
+      ! Check if any two vertices have the same age and mark that
+      ! edge. In addition, determine the largest age and its position
       ipos = 1
       do ive = 1, TRIA_NVETRI2D
         if (abs(IvertexAge(ive)) .eq. abs(IvertexAge(mod(ive, TRIA_NVETRI2D)+1))) then
           ! Edge connects two nodes with the same age
           istate = ibset(istate, ive)
         elseif (abs(IvertexAge(ive)) .gt. abs(IvertexAge(ipos))) then
-          ! The age of the "next" node is larger, so than it might be the largest
+          ! The age of the "next" node is larger, so than it might be
+          ! the largest
           ipos = ive
         end if
       end do
       
-      ! If ISTATE=0, then there must be one youngest vertex. Its local number
-      ! is returned but with negative sign. In this case the state of the
-      ! triangle cannot be uniquely determined and additional checks are required.
+      ! If ISTATE=0, then there must be one youngest vertex. Its local
+      ! number is returned but with negative sign. In this case the
+      ! state of the triangle cannot be uniquely determined and
+      ! additional checks are required.
       !
-      ! Otherwise, either all nodes have the same age (1110 : inner red triangle)
-      ! or exactly two nodes have the same age. In the latter case, we must check
-      ! if the opposite vertex is the youngest one in the triple of nodes.
+      ! Otherwise, either all nodes have the same age (1110 : inner
+      ! red triangle) or exactly two nodes have the same age. In the
+      ! latter case, we must check if the opposite vertex is the
+      ! youngest one in the triple of nodes.
       select case(istate)
       case(STATE_TRIA_ROOT)
         istate = -ibset(0, ipos)
@@ -9715,13 +10071,14 @@ contains
     ! Reset state
     istate = 0
 
-    ! Check if quadrilateral belongs to the initial triangulation. Then nothing
-    ! needs to be done. Otherwise, perform additional checks.
+    ! Check if quadrilateral belongs to the initial
+    ! triangulation. Then nothing needs to be done. Otherwise, perform
+    ! additional checks.
     if (sum(abs(IvertexAge)) .ne. 0) then
       
-      ! Check if any two vertices have the same age and mark that edge.
-      ! After this procedure, ISTATE must be different from 0 and a unique
-      ! state for the quadrilateral has been determined.
+      ! Check if any two vertices have the same age and mark that
+      ! edge. After this procedure, ISTATE must be different from 0
+      ! and a unique state for the quadrilateral has been determined.
       do ive = 1, TRIA_NVEQUAD2D
         if (abs(IvertexAge(ive)) .eq. abs(IvertexAge(mod(ive, TRIA_NVEQUAD2D)+1))) then
           ! Edge connects two nodes with the same age
