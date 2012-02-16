@@ -571,7 +571,7 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    TTYPE(T_TYPE), dimension(2), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(2), intent(in) :: data
 
     ! OPTIONAL: Number of the quad to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
@@ -780,7 +780,7 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    TTYPE(T_TYPE), dimension(2), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(2), intent(in) :: data
 !</input>
 
 !<inputoutput>
@@ -914,7 +914,7 @@ contains
             if (ivt .ne. rquadtree%NVT) then
               DataTmp(:) = rquadtree%p_Data(:,rquadtree%NVT)
               if (qtree_find(rquadtree, DataTmp(:),&
-                                         jnode, jpos, jvt) .eq. QTREE_FOUND) then
+                             jnode, jpos, jvt) .eq. QTREE_FOUND) then
 
                 ! Move last item JVT to position IVT
                 rquadtree%p_Data(:, ivt) = rquadtree%p_Data(:, jvt)
@@ -984,7 +984,7 @@ contains
 !</function>
 
     ! local variables
-    TTYPE(T_TYPE), dimension(2) :: Data
+    TTYPE(T_TYPE), dimension(2) :: data
     
     if (ivt .le. rquadtree%NVT) then
       ! Get coordinates and invoke deletion routine
@@ -1016,7 +1016,7 @@ contains
     type(template_T(t_quadtree,T)), intent(in) :: rquadtree
     
     ! Coordinates that should be searched
-    TTYPE(T_TYPE), dimension(2), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(2), intent(in) :: data
 !</input>
 
 !<output>
@@ -1119,7 +1119,7 @@ contains
     type(template_T(t_quadtree,T)), intent(in) :: rquadtree
     
     ! Coordinates
-    TTYPE(T_TYPE), dimension(2), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(2), intent(in) :: data
 
     ! Number of node
     integer, intent(in) :: inode
@@ -2157,12 +2157,12 @@ contains
 
     call storage_realloc('resizeNNODE', nnnode, rquadtree%h_BdBox,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_getbase(rquadtree%h_Knode, rquadtree%p_Knode)
+    call storage_getbase(rquadtree%h_BdBox, rquadtree%p_BdBox)
 
 #ifdef T_STORAGE
     call storage_realloc('resizeNNODE', nnnode, rquadtree%h_Knode,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_getbase(rquadtree%h_BdBox, rquadtree%p_BdBox)
+    call storage_getbase(rquadtree%h_Knode, rquadtree%p_Knode)
 #else
     allocate(p_Ddata(size(rquadtree%p_BdBox,1),size(rquadtree%p_BdBox,2))
     p_BdBox = rquadtree%p_BdBox

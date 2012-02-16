@@ -577,7 +577,7 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    TTYPE(T_TYPE), dimension(3), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(3), intent(in) :: data
 
     ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
@@ -811,7 +811,7 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    TTYPE(T_TYPE), dimension(3), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(3), intent(in) :: data
 !</input>
 
 !<inputoutput>
@@ -944,7 +944,7 @@ contains
             if (ivt .ne. roctree%NVT) then
               DataTmp(:) = roctree%p_Data(:,roctree%NVT)
               if (otree_find(roctree, DataTmp(:),&
-                                       jnode, jpos, jvt) .eq. OTREE_FOUND) then
+                             jnode, jpos, jvt) .eq. OTREE_FOUND) then
                 
                 ! Move last item JVT to position IVT
                 roctree%p_Data(:, ivt) = roctree%p_Data(:, jvt)
@@ -1014,7 +1014,7 @@ contains
 !</function>
 
     ! local variables
-    TTYPE(T_TYPE), dimension(3) :: Data
+    TTYPE(T_TYPE), dimension(3) :: data
     
     if (ivt .le. roctree%NVT) then
       ! Get coordinates and invoke deletion routine
@@ -1046,7 +1046,7 @@ contains
     type(template_T(t_octree,T)), intent(in) :: roctree
     
     ! Coordinates that should be searched for
-    TTYPE(T_TYPE), dimension(3), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(3), intent(in) :: data
 !</input>
 
 !<output>
@@ -1149,7 +1149,7 @@ contains
     type(template_T(t_octree,T)), intent(in) :: roctree
     
     ! Coordinates
-    TTYPE(T_TYPE), dimension(3), intent(in) :: Data
+    TTYPE(T_TYPE), dimension(3), intent(in) :: data
 
     ! Number of node
     integer, intent(in) :: inode
@@ -1986,12 +1986,12 @@ contains
 
     call storage_realloc('resizeNNODE', nnnode, roctree%h_BdBox,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_getbase(roctree%h_Knode, roctree%p_Knode)
+    call storage_getbase(roctree%h_BdBox, roctree%p_BdBox)
 
 #ifdef T_STORAGE
     call storage_realloc('resizeNNODE', nnnode, roctree%h_Knode,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_getbase(roctree%h_BdBox, roctree%p_BdBox)
+    call storage_getbase(roctree%h_Knode, roctree%p_Knode)
 #else
     allocate(p_Ddata(size(roctree%p_BdBox,1),size(roctree%p_BdBox,2))
     p_BdBox = roctree%p_BdBox
