@@ -9521,11 +9521,11 @@ contains
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
-             !        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
-             !          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
-             !        else
-             if (bclear) call lsyssc_clearMatrix (rmatrix)
-             !        end if
+             if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+               call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+             else
+               if (bclear) call lsyssc_clearMatrix (rmatrix)
+             end if
 
 
              ! Allocate the edgelist
@@ -14020,11 +14020,11 @@ contains
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
-             !        if (rmatrix%h_DA .eq. ST_NOHANDLE) then
-             !          call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
-             !        else
-             if (bclear) call lsyssc_clearMatrix (rmatrix)
-             !        end if
+             if (rmatrix%h_DA .eq. ST_NOHANDLE) then
+               call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
+             else
+               if (bclear) call lsyssc_clearMatrix (rmatrix)
+             end if
 
 
              ! Allocate the edgelist

@@ -19,6 +19,7 @@ program dg
   use dg2d_systems
   use dg2d_multigridscalar
   use dg2d_multigridsystem
+  use dg2d_multigridpoisson
 
   implicit none
 
@@ -60,11 +61,11 @@ program dg
 !  call output_line ('----------------------------------------------------------')
 !  call dg2d_sys
   
-  ! Call the problem to solve. Linear scalar equation, multigrid solver:
-  call output_lbrk ()
-  call output_line ('Linear scalar equation, multigrid solver')
-  call output_line ('----------------------------------------')
-  call dg2d_mgsc
+!  ! Call the problem to solve. Linear scalar equation, multigrid solver:
+!  call output_lbrk ()
+!  call output_line ('Linear scalar equation, multigrid solver')
+!  call output_line ('----------------------------------------')
+!  call dg2d_mgsc
   
 !  ! Call the problem to solve. Hyperbolic system conservation problem, multigrid solver:
 !  call output_lbrk ()
@@ -72,6 +73,12 @@ program dg
 !  call output_line ('with implicit DG discretisation and multigrid solver')
 !  call output_line ('----------------------------------------------------')
 !  call dg2d_mgsys
+
+  ! Call the problem to solve. Poisson equation, multigrid solver:
+  call output_lbrk ()
+  call output_line ('Poisson equation, multigrid solver')
+  call output_line ('----------------------------------')
+  call dg2d_mgpoisson
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

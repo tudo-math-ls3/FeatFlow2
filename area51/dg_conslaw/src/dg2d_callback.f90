@@ -9097,6 +9097,460 @@ contains
     deallocate(DsolutionValues)
     
   end subroutine
+  
+  
+  !<subroutine>
+
+  subroutine flux_poisson_rmatrixF1 (&
+         DfluxValues,&
+         rvectorSol,&
+         IelementList,&
+         Dside,&
+         normal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorScalar), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+    real(DP), dimension(:,:), intent(out) :: Dside
+
+    !</input>
+
+    !<output>
+    !  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 0.0_dp
+    
+    Dside(1,2) = 0.0_dp
+    Dside(2,2) = 1.0_dp
+    
+    do iedge = 1, size(DfluxValues,3)
+       do ipoint = 1, size(DfluxValues,2)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+          DfluxValues(1,ipoint,iedge) = -1.0_dp
+          DfluxValues(2,ipoint,iedge) = +1.0_dp
+          
+          ! Boundary flux
+          if (Ielementlist(iedge).eq.0) then
+            DfluxValues(1,ipoint,iedge) = -2.0_dp  
+          end if
+
+       end do
+    end do
+  
+  end subroutine
+
+  
+  !<subroutine>
+
+  subroutine flux_poisson_rmatrixFn1 (&
+         DfluxValues,&
+         rvectorSol,&
+         IelementList,&
+         Dside,&
+         normal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorScalar), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+    real(DP), dimension(:,:), intent(out) :: Dside
+
+    !</input>
+
+    !<output>
+    !  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 1.0_dp
+    
+    do iedge = 1, size(DfluxValues,3)
+       do ipoint = 1, size(DfluxValues,2)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+          DfluxValues(1,ipoint,iedge) = 0.5_dp*normal(1,iedge)
+          
+          ! Boundary flux
+          if (Ielementlist(iedge).eq.0) then
+            DfluxValues(1,ipoint,iedge) = normal(1,iedge)  
+          end if
+
+       end do
+    end do
+  
+  end subroutine
+
+  
+  !<subroutine>
+
+  subroutine flux_poisson_rmatrixFn2 (&
+         DfluxValues,&
+         rvectorSol,&
+         IelementList,&
+         Dside,&
+         normal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorScalar), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+    real(DP), dimension(:,:), intent(out) :: Dside
+
+    !</input>
+
+    !<output>
+    !  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 1.0_dp
+    
+    do iedge = 1, size(DfluxValues,3)
+       do ipoint = 1, size(DfluxValues,2)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+          DfluxValues(1,ipoint,iedge) = 0.5_dp*normal(2,iedge)
+          
+          ! Boundary flux
+          if (Ielementlist(iedge).eq.0) then
+            DfluxValues(1,ipoint,iedge) = normal(2,iedge)  
+          end if
+
+       end do
+    end do
+    
+  end subroutine
+
+  
+  !<subroutine>
+
+  subroutine flux_poisson_rmatrixFn12 (&
+         DfluxValues,&
+         rvectorSol,&
+         IelementList,&
+         Dside,&
+         normal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorScalar), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+    real(DP), dimension(:,:), intent(out) :: Dside
+
+    !</input>
+
+    !<output>
+    !  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 1.0_dp
+    
+    do iedge = 1, size(DfluxValues,3)
+       do ipoint = 1, size(DfluxValues,2)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+          DfluxValues(1,ipoint,iedge) = 0.5_dp*normal(1,iedge)
+          
+          ! Boundary flux
+          if (Ielementlist(iedge).eq.0) then
+            DfluxValues(1,ipoint,iedge) = 0.0_dp !normal(1,iedge)  
+          end if
+
+       end do
+    end do
+  
+  end subroutine
+
+  
+  !<subroutine>
+
+  subroutine flux_poisson_rmatrixFn22 (&
+         DfluxValues,&
+         rvectorSol,&
+         IelementList,&
+         Dside,&
+         normal,&
+         rintSubSet,&
+         rcollection )
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    !  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+    real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+    real(DP), dimension(:,:), intent(in) :: normal
+    !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+    type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+    type(t_collection), intent(inout), target, optional :: rcollection
+    type(t_vectorScalar), intent(in) :: rvectorSol
+    integer, dimension(:), intent(in) :: IelementList
+    real(DP), dimension(:,:), intent(out) :: Dside
+
+    !</input>
+
+    !<output>
+    !  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    integer :: iedge, ipoint
+    real(dp) :: dx, dy
+    
+    Dside(1,1) = 1.0_dp
+    Dside(2,1) = 1.0_dp
+    
+    do iedge = 1, size(DfluxValues,3)
+       do ipoint = 1, size(DfluxValues,2)
+
+          dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
+          dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
+
+          DfluxValues(1,ipoint,iedge) = 0.5_dp*normal(2,iedge)
+          
+          ! Boundary flux
+          if (Ielementlist(iedge).eq.0) then
+            DfluxValues(1,ipoint,iedge) = 0.0_dp !normal(2,iedge)  
+          end if
+
+       end do
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine coeff_RHS_DG_Poisson (rdiscretisation,rform, &
+       nelements,npointsPerElement,Dpoints, &
+       IdofsTest,rdomainIntSubset,&
+       Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+
+    !</input>
+
+    !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    !    u(x,y) = 16*x*(1-x)*y*(1-y)
+    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
+    Dcoefficients (1,:,:) = 32.0_DP * &
+         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+
+  end subroutine
 
 
 end module dg2d_callback
