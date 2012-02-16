@@ -3410,7 +3410,6 @@ contains
 
 !<description>
     ! This subroutine restores an arraylist from a previous backup.
-    ! The format and ordering of both arraylists must be the same.
 !</description>
 
 !<input>
