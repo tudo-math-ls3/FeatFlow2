@@ -98,13 +98,20 @@ TRILIBDEFS = -DTRILIBRARY
 
 # The action starts here.
 
-all: $(BIN)triangle $(BIN)gridgen1d $(BIN)gridgencirc2d $(BIN)showme
+all: $(BIN)triangle\
+     $(BIN)gridgen1d\
+     $(BIN)gridgencirc2d\
+     $(BIN)gridgenlaval2d\
+     $(BIN)showme
 
 $(BIN)gridgen1d: $(SRC)gridgen1d.f90
 	$(F90) -o $(BIN)gridgen1d $(SRC)gridgen1d.f90
 
 $(BIN)gridgencirc2d: $(SRC)gridgencirc2d.f90
 	$(F90) $(F90SWITCHES) -o $(BIN)gridgencirc2d $(SRC)gridgencirc2d.f90
+
+$(BIN)gridgenlaval2d: $(SRC)gridgenlaval2d.f90
+	$(F90) $(F90SWITCHES) -o $(BIN)gridgenlaval2d $(SRC)gridgenlaval2d.f90
 
 $(BIN)triangle: $(SRC)triangle.c
 	$(CC) $(CSWITCHES) -o $(BIN)triangle $(SRC)triangle.c -lm

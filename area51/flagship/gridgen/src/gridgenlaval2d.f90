@@ -42,20 +42,23 @@ program gridgenlaval2d
   real(DP) :: pi
 
   ! Predefined values
+  real(DP) :: dangle1  = 85.0_DP
+  real(DP) :: dangle2  =  2.0_DP
+  real(DP) :: darea    =  0.5_DP
+  real(DP) :: ddist    =  1.0_DP
   real(DP) :: dheight0 =  7.0_DP
   real(DP) :: dheight1 =  1.0_DP
   real(DP) :: dheight2 =  1.0_DP
   real(DP) :: dheight3 = 14.0_DP
+  real(DP) :: dlength  = 58.85_DP
+  real(DP) :: dradius0 =  2.0_DP
+  real(DP) :: dradius1 = 11.75_DP
   real(DP) :: dwidth1  =  1.0_DP
   real(DP) :: dwidth2  =  1.0_DP
   real(DP) :: dwidth3  = 14.0_DP
-  real(DP) :: dangle1  = 85.0_DP
-  real(DP) :: dangle2  =  2.0_DP
-  real(DP) :: dradius0 =  2.0_DP
-  real(DP) :: dradius1 = 11.75_DP
   real(DP) :: dx1      =  0.0_DP
   real(DP) :: dy1      = 13.0_DP
-  real(DP) :: dlength  = 58.85_DP
+  integer :: nsegments = 10
 
   ! Coordinates
   real(DP), dimension(2,18) :: Dpoints
@@ -69,7 +72,10 @@ program gridgenlaval2d
   ! local variables
   character(len=80) :: cbuffer
   character(len=32) :: cbuffer1,cbuffer2,cbuffer3,cbuffer4,cbuffer5,cbuffer6
-  integer :: i
+  logical :: brewrite
+  real(DP) :: domega,dsegmentlen,dx,dy,dpar
+  integer :: i,i1,i2,i3,i4,ibdc,iel,ipoint,isubpoint,ivt
+  integer :: nel,nmt,npoints,nsubsegments,nvt
   
   !-----------------------------------------------------------------------------
   ! Initialize mathematical constant(s)
@@ -90,25 +96,31 @@ program gridgenlaval2d
       write(*,'(A)') 'Generate grid for laval nozzle in TRI/PRM format.'
       write(*,*)
       write(*,'(A,T30,A)') '-h,  -H,  --help','this help screen'
-      write(*,'(A,T30,A)') '-a1,  --angle1' ,'angle of the circle segment'
-      write(*,'(A,T30,A)') '-a2,  --angle2' ,'angle of the diverging chamber'
-      write(*,'(A,T30,A)') '-h0,  --height0','height of the midpoint of the inlet'
-      write(*,'(A,T30,A)') '-h1,  --height1','height of the inlet chamber'
-      write(*,'(A,T30,A)') '-h2,  --height2','height of the inlet chamber'
-      write(*,'(A,T30,A)') '-h3,  --height3','height of the outlet chamber'
-      write(*,'(A,T30,A)') '-r0,  --radius0','radius of the inlet'
-      write(*,'(A,T30,A)') '-r1,  --radius1','radius of the circle segment'
-      write(*,'(A,T30,A)') '-x1'            ,'horizontal position of the circle segment'
-      write(*,'(A,T30,A)') '-y1'            ,'vertical position of the circle segment'
-      write(*,'(A,T30,A)') '-w1,  --width1' ,'width of the inlet chamber'
-      write(*,'(A,T30,A)') '-w2,  --width2' ,'width of the inlet chamber'
-      write(*,'(A,T30,A)') '-w3,  --width3' ,'width of the outlet chamber'
-
+      write(*,'(A,T30,A)') '-a1, --angle1' ,'angle of the circle segment'
+      write(*,'(A,T30,A)') '-a2, --angle2' ,'angle of the diverging chamber'
+      write(*,'(A,T30,A)') '-a,  --area' ,'average area of triangles'
+      write(*,'(A,T30,A)') '-d,  --dist' ,'average distance between points along the boundary'
       write(*,'(A,T30,A)') '-f,  --filename','name of the output file'
       write(*,'(T30,A)')   'If not given, the generated grid is stored in file "grid.tri/prm".'
+      write(*,'(A,T30,A)') '-h0, --height0','height of the midpoint of the inlet'
+      write(*,'(A,T30,A)') '-h1, --height1','height of the inlet chamber'
+      write(*,'(A,T30,A)') '-h2, --height2','height of the inlet chamber'
+      write(*,'(A,T30,A)') '-h3, --height3','height of the outlet chamber'
+      write(*,'(A,T30,A)') '-r0, --radius0','radius of the inlet'
+      write(*,'(A,T30,A)') '-r1, --radius1','radius of the circle segment'
+      write(*,'(A,T30,A)') '-s,c --segment','number of segments of the circle segment'
+      write(*,'(A,T30,A)') '-x1'            ,'horizontal position of the circle segment'
+      write(*,'(A,T30,A)') '-y1'            ,'vertical position of the circle segment'
+      write(*,'(A,T30,A)') '-w1, --width1' ,'width of the inlet chamber'
+      write(*,'(A,T30,A)') '-w2, --width2' ,'width of the inlet chamber'
+      write(*,'(A,T30,A)') '-w3, --width3' ,'width of the outlet chamber'
       write(*,*)
       write(*,'(A)') 'Report bugs to <matthias.moeller@math.tu-dortmund.de>.'
       stop
+
+    case('-a','--area')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) darea
 
     case('-a1','--angle1')
       call get_command_argument(i+1, cbuffer)
@@ -142,6 +154,10 @@ program gridgenlaval2d
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dradius1
 
+    case('-s','--segment')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) nsegments
+
     case('-x1')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dx1
@@ -165,11 +181,16 @@ program gridgenlaval2d
     case('-f','--filename')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) cfilename
+      
+    case('-d','--dist')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) ddist
+      
     end select
   end do
   
-  dangle1 = pi/180._DP*dangle1
-  dangle2 = pi/180._DP*dangle2
+  dangle1 = pi/180.0_DP*dangle1
+  dangle2 = pi/180.0_DP*dangle2
 
   !-----------------------------------------------------------------------------
   ! Write statistics
@@ -178,7 +199,6 @@ program gridgenlaval2d
   write(*,'(A)') 'Generating grid'
   write(*,'(A)') '---------------'
   write(*,'(A,T45,A)') 'name of output file: ',trim(adjustl(cfilename))
-
 
   !-----------------------------------------------------------------------------
   ! Generate coordinates of all corners
@@ -422,16 +442,15 @@ program gridgenlaval2d
   
   close(100)
 
-
-  !-----------------------------------------------------------------------------
-  ! Prepare generation of TRI-file
-  !-----------------------------------------------------------------------------
-
   !-----------------------------------------------------------------------------
   ! Generate PSLG (planar straight line graph) for the external program triangle
   !-----------------------------------------------------------------------------
   
-  open(unit=100, file=trim(adjustl(cfilename))//'.poly')
+  ! Initialize the number of points
+  npoints = 0
+  brewrite = .false.
+
+1 open(unit=100, file=trim(adjustl(cfilename))//'.poly', form='formatted')
   
   ! Write file header
   write(100, '(A)') "# "//trim(adjustl(cfilename))//'.poly'
@@ -443,37 +462,138 @@ program gridgenlaval2d
 
   ! Write number of points
   write(100, '(A)') "# Number of points, 2D, one attribute, boundary markers"
-  write(cbuffer1, '(I10)') 18
+  write(cbuffer1, '(I10)') npoints
   write(100, '(A)') trim(adjustl(cbuffer1))//' 2 1 1'
-      
+
+  ! Initialize the number of points
+  npoints = 0  
+
   ! Write vertex coordinates
-  do i = 1, 18
-    
+  do ipoint = 1, 18
+   
+    ! Increase number of points by one
+    npoints = npoints+1
+ 
     ! Fill buffers
-    write(cbuffer1, '(I10)') i
-    write(cbuffer2, cFormat) Dpoints(1,i)
-    write(cbuffer3, cFormat) Dpoints(2,i)
-    write(cbuffer4, cFormat) 0.0_DP
+    write(cbuffer1, '(I10)') npoints
+    write(cbuffer2, cFormat) Dpoints(1,ipoint)
+    write(cbuffer3, cFormat) Dpoints(2,ipoint)
+    write(cbuffer4, cFormat) real(ipoint-1,DP)
     
     ! Write line to file
     write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
                       trim(adjustl(cbuffer2))//' '//&
                       trim(adjustl(cbuffer3))//' '//&
-                      trim(adjustl(cbuffer4))//' 0'
+                      trim(adjustl(cbuffer4))//' 1'
+
+    ! Write extra points between two regular points with user-defined
+    ! average distance; note that we must distinguish between points
+    ! on a straight line and those on a circular segment
+    select case(ipoint)
+    case(1:4,6:12,14:18)
+      ! Compute line segment length
+      dsegmentlen = sqrt((Dpoints(1,mod(ipoint,18)+1)-Dpoints(1,ipoint))**2+&
+                         (Dpoints(2,mod(ipoint,18)+1)-Dpoints(2,ipoint))**2)
+
+      ! Compute number of auxiliary segments
+      nsubsegments = nint(dsegmentlen/ddist)
+
+      ! Write vertex coordinates of auxiliary points
+      do isubpoint = 1, nsubsegments-1
+        ! Increase number of points by one
+        npoints = npoints+1
+
+        ! Compute relative position of the auxiliary point on
+        ! the line segment between the points [ipoint,ipoint+1]
+        domega = real(isubpoint,DP)/real(nsubsegments,DP)
+
+        ! Fill buffer
+        write(cbuffer1, '(I10)') npoints
+        write(cbuffer2, cFormat) Dpoints(1,ipoint) +&
+                         domega*(Dpoints(1,mod(ipoint,18)+1)-Dpoints(1,ipoint))
+        write(cbuffer3, cFormat) Dpoints(2,ipoint) +&
+                         domega*(Dpoints(2,mod(ipoint,18)+1)-Dpoints(2,ipoint))
+        write(cbuffer4, cFormat) real(ipoint-1,DP)+domega
+    
+        ! Write line to file
+        write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
+                          trim(adjustl(cbuffer2))//' '//&
+                          trim(adjustl(cbuffer3))//' '//&
+                          trim(adjustl(cbuffer4))//' 1'
+      end do
+
+    case(5)
+      ! Compute circular segment length
+      dsegmentlen = dradius1*dangle1
+
+      ! Compute number of auxiliary segments
+      nsubsegments = nint(dsegmentlen/ddist)
+
+      ! Write vertex coordinates of auxiliary points
+      do isubpoint = 1, nsubsegments-1
+        ! Increase number of points by one
+        npoints = npoints+1
+
+        ! Compute relative position of the auxiliary point on
+        ! the circular segment between the points ipoint and ipoint+1
+        domega = real(isubpoint,DP)/real(nsubsegments,DP)
+        
+        ! Fill buffer
+        write(cbuffer1, '(I10)')  npoints
+        write(cbuffer2, cFormat)  dx1+dradius1*cos(pi-dangle1*domega)
+        write(cbuffer3, cFormat) -dy1+dradius1*sin(pi-dangle1*domega)
+        write(cbuffer4, cFormat)  real(ipoint-1,DP)+domega
+    
+        ! Write line to file
+        write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
+                          trim(adjustl(cbuffer2))//' '//&
+                          trim(adjustl(cbuffer3))//' '//&
+                          trim(adjustl(cbuffer4))//' 1'
+      end do
+
+    case(13)
+      ! Compute circular segment length
+      dsegmentlen = dradius1*dangle1
+
+      ! Compute number of auxiliary segments
+      nsubsegments = nint(dsegmentlen/ddist)
+
+      ! Write vertex coordinates of auxiliary points
+      do isubpoint = nsubsegments-1, 1, -1
+        ! Increase number of points by one
+        npoints = npoints+1
+
+        ! Compute relative position of the auxiliary point on
+        ! the circular segment between the points ipoint and ipoint+1
+        domega = real(isubpoint,DP)/real(nsubsegments,DP)
+        
+        ! Fill buffer
+        write(cbuffer1, '(I10)')  npoints
+        write(cbuffer2, cFormat)  dx1+dradius1*cos(pi-dangle1*domega)
+        write(cbuffer3, cFormat)  dy1-dradius1*sin(pi-dangle1*domega)
+        write(cbuffer4, cFormat)  real(ipoint,DP)-domega
+    
+        ! Write line to file
+        write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
+                          trim(adjustl(cbuffer2))//' '//&
+                          trim(adjustl(cbuffer3))//' '//&
+                          trim(adjustl(cbuffer4))//' 1'
+      end do
+    end select
   end do
 
   ! Write number of segments
   write(100, '(A)') "# Number of segments, boundary markers"
-  write(cbuffer1, '(I10)') 18
+  write(cbuffer1, '(I10)') npoints
   write(100, '(A)') trim(adjustl(cbuffer1))//' 1'
 
   ! Write segments
-  do i = 1, 18
+  do ipoint = 1, npoints
 
     ! Fill buffers
-    write(cbuffer1, '(I10)') i
-    write(cbuffer2, '(I10)') i
-    write(cbuffer3, '(I10)') mod(i,18)+1
+    write(cbuffer1, '(I10)') ipoint
+    write(cbuffer2, '(I10)') ipoint
+    write(cbuffer3, '(I10)') mod(ipoint,npoints)+1
 
     write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
                       trim(adjustl(cbuffer2))//' '//&
@@ -486,572 +606,131 @@ program gridgenlaval2d
 
   close(100)
 
+  ! Now, the number of total points is known and needs to be updated
+  if ((npoints .ne. 18) .and. .not.brewrite) then
+    brewrite = .true.
+    goto 1
+  end if
+  
   ! Generate conforming Delaunay triangulation (-D) subject to a
   ! user-defined element area (-a) without generating additional
   ! Steiner points on the boundary (-Y) based on vertex distribution
-  write(cbuffer1, cFormat) 0.11
-  call system('triangle -V -Y -D -e -q32.5 '//&
+  write(cbuffer1, cFormat) darea
+  call system('triangle -V -Y -D '//&
       ' -a'//trim(adjustl(cbuffer1))//&
       ' -p '//trim(adjustl(cfilename))//'.poly')
   
+  !---------------------------------------------------------------------------
+  ! Read data for inner triangulation and convert it into TRI format
+  !---------------------------------------------------------------------------
+  
+  open(unit=100, file=trim(adjustl(cfilename))//'.1.node')
+  read(100, fmt=*) nvt
+  close(100)
+  
+  open(unit=100, file=trim(adjustl(cfilename))//'.1.ele')
+  read(100, fmt=*) nel
+  close(100)
+  
+  open(unit=100, file=trim(adjustl(cfilename))//'.1.edge')
+  read(100, fmt=*) nmt
+  close(100)
 
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Read data for inner triangulation and convert it into TRI format
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    open(unit=100, file=trim(adjustl(cfilename))//'.1.node')
-!!$    read(100, fmt=*) nvt
-!!$    close(100)
-!!$
-!!$    open(unit=100, file=trim(adjustl(cfilename))//'.1.ele')
-!!$    read(100, fmt=*) nel
-!!$    close(100)
-!!$
-!!$    open(unit=100, file=trim(adjustl(cfilename))//'.1.edge')
-!!$    read(100, fmt=*) nmt
-!!$    close(100)
-!!$
-!!$  else
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Determine the number of inner layers manually
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Determine the number of regular coarsening steps to obtain the
-!!$    ! number of vertices/elements/midpoints of the coarse grid.
-!!$    isegment = nsegments; irefine  = 0
-!!$
-!!$    inner: do
-!!$      if ((mod(isegment, 2) .eq. 0) .and.&
-!!$          (isegment .ge. 2*nminsegments)) then
-!!$        isegment = isegment/2
-!!$        irefine  = irefine+1
-!!$      else
-!!$        exit inner
-!!$      end if
-!!$    end do inner
-!!$
-!!$    ! Determine number of vertices/elements in the interior circle.
-!!$    ! Thus, we initialize the quantities NEL, NVT and NMT by the
-!!$    ! values of the initial coarse grid in perform regular subdivision.
-!!$    nel = isegment
-!!$    nvt = isegment+1
-!!$    nmt = 2*isegment
-!!$
-!!$    do i = 1, irefine
-!!$      ! Each edge produces a new vertex
-!!$      nvt = nvt + nmt
-!!$
-!!$      ! Each edge is subdivided into two new edges and
-!!$      ! each element produces three new edges
-!!$      nmt = 2*nmt + 3*nel
-!!$
-!!$      ! Each element is subdivided into four new elements
-!!$      nel = 4*nel
-!!$    end do
-!!$
-!!$    ! Update number of vertices/midpoints for circle sections
-!!$    if (dazimuth .lt. 2.0_DP*pi) then
-!!$      nvt = nvt+2**irefine
-!!$      nmt = nmt+2**(irefine+1)
-!!$    end if
-!!$
-!!$  end if
-!!$
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  ! Generate TRI-file
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  open(unit=100, file=trim(adjustl(cfilename))//'.tri')
-!!$
-!!$  write(100,'(A)') 'Coarse mesh 2D'
-!!$  write(100,'(A)') 'Generated by gridgencirc2d'
-!!$
-!!$  write(cbuffer1, '(I10)') nel + nsegments*nlayers
-!!$  write(cbuffer2, '(I10)') nvt + nsegments*nlayers +&
-!!$                           merge(0, nlayers, dazimuth .ge. 2.0_DP*pi)
-!!$
-!!$  write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
-!!$                   trim(adjustl(cbuffer2))//' 0 4 1  NEL NVT NMT NVE NBCT'
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  write(100,'(A)') 'DCORVG'
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  if (bexternalDelaunay) then
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Copy/convert coordinates of inner region from external triangulation
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Write interior vertices in the inner layer
-!!$    open(unit=200, file=trim(adjustl(cfilename))//'.1.node')
-!!$    read(200, fmt=*) nvt
-!!$
-!!$    ! Read node file line by line and convert coordinates
-!!$    do ivt = 1, nvt
-!!$      read(200, fmt=*) i, x, y, bdrPar, iaux
-!!$
-!!$      if (iaux .gt. 1) then
-!!$        ! Write boundary parametrization
-!!$        write(cbuffer1, cFormat) bdrPar
-!!$        write(cbuffer2, cFormat) 0.0_DP
-!!$      else
-!!$        ! Write inner vertex
-!!$        write(cbuffer1, cFormat) x
-!!$        write(cbuffer2, cFormat) y
-!!$      end if
-!!$
-!!$      ! Write line to file
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$    end do
-!!$
-!!$    close(200)
-!!$
-!!$  else
-!!$    !---------------------------------------------------------------------------
-!!$    ! Create coordinates of inner region manually
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Write vertex at origin
-!!$    if (dazimuth .ge. 2.0_DP*pi) then
-!!$      write(cbuffer1, cFormat) 0.0_DP
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1))
-!!$    else
-!!$      write(cbuffer1, cFormat) 2.0_DP
-!!$      write(cbuffer2, cFormat) 0.0_DP
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$    end if
-!!$
-!!$    ! Write vertices in the inner layer
-!!$    iaux = isegment
-!!$
-!!$    ! Loop over all refinement steps
-!!$    do j = 1, 2**irefine
-!!$
-!!$      ! Compute radius of current layer
-!!$      r = j*(dinnerRadius)/(2**irefine)
-!!$
-!!$      ! Loop over all segments in current layer
-!!$      do i = 1, iaux
-!!$
-!!$        ! Compute azimuth
-!!$        phi = dazimuth0+(i-1)*dazimuth/iaux
-!!$
-!!$        if ((dazimuth .lt. 2.0_DP*pi) .and. (i .eq. 1)) then
-!!$          ! Fill buffers
-!!$          write(cbuffer1, cFormat) 2.0_DP+r/douterRadius
-!!$          write(cbuffer2, cFormat) 0.0_DP
-!!$        else
-!!$          ! Fill buffers
-!!$          write(cbuffer1, cFormat) r * cos(phi)
-!!$          write(cbuffer2, cFormat) r * sin(phi)
-!!$        end if
-!!$
-!!$        ! Write line to file
-!!$        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$      end do
-!!$
-!!$      ! Since the circle is not closed we have to add one extra vertex
-!!$      if (dazimuth .lt. 2.0_DP*pi) then
-!!$      ! Fill buffers
-!!$      write(cbuffer1, cFormat) 2.0_DP-r/douterRadius
-!!$        write(cbuffer2, cFormat) 0.0_DP
-!!$
-!!$        ! Write line to file
-!!$        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$      end if
-!!$
-!!$      ! Increate the number of segments
-!!$      iaux = iaux + isegment
-!!$    end do
-!!$
-!!$  end if
-!!$
-!!$  ! Compute minimal grid spacing (isotropic/anisotropic ?)
-!!$  if (danisotropy .eq. 1.0_DP) then
-!!$    dr0 = (douterRadius-dinnerRadius)/nlayers
-!!$  else
-!!$    ! Compute local anisotropy factor
-!!$    danisotropy = exp(log(danisotropy)/(nlayers-1.0_DP))
-!!$    dr0 = (douterRadius-dinnerRadius)*(danisotropy-1)/(danisotropy**nlayers-1)
-!!$  end if
-!!$
-!!$
-!!$  do i = 1, merge(nsegments, nsegments+1, dazimuth .ge. 2.0_DP*pi)
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Write interior vertices in the outer layer
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    do j = 1, nlayers-1
-!!$
-!!$      ! Compute radius
-!!$      if (danisotropy .eq. 1.0_DP) then
-!!$        r = dinnerRadius + dr0*j
-!!$      else
-!!$        r = dinnerRadius + dr0*(danisotropy**(j)-1)/(danisotropy-1)
-!!$      end if
-!!$
-!!$      ! Compute azimuth
-!!$      phi = dazimuth0+dazimuth*(i-1)/nsegments
-!!$
-!!$      if (dazimuth .ge. 2.0_DP*pi) then
-!!$        ! Fill buffers
-!!$        write(cbuffer1, cFormat) r * cos(phi)
-!!$        write(cbuffer2, cFormat) r * sin(phi)
-!!$
-!!$        ! Write line to file
-!!$        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$      else
-!!$        if (i .eq. 1) then
-!!$          ! Fill buffer
-!!$          write(cbuffer1, cFormat) 2.0_DP+r/douterRadius
-!!$          write(cbuffer2, cFormat) 0.0
-!!$        elseif (i .eq. nsegments+1) then
-!!$          ! Fill buffer
-!!$          write(cbuffer1, cFormat) 2.0_DP-r/douterRadius
-!!$          write(cbuffer2, cFormat) 0.0
-!!$        else
-!!$          ! Fill buffers
-!!$          write(cbuffer1, cFormat) r * cos(phi)
-!!$          write(cbuffer2, cFormat) r * sin(phi)
-!!$        end if
-!!$
-!!$        ! Write line to file
-!!$        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$      end if
-!!$    end do
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Write parameters for boundary vertex
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    r = real(i-1,DP)/real(nsegments,DP)
-!!$    write(cbuffer1, cFormat) r
-!!$    write(cbuffer2, cFormat) 0.0
-!!$    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$  end do
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  write(100,'(A)') 'KVERT'
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  if (bexternalDelaunay) then
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Copy elements of inner region from external triangulation
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    open(unit=200, file=trim(adjustl(cfilename))//'.1.ele')
-!!$    read(200, fmt=*) nel
-!!$
-!!$    ! Read element file line by line and convert coordinates
-!!$    do i = 1, nel
-!!$      read(200, fmt=*) iaux, i1, i2, i3
-!!$
-!!$      write(cbuffer1, '(I10)') i1
-!!$      write(cbuffer2, '(I10)') i2
-!!$      write(cbuffer3, '(I10)') i3
-!!$      write(cbuffer4, '(I10)') 0
-!!$
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-!!$          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-!!$    end do
-!!$
-!!$    close(200)
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Process connection layer between unstructured and structured grids
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    do i = 1, nsegments
-!!$
-!!$      ! Compute base vertex number
-!!$      ivt = nlayers*(i-1)
-!!$
-!!$      if (dazimuth .ge. 2.0_DP*pi) then
-!!$        write(cbuffer1, '(I10)') mod(i-1,         nsegments)+1
-!!$        write(cbuffer2, '(I10)') mod(ivt,         nsegments*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(i,           nsegments)+1
-!!$      else
-!!$        write(cbuffer1, '(I10)') mod(i-1,         (nsegments+1))+1
-!!$        write(cbuffer2, '(I10)') mod(ivt,         (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers, (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(i,           (nsegments+1))+1
-!!$      end if
-!!$
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-!!$          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-!!$    end do
-!!$
-!!$  else
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Create triangles of inner region manually
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Process inner most triangles
-!!$    do i = 1, isegment
-!!$
-!!$      if (dazimuth .ge. 2.0_DP*pi) then
-!!$        write(cbuffer1, '(I10)') 1
-!!$        write(cbuffer2, '(I10)') mod(i-1, isegment)+2
-!!$        write(cbuffer3, '(I10)') mod(i,   isegment)+2
-!!$        write(cbuffer4, '(I10)') 0
-!!$      else
-!!$        write(cbuffer1, '(I10)') 1
-!!$        write(cbuffer2, '(I10)') mod(i-1, isegment+1)+2
-!!$        write(cbuffer3, '(I10)') mod(i,   isegment+1)+2
-!!$        write(cbuffer4, '(I10)') 0
-!!$      end if
-!!$
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-!!$          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-!!$    end do
-!!$
-!!$
-!!$    ! Initialize counter and process triangles in interior region
-!!$    iaux = 0
-!!$
-!!$    ! Loop over all layers
-!!$    do j = 1, 2**irefine-1
-!!$
-!!$      ! Update counter
-!!$      iaux = iaux + j
-!!$
-!!$      ! Loop over all segments of the inner most coarse grid
-!!$      do i = 1, isegment
-!!$
-!!$        ! Compute number of starting vertices in current layer and the
-!!$        ! next layer which is located interior to the current one
-!!$        if (dazimuth .ge. 2.0_DP*pi) then
-!!$          ivt = iaux*isegment+(i-1)*j+i+1
-!!$          jvt = (iaux-j)*isegment+(i-1)*(j-1)+i+1
-!!$        else
-!!$          ivt = iaux*isegment+i*(j+1)+1
-!!$          jvt = (iaux-j)*isegment+i*j+1
-!!$        end if
-!!$
-!!$        ! Loop over all edges in the current layer
-!!$        do k = 1, iaux*isegment+i*(j+1)+1-ivt+&
-!!$                  merge(0, j, dazimuth .ge. 2.0_DP*pi)
-!!$
-!!$          write(cbuffer1, '(I10)') ivt
-!!$          write(cbuffer2, '(I10)') ivt+1
-!!$          write(cbuffer3, '(I10)') jvt
-!!$          write(cbuffer4, '(I10)') 0
-!!$
-!!$          write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
-!!$                           trim(adjustl(cbuffer2))//' '//&
-!!$                           trim(adjustl(cbuffer3))//' '//&
-!!$                           trim(adjustl(cbuffer4))
-!!$
-!!$          ! Increase vertex number in current layer
-!!$          ivt = ivt + 1
-!!$
-!!$          write(cbuffer1, '(I10)') ivt
-!!$          ! Check if this is the last=first vertex in the inner layer
-!!$          if (jvt+1 .eq. iaux*isegment+&
-!!$                         merge(2, 2+j, dazimuth .ge. 2.0_DP*pi)) then
-!!$            write(cbuffer2, '(I10)') (iaux-j)*isegment+2
-!!$          else
-!!$            write(cbuffer2, '(I10)') jvt+1
-!!$          end if
-!!$          write(cbuffer3, '(I10)') jvt
-!!$          write(cbuffer4, '(I10)') 0
-!!$
-!!$          write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
-!!$                           trim(adjustl(cbuffer2))//' '//&
-!!$                           trim(adjustl(cbuffer3))//' '//&
-!!$                           trim(adjustl(cbuffer4))
-!!$
-!!$          ! Increase vertex number in inner layer
-!!$          jvt = jvt + 1
-!!$
-!!$        end do
-!!$
-!!$        write(cbuffer1, '(I10)') ivt
-!!$        ! Check if this is the last=first vertex in the current layer
-!!$        if (ivt+1 .eq. (iaux+j+1)*isegment+2) then
-!!$          write(cbuffer2, '(I10)') jvt
-!!$        else
-!!$          write(cbuffer2, '(I10)') ivt+1
-!!$        end if
-!!$        ! Check if this is the last=first vertex in the inner layer
-!!$        if (jvt .eq. iaux*isegment+&
-!!$                     merge(2, 2+j, dazimuth .ge. 2.0_DP*pi)) then
-!!$          write(cbuffer3, '(I10)') (iaux-j)*isegment+2
-!!$        else
-!!$          write(cbuffer3, '(I10)') jvt
-!!$        end if
-!!$        write(cbuffer4, '(I10)') 0
-!!$
-!!$        write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
-!!$                         trim(adjustl(cbuffer2))//' '//&
-!!$                         trim(adjustl(cbuffer3))//' '//&
-!!$                         trim(adjustl(cbuffer4))
-!!$      end do
-!!$    end do
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Process connection layer between unstructured and structured grids
-!!$    !---------------------------------------------------------------------------
-!!$    do i = 1, nsegments
-!!$
-!!$      ! Compute base vertex number
-!!$      ivt = nlayers*(i-1)
-!!$
-!!$      if (dazimuth .ge. 2.0_DP*pi) then
-!!$        write(cbuffer1, '(I10)') mod(i-1,         nsegments)+nvt-nsegments+1
-!!$        write(cbuffer2, '(I10)') mod(ivt,         nsegments*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(i,           nsegments)+nvt-nsegments+1
-!!$      else
-!!$        write(cbuffer1, '(I10)') mod(i-1,         (nsegments+1))+nvt-nsegments
-!!$        write(cbuffer2, '(I10)') mod(ivt,         (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers, (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(i,           (nsegments+1))+nvt-nsegments
-!!$      end if
-!!$
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-!!$          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-!!$    end do
-!!$
-!!$  end if
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  ! Process outer structured grid
-!!$  !-----------------------------------------------------------------------------
-!!$  do i = 1, nsegments
-!!$    do j = 1, nlayers-1
-!!$
-!!$      ! Compute base vertex number
-!!$      ivt = j-1 + nlayers*(i-1)
-!!$
-!!$      if (dazimuth .ge. 2.0_DP*pi) then
-!!$        write(cbuffer1, '(I10)') mod(ivt,           nsegments*nlayers)+nvt+1
-!!$        write(cbuffer2, '(I10)') mod(ivt+1,         nsegments*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers+1, nsegments*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(ivt+nlayers,   nsegments*nlayers)+nvt+1
-!!$      else
-!!$        write(cbuffer1, '(I10)') mod(ivt,           (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer2, '(I10)') mod(ivt+1,         (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer3, '(I10)') mod(ivt+nlayers+1, (nsegments+1)*nlayers)+nvt+1
-!!$        write(cbuffer4, '(I10)') mod(ivt+nlayers,   (nsegments+1)*nlayers)+nvt+1
-!!$      end if
-!!$
-!!$      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-!!$                       trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-!!$    end do
-!!$  end do
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  write(100,'(A)') 'KNPR'
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  if (dazimuth .ge. 2.0_DP*pi) then
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Full circle
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    ! Write nodal property for interior vertices
-!!$    do i = 1, nvt
-!!$      write(100,'(A)') '0'
-!!$    end do
-!!$
-!!$    do i = 1, nsegments
-!!$      ! Write nodal property for interior vertices
-!!$      do j = 1, nlayers-1
-!!$        write(100,'(A)') '0'
-!!$      end do
-!!$      ! Write nodal property for boundary vertices
-!!$      write(100,'(A)') '1'
-!!$    end do
-!!$
-!!$  else
-!!$
-!!$    !---------------------------------------------------------------------------
-!!$    ! Circle segment
-!!$    !---------------------------------------------------------------------------
-!!$
-!!$    if (bexternalDelaunay) then
-!!$
-!!$      ! Write nodal property for vertices in inner region
-!!$      open(unit=200, file=trim(adjustl(cfilename))//'.1.node')
-!!$      read(200, fmt=*) nvt
-!!$      do ivt = 1, nvt
-!!$        read(200, fmt=*) i, x, y, bdrPar, iaux
-!!$        write(100,'(A)') merge('1', '0', iaux .gt. 1)
-!!$      end do
-!!$      close(200)
-!!$
-!!$    else ! Create nodal properties manually
-!!$
-!!$      ! Write nodal property for vertex at origin
-!!$      write(100,'(A)') '1'
-!!$
-!!$      ! Write nodal properties for vertices in the inner layer
-!!$      iaux = isegment
-!!$
-!!$      ! Loop over all refinement steps
-!!$      do j = 1, 2**irefine
-!!$
-!!$        ! Loop over all segments in current layer
-!!$        do i = 1, iaux
-!!$
-!!$          if (i .eq. 1) then
-!!$            write(100,'(A)') '1'
-!!$          else
-!!$            write(100,'(A)') '0'
-!!$          end if
-!!$        end do
-!!$
-!!$        ! Since the circle is not closed we have to add one extra vertex
-!!$        write(100,'(A)') '1'
-!!$
-!!$        ! Increate the number of segments
-!!$        iaux = iaux + isegment
-!!$      end do
-!!$
-!!$    end if
-!!$
-!!$    ! Write nodal properties for vertices in the outer layer
-!!$    do i = 1, nsegments+1
-!!$      do j = 1, nlayers-1
-!!$        if ((i .eq. 1) .or. (i .eq. nsegments+1)) then
-!!$          ! Write nodal property for boundary vertex
-!!$          write(100,'(A)') '1'
-!!$        else
-!!$          ! Write nodal property for interior vertex
-!!$          write(100,'(A)') '0'
-!!$        end if
-!!$      end do
-!!$
-!!$      ! Write nodal property for boundary vertex
-!!$      write(100,'(A)') '1'
-!!$    end do
-!!$
-!!$  end if
-!!$
-!!$  !-----------------------------------------------------------------------------
-!!$  write(100,'(A)') 'KMM'
-!!$  !-----------------------------------------------------------------------------
-!!$
-!!$  if (dazimuth .ge. 2.0_DP*pi) then
-!!$    write(cbuffer1, '(I10)') nlayers+nvt
-!!$    write(cbuffer2, '(I10)') nlayers*nsegments+nvt
-!!$  else
-!!$    write(cbuffer1, '(I10)') nlayers+nvt
-!!$    write(cbuffer2, '(I10)') nlayers+nvt-1
-!!$  end if
-!!$
-!!$  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
-!!$
-!!$  close(100)
+  !-----------------------------------------------------------------------------
+  ! Generate TRI-file
+  !-----------------------------------------------------------------------------
+  
+  open(unit=100, file=trim(adjustl(cfilename))//'.tri')
+  
+  write(100,'(A)') 'Coarse mesh 2D'
+  write(100,'(A)') 'Generated by gridgencirc2d'
+
+  write(cbuffer1, '(I10)') nel
+  write(cbuffer2, '(I10)') nvt
+
+  write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
+                   trim(adjustl(cbuffer2))//' 0 4 1  NEL NVT NMT NVE NBCT'
+
+  !-----------------------------------------------------------------------------
+  write(100,'(A)') 'DCORVG'
+  !-----------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------
+  ! Copy/convert coordinates from external triangulation
+  !---------------------------------------------------------------------------
+
+  open(unit=200, file=trim(adjustl(cfilename))//'.1.node')
+  read(200, fmt=*) nvt
+  
+  ! Read node file line by line and convert coordinates
+  do ivt = 1, nvt
+    read(200, fmt=*) i, dx, dy, dpar, ibdc
+    
+    if (ibdc .eq. 0) then
+      ! Write inner vertex
+      write(cbuffer1, cFormat) dx
+      write(cbuffer2, cFormat) dy
+    else
+      ! Write boundary parametrization
+      write(cbuffer1, cFormat) dpar
+      write(cbuffer2, cFormat) 0.0_DP
+    end if
+    
+    ! Write line to file
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
+  end do
+
+  close(200)
+
+  !-----------------------------------------------------------------------------
+  write(100,'(A)') 'KVERT'
+  !-----------------------------------------------------------------------------
+
+  !---------------------------------------------------------------------------
+  ! Copy elements of inner region from external triangulation
+  !---------------------------------------------------------------------------
+  
+  open(unit=200, file=trim(adjustl(cfilename))//'.1.ele')
+  read(200, fmt=*) nel
+  
+  ! Read element file line by line and convert coordinates
+  do iel = 1, nel
+    read(200, fmt=*) i, i1, i2, i3
+    
+    write(cbuffer1, '(I10)') i1
+    write(cbuffer2, '(I10)') i2
+    write(cbuffer3, '(I10)') i3
+    write(cbuffer4, '(I10)') 0
+    
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+                     trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+  end do
+  
+  close(200)
+
+  !-----------------------------------------------------------------------------
+  write(100,'(A)') 'KNPR'
+  !-----------------------------------------------------------------------------
+
+  ! Write nodal property for boundary vertices
+  do ipoint = 1, npoints
+    write(100,'(A)') '1'
+  end do
+  
+  ! Write nodal property for boundary vertices
+  do ipoint = npoints+1,nvt
+    write(100,'(A)') '0'
+  end do
+  
+  !-----------------------------------------------------------------------------
+  write(100,'(A)') 'KMM'
+  !-----------------------------------------------------------------------------
+
+  write(cbuffer1, '(I10)') 1
+  write(cbuffer2, '(I10)') npoints
+
+  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
+
+  close(100)
 
 end program gridgenlaval2d
