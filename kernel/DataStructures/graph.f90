@@ -5,25 +5,27 @@
 !#
 !# <purpose>
 !# This module contains the basic definitions and routines to maintain
-!# graphs. A graph consists of a set of vertices V and a set of edged E
-!# connecting vertices. Graphs are stored as adjacency matrices which can be
-!# modified dynamically. A new vertex can be added or an existing vertex can
-!# be removed. Moreover, edges can be inserted between two vertices or removed.
-!# This module provides data structures for both directed and undirected graphs.
-!# You should be aware of the fact, that adjacency lists are perhaps not the
-!# optimal choice for nearly complete graphs, that is, graphs which possess
-!# the majority of all possible edges. In this case it would make sense to
-!# adopt a static matrix data structure. Be warned, this is not implemented
-!# in this module so that the performance of the provided routines may
-!# deteriorate for nearly complete graphs.
+!# graphs. A graph consists of a set of vertices V and a set of edge E
+!# connecting vertices. Graphs are stored as adjacency matrices which
+!# can be modified dynamically. A new vertex can be added or an
+!# existing vertex can be removed. Moreover, edges can be inserted
+!# between two vertices or removed.  This module provides data
+!# structures for both directed and undirected graphs.  You should be
+!# aware of the fact, that adjacency lists are perhaps not the optimal
+!# choice for nearly complete graphs, that is, graphs which possess
+!# the majority of all possible edges. In this case it would make
+!# sense to adopt a static matrix data structure. Be warned, this is
+!# not implemented in this module so that the performance of the
+!# provided routines may deteriorate for nearly complete graphs.
 !#
-!# To keep things simple, graphs can be seen as sparce matrices stored in the
-!# CSR format (either 7 or 9) which can be modified dynamically. Hence, it
-!# makes sence to provide conversion routines between a scalar matrix and a
-!# graph. If you are familiar with the CSR format used for scalar matrices
-!# then this hint will be helpful: The list of vertices is stored in the Kld
-!# array whereas the edges are associated with the Kcol array. In short, an
-!# edge (I,J) exists if and only if there is an entry J in the subarray
+!# To keep things simple, graphs can be seen as sparce matrices stored
+!# in the CSR format (either 7 or 9) which can be modified
+!# dynamically. Hence, it makes sence to provide conversion routines
+!# between a scalar matrix and a graph. If you are familiar with the
+!# CSR format used for scalar matrices then this hint will be helpful:
+!# The list of vertices is stored in the Kld array whereas the edges
+!# are associated with the Kcol array. In short, an edge (I,J) exists
+!# if and only if there is an entry J in the subarray
 !# Kcol(Kld(i):Kld(i+1)-1).
 !#
 !#
@@ -79,7 +81,7 @@ module graph
 
 !$use omp_lib
   use arraylist
-  use binarytree
+  use map
   use fsystem
   use genoutput
   use linearsystemscalar
@@ -142,20 +144,21 @@ module graph
     ! Number of edges
     integer :: NEDGE = 0
 
-    ! Is set to true, if the graph is dense, that is, a graph with NVT vertices
-    ! contains the mainly the vertices labeled 1,...,NVT. In this case the vertex
-    ! number coincides with the table under which its adjacency list is stored.
-    ! If the graph is note marked as dense, then for each vertex IVT the table
-    ! number is stored in the vertex list and must be looked-up each time, the
-    ! adjacency information is required.
-    ! Note that dense graphs can only store positive vertex labels !!!
+    ! Is set to true, if the graph is dense, that is, a graph with NVT
+    ! vertices contains the mainly the vertices labeled 1,...,NVT. In
+    ! this case the vertex number coincides with the table under which
+    ! its adjacency list is stored.  If the graph is note marked as
+    ! dense, then for each vertex IVT the table number is stored in
+    ! the vertex list and must be looked-up each time, the adjacency
+    ! information is required.  Note that dense graphs can only store
+    ! positive vertex labels !!!
     logical :: bisDense = .true.
 
-    ! Search tree for the list of vertices
-    type(t_btree) :: rVertices
+    ! Map for the list of vertices
+    type(t_mapInt_Int) :: rVertices
 
     ! Array of lists for the edges
-    type(t_arraylist) :: rEdges
+    type(t_arraylistInt) :: rEdges
 
   end type t_graph
     
@@ -169,22 +172,24 @@ contains
   subroutine grph_createGraph(rgraph,cgraphFormat,nvtMax,nedgeMax,bisDense)
 
 !<description>
-    ! This routine creates a graph rgraph. The graph format must be one of
-    ! the GRPH_GRAPHx format specifiers. The parameters nvtMax and
-    ! nedgeMax define the maximum number of vertices/egdes that can be
-    ! initially stored in the graph. If either more vertices or edges are
-    ! inserted into the graph, then reallocation of memory will be performed.
-    ! The optional parameter bisDense defines, if the graph should be treted
-    ! as dense graph or not. In a dense graph, the adjacency list of vertex
-    ! ivt is stored in table itable=ivt. It makes sense to use dense graphs,
-    ! e.g., if NVT vertices numbered by 1..NVT are present in the graph so
-    ! that the table look-up can be performed in time O(1). If the graph
+    ! This routine creates a graph rgraph. The graph format must be
+    ! one of the GRPH_GRAPHx format specifiers. The parameters nvtMax
+    ! and nedgeMax define the maximum number of vertices/egdes that
+    ! can be initially stored in the graph. If either more vertices or
+    ! edges are inserted into the graph, then reallocation of memory
+    ! will be performed.  The optional parameter bisDense defines, if
+    ! the graph should be treted as dense graph or not. In a dense
+    ! graph, the adjacency list of vertex ivt is stored in table
+    ! itable=ivt. It makes sense to use dense graphs, e.g., if NVT
+    ! vertices numbered by 1..NVT are present in the graph so that the
+    ! table look-up can be performed in time O(1). If the graph
     ! consists of NVT vertices which can be labeled arbitrarily, e.g.,
-    ! <tex>1.. ($1^k$)*NVT, k >> 1</tex>, then an enormous amount of memory would be
-    ! wasted for the look-up tables. Then it makes sense to define the graph as
-    ! "not dense". In this case, the tables are used sequentially if new
-    ! vertices are inserted but finding the correct table number for vertex
-    ! ivt requires a search in the binary tree, i.e. time O(log NVT).
+    ! <tex>1.. ($1^k$)*NVT, k >> 1</tex>, then an enormous amount of
+    ! memory would be wasted for the look-up tables. Then it makes
+    ! sense to define the graph as "not dense". In this case, the
+    ! tables are used sequentially if new vertices are inserted but
+    ! finding the correct table number for vertex ivt requires a
+    ! search in the map, i.e. time O(log NVT).
 !</description>
 
 !<input>
@@ -219,54 +224,54 @@ contains
     case(GRPH_GRAPHORDERED_DIRECTED)
       rgraph%cgraphFormat = GRPH_GRAPHORDERED_DIRECTED
 
-      ! Create search tree for the list of vertices
+      ! Create map for the list of vertices
       if (rgraph%bisDense) then
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       else
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
       
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
+      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
 
     case(GRPH_GRAPHUNORDERED_DIRECTED)
       rgraph%cgraphFormat = GRPH_GRAPHUNORDERED_DIRECTED
 
-      ! Create search tree for the list of vertices
+      ! Create map for the list of vertices
       if (rgraph%bisDense) then
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       else
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
       
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_UNORDERED)
+      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
 
     case(GRPH_GRAPH7)
       rgraph%cgraphFormat = GRPH_GRAPH7
 
-      ! Create search tree for the list of vertices
+      ! Create map for the list of vertices
       if (rgraph%bisDense) then
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       else
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
 
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_CSR7)
+      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
 
     case(GRPH_GRAPH9)
       rgraph%cgraphFormat = GRPH_GRAPH9
 
-      ! Create search tree for the list of vertices
+      ! Create map for the list of vertices
       if (rgraph%bisDense) then
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       else
-        call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
 
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
+      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
       
     case DEFAULT
       call output_line('Invalid matrix format!',&
@@ -282,12 +287,13 @@ contains
   subroutine grph_createGraphFromMatrix(rscalarMatrix,rgraph,nvtMax,nedgeMax)
 
 !<description>
-    ! This routine creates a graph rgraph from a scalar matrix rscalarMatrix.
-    ! The matrix must be stored in CSR format 7 or 9. Note that a graph that
-    ! is generated from a matrix is assumed to be dense automatically.
-    ! If the optional parameters nvtMax or nedgeMax are present then
-    ! their values will be adopted for the maximum number of vertices/edges
-    ! than can be stored in the graph initially without reallocation.
+    ! This routine creates a graph rgraph from a scalar matrix
+    ! rscalarMatrix.  The matrix must be stored in CSR format 7 or
+    ! 9. Note that a graph that is generated from a matrix is assumed
+    ! to be dense automatically.  If the optional parameters nvtMax or
+    ! nedgeMax are present then their values will be adopted for the
+    ! maximum number of vertices/edges than can be stored in the graph
+    ! initially without reallocation.
 !</description>
 
 !<input>
@@ -338,24 +344,24 @@ contains
          LSYSSC_MATRIX7INTL)
       rgraph%cgraphFormat = GRPH_GRAPH7
 
-      ! Create search tree for the list of vertices
-      call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+      ! Create map for the list of vertices
+      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_CSR7)
+      call alst_create(rgraph%rEdges,nvt,nedge)
 
       ! Set pointers
       call lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
       call lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
 
       ! Fill list of edges
-      call arrlst_copyArrayListTable(p_Kcol,rgraph%rEdges,p_Kld)
+      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
 
       ! Generate p_Key = array [1,2,3,...,NVT]
-      call storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
-          h_Key,ST_NEWBLOCK_ORDERED)
+      call storage_new('grph_createGraphFromMatrix','p_Key',&
+          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
       call storage_getbase_int(h_Key,p_Key)
-      call btree_copyToTree(p_Key,rgraph%rVertices)
+      call map_copy(p_Key,rgraph%rVertices)
       call storage_free(h_Key)
       
 
@@ -363,24 +369,24 @@ contains
          LSYSSC_MATRIX9INTL)
       rgraph%cgraphFormat = GRPH_GRAPH9
       
-      ! Create search tree for the list of vertices
-      call btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+      ! Create map for the list of vertices
+      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
       
       ! Create array of lists for edges
-      call arrlst_createArrayList(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_INCREASING)
+      call alst_create(rgraph%rEdges,nvt,nedge)
 
       ! Set pointers
       call lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
       call lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
 
       ! Fill list of edges
-      call arrlst_copyArrayListTable(p_Kcol,rgraph%rEdges,p_Kld)
+      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
 
       ! Generate p_Key = array [1,2,3,...,NVT]
-      call storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
-          h_Key,ST_NEWBLOCK_ORDERED)
+      call storage_new('grph_createGraphFromMatrix','p_Key',&
+          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
       call storage_getbase_int(h_Key,p_Key)
-      call btree_copyToTree(p_Key,rgraph%rVertices)
+      call map_copy(p_Key,rgraph%rVertices)
       call storage_free(h_Key)
 
 
@@ -407,11 +413,11 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Release search tree for the list of vertices
-    call btree_releaseTree(rgraph%rVertices)
+    ! Release map for the list of vertices
+    call map_release(rgraph%rVertices)
 
     ! Release array of lists for edges
-    call arrlst_releaseArrayList(rgraph%rEdges)
+    call alst_release(rgraph%rEdges)
 
     ! Reset data
     rgraph%cgraphFormat = GRPH_GRAPHUNDEFINED
@@ -427,9 +433,9 @@ contains
   subroutine grph_generateMatrix(rgraph,rscalarMatrix)
 
 !<description>
-    ! This subroutine generates a sparse matrix rscalarMatrix stored in
-    ! format CSR 7 or 9 whereby the sparsity pattern is adopted from
-    ! the graph rgraph.
+    ! This subroutine generates a sparse matrix rscalarMatrix stored
+    ! in format CSR 7 or 9 whereby the sparsity pattern is adopted
+    ! from the graph rgraph.
 !</description>
 
 !<input>
@@ -444,9 +450,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
-    integer :: itable,ieq,ia,ncols,ipred,ipos
-    integer :: isize
+    type(it_mapInt_Int) :: rmapIter
+    integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
+    integer :: ia,ieq,isize,itable,ncols
     
     ! Check that matrix and graph have the same format
     select case(rscalarMatrix%cmatrixFormat)
@@ -476,21 +482,22 @@ contains
     ! Set number of edges = number of nonzero matrix entries
     rscalarMatrix%NA = rgraph%NEDGE
     
-    ! Set number of columns/rows. This is a little bit ugly because the
-    ! number of vertices (NVT) may be different from the number of tables.
-    ! If vertices are inserted as follows 1,2,3,...,NVT, then the number of
-    ! tables is equal to the number of vertices. However, if only vertices
-    ! 1,5,9,10 are present in the graph, then NVT=4 but the largest number in
-    ! the graph is 10. Hence, the matrix has NEQ=NCOLS=10 and some rows, e.g.
-    ! 2,3,4 have no entries. For a finite element matrix, this does not make
-    ! sense but this graph module should be as general as possible.
-    rscalarMatrix%NEQ   = max(rgraph%NVT,rgraph%rEdges%NTABLE)
+    ! Set number of columns/rows. This is a little bit ugly because
+    ! the number of vertices (NVT) may be different from the number of
+    ! tables.  If vertices are inserted as follows 1,2,3,...,NVT, then
+    ! the number of tables is equal to the number of vertices.
+    ! However, if only vertices 1,5,9,10 are present in the graph,
+    ! then NVT=4 but the largest number in the graph is 10. Hence, the
+    ! matrix has NEQ=NCOLS=10 and some rows, e.g.  2,3,4 have no
+    ! entries. For a finite element matrix, this does not make sense
+    ! but this graph module should be as general as possible.
+    rscalarMatrix%NEQ   = max(rgraph%NVT,alst_ntable(rgraph%rEdges))
     rscalarMatrix%NCOLS = rscalarMatrix%NEQ
 
     if (rgraph%bisDense) then
       
       ! Convert array list to matrix
-      call arrlst_copyArrayListTable(rgraph%rEdges,rscalarMatrix%h_Kcol,rscalarMatrix%h_Kld)
+      call alst_copy(rgraph%rEdges,rscalarMatrix%h_Kld,rscalarMatrix%h_Kcol)
       
     else
 
@@ -532,13 +539,16 @@ contains
 
         p_Kld(ieq) = ia
 
-        ! Check if vertex with number ieq exists
-        if (btree_searchInTree(rgraph%rVertices,ieq,ipred).eq.BTREE_FOUND) then
-          ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-          itable = rgraph%rVertices%p_IData(1,ipos)
+        ! Check if vertex with number IEQ exists
+        rmapIter = map_find(rgraph%rVertices,ieq)
+        if (.not.map_isNull(rmapIter)) then
+          
+          ! Get auxiliary data
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
 
           ! Restore row from table
-          call arrlst_copyArrayList(rgraph%rEdges,itable,p_Kcol(ia:),ncols)
+          call alst_copyTbl(rgraph%rEdges,itable,p_Kcol(ia:),ncols)
         end if
 
         ia = ia+ncols
@@ -570,6 +580,7 @@ contains
       ! Rebuild array
       call lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rscalarMatrix%NEQ)
     end if
+
   end subroutine grph_generateMatrix
 
   ! ***************************************************************************
@@ -588,83 +599,63 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    type(it_mapInt_Int) :: rmapIter
+    integer, dimension(:), pointer :: p_Idata
+    integer :: ikey,itable
+
     ! Are we dense graph?
     if (rgraph%bisDense) then
-      call inorderDense(rgraph%rVertices%p_Kchild(TRIGHT,TROOT))
+
+      ! Output dense graph
+      rmapIter = map_begin(rgraph%rVertices)
+      do while (.not.map_isNull(rmapIter))
+
+        ! Get key value
+        ikey = map_get(rgraph%rVertices,rmapIter)
+
+        ! Print neighbours of vertex IKEY
+        call output_line('Vertex number: '//trim(sys_siL(ikey,15)))
+        call alst_print(rgraph%rEdges,ikey)
+
+        ! Proceed to next vertex
+        call map_next(rmapIter)
+      end do
+
     else
-      call inorderSparse(rgraph%rVertices%p_Kchild(TRIGHT,TROOT))
+
+      ! Output sparse graph
+      rmapIter = map_begin(rgraph%rVertices)
+      do while (.not.map_isNull(rmapIter))
+
+        ! Get key value
+        ikey = map_get(rgraph%rVertices,rmapIter)
+
+        ! Get auxiliary data value
+        call map_get(rgraph%rVertices,rmapIter,p_Idata)
+        itable = p_Idata(1)
+
+        ! Print neighbours of vertex IKEY
+        call output_line('Vertex number: '//trim(sys_siL(ikey,15)))
+        call alst_print(rgraph%rEdges,itable)
+
+        ! Proceed to next vertex
+        call map_next(rmapIter)
+      end do
+
     end if
-
-  contains
     
-    ! Here, the real working routines follow.
-    
-    !**************************************************************
-    ! Inorder traversal of the tree storing the vertex numbers
-    recursive subroutine inorderDense(i)
-      integer, intent(in) :: i
-
-      ! local variables
-      integer :: ikey
-
-      ! Check if position is valid
-      if (i .eq. TNULL) return
-
-      ! Proceed with left child if it exists
-      if (rgraph%rVertices%p_Kchild(TLEFT,i) .ne. TNULL)&
-          call inorderDense(rgraph%rVertices%p_Kchild(TLEFT,i))
-
-      ! We are in the lucky position that itable = ikey
-      ikey   = rgraph%rVertices%p_IKey(i)
-      
-      call output_line('Vertex number: '//trim(sys_siL(ikey,15)))
-      call arrlst_printArrayList(rgraph%rEdges,ikey)
-        
-      ! Proceed with right child if it exists
-      if (rgraph%rVertices%p_Kchild(TRIGHT,i) .ne. TNULL)&
-          call inorderDense(rgraph%rVertices%p_Kchild(TRIGHT,i))
-    end subroutine inorderDense
-
-     !**************************************************************
-    ! Inorder traversal of the tree storing the vertex numbers
-    recursive subroutine inorderSparse(i)
-      integer, intent(in) :: i
-
-      ! local variables
-      integer :: itable,ikey
-
-      ! Check if position is valid
-      if (i .eq. TNULL) return
-
-      ! Proceed with left child if it exists
-      if (rgraph%rVertices%p_Kchild(TLEFT,i) .ne. TNULL)&
-          call inorderSparse(rgraph%rVertices%p_Kchild(TLEFT,i))
-
-      ! In general ikey != itable
-      ikey   = rgraph%rVertices%p_IKey(i)
-      itable = rgraph%rVertices%p_IData(1,i)
-
-      call output_line('Vertex number: '//trim(sys_siL(ikey,15)))
-      call arrlst_printArrayList(rgraph%rEdges,itable)
-
-      ! Proceed with right child if it exists
-      if (rgraph%rVertices%p_Kchild(TRIGHT,i) .ne. TNULL)&
-          call inorderSparse(rgraph%rVertices%p_Kchild(TRIGHT,i))
-    end subroutine inorderSparse
   end subroutine grph_printGraph
 
   ! ***************************************************************************
 
 !<function>
 
-  function grph_hasVertex(rgraph,iVertex,iVertexPosition) result(bexists)
+  function grph_hasVertex(rgraph,iVertex) result(bexists)
 
 !<description>
     ! This function returns TRUE if the graph has the given vertex.
-    ! Otherwise, it returns FALSE. If the optional parameter
-    ! iVertexPosition is present, then the function will also
-    ! return the position of the vertex with number iVertex in the
-    ! tree.
+    ! Otherwise, it returns FALSE.
 !</description>
 
 !<input>
@@ -676,11 +667,6 @@ contains
     ! The graph
     type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
-
-!<output>
-    ! OPTIONAL: position of vertex in list
-    integer, intent(out), optional :: iVertexPosition
-!</output>
 
 !<result>
     ! Flag for existence of the vertex
@@ -688,31 +674,24 @@ contains
 !</result>
 !</function>
 
-    ! local variabes
-    integer :: ipred
-
     ! Search in the vertex list
-    bexists = (btree_searchInTree(rgraph%rVertices,iVertex,ipred).eq.BTREE_FOUND)
+    bexists  = .not.map_isNull(map_find(rgraph%rVertices,iVertex))
 
-    ! Return vertex position if required
-    if (bexists .and. present(iVertexPosition)) then
-      iVertexPosition = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-    end if
   end function grph_hasVertex
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine grph_insertVertex(rgraph,iVertex,iVertexPosition,iEdgePosition)
+  subroutine grph_insertVertex(rgraph,iVertex)
 
 !<description>
-    ! This subroutine inserts the vertex with number iVertex into the graph.
-    ! In addition, the trivial edge (iVertex,iVertex) is inserted.
-    ! If the optional parameter iVertexPosition is present, then
-    ! the posiion of vertex iVertex in the tree is returned.
-    ! If the optional parameter iEdgePosition is present, then the position
-    ! of the trivial edge (iVertex,iVertex) is returned
+    ! This subroutine inserts the vertex with number iVertex into the
+    ! graph.  In addition, the trivial edge (iVertex,iVertex) is
+    ! inserted.  If the optional parameter iVertexPosition is present,
+    ! then the posiion of vertex iVertex is returned.  If the optional
+    ! parameter iEdgePosition is present, then the position of the
+    ! trivial edge (iVertex,iVertex) is returned
 !</description>
 
 !<input>
@@ -725,35 +704,26 @@ contains
     type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 
-!<output>
-    ! OPTIONAL: position of vertex in list
-    integer, intent(out), optional :: iVertexPosition
-
-    ! OPTIONAL: position of edge (iVertex,iVertex)
-    integer, intent(out), optional :: iEdgePosition
-!</output>
 !</subroutine>
 
     ! local variabes
-    integer :: iposVertex,iposEdge,itable
+    type(it_mapInt_Int) :: rmapIter
+    integer :: itable
     
     ! Try to add entry with key iVertex
     if (rgraph%bisDense) then
-      itable=iVertex
-      call btree_insertIntoTree(rgraph%rVertices,iVertex,iposOpt=iposVertex)
+      itable   = iVertex
+      rmapIter = map_insert(rgraph%rVertices,iVertex)
     else
-      itable=rgraph%NVT+1
-      call btree_insertIntoTree(rgraph%rVertices,iVertex,IData=(/itable/),iposOpt=iposVertex)
+      itable   = rgraph%NVT+1
+      rmapIter = map_insert(rgraph%rVertices,iVertex,(/itable/))
     end if
 
-    ! Return if vertex already exists
-    if (iposVertex < 0) then
-      if (present(iVertexPosition)) iVertexPosition=abs(iposVertex)
-      return
-    end if
+    ! Check for special flag
+    if (map_hasSpec(rmapIter, MAP_MSPEC_EXISTS)) return
 
     ! Increase number of vertices by one
-    rgraph%NVT=rgraph%NVT+1
+    rgraph%NVT = rgraph%NVT+1
     
     ! Add trivial edge (iVertex,iVertex) to the list of edges
     select case(rgraph%cgraphFormat)
@@ -762,7 +732,7 @@ contains
          GRPH_GRAPH9,&
          GRPH_GRAPHORDERED_DIRECTED,&
          GRPH_GRAPHUNORDERED_DIRECTED)
-      call arrlst_prependToArrayList(rgraph%rEdges,itable,iVertex,iposEdge)
+      call alst_push_front(rgraph%rEdges,itable,iVertex)
       
     case DEFAULT
       call output_line('Unsupported graph format!',&
@@ -771,11 +741,8 @@ contains
     end select
     
     ! Increase number of edges by one
-    rgraph%NEDGE=rgraph%NEDGE+1
+    rgraph%NEDGE = rgraph%NEDGE+1
     
-    ! Return vertex/edge position?
-    if (present(iVertexPosition)) iVertexPosition=iposVertex
-    if (present(iEdgePosition))   iEdgePosition=iposEdge
   end subroutine grph_insertVertex
 
   ! ***************************************************************************
@@ -785,12 +752,13 @@ contains
   subroutine grph_removeVertex(rgraph,iVertex,ireplacementVertex)
 
 !<description>
-    ! This subroutine removes the vertex with number iVertex from the graph
-    ! and eliminates all of its incoming and outgoing edges.
-    ! If the optional parameter ireplacemantVertex is true, then vertex iVertex
-    ! is removed and the vertex with number ireplacementVertex is moved at its
-    ! former position. This can be useful, if one needs a complete set of
-    ! vertices, e.g., 1..NVT without "holes" at the positions of removed vertices.
+    ! This subroutine removes the vertex with number iVertex from the
+    ! graph and eliminates all of its incoming and outgoing edges.  If
+    ! the optional parameter ireplacemantVertex is true, then vertex
+    ! iVertex is removed and the vertex with number ireplacementVertex
+    ! is moved at its former position. This can be useful, if one
+    ! needs a complete set of vertices, e.g., 1..NVT without "holes"
+    ! at the positions of removed vertices.
 !</description>
 
 !<input>
@@ -808,22 +776,26 @@ contains
 !</subroutine>
 
     ! local variabes
-    integer :: itable,jtable,ireplaceTable,jVertex,ireplaceVertex,ipred,ipos,iposVertex
+    type(it_mapInt_Int) :: rmapIter
+    type(it_arraylistInt) :: ralstIter,rposition
+    integer, dimension(:), pointer :: p_Idata
+    integer :: ireplaceTable,ireplaceVertex,itable,jVertex,jtable
     logical :: bdoReplace
 
-    ! Check if vertex is present in tree?
-    if (btree_searchInTree(rgraph%rVertices,iVertex,ipred).eq.BTREE_NOT_FOUND) then
+    ! Check if vertex is present in map
+    rmapIter = map_find(rgraph%rVertices,iVertex)
+    if (map_isNull(rmapIter)) then
       call output_line('Vertex does not exist in graph!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
       call sys_halt()
     end if
 
     ! Replace vertex or leave "holes"?
-    bdoReplace=present(ireplacementVertex)
+    bdoReplace = present(ireplacementVertex)
     if (bdoReplace) then
-      ireplaceVertex=ireplacementVertex
+      ireplaceVertex = ireplacementVertex
     else
-      ireplaceVertex=0
+      ireplaceVertex = 0
     end if
 
     ! Are we dense graph?
@@ -840,51 +812,61 @@ contains
       
       case(GRPH_GRAPH7,&
            GRPH_GRAPH9)
-        ! We are in the lucky position, that the graph is undirected, that is,
-        ! there exits an edge (i,j) if and only if there exists the edge (j,i).
-        ! Hence, we do not have to loop through the list of all vertices but
-        ! it suffices to visit those which are present in the adjacency list
-        ! of vertex iVertex.
+        ! We are in the lucky position, that the graph is undirected,
+        ! that is, there exits an edge (i,j) if and only if there
+        ! exists the edge (j,i).  Hence, we do not have to loop
+        ! through the list of all vertices but it suffices to visit
+        ! those which are present in the adjacency list of vertex
+        ! iVertex.
         
-        ! Step 1: Delete corresponding vertex from tree. Note that for dense
-        !         graphs the vertex tree does not store further information and
-        !         can be eliminated in the first step. If the vertex should be
-        !         replaced by the last vertex, then the last vertex is
-        !         removed from the tree instead of vertex numbered iVertex.
-        if (btree_deleteFromTree(rgraph%rVertices,&
-            merge(ireplaceVertex,iVertex,bdoReplace)).eq.BTREE_NOT_FOUND) then
+        ! Step 1: Delete corresponding vertex from map. Note that for
+        !         dense graphs the vertex map does not store further
+        !         information and can be eliminated in the first
+        !         step. If the vertex should be replaced by the last
+        !         vertex, then the last vertex is removed from the map
+        !         instead of vertex numbered iVertex.
+        rmapIter = map_find(rgraph%rVertices,&
+                            merge(ireplaceVertex,iVertex,bdoReplace))
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist in graph!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           call sys_halt()
+        else
+          call map_erase(rgraph%rVertices, rmapIter)
         end if
                
-        ! Step 2: Loop through adjacency list of vertex iVertex and delete all
-        !         edges (jVertex,iVertex) from the adjacency list of jVertex.
+        ! Step 2: Loop through adjacency list of vertex iVertex and
+        !         delete all edges (jVertex,iVertex) from the
+        !         adjacency list of jVertex.
 
         ! Find position of first entry in adjacency list
-        iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.true.)
-        do while(iposVertex .ne. ARRLST_NULL)
+        ralstIter = alst_begin(rgraph%rEdges,iVertex)
+        do while(.not.alst_isNull(ralstIter))
           
           ! Get number of adjacent vertex
-          jVertex=rgraph%rEdges%p_IData(iposVertex)
-
-          ! Get position of next entry in adjacency list
-          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.false.)
+          jVertex = alst_get(rgraph%rEdges,ralstIter)
           
-          ! Do nothing if both vertices are the same. The adjacency list of
-          ! iVertex is removed/replaced anyway so we can leave it 'as is'
+          ! Get position of next entry in adjacency list
+          call alst_next(ralstIter)
+          
+          ! Do nothing if both vertices are the same. The adjacency
+          ! list of iVertex is removed/replaced anyway so we can leave
+          ! it 'as is'
           if (iVertex .eq. jVertex) cycle
 
           ! Remove vertex iVertex from adjacency list of vertex jVertex
-          if (arrlst_deleteFromArrayList(rgraph%rEdges,jVertex,iVertex).eq.&
-              ARRAYLIST_NOT_FOUND) then
+          rposition = alst_find(rgraph%rEdges,jVertex,iVertex)
+          if (alst_isNull(rposition)) then
             call output_line('Unable to delete vertex from adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            rposition = alst_erase(rgraph%rEdges,rposition)
           end if
            
-          ! Decrease number of edges by two; for the edge (iVertex,jVertex)
-          ! and for the edge (jVertex,iVertex) that exists in an undirected graph
+          ! Decrease number of edges by two; for the edge
+          ! (iVertex,jVertex) and for the edge (jVertex,iVertex) that
+          ! exists in an undirected graph
           rgraph%NEDGE = rgraph%NEDGE-1
         end do
         
@@ -893,86 +875,95 @@ contains
         if (bdoReplace .and. (iVertex .ne. ireplaceVertex)) then
           
           ! Remove the trivial edge (ireplaceVertex,ireplaceVertex)
-          if (arrlst_deleteFromArrayList(rgraph%rEdges,ireplaceVertex,ireplaceVertex).eq.&
-              ARRAYLIST_NOT_FOUND) then
+          rposition = alst_find(rgraph%rEdges,ireplaceVertex,ireplaceVertex)
+          if (alst_isNull(rposition)) then
             call output_line('Unable to delete vertex from adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            rposition = alst_erase(rgraph%rEdges,rposition)
           end if
-          
+                    
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
-          ! From now onward, the adjacencey list of the replacement vertex is
-          ! stored at position iVertex and vice versa. Keep this in mind!
-          call arrlst_swapArrayList(rgraph%rEdges,iVertex,ireplaceVertex)
-
+          ! From now onward, the adjacencey list of the replacement
+          ! vertex is stored at position iVertex and vice versa. Keep
+          ! this in mind!
+          call alst_swapTbl(rgraph%rEdges,iVertex,ireplaceVertex)
+          
           ! Release adjacency list of vertex ireplaceVertex
-          call arrlst_releaseArrayList(rgraph%rEdges,ireplaceVertex)
-
-          ! Look for position of trivial edge (iVertex,iVertex)
-          if (arrlst_searchInArrayList(rgraph%rEdges,iVertex,iVertex,ipred).eq.&
-              ARRAYLIST_FOUND) then
+          call alst_releaseTbl(rgraph%rEdges,ireplaceVertex)
+          
+          ! Insert trivial edge (iVertex,iVertex) into adjacency list
+          rposition = alst_find(rgraph%rEdges,iVertex,iVertex,.false.)
+          if (alst_isNull(rposition)) then
+            rposition = alst_insert(rgraph%rEdges,rposition,iVertex)
+          else
             call output_line('Vertex already exists in adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
           end if
 
-          ! Insert trivial edge (iVertex,iVertex) into adjacency list
-          call arrlst_insertIntoArrayList(rgraph%rEdges,iVertex,iVertex,ipred,ipos)
-
-          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex
-          !            (which is already stored at its new position iVertex) and
-          !            delete all edges (jVertex,ireplaceVertex) from the adjacency
-          !            lists of jVertex. Afterwards, add the edge (jVertex,iVertex)
-          !            to the adjacency list of jVertex.
+          ! Step 3(a): Loop through adjacency list of vertex
+          !            ireplaceVertex (which is already stored at its
+          !            new position iVertex) and delete all edges
+          !            (jVertex,ireplaceVertex) from the adjacency
+          !            lists of jVertex. Afterwards, add the edge
+          !            (jVertex,iVertex) to the adjacency list of
+          !            jVertex.
 
           ! Find position of first entry in adjacency list
-          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.true.)
-          do while(iposVertex .ne. ARRLST_NULL)
+          ralstIter = alst_begin(rgraph%rEdges,iVertex)
+          do while(.not.alst_isNull(ralstIter))
             
             ! Get number of adjacent vertex
-            jVertex=rgraph%rEdges%p_IData(iposVertex)
+            jVertex = alst_get(rgraph%rEdges,ralstIter)
 
             ! Get position of next entry in adjacency list
-            iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.false.)
+            call alst_next(ralstIter)
             
             ! Do nothing if jVertex is identical iVertex
             if (jVertex .eq. iVertex) cycle
             
-            ! Remove vertex ireplaceVertex from adjacency list of vertex jVertex
-            if (arrlst_deleteFromArrayList(rgraph%rEdges,jVertex,ireplaceVertex).eq.&
-                ARRAYLIST_NOT_FOUND) then
+            ! Remove vertex ireplaceVertex from adjacency list of
+            ! vertex jVertex
+            rposition = alst_find(rgraph%rEdges,jVertex,ireplaceVertex)
+            if (alst_isNull(rposition)) then
               call output_line('Unable to delete vertex from adjacency list!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
+            else
+              rposition = alst_erase(rgraph%rEdges,rposition)
             end if
 
-            ! Look for position of edge (jVertex,iVertex)
-            if (arrlst_searchInArrayList(rgraph%rEdges,jVertex,iVertex,ipred).eq.&
-                ARRAYLIST_FOUND) then
+            ! Insert edge (jVertex,iVertex) into adjacency list
+            rposition = alst_find(rgraph%rEdges,jVertex,iVertex,.false.)
+            if (alst_isNull(rposition)) then
+              rposition = alst_insert(rgraph%rEdges,rposition,iVertex)
+            else
               call output_line('Vertex already exists in adjacency list!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
             end if
             
-            ! Insert edge (jVertex,iVertex) into adjacency list
-            call arrlst_insertIntoArrayList(rgraph%rEdges,jVertex,iVertex,ipred,ipos)
           end do
                   
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
           
-          ! Decrease number of edges by one; for the trivial edge (lastVertex,lastVertex)
+          ! Decrease number of edges by one; for the trivial edge
+          ! (lastVertex,lastVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
 
         else
           
           ! Step 3(b): Release adjacency list of vertex iVertex
-          call arrlst_releaseArrayList(rgraph%rEdges,iVertex)
+          call alst_releaseTbl(rgraph%rEdges,iVertex)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
           
-          ! Decrease number of edges by one; for the trivial edge (iVertex,iVertex)
+          ! Decrease number of edges by one; for the trivial edge
+          ! (iVertex,iVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
 
@@ -995,174 +986,200 @@ contains
 
       case(GRPH_GRAPH7,&
            GRPH_GRAPH9)
-        ! We are in the lucky position, that the graph is undirected, that is,
-        ! there exits an edge (i,j) if and only if there exists the edge (j,i).
-        ! Hence, we do not have to loop through the list of all vertices but
-        ! it suffices to visit those which are present in the adjacency list
-        ! of vertex iVertex.
+        ! We are in the lucky position, that the graph is undirected,
+        ! that is, there exits an edge (i,j) if and only if there
+        ! exists the edge (j,i).  Hence, we do not have to loop
+        ! through the list of all vertices but it suffices to visit
+        ! those which are present in the adjacency list of vertex
+        ! iVertex.
         
         ! Get table for iVertex
-        if (btree_searchInTree(rgraph%rVertices,iVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist in graph!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos   = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
         
-        ! Get table for ireplaceVertex if required
+        ! Get table for ireplaceVertex (if required)
         if (bdoReplace) then
-          if (btree_searchInTree(rgraph%rVertices,ireplaceVertex,ipred).eq.BTREE_NOT_FOUND) then
+          rmapIter = map_find(rgraph%rVertices,ireplaceVertex)
+          if (map_isNull(rmapIter)) then
             call output_line('Vertex does not exist in graph!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            call map_get(rgraph%rVertices,rmapIter,p_Idata)
+            ireplaceTable = p_Idata(1)
           end if
-          ipos          = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-          ireplaceTable = rgraph%rVertices%p_IData(1,ipos)
         else
-          ireplaceTable=0
+          ireplaceTable = 0
         end if
         
-        ! Step 1: Delete corresponding vertex from tree. Note that for dense
-        !         graphs the vertex tree does not store further information and
-        !         can be eliminated in the first step. If the vertex should be
-        !         replaced by the last vertex, then the last vertex is
-        !         removed from the tree instead of vertex numbered iVertex.
-        
-        if (btree_deleteFromTree(rgraph%rVertices,&
-            merge(ireplaceTable,iVertex,bdoReplace)).eq.BTREE_NOT_FOUND) then
+        ! Step 1: Delete corresponding vertex from map. Note that for
+        !         dense graphs the vertex map does not store further
+        !         information and can be eliminated in the first
+        !         step. If the vertex should be replaced by the last
+        !         vertex, then the last vertex is removed from the map
+        !         instead of vertex numbered iVertex.
+        rmapIter = map_find(rgraph%rVertices,&
+                            merge(ireplaceTable,iVertex,bdoReplace))
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist in graph!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           call sys_halt()
+        else
+          call map_erase(rgraph%rVertices,rmapIter)
         end if
         
-        ! Step 2: Loop through adjacency list of vertex iVertex and delete all
-        !         edges (jVertex,iVertex) from the adjacency lists of jVertex.
+        ! Step 2: Loop through adjacency list of vertex iVertex and
+        !         delete all edges (jVertex,iVertex) from the
+        !         adjacency lists of jVertex.
         
         ! Find position of first entry in adjacency list
-        iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,itable,.true.)
-        do while(iposVertex .ne. ARRLST_NULL)
+        ralstIter = alst_begin(rgraph%rEdges,itable)
+        do while(.not.alst_isNull(ralstIter))
           
           ! Get number of adjacent vertex
-          jVertex=rgraph%rEdges%p_IData(iposVertex)
+          jVertex = alst_get(rgraph%rEdges,ralstIter)
           
           ! Get position of next entry in adjacency list
-          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,itable,.false.)
+          call alst_next(ralstIter)
           
           ! Do nothing if both vertices are the same
           if (iVertex .eq. jVertex) cycle
 
-          ! In addition, do nothing if the current vertex is identical to
-          ! the replacement vertex. Otherwise, we would have to re-insert
-          ! it afterwards. Hence, it does not make sense to remove before.
+          ! In addition, do nothing if the current vertex is identical
+          ! to the replacement vertex. Otherwise, we would have to
+          ! re-insert it afterwards. Hence, it does not make sense to
+          ! remove before.
           if (bdoReplace .and. (ireplaceVertex .eq. jVertex)) cycle
 
           ! Get table for jVertex
-          if (btree_searchInTree(rgraph%rVertices,jVertex,ipred).eq.BTREE_NOT_FOUND) then
+          rmapIter = map_find(rgraph%rVertices,jVertex)
+          if (map_isNull(rmapIter)) then
             call output_line('Vertex does not exist in graph!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            call map_get(rgraph%rVertices,rmapIter,p_Idata)
+            jtable = p_Idata(1)
           end if
-          ipos   = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-          jtable = rgraph%rVertices%p_IData(1,ipos)
 
           ! Remove vertex iVertex from adjacency list of vertex jVertex
-          if (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,iVertex).eq.&
-              ARRAYLIST_NOT_FOUND) then
+          rposition = alst_find(rgraph%rEdges,jtable,iVertex)
+          if (alst_isNull(rposition)) then
             call output_line('Unable to delete vertex from adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            rposition = alst_erase(rgraph%rEdges, rposition)
           end if
           
-          ! Decrease number of edges by two; for the edge (iVertex,jVertex)
-          ! and for the edge (jVertex,iVertex) that exists in an undirected graph
+          ! Decrease number of edges by two; for the edge
+          ! (iVertex,jVertex) and for the edge (jVertex,iVertex) that
+          ! exists in an undirected graph
           rgraph%NEDGE = rgraph%NEDGE-2
         end do
 
-        ! Now, vertex iVertex does no longer exist in any adjacency list.
-        ! Check if replacement vertex needs to be moved to position iVertex.
+        ! Now, vertex iVertex does no longer exist in any adjacency
+        ! list.  Check if replacement vertex needs to be moved to
+        ! position iVertex.
         if (bdoReplace .and. (iVertex .ne. ireplaceVertex)) then
           
-          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex and
-          !            delete all edges (jVertex,ireplaceVertex) from the adjacency
-          !            lists of jVertex. Afterwards, add the edge (jVertex,iVertex)
-          !            to the adjacency list of jVertex. Finally, swap adjacency
-          !            list of vertices iVertex and ireplaceVertex.
+          ! Step 3(a): Loop through adjacency list of vertex
+          !            ireplaceVertex and delete all edges
+          !            (jVertex,ireplaceVertex) from the adjacency
+          !            lists of jVertex. Afterwards, add the edge
+          !            (jVertex,iVertex) to the adjacency list of
+          !            jVertex. Finally, swap adjacency list of
+          !            vertices iVertex and ireplaceVertex.
           
           ! Find position of first entry in adjacency list
-          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,ireplaceTable,.true.)
-          do while(iposVertex .ne. ARRLST_NULL)
+          ralstIter = alst_begin(rgraph%rEdges,ireplaceTable)
+          do while(.not.alst_isNull(ralstIter))
 
             ! Get number of adjacent vertex
-            jVertex=rgraph%rEdges%p_IData(iposVertex)
+            jVertex = alst_get(rgraph%rEdges,ralstIter)
             
             ! Get position of next entry in adjacency list
-            iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,ireplaceTable,.false.)
+            call alst_next(ralstIter)
             
-            ! Do nothing if both vertices are the same. This situation required
-            ! special treatment (see below)
+            ! Do nothing if both vertices are the same. This situation
+            ! required special treatment (see below)
             if ((ireplaceVertex .eq. jVertex) .or. iVertex .eq. jVertex) cycle
             
             ! Get table for jVertex
-            if (btree_searchInTree(rgraph%rVertices,jVertex,ipred).eq.BTREE_NOT_FOUND) then
+            rmapIter = map_find(rgraph%rVertices,jVertex)
+            if (map_isNull(rmapIter)) then
               call output_line('Vertex does not exist in graph!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
+            else
+              call map_get(rgraph%rVertices,rmapIter,p_Idata)
+              jtable = p_Idata(1)
             end if
-            ipos   = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-            jtable = rgraph%rVertices%p_IData(1,ipos)
             
             ! Remove vertex lastVertex from adjacency list of vertex jVertex
-            if (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,ireplaceVertex).eq.&
-                ARRAYLIST_NOT_FOUND) then
+            rposition = alst_find(rgraph%rEdges,jtable,ireplaceVertex)
+            if (alst_isNull(rposition)) then
               call output_line('Unable to update vertex in adjacency list!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
+            else
+              rposition = alst_erase(rgraph%rEdges,rposition)
             end if
             
-            ! Look for position of edge (jVertex,iVertex)
-            if (arrlst_searchInArrayList(rgraph%rEdges,jtable,&
-                iVertex,ipred).eq.ARRAYLIST_FOUND) then
+            ! Insert edge (jVertex,iVertex) into adjacency list
+            rposition = alst_find(rgraph%rEdges,jtable,iVertex,.false.)
+            if (alst_isNull(rposition)) then
+              rposition = alst_insert(rgraph%rEdges,rposition,iVertex)
+            else
               call output_line('Vertex replacement already exists in adjacency list!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
             end if
-            
-            ! Insert edge (jVertex,iVertex) into adjacency list
-            call arrlst_insertIntoArrayList(rgraph%rEdges,jtable,iVertex,ipred,ipos)
           end do
 
-          ! Remove the trivial edge (ireplaceVertex,ireplaceVertex) from the adjacency
-          ! list. Note that the trivial edge (iVertex,iVertex) still exists and has
-          ! not been removed in the upper removal loop
-          if (arrlst_deleteFromArrayList(rgraph%rEdges,ireplaceTable,ireplaceVertex).eq.&
-              ARRAYLIST_NOT_FOUND) then
+          ! Remove the trivial edge (ireplaceVertex,ireplaceVertex)
+          ! from the adjacency list. Note that the trivial edge
+          ! (iVertex,iVertex) still exists and has not been removed in
+          ! the upper removal loop
+          rposition = alst_find(rgraph%rEdges,ireplaceTable,ireplaceVertex)
+          if (alst_isNull(rposition)) then
             call output_line('Unable to update vertex in adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
+          else
+            rposition = alst_erase(rgraph%rEdges,rposition)
           end if
 
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
-          call arrlst_swapArrayList(rgraph%rEdges,itable,ireplaceTable)
+          call alst_swapTbl(rgraph%rEdges,itable,ireplaceTable)
 
           ! Release adjacency list of vertex ireplaceVertex
-          call arrlst_releaseArrayList(rgraph%rEdges,ireplaceTable)
+          call alst_releaseTbl(rgraph%rEdges,ireplaceTable)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
           
-          ! Decrease number of edges by one; for the trivial edge (lastVertex,lastVertex)
+          ! Decrease number of edges by one; for the trivial edge
+          ! (lastVertex,lastVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
 
         else
           
           ! Step 3(b): Release adjacency list of vertex iVertex
-          call arrlst_releaseArrayList(rgraph%rEdges,itable)
+          call alst_releaseTbl(rgraph%rEdges,itable)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
           
-          ! Decrease number of edges by one; for the trivial edge (iVertex,iVertex)
+          ! Decrease number of edges by one; for the trivial edge
+          ! (iVertex,iVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
         
@@ -1178,14 +1195,14 @@ contains
 
 !<function>
 
-  function grph_hasEdge(rgraph,iFromVertex,iToVertex,iEdgePosition) result(bexists)
+  function grph_hasEdge(rgraph,iFromVertex,iToVertex) result(bexists)
 
 !<description>
     ! This function returns TRUE if the graph has the given edge from
-    ! vertex iFromVertex to vertex iToVertex.
-    ! Otherwise, it returns FALSE. If the optional parameter iEdgePosition
-    ! is present, then the function will also return the position of the
-    ! edge (iFromVertex,iToVertex) in the array list.
+    ! vertex iFromVertex to vertex iToVertex.  Otherwise, it returns
+    ! FALSE. If the optional parameter iEdgePosition is present, then
+    ! the function will also return the position of the edge
+    ! (iFromVertex,iToVertex) in the array list.
 !</description>
 
 !<input>
@@ -1200,11 +1217,6 @@ contains
     ! The graph
     type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
-
-!<output>
-    ! OPTIONAL: position of vertex in list
-    integer, intent(out), optional :: iEdgePosition
-!</output>
 
 !<result>
     ! Flag for existence of the vertex
@@ -1213,39 +1225,40 @@ contains
 !</function>
 
     ! local variables
-    integer :: itable,ipred,ipos
+    type(it_mapInt_Int) :: rmapIter
+    integer, dimension(:), pointer :: p_Idata
+    integer :: itable
 
     ! Determine table
     if (rgraph%bisDense) then
       itable = iFromVertex
     else
-      if (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).eq.BTREE_NOT_FOUND) then
+      rmapIter = map_find(rgraph%rVertices,iFromVertex)
+      if (map_isNull(rmapIter)) then
         bexists = .false.
         return
+      else
+        call map_get(rgraph%rVertices,rmapIter,p_Idata)
+        itable = p_Idata(1)
       end if
-      ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-      itable = rgraph%rVertices%p_IData(1,ipos)
     end if
 
-    bexists = (arrlst_searchInArrayList(rgraph%rEdges,itable,iToVertex,ipos).eq.ARRAYLIST_FOUND)
-
-    ! Return edge position if required
-    if (bexists .and. present(iEdgePosition)) then
-      iEdgePosition = ipos
-    end if
+    ! Look for edge (iFromVertex,iToVertex)
+    bexists = .not.alst_isNull(alst_find(rgraph%rEdges,itable,iToVertex))
+    
   end function grph_hasEdge
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine grph_insertEdge(rgraph,iFromVertex,iToVertex,iToEdgePosition,iFromEdgePosition)
+  subroutine grph_insertEdge(rgraph,iFromVertex,iToVertex)
 
 !<description>
-    ! This subroutine inserts the edge between vertices iFromVertex and
-    ! iToVertex. If the graph is undirected, then the opposite edge
-    ! (iToVertex,iFromVertex) is also added to attain symmetry of the
-    ! sparsity pattern.
+    ! This subroutine inserts the edge between vertices iFromVertex
+    ! and iToVertex. If the graph is undirected, then the opposite
+    ! edge (iToVertex,iFromVertex) is also added to attain symmetry of
+    ! the sparsity pattern.
 !</description>
 
 !<input>
@@ -1260,18 +1273,13 @@ contains
     ! The graph
     type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
-
-!<output>
-    ! OPTIONAL: Position of edge (iToVertex,iFromVertex) in the array list
-    integer, intent(out), optional :: iToEdgePosition
-
-    ! OPTIONAL: Position of edge (iFromVertex,iToVertex) in the array list
-    integer, intent(out), optional :: iFromEdgePosition
-!</output>
 !</subroutine>
 
     ! local variables
-    integer :: itable,ipred,ipos
+    type(it_mapInt_Int) :: rmapIter
+    type(it_arraylistInt) :: ralstIter
+    integer, dimension(:), pointer :: p_Idata
+    integer :: itable
     
     ! What graph format are we?
     select case(rgraph%cgraphFormat)
@@ -1281,34 +1289,32 @@ contains
       if (rgraph%bisDense) then
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
-            iFromVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_appendToArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipos)
+        ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex)
+        if (alst_isNull(ralstIter)) then
+          call alst_push_back(rgraph%rEdges,iToVertex,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
-      else
 
+      else
+        
         ! Get table associated with vertex iToVertex
-        if (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iToVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exists!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,itable,&
-            iFromVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_appendToArrayList(rgraph%rEdges,itable,iFromVertex,ipos)
+        ralstIter = alst_find(rgraph%rEdges,itable,iFromVertex)
+        if (alst_isNull(ralstIter)) then
+          call alst_push_back(rgraph%rEdges,itable,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
+
       end if
 
 
@@ -1317,36 +1323,33 @@ contains
       if (rgraph%bisDense) then
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
-            iFromVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_insertIntoArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
+        
       else
 
         ! Get table associated with vertex iToVertex
-        if (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iToVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exists!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
-
+        
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,itable,&
-            iFromVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_insertIntoArrayList(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,itable,iFromVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
       end if
-
+      
       
     case(GRPH_GRAPH7,&
          GRPH_GRAPH9)
@@ -1354,63 +1357,57 @@ contains
       if (rgraph%bisDense) then
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
-            iFromVertex,ipred).ne.ARRAYLIST_FOUND) then
-
-          call arrlst_insertIntoArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,iFromVertex,&
-            iToVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_insertIntoArrayList(rgraph%rEdges,iFromVertex,iToVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,iFromVertex,iToVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iToVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-          
-          if (present(iFromEdgePosition)) iFromEdgePosition=ipos
         end if
+        
       else
         
         ! Get table associated with vertex iToVertex
-        if (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iToVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exists!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,itable,&
-            iFromVertex,ipred).ne.ARRAYLIST_FOUND) then
-          
-          call arrlst_insertIntoArrayList(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,itable,iFromVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iToEdgePosition)) iToEdgePosition=ipos
         end if
 
         ! Get table associated with vertex iFromVertex
-        if (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iFromVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exists!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        if (arrlst_searchInArrayList(rgraph%rEdges,itable,&
-            iToVertex,ipred).eq.ARRAYLIST_NOT_FOUND) then
-          
-          call arrlst_insertIntoArrayList(rgraph%rEdges,itable,iToVertex,ipred,ipos)
+        ralstIter = alst_find(rgraph%rEdges,itable,iToVertex,.false.)
+        if (alst_isNull(ralstIter)) then
+          ralstIter = alst_insert(rgraph%rEdges,ralstIter,iToVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
-
-          if (present(iFromEdgePosition)) iFromEdgePosition=ipos
         end if
+
       end if
 
       
@@ -1428,10 +1425,10 @@ contains
   subroutine grph_removeEdge(rgraph,iFromVertex,iToVertex)
 
 !<description>
-    ! This subroutine removes the edge between vertices iFromVertex and
-    ! iToVertex. If the graph is undirected, then the opposite edge
-    ! (iToVertex,iFromVertex) is also removed to attain symmetry of the
-    ! sparsity pattern.
+    ! This subroutine removes the edge between vertices iFromVertex
+    ! and iToVertex. If the graph is undirected, then the opposite
+    ! edge (iToVertex,iFromVertex) is also removed to attain symmetry
+    ! of the sparsity pattern.
 !</description>
 
 !<input>
@@ -1449,7 +1446,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: itable,ipred,ipos
+    type(it_mapInt_Int) :: rmapIter
+    type(it_arraylistInt) :: ralstIter
+    integer, dimension(:), pointer :: p_Idata
+    integer :: itable
     
     ! What graph format are we=
     select case(rgraph%cgraphFormat)
@@ -1460,22 +1460,31 @@ contains
       if (rgraph%bisDense) then
 
         ! Remove vertex iToVertex from table iFromVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,iFromVertex,iToVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
+        ralstIter = alst_find(rgraph%rEdges,iFromVertex,iToVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
+
       else
 
         ! Get table associated with vertex iFromVertex
-        if (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iFromVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
+        ralstIter = alst_find(rgraph%rEdges,itable,iToVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
       end if
 
 
@@ -1485,39 +1494,56 @@ contains
       if (rgraph%bisDense) then
         
         ! Remove vertex iToVertex from table iFromVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,iFromVertex,iToVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
-
+        ralstIter = alst_find(rgraph%rEdges,iFromVertex,iToVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
+        
         ! Remove vertex iFromVertex from table iToVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,iToVertex,iFromVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
+        ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
+
       else
 
         ! Get table associated with vertex iFromVertex
-        if (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).eq.BTREE_NOT_FOUND) then
+        rmapIter = map_find(rgraph%rVertices,iFromVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
-
-        ! Get table associated with vertex iFromVertex
-        if (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).eq.BTREE_NOT_FOUND) then
+        ralstIter = alst_find(rgraph%rEdges,itable,iToVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
+        
+        ! Get table associated with vertex iToVertex
+        rmapIter = map_find(rgraph%rVertices,iToVertex)
+        if (map_isNull(rmapIter)) then
           call output_line('Vertex does not exist!',&
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           call sys_halt()
+        else
+          call map_get(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
         end if
-        ipos = rgraph%rVertices%p_Kchild(merge(TLEFT,TRIGHT,ipred < 0),abs(ipred))
-        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Remove vertex iFromVertex from table iToVertex
-        if (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iFromVertex)&
-            .eq.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
+        ralstIter = alst_find(rgraph%rEdges,itable,iFromVertex)
+        if (.not.alst_isNull(ralstIter)) then
+          ralstIter = alst_erase(rgraph%rEdges,ralstIter)
+          rgraph%NEDGE = rgraph%NEDGE-1
+        end if
       end if
 
 
@@ -1560,10 +1586,10 @@ contains
   subroutine grph_duplicateGraph(rgraph,rgraphBackup)
 
 !<description>
-    ! This subroutine makes a copy of a graph in memory.
-    ! It does not make sense to share some information between graphs,
-    ! so each vectors is physically copied from the source graph
-    ! to the destination graph.
+    ! This subroutine makes a copy of a graph in memory. It does not
+    ! make sense to share some information between graphs, so each
+    ! vectors is physically copied from the source graph to the
+    ! destination graph.
 !</description>
 
 !<input>
@@ -1583,8 +1609,8 @@ contains
     ! Copy all data
     rgraphBackup = rgraph
 
-    call btree_duplicateTree(rgraph%rVertices,rgraphBackup%rVertices)
-    call arrlst_duplicateArrayList(rgraph%rEdges,rgraphBackup%rEdges)
+    call map_duplicate(rgraph%rVertices,rgraphBackup%rVertices)
+    call alst_duplicate(rgraph%rEdges,rgraphBackup%rEdges)
   end subroutine grph_duplicateGraph
 
   ! ***************************************************************************

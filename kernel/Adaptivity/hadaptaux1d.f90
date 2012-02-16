@@ -568,17 +568,15 @@ contains
       if (ivtReplace .ne. 0) then
         
         ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                         ivtReplace, .true.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .true.)
 
         update: do while(ipos .gt. ARRLST_NULL)
           
           ! Get element number JEL
-          jel = rhadapt%rElementsAtVertex%p_IData(ipos)
+          call alst_get(rhadapt%rElementsAtVertex, ipos, jel)
           
           ! Proceed to next element
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                           ivtReplace, .false.)
+          ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .false.)
           
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           do ive = 1, TRIA_NVELINE1D
@@ -596,13 +594,13 @@ contains
         end do update
         
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
-        call arrlst_swapArrayList(rhadapt%rElementsAtVertex, ivt, ivtReplace)
-        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivtReplace)
+        call alst_swapTbl(rhadapt%rElementsAtVertex, ivt, ivtReplace)
+        call alst_releaseTbl(rhadapt%rElementsAtVertex, ivtReplace)
         
       else
         
         ! Release table IVT
-        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivt)
+        call alst_releaseTbl(rhadapt%rElementsAtVertex, ivt)
       end if
 
       ! Optionally, invoke callback function
@@ -858,7 +856,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ivt,jel,ive,jve,ipos
+    integer :: ivt,jel,ive,jve,ipos,iel1
 
     ! Replace element by the last element and delete last element
     ielReplace = rhadapt%NEL
@@ -886,17 +884,18 @@ contains
         ivt = rhadapt%p_IverticesAtElement(ive, ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .true.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
         elements: do while(ipos .gt. ARRLST_NULL)
           
           ! Check if element number corresponds to the replaced element
-          if (rhadapt%rElementsAtVertex%p_IData(ipos) .eq. ielReplace) then
-              rhadapt%rElementsAtVertex%p_IData(ipos) = iel
+          call alst_get(rhadapt%rElementsAtVertex, ipos, iel1)
+          if (iel1 .eq. ielReplace) then
+            call alst_assign(rhadapt%rElementsAtVertex, ipos, iel)
             exit elements
           end if
           
           ! Proceed to next element in list
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
+          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
         end do elements
 
                 
@@ -1107,16 +1106,16 @@ contains
     call update_ElementNeighbors1D(rhadapt, e2, iel, nel0+1)
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Line2Line')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
     
     ! Optionally, invoke callback routine
     if (present(fcb_hadaptCallback) .and. present(rcollection)) then
@@ -1220,27 +1219,27 @@ contains
       if (ielRemove .eq. iel1) then
 
         ! Remove element IELREMOVE from right endpoint
-        if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                       i2, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+        if (alst_erase(rhadapt%relementsAtVertex, i2, ielRemove)&
+            .eq. ARRAYLIST_NOT_FOUND) then
           call output_line('Unable to delete element from vertex list!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
           call sys_halt()
         end if
 
         ! Add new element JEL to right endpoint
-        call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel, ipos)
+        call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
       else
 
         ! Remove element IELREMOVE from left endpoint
-        if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                       i1, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+        if (alst_erase(rhadapt%relementsAtVertex, i1, ielRemove)&
+            .eq. ARRAYLIST_NOT_FOUND) then
           call output_line('Unable to delete element from vertex list!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
           call sys_halt()
         end if
 
         ! Add new element JEL to left endpoint
-        call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel, ipos)
+        call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
       end if
 
       ! Optionally, invoke callback function

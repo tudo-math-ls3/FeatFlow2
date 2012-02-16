@@ -11,43 +11,22 @@
 
 module listbase
 
+  use fsystem
+
   implicit none
 
 !<constants>
-!<constantblock description="Global flags for list ordering">
+!<constantblock description="Flags for the iterator specification bitfield">
 
-  ! Identifier for unordered list
-  integer, parameter :: LIST_UNORDERED  = 0
-  
-  ! Identifier for increasingly ordered list
-  integer, parameter :: LIST_INCREASING = 1
+  ! Reverse iterator
+  integer(I32), parameter :: LIST_LSPEC_REVERSE = 2**0
 
-  ! Identifier for decreasingly ordered list
-  integer, parameter :: LIST_DECREASING = 2
+  ! Iterator refers to virtual position. This flag is set if the key
+  ! value is not found in an ordered list and the returned iterator
+  ! refers to the element which follows the desired element in
+  ! lexicographical order
+  integer(I32), parameter :: LIST_LSPEC_VIRTUAL = 2**1
 
-  ! Identifier for ordered list
-  integer, parameter :: LIST_CSR7       = 3
-
-!</constantblock>
-
-!<constantblock description="Global flags for list likn-type">
-
-  ! Identifier fir single-linked list
-  integer, parameter :: LIST_SINGLELINKED = 1
-  
-  ! Identifier for double-linked list
-  integer, parameter :: LIST_DOUBLELINKED = 2
-
-!</constantblock>
-
-!<constantblock description="Global flags for list operations">
-
-  ! Identifier for "not found in list"
-  integer, parameter :: LIST_NOT_FOUND = -1
-
-  ! Identifier for "found in list"
-  integer, parameter :: LIST_FOUND     =  0
-  
 !</constantblock>
 
 !<constantblock description="Internal tags for list status">

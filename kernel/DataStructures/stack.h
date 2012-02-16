@@ -5,90 +5,155 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> TEMPLATE(stack,T) </name>
+!# <name> template_T(stack,T) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module header file implements a dynamic stack for T_TYPE data
+!#
+!# This module header file implements a LIFO stack.
+!#
+!# Stacks are a type of container adaptor, specifically designed to
+!# operate in a LIFO context (last-in first-out), where elements are
+!# inserted and extracted only from the end of the container. Elements
+!# are pushed/popped from the "back" of the specific container, which
+!# is known as the top of the stack.
+!#
+!# -----------------------------------------------------------------------------
+!# This module is designed with greatest compatibility to the C++
+!# Standard Template Library (STL) concerning naming conventions.
+!# -----------------------------------------------------------------------------
 !#
 !# The following routines are available:
 !#
-!# 1.) stack_create
+!# 1.) stack_create (constructor in STL)
 !#     -> Creates a new empty stack
 !#
-!# 2.) stack_release
+!# 2.) stack_release (destructor in STL)
 !#     -> Releases an existing stack
 !#
-!# 3.) stack_clear
+!# 3.) stack_clear (no equivalent in STL)
 !#     -> Clears an existing stack
 !#
-!# 4.) stack_isempty
-!#     -> Tests if an existing stack is empty
+!# 4.) stack_empty (empty in STL)
+!#     -> Tests if the stack is empty
 !#
-!# 5.) stack_size
+!# 5.) stack_size (size in STL)
 !#     -> Returns the size of the stack
 !#
-!# 6.) stack_top
+!# 6.) stack_top (top in STL)
 !#     -> Returns the entry from the top of the stack
 !#
-!# 7.) stack_push
+!# 7.) stack_push (push in STL)
 !#     -> Pushes a new entry on top of the stack
 !#
-!# 8.) stack_pop
+!# 8.) stack_pop (pop in STL)
 !#     -> Pops the entry from the top of the stack
+!#
+!#
+!# The following operators are available:
+!#
+!# 1.) "="  assignment operator
+!#
+!# 2.) "==" Compares two stacks for equality. Two stacks are equal if
+!#          they contain the same number of elements and if they are
+!#          equal element-by-element.
+!#
+!# 3.) "/=" Compares two stacks for non-equality. Two stacks are not equal
+!#          if they contain a different number of elements or if they are
+!#          not equal element-by-element.
+!#
+!# 4.) "<"  Lexicographical ordering of two stacks.
+!#
+!# 5.) "<=" Lexicographical ordering of two stacks.
+!#
+!# 6.) ">"  Lexicographical ordering of two stacks.
+!#
+!# 7.) ">=" Lexicographical ordering of two stacks.
 !#
 !# </purpose>
 !##############################################################################
 
 #include "template.h"
 
-#ifndef T_STORAGE
-  __external_use__(T_MODULE)
-#endif
-  
   implicit none
 
   private
-  public :: TEMPLATE(t_stack,T)
+  public :: template_T(t_stack,T)
   public :: stack_create
   public :: stack_release
   public :: stack_clear
-  public :: stack_isempty
+  public :: stack_empty
   public :: stack_size
   public :: stack_top
   public :: stack_push
   public :: stack_pop
 
+  public assignment(=)
+  public operator(==)
+  public operator(/=)
+  public operator(<)
+  public operator(<=)
+  public operator(>)
+  public operator(>=)
+
   interface stack_create
-    module procedure TEMPLATE(stack_create,T)
+    module procedure template_T(stack_create,T)
   end interface
 
   interface stack_release
-    module procedure TEMPLATE(stack_release,T)
+    module procedure template_T(stack_release,T)
   end interface
 
   interface stack_clear
-    module procedure TEMPLATE(stack_clear,T)
+    module procedure template_T(stack_clear,T)
   end interface
 
-  interface stack_isempty
-    module procedure TEMPLATE(stack_isempty,T)
+  interface stack_empty
+    module procedure template_T(stack_empty,T)
   end interface
 
   interface stack_size
-    module procedure TEMPLATE(stack_size,T)
+    module procedure template_T(stack_size,T)
   end interface
 
   interface stack_top
-    module procedure TEMPLATE(stack_top,T)
+    module procedure template_T(stack_top,T)
   end interface
 
   interface stack_push
-    module procedure TEMPLATE(stack_push,T)
+    module procedure template_T(stack_push,T)
   end interface
   
   interface stack_pop
-    module procedure TEMPLATE(stack_pop,T)
+    module procedure template_T(stack_pop,T)
+  end interface
+
+  interface assignment(=)
+    module procedure template_T(stack_fassign,T)
+  end interface
+
+  interface operator(==)
+    module procedure template_T(stack_eq,T)
+  end interface
+  
+  interface operator(/=)
+    module procedure template_T(stack_ne,T)
+  end interface
+
+  interface operator(<)
+    module procedure template_T(stack_lt,T)
+  end interface
+
+  interface operator(<=)
+    module procedure template_T(stack_le,T)
+  end interface
+
+  interface operator(>)
+    module procedure template_T(stack_gt,T)
+  end interface
+
+  interface operator(>=)
+    module procedure template_T(stack_ge,T)
   end interface
 
 !<types>
@@ -96,7 +161,7 @@
 !<typeblock>
 
   ! Type block for holding a dynamic stack
-  type TEMPLATE(t_stack,T)
+  type template_T(t_stack,T)
     private
 
     ! Size of stack
@@ -125,7 +190,7 @@ contains
 
 !<subroutine>
 
-  subroutine TEMPLATE(stack_create,T)(rstack, isize)
+  subroutine template_T(stack_create,T)(rstack, isize)
 
 !<description>
     ! Creates a stack with prescribed initial memory
@@ -138,7 +203,7 @@ contains
 
 !<output>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(out) :: rstack
+    type(template_T(t_stack,T)), intent(out) :: rstack
 !</output>
 !</subroutine>
 
@@ -159,7 +224,7 @@ contains
 
 !<subroutine>
 
-  subroutine TEMPLATE(stack_release,T)(rstack)
+  subroutine template_T(stack_release,T)(rstack)
 
 !<description>
     ! Release a stack
@@ -167,7 +232,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(inout) :: rstack
+    type(template_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -176,7 +241,8 @@ contains
         call storage_free(rstack%h_StackData)
     nullify(rstack%p_StackData)
 #else
-    deallocate(rstack%p_StackData)
+    if (associated(rstack%p_StackData))&
+        deallocate(rstack%p_StackData)
 #endif
 
     rstack%istackSize     = 0
@@ -188,7 +254,7 @@ contains
 
 !<subroutine>
 
-  subroutine TEMPLATE(stack_clear,T)(rstack)
+  subroutine template_T(stack_clear,T)(rstack)
 
 !<description>
     ! Clear stack, i.e., reset stack pointer to zero
@@ -196,7 +262,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(inout) :: rstack
+    type(template_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -208,7 +274,7 @@ contains
 
 !<function>
 
-  function TEMPLATE(stack_isEmpty,T)(rstack) result(bisempty)
+  pure function template_T(stack_Empty,T)(rstack) result(bempty)
 
 !<description>
     ! Checks if the stack is empty
@@ -216,16 +282,16 @@ contains
 
 !<input>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(in) :: rstack
+    type(template_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<result>
     ! Flag: is true if the stack is empty
-    logical :: bisempty
+    logical :: bempty
 !</result>
 !</function>
 
-    bisEmpty = (rstack%istackPosition .eq. 0)
+    bempty = (rstack%istackPosition .eq. 0)
 
   end function
 
@@ -233,7 +299,7 @@ contains
 
 !<function>
 
-  function TEMPLATE(stack_size,T)(rstack) result(isize)
+  pure function template_T(stack_size,T)(rstack) result(isize)
 
 !<description>
     ! Returns the stack size
@@ -241,7 +307,7 @@ contains
 
 !<input>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(in) :: rstack
+    type(template_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -258,7 +324,7 @@ contains
 
 !<subroutine>
   
-  subroutine TEMPLATE(stack_push,T)(rstack, data)
+  subroutine template_T(stack_push,T)(rstack, data)
 
 !<description>
     ! Add a new value to the top of the stack
@@ -271,7 +337,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(inout) :: rstack
+    type(template_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -315,7 +381,7 @@ contains
 
 !<subroutine>
 
-  subroutine TEMPLATE(stack_top,T)(rstack, data)
+  subroutine template_T(stack_top,T)(rstack, data)
 
 !<description>
     ! Return value from top of the stack
@@ -323,7 +389,7 @@ contains
 
 !<input>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(in) :: rstack
+    type(template_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<output>
@@ -332,7 +398,7 @@ contains
 !</output>
 !</subroutine>
 
-    if (.not.stack_isempty(rstack)) then
+    if (.not.stack_empty(rstack)) then
       data = rstack%p_StackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
@@ -346,7 +412,7 @@ contains
 
 !<subroutine>
 
-  subroutine TEMPLATE(stack_pop,T)(rstack, data)
+  subroutine template_T(stack_pop,T)(rstack, data)
 
 !<description>
     ! Remove a value from the top of the stack
@@ -354,7 +420,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(TEMPLATE(t_stack,T)), intent(inout) :: rstack
+    type(template_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 
 !<output>
@@ -367,5 +433,270 @@ contains
     rstack%istackPosition = rstack%istackPosition-1
 
   end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine template_T(stack_fassign,T)(rstackDest,rstackSrc)
+
+!<description>
+    ! Assigns the content of rstackSrc to rstackDest
+!</description>
+
+!<input>
+    ! Source stack
+    type(template_T(t_stack,T)), intent(in) :: rstackSrc
+!</input>
+
+!<output>
+    ! Destination stack
+    type(template_T(t_stack,T)), intent(out) :: rstackDest
+!</output>
+!</subroutine>
+
+    ! local variable
+    integer :: i
+
+    ! Create empty stack
+    call stack_create(rstackDest, rstackSrc%istackSize)
+
+    do i = 1, rstackSrc%istackSize
+      rstackDest%p_StackData(i) = rstackSrc%p_StackData(i)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_eq,T)(rstack1,rstack2) result(beq)
+
+!<description>
+    ! Compare two stacks for equality
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if both stacks contain the same number of elements and if
+    ! they are equal element-by-element
+    logical :: beq
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    beq = (rstack1%istackSize == rstack2%istackSize)
+
+    ! Early return?
+    if (.not.beq) return
+
+    do i = 1, rstack1%istackSize
+      beq = (rstack1%p_StackData(i) == rstack2%p_StackData(i))
+      if (.not.beq) return
+    end do
+
+    ! If we are here, then both stacks are equal
+
+  end function
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_ne,T)(rstack1,rstack2) result(bne)
+
+!<description>
+    ! Compare two stacks for non-equality
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if both stacks contain a different same number of elements
+    ! or if they are not equal element-by-element
+    logical :: bne
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    bne = (rstack1%istackSize /= rstack2%istackSize)
+
+    ! Early return?
+    if (bne) return
+
+    do i = 1, rstack1%istackSize
+      bne = (rstack1%p_StackData(i) /= rstack2%p_StackData(i))
+      if (bne) return
+    end do
+
+    ! If we are here, then both stacks are equal
+
+  end function
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_lt,T)(rstack1,rstack2) result(blt)
+
+!<description>
+    ! Checks lexicographical ordering of two stacks
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if the lexicographical ordering of stack1 is smaller than
+    ! that of stack2
+    logical :: blt
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    blt = (rstack1%istackSize < rstack2%istackSize)
+
+    ! Early return?
+    if (.not.blt) return
+    
+    do i = 1, min(rstack1%istackSize,rstack2%istackSize)
+      blt = (rstack1%p_StackData(i) < rstack2%p_StackData(i))
+      if (.not.blt) return
+    end do
+
+  end function
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_le,T)(rstack1,rstack2) result(ble)
+
+!<description>
+    ! Checks lexicographical ordering of two stacks
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if the lexicographical ordering of stack1 is smaller than
+    ! or equal to that of stack2
+    logical :: ble
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    ble = (rstack1%istackSize <= rstack2%istackSize)
+
+    ! Early return?
+    if (.not.ble) return
+    
+    do i = 1, min(rstack1%istackSize,rstack2%istackSize)
+      ble = (rstack1%p_StackData(i) <= rstack2%p_StackData(i))
+      if (.not.ble) return
+    end do
+
+  end function
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_gt,T)(rstack1,rstack2) result(bgt)
+
+!<description>
+    ! Checks lexicographical ordering of two stacks
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if the lexicographical ordering of stack1 is greater than
+    ! that of stack2
+    logical :: bgt
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    bgt = (rstack1%istackSize > rstack2%istackSize)
+
+    ! Early return?
+    if (.not.bgt) return
+    
+    do i = 1, min(rstack1%istackSize,rstack2%istackSize)
+      bgt = (rstack1%p_StackData(i) > rstack2%p_StackData(i))
+      if (.not.bgt) return
+    end do
+
+  end function
+
+  !************************************************************************
+
+!<function>
+
+  pure function template_T(stack_ge,T)(rstack1,rstack2) result(bge)
+
+!<description>
+    ! Checks lexicographical ordering of two stacks
+!</description>
+
+!<input>
+    ! Stacks
+    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+!</input>
+
+!<result>
+    ! True if the lexicographical ordering of stack1 is greater than
+    ! or equal to that of stack2
+    logical :: bge
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    ! Initialisation
+    bge = (rstack1%istackSize >= rstack2%istackSize)
+
+    ! Early return?
+    if (.not.bge) return
+    
+    do i = 1, min(rstack1%istackSize,rstack2%istackSize)
+      bge = (rstack1%p_StackData(i) >= rstack2%p_StackData(i))
+      if (.not.bge) return
+    end do
+
+  end function
 
 #endif

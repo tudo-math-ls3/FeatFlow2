@@ -2175,7 +2175,7 @@ contains
 
       ! Check for closing parenthesis
       do while (c .eq. ')')
-        if (.not.stack_isempty(rstack)) then
+        if (.not.stack_empty(rstack)) then
           call stack_top(rstack, idummy)
           if(idummy .eq. iparenthCount) call stack_pop(rstack, idummy)
         end if
@@ -2200,7 +2200,7 @@ contains
       
       ! Check operators
       iopSize = 0
-      if (.not.stack_isempty(rstack)) then
+      if (.not.stack_empty(rstack)) then
         call stack_top(rstack, idummy)
         if (c .eq. ',' .and. idummy .eq. iparenthCount) then
           iopSize = 1

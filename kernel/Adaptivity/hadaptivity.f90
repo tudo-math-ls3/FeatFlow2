@@ -62,7 +62,7 @@
 module hadaptivity
 
 !$use omp_lib
-  use arraylist
+  use arraylistInt
   use binarytree
   use boundary
   use collection
@@ -348,7 +348,7 @@ contains
     end if
 
     ! Release elements-meeting-at-vertex arraylist
-    call arrlst_releaseArraylist(rhadapt%relementsAtVertex)
+    call alst_release(rhadapt%relementsAtVertex)
 
     ! Release storage which is no longer in use
     call checkAndRelease(idupflag, HADAPT_SHARE_IMARKER,&
@@ -606,8 +606,8 @@ contains
     ! Bit   8: rElementsAtVertex
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
                        HADAPT_SHARE_RELEMENTSATVERTEX) then
-      call arrlst_duplicateArrayList(rhadapt%rElementsAtVertex,&
-                                     rhadaptBackup%rElementsAtVertex)
+      call alst_duplicate(rhadapt%rElementsAtVertex,&
+                            rhadaptBackup%rElementsAtVertex)
     end if
 
   contains
@@ -772,8 +772,8 @@ contains
     ! Bit   8: rElementsAtVertex
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
                        HADAPT_SHARE_RELEMENTSATVERTEX) then
-      call arrlst_restoreArrayList(rhadaptBackup%rElementsAtVertex,&
-                                   rhadapt%rElementsAtVertex)
+      call alst_restore(rhadaptBackup%rElementsAtVertex,&
+                          rhadapt%rElementsAtVertex)
     end if
   
   contains
@@ -933,7 +933,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(1) :: Ielements, Ivertices
     integer, dimension(2) :: Isize
     integer :: nvt,nel
 
@@ -1202,7 +1201,7 @@ contains
 
     call output_line('Element at vertex structure:')
     call output_line('----------------------------')
-    call arrlst_infoArraylist(rhadapt%relementsAtVertex)
+    call alst_info(rhadapt%relementsAtVertex)
 
   end subroutine hadapt_infoStatistics
 
@@ -1574,7 +1573,7 @@ contains
                      merge('PASSED','FAILED',btest))
 
     ! Test #5: Check consistency of element-meeting-at-vertex lists
-    btest = (rhadapt%rElementsAtVertex%NTABLE .eq. rhadapt%NVT)
+    btest = (alst_ntable(rhadapt%rElementsAtVertex) .eq. rhadapt%NVT)
     if (btest) then
       
       ! Create index array
@@ -1634,16 +1633,16 @@ contains
       do ivt = 1, rhadapt%NVT
         
         ! Get first entry in array list
-        ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .true.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
         
         ! Repeat until there is no entry left in the array list
         do while(ipos .gt. ARRLST_NULL)
           
           ! Get element number IEL
-          iel = rhadapt%rElementsAtVertex%p_IData(ipos)
+          call alst_get(rhadapt%rElementsAtVertex, ipos, iel)
 
           ! Proceed to next entry in array list
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
+          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
 
           ! Look for element IEL in temporal elements-meeting-at-vertex list
           ! If it does exist, multiply its value by minus one so that it cannot

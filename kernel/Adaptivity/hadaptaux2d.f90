@@ -3437,17 +3437,15 @@ contains
       if (ivtReplace .ne. 0) then
         
         ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                         ivtReplace, .true.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .true.)
 
         update: do while(ipos .gt. ARRLST_NULL)
           
           ! Get element number JEL
-          jel = rhadapt%rElementsAtVertex%p_IData(ipos)
+          call alst_get(rhadapt%rElementsAtVertex, ipos, jel)
           
           ! Proceed to next element
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,&
-                                           ivtReplace, .false.)
+          ipos = alst_next(rhadapt%rElementsAtVertex, ivtReplace, .false.)
           
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           do ive = 1, hadapt_getNVE(rhadapt, jel)
@@ -3465,13 +3463,13 @@ contains
         end do update
         
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
-        call arrlst_swapArrayList(rhadapt%rElementsAtVertex, ivt, ivtReplace)
-        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivtReplace)
+        call alst_swapTbl(rhadapt%rElementsAtVertex, ivt, ivtReplace)
+        call alst_releaseTbl(rhadapt%rElementsAtVertex, ivtReplace)
         
       else
         
         ! Release table IVT
-        call arrlst_releaseArrayList(rhadapt%rElementsAtVertex, ivt)
+        call alst_releaseTbl(rhadapt%rElementsAtVertex, ivt)
       end if
             
       ! Optionally, invoke callback function
@@ -4022,13 +4020,13 @@ contains
           trim(sys_siL(rhadapt%p_IvertexAge(ivt),5))//''','''
       
       ! Generate list of elements meeting at vertex
-      ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex, ivt, .true.)
+      ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
       do while(ipos .gt. ARRLST_NULL)
         ! Get element number IEL
-        iel = rhadapt%rElementsAtVertex%p_IData(ipos)
+        call alst_get(rhadapt%rElementsAtVertex, ipos, iel)
         
         ! Proceed to next entry in array list
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
 
         if (ipos .gt. ARRLST_NULL) then
           write(iunit,FMT='(A)',ADVANCE='NO') trim(sys_siL(iel,10))//','
@@ -4221,7 +4219,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
         end if
-        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
+        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT, BTRIGHT, ipred .lt. 0), abs(ipred))
         dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
         
         if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
@@ -4229,7 +4227,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
           call sys_halt()
         end if
-        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
+        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT, BTRIGHT, ipred .lt. 0), abs(ipred))
         dvbdp2 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
         
         ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
@@ -4407,7 +4405,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
       
       ! Get the two boundary neighbors: I1 <- IVT -> I2
       i1 = rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos)
@@ -4421,7 +4419,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
       rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = i2
       
       ! Second, set I1 as previous neighbor of I2
@@ -4431,7 +4429,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         call sys_halt()
       end if
-      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+      ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
       rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = i1
       
       ! And finally, delete IVT from the boundary
@@ -4464,7 +4462,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
         
         ! Insert IVT into the boundary vector
         call btree_insertIntoTree(rhadapt%rBoundary(ibct), ivt,&
@@ -4483,7 +4481,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
         rhadapt%rBoundary(ibct)%p_IData(BdrNext, ipos) = ivt
         
         ! Second, set IVT as previous neighbor of I2
@@ -4493,7 +4491,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           call sys_halt()
         end if
-        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT,TRIGHT, ipred .lt. 0), abs(ipred))
+        ipos = rhadapt%rBoundary(ibct)%p_Kchild(merge(BTLEFT,BTRIGHT, ipred .lt. 0), abs(ipred))
         rhadapt%rBoundary(ibct)%p_IData(BdrPrev, ipos) = ivt
         
         ! Finally, delete IVTREPLACE from the boundary
@@ -4711,7 +4709,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipos,ivt,jel,jelmid,ive,jve
+    integer :: ipos,ivt,jel,jelmid,ive,jve,iel1
     logical :: bfound
 
     ! Which kind of element are we?
@@ -4754,17 +4752,18 @@ contains
         ivt = rhadapt%p_IverticesAtElement(ive, ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .true.)
+        ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .true.)
         elements: do while(ipos .gt. ARRLST_NULL)
           
           ! Check if element number corresponds to the replaced element
-          if (rhadapt%rElementsAtVertex%p_IData(ipos) .eq. ielReplace) then
-              rhadapt%rElementsAtVertex%p_IData(ipos) = iel
+          call alst_get(rhadapt%rElementsAtVertex, ipos, iel1)
+          if (iel1 .eq. ielReplace) then
+            call alst_assign(rhadapt%rElementsAtVertex, ipos, iel)
             exit elements
           end if
           
           ! Proceed to next element in list
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex, ivt, .false.)
+          ipos = alst_next(rhadapt%rElementsAtVertex, ivt, .false.)
         end do elements
 
                 
@@ -5363,17 +5362,17 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria2Tria')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, iel,    ipos)
 
 
     ! Optionally, invoke callback function
@@ -5522,19 +5521,19 @@ contains
 
             
       ! Update list of elements meeting at vertices
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         call sys_halt()
       end if
       
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, iel,    ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, iel,    ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, iel,    ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, iel,    ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
 
 
       ! Optionally, invoke callback function
@@ -5563,20 +5562,20 @@ contains
       
       
       ! Update list of elements meeting at vertices
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, nel0+2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel,    ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
 
 
       ! Optionally, invoke callback function
@@ -5688,37 +5687,37 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i1, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i1, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       call sys_halt()
     end if
    
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, iel   , ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel   , ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, iel   , ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i1, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, iel   , ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel   , ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel   , ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
 
 
     ! Optionally, invoke callback function
@@ -5848,25 +5847,25 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
     
 
     ! Optionally, invoke callback function
@@ -6004,26 +6003,26 @@ contains
     
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
 
 
     ! Adjust number of elements
@@ -6169,29 +6168,29 @@ contains
 
     
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+3, ipos)
 
 
     ! Adjust number of elements
@@ -6319,40 +6318,40 @@ contains
 
         
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, nel0+3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+3, ipos)
 
 
     ! Optionally, invoke callback function
@@ -6467,27 +6466,27 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, jel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, jel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, jel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, jel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i5, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+2, ipos)
 
 
     ! Optionally, invoke callback function
@@ -6613,43 +6612,43 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, jel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, jel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i7, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i7, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i7, jel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i7, jel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, jel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, nel0+2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, jel,    ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, jel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, jel,    ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+2, ipos)
 
 
     ! Optionally, invoke callback function
@@ -6776,42 +6775,42 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i5, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i5, iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, iel2,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, iel3,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, iel3,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel1,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel1,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel2,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel3,   ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel2,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i6, iel3,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, nel0+1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3,   ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, nel0+1, ipos)
 
     ! Finally, adjust numbers of triangles/quadrilaterals
     rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-3
@@ -6943,39 +6942,39 @@ contains
 
 
     ! Update list of elements meeting at vertices
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i5, iel4) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i5, iel4)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i6, iel4) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i6, iel4)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, iel3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, iel4, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel4, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel2, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel3, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel4, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i7, iel4, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i8, iel4, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel1, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel2, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel3, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i9, iel4, ipos)
 
 
     ! Finally, adjust numbers of triangles/quadrilaterals
@@ -7143,37 +7142,37 @@ contains
     ! Update list of elements meeting at vertices
     if (ielRemove .eq. iel1) then
       
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, ielRemove)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i3, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i3, ielRemove)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
       
     else
       
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i1, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i1, ielRemove)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i3, ielRemove) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i3, ielRemove)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
       
     end if
     
@@ -7348,28 +7347,28 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i1, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, jel, ipos)
 
 
     ! Optionally, invoke callback function
@@ -7518,51 +7517,51 @@ contains
       ! Update list of elements meeting at vertices.
       ! Note that all elements are removed in the first step. Afterwards,
       ! element JEL is appended to the list of elements meeting at each vertex
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i1, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i3, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i4, iel) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i4, iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i4, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i4, iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i4, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i4, iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i4, jel2, ipos)
 
 
       ! Optionally, invoke callback function
@@ -7609,51 +7608,51 @@ contains
 
 
       ! Update list of elements meeting at vertices
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i1, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i3, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i5, iel) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i5, iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i5, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i5, iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i5, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i5, iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
       
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i5, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i5, jel2, ipos)
 
 
       ! Optionally, invoke callback function
@@ -7702,51 +7701,51 @@ contains
       ! Update list of elements meeting at vertices.
       ! Note that all elements are removed in the first step. Afterwards,
       ! element JEL is appended to the list of elements meeting at each vertex
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i1, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i1, iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i2, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i2, iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i3, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i3, iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
 
       ! Note, this can be improved by checking against JEL1 and JEL2
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i6, iel) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i6, iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i6, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i6, iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                     i6, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex, i6, iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel2, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, jel1, ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i6, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i1, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i2, jel2, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i3, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i6, jel1, ipos)
+      call alst_push_back(rhadapt%relementsAtVertex, i6, jel2, ipos)
       
 
       ! Optionally, invoke callback function
@@ -7939,35 +7938,35 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i1, iel) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i1, iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i2, iel1) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i2, iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i3, iel2) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i3, iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
-                                   i4, iel3) .eq. ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex, i4, iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad1Quad')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i1, jel, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i2, jel, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, jel, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i4, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i1, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i2, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i3, jel, ipos)
+    call alst_push_back(rhadapt%relementsAtVertex, i4, jel, ipos)
 
 
     ! Optionally, invoke callback function
@@ -8110,63 +8109,63 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i5,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i5,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i7,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel3).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i7,iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad2Quad')
       call sys_halt()
     end if
    
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i7,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i7,jel2,ipos)
 
 
     ! Optionally, invoke callback function
@@ -8302,52 +8301,52 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i5,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i5,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Quad3Tria')
       call sys_halt()
     end if
 
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel3,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel3,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel3,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel3,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel3,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,jel3,ipos)
 
 
     ! Adjust number of elements
@@ -8467,10 +8466,10 @@ contains
     ! Update list of elements meeting at vertices. Note that we only have to
     ! add some elements to the vertices since all four elements are already
     ! "attached" to one of the four corner nodes
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel3,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,iel2,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i8,iel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,iel1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,iel3,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,iel2,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i8,iel2,ipos)
     
     ! Adjust number of elements
     rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+4
@@ -8622,21 +8621,21 @@ contains
 
 
       ! Update list of elements meeting at vertices.
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i3,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,iel,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,iel,ipos)
 
     else
 
@@ -8690,21 +8689,21 @@ contains
       
 
       ! Update list of elements meeting at vertices.
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i4,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Quad1Quad')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,iel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,iel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,iel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,iel1,ipos)
 
     end if
 
@@ -8816,9 +8815,9 @@ contains
 
 
     ! Update list of elements meeting at vertices.
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
 
 
     ! Adjust number of elements
@@ -8980,47 +8979,47 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i2,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i3,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i4,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i4,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_3Tria1Quad')
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel,ipos)
 
 
     ! Adjust number of elements
@@ -9198,47 +9197,47 @@ contains
     ! Update list of elements meeting at vertices.
     ! Note that all elements are removed in the first step. Afterwards,
     ! element JEL is appended to the list of elements meeting at each vertex
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel3).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
-    if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).eq.&
-        ARRAYLIST_NOT_FOUND) then
+    if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
+        .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Quad')
       call sys_halt()
     end if
         
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel,ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i1,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i2,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i3,jel,ipos)
+    call alst_push_back(rhadapt%relementsAtVertex,i4,jel,ipos)
     
     
     ! Adjust number of elements
@@ -9375,70 +9374,70 @@ contains
       ! Update list of elements meeting at vertices.
       ! Note that all elements are removed in the first step. Afterwards,
       ! element JEL is appended to the list of elements meeting at each vertex
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel3).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i6,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i6,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel2).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i6,iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel3,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel3,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i6,jel3,ipos)
 
       
       ! Optionally, invoke callback function
@@ -9478,70 +9477,70 @@ contains
       ! Update list of elements meeting at vertices.
       ! Note that all elements are removed in the first step. Afterwards,
       ! element JEL is appended to the list of elements meeting at each vertex
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel3).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i1,iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i2,iel1)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i3,iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i4,iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i7,iel)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel2).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i7,iel2)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
-      if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel3).eq.&
-          ARRAYLIST_NOT_FOUND) then
+      if (alst_erase(rhadapt%relementsAtVertex,i7,iel3)&
+          .eq. ARRAYLIST_NOT_FOUND) then
         call output_line('Unable to delete element from vertex list!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
         call sys_halt()
       end if
 
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel3,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel3,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel1,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel2,ipos)
-      call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i1,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i2,jel3,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i3,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i4,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel1,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel2,ipos)
+      call alst_push_back(rhadapt%relementsAtVertex,i7,jel3,ipos)
 
       ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then

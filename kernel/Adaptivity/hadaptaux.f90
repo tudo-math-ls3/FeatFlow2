@@ -73,7 +73,7 @@
 module hadaptaux
 
 !$use omp_lib
-  use arraylist
+  use arraylistInt
   use basicgeometry
   use binarytree
   use fsystem
@@ -505,7 +505,7 @@ module hadaptaux
     type(t_btree), dimension(:), pointer :: rBoundary => null()
 
     ! Arraylist for elements-meeting-at-vertex structure
-    type(t_arraylist) :: rElementsAtVertex
+    type(t_arraylistInt) :: rElementsAtVertex
   end type t_hadapt
   
   public :: t_hadapt
@@ -1612,16 +1612,14 @@ contains
     end if
 
     ! Create arraylist
-    call arrlst_createArraylist(rhadapt%relementsAtVertex,&
-                                2*rhadapt%NVT, 8*rhadapt%NEL,&
-                                ST_INT, ARRAYLIST_UNORDERED)
+    call alst_create(rhadapt%relementsAtVertex,&
+                       2*rhadapt%NVT, 8*rhadapt%NEL, ARRAYLIST_UNORDERED)
 
     ! Fill arraylist
     do iel = 1, rhadapt%NEL
       do ive = 1, hadapt_getNVE(rhadapt,iel)
-        call arrlst_appendToArraylist(rhadapt%relementsAtVertex,&
-                                      rhadapt%p_IverticesAtElement(ive,iel),&
-                                      iel, ipos)
+        call alst_push_back(rhadapt%relementsAtVertex,&
+                           rhadapt%p_IverticesAtElement(ive,iel), iel, ipos)
       end do
     end do
     

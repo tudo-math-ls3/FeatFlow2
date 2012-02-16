@@ -102,7 +102,7 @@ contains
     case (STACK_INT)
       allocate(rstack%p_StackInt)
       
-    case (ST_DOUBLE)
+    case (STACK_DOUBLE)
       allocate(rstack%p_StackDble)
     
     case (STACK_SINGLE)
