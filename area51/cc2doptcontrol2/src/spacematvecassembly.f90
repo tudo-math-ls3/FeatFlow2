@@ -7144,106 +7144,106 @@ contains
       call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
 #endif
 
-      ! ------------------------------
-      ! Weak implementation of the BCC
-      ! ------------------------------
-      
-      ! Set up the matrix. Primal velocity.
-      
-      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
-          rmatrixY1Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
-      
-      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-        ! Second matrix if not identical to the first one.
-        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
-            rmatrixY2Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
-      end if
-      
-      ! Dual velocity.
-
-      rcollection%DquickAccess(1) = dc2 * dpenalty
-
-      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
-          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-          rcollection=rcollection)
-
-      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-        ! Second matrix if not identical to the first one.
-        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
-            rmatrixLambda2Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
-            rcollection=rcollection)
-      end if
-
-      ! Pressure
-      rcollection%DquickAccess(1) = dc3 * dpenalty
-
-      ! X-derivative
-      rcollection%IquickAccess(1) = 1
-
-      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
-          rmatrixGrad1Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
-
-      ! Y-derivative
-      rcollection%IquickAccess(1) = 2
-
-      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
-          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
-
-
-!      ! --------------------------------
-!      ! Strong implementation of the BCC
-!      ! --------------------------------
+!      ! ------------------------------
+!      ! Weak implementation of the BCC
+!      ! ------------------------------
+!      
+!      ! Set up the matrix. Primal velocity.
+!      
+!      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+!          rmatrixY1Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+!      
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        ! Second matrix if not identical to the first one.
+!        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .true., &
+!            rmatrixY2Temp,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+!      end if
+!      
+!      ! Dual velocity.
 !
-!      ! Clear the rows in the matrix which are affected.
+!      rcollection%DquickAccess(1) = dc2 * dpenalty
+!
+!      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+!          rmatrixLambda1Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!          rcollection=rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        ! Second matrix if not identical to the first one.
+!        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .true., &
+!            rmatrixLambda2Temp,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+!            rcollection=rcollection)
+!      end if
+!
+!      ! Pressure
+!      rcollection%DquickAccess(1) = dc3 * dpenalty
+!
+!      ! X-derivative
+!      rcollection%IquickAccess(1) = 1
+!
+!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+!          rmatrixGrad1Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+!
+!      ! Y-derivative
+!      rcollection%IquickAccess(1) = 2
+!
+!      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .true., &
+!          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+
+      ! --------------------------------
+      ! Strong implementation of the BCC
+      ! --------------------------------
+
+      ! Clear the rows in the matrix which are affected.
 !      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
 !      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
 !      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
 !      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
 !      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
 !      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
-!
-!      ! Set up the matrix. Primal velocity.
-!
-!      call linf_getBoundaryOperatorMatrix (&
-!          rlinform1,rmatrixY1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
-!
-!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-!        ! Second matrix if not identical to the first one.
-!        call linf_getBoundaryOperatorMatrix (&
-!            rlinform1,rmatrixY2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
-!      end if
-!
-!      ! Dual velocity.
-!
-!      rcollection%DquickAccess(1) = dc2
-!
-!      call linf_getBoundaryOperatorMatrix (&
-!          rlinform2,rmatrixLambda1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-!          fcoeff_dirichletbcclf1,rcollection)
-!
-!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-!        ! Second matrix if not identical to the first one.
-!        call linf_getBoundaryOperatorMatrix (&
-!            rlinform2,rmatrixLambda2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-!            fcoeff_dirichletbcclf1,rcollection)
-!      end if
-!
-!      ! Pressure
-!      rcollection%DquickAccess(1) = dc3
-!
-!      ! X-derivative
-!      rcollection%IquickAccess(1) = 1
-!
-!      call linf_getBoundaryOperatorMatrix (&
-!          rlinform3,rmatrixGrad1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-!          fcoeff_dirichletbcclf2,rcollection)
-!
-!      ! Y-derivative
-!      rcollection%IquickAccess(1) = 2
-!
-!      call linf_getBoundaryOperatorMatrix (&
-!          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-!          fcoeff_dirichletbcclf2,rcollection)
+
+      ! Set up the matrix. Primal velocity.
+
+      call linf_getBoundaryOperatorMatrix (&
+          rlinform1,rmatrixY1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+        ! Second matrix if not identical to the first one.
+        call linf_getBoundaryOperatorMatrix (&
+            rlinform1,rmatrixY2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+      end if
+
+      ! Dual velocity.
+
+      rcollection%DquickAccess(1) = dc2
+
+      call linf_getBoundaryOperatorMatrix (&
+          rlinform2,rmatrixLambda1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+          fcoeff_dirichletbcclf1,rcollection)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+        ! Second matrix if not identical to the first one.
+        call linf_getBoundaryOperatorMatrix (&
+            rlinform2,rmatrixLambda2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+            fcoeff_dirichletbcclf1,rcollection)
+      end if
+
+      ! Pressure
+      rcollection%DquickAccess(1) = dc3
+
+      ! X-derivative
+      rcollection%IquickAccess(1) = 1
+
+      call linf_getBoundaryOperatorMatrix (&
+          rlinform3,rmatrixGrad1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+          fcoeff_dirichletbcclf2,rcollection)
+
+      ! Y-derivative
+      rcollection%IquickAccess(1) = 2
+
+      call linf_getBoundaryOperatorMatrix (&
+          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+          fcoeff_dirichletbcclf2,rcollection)
 
 !      ! ------------------------------------------
 !      ! Alternative Weak implementation of the BCC
@@ -8245,7 +8245,7 @@ contains
     real(DP), dimension(2) :: Dweights
     real(DP), dimension(2,2,1) :: Dcoefficients
     integer, dimension(32,1), target :: IdofGlobTrial,IdofGlobTest
-    real(DP), dimension(2,1) :: DpointPar
+    real(DP), dimension(:,:), allocatable :: DpointPar
     integer :: ndofLocTrial,ndofLocTest,idoflocTrial,idofLocTest,npoints,nve,ipoint
     
     integer :: nel,ielidx,iel,i,i1,ia
@@ -8392,6 +8392,17 @@ contains
         
         ! If a callback function is given, calculate the weights in the points.
         if (present(fcoeff_buildVectorScBdr2D_sim)) then
+          
+          ! Allocate memory for the parameter values.
+          if (.not. allocated (DpointPar)) then
+            allocate (DpointPar(npoints,1))
+          end if
+          
+          if (ubound(DpointPar,1) .ne. npoints) then
+            deallocate(DpointPar)
+            allocate (DpointPar(npoints,1))
+          end if
+          
           ! Approximate the parameter values of the points.
           ! Take the start parameter value of the edge of the current element
           ! and add the position of the point to get an approximate parameter value.
@@ -8441,6 +8452,7 @@ contains
           call fcoeff_buildVectorScBdr2D_sim (rmatrix%p_rspatialDiscrTrial, rlinform, &
                   1, npoints, DrefCoords, rboundaryRegion%iboundCompIdx, DpointPar,&
                   IdofGlobTest(:,:), rintSubset, Dcoefficients, rcollection)
+                  
         end if
         
         ! Multiplying a FE function in the npoints points DrefCoords, weighted
@@ -8505,6 +8517,10 @@ contains
       ! Release memory
       deallocate (Ielements)
       deallocate (IdofsAtBoundary)
+
+      if (allocated (DpointPar)) then
+        deallocate (DpointPar)
+      end if
 
   end subroutine
 
