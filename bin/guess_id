@@ -337,6 +337,11 @@ case ${id} in
 	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
         ;;
 
+    armv7l-*-linux)
+        cpu="cortexa9"
+        os="linux" 
+        ;;
+
     *-*-*bsd|*-*-darwin*)
 	case ${arch} in
 	    x86_64) arch="pc64";;	

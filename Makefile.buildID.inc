@@ -74,6 +74,10 @@ ifeq ($(strip $(REALID)), alpha-ev6-osf1)
 REALID:=$(strip $(REALID))-cf90-dxml
 endif
 
+ifeq ($(strip $(REALID)), armv7l-cortexa9-linux)
+REALID:=$(strip $(REALID))-gcc-blas
+endif
+
 ifeq ($(strip $(REALID)), ia64-itanium2-linux)
 # REALID:=$(strip $(REALID))-intel-mkl
 REALID:=$(strip $(REALID))-gcc-blas

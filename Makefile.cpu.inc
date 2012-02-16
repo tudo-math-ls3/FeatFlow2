@@ -1084,6 +1084,27 @@ endif
 
 
 ##############################################################################
+# ARM Cortex-A9
+#
+##############################################################################
+
+ifeq ($(call match,$(ID),armv7l-cortexa9-linux-gcc-.*),yes)
+# invokes the GNU Compiler suite, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(strip $(optimise)), YES)
+CFLAGSF77LIBS := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF77)
+CFLAGSF90     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF90)
+CFLAGSC       := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSC)
+CFLAGSCXX     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSCXX)
+LDFLAGS       := -march=armv7-a -mcpu=cortex-a9 $(LDFLAGS)
+endif
+endif
+
+
+
+##############################################################################
 # IBM Regatta
 #
 ##############################################################################
