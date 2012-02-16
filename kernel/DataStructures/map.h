@@ -1419,8 +1419,8 @@ contains
 !</input>
 
 !<output>
-    ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(out), pointer :: p_data
+    ! Data pointer
+    DTYPE(D_TYPE), dimension(:), pointer :: p_data
 !</output>
 !</subroutine>
 

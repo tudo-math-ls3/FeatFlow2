@@ -1359,11 +1359,11 @@ contains
 
 !<output>
     ! Pointer to the key value
-    TTYPE(T_TYPE), intent(out), pointer :: p_key
+    TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
     ! OPTIONAL: Pointer to the data
-    DTYPE(D_TYPE), dimension(:), intent(out), pointer, optional :: p_data
+    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
@@ -1743,12 +1743,12 @@ contains
 !</input>
 
 !<output>
-    ! key value
-    TTYPE(T_TYPE), intent(out), pointer :: p_key
+    ! Pointer  to key value
+    TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(out), pointer, optional :: p_data
+    ! OPTIONAL: Pointer to data
+    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
@@ -1831,12 +1831,12 @@ contains
 !</input>
 
 !<output>
-    ! key value
-    TTYPE(T_TYPE), intent(out), pointer :: p_key
+    ! Pointer to key value
+    TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(out), pointer, optional :: p_data
+    ! OPTIONAL: Pointer to data
+    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
