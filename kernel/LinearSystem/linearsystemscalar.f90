@@ -427,7 +427,7 @@ module linearsystemscalar
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  integer(I32), parameter, public :: LSYSSC_MSPEC_STANDaRD =        0
+  integer(I32), parameter, public :: LSYSSC_MSPEC_STANDARD =        0
   
   ! Matrix structure is a copy of another matrix, shared via the same
   ! handles.
