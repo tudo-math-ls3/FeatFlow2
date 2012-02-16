@@ -3298,6 +3298,11 @@ contains
       call ucd_startVTK (rexport,&
           UCD_FLAG_STANDARD+UCD_FLAG_USEEDGEMIDPOINTS+UCD_FLAG_IGNOREDEADNODES,p_rtriangulation,sfile)
           
+    case (4)
+      call ucd_startVTK (rexport,&
+          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES+&
+          UCD_FLAG_ONCEREFINED+UCD_FLAG_AUTOINTERPOLATE,p_rtriangulation,sfile)
+
     case default
       call output_line ('Invalid UCD ooutput type.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'fbsim_writeUCD')
