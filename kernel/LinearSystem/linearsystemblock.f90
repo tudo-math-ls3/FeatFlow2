@@ -5362,11 +5362,39 @@ contains
     bshareContent = .false.
     
     if (present(ifirstSubvector)) then
-      ifirst = min(max(ifirst,ifirstSubvector),ilast)
+    
+      ! Cancel if out of bounds
+      if (ifirstSubvector .lt. 1) then
+        call output_line("ifirstSubvector < 1",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_deriveSubvector')
+        call sys_halt()
+      end if
+
+      if (ifirstSubvector .gt. ilast) then
+        call output_line("ifirstSubvector > nblocks",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_deriveSubvector')
+        call sys_halt()
+      end if
+      
+      ifirst = ifirstSubvector
     end if
     
     if (present(ilastSubvector)) then
-      ilast = max(min(ilast,ilastSubvector),ifirst)
+
+      ! Cancel if out of bounds
+      if (ilastSubvector .lt. ifirst) then
+        call output_line("ilastSubvector < ifirstSubvector",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_deriveSubvector')
+        call sys_halt()
+      end if
+
+      if (ilastSubvector .gt. ilast) then
+        call output_line("ilastSubvector > nblocks",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_deriveSubvector')
+        call sys_halt()
+      end if
+
+      ilast = ilastSubvector
     end if
     
     if (present(bshare)) then
