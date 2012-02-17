@@ -1623,8 +1623,10 @@ contains
           rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
           
           ! Assemble the linear form for the scalar subvector
-          call linf_buildVectorScalar2(rform, .true.,&
-              rvector%RvectorBlock(iblock), mhd_coeffVectorAnalytic, rcollectionTmp)
+          call linf_buildVectorScalar(rform, .true.,&
+              rvector%RvectorBlock(iblock),&
+              fcoeff_buildVectorSc_sim=mhd_coeffVectorAnalytic,&
+              rcollection=rcollectionTmp)
 
           ! Increase number of processed expressions
           nexpression = nexpression + 1
@@ -1645,8 +1647,10 @@ contains
             rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
             ! Assemble the linear form for the scalar subvector
-            call linf_buildVectorScalar2(rform, .true.,&
-                rvectorBlock%RvectorBlock(ivar), mhd_coeffVectorAnalytic, rcollectionTmp)
+            call linf_buildVectorScalar(rform, .true.,&
+                rvectorBlock%RvectorBlock(ivar),&
+                fcoeff_buildVectorSc_sim=mhd_coeffVectorAnalytic,&
+                rcollection=rcollectionTmp)
           end do
 
           ! Convert block vector back to scalar vector in interleaved format

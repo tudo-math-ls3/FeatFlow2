@@ -771,8 +771,10 @@ contains
       rcollection%IquickAccess(2) = iblock
       
       ! Assemble the linear form for the scalar subvector
-      call linf_buildVectorScalar2(rform, .true.,&
-          rdestVector%RvectorBlock(iblock), mhd_coeffVectorFE, rcollection)
+      call linf_buildVectorScalar(rform, .true.,&
+          rdestVector%RvectorBlock(iblock),&
+          fcoeff_buildVectorSc_sim=mhd_coeffVectorFE,&
+          rcollection=rcollection)
 
       ! Compute the lumped L2-projection
       call lsyssc_invertedDiagMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
