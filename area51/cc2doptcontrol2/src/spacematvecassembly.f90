@@ -1441,7 +1441,7 @@ contains
     ! local variables
     logical :: ballocate
     type(t_matrixBlock) :: rtempMatrix
-    type(t_vectorBlock) :: rtempVector
+    type(t_vectorBlock) :: rvectorPrimal, rvectorDual, rvectorDual2
     type(t_settings_stabil) :: rstabilisation
     integer :: i,j
     type(t_optcoperator) :: roptcoperator
@@ -1545,6 +1545,61 @@ contains
         call spdiscr_deriveBlockDiscr (&
             rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual, rvelDiscr, 1, 3)
         call lsysbl_createMatBlockByDiscr (rvelDiscr,rtempMatrix)
+
+        ! Get the primal velocity
+        select case (rnonlinearSpatialMatrix%iprimalSol)
+        case (1)
+          call lsysbl_deriveSubvector(&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,rvectorPrimal, 1,2,.true.)
+        case (2)
+          call lsysbl_deriveSubvector(&
+            rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,rvectorPrimal, 1,2,.true.)
+        case (3)
+          call lsysbl_deriveSubvector(&
+              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rvectorPrimal, 1,2,.true.)
+        end select
+
+        ! Get the dual velocity.
+        ! For pure forward/backward equations, this may be missing if not used.
+        ! In this case, the temp vector stays uninitialised.
+        select case (rnonlinearSpatialMatrix%idualSol)
+        case (1)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,rvectorDual, 4,5,.true.)
+          end if
+        case (2)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,rvectorDual, 4,5,.true.)
+          end if
+        case (3)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rvectorDual, 4,5,.true.)
+          end if
+        end select
+        
+        ! Get the 2nd dual velocity for reactive terms.
+        ! For pure forward/backward equations, this may be missing if not used.
+        ! In this case, the temp vector stays uninitialised.
+        select case (rnonlinearSpatialMatrix%idualSol2)
+        case (1)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,rvectorDual2, 4,5,.true.)
+          end if
+        case (2)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,rvectorDual2, 4,5,.true.)
+          end if
+        case (3)
+          if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3%nblocks .gt. 3) then
+            call lsysbl_deriveSubvector(&
+                rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rvectorDual2, 4,5,.true.)
+          end if
+        end select
         
         ! Primal equation
         ! ---------------
@@ -1559,41 +1614,17 @@ contains
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
-        select case (rnonlinearSpatialMatrix%iprimalSol)
-        case (1)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dstokes(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
-        case (2)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dstokes(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
-        case (3)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dstokes(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
-              dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
-        end select
+        
+        call assembleNonlinearity (&
+            rnonlinearSpatialMatrix,rtempMatrix,&
+            rvectorPrimal,rvectorPrimal,&
+            rnonlinearSpatialMatrix%Dstokes(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
+            rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,1,1)
@@ -1647,75 +1678,27 @@ contains
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
-        select case (rnonlinearSpatialMatrix%iprimalSol)
-        case (1)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rnonlinearSpatialMatrix%Dstokes(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
+        call assembleNonlinearity (&
+            rnonlinearSpatialMatrix,rtempMatrix,&
+            rvectorPrimal,rvectorPrimal,&
+            rnonlinearSpatialMatrix%Dstokes(2,2),&
+            dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+            dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
+            dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
+            rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
-          ! Assemble the additional term for the natural BDC in the dual equation.
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(1,1),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,&
-              rtempMatrix%RmatrixBlock(2,2),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
+        ! Assemble the additional term for the natural BDC in the dual equation.
+        call smva_assembleDualNeumannBd (rvectorPrimal,&
+            rtempMatrix%RmatrixBlock(1,1),&
+            dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+            rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
+        call smva_assembleDualNeumannBd (rvectorPrimal,&
+            rtempMatrix%RmatrixBlock(2,2),&
+            dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
+            rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
-        case (2)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rnonlinearSpatialMatrix%Dstokes(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
-
-          ! Assemble the additional term for the natural BDC in the dual equation.
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(1,1),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,&
-              rtempMatrix%RmatrixBlock(2,2),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-
-        case (3)
-          call assembleNonlinearity (&
-              rnonlinearSpatialMatrix,rtempMatrix,&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rnonlinearSpatialMatrix%Dstokes(2,2),&
-              dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
-              dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
-              dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
-
-          ! Assemble the additional term for the natural BDC in the dual equation.
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(1,1),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-          call smva_assembleDualNeumannBd (rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,&
-              rtempMatrix%RmatrixBlock(2,2),&
-              dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-
-        end select
-        
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,4)
 
@@ -1756,20 +1739,9 @@ contains
         !    rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
         rstabilisation = t_settings_stabil(3,0.0_DP,1,1,1)
 
-        select case (rnonlinearSpatialMatrix%idualSol)
-        case (1)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,rtempVector, 4,6,.true.)
-        case (2)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,rtempVector, 4,6,.true.)
-        case (3)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rtempVector, 4,6,.true.)
-        end select
-            
         call assembleNonlinearity (&
-            rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
+            rnonlinearSpatialMatrix,rtempMatrix,&
+            rvectorPrimal,rvectorDual,&
             rnonlinearSpatialMatrix%Dstokes(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
@@ -1777,32 +1749,16 @@ contains
             dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
             rcubatureInfo,rstabilisation)
             
-        if (rtempVector%NEQ .ne. 0) &
-          call lsysbl_releaseVector (rtempVector)
-            
         ! There is probably a 2nd reactive term stemming from the next time step.
         ! Assemble it.
         
-        select case (rnonlinearSpatialMatrix%idualSol2)
-        case (1)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1,rtempVector, 4,6,.true.)
-        case (2)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2,rtempVector, 4,6,.true.)
-        case (3)
-          call lsysbl_deriveSubvector(&
-              rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3,rtempVector, 4,6,.true.)
-        end select
-            
         call assembleNonlinearity (&
-            rnonlinearSpatialMatrix,rtempMatrix,rtempVector,0.0_DP,0.0_DP,&
+            rnonlinearSpatialMatrix,rtempMatrix,&
+            rvectorPrimal,rvectorDual2,&
+            0.0_DP,0.0_DP,&
             dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
             0.0_DP,rcubatureInfo,rstabilisation)
-
-        if (rtempVector%NEQ .ne. 0) &
-          call lsysbl_releaseVector (rtempVector)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,1)
@@ -2074,6 +2030,16 @@ contains
     end if
     
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,1),p_Ddata)
+    
+    if (rvectorPrimal%NEQ .ne. 0) &
+      call lsysbl_releaseVector (rvectorPrimal)
+
+    if (rvectorDual%NEQ .ne. 0) &
+      call lsysbl_releaseVector (rvectorDual)
+
+    if (rvectorDual2%NEQ .ne. 0) &
+      call lsysbl_releaseVector (rvectorDual2)
+    
     
   contains
   
@@ -2478,7 +2444,8 @@ contains
     ! -----------------------------------------------------
 
     subroutine assembleNonlinearity (&
-        rnonlinearSpatialMatrix,rmatrix,rvector,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
+        rnonlinearSpatialMatrix,rmatrix,rvectorPrimalVel,rvectorNonlinearity,&
+        dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
         rcubatureInfo,rstabilisation,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
@@ -2491,14 +2458,17 @@ contains
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix.
-    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
+    type(t_nonlinearSpatialMatrix), intent(in) :: rnonlinearSpatialMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
+    
+    ! Primal velocity vector. Used for nonlinear viscosity.
+    type(t_vectorBlock), intent(in) :: rvectorPrimalVel
     
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    type(t_vectorBlock) :: rvector
+    type(t_vectorBlock), intent(in) :: rvectorNonlinearity
     
     ! Weight for the stabilisation and Stokes operator in the Stokes case.
     real(DP), intent(in) :: dtheta
@@ -2549,7 +2519,7 @@ contains
             LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
       end if
                     
-      call lsysbl_getbase_double (rvector,p_Ddata1)
+      call lsysbl_getbase_double (rvectorNonlinearity,p_Ddata1)
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Ddata2)
              
       if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
@@ -2613,11 +2583,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvectorNonlinearity, rvectorNonlinearity, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix,rcubatureInfo=rcubatureInfo)
@@ -2653,7 +2623,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
 
@@ -2664,11 +2634,11 @@ contains
           end if
 
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,&
+              rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
               ffunctionViscoModel,rcollection,rcubatureInfo)
 
         case (CCMASM_STAB_UPWIND)
@@ -2702,7 +2672,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
                     
@@ -2713,11 +2683,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity for everything except
-          ! for the convection. As velocity vector, specify rvector!
+          ! for the convection. As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,&
+              rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
               ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
@@ -2729,11 +2699,11 @@ contains
           rupwindStabil%dtheta = dgamma
           
           ! Apply the upwind operator.
-          call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+          call conv_upwind2d (rvectorNonlinearity, rvectorNonlinearity, 1.0_DP, 0.0_DP,&
               rupwindStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
-            call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+            call conv_upwind2d (rvectorNonlinearity, rvectorNonlinearity, 1.0_DP, 0.0_DP,&
                 rupwindStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(2,2))
           end if
 
@@ -2744,7 +2714,7 @@ contains
           !rstreamlineDiffusion3%ddelta = 1.0_DP
           
           ! Apply the upwind operator.
-          !call conv_streamDiff2Blk2dMat (rstreamlineDiffusion3,rmatrix,rvector)
+          !call conv_streamDiff2Blk2dMat (rstreamlineDiffusion3,rmatrix,rvectorNonlinearity)
           
           !call output_line ('Upwind not supported.', &
           !                  OU_CLASS_ERROR,OU_MODE_STD,'assembleNonlinearity')
@@ -2777,12 +2747,12 @@ contains
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvectorNonlinearity, rvectorNonlinearity, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix,rcubatureInfo=rcubatureInfo)
@@ -2850,7 +2820,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
                     
@@ -2861,11 +2831,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,&
+              rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
               ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! Set up the jump stabilisation structure.
@@ -2932,7 +2902,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
                     
@@ -2943,13 +2913,13 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
           call lsyssc_getbase_double (rmatrixEOJ, p_Ddata2)
           call conv_streamDiff2Blk2dMat (&
-              rstreamlineDiffusion2,rmatrix,rvector,&
+              rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
               ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! We use the precomputed EOJ matrix and sum it up to the
@@ -3017,7 +2987,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
             ! Assemble the deformation tensor?
             if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
@@ -3026,11 +2996,11 @@ contains
             end if
           
             ! Call the SD method to calculate the nonlinearity for everything except
-            ! for the convection. As velocity vector, specify rvector!
+            ! for the convection. As velocity vector, specify rvectorNonlinearity!
             ! Therefore, the primal velcity is always used for assembling
             ! that thing!
             call conv_streamDiff2Blk2dMat (&
-                rstreamlineDiffusion2,rmatrix,rvector,&
+                rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
                 ffunctionViscoModel,rcollection,rcubatureInfo)
 
           end if
@@ -3900,7 +3870,8 @@ contains
       call lsysbl_deriveSubvector(rd,rtempVectorB,1,2,.true.)
 
       call assembleNonlinearityDefect (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
+          rnonlinearSpatialMatrix,rtempMatrix,&
+          rvectorPrimal,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
@@ -3925,7 +3896,8 @@ contains
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
 
       call assembleNonlinearityDefect (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
+          rnonlinearSpatialMatrix,rtempMatrix,&
+          rvectorPrimal,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,2),&
           dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
@@ -3960,7 +3932,8 @@ contains
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
 
       call assembleNonlinearityDefect (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
+          rnonlinearSpatialMatrix,rtempMatrix,&
+          rvectorPrimal,rvectorDual,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
@@ -3974,7 +3947,8 @@ contains
       rstabilisation = t_settings_stabil(3,0.0_DP,1,1,1)
       
       call assembleNonlinearityDefect (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
+          rnonlinearSpatialMatrix,rtempMatrix,&
+          rvectorPrimal,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
           dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
           0.0_DP,rcubatureInfo,rstabilisation,dcx)
@@ -4435,7 +4409,8 @@ contains
     ! -----------------------------------------------------
 
     subroutine assembleNonlinearityDefect (&
-        rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
+        rnonlinearSpatialMatrix,rmatrix,rvectorPrimalVel,rvectorNonlinearity,&
+        rx,rb,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
         rcubatureInfo,rstabilisation,dcx,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
@@ -4453,9 +4428,12 @@ contains
     ! 2X2 block matrix that specifies the structure of the velocity FE space.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
+    ! Primal velocity vector. Used for nonlinear viscosity.
+    type(t_vectorBlock), intent(in) :: rvectorPrimalVel
+    
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    type(t_vectorBlock), intent(in) :: rvector
+    type(t_vectorBlock), intent(in) :: rvectorNonlinearity
     
     ! The current solution vector for the velocity (x- and y-velocity)
     type(t_vectorBlock), intent(in) :: rx
@@ -4556,11 +4534,11 @@ contains
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvectorNonlinearity, rvectorNonlinearity, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
@@ -4599,7 +4577,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
           
@@ -4610,11 +4588,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rx,rb,rvectorNonlinearity,ffunctionViscoModel,rcollection,rcubatureInfo)
               
         case (CCMASM_STAB_UPWIND)
         
@@ -4650,7 +4628,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
 
@@ -4661,11 +4639,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity except for the
-          ! convection part. As velocity vector, specify rvector!
+          ! convection part. As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rx,rb,rvectorNonlinearity,ffunctionViscoModel,rcollection,rcubatureInfo)
 
           ! Prepare the upwind structure for the assembly of the convection.
           ! Note: Stabilisation weight is actually wrong, but it is not possible
@@ -4679,7 +4657,7 @@ contains
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Apply the upwind operator.
-          call conv_upwind2d (rvector, rvector, 1.0_DP, 0.0_DP,&
+          call conv_upwind2d (rvectorNonlinearity, rvectorNonlinearity, 1.0_DP, 0.0_DP,&
               rupwindStabil, CONV_MODDEFECT, rmatrix%RmatrixBlock(1,1), rx, rb)
 
           ! Prepare the upwind structure for the assembly of the convection.
@@ -4690,7 +4668,7 @@ contains
           
           ! Apply the upwind operator.
           !call conv_streamDiff2Blk2dDef (rstreamlineDiffusion3,rmatrix,&
-          !    rx,rb,rvector)
+          !    rx,rb,rvectorNonlinearity)
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
@@ -4721,11 +4699,11 @@ contains
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvectorNonlinearity, rvectorNonlinearity, &
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
@@ -4792,7 +4770,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
 
@@ -4803,11 +4781,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rx,rb,rvectorNonlinearity,ffunctionViscoModel,rcollection,rcubatureInfo)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4869,7 +4847,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
           end if
 
@@ -4880,11 +4858,11 @@ contains
           end if
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector!
+          ! As velocity vector, specify rvectorNonlinearity!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rx,rb,rvector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rx,rb,rvectorNonlinearity,ffunctionViscoModel,rcollection,rcubatureInfo)
                               
           ! Just do some mat-vec's to compute the defect.
           !
@@ -4949,7 +4927,7 @@ contains
             rcollection%p_rnextCollection => ruserCollection
             call smva_prepareViscoAssembly (&
                 rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal,&
-                rcollection,rvector)
+                rcollection,rvectorPrimalVel)
             
             ! Assemble the deformation tensor?
             if (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) then
@@ -4958,11 +4936,11 @@ contains
             end if
           
             ! Call the SD method to calculate the nonlinearity for everything except
-            ! for the convection. As velocity vector, specify rvector!
+            ! for the convection. As velocity vector, specify rvectorNonlinearity!
             ! Therefore, the primal velcity is always used for assembling
             ! that thing!
             call conv_streamDiff2Blk2dMat (&
-                rstreamlineDiffusion2,rmatrix,rvector,&
+                rstreamlineDiffusion2,rmatrix,rvectorNonlinearity,&
                 ffunctionViscoModel,rcollection,rcubatureInfo)
 
           end if
@@ -6966,9 +6944,9 @@ contains
     integer :: ndofs
     
     ! Cancel if there is nothing to assemble.
-    if ((dc1 .eq. 0.0_DP) .and. (dc2 .eq. 0.0_DP) .and. (dc3 .eq. 0.0_DP)) then
-      return
-    end if
+    !if ((dc1 .eq. 0.0_DP) .and. (dc2 .eq. 0.0_DP) .and. (dc3 .eq. 0.0_DP)) then
+    !  return
+    !end if
     
     ! If any of the matrices is deactivated by its scaliing factor,
     ! activate it and clear it in advance.
