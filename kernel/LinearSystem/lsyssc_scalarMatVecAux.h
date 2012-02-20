@@ -50,17 +50,17 @@
 #define __VecName__ Sngl
 #define __VecType__ SP
 #define __VecOne__  1.0_SP
-#define __VecZero__ 1.0_SP
+#define __VecZero__ 0.0_SP
 #elif VecDT == double
 #define __VecName__ Dble
 #define __VecType__ DP
 #define __VecOne__  1.0_DP
-#define __VecZero__ 1.0_DP
+#define __VecZero__ 0.0_DP
 #elif VecDT == quad
 #define __VecName__ Quad
 #define __VecType__ QP
 #define __VecOne__  1.0_QP
-#define __VecZero__ 1.0_QP
+#define __VecZero__ 0.0_QP
 #else
 #error "Unsupported vector datatype!"
 #endif
