@@ -5,12 +5,12 @@
   ! Perform the multiplication
   if(cx .ne. __MatOne__) then
     
-    if(cy .eq. __VecOne__) then
+    if(cy .eq. __VecZero__) then
       
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -28,7 +28,7 @@
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -46,7 +46,7 @@
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -63,12 +63,12 @@
     
   else   ! arbitrary cx value
     
-    if(cy .eq. __VecOne__) then
+    if(cy .eq. __VecZero__) then
       
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -86,7 +86,7 @@
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -104,7 +104,7 @@
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        Ddtmp = __MatOne__
+        Ddtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           icol = Kcol(ia)
           do ivar = 1, __NVAR__
@@ -126,12 +126,12 @@
   ! Perform the multiplication
   if(cx .ne. __MatOne__) then
     
-    if(cy .eq. __VecOne__) then
+    if(cy .eq. __VecZero__) then
       
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
@@ -144,7 +144,7 @@
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
@@ -157,7 +157,7 @@
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
@@ -169,12 +169,12 @@
     
   else   ! arbitrary cx value
     
-    if(cy .eq. __VecOne__) then
+    if(cy .eq. __VecZero__) then
       
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
@@ -187,7 +187,7 @@
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
@@ -200,7 +200,7 @@
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
-        dtmp = __MatOne__
+        dtmp = __MatZero__
         do ia = Kld(irow), Kld(irow+1)-1
           dtmp = dtmp + Da(ia)*Dx(Kcol(ia))
         end do
