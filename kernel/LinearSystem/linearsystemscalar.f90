@@ -3980,10 +3980,10 @@ contains
   subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose, rperfconfig)
   
 !<description>
-  ! Performs a matrix vector multiplicationwith a given scalar matrix:
+  ! Performs a matrix vector multiplication with a given scalar matrix:
   !   <tex> $$  Dy   =   cx * rMatrix * rx   +   cy * ry  $$ </tex>
 !</description>
-  
+
 !<input>
   
   ! Scalar matrix
@@ -4564,7 +4564,7 @@ contains
     end if
   
   contains
-  
+
     ! Now the real MV multiplication routines follow.
     ! We create them in the scoping unit of the procedure to prevent
     ! direct calls from outside.
