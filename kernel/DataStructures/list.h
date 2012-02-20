@@ -107,10 +107,10 @@
 !# 17.) list_pop_back (pop_back in STL)
 !#      -> Removes the last element from a list
 !#
-!# 18.) list_front (front in STL)
+!# 18.) list_front / list_getbase_front (front in STL)
 !#      -> Gets key and value of the first element in a list
 !#
-!# 19.) list_back (front in STL)
+!# 19.) list_back / list_getbase_back (back in STL)
 !#      -> Gets key and value of the last element in a list
 !#
 !# 20.) list_insert (insert in STL)
@@ -236,7 +236,9 @@
   public :: list_pop_front
   public :: list_pop_back
   public :: list_front
+  public :: list_getbase_front
   public :: list_back
+  public :: list_getbase_back
   public :: list_insert
   public :: list_erase
   public :: list_size
@@ -347,13 +349,19 @@ interface list_getbase_key
   end interface
 
   interface list_front
-    module procedure template_TD(list_front1,T,D)
-    module procedure template_TD(list_front2,T,D)
+    module procedure template_TD(list_front,T,D)
+  end interface
+
+  interface list_getbase_front
+    module procedure template_TD(list_getbase_front,T,D)
   end interface
   
   interface list_back
-    module procedure template_TD(list_back1,T,D)
-    module procedure template_TD(list_back2,T,D)
+    module procedure template_TD(list_back,T,D)
+  end interface
+  
+  interface list_getbase_back
+    module procedure template_TD(list_getbase_back,T,D)
   end interface
 
   interface list_insert
@@ -1761,9 +1769,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_front1,T,D)(rlist, p_key, p_data)
+  subroutine template_TD(list_getbase_front,T,D)(rlist, p_key, p_data)
 #else
-  subroutine template_TD(list_front1,T,D)(rlist, p_key)
+  subroutine template_TD(list_getbase_front,T,D)(rlist, p_key)
 #endif
 
 !<description>
@@ -1817,7 +1825,7 @@ contains
 
 !<function>
 
-  function template_TD(list_front2,T,D)(rlist) result(key)
+  function template_TD(list_front,T,D)(rlist) result(key)
 
 !<description>
     ! This function returns the key stored in the first element
@@ -1850,9 +1858,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_back1,T,D)(rlist, p_key, p_data)
+  subroutine template_TD(list_getbase_back,T,D)(rlist, p_key, p_data)
 #else
-  subroutine template_TD(list_back1,T,D)(rlist, p_key)
+  subroutine template_TD(list_getbase_back,T,D)(rlist, p_key)
 #endif
 
 !<description>
@@ -1906,7 +1914,7 @@ contains
   
 !<function>
 
-  function template_TD(list_back2,T,D)(rlist) result(key)
+  function template_TD(list_back,T,D)(rlist) result(key)
 
 !<description>
     ! This function returns the key stored in the last element
@@ -2055,12 +2063,14 @@ contains
 
   !************************************************************************
 
-!<subroutine>
+!<function>
 
 #ifdef D
-  subroutine template_TD(list_insert2,T,D)(rlist, rposition, n, key, data)
+  function template_TD(list_insert2,T,D)(rlist, rposition, n, key, data)&
+                                         result(riterator)
 #else
-  subroutine template_TD(list_insert2,T,D)(rlist, rposition, n, key)
+  function template_TD(list_insert2,T,D)(rlist, rposition, n, key)&
+                                         result(riterator)
 #endif
 
 !<description>
@@ -2088,10 +2098,13 @@ contains
     ! The linked list
     type(template_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
-!</subroutine>
+!<result>
+    ! The new iterator
+    type(template_TD(it_list,T,D)) :: riterator
+!</result>
+!</function>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
     integer :: i
 
     do i = 1, n
@@ -2102,13 +2115,14 @@ contains
 #endif
     end do
 
-  end subroutine
+  end function
 
   !************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine template_TD(list_insert3,T,D)(rlist, rposition, rfirst, rlast)
+  function template_TD(list_insert3,T,D)(rlist, rposition, rfirst, rlast)&
+                                         result(riterator)
 
 !<description>
     ! This subroutine inserts content in the range [rfirst,rlast)
@@ -2130,10 +2144,14 @@ contains
     ! The linked list
     type(template_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
-!</subroutine>
+!<result>
+    ! The new iterator
+    type(template_TD(it_list,T,D)) :: riterator
+!</result>
+!</function>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator,riter1
+    type(template_TD(it_list,T,D)) :: riter
     TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
@@ -2141,21 +2159,21 @@ contains
 #endif
 
     ! Push content to the list
-    riterator = rfirst
-    do while(riterator /= rlast)
+    riter = rfirst
+    do while(riter /= rlast)
 
 #ifdef D
-      call list_getbase_key(riterator%p_rlist, riterator, p_key)
-      call list_getbase_data(riterator%p_rlist, riterator, p_data)
-      riter1 = list_insert(rlist, rposition, p_key, p_data)
+      call list_getbase_key(riter%p_rlist, riter, p_key)
+      call list_getbase_data(riter%p_rlist, riter, p_data)
+      riterator = list_insert(rlist, rposition, p_key, p_data)
 #else
-      call list_getbase_key(riterator%p_rlist, riterator, p_key)
-      riter1 = list_insert(rlist, rposition, p_key)
+      call list_getbase_key(riter%p_rlist, riter, p_key)
+      riterator = list_insert(rlist, rposition, p_key)
 #endif
-      call list_next(riterator)
+      call list_next(riter)
     end do
 
-  end subroutine
+  end function
 
   !************************************************************************
 

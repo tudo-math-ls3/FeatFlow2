@@ -80,10 +80,10 @@
 !# 17.) alst_pop_back (pop_back in STL)
 !#      -> Removes the last element from an arraylist
 !#
-!# 18.) alst_front (front in STL)
+!# 18.) alst_front / alst_getbase_front(front in STL)
 !#      -> Gets key and value of the first element in an arraylist
 !#
-!# 19.) alst_back (front in STL)
+!# 19.) alst_back / alst_getbase_back (back in STL)
 !#      -> Gets key and value of the last element in an arraylist
 !#
 !# 20.) alst_insert (insert in STL)
@@ -179,7 +179,9 @@
   public :: alst_pop_front
   public :: alst_pop_back
   public :: alst_front
+  public :: alst_getbase_front
   public :: alst_back
+  public :: alst_getbase_back
   public :: alst_insert
   public :: alst_erase
   public :: alst_size
@@ -322,13 +324,19 @@
   end interface
 
   interface alst_front
-    module procedure template_TD(alst_front1,T,D)
-    module procedure template_TD(alst_front2,T,D)
+    module procedure template_TD(alst_front,T,D)
+  end interface
+
+  interface alst_getbase_front
+    module procedure template_TD(alst_getbase_front,T,D)
   end interface
 
   interface alst_back
-    module procedure template_TD(alst_back1,T,D)
-    module procedure template_TD(alst_back2,T,D)
+    module procedure template_TD(alst_back,T,D)
+  end interface
+
+  interface alst_getbase_back
+    module procedure template_TD(alst_getbase_back,T,D)
   end interface
 
   interface alst_insert
@@ -2525,9 +2533,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_front1,T,D)(rarraylist, itable, p_key, p_data)
+  subroutine template_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key, p_data)
 #else
-  subroutine template_TD(alst_front1,T,D)(rarraylist, itable, p_key)
+  subroutine template_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key)
 #endif
 
 !<description>
@@ -2584,7 +2592,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_front2,T,D)(rarraylist, itable) result(key)
+  function template_TD(alst_front,T,D)(rarraylist, itable) result(key)
 
 !<description>
     ! This function returns the key stored in the first element of the
@@ -2621,9 +2629,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_back1,T,D)(rarraylist, itable, p_key, p_data)
+  subroutine template_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key, p_data)
 #else
-  subroutine template_TD(alst_back1,T,D)(rarraylist, itable, p_key)
+  subroutine template_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key)
 #endif
 
 !<description>
@@ -2680,7 +2688,7 @@ contains
   
 !<function>
 
-  function template_TD(alst_back2,T,D)(rarraylist, itable) result(key)
+  function template_TD(alst_back,T,D)(rarraylist, itable) result(key)
 
 !<description>
     ! This function returns the key stored in the last element of the
@@ -2842,12 +2850,14 @@ contains
 
   !************************************************************************
 
-!<subroutine>
+!<function>
 
 #ifdef D
-  subroutine template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key, data)
+  function template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key, data)&
+                                         result(riterator)
 #else
-  subroutine template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key)
+  function template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key)&
+                                         result(riterator)
 #endif
 
 !<description>
@@ -2875,10 +2885,14 @@ contains
     ! The arraylist
     type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
-!</subroutine>
+
+!<result>
+    ! The new iterator
+    type(template_TD(it_arraylist,T,D)) :: riterator
+!</result>
+!</function>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
     integer :: i
 
     do i = 1, n
@@ -2889,13 +2903,14 @@ contains
 #endif
     end do
 
-  end subroutine
+  end function
 
   !************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine template_TD(alst_insert3,T,D)(rarraylist, rposition, rfirst, rlast)
+  function template_TD(alst_insert3,T,D)(rarraylist, rposition, rfirst, rlast)&
+                                         result(riterator)
 
 !<description>
     ! This subroutine inserts content in the range [rfirst,rlast)
@@ -2917,10 +2932,15 @@ contains
     ! The arraylist
     type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
-!</subroutine>
+
+!<result>
+    ! The new iterator
+    type(template_TD(it_arraylist,T,D)) :: riterator
+!</result>
+!</function>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator,riter1
+    type(template_TD(it_arraylist,T,D)) :: riter
     TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
@@ -2928,21 +2948,21 @@ contains
 #endif
 
     ! Push content to the list
-    riterator = rfirst
-    do while(riterator /= rlast)
+    riter = rfirst
+    do while(riter /= rlast)
 
 #ifdef D
-      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
-      call alst_getbase_data(riterator%p_rarraylist, riterator, p_data)
-      riter1 = alst_insert(rarraylist, rposition, p_key, p_data)
+      call alst_getbase_key(riter%p_rarraylist, riter, p_key)
+      call alst_getbase_data(riter%p_rarraylist, riter, p_data)
+      riterator = alst_insert(rarraylist, rposition, p_key, p_data)
 #else
-      call alst_getbase_key(riterator%p_rarraylist, riterator, p_key)
-      riter1 = alst_insert(rarraylist, rposition, p_key)
+      call alst_getbase_key(riter%p_rarraylist, riter, p_key)
+      riterator = alst_insert(rarraylist, rposition, p_key)
 #endif
-      call alst_next(riterator)
+      call alst_next(riter)
     end do
 
-  end subroutine
+  end function
 
   !************************************************************************
 

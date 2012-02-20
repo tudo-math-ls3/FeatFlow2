@@ -1605,12 +1605,12 @@ contains
 
   !************************************************************************
 
-!<subroutine>
+!<function>
 
-  subroutine template_TD(map_insert2,T,D)(rmap, rfirst, rlast)
+  function template_TD(map_insert2,T,D)(rmap, rfirst, rlast) result(riterator)
 
 !<description>
-    ! This subroutine inserts content in the range [rfirst,rlast)
+    ! This function inserts content in the range [rfirst,rlast)
     ! into the map.
 !</description>
 
@@ -1626,31 +1626,36 @@ contains
     ! The map
     type(template_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
-!</subroutine>
+
+!<result>
+    ! The new iterator
+    type(template_TD(it_map,T,D)) :: riterator
+!</result>
+!</function>
 
     ! local variable
-    type(template_TD(it_map,T,D)) :: riterator,riterator1
+    type(template_TD(it_map,T,D)) :: riter
     TTYPE(T_TYPE) :: key
 
 #ifdef D
     DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
     
-    riterator = rfirst
-    do while(riterator /= rlast)
+    riter = rfirst
+    do while(riter /= rlast)
 
-      key = map_get(riterator%p_rmap, riterator)
+      key = map_get(riter%p_rmap, riter)
       
 #ifdef D
-      call map_getbase_data(riterator%p_rmap, riterator, p_data)
-      riterator1 = map_insert(rmap, key, p_data)
+      call map_getbase_data(riter%p_rmap, riter, p_data)
+      riterator = map_insert(rmap, key, p_data)
 #else
-      riterator1 = map_insert(rmap, key)
+      riterator = map_insert(rmap, key)
 #endif
-      call map_next(riterator)
+      call map_next(riter)
     end do
 
-  end subroutine
+  end function
 
   !************************************************************************
 
