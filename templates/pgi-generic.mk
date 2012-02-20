@@ -65,7 +65,7 @@ ifeq ($(call optimise), YES)
 # -Mcache_align is important when using ACML.
 CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -fastsse \
 		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
-		 -Mvect=assoc,cachesize:1048576,prefetch,sse -time -v
+		 -Mvect=assoc,cachesize:1048576,prefetch,sse
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 # PGI F90 Compiler v6.1.x most likely needs "-g -Msave" otherwise FEAT2 used to
 # crash as soon as it tries to start solving something! This might have been
@@ -74,7 +74,7 @@ CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
 		 $(CFLAGSF77LIBS) -module $(OBJDIR) -I $(OBJDIR)
 CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
 		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
-		 -Mvect=assoc,cachesize:1048576,prefetch,sse -time -v
+		 -Mvect=assoc,cachesize:1048576,prefetch,sse
 LDFLAGS       := $(LDFLAGS)
 else
 CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O0 -g -Mbounds
