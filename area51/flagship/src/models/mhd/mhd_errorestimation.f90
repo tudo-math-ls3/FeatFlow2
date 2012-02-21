@@ -9,8 +9,14 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) mhd_estimateRecoveryError
+!# 1.) mhd_errorestRecovery
 !#     -> Estimates the solution error using recovery techniques
+!#
+!#
+!# The following internal routines are available:
+!#
+!# 1.) mhd_calcProtectionLayer
+!#     -> Calculates a protection layer for grid adaptation
 !#
 !# </purpose>
 !##############################################################################
@@ -36,7 +42,7 @@ module mhd_errorestimation
 
   private
 
-  public :: mhd_estimateRecoveryError
+  public :: mhd_errorestRecovery
 
 contains
 
@@ -44,7 +50,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_estimateRecoveryError(rparlist, ssectionName,&
+  subroutine mhd_errorestRecovery(rparlist, ssectionName,&
       rproblemLevel, rsolution, dtime, rerror, derror)
 
 !<description>
@@ -90,15 +96,11 @@ contains
     ! local variables
     type(t_vectorScalar) :: rvectorScalar, rvectorTmp
     real(DP), dimension(:), pointer :: p_Ddata, p_DdataTmp
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IneighboursAtElement
-    logical, dimension(:), pointer :: p_BisactiveElement
     character(LEN=SYS_STRLEN) :: serrorvariable
     real(DP) :: dnoiseFilter, dabsFilter, dvalue,&
                 dprotectLayerTolerance, derrorTmp
     integer :: ierrorEstimator, igridindicator, iexactsolutiontype
-    integer :: iprotectLayer, nprotectLayers, ierrorVariable, nerrorVariables
-    integer :: h_BisactiveElement
+    integer :: nprotectLayers, ierrorVariable, nerrorVariables
 
 
     ! Get global configuration from parameter list
@@ -184,7 +186,7 @@ contains
 
       case default
         call output_line('Invalid type of error estimator!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_estimateRecoveryError')
+            OU_CLASS_ERROR,OU_MODE_STD,'mhd_errorestRecovery')
         call sys_halt()
       end select
 
@@ -234,65 +236,98 @@ contains
     ! Calculate protection layers
     !---------------------------------------------------------------------------
 
-    if (nprotectLayers > 0) then
+    if (nprotectLayers > 0)&
+        call mhd_calcProtectionLayer(rproblemLevel%rtriangulation,&
+        nprotectLayers, dprotectLayerTolerance, rerror)
 
-      ! Create auxiliary memory
-      h_BisactiveElement = ST_NOHANDLE
-      call storage_new('mhd_estimateRecoveryError',' BisactiveElement',&
-          rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-          h_BisactiveElement, ST_NEWBLOCK_NOINIT)
-      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+  end subroutine mhd_errorestRecovery
 
-      ! Set pointers
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call lsyssc_getbase_double(rerror, p_Ddata)
+  !*****************************************************************************
 
-      ! Compute protection layers
-      do iprotectLayer = 1, nprotectLayers
+!<subroutine>
 
-        ! Reset activation flag
-        p_BisActiveElement = .false.
+  subroutine mhd_calcProtectionLayer(rtriangulation, nlayers, dtreshold, rvector)
 
-        ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement,&
-            p_IneighboursAtElement, rproblemLevel%rtriangulation%NEL,&
-            dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
-      end do
+!<description>
+    ! This subroutine takes the given vector rvector as elementwise
+    ! indicator and calculates a prescribed number of protection
+    ! layers for all markers which exceed the given threshold dtreshold.
+!</description>
 
-      ! Release memory
-      call storage_free(h_BisactiveElement)
+!<input>
+    ! Triangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
-    end if
+    ! Number of protection layers
+    integer, intent(in) :: nlayers
 
+    ! Threshold of protection layer
+    real(DP), intent(in) :: dtreshold
+!</input>
+
+!<inputoutput>
+    ! Vector with elementwise markers
+    type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:,:), pointer :: p_IverticesAtElement,p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+    integer :: h_BisactiveElement
+    integer :: ilayer
+
+    ! Create auxiliary memory
+    h_BisactiveElement = ST_NOHANDLE
+    call storage_new('mhd_calcProtectionLayer',' BisactiveElement',&
+        rtriangulation%NEL, ST_LOGICAL, h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+    
+    ! Set pointers
+    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
+                               p_IneighboursAtElement)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+    call lsyssc_getbase_double(rvector, p_Ddata)
+    
+    ! Compute protection layers
+    do ilayer = 1, nlayers
+      
+      ! Reset activation flag
+      p_BisActiveElement = .false.
+      
+      ! Compute a single-width protection layer
+      call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
+          rtriangulation%NEL, dtreshold, p_Ddata, p_BisActiveElement)
+    end do
+    
+    ! Release memory
+    call storage_free(h_BisactiveElement)
+    
   contains
-
-    ! Here, the real working routines follow.
-
+    
     !**************************************************************
     ! Compute one uniformly distributed protection layer
-
+    
     subroutine doProtectionLayerUniform(IverticesAtElement,&
-        IneighboursAtElement, NEL, dthreshold, Ddata,&
-        BisactiveElement)
-
+        IneighboursAtElement, NEL, dthreshold, Ddata, BisactiveElement)
+      
       integer, dimension(:,:), intent(in) :: IverticesAtElement
       integer, dimension(:,:), intent(in) :: IneighboursAtElement
       real(DP), intent(in) :: dthreshold
       integer, intent(in) :: NEL
-
+      
       real(DP), dimension(:), intent(inout) :: Ddata
       logical, dimension(:), intent(inout) :: BisactiveElement
-
-
+      
+      
       ! local variables
-      integer :: iel,jel,ive
-
+      integer :: iel,ive,jel
+      
       ! Loop over all elements in triangulation
       do iel = 1, NEL
-
+        
         ! Do nothing if element belongs to active layer
         if (BisactiveElement(iel)) cycle
 
@@ -323,8 +358,9 @@ contains
           end if
         end do
       end do
-    end subroutine doProtectionLayerUniform
 
-  end subroutine mhd_estimateRecoveryError
+    end subroutine doProtectionLayerUniform
+    
+  end subroutine mhd_calcProtectionLayer
 
 end module mhd_errorestimation

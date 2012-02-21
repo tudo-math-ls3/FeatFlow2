@@ -583,7 +583,7 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call hydro_estimateRecoveryError(rparlist, ssectionname,&
+            call hydro_errorestRecovery(rparlist, ssectionname,&
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
                 relementError, derror)
 
@@ -776,7 +776,7 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
         ! Compute the error estimator using recovery techniques
-        call hydro_estimateRecoveryError(rparlist, ssectionname,&
+        call hydro_errorestRecovery(rparlist, ssectionname,&
             p_rproblemLevel, rsolution, rtimestep%dTime,&
             relementError, derror)
 

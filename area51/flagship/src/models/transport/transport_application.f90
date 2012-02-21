@@ -265,6 +265,7 @@ contains
     character(LEN=SYS_STRLEN) :: algorithm
 
     ! local variables
+    real(DP) :: derrorL2,derrorH1
     integer :: systemMatrix, ndimension
 
 
@@ -410,6 +411,11 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
+
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal=rsolutionPrimal,&
@@ -425,6 +431,11 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
+
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
@@ -438,6 +449,11 @@ contains
         call transp_solvePseudoTransPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
+
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
 
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
@@ -454,6 +470,11 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
+
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
@@ -467,6 +488,11 @@ contains
         call transp_solveSteadyStatePrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
+        
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
 
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
@@ -482,6 +508,11 @@ contains
         call transp_solveSteadyStatePrimDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
+
+        call transp_errestExact(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorL2=derrorL2,&
+            derrorH1=derrorH1, rcollection=rcollection)
 
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
@@ -721,7 +752,7 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call transp_estimateRecoveryError(rparlist, ssectionname,&
+            call transp_errestRecovery(rparlist, ssectionname,&
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
                 relementError, derror, rcollection)
 
@@ -919,7 +950,7 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
         ! Compute the error estimator using recovery techniques
-        call transp_estimateRecoveryError(rparlist, ssectionname,&
+        call transp_errestRecovery(rparlist, ssectionname,&
             p_rproblemLevel, rsolution, rtimestep%dTime,&
             relementError, derror, rcollection)
 
@@ -1336,7 +1367,7 @@ contains
       call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call transp_estimateRecoveryError(rparlist, ssectionname,&
+      call transp_errestRecovery(rparlist, ssectionname,&
           p_rproblemLevel, rsolution, 0.0_DP, relementError, derror,&
           rcollection)
 
@@ -1725,7 +1756,7 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+        call transp_errestTargetFunc(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
             rsolutionDual, rcollection, relementError, derror, rrhs)
 
@@ -1735,7 +1766,7 @@ contains
       else
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+        call transp_errestTargetFunc(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
             rsolutionDual, rcollection, relementError, derror)
 
@@ -2057,7 +2088,7 @@ contains
       call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call transp_estimateRecoveryError(rparlist, ssectionname,&
+      call transp_errestRecovery(rparlist, ssectionname,&
           p_rproblemLevel, rsolution, 0.0_DP, relementError, derror,&
           rcollection)
 
@@ -2460,7 +2491,7 @@ contains
             0.0_DP, rrhs, rcollection)
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+        call transp_errestTargetFunc(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
             rsolutionDual, rcollection, relementError, derror, rrhs)
 
@@ -2470,7 +2501,7 @@ contains
       else
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+        call transp_errestTargetFunc(rparlist, ssectionName,&
             p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
             rsolutionDual, rcollection, relementError, derror)
 

@@ -10,11 +10,20 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) transp_estimateTargetFuncError
+!# 1.) transp_errestTargetFunc
 !#     -> Estimates the error in the quantity of interest
 !#
-!# 2.) transp_estimateRecoveryError
+!# 2.) transp_errestRecovery
 !#     -> Estimates the solution error using recovery techniques
+!#
+!# 3.) transp_errestExact
+!#     -> Estimates the solution error using a given analytical solution
+!#
+!#
+!# The following internal routines are available:
+!#
+!# 1.) transp_calcProtectionLayer
+!#     -> Calculates a protection layer for grid adaptation
 !#
 !# </purpose>
 !##############################################################################
@@ -51,8 +60,9 @@ module transport_errorestimation
 
   private
 
-  public :: transp_estimateRecoveryError
-  public :: transp_estimateTargetFuncError
+  public :: transp_errestRecovery
+  public :: transp_errestTargetFunc
+  public :: transp_errestExact
 
 contains
 
@@ -60,7 +70,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_estimateTargetFuncError(rparlist, ssectionName,&
+  subroutine transp_errestTargetFunc(rparlist, ssectionName,&
       rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
       rsolutionDual, rcollection, rtargetError, dtargetError, rrhs)
 
@@ -121,18 +131,15 @@ contains
     type(t_vectorScalar) :: rvectorScalar
     type(t_matrixScalar) :: rmatrix
     type(t_collection) :: rcollectionTmp
-    real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
-    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
-    logical, dimension(:), pointer :: p_BisactiveElement
+    real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance
     real(DP) :: daux, dtargetFunc, dStep, theta
-    integer :: i, convectionAFC, diffusionAFC, NEQ
+    integer :: ieq, idim, convectionAFC, diffusionAFC, NEQ
     integer :: cconvectionStabilisation, cdiffusionStabilisation
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
     integer :: itargetfunctype, iexactsolutiontype, imasstype
-    integer :: iprotectLayer, nprotectLayers, igridindicator
-    integer :: h_BisactiveElement
+    integer :: nprotectLayers, igridindicator
 
 
     !---------------------------------------------------------------------------
@@ -151,9 +158,12 @@ contains
     ! updated. Then the steady-state residual vector is evaluated.
 
     ! Get parameters from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', imasstype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'imasstype', imasstype)
 
     ! Set mass type to 'no mass matrix'
     call parlst_setvalue(rparlist, ssectionName, 'imasstype', '0')
@@ -242,16 +252,18 @@ contains
 
     ! Now we compute the global error and its nodal contributions
     dtargetError = 0.0_DP
-    do i = 1, NEQ
-      dtargetError   = dtargetError + p_Dresidual(i)*p_DsolutionDual(i)
-      p_Dresidual(i) = abs(p_Dresidual(i)*p_DsolutionDual(i))/p_DlumpedMassMatrix(i)
+    do ieq = 1, NEQ
+      dtargetError     = dtargetError + p_Dresidual(ieq)*p_DsolutionDual(ieq)
+      p_Dresidual(ieq) = abs(p_Dresidual(ieq)*p_DsolutionDual(ieq))/&
+                     p_DlumpedMassMatrix(ieq)
     end do
     dtargetError = abs(dtargetError)
 
     ! Compute the element-wise error.  We create a scalar vector and
     ! compute the local L1-norms of nodal error vector which yields
     ! the local values of the a posteriori error estimator.
-    call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
+    call lsyssc_createVector(rtargetError,&
+        rproblemLevel%rtriangulation%NEL, .false.)
     call lsyssc_getbase_double(rtargetError, p_DtargetError)
     call pperr_scalar(PPERR_L1ERROR, daux, rvector2%RvectorBlock(1),&
         DelementError=p_DtargetError)
@@ -299,7 +311,7 @@ contains
       select case(itargetfunctype)
       case (TFUNC_ZERO)
         call output_line('Zero target functional is not implemented yet!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_errestTargetFunc')
         call sys_halt()
 
 
@@ -393,10 +405,11 @@ contains
         rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
         ! ... and also the numbers of the exact velocity function
-        do i = 1, rproblemLevel%rtriangulation%ndim
+        do idim = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
-              'svelocityname', svelocityname, isubString=i)
-          rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+              'svelocityname', svelocityname, isubString=idim)
+          rcollectionTmp%IquickAccess(idim+2) =&
+              fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
 
         ! Attach primal solution vector and velocity fied to first and
@@ -484,10 +497,11 @@ contains
         rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
         
         ! ... and also the numbers of the exact velocity function
-        do i = 1, rproblemLevel%rtriangulation%ndim
+        do idim = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
-              'svelocityname', svelocityname, isubString=i)
-          rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+              'svelocityname', svelocityname, isubString=idim)
+          rcollectionTmp%IquickAccess(idim+2) =&
+              fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
 
         ! Attach primal solution vector and velocity fied to first and
@@ -606,7 +620,7 @@ contains
 
       case default
         call output_line('Invalid type of target functional!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_errestTargetFunc')
         call sys_halt()
       end select
 
@@ -627,8 +641,10 @@ contains
     ! Apply the adaptation strategy
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'igridindicator', igridindicator)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+        'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist,&
+        trim(serrorestimatorName), 'igridindicator', igridindicator)
 
     ! What type of grid indicator are we?
     select case(igridIndicator)
@@ -638,7 +654,7 @@ contains
 
     case default
       call output_line('Invalid type of grid indicator!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_errestTargetFunc')
       call sys_halt()
     end select
 
@@ -647,108 +663,24 @@ contains
     ! Calculate protection layers
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_int(rparlist,&
+        trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
     call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
         'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
 
-    if (nprotectLayers > 0) then
+    if (nprotectLayers > 0)&
+        call transp_calcProtectionLayer(rproblemLevel%rtriangulation,&
+        nprotectLayers, dprotectLayerTolerance, rtargetError)
 
-      ! Create auxiliary memory
-      h_BisactiveElement = ST_NOHANDLE
-      call storage_new('transp_estimateTargetFuncError',' BisactiveElement',&
-          rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-          h_BisactiveElement, ST_NEWBLOCK_NOINIT)
-      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
-
-      ! Set pointers
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call lsyssc_getbase_double(rtargetError, p_DtargetError)
-
-      ! Compute protection layers
-      do iprotectLayer = 1, nprotectLayers
-
-        ! Reset activation flag
-        p_BisActiveElement = .false.
-
-        ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement,&
-            p_IneighboursAtElement, rproblemLevel%rtriangulation%NEL,&
-            dprotectLayerTolerance, p_DtargetError,&
-            p_BisActiveElement)
-      end do
-
-      ! Release memory
-      call storage_free(h_BisactiveElement)
-
-    end if
-
-  contains
-
-    !**************************************************************
-    ! Compute one uniformly distributed protection layer
-
-    subroutine doProtectionLayerUniform(IverticesAtElement,&
-        IneighboursAtElement, NEL, dthreshold, Ddata,&
-        BisactiveElement)
-
-      integer, dimension(:,:), intent(in) :: IverticesAtElement
-      integer, dimension(:,:), intent(in) :: IneighboursAtElement
-      real(DP), intent(in) :: dthreshold
-      integer, intent(in) :: NEL
-
-      real(DP), dimension(:), intent(inout) :: Ddata
-      logical, dimension(:), intent(inout) :: BisactiveElement
-
-
-      ! local variables
-      integer :: iel,jel,ive
-
-      ! Loop over all elements in triangulation
-      do iel = 1, NEL
-
-        ! Do nothing if element belongs to active layer
-        if (BisactiveElement(iel)) cycle
-
-        ! Do nothing if element indicator does not exceed threshold
-        if (Ddata(iel) .le. dthreshold) cycle
-
-        ! Loop over neighbouring elements
-        do ive = 1, tria_getNVE(IverticesAtElement, iel)
-
-          ! Get number of neighbouring element
-          jel = IneighboursAtElement(ive, iel)
-
-          ! Do nothing at the boundary
-          if (jel .eq. 0) cycle
-
-          ! Check if element belongs to active layer
-          if (BisactiveElement(jel)) then
-            ! If yes, then just update the element indicator
-            Ddata(jel) = max(Ddata(jel), Ddata(iel))
-          else
-            ! Otherwise, we have to check if the neighbouring element
-            ! exceeds the prescribed threshold level. If this is the case
-            ! it will be processed later or has already been processed
-            if (Ddata(jel) .lt. dthreshold) then
-              Ddata(jel) = max(Ddata(jel), Ddata(iel))
-              BisactiveElement(jel) = .true.
-            end if
-          end if
-        end do
-      end do
-    end subroutine doProtectionLayerUniform
-
-  end subroutine transp_estimateTargetFuncError
+  end subroutine transp_errestTargetFunc
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_estimateRecoveryError(rparlist, ssectionName,&
+  subroutine transp_errestRecovery(rparlist, ssectionName,&
       rproblemLevel, rsolution, dtime, rerror, derror, rcollection)
 
 !<description>
@@ -800,25 +732,28 @@ contains
     type(t_vectorScalar) :: rvectorScalar
     type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_Ddata, p_Derror, p_DelementError
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IneighboursAtElement
-    logical, dimension(:), pointer :: p_BisactiveElement
     real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
                 dexacterror, dprotectLayerTolerance
     integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
-    integer :: iprotectLayer, nprotectLayers
-    integer :: h_BisactiveElement
+    integer :: nprotectLayers
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_string(rparlist, ssectionName, 'sexactsolutionname', sexactsolutionName, '')
-    call parlst_getvalue_int(rparlist, ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'ierrorestimator', ierrorestimator)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'igridindicator', igridindicator)
-    call parlst_getvalue_int(rparlist, trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
-    call parlst_getvalue_double(rparlist, trim(serrorestimatorName),&
-                                'dprotectLayerTolerance', dprotectLayerTolerance, 0.0_DP)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'sexactsolutionname', sexactsolutionName, '')
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
+    call parlst_getvalue_int(rparlist,&
+        trim(serrorestimatorName), 'ierrorestimator', ierrorestimator)
+    call parlst_getvalue_int(rparlist,&
+        trim(serrorestimatorName), 'igridindicator', igridindicator)
+    call parlst_getvalue_int(rparlist,&
+        trim(serrorestimatorName), 'nprotectLayers', nprotectLayers, 0)
+    call parlst_getvalue_double(rparlist,&
+        trim(serrorestimatorName), 'dprotectLayerTolerance',&
+        dprotectLayerTolerance, 0.0_DP)
 
 
     !---------------------------------------------------------------------------
@@ -865,7 +800,7 @@ contains
 
     case default
       call output_line('Invalid type of error estimator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_errestRecovery')
       call sys_halt()
     end select
 
@@ -1051,7 +986,7 @@ contains
 
     case default
       call output_line('Invalid type of grid indicator!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateRecoveryError')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_errestRecovery')
       call sys_halt()
     end select
 
@@ -1060,65 +995,258 @@ contains
     ! Calculate protection layers
     !---------------------------------------------------------------------------
 
-    if (nprotectLayers > 0) then
+    if (nprotectLayers > 0)&
+        call transp_calcProtectionLayer(rproblemLevel%rtriangulation,&
+        nprotectLayers, dprotectLayerTolerance, rerror)
 
-      ! Create auxiliary memory
-      h_BisactiveElement = ST_NOHANDLE
-      call storage_new('transp_estimateRecoveryError',' BisactiveEleme' // &
-          'nt', rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-          h_BisactiveElement, ST_NEWBLOCK_NOINIT)
-      call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+  end subroutine transp_errestRecovery
 
-      ! Set pointers
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call lsyssc_getbase_double(rerror, p_Ddata)
+  !*****************************************************************************
 
-      ! Compute protection layers
-      do iprotectLayer = 1, nprotectLayers
+!<subroutine>
 
-        ! Reset activation flag
-        p_BisActiveElement = .false.
+  subroutine transp_errestExact(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, rerrorL1, derrorL1,&
+      rerrorL2, derrorL2, rerrorH1, derrorH1, rcollection)
 
-        ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement,&
-            p_IneighboursAtElement, rproblemLevel%rtriangulation%NEL,&
-            dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
-      end do
+!<description>
+    ! This subroutine estimates the error of the discrete solution by
+    ! comparing it to theanalytically given exact solution.
+!</description>
 
-      ! Release memory
-      call storage_free(h_BisactiveElement)
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
 
-    end if
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+!</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL: element-wise L1-error distribution
+    type(t_vectorScalar), intent(out), optional :: rerrorL1
+
+    ! OPTIONAL: element-wise L2-error distribution
+    type(t_vectorScalar), intent(out), optional :: rerrorL2
+
+    ! OPTIONAL: element-wise H1-error distribution
+    type(t_vectorScalar), intent(out), optional :: rerrorH1
+
+    ! OPTIONAL: global L1-error
+    real(DP), intent(out), optional :: derrorL1
+
+    ! OPTIONAL: global L2-error
+    real(DP), intent(out), optional :: derrorL2
+
+    ! OPTIONAL: global H1-error
+    real(DP), intent(out), optional :: derrorH1
+!</output>
+!</subroutine>
+    
+    ! section names
+    character(LEN=SYS_STRLEN) :: serrorestimatorName
+    character(LEN=SYS_STRLEN) :: sexactsolutionName
+    
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_collection) :: rcollectionTmp
+    real(DP), dimension(:), pointer :: p_Derror
+    integer :: iexactsolutiontype
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'errorestimator', serrorestimatorName)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'sexactsolutionname', sexactsolutionName, '')
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
+
+    !---------------------------------------------------------------------------
+    ! Compute solution error
+    !---------------------------------------------------------------------------
+
+    select case(iexactsolutiontype)
+    case (SOLUTION_ANALYTIC_POINTVALUE)
+      
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
+      
+      ! Initialise temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the temporal collection structure
+      rcollectionTmp%SquickAccess(1) = ''
+      rcollectionTmp%SquickAccess(2) = 'rfparser'
+      rcollectionTmp%DquickAccess(1) = dtime
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      
+      ! Attach user-defined collection structure to temporal collection
+      ! structure (may be required by the callback function)
+      rcollectionTmp%p_rnextCollection => rcollection
+      
+      ! Attach function parser from boundary conditions to collection
+      ! structure and specify its name in quick access string array
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+
+      if (present(derrorL1)) then
+        ! Calculate the L1-error of the reference solution
+        if (present(rerrorL1)) then
+          call lsyssc_createVector(rerrorL1,&
+              rproblemLevel%rtriangulation%NEL, .false.)
+          call lsyssc_getbase_double(rerrorL1, p_Derror)
+          call pperr_scalar(PPERR_L1ERROR, derrorL1, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp, DelementError=p_Derror)
+        else
+          call pperr_scalar(PPERR_L1ERROR, derrorL1, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp)
+        end if
+        call output_line('exact L1-error: '//trim(sys_sdEP(derrorL2,15,6)))
+      end if
+
+      if (present(derrorL2)) then
+        ! Calculate the L2-error of the reference solution
+        if (present(rerrorL2)) then
+          call lsyssc_createVector(rerrorL2,&
+              rproblemLevel%rtriangulation%NEL, .false.)
+          call lsyssc_getbase_double(rerrorL2, p_Derror)
+          call pperr_scalar(PPERR_L2ERROR, derrorL2, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp, DelementError=p_Derror)
+        else
+          call pperr_scalar(PPERR_L2ERROR, derrorL2, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp)
+        end if
+        call output_line('exact L2-error: '//trim(sys_sdEP(derrorL2,15,6)))
+      end if
+
+      if (present(derrorH1)) then
+        ! Calculate the H1-error of the reference solution
+        if (present(rerrorH1)) then
+          call lsyssc_createVector(rerrorH1,&
+              rproblemLevel%rtriangulation%NEL, .false.)
+          call lsyssc_getbase_double(rerrorH1, p_Derror)
+          call pperr_scalar(PPERR_H1ERROR, derrorH1, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp, DelementError=p_Derror)
+        else
+          call pperr_scalar(PPERR_H1ERROR, derrorH1, rsolution%RvectorBlock(1),&
+              transp_refFuncAnalytic, rcollectionTmp)
+        end if
+        call output_line('exact H1-error: '//trim(sys_sdEP(derrorH1,15,6)))
+      end if
+
+      call output_lbrk()
+
+    case default
+      call output_line('Analytical solution is not available!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_errestExact')
+    end select
+   
+  end subroutine transp_errestExact
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcProtectionLayer(rtriangulation, nlayers, dtreshold, rvector)
+
+!<description>
+    ! This subroutine takes the given vector rvector as elementwise
+    ! indicator and calculates a prescribed number of protection
+    ! layers for all markers which exceed the given threshold dtreshold.
+!</description>
+
+!<input>
+    ! Triangulation
+    type(t_triangulation), intent(in) :: rtriangulation
+
+    ! Number of protection layers
+    integer, intent(in) :: nlayers
+
+    ! Threshold of protection layer
+    real(DP), intent(in) :: dtreshold
+!</input>
+
+!<inputoutput>
+    ! Vector with elementwise markers
+    type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:,:), pointer :: p_IverticesAtElement,p_IneighboursAtElement
+    logical, dimension(:), pointer :: p_BisactiveElement
+    integer :: h_BisactiveElement
+    integer :: ilayer
+
+    ! Create auxiliary memory
+    h_BisactiveElement = ST_NOHANDLE
+    call storage_new('transp_calcProtectionLayer',' BisactiveElement',&
+        rtriangulation%NEL, ST_LOGICAL, h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
+    
+    ! Set pointers
+    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
+                               p_IneighboursAtElement)
+    call storage_getbase_int2D(rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+    call lsyssc_getbase_double(rvector, p_Ddata)
+    
+    ! Compute protection layers
+    do ilayer = 1, nlayers
+      
+      ! Reset activation flag
+      p_BisActiveElement = .false.
+      
+      ! Compute a single-width protection layer
+      call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
+          rtriangulation%NEL, dtreshold, p_Ddata, p_BisActiveElement)
+    end do
+    
+    ! Release memory
+    call storage_free(h_BisactiveElement)
+    
   contains
-
-    ! Here, the real working routines follow.
-
+    
     !**************************************************************
     ! Compute one uniformly distributed protection layer
-
+    
     subroutine doProtectionLayerUniform(IverticesAtElement,&
-        IneighboursAtElement, NEL, dthreshold, Ddata,&
-        BisactiveElement)
-
+        IneighboursAtElement, NEL, dthreshold, Ddata, BisactiveElement)
+      
       integer, dimension(:,:), intent(in) :: IverticesAtElement
       integer, dimension(:,:), intent(in) :: IneighboursAtElement
       real(DP), intent(in) :: dthreshold
       integer, intent(in) :: NEL
-
+      
       real(DP), dimension(:), intent(inout) :: Ddata
       logical, dimension(:), intent(inout) :: BisactiveElement
-
-
+      
+      
       ! local variables
-      integer :: iel,jel,ive
-
+      integer :: iel,ive,jel
+      
       ! Loop over all elements in triangulation
       do iel = 1, NEL
-
+        
         ! Do nothing if element belongs to active layer
         if (BisactiveElement(iel)) cycle
 
@@ -1149,8 +1277,9 @@ contains
           end if
         end do
       end do
+
     end subroutine doProtectionLayerUniform
-
-  end subroutine transp_estimateRecoveryError
-
+    
+  end subroutine transp_calcProtectionLayer
+  
 end module transport_errorestimation

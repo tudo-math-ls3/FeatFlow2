@@ -1054,7 +1054,7 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
 !!$        ! Compute the error estimator using recovery techniques
-!!$        call hydro_estimateRecoveryError(rparlist,&
+!!$        call hydro_errorestRecovery(rparlist,&
 !!$            ssectionnameHydro, p_rproblemLevel, p_rsolutionHydro,&
 !!$            rtimestep%dinitialTime, relementError, derror)
 
