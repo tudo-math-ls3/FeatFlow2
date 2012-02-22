@@ -2089,16 +2089,15 @@ end if
     real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx,Dfy,dalx,daly,dTorque, &
                 ah1u,ah1p,ah2u,ah2p,Dfxu,Dfyu,Dfxp,Dfyp 
     
-    ! Cubature point coordinates on the reference element
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-    
-    ! For every cubature point on the reference element,
-    ! the corresponding cubature weight
-    real(DP), dimension(CUB_MAXCUBP) :: Domega
-    
-    ! number of cubature points on the reference element
-    integer :: ncubp
-    
+    ! Cubature points
+    real(DP), dimension(:,:), allocatable :: Dpoints
+     
+    ! Cubature weights
+    real(DP), dimension(:), allocatable :: Domega
+     
+    ! Number of points and coordinate dimension
+    integer :: ncubp, ncdim
+
     ! Number of local degees of freedom for test functions
     integer :: indofTrial,indofFunc1,indofFunc2
     
@@ -2163,7 +2162,8 @@ end if
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     logical :: bfileExists    
-    
+    type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
+        
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
@@ -2189,6 +2189,9 @@ end if
       ! Activate the current element distribution
       p_relementDistributionU => &
       rvectorSol%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(icurrentElementDistr)
+
+      call spdiscr_createDefCubStructure(rvectorSol%RvectorBlock(1)%p_rspatialDiscr,rcubatureInfoUV)
+      rcubatureInfoUV%p_RinfoBlocks(:)%ccubature = CUB_G3_2D
 
       p_relementDistributionA =>&
       rvectorAlpha%p_rspatialDiscr%RelementDistr(icurrentElementDistr)
@@ -2223,19 +2226,23 @@ end if
       ! Get cubature weights and point coordinates on the reference element
       ! Now Dxi stores the point coordinates of the cubature points on the reference element
       
-      write(*,*) p_relementDistributionU%ccubTypeEval
-      call cub_getCubPoints(p_relementDistributionU%ccubTypeEval, ncubp, Dxi, Domega)
-      pause
+!      call cub_getCubPoints(p_relementDistributionU%ccubTypeEval, ncubp, Dxi, Domega)
+      ncubp = cub_igetNumPts(CUB_G3_2D)
+      ncdim = cub_igetCoordDim(CUB_G3_2D)
+      allocate(Dpoints(ncdim,ncubp))
+      allocate(Domega(ncubp))
+      call cub_getCubature(rcubatureInfoUV%p_RinfoBlocks(1)%ccubature, Dpoints, Domega)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
       
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i=1,ncubp
-        do k=1,ubound(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i) = Dxi(i,k)
-        end do
-      end do
+!      ! Reformat the cubature points; they are in the wrong shape!
+!      do i=1,ncubp
+!        do k=1,ubound(p_DcubPtsRef,1)
+!          p_DcubPtsRef(k,i) = Dxi(i,k)
+          p_DcubPtsRef = Dpoints
+!        end do
+!      end do
       
       ! Allocate memory for the DOF's of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
@@ -2491,6 +2498,8 @@ end if
       deallocate(IdofsTrial)
       deallocate(IdofsFunc1)
       deallocate(IdofsFunc2)
+      deallocate(Dpoints)
+      deallocate(Domega)
 
     end do ! icurrentElementDistr
     

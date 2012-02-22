@@ -115,11 +115,11 @@ dwriteSolDeltaTime = 0.0
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 4
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 6
+NLMAX              = 8
 
 # ------------------------------------------------------------------------
 
