@@ -735,14 +735,12 @@ contains
     real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
                 dexacterror, dprotectLayerTolerance
     integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
-    integer :: nprotectLayers
+    integer :: nprotectLayers, iexactsolution, nexactsolution
 
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'sexactsolutionname', sexactsolutionName, '')
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
     call parlst_getvalue_int(rparlist,&
@@ -754,6 +752,8 @@ contains
     call parlst_getvalue_double(rparlist,&
         trim(serrorestimatorName), 'dprotectLayerTolerance',&
         dprotectLayerTolerance, 0.0_DP)
+    nexactsolution = parlst_querysubstrings(rparlist,&
+        ssectionName, 'sexactsolutionname')
 
 
     !---------------------------------------------------------------------------
@@ -823,7 +823,20 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      
+      do iexactsolution = 1, nexactsolution
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionName, '',&
+            isubstring=iexactsolution)
+        rcollectionTmp%IquickAccess(iexactsolution) =&
+            fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      end do
+
+      ! Make sure that the callback routine will throw an error if a
+      ! derivative is required which is not given by the user.
+      do iexactsolution = nexactsolution+1, DER_DERIV3D_Z
+        rcollectionTmp%IquickAccess(iexactsolution) = 0
+      end do
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)
@@ -1065,15 +1078,15 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_Derror
-    integer :: iexactsolutiontype
+    integer :: iexactsolutiontype, iexactsolution, nexactsolution
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'errorestimator', serrorestimatorName)
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'sexactsolutionname', sexactsolutionName, '')
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
+    nexactsolution = parlst_querysubstrings(rparlist,&
+        ssectionName, 'sexactsolutionname')
 
     !---------------------------------------------------------------------------
     ! Compute solution error
@@ -1093,7 +1106,20 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+
+      do iexactsolution = 1, nexactsolution
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionName, '',&
+            isubstring=iexactsolution)
+        rcollectionTmp%IquickAccess(iexactsolution) =&
+            fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      end do
+
+      ! Make sure that the callback routine will throw an error if a
+      ! derivative is required which is not given by the user.
+      do iexactsolution = nexactsolution+1, DER_DERIV3D_Z
+        rcollectionTmp%IquickAccess(iexactsolution) = 0
+      end do
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)

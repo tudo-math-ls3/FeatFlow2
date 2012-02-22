@@ -5352,7 +5352,7 @@ contains
     dtime(1) = rcollection%DquickAccess(1)
 
     ! Get number of the analytic reference function
-    icomp = rcollection%IquickAccess(1)
+    icomp = rcollection%IquickAccess(cderivative)
 
     ! Evaluate all values using the function parser
     !$omp parallel do
