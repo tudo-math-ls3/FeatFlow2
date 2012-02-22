@@ -20,7 +20,9 @@ defconst: Tfin = 1.5
 deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
+deffunc: @exactsol_func   = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
+deffunc: @exactsol_derivx = 0 ; x,y,t
+deffunc: @exactsol_derivy = 0 ; x,y,t
 
 # Specify the initial velocity by logical expressions and solution values
 #deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y) ; x,y,t

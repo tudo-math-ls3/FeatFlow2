@@ -29,7 +29,9 @@ deffunc: @null = 0 ; x,y,t
 deffunc: @initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,t
+deffunc: @exactsol_func   = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,t
+deffunc: @exactsol_derivx = 0 ; x,y,t
+deffunc: @exactsol_derivy = 0 ; x,y,t
 
 # Specify the velocity field
 deffunc: @velocity_x = y ; x,y,t

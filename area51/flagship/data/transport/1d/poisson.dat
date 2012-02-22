@@ -108,10 +108,10 @@ ssolutionname =
 # 0 = no exact solution available
 # 1 = analytical exact solution
 # 2 = PGM image
-iexactsolutiontype = 1
+iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
 # type of target functional
 # 0 = zero target functional

@@ -112,7 +112,7 @@ ssolutionname = @initsol
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
 # type of target functional
 # 0 = zero target functional

@@ -13,7 +13,9 @@
 deffunc: @initsol = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,t
+deffunc: @exactsol_func   = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,t
+deffunc: @exactsol_derivx = 2*COS(2*_PI*(x-t))*_PI*SIN(2*_PI*(x-t)) ; x,y,t
+deffunc: @exactsol_derivy = 2*SIN(2*_PI*(x-t))*_PI*COS(2*_PI*(x-t)) ; x,y,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,t

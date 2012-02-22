@@ -20,7 +20,9 @@ defexpr:  area = (_pi*_eps*_eps)
 deffunc: @null = 0 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(x = 0.5, 1, 0) ; x,y,t
+deffunc: @exactsol_func   = if(x = 0.5, 1, 0) ; x,y,t
+deffunc: @exactsol_derivx = 0 ; x,y,t
+deffunc: @exactsol_derivy = 0 ; x,y,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,t

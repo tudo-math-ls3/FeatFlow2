@@ -11,7 +11,8 @@
 deffunc: @initsol = if(x > 0.2 & x < 0.7, 1.0, 0.0) ; x,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
+deffunc: @exactsol_func   = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
+deffunc: @exactsol_derivx = 0 ; x,t
 
 # Specify the diffusion coefficient
 deffunc: @diffusion = 1e-3 ; x,t
