@@ -1483,9 +1483,6 @@ contains
         do i=1,2
           call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D+1,NDIM2D+1)
           
-          ! The B-matrices in (4,6), (5,6) share their data with (1,3), (2,3),
-          ! so the do not have to be assembled.
-          
           call allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
               rnonlinearSpatialMatrix%DidentityY(i,j),rnonlinearSpatialMatrix%Dmass(i,j),&
               rnonlinearSpatialMatrix%Dstokes(i,j),rnonlinearSpatialMatrix%Dygrad(i,j),&
@@ -1494,8 +1491,7 @@ contains
               rnonlinearSpatialMatrix%DBTMat(i,j),rnonlinearSpatialMatrix%DidentityP(i,j),&
               rnonlinearSpatialMatrix%DdirichletBCCY(i,j),&
               rnonlinearSpatialMatrix%DdirichletBCCLambda(i,j),&
-              rnonlinearSpatialMatrix%DdirichletBCCXi(i,j),&
-              (i .eq. 2) .and. (j .eq. 2))
+              rnonlinearSpatialMatrix%DdirichletBCCXi(i,j))
           call lsysbl_updateMatStrucInfo(rtempMatrix)
           call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,(i-1)*3+1,(j-1)*3+1)
           call lsysbl_releaseMatrix (rtempMatrix)
@@ -1503,16 +1499,6 @@ contains
       end do
       
       call lsysbl_allocEmptyMatrix (rmatrix,LSYSSC_SETM_UNDEFINED,.true.)
-
-      ! Share the B-matrices of the dual equation with those of the primal
-      ! equation; we need them only once since they are the same, even if
-      ! boundary conditions are imposed.
-      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
-      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%DBmat(2,2)
 
     end if
    
@@ -1523,6 +1509,10 @@ contains
       call spdiscr_createDefCubStructure (&
           rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
+
+!#ifndef TESTCODE
+!      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),p_Ddata)
+!#endif
 
       if (.not. bnewmethod) then
         ! The system matrix in the whole looks like:
@@ -1609,7 +1599,7 @@ contains
         call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,&
             rtempMatrix,rnonlinearSpatialMatrix%DidentityY(1,1),rnonlinearSpatialMatrix%Dmass(1,1),&
             rnonlinearSpatialMatrix%Dstokes(1,1),&
-            rnonlinearSpatialMatrix%DBmat(1,1),rnonlinearSpatialMatrix%DBTmat(1,1),.false.)
+            rnonlinearSpatialMatrix%DBmat(1,1),rnonlinearSpatialMatrix%DBTmat(1,1))
 
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
@@ -1673,8 +1663,7 @@ contains
         call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
             rnonlinearSpatialMatrix%DidentityY(2,2),rnonlinearSpatialMatrix%Dmass(2,2),&
             rnonlinearSpatialMatrix%Dstokes(2,2),&
-            rnonlinearSpatialMatrix%DBmat(2,2),rnonlinearSpatialMatrix%DBTmat(2,2),&
-            rnonlinearSpatialMatrix%DBmat(1,1) .eq. rnonlinearSpatialMatrix%DBmat(2,2))
+            rnonlinearSpatialMatrix%DBmat(2,2),rnonlinearSpatialMatrix%DBTmat(2,2))
 
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
@@ -1719,19 +1708,23 @@ contains
           call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
               rnonlinearSpatialMatrix%DidentityY(2,1),rnonlinearSpatialMatrix%Dmass(2,1),&
               rnonlinearSpatialMatrix%Dstokes(2,1),&
-              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
+              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1))
         else
           ! A special observation area. Two steps. In the second, assemble the
           ! nonlinear mass matrix.
           call assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
               rnonlinearSpatialMatrix%DidentityY(2,1),0.0_DP,&
               rnonlinearSpatialMatrix%Dstokes(2,1),&
-              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1),.false.)
+              rnonlinearSpatialMatrix%DBmat(2,1),rnonlinearSpatialMatrix%DBTmat(2,1))
               
           call assembleBoxIdentity (rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea,&
               rnonlinearSpatialMatrix%Dmass(2,1),rtempMatrix%RmatrixBlock(1,1),rcubatureInfo)
           call assembleBoxIdentity (rnonlinearSpatialMatrix%rdiscrData%p_DobservationArea,&
               rnonlinearSpatialMatrix%Dmass(2,1),rtempMatrix%RmatrixBlock(2,2),rcubatureInfo)
+    
+          ! Switch on the mass matrices
+          rtempMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
+          rtempMatrix%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
         end if
 
         ! Co stabilisation in the convective parts here.
@@ -2029,7 +2022,7 @@ contains
       
     end if
     
-    call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,1),p_Ddata)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),p_Ddata)
     
     if (rvectorPrimal%NEQ .ne. 0) &
       call lsysbl_releaseVector (rvectorPrimal)
@@ -2047,8 +2040,7 @@ contains
     
     subroutine allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rsubmatrix,&
         diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa,&
-        ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi,&
-        bignoreEta)
+        ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi)
         
     ! Allocates memory for a submatrix of the system matrix.
     ! The submatrix can then be inserted into a larger system matrix.
@@ -2076,12 +2068,6 @@ contains
     ! Switches that pressure-matrix on/off.
     real(DP), intent(in) :: dkappa
        
-    ! If set to TRUE, the assembly of the data in the B-matrices will be skipped.
-    ! This can be used if the B-matrices of one equation share their information
-    ! with B-matrices from another equation and thus do not need to be assembled
-    ! twice.
-    logical, intent(in) :: bignoreEta
-
       ! local variables
       logical :: bdecoupled,bfulltensor
        
@@ -2189,7 +2175,7 @@ contains
       !
       ! If cdirichletBCCXi>0, we may have boundary control and need that
       ! matrix pair as well.
-      if ((deta*deta + ddirichletBCCXi*ddirichletBCCXi .ne. 0.0_DP) .and. .not. bignoreEta) then
+      if (deta*deta + ddirichletBCCXi*ddirichletBCCXi .ne. 0.0_DP) then
         call lsyssc_duplicateMatrix (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rsubmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -2240,7 +2226,7 @@ contains
     ! -----------------------------------------------------
     
     subroutine assembleLinearSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,&
-        rmatrix,diota,dalpha,dtheta,deta,dtau,bignoreEta)
+        rmatrix,diota,dalpha,dtheta,deta,dtau)
         
     ! Assembles a matrix containing only linear terms. The matrix is a
     ! submatrix of a larger system matrix and can then be inserted
@@ -2274,12 +2260,6 @@ contains
     
     ! Coefficient in front of the B^T-matrices
     real(DP), intent(in) :: dtau
-        
-    ! If set to TRUE, the assembly of the data in the B-matrices will be skipped.
-    ! This can be used if the B-matrices of one equation share their information
-    ! with B-matrices from another equation and thus do not need to be assembled
-    ! twice.
-    logical, intent(in) :: bignoreEta
         
     ! local variables
     logical :: bshared
@@ -2397,7 +2377,7 @@ contains
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      if ((deta .ne. 0.0_DP) .and. .not. bignoreEta) then
+      if (deta .ne. 0.0_DP) then
         call lsyssc_duplicateMatrix (&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
             rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
@@ -6944,9 +6924,9 @@ contains
     integer :: ndofs
     
     ! Cancel if there is nothing to assemble.
-    !if ((dc1 .eq. 0.0_DP) .and. (dc2 .eq. 0.0_DP) .and. (dc3 .eq. 0.0_DP)) then
-    !  return
-    !end if
+    if ((dc1 .eq. 0.0_DP) .and. (dc2 .eq. 0.0_DP) .and. (dc3 .eq. 0.0_DP)) then
+      return
+    end if
     
     ! If any of the matrices is deactivated by its scaliing factor,
     ! activate it and clear it in advance.
@@ -6980,13 +6960,13 @@ contains
       call lsyssc_clearMatrix (rmatrixGrad2)
     end if
     
-    ! Create temporary copies.
-    call lsyssc_duplicateMatrix (rmatrixY1,rmatrixY1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_duplicateMatrix (rmatrixY2,rmatrixY2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_duplicateMatrix (rmatrixLambda1,rmatrixLambda1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_duplicateMatrix (rmatrixLambda2,rmatrixLambda2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_duplicateMatrix (rmatrixGrad1,rmatrixGrad1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_duplicateMatrix (rmatrixGrad2,rmatrixGrad2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    ! Create temporary copies.
+!    call lsyssc_duplicateMatrix (rmatrixY1,rmatrixY1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_duplicateMatrix (rmatrixY2,rmatrixY2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_duplicateMatrix (rmatrixLambda1,rmatrixLambda1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_duplicateMatrix (rmatrixLambda2,rmatrixLambda2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_duplicateMatrix (rmatrixGrad1,rmatrixGrad1temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_duplicateMatrix (rmatrixGrad2,rmatrixGrad2temp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
     
     ! Assemble the matrices
     
@@ -7022,7 +7002,7 @@ contains
     ! Prepare a linear form for y
     rlinform1%itermCount = 1
     rlinform1%Idescriptors(1) = DER_FUNC2D
-    rlinform1%Dcoefficients(1:rlinform1%itermCount)  = dc1
+    rlinform1%Dcoefficients(1:rlinform1%itermCount)  = dc1*dpenalty
 
     ! Prepare a linear form for lambda
     rlinform2%itermCount = 2
@@ -7088,39 +7068,83 @@ contains
     
     do i = 1,rdirichletBCC%nregionsPrimal
 
+!      ! Get the DOF's in that segment
+!      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
+!          p_rdirichletBCCBd%rboundaryRegion,ndofs=ndofs)
+!      
+!      ! Allocate memory if not done already.
+!      if (.not. allocated(Idofs)) allocate (Idofs(ndofs))
+!      if (size (Idofs) .lt. ndofs) then
+!        deallocate (Idofs)
+!        allocate (Idofs(ndofs))
+!      end if
+!
+!      ! Calculate the DOF`s which are affected.          
+!      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
+!          p_rdirichletBCCBd%rboundaryRegion,IdofsArray=Idofs)
 
-      ! Get the DOF's in that segment
-      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
-          p_rdirichletBCCBd%rboundaryRegion,ndofs=ndofs)
+!#ifdef DEBUG
+!      ! Clear the matrices
+!      call lsyssc_clearMatrix (rmatrixY1temp)
+!      call lsyssc_clearMatrix (rmatrixY2temp)
+!      call lsyssc_clearMatrix (rmatrixLambda1temp)
+!      call lsyssc_clearMatrix (rmatrixLambda2temp)
+!      call lsyssc_clearMatrix (rmatrixGrad1temp)
+!      call lsyssc_clearMatrix (rmatrixGrad2temp)
+!#else
+!      ! Clear the rows in the matrix which are later added to the global matrix.
+!      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
+!      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
+!#endif
+
+      ! ------------------------------------------------------------
+      ! Direct weak implementation of the BCC, no temporary matrices
+      ! ------------------------------------------------------------
       
-      ! Allocate memory if not done already.
-      if (.not. allocated(Idofs)) allocate (Idofs(ndofs))
-      if (size (Idofs) .lt. ndofs) then
-        deallocate (Idofs)
-        allocate (Idofs(ndofs))
+      ! Set up the matrix. Primal velocity.
+      
+      call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .false., &
+          rmatrixY1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+      
+      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+        ! Second matrix if not identical to the first one.
+        call bilf_buildMatrixScalarBdr2D (rform1, CUB_G4_1D, .false., &
+            rmatrixY2,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion)
+      end if
+      
+      ! Dual velocity.
+
+      rcollection%DquickAccess(1) = dc2 * dpenalty
+
+      call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .false., &
+          rmatrixLambda1,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+          rcollection=rcollection)
+
+      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+        ! Second matrix if not identical to the first one.
+        call bilf_buildMatrixScalarBdr2D (rform2, CUB_G4_1D, .false., &
+            rmatrixLambda2,fcoeff_dirichletbcc1,rboundaryRegion=p_rdirichletBCCBd%rboundaryRegion,&
+            rcollection=rcollection)
       end if
 
-      ! Calculate the DOF`s which are affected.          
-      call bcasm_getDOFsInBDRegion (rmatrixY1Temp%p_rspatialDiscrTrial,&
-          p_rdirichletBCCBd%rboundaryRegion,IdofsArray=Idofs)
+      ! Pressure
+      rcollection%DquickAccess(1) = dc3 * dpenalty
 
-#ifdef DEBUG
-      ! Clear the matrices
-      call lsyssc_clearMatrix (rmatrixY1temp)
-      call lsyssc_clearMatrix (rmatrixY2temp)
-      call lsyssc_clearMatrix (rmatrixLambda1temp)
-      call lsyssc_clearMatrix (rmatrixLambda2temp)
-      call lsyssc_clearMatrix (rmatrixGrad1temp)
-      call lsyssc_clearMatrix (rmatrixGrad2temp)
-#else
-      ! Clear the rows in the matrix which are later added to the global matrix.
-      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
-      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
-      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
-      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
-      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
-      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
-#endif
+      ! X-derivative
+      rcollection%IquickAccess(1) = 1
+
+      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .false., &
+          rmatrixGrad1,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
+
+      ! Y-derivative
+      rcollection%IquickAccess(1) = 2
+
+      call bilf_buildMatrixScalarBdr2D (rform3, CUB_G4_1D, .false., &
+          rmatrixGrad2,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
 !      ! ------------------------------
 !      ! Weak implementation of the BCC
@@ -7168,60 +7192,60 @@ contains
 !          rmatrixGrad2Temp,fcoeff_dirichletbcc2,p_rdirichletBCCBd%rboundaryRegion,rcollection)
 
 
-      ! --------------------------------
-      ! Strong implementation of the BCC
-      ! --------------------------------
-
-      ! Clear the rows in the matrix which are affected.
-!      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
-!      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
-!      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
-!      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
-!      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
-!      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
-
-      ! Set up the matrix. Primal velocity.
-
-      call linf_getBoundaryOperatorMatrix (&
-          rlinform1,rmatrixY1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
-
-      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-        ! Second matrix if not identical to the first one.
-        call linf_getBoundaryOperatorMatrix (&
-            rlinform1,rmatrixY2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
-      end if
-
-      ! Dual velocity.
-
-      rcollection%DquickAccess(1) = dc2
-
-      call linf_getBoundaryOperatorMatrix (&
-          rlinform2,rmatrixLambda1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-          fcoeff_dirichletbcclf1,rcollection)
-
-      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-        ! Second matrix if not identical to the first one.
-        call linf_getBoundaryOperatorMatrix (&
-            rlinform2,rmatrixLambda2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-            fcoeff_dirichletbcclf1,rcollection)
-      end if
-
-      ! Pressure
-      rcollection%DquickAccess(1) = dc3
-
-      ! X-derivative
-      rcollection%IquickAccess(1) = 1
-
-      call linf_getBoundaryOperatorMatrix (&
-          rlinform3,rmatrixGrad1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-          fcoeff_dirichletbcclf2,rcollection)
-
-      ! Y-derivative
-      rcollection%IquickAccess(1) = 2
-
-      call linf_getBoundaryOperatorMatrix (&
-          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
-          fcoeff_dirichletbcclf2,rcollection)
+!      ! --------------------------------
+!      ! Strong implementation of the BCC
+!      ! --------------------------------
+!
+!      ! Clear the rows in the matrix which are affected.
+!!      call mmod_replaceLinesByZero (rmatrixY1Temp,Idofs(1:ndofs))
+!!      call mmod_replaceLinesByZero (rmatrixY2Temp,Idofs(1:ndofs))
+!!      call mmod_replaceLinesByZero (rmatrixLambda1Temp,Idofs(1:ndofs))
+!!      call mmod_replaceLinesByZero (rmatrixLambda2Temp,Idofs(1:ndofs))
+!!      call mmod_replaceLinesByZero (rmatrixGrad1Temp,Idofs(1:ndofs))
+!!      call mmod_replaceLinesByZero (rmatrixGrad2Temp,Idofs(1:ndofs))
+!
+!      ! Set up the matrix. Primal velocity.
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform1,rmatrixY1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        ! Second matrix if not identical to the first one.
+!        call linf_getBoundaryOperatorMatrix (&
+!            rlinform1,rmatrixY2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion)
+!      end if
+!
+!      ! Dual velocity.
+!
+!      rcollection%DquickAccess(1) = dc2*dpenalty
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform2,rmatrixLambda1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf1,rcollection)
+!
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        ! Second matrix if not identical to the first one.
+!        call linf_getBoundaryOperatorMatrix (&
+!            rlinform2,rmatrixLambda2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!            fcoeff_dirichletbcclf1,rcollection)
+!      end if
+!
+!      ! Pressure
+!      rcollection%DquickAccess(1) = dc3*dpenalty
+!
+!      ! X-derivative
+!      rcollection%IquickAccess(1) = 1
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform3,rmatrixGrad1Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf2,rcollection)
+!
+!      ! Y-derivative
+!      rcollection%IquickAccess(1) = 2
+!
+!      call linf_getBoundaryOperatorMatrix (&
+!          rlinform3,rmatrixGrad2Temp,.false.,p_rdirichletBCCBd%rboundaryRegion,&
+!          fcoeff_dirichletbcclf2,rcollection)
 
 !      ! ------------------------------------------
 !      ! Alternative Weak implementation of the BCC
@@ -7281,48 +7305,48 @@ contains
       ! Imponsing of the control to the matrices
       ! ----------------------------------------
 
-      ! Sum up the matrices
-
-      ! Only the entries on the boundary, replacing the old entries
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixY1temp,rmatrixY1,1.0_DP,0.0_DP,Idofs(1:ndofs))
-      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
-        call lsyssc_matrixLinearCombIndexed (&
-            rmatrixY2temp,rmatrixY2,1.0_DP,0.0_DP,Idofs(1:ndofs))
-      end if
-      
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,0.0_DP,Idofs(1:ndofs))
-      
-      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
-        call lsyssc_matrixLinearCombIndexed (&
-            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,0.0_DP,Idofs(1:ndofs))
-      end if
-      
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,0.0_DP,Idofs(1:ndofs))
-      call lsyssc_matrixLinearCombIndexed (&
-          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      ! Sum up the matrices
+!
+!      ! Only the entries on the boundary, replacing the old entries
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixY1temp,rmatrixY1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixY2temp,rmatrixY2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      
+!      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
+!        call lsyssc_matrixLinearCombIndexed (&
+!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      end if
+!      
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,0.0_DP,Idofs(1:ndofs))
+!      call lsyssc_matrixLinearCombIndexed (&
+!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,0.0_DP,Idofs(1:ndofs))
           
 !      ! Only the entries on the boundary, summing up to the old entries
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP)!0.0_DP,Idofs(1:ndofs))
+!          rmatrixY1temp,rmatrixY1,1.0_DP,1.0_DP,Idofs(1:ndofs))
 !      if (.not. lsyssc_isMatrixContentShared(rmatrixY1,rmatrixY2)) then
 !        call lsyssc_matrixLinearCombIndexed (&
-!            rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+!            rmatrixY2temp,rmatrixY2,1.0_DP,1.0_DP,Idofs(1:ndofs))
 !      end if
 !      
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+!          rmatrixLambda1Temp,rmatrixLambda1,1.0_DP,1.0_DP,Idofs(1:ndofs))
 !      if (.not. lsyssc_isMatrixContentShared(rmatrixLambda1,rmatrixLambda2)) then
 !        call lsyssc_matrixLinearCombIndexed (&
-!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+!            rmatrixLambda2temp,rmatrixLambda2,1.0_DP,1.0_DP,Idofs(1:ndofs))
 !      end if
 !      
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+!          rmatrixGrad1temp,rmatrixGrad1,1.0_DP,1.0_DP,Idofs(1:ndofs))
 !      call lsyssc_matrixLinearCombIndexed (&
-!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP)!,0.0_DP,Idofs(1:ndofs))
+!          rmatrixGrad2temp,rmatrixGrad2,1.0_DP,1.0_DP,Idofs(1:ndofs))
 
 !      ! All entries from the integral, summing up
 !      call lsyssc_matrixLinearCombIndexed (&
@@ -7349,16 +7373,16 @@ contains
       p_rdirichletBCCBd => p_rdirichletBCCBd%p_nextBdRegion
     end do
 
-    ! Release memory
-    if (allocated(Idofs)) deallocate (Idofs)
+!    ! Release memory
+!    if (allocated(Idofs)) deallocate (Idofs)
 
-    ! Release the temporary copies.
-    call lsyssc_releaseMatrix (rmatrixY1temp)
-    call lsyssc_releaseMatrix (rmatrixY2temp)
-    call lsyssc_releaseMatrix (rmatrixLambda1temp)
-    call lsyssc_releaseMatrix (rmatrixLambda2temp)
-    call lsyssc_releaseMatrix (rmatrixGrad1temp)
-    call lsyssc_releaseMatrix (rmatrixGrad2temp)
+!    ! Release the temporary copies.
+!    call lsyssc_releaseMatrix (rmatrixY1temp)
+!    call lsyssc_releaseMatrix (rmatrixY2temp)
+!    call lsyssc_releaseMatrix (rmatrixLambda1temp)
+!    call lsyssc_releaseMatrix (rmatrixLambda2temp)
+!    call lsyssc_releaseMatrix (rmatrixGrad1temp)
+!    call lsyssc_releaseMatrix (rmatrixGrad2temp)
 
   end subroutine
 
@@ -8422,6 +8446,11 @@ contains
             
           end do
         
+          ! Convert to length parametrization
+          call boundary_convertParameterList(&
+              rmatrix%p_rspatialDiscrTrial%p_rboundary, rboundaryRegion%iboundCompIdx, &
+              DpointPar,DpointPar,BDR_PAR_01,BDR_PAR_LENGTH)
+                  
           ! Prepare the call of the callback routine
           rintSubset%ielementStartIdx      =  ielidx
           rintSubset%p_Ielements           => Ielements

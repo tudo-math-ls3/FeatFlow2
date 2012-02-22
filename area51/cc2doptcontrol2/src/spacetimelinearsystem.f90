@@ -214,6 +214,7 @@ module spacetimelinearsystem
   use user_callback
   
   use matrixio
+  use vectorio
     
   implicit none
 
@@ -1380,6 +1381,10 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dx3,p_Db
     real(DP), dimension(:), pointer :: p_DxE1,p_DxE2,p_DxE3
+!#ifndef TESTCODE
+!    type(t_matrixAssemblyFlags) :: rflags
+!    type(t_matrixBlock) :: rmatrix
+!#endif
     
     blocalPrintRes = .false.
     if (present(bprintRes)) blocalPrintRes = bprintRes
@@ -1707,9 +1712,6 @@ contains
         call tbc_implementTermCondDefSingle (rtempVectorD)
       end if
       
-      ! Save the defect vector back to rd.
-      call sptivec_setTimestepData(rd, ieqTime, rtempVectorD)
-      
       ! If dnorm is specified, calculate the norm of the sub-defect vector and
       ! add it to dnorm.
       if (present(dnorm) .or. blocalPrintRes) then
@@ -1727,9 +1729,57 @@ contains
                 trim(sys_sdEL(&
                     lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2),10)) )
           end do
+
+!#ifndef TESTCODE
+!          if (ieqTime .eq. 2) then
+!            ! Test
+!            call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
+!                rspaceTimeMatrix%p_rglobalData,rspaceDiscr,rnonlinearity)
+!            call stlin_setupMatrixWeights (rspaceTimeMatrix,&
+!              ieqTime,0,rnonlinearSpatialMatrix)
+!
+!            ! Subtract: rd = rd - Ann xn
+!            call sptivec_getTimestepData(rd, ieqTime, rtempVectorD)
+!            call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
+!            if (iand(cfilter,SPTID_FILTER_BCDEF) .ne. 0) then
+!              call vecfil_discreteBCdef (rtempVectorD)
+!            end if
+!            print *,lsyssc_vectorNorm(rtempVectorD%RvectorBlock(1),LINALG_NORML2)
+!
+!            call sptivec_getTimestepData(rd, ieqTime, rtempVectorD)
+!            call smva_assembleMatrix (CCMASM_ALLOCMEM+CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,rflags,&
+!                rnonlinearSpatialMatrix,rmatrix)
+!
+!            call vecio_writeBlockVectorHR (rtempVectorD, "rb",&
+!                .true., 0, "rb2.txt", "(E15.5)")
+!            call vecio_writeBlockVectorHR (rtempVector(2), "rx",&
+!                .true., 0, "rx2.txt", "(E15.5)")
+!
+!            call lsysbl_blockmatvec (rmatrix,rtempvector(2),rtempvectord,-1.0_dp,1.0_dp)
+!
+!            if (iand(cfilter,sptid_filter_bcdef) .ne. 0) then
+!              call vecfil_discretebcdef (rtempvectord)
+!              call matfil_discretebc (rmatrix,rtempvectord%p_rdiscretebc)
+!            end if
+!
+!            call vecio_writeblockvectorhr (rtempvectord, "rd",&
+!                .true., 0, "rd2.txt", "(e15.5)")
+!
+!            call matio_writeBlockMatrixHR (rmatrix, "matrix",&
+!              .true., 0, "matrix2.txt", "(E15.5)", dthreshold=1E-12_DP)
+!
+!            print *,lsyssc_vectorNorm(rtempVectorD%RvectorBlock(1),LINALG_NORML2)
+!
+!            call lsysbl_releaseMatrix (rmatrix)
+!          end if
+!#endif
+                  
         end if
       end if
       
+      ! Save the defect vector back to rd.
+      call sptivec_setTimestepData(rd, ieqTime, rtempVectorD)
+            
       ! Cycle the solution vectors and the evaluation points: 1 <- 2 <- 3.
       call lsysbl_copyVector (rtempVector(2),rtempVector(1))
       call lsysbl_copyVector (rtempVector(3),rtempVector(2))

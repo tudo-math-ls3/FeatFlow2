@@ -178,6 +178,7 @@ module spacetimelinearsolver
   use forwardbackwardsimulation
   
   use matrixio
+  use vectorio
     
   implicit none
   
@@ -2253,7 +2254,7 @@ contains
         call sptivec_vectorLinearComb (p_rdef,p_rx,rsolverNode%drelax,1.0_DP)
 
         ! Calculate the residuum for the next step : (b-Ax).
-        ! Dimultaneously filter the defect for bondary conditions.
+        ! Simultaneously filter the defect for bondary conditions.
         call sptivec_copyVector (rd,p_rdef)
         call stlin_spaceTimeMatVec (p_rmatrix,p_rx,p_rdef, -1.0_DP,1.0_DP, &
             SPTID_FILTER_DEFECT,dresnorm,rsolverNode%p_roptcBDC,&
@@ -2870,9 +2871,30 @@ contains
       ! Save back the preconditioned defect.
       call sptivec_setTimestepData (rd, iiterate, rtempVectorD)
       
+!#ifndef TESTCODE
+!      if (iiterate .eq. 2) then
+!        call matio_writeBlockMatrixHR (p_rpreconditioner%p_rmatrixPrecond(1), "matrix",&
+!            .true., 0, "matrix1.txt", "(E15.5)", dthreshold=1E-12_DP)
+!        call vecio_writeBlockVectorHR (rtempVectorD2, "rb",&
+!            .true., 0, "rb1.txt", "(E15.5)")
+!        call vecio_writeBlockVectorHR (rtempVectorD, "rx",&
+!            .true., 0, "rx1.txt", "(E15.5)")
+!        call lsysbl_getbase_double (rtempVectorD2,p_Dd)
+!        call lsysbl_getbase_double (rtempVectorD,p_Dx)
+!        call lsyssc_scalarMatVec (p_rpreconditioner%p_rmatrixPrecond(1)%RmatrixBlock(1,1),&
+!            rtempVectorD%RvectorBlock(1),rtempVectorD2%RvectorBlock(1),-1.0_DP,1.0_DP)
+!        call lsyssc_scalarMatVec (p_rpreconditioner%p_rmatrixPrecond(1)%RmatrixBlock(1,3),&
+!            rtempVectorD%RvectorBlock(3),rtempVectorD2%RvectorBlock(1),-1.0_DP,1.0_DP)      
+!        call vecio_writeBlockVectorHR (rtempVectorD2, "rd",&
+!            .true., 0, "rd1.txt", "(E15.5)")
+!        print *,""
+!      end if
+!#endif
+      
     end do
     
     call lsysbl_releaseVector (rtempVectorD)
+    call lsysbl_releaseVector (rtempVectorD2)
     
     call stat_stopTimer (rsolverNode%rtimeTotal)
     

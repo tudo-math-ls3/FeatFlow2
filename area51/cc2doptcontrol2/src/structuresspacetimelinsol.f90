@@ -822,7 +822,7 @@ contains
 
 !</subroutine>
     ! local variables
-    type(t_sptilsNode), pointer :: p_rprecond
+    type(t_sptilsNode), pointer :: p_rprecond, p_rprecond2
 
     ! Based on the parameters in rsolversettings, create p_rsolver.
     select case (rsolversettings%ctypeSolver)
@@ -1016,6 +1016,31 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
+
+    case (14)
+      ! Defect correction with BiCGStab(forward-backward) preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rprecsettings%drelax,p_rprecond,rprecsettings%slinearSpaceSolverAlternative)
+          
+      p_rprecond%nminIterations = 1
+      p_rprecond%nmaxIterations = 1
+      p_rprecond%ioutputLevel = 0
+      p_rprecond%domega = 1.0_DP
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rprecond2,p_rprecond)
+
+      p_rprecond2%nminIterations = rprecsettings%nminIterations
+      p_rprecond2%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond2%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond2%domega = rprecsettings%domega
+      
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond2)
 
     case default
 

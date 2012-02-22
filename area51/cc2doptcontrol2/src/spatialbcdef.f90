@@ -280,15 +280,15 @@ contains
     p_rneumannRegion1 => rneumannBoundary%p_rprimalBdHead
     do i=1,rneumannBoundary%nregionsPrimal
       p_rneumannRegion2 => p_rneumannRegion1
-      p_rneumannRegion1 => rneumannBoundary%p_rprimalBdHead
-      deallocate(p_rneumannRegion1)
+      p_rneumannRegion1 => p_rneumannRegion2%p_nextBDregion
+      deallocate(p_rneumannRegion2)
     end do
 
     p_rneumannRegion1 => rneumannBoundary%p_rdualBdHead
     do i=1,rneumannBoundary%nregionsDual
       p_rneumannRegion2 => p_rneumannRegion1
-      p_rneumannRegion1 => rneumannBoundary%p_rdualBdHead
-      deallocate(p_rneumannRegion1)
+      p_rneumannRegion1 => p_rneumannRegion2%p_nextBDregion
+      deallocate(p_rneumannRegion2)
     end do
     
     ! Nothing inside anymore.

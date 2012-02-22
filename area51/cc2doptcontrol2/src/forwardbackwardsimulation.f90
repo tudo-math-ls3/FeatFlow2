@@ -1332,6 +1332,8 @@ contains
         case (0)
           ! UMFPACK coarse grid solver. Easy.
           call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
+          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix2.txt"
           
         case (1)
           ! Defect correction with diagonal VANKA preconditioning.
@@ -2231,6 +2233,9 @@ contains
     ! DEBUG!!!
     !call lsysbl_getbase_double (rd,p_def)
     !call lsysbl_getbase_double (rx,p_vec)
+!#ifndef TESTCODE
+!    real(DP), dimension(:), pointer :: p_Ddata
+!#endif
     
     ! Get the current time.
     call tdiscr_getTimestep(rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,ieqTime-1,dtimePrimal, dtstep)
@@ -2341,6 +2346,10 @@ contains
       if (ilev .eq. rpreconditioner%NLMAX) then
         call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,rassemblyFlags,&
             rnonlinearSpatialMatrix,p_rmatrix)
+!#ifndef TESTCODE
+!        call lsyssc_getbase_double (p_rmatrix%RmatrixBlock(4,1), p_Ddata)
+!#endif
+
       else
         call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,rassemblyFlags,&
             rnonlinearSpatialMatrix,p_rmatrix,p_rmatrixFine)
