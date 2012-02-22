@@ -307,13 +307,15 @@ use constant MUST_INCLUDE => "";
 #  macros that need to be evaluated when being included into a
 #  Fortran source file.)
 my $HEADER_FILES_TO_COPY =
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/feat2constants.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/feat2macros.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/template.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/arraylist.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/list.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/map.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/quadtree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/octree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/stack.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/template.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/latxd.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax79.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax79intl1.h " .
@@ -321,7 +323,6 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax9rowc.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/ltx79.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVecAux.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/feat2constants.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/fmath.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h";
 

@@ -1,5 +1,6 @@
-#if 0
 !-*- mode: f90; -*-
+
+#if 0
 !##############################################################################
 !# ****************************************************************************
 !# <name> flagship </name>
@@ -15,7 +16,8 @@
 #ifndef _FLAGSHIP_H_
 #define _FLAGSHIP_H_
 
-#include "../../../kernel/System/feat2constants.h"
+#include "../../../kernel/feat2constants.h"
+#include "../../../kernel/feat2macros.h"
 #include "../../../kernel/System/idxmanager.h"
 
 #if defined(LANGUAGE) && LANGUAGE == LANGUAGE_F

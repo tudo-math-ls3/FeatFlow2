@@ -1,8 +1,9 @@
+!-*- mode: f90; -*-
+
 #ifndef _THERMODYNAMICS_H_
 #define _THERMODYNAMICS_H_
 
 #if 0
-!-*- mode: f90; -*-
 !##############################################################################
 !# ****************************************************************************
 !# <name> thermodynamic </name>
@@ -15,7 +16,8 @@
 !##############################################################################
 #endif
 
-#include "../../../../kernel/System/feat2constants.h"
+#include "../../../../kernel/feat2constants.h"
+#include "../../../../kernel/feat2macros.h"
 #include "../../../../kernel/System/fmath.h"
 #include "../flagship.h"
 

@@ -1,19 +1,6 @@
 !-*- mode: f90; -*-
 
-! ------------------------------------------------------------------------------
-! The following data types are available
-! ------------------------------------------------------------------------------
-#ifndef single
-#define single 1
-#endif
-
-#ifndef double
-#define double 2
-#endif
-
-#ifndef quad
-#define quad   3
-#endif
+#include "../feat2constants.h"
 
 ! ------------------------------------------------------------------------------
 ! Convention: all internal identifiers have two leading and two
@@ -23,17 +10,17 @@
 #ifndef MatDT
 #error "Definition of MatDT is missing!"
 #else
-#if   MatDT == single
+#if   MatDT == SINGLE_PREC
 #define __MatName__ Sngl
 #define __MatType__ SP
 #define __MatOne__  1.0_SP
 #define __MatZero__ 0.0_SP
-#elif MatDT == double
+#elif MatDT == DOUBLE_PREC
 #define __MatName__ Dble
 #define __MatType__ DP
 #define __MatOne__  1.0_DP
 #define __MatZero__ 0.0_DP
-#elif MatDT == quad
+#elif MatDT == QUAD_PREC
 #define __MatName__ Quad
 #define __MatType__ QP
 #define __MatOne__  1.0_DP
@@ -46,18 +33,18 @@
 #ifndef VecDT
 #error "Definition of VecDT is missing!"
 #else
-#if   VecDT == single
+#if   VecDT == SINGLE_PREC
 #define __VecName__ Sngl
 #define __VecType__ SP
 #define __VecOne__  1.0_SP
 #define __VecZero__ 0.0_SP
-#elif VecDT == double
+#elif VecDT == DOUBLE_PREC
 #define __VecName__ Dble
 #define __VecType__ DP
 #define __VecOne__  1.0_DP
 #define __VecZero__ 0.0_DP
 #elif VecDT == quad
-#define __VecName__ Quad
+#define __VecName__ QUAD_PREC
 #define __VecType__ QP
 #define __VecOne__  1.0_QP
 #define __VecZero__ 0.0_QP
@@ -457,7 +444,7 @@ select case(NVAR)
 
   end subroutine
 
-!**************************************************************
+  !**************************************************************
   ! Format 7 and Format 9 multiplication, transposed matrix
   ! matrix dataype    : real(__MatType__)
   ! vectors data type : real(__VecType__)
@@ -546,3 +533,6 @@ select case(NVAR)
 #undef __VecType__
 #undef __VecOne__
 #undef __VecZero__
+
+#undef template_
+#undef template

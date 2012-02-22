@@ -1,10 +1,11 @@
+!-*- mode: f90; -*-
+
 #ifndef _IDXMANAGER_H_
 #define _IDXMANAGER_H_
 
-#include "feat2constants.h"
+#include "../feat2constants.h"
 
 #if 0
-!-*- mode: f90; -*-
 !##############################################################################
 !# <name> idxmanager </name>
 !# ****************************************************************************
@@ -233,7 +234,5 @@
 #define IDX1_MALLOC(a,n1)         IDX1(a,n1)
 #define IDX2_MALLOC(a,n1,n2)      IDX2(a,n1,n2,n1,n2)
 #define IDX3_MALLOC(a,n1,n2,n3)   IDX3(a,n1,n2,n3,n1,n2,n3)
-
-#define IDX1_
 
 #endif

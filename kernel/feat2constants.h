@@ -1,15 +1,16 @@
+!-*- mode: f90; -*-
+
 #ifndef _FEAT2CONSTANS_H_
 #define _FEAT2CONSTANS_H_
 
 #if 0
-!-*- mode: f90; -*-
 !##############################################################################
 !# <name> feat2constants </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This header file provides global preprocessor constants.
-!#
+!# This header file defines a couple of preprocessor
+!# constants used throught the complete Featflow2 kernel.
 !# </purpose>
 !##############################################################################
 #endif
