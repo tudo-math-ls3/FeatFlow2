@@ -96,6 +96,9 @@
 !# 13.) afcsc_initPerfConfig
 !#       -> Initialises the global performance configuration
 !#
+!# 14.) afcsc_renderOperatorLED
+!#      -> Renders the given operator local extremum diminishing LED
+!#
 !#
 !# The following auxiliary routines are available:
 !#
@@ -141,6 +144,8 @@ module afcstabscalar
   public :: afcsc_buildJacobianTVD
   public :: afcsc_buildJacobianGP
   public :: afcsc_buildJacobianSymm
+
+  public :: afcsc_renderOperatorLED
 
 !<constants>
 
@@ -11790,6 +11795,481 @@ contains
     end subroutine assembleJacobianMat79_Symm
 
   end subroutine afcsc_buildJacobianSymmScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcsc_renderOperatorLED(rafcstab, rmatrix, rperfconfig)
+
+!<description>
+    ! This subroutine renders the given operator rmatrix local
+    ! extremum diminishing (LED). This is achieved by adding a
+    ! symmetric operator which has zero row and column sums and
+    ! eliminates all negative off-diagonal entries.
+!</description>
+
+!<input>
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    real(SP), dimension(:,:), pointer :: p_Fcoefficients
+
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
+
+    logical :: bsymm
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
+
+    ! Check if stabilisation structure is prepared
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST) .eq. 0) then
+      call output_line('Stabilisation structure does not provide required data!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsc_renderOperatorLED')
+      call sys_halt()
+    end if
+    
+    ! Set pointers
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+
+    ! Symmetric artificial diffusion?
+    bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
+
+    ! What data types are we?
+    select case(rmatrix%cdataType)
+    case (ST_DOUBLE)
+      ! Set pointers
+      call lsyssc_getbase_double(rmatrix, p_Ddata)
+
+      ! Check if coefficients should be stored in stabilisation
+      if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
+        
+        ! Check if stabilisation has the same data type
+        if (rafcstab%cdataType .ne. ST_DOUBLE) then
+          call output_line('Stabilisation must have double precision!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_renderOperatorLED')
+          call sys_halt()
+        end if
+        
+        ! Set additional pointers
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+
+        !-----------------------------------------------------------------------
+        ! Assemble operator with stabilisation and generate coefficients
+        !-----------------------------------------------------------------------
+        call doOperatorEdgeAFCDble(p_IedgeListIdx, p_IedgeList, bsymm,&
+            p_Ddata, p_Dcoefficients)
+        
+        ! Set state of stabilisation
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)       
+      else
+        
+        !-----------------------------------------------------------------------
+        ! Assemble operator with stabilisation but do not generate coeffs
+        !-----------------------------------------------------------------------
+        call doOperatorEdgeDble(p_IedgeListIdx, p_IedgeList, bsymm, p_Ddata)
+      end if
+
+    case (ST_SINGLE)
+      ! Set pointers
+      call lsyssc_getbase_single(rmatrix, p_Fdata)
+
+      ! Check if coefficients should be stored in stabilisation
+      if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
+        
+        ! Check if stabilisation has the same data type
+        if (rafcstab%cdataType .ne. ST_SINGLE) then
+          call output_line('Stabilisation must have single precision!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_renderOperatorLED')
+          call sys_halt()
+        end if
+        
+        ! Set additional pointers
+        call afcstab_getbase_FcoeffsAtEdge(rafcstab, p_Fcoefficients)
+
+        !-----------------------------------------------------------------------
+        ! Assemble operator with stabilisation and generate coefficients
+        !-----------------------------------------------------------------------
+        call doOperatorEdgeAFCSngl(p_IedgeListIdx, p_IedgeList, bsymm,&
+            p_Fdata, p_Fcoefficients)
+        
+        ! Set state of stabilisation
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)       
+      else
+        
+        !-----------------------------------------------------------------------
+        ! Assemble operator with stabilisation but do not generate coeffs
+        !-----------------------------------------------------------------------
+        call doOperatorEdgeSngl(p_IedgeListIdx, p_IedgeList, bsymm, p_Fdata)
+      end if
+
+    end select
+
+  contains
+
+    ! Here, the real working routines start
+
+    !**************************************************************
+    ! Render the matrix local extremum without storing the artificial
+    ! diffusion coefficient for later use
+    
+    subroutine doOperatorEdgeDble(IedgeListIdx, IedgeList, bsymm, Ddata)
+      
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      logical, intent(in) :: bsymm
+      
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! local variables
+      real(DP) :: d_ij
+      integer :: iedge,igroup,ii,jj,ij,ji
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
+      !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
+      
+      if (bsymm) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Symmetric artificial diffusion coefficient
+            d_ij = max(0.0_DP, -Ddata(ij))
+            
+            ! Update the global operator
+            Ddata(ii) = Ddata(ii) - d_ij
+            Ddata(jj) = Ddata(jj) - d_ij
+            Ddata(ij) = Ddata(ij) + d_ij
+            Ddata(ji) = Ddata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Non-symmetric artificial diffusion coefficient
+            d_ij = max(0.0_DP, -Ddata(ij), -Ddata(ji))
+            
+            ! Update the global operator
+            Ddata(ii) = Ddata(ii) - d_ij
+            Ddata(jj) = Ddata(jj) - d_ij
+            Ddata(ij) = Ddata(ij) + d_ij
+            Ddata(ji) = Ddata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      end if
+
+    end subroutine doOperatorEdgeDble
+
+    !**************************************************************
+    ! Render the matrix local extremum without storing the artificial
+    ! diffusion coefficient for later use
+    
+    subroutine doOperatorEdgeAFCDble(IedgeListIdx, IedgeList, bsymm,&
+        Ddata, Dcoefficients)
+      
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      logical, intent(in) :: bsymm
+      
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: Dcoefficients
+      
+      ! local variables
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: iedge,igroup,ii,jj,ij,ji
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
+      !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
+      
+      if (bsymm) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Symmetric artificial diffusion coefficient
+            d_ij = max(0.0_DP, -Ddata(ij))
+            k_ij = max(0.0_DP,  Ddata(ij))
+
+            ! Symmetric AFC w/o edge orientation
+            Dcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+            
+            ! Update the global operator
+            Ddata(ii) = Ddata(ii) - d_ij
+            Ddata(jj) = Ddata(jj) - d_ij
+            Ddata(ij) = Ddata(ij) + d_ij
+            Ddata(ji) = Ddata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Non-symmetric artificial diffusion coefficient
+            d_ij = max(0.0_DP, -Ddata(ij), -Ddata(ji))
+            k_ij = max(0.0_DP,  Ddata(ij))
+            k_ji = max(0.0_DP,  Ddata(ji))
+            
+            ! Non-symmetric AFC w/o edge orientation
+            Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+            
+            ! Update the global operator
+            Ddata(ii) = Ddata(ii) - d_ij
+            Ddata(jj) = Ddata(jj) - d_ij
+            Ddata(ij) = Ddata(ij) + d_ij
+            Ddata(ji) = Ddata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      end if
+
+    end subroutine doOperatorEdgeAFCDble
+
+    !**************************************************************
+    ! Render the matrix local extremum without storing the artificial
+    ! diffusion coefficient for later use
+    
+    subroutine doOperatorEdgeSngl(IedgeListIdx, IedgeList, bsymm, Fdata)
+      
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      logical, intent(in) :: bsymm
+      
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+      
+      ! local variables
+      real(SP) :: d_ij
+      integer :: iedge,igroup,ii,jj,ij,ji
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
+      !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
+      
+      if (bsymm) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Symmetric artificial diffusion coefficient
+            d_ij = max(0.0_SP, -Fdata(ij))
+            
+            ! Update the global operator
+            Fdata(ii) = Fdata(ii) - d_ij
+            Fdata(jj) = Fdata(jj) - d_ij
+            Fdata(ij) = Fdata(ij) + d_ij
+            Fdata(ji) = Fdata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Non-symmetric artificial diffusion coefficient
+            d_ij = max(0.0_SP, -Fdata(ij), -Fdata(ji))
+            
+            ! Update the global operator
+            Fdata(ii) = Fdata(ii) - d_ij
+            Fdata(jj) = Fdata(jj) - d_ij
+            Fdata(ij) = Fdata(ij) + d_ij
+            Fdata(ji) = Fdata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      end if
+
+    end subroutine doOperatorEdgeSngl
+
+    !**************************************************************
+    ! Render the matrix local extremum without storing the artificial
+    ! diffusion coefficient for later use
+    
+    subroutine doOperatorEdgeAFCSngl(IedgeListIdx, IedgeList, bsymm,&
+        Fdata, Fcoefficients)
+      
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      logical, intent(in) :: bsymm
+      
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+
+      ! output parameters
+      real(SP), dimension(:,:), intent(out) :: Fcoefficients
+      
+      ! local variables
+      real(SP) :: d_ij,k_ij,k_ji
+      integer :: iedge,igroup,ii,jj,ij,ji
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
+      !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
+      
+      if (bsymm) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Symmetric artificial diffusion coefficient
+            d_ij = max(0.0_SP, -Fdata(ij))
+            k_ij = max(0.0_SP,  Fdata(ij))
+
+            ! Symmetric AFC w/o edge orientation
+            Fcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+            
+            ! Update the global operator
+            Fdata(ii) = Fdata(ii) - d_ij
+            Fdata(jj) = Fdata(jj) - d_ij
+            Fdata(ij) = Fdata(ij) + d_ij
+            Fdata(ji) = Fdata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      else
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronise memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = IedgeList(5,iedge)
+            jj = IedgeList(6,iedge)
+            
+            ! Non-symmetric artificial diffusion coefficient
+            d_ij = max(0.0_SP, -Fdata(ij), -Fdata(ji))
+            k_ij = max(0.0_SP,  Fdata(ij))
+            k_ji = max(0.0_SP,  Fdata(ji))
+            
+            ! Non-symmetric AFC w/o edge orientation
+            Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+            
+            ! Update the global operator
+            Fdata(ii) = Fdata(ii) - d_ij
+            Fdata(jj) = Fdata(jj) - d_ij
+            Fdata(ij) = Fdata(ij) + d_ij
+            Fdata(ji) = Fdata(ji) + d_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        
+      end if
+
+    end subroutine doOperatorEdgeAFCSngl
+
+  end subroutine afcsc_renderOperatorLED
 
   !*****************************************************************************
 
