@@ -359,6 +359,11 @@ contains
     ! Release the parameter list
     call parlst_done (p_rproblem%rparamList)
     
+    call collct_deletevalue (p_rproblem%rcollection, 'particles')
+    call geom_releaseParticleCollct(p_rproblem%rparticleCollection)
+
+    call collct_deletevalue (p_rproblem%rcollection, 'PARLST')
+
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
     call output_line ('Remaining collection statistics:')
