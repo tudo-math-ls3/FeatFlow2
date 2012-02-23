@@ -705,6 +705,9 @@ contains
             (ddefNorm .le. rnlstsolver%depsRelFixedPoint*dinitDefNorm)) then
           
           ! Yep, has to be activated.
+          if ((rnlstsolver%ioutputLevel .ge. 1) .and. (rnlstsolver%nnonlinearIterations .gt. 0)) then
+            call output_line ("Adaptive Newton: Selecting full Newton iteration.")
+          end if
 
           call nlstslv_donePrecMatrices (rnlstsolver%p_RprecMatrices)
           call nlstslv_initPrecMatrices (rsettings,rnlstsolver%ctypeNonlinearIteration,&

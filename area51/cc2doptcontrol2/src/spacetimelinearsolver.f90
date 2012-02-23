@@ -517,7 +517,7 @@ module spacetimelinearsolver
     integer :: niteLinSolveSpace = 0
     
     ! Structure of the space time matrix that the solver should use.
-    type(t_ccoptSpaceTimeMatrix) :: rmatrix
+    type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix => null()
     
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     type (t_sptilsSubnodeDefCorr), pointer        :: p_rsubnodeDefCorr => null()
@@ -824,8 +824,8 @@ module spacetimelinearsolver
   
   type t_sptilsMGLevelInfo
   
-    ! Structure that defines the space time matrix on that level.
-    type(t_ccoptSpaceTimeMatrix)        :: rmatrix
+    ! Pointer to the structure that defines the space time matrix on that level.
+    type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix => null()
     
     ! A RHS vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
@@ -1118,7 +1118,7 @@ contains
   ! The system matrix for the solver. For MG solvers, this defines just the fine
   ! grid matrix; the matrices on the lower levels have to be set by
   ! setLevelMatrix!
-  type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
+  type(t_ccoptSpaceTimeMatrix), intent(in), target :: rmatrix
 !</input>
   
 !<inputoutput>
@@ -1128,9 +1128,9 @@ contains
   
 !</subroutine>
 
-  ! Copy the matrix structure on the finest level to the rsolverNode
+  ! fetch the matrix structure on the finest level to the rsolverNode
   ! structure. This corresponds to the system we want to solve.
-  rsolverNode%rmatrix = rmatrix
+  rsolverNode%p_rmatrix => rmatrix
   
   ! Depending on the solver type, call the corresponding initialisation
   ! routine. For all single-grid solvers, pass the matrix on the highest
@@ -1976,12 +1976,12 @@ contains
     
     ! Allocate memory for the two temp vectors.
     call sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector,&
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
 
     call sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector2,&
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
         
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there's not much to do with isubgroup,
@@ -2150,7 +2150,7 @@ contains
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
-    p_rmatrix => rsolverNode%rmatrix
+    p_rmatrix => rsolverNode%p_rmatrix
 
     ! Check the parameters
     if (rd%NEQtime .eq. 0) then
@@ -2553,19 +2553,19 @@ contains
     ! Initialise a partial preconditioner.
     call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecond, &
         rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr, &
         rsolverNode%p_roptcBDC,rsolverNode%p_rsubnodeBlockJacobi%p_rparlist,&
         rsolverNode%p_rsubnodeBlockJacobi%ssection)
     
     ! Create an access pool for quick access to nonlinearities
-    call sptivec_createAccessPool(rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+    call sptivec_createAccessPool(rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,3)
 
     ! Probably initialise an alternative linear solver.
     if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .ne. "") then
       call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecondAlternative, &
           rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
-          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
+          rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr, &
           rsolverNode%p_roptcBDC,rsolverNode%p_rsubnodeBlockJacobi%p_rparlist,&
           rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative)
     end if
@@ -2724,17 +2724,17 @@ contains
     p_rpreconditionerAlternative => rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecondAlternative
     
     ! Number of unknowns in time
-    neqtime = tdiscr_igetNDofGlob(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr)
+    neqtime = tdiscr_igetNDofGlob(rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr)
     
     ! Create temp vectors for D.
     ! Get a reference to our matrix and to the three temp vectors
     ! that were created by the init routine.
-    call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+    call lsysbl_createVecBlockByDiscr (rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rtempVectorD,.true.)
         
     ! Bind roseenAccess to the nonlinearity
-    if (associated(rsolverNode%rmatrix%p_rsolution)) then
-      call sptivec_bindPoolToVec(rsolverNode%rmatrix%p_rsolution,&
+    if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
+      call sptivec_bindPoolToVec(rsolverNode%p_rmatrix%p_rsolution,&
           rsolverNode%p_rsubnodeBlockJacobi%roseenAccess)
     end if
 
@@ -2760,8 +2760,8 @@ contains
     do iiterate = 1,neqtime
     
       ! Current time step?
-      call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
-      dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
+      call tdiscr_getTimestep(rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
       ! Update the boundary conditions to the current time
       call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,p_rpreconditioner,&
@@ -2775,7 +2775,7 @@ contains
       end if
     
       ! Get pointers for the Oseen solution / nonlinearity
-      if (associated(rsolverNode%rmatrix%p_rsolution)) then
+      if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
       
         if (iiterate .gt. 1) then
           call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
@@ -2796,16 +2796,16 @@ contains
       ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
           dtimePrimal,dtimeDual,&
-          rsolverNode%rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-          rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
-          rsolverNode%rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
+          rsolverNode%p_rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
+          rsolverNode%p_rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
+          rsolverNode%p_rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
       if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .eq. "") then
       
         ! Assemble the preconditioner matrices on all levels.
         call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
         call fbsim_assemblePrecMatrices (p_rpreconditioner,&
-            iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+            iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
         call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           
         !call matio_writeBlockMatrixHR (p_rpreconditioner%p_RmatrixPrecondFullSpace(2), "matrix",&
@@ -2826,7 +2826,7 @@ contains
         ! Assemble the preconditioner matrices on all levels.
         call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
         call fbsim_assemblePrecMatrices (p_rpreconditioner,&
-            iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+            iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
         call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           
         ! Perform preconditioning of the spatial defect with the method provided by the
@@ -2852,7 +2852,7 @@ contains
           ! Assemble the preconditioner matrices on all levels.
           call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           call fbsim_assemblePrecMatrices (p_rpreconditionerAlternative,&
-              iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+              iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
           call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             
           call lsysbl_copyVector (rtempVectorD2,rtempVectorD)
@@ -3081,7 +3081,7 @@ contains
     ! Initialise a partial preconditioner.
     call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecond, &
         rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr, &
         rsolverNode%p_roptcBDC,rsolverNode%p_rsubnodeBlockFBSOR%p_rparlist,&
         rsolverNode%p_rsubnodeBlockFBSOR%ssection)
         
@@ -3089,7 +3089,7 @@ contains
     if (rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative .ne. "") then
       call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecondAlternative, &
           rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
-          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
+          rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr, &
           rsolverNode%p_roptcBDC,rsolverNode%p_rsubnodeBlockFBSOR%p_rparlist,&
           rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative)
     end if
@@ -3101,11 +3101,11 @@ contains
 
     ! Allocate memory for temp vectors.
     call sptivec_initVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector,&
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
 
     ! Create an access pool for quick access to nonlinearities
-    call sptivec_createAccessPool(rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+    call sptivec_createAccessPool(rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,3)
 
   end subroutine
@@ -3277,24 +3277,24 @@ contains
     if (rsolverNode%ioutputLevel .ge. 2) then
       ! Prepare a temp vector for residual output
       call sptivec_initVector (rtempVector,&
-          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-          rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+          rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+          rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
     end if
     
     ! Create temp vectors.
-    call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+    call lsysbl_createVecBlockByDiscr (rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rtempVectorD,.true.)
-    call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+    call lsysbl_createVecBlockByDiscr (rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rtempVectorX,.true.)
         
     if (rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative .ne. "") then
-      call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+      call lsysbl_createVecBlockByDiscr (rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
           rtempVectorD2,.true.)
     end if
         
     ! Bind roseenAccess to the nonlinearity
-    if (associated(rsolverNode%rmatrix%p_rsolution)) then
-      call sptivec_bindPoolToVec(rsolverNode%rmatrix%p_rsolution,&
+    if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
+      call sptivec_bindPoolToVec(rsolverNode%p_rmatrix%p_rsolution,&
           rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
     end if
         
@@ -3304,7 +3304,7 @@ contains
     if (rsolverNode%ioutputLevel .ge. 2) then
       ! Print the initial defect
       call sptivec_copyVector (rd,rtempVector)
-      call stlin_spaceTimeMatVec (rsolverNode%rmatrix, p_rx, rtempVector, &
+      call stlin_spaceTimeMatVec (rsolverNode%p_rmatrix, p_rx, rtempVector, &
           -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dnorm, rsolverNode%p_roptcBDC, &
           rsolverNode%ioutputLevel .ge. 3)
       call output_line ("FBSOR: Initial defect = "//trim(sys_sdEL(dnorm,10)))
@@ -3315,42 +3315,42 @@ contains
       if (rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative .eq. "") then
 
         ! No alternative linear solver
-        if (associated(rsolverNode%rmatrix%p_rsolution)) then
-          call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+        if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
+          call forwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
 
-          call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call backwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
         else
-          call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call forwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
 
-          call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call backwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
         end if
       
       else
       
         ! Using an altérnative linear solver for fallback in case of convergence problems.
-        if (associated(rsolverNode%rmatrix%p_rsolution)) then
-          call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+        if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
+          call forwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,&
               rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecondAlternative,rtempVectorD2)
 
-          call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call backwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,&
               rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecondAlternative,rtempVectorD2)
         else
-          call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call forwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rpreconditionerAlternative=rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecondAlternative,&
               rtempVectorD2=rtempVectorD2)
 
-          call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          call backwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
               rpreconditionerAlternative=rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecondAlternative,&
               rtempVectorD2=rtempVectorD2)
@@ -3361,7 +3361,7 @@ contains
       if (rsolverNode%ioutputLevel .ge. 2) then
         ! Print the initial defect
         call sptivec_copyVector (rd,rtempVector)
-        call stlin_spaceTimeMatVec (rsolverNode%rmatrix, p_rx, rtempVector, &
+        call stlin_spaceTimeMatVec (rsolverNode%p_rmatrix, p_rx, rtempVector, &
             -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dnorm, rsolverNode%p_roptcBDC, &
             rsolverNode%ioutputLevel .ge. 3)
         call output_line ("FBSOR: Iteration = "//trim(sys_siL(i,10))//&
@@ -3550,8 +3550,8 @@ contains
       p_rdiscreteFBC => rpreconditioner%p_RdiscreteFBC(rpreconditioner%nlmax)
       
       ! Put the 'current' solution to the 'middle' vector.
-      if (associated(rsolverNode%rmatrix%p_rsolution))  then
-        call sptivec_getTimestepData (rsolverNode%rmatrix%p_rsolution, 1, p_rvector2)
+      if (associated(rsolverNode%p_rmatrix%p_rsolution))  then
+        call sptivec_getTimestepData (rsolverNode%p_rmatrix%p_rsolution, 1, p_rvector2)
       end if
         
       ! Loop through the substeps.
@@ -3562,8 +3562,8 @@ contains
       do iiterate = 1,neqtime
       
         ! Current time step?
-        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
-        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
+        call tdiscr_getTimestep(rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         ! Update the boundary conditions to the current time
         call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,&
@@ -3670,7 +3670,7 @@ contains
           ! Assemble the preconditioner matrices on all levels.
           call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           call fbsim_assemblePrecMatrices (rpreconditioner,&
-              iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+              iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
           call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             
           ! Perform preconditioning of the spatial defect with the method provided by the
@@ -3688,7 +3688,7 @@ contains
           ! Assemble the preconditioner matrices on all levels.
           call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           call fbsim_assemblePrecMatrices (rpreconditioner,&
-              iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+              iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
           call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             
           ! Perform preconditioning of the spatial defect with the method provided by the
@@ -3714,7 +3714,7 @@ contains
             ! Assemble the preconditioner matrices on all levels.
             call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             call fbsim_assemblePrecMatrices (rpreconditionerAlternative,&
-                iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+                iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
             call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
               
             call lsysbl_copyVector (rtempVectorD2,rtempVectorD)
@@ -3826,8 +3826,8 @@ contains
       do iiterate = neqtime,1,-1
       
         ! Current time step?
-        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
-        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
+        call tdiscr_getTimestep(rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         ! Update the boundary conditions to the current time
         call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,&
@@ -3929,7 +3929,7 @@ contains
           ! Assemble the preconditioner matrices on all levels.
           call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           call fbsim_assemblePrecMatrices (rpreconditioner,&
-              iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+              iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
           call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             
           ! Perform preconditioning of the spatial defect with the method provided by the
@@ -3947,7 +3947,7 @@ contains
           ! Assemble the preconditioner matrices on all levels.
           call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
           call fbsim_assemblePrecMatrices (rpreconditioner,&
-              iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+              iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
           call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             
           ! Perform preconditioning of the spatial defect with the method provided by the
@@ -3973,7 +3973,7 @@ contains
             ! Assemble the preconditioner matrices on all levels.
             call stat_startTimer (rsolverNode%rtimeSpaceMatrixAssembly)
             call fbsim_assemblePrecMatrices (rpreconditionerAlternative,&
-                iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+                iiterate,0,rsolverNode%p_rmatrix,rnonlinearData,.true.)
             call stat_stopTimer (rsolverNode%rtimeSpaceMatrixAssembly)
               
             call lsysbl_copyVector (rtempVectorD2,rtempVectorD)
@@ -4151,15 +4151,15 @@ contains
 !    ! Allocate that here! Use the default data type prescribed in the solver
 !    ! structure for allocating the temp vectors.
 !    p_rsubnode => rsolverNode%p_rsubnodeCG
-!    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime
+!    NEQtime = rsolverNode%p_rmatrix%p_rspaceTimeDiscr%NEQtime
 !    do i=1,4
 !      call sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
-!        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
+!        rsolverNode%p_rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
 !    end do
 !
 !    ! Allocate memory for a spatial temp vector.
 !    call lsysbl_createVecBlockByDiscr (&
-!        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+!        rsolverNode%p_rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
 !        rsolverNode%p_rsubnodeCG%rtempVectorSpace)
 
   end subroutine
@@ -4387,8 +4387,8 @@ contains
 !
 !    ! Get some information
 !    p_rsubnode => rsolverNode%p_rsubnodeCG
-!    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
-!    p_rmatrix => rsolverNode%rmatrix
+!    p_rspaceTimeDiscr => rsolverNode%p_rmatrix%p_rspaceTimeDiscr
+!    p_rmatrix => rsolverNode%p_rmatrix
 !
 !    ! Check the parameters
 !    if ((rd%NEQtime .eq. 0) .or. &
@@ -4839,7 +4839,7 @@ contains
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
     
-    allocate(IpureDirichletTimesteps(rsolverNode%rmatrix%NEQtime))
+    allocate(IpureDirichletTimesteps(rsolverNode%p_rmatrix%NEQtime))
 
     ! We have to create a global matrix first!
     ! Call the assembly routine to assemble the global block matrix.
@@ -4848,7 +4848,7 @@ contains
     call assembleGlobalSpaceTimeMatrix (rsolverNode%p_rsettings,&
         rsolverNode%p_rspaceTimeHierarchy,rsolverNode%p_roptcBDC,&
         rsolverNode%ispaceTimeLevel,&
-        rsolverNode%rmatrix,rmatrixGlobal,&
+        rsolverNode%p_rmatrix,rmatrixGlobal,&
         IpureDirichletTimesteps,npureDirichletTimesteps)
 
     ! Extract a submatrix for file output?
@@ -4887,7 +4887,7 @@ contains
     ! the pressure in the first node by writing a unit line into
     ! the global matrix for the first pressure DOF in every timestep.
     call pressureDirichlet (rsolverNode%p_rsettings,&
-        rsolverNode%rmatrix,rtempMatrix,&
+        rsolverNode%p_rmatrix,rtempMatrix,&
         IpureDirichletTimesteps,npureDirichletTimesteps)
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
@@ -5645,7 +5645,7 @@ contains
 
 !    !!! DEBUG
 !    CALL assembleGlobalSpaceTimeMatrix (rsolverNode%p_rsettings,&
-!        rsolverNode%rmatrix,rmatrixGlobal)
+!        rsolverNode%p_rmatrix,rmatrixGlobal)
 !    call lsysbl_createVecBlockDirect (rrhs, (/rb%NEQ/),.false.)
 !    call lsysbl_createVecBlockDirect (rsol, (/rb%NEQ/),.false.)
 !    CALL lsysbl_getbase_double(rrhs,p_Db)
@@ -5659,7 +5659,7 @@ contains
 !
 !    call sptivec_copyVector (rd,rsol2)
 !    CALL sptivec_convertVectorToSupervec (rx,rsol2)
-!    call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, rsolverNode%rmatrix, &
+!    call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, rsolverNode%p_rmatrix, &
 !      rsol2, rd, -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dnorm,.true.)
 !    call sptivec_releaseVector (rsol2)
 
@@ -5838,13 +5838,13 @@ contains
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     do i=1,7
       call sptivec_initVector (p_rsubnode%RtempVectors(i),&
-          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-          rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+          rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+          rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
     end do
     
     ! Allocate memory for a spatial temp vector.
     call lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
     
   end subroutine
@@ -6102,7 +6102,7 @@ contains
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-    p_rmatrix => rsolverNode%rmatrix
+    p_rmatrix => rsolverNode%p_rmatrix
     bstopOnRealResiduum = rsolverNode%p_rsubnodeBiCGStab%bstopOnRealResiduum
 
     ! Check the parameters
@@ -6764,13 +6764,13 @@ contains
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStabRight
     do i=1,7
       call sptivec_initVector (p_rsubnode%RtempVectors(i),&
-          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-          rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+          rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+          rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr)
     end do
     
     ! Allocate memory for a spatial temp vector.
     call lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rspaceDiscr,&
         rsolverNode%p_rsubnodeBiCGStabRight%rtempVectorSpace)
     
   end subroutine
@@ -7027,7 +7027,7 @@ contains
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStabRight
-    p_rmatrix => rsolverNode%rmatrix
+    p_rmatrix => rsolverNode%p_rmatrix
 
     ! Check the parameters
     if (rd%NEQtime .eq. 0) then
@@ -7529,7 +7529,7 @@ contains
   ! The system matrix for the solver. If ilevel is not specified,
   ! this specifies the matrix for the topmost level. Lower levels must
   ! be initialised by having ilevel present!
-  type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
+  type(t_ccoptSpaceTimeMatrix), intent(in), target :: rmatrix
   
   ! OPTIONAL: Level of the matrix.
   ! Must be present for all levels less than the maximum.
@@ -7550,8 +7550,8 @@ contains
       ilev = ilevel
     end if
 
-    ! Set the matrix.
-    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rmatrix = rmatrix
+    ! Get a pointer to the matrix.
+    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rmatrix => rmatrix
       
     ! Call the setMatrix-routine for the presmoother/postsmoother/
     ! coarse grid solver
@@ -7726,18 +7726,18 @@ contains
       ! On all levels except for the maximum one, create a solution vector
       if (ilev .lt. NLMAX) then
         call sptivec_initVector (p_rmgLevel%rsolutionVector,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rtimeDiscr,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rspaceDiscr)
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rspaceDiscr)
       end if
       
       ! On all levels except for the first one, create a RHS and a temp vector
       if (ilev .gt. 1) then
         call sptivec_initVector (p_rmgLevel%rrhsVector,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rtimeDiscr,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rspaceDiscr)
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rspaceDiscr)
         call sptivec_initVector (p_rmgLevel%rtempVector,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rtimeDiscr,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rspaceDiscr)
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rspaceDiscr)
       end if
       
       ! If adaptive coarse grid correction is activated, we need a temporary
@@ -7745,13 +7745,13 @@ contains
       if (rsolverNode%p_rsubnodeMultigrid%dalphamin .ne. &
           rsolverNode%p_rsubnodeMultigrid%dalphamax) then
         call sptivec_initVector (p_rmgLevel%rtempCGCvector,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rtimeDiscr,&
-            p_rmgLevel%rmatrix%rdiscrData%p_rspaceDiscr)
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+            p_rmgLevel%p_rmatrix%rdiscrData%p_rspaceDiscr)
       end if
       
       ! Create a block temp vector for the interlevel projection
       call lsysbl_createVecBlockByDiscr(&
-          p_rmgLevel%rmatrix%rdiscrData%p_rspaceDiscr,&
+          p_rmgLevel%p_rmatrix%rdiscrData%p_rspaceDiscr,&
           p_rmgLevel%rprjVector,.false.)
 
     end do
@@ -8142,7 +8142,7 @@ contains
     !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
     
     ! Apply nmaxIterations times defect correction to the given solution rx.
-    p_rmatrix => rsolverNode%rmatrix
+    p_rmatrix => rsolverNode%p_rmatrix
     
     ! Do we have an iterative or one-step solver given?
     ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
@@ -8309,7 +8309,7 @@ contains
     call stat_clearTimer (rsolverNode%rtimeFiltering)
 
     ! Get the system matrix on the finest level:
-    p_rmatrix => rsolverNode%rmatrix
+    p_rmatrix => rsolverNode%p_rmatrix
 
     if (p_rsubnode%icycle .lt. 0) then
       ! Wrong cycle
@@ -8476,7 +8476,7 @@ contains
           ilev = nlmax
 
           ! Get the system matrix on the finest level:
-          p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
+          p_rmatrix => p_rsubnode%p_Rlevels(ilev)%p_rmatrix
           
           if (rsolverNode%ioutputLevel .ge. 3) then
             call output_line (&
@@ -8696,7 +8696,7 @@ contains
             
               ! Go down one level
               ilev = ilev - 1
-              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
+              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%p_rmatrix
 
               if (rsolverNode%ioutputLevel .ge. 3) then
                 call output_line ('Space-Time-Multigrid: Current mesh level: '//trim(sys_siL(ilev,5)))
@@ -8748,7 +8748,7 @@ contains
             !
             do while (ilev .lt. nlmax)
               ilev = ilev + 1
-              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rmatrix
+              p_rmatrix => p_rsubnode%p_Rlevels(ilev)%p_rmatrix
               
               if (rsolverNode%ioutputLevel .ge. 3) then
                 call output_line ('Space-Time-Multigrid: Current mesh level: '&
@@ -9520,8 +9520,8 @@ contains
 
     ! Allocate memory for a temp vector.
     call sptivec_initVector (rsolverNode%p_rsubnodeFBsim%rtempVector,&
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-        rsolverNode%rmatrix%rdiscrData%p_rdiscrPrimalDual)
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rdiscrPrimalDual)
 
   end subroutine
   
@@ -9555,8 +9555,8 @@ contains
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
 
-    call fbsim_setMatrix (rsolverNode%p_rsubnodeFBsim%rforwardSolver,rsolverNode%rmatrix)
-    call fbsim_setMatrix (rsolverNode%p_rsubnodeFBsim%rbackwardSolver,rsolverNode%rmatrix)
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeFBsim%rforwardSolver,rsolverNode%p_rmatrix)
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeFBsim%rbackwardSolver,rsolverNode%p_rmatrix)
 
   end subroutine
   
@@ -9668,7 +9668,7 @@ contains
       call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rforwardsolver, &
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
-          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
+          rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
       ! Sum up statistical data.
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
@@ -9693,7 +9693,7 @@ contains
       call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rbackwardsolver, &
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
-          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
+          rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
       ! Sum up statistical data.
       rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
@@ -9899,8 +9899,8 @@ contains
 
     ! Allocate memory for a temp vector.
     call sptivec_initVector (rsolverNode%p_rsubnodeTimeVanka%rtempVector,&
-        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
-        rsolverNode%rmatrix%rdiscrData%p_rdiscrPrimalDual)
+        rsolverNode%p_rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%p_rmatrix%rdiscrData%p_rdiscrPrimalDual)
 
   end subroutine
   
@@ -9934,8 +9934,8 @@ contains
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
 
-    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rforwardSolver,rsolverNode%rmatrix)
-    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rbackwardSolver,rsolverNode%rmatrix)
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rforwardSolver,rsolverNode%p_rmatrix)
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rbackwardSolver,rsolverNode%p_rmatrix)
 
   end subroutine
   
@@ -10053,7 +10053,7 @@ contains
               rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
               rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
               min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
-              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+              rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
           
           if (.not. bsuccess) then
             call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -10067,7 +10067,7 @@ contains
               rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
               rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
               min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
-              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+              rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
 
           if (.not. bsuccess) then
             call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -10091,7 +10091,7 @@ contains
               rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
               rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
               min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
-              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+              rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
           
           if (.not. bsuccess) then
             call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -10105,7 +10105,7 @@ contains
               rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
               rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
               min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
-              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+              rsolverNode%p_rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
 
           if (.not. bsuccess) then
             call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
