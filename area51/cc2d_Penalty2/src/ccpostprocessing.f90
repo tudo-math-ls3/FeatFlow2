@@ -2027,6 +2027,9 @@ end if
     print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
     p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
     
+    ! Release the vector
+    call lsyssc_releaseVector(p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB)
+
   end do  ! end particles
   
   end subroutine
@@ -2236,13 +2239,13 @@ end if
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
       
-!      ! Reformat the cubature points; they are in the wrong shape!
-!      do i=1,ncubp
-!        do k=1,ubound(p_DcubPtsRef,1)
+      ! Reformat the cubature points; they are in the wrong shape!
+      do i=1,ncubp
+        do k=1,ubound(p_DcubPtsRef,1)
 !          p_DcubPtsRef(k,i) = Dxi(i,k)
-          p_DcubPtsRef = Dpoints
-!        end do
-!      end do
+          p_DcubPtsRef(k,i) = Dpoints(k,i)
+        end do
+      end do
       
       ! Allocate memory for the DOF's of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
