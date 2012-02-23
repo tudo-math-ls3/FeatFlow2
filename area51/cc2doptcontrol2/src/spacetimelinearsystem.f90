@@ -978,12 +978,12 @@ contains
         end if
         
         ! Dirichlet boundary control
+
+        ! Multiply all weigths by the penalty parameter.
+        dtmp = 1.0_DP !rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ddirichletBCPenalty
+        rnonlinearSpatialMatrix%DdirichletBCCY(1,1) = dtmp
+        
         if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dbetaC .gt. 0.0_DP) then
-          ! Active.
-          ! Multiply all weigths by the penalty parameter.
-          dtmp = 1.0_DP !rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ddirichletBCPenalty
-          rnonlinearSpatialMatrix%DdirichletBCCY(1,1) = dtmp
-          
           ! In the first timestep, the dual equation is not connected to the primal one.
           ! Initial condition...
           if (ieqTime .gt. 1) then

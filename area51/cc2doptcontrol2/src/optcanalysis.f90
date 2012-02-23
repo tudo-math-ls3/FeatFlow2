@@ -41,6 +41,8 @@ module optcanalysis
   use spatialdiscretisation
   use fparser
   use pprocerror
+  use derivatives
+  use feevaluation
   
   use analyticsolution
   
@@ -225,12 +227,136 @@ contains
 !
 !  end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fct_diffToTarget (cderivative, rdiscretisation, &
+                                   nelements, npointsPerElement, Dpoints, &
+                                   IdofsTest, rdomainIntSubset, &
+                                   Dvalues, rcollection)
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! Calculates the error "y-z" in the cubature points inside the domain
+    ! of interest.
+  !</description>
+    
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  !</output>
+    
+  !</subroutine>
+  
+    integer :: icomponent,i,j
+    type(t_vectorBlock), pointer :: p_rvectorBlock
+    real(DP), dimension(:,:), allocatable :: DvaluesY
+    real(DP) :: dx1,dy1,dx2,dy2,dx,dy
+  
+    ! Call the user-function to calculate z.
+    ! Pass the user-defined collection.
+    select case (rcollection%IquickAccess(2))
+    case (1)
+      ! User definec
+      call user_fct_Target (cderivative, rdiscretisation, &
+          nelements, npointsPerElement, Dpoints, &
+          IdofsTest, rdomainIntSubset, &
+          Dvalues, rcollection%p_rnextCollection)
+    case (2)
+      ! Standard implementation
+      call optcana_evalFunction (cderivative, rdiscretisation, &
+          nelements, npointsPerElement, Dpoints, &
+          IdofsTest, rdomainIntSubset, &
+          Dvalues, rcollection%p_rnextCollection)
+    end select
+        
+    ! Fetch some parameters
+    icomponent = rcollection%IquickAccess(1)
+    p_rvectorBlock => rcollection%p_rvectorQuickAccess1
+    dx1 = rcollection%DquickAccess(1)
+    dy1 = rcollection%DquickAccess(2)
+    dx2 = rcollection%DquickAccess(3)
+    dy2 = rcollection%DquickAccess(4)
+    
+    ! Calculate y-z
+    allocate (DvaluesY(ubound(Dvalues,1),ubound(Dvalues,2)))
+    
+    call fevl_evaluate_sim (p_rvectorBlock%RvectorBlock(icomponent), &
+        rdomainIntSubset, DER_FUNC, DvaluesY)
+    do i=1,ubound(Dvalues,2)
+      do j=1,ubound(Dvalues,1)
+      
+        ! Check if the point is in the domain of integest.
+        dx = Dpoints(1,j,i)
+        dy = Dpoints(2,j,i)
+        if ((dx .ge. dx1) .and. (dy .ge. dy1) .and. (dx .le. dx2) .and. (dy .le. dy2)) then
+          Dvalues(j,i) = (DvaluesY(j,i) - Dvalues(j,i))
+        else
+          Dvalues(j,i) = 0.0_DP
+        end if
+        
+      end do
+    end do
+    
+    deallocate (DvaluesY)
+
+  end subroutine
+
 !******************************************************************************
 
 !<subroutine>
 
   subroutine optcana_nonstatFunctional (rglobalData,rphysics,rconstraints,rsolution,rreference,&
-      dalphaC,dbetaC,dgammaC,Derror)
+      dalphaC,dbetaC,dgammaC,Derror,DobservationArea)
 
 !<description>
   ! This function calculates the value of the functional which is to be
@@ -271,6 +397,9 @@ contains
 
   ! Global settings for callback routines.
   type(t_globalData), intent(inout), target :: rglobalData
+  
+  ! OPTIONAL: Observation area where to observe the functional.
+  real(DP), dimension(:), intent(in), optional :: DobservationArea
 !</input>
 
 !<output>
@@ -288,13 +417,14 @@ contains
     integer :: isubstep
     real(DP) :: dtstep,dtime
     real(DP),dimension(2) :: Derr
-    type(t_collection) :: rcollection
-    type(t_vectorBlock) :: rtempVector
+    type(t_collection), target :: rcollection,rlocalcoll
+    type(t_vectorBlock), target :: rtempVector, rzeroVector
     real(dp), dimension(:), pointer :: p_Dx
     type(t_optcconstraintsSpace) :: rconstrSpace
     
     ! Create a temp vector
     call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rtempVector,.true.)
+    call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rzeroVector,.true.)
     
     call lsysbl_getbase_double (rtempVector,p_Dx)
     
@@ -331,37 +461,72 @@ contains
         
         ! Compute:
         ! Derror(1) = ||y-z||^2_{L^2}.
+
+        ! The local callback function calculates y-z in the domain of
+        ! integest. Pass the user-defined callback function
+        ! and the necessary parameters.
+        rlocalcoll%p_rnextCollection => rcollection
+        rlocalcoll%p_rvectorQuickAccess1 => rtempVector
+        
+        ! Domain of interest
+        rlocalcoll%DquickAccess(1) = -SYS_MAXREAL_DP
+        rlocalcoll%DquickAccess(2) = -SYS_MAXREAL_DP
+        rlocalcoll%DquickAccess(3) = SYS_MAXREAL_DP
+        rlocalcoll%DquickAccess(4) = SYS_MAXREAL_DP
+        
+        if (present(DobservationArea)) then
+          ! Put the observation area into the collection
+          rlocalcoll%DquickAccess(1) = DobservationArea(1)
+          rlocalcoll%DquickAccess(2) = DobservationArea(2)
+          rlocalcoll%DquickAccess(3) = DobservationArea(3)
+          rlocalcoll%DquickAccess(4) = DobservationArea(4)
+        end if
+
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          
+          ! Mark: Reference function given by user_fct_Target.
+          rlocalcoll%IquickAccess(2) = 1
           
           ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
           call user_initCollectForVecAssembly (rglobalData,&
               rreference%iid,1,dtime,rcollection)
-
-          call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(1),&
-              user_fct_Target,rcollection)
+          
+          ! X-velocity
+          rlocalcoll%IquickAccess(1) = 1
+          call pperr_scalar (PPERR_L2ERROR,Derr(1),rzeroVector%RvectorBlock(1),&
+              fct_diffToTarget,rlocalcoll)
 
           call user_doneCollectForAssembly (rglobalData,rcollection)
 
           call user_initCollectForVecAssembly (rglobalData,&
               rreference%iid,2,dtime,rcollection)
 
-          call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(2),&
-              user_fct_Target,rcollection)
+          ! Y-velocity
+          rlocalcoll%IquickAccess(1) = 2
+          call pperr_scalar (PPERR_L2ERROR,Derr(2),rzeroVector%RvectorBlock(2),&
+              fct_diffToTarget,rlocalcoll)
               
           call user_doneCollectForAssembly (rglobalData,rcollection)
+          
         else
+          
           ! Use our standard implementation to evaluate the functional.
           call ansol_prepareEval (rreference,rcollection,"SOL",dtime)
 
+          ! Mark: Reference function given by optcana_evalFunction.
+          rlocalcoll%IquickAccess(2) = 2
+
           ! X-velocity
+          rlocalcoll%IquickAccess(1) = 1
           rcollection%IquickAccess(1) = 1
-          call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(1),&
-              optcana_evalFunction,rcollection)
+          call pperr_scalar (PPERR_L2ERROR,Derr(1),rzeroVector%RvectorBlock(1),&
+              fct_diffToTarget,rlocalcoll)
 
           ! Y-velocity
+          rlocalcoll%IquickAccess(1) = 2
           rcollection%IquickAccess(1) = 2
-          call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(2),&
-              optcana_evalFunction,rcollection)
+          call pperr_scalar (PPERR_L2ERROR,Derr(2),rzeroVector%RvectorBlock(2),&
+              fct_diffToTarget,rlocalcoll)
               
           call ansol_doneEval (rcollection,"SOL")
         end if
@@ -457,6 +622,7 @@ contains
     
     ! Release temnp vector
     call lsysbl_releaseVector (rtempVector)
+    call lsysbl_releaseVector (rzeroVector)
     
   end subroutine
 

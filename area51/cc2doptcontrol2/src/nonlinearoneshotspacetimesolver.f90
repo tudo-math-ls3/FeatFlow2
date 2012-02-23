@@ -610,12 +610,23 @@ contains
 
       ! Value of the functional
       call stat_startTimer (rtimerPostproc)
-      call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-          rsettings%rsettingsOptControl%rconstraints,&
-          rx,rsettings%rsettingsOptControl%rtargetFunction,&
-          rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
-          rsettings%rsettingsOptControl%dgammaC,&
-          Derror)
+      if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
+        ! Subdomain is the observation area
+        call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+            rsettings%rsettingsOptControl%rconstraints,&
+            rx,rsettings%rsettingsOptControl%rtargetFunction,&
+            rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+            rsettings%rsettingsOptControl%dgammaC,&
+            Derror,rsettings%rsettingsOptControl%p_DobservationArea)
+      else
+        ! Full domain
+        call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+            rsettings%rsettingsOptControl%rconstraints,&
+            rx,rsettings%rsettingsOptControl%rtargetFunction,&
+            rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+            rsettings%rsettingsOptControl%dgammaC,&
+            Derror)
+      end if
       if (rnlstsolver%ioutputLevel .ge. 1) then
         call output_separator (OU_SEP_MINUS)
         call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
@@ -906,12 +917,23 @@ contains
       call output_separator (OU_SEP_MINUS)
     call stat_clearTimer (rtimerPostproc)
     call stat_startTimer (rtimerPostproc)
-    call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-        rsettings%rsettingsOptControl%rconstraints,&
-        rx,rsettings%rsettingsOptControl%rtargetFunction,&
-        rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
-        rsettings%rsettingsOptControl%dgammaC,&
-        Derror)
+    if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
+      ! Subdomain is the observation area
+      call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+          rsettings%rsettingsOptControl%rconstraints,&
+          rx,rsettings%rsettingsOptControl%rtargetFunction,&
+          rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+          rsettings%rsettingsOptControl%dgammaC,&
+          Derror,rsettings%rsettingsOptControl%p_DobservationArea)
+    else
+      ! Full domain
+      call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+          rsettings%rsettingsOptControl%rconstraints,&
+          rx,rsettings%rsettingsOptControl%rtargetFunction,&
+          rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
+          rsettings%rsettingsOptControl%dgammaC,&
+          Derror)
+    end if
     if (rnlstsolver%ioutputLevel .ge. 1) then
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
       call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))

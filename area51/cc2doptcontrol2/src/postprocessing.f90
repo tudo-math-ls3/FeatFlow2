@@ -1445,9 +1445,18 @@ contains
       ! Should we calculate the functional?
       if (rpostproc%icalcFunctionalValues .ne. 0) then
         call output_lbrk()
-        call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-            roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
-            roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror)
+        if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
+          ! Subdomain is the observation area
+          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+              roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
+              roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror,&
+              rsettings%rsettingsOptControl%p_DobservationArea)
+        else
+          ! Full domain
+          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+              roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
+              roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror)
+        end if
         call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
         call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
         call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
