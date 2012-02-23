@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for NLMAX in 5 6 7 8 9 10 11 12;do
+for NLMAX in 5 6 7 8 9 10;do
 
 cat >./data/discretisation.dat <<END_OF_DATA
 
@@ -470,7 +470,7 @@ ipostprocTimeInterpSolution = 1
 # 4=Matlab
 # 5=binary GMV
 
-ioutputUCD = 3
+ioutputUCD = 0
 
 # Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
@@ -484,7 +484,7 @@ ilevelUCD = 0
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = '%{spostdirectory}/u.fbm.${NLMAX}.vtk'
+sfilenameUCD = '%{spostdirectory}/u.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -583,13 +583,13 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 0
+ierrorAnalysisL2 = 1
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisH1 = 0
+ierrorAnalysisH1 = 1
 
 # Calculate the kinetic energy.
 # =0: Don't calculate
@@ -604,9 +604,9 @@ scubError          =
 
 # Whether to write the L2/H1-error and/or kinetic energy to a file
 
-iwriteErrorAnalysisL2 = 0
-iwriteErrorAnalysisH1 = 0
-iwriteKineticEnergy = 0
+iwriteErrorAnalysisL2 = 1
+iwriteErrorAnalysisH1 = 1
+iwriteKineticEnergy = 1
 
 # Filename for the L2/H1-error/kinetic energy if iwriteerrorAnalysisXXXX = 1
 
@@ -660,7 +660,7 @@ iwriteBodyForces = 0
 
 # Filename for the body forces
 
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_fbm_${NLMAX}'
 
 # ------------------------------------------------------------------------
 # Point values
