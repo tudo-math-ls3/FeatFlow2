@@ -14,13 +14,13 @@
 # 1=standard
 # Former NLMIN.
 
-nminIterations     = 1
+nminIterations     = 2
 
 # max number of nonlinear iterations; 
 # in nonstationary simulations: per time step.
 # Former NLMAX
 
-nmaxIterations     = 1
+nmaxIterations     = 20
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 

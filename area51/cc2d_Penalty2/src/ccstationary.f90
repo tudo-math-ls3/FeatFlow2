@@ -87,6 +87,9 @@ contains
 
     ! The nonlinear solver configuration
     type(t_nlsolNode) :: rnlSol
+
+    ! A penalty parameter/weight
+    real(DP) :: dpenalty
     
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
@@ -98,9 +101,13 @@ contains
     call cc_initNonlinearLoop (&
         rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
         rnonlinearIteration,'CC2D-NONLINEAR')
-        
+       
+    call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY',&
+                                'DPENALTY',dpenalty,0.0_DP)    
+
     ! Set up all the weights in the core equation according to the current timestep.
     rnonlinearIteration%dalpha = 0.0_DP
+    rnonlinearIteration%dpenalty = dpenalty
     rnonlinearIteration%dtheta = 1.0_DP
     rnonlinearIteration%dgamma = real(1-rproblem%rphysics%iequation,DP)
     rnonlinearIteration%deta   = 1.0_DP

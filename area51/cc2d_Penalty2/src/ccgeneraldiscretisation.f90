@@ -175,7 +175,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,j,ielementType,icubA,icubB,icubM
+  integer :: i,j,ielementType,icubA,icubB,icubM,icubMp,icubMpa,icubrefin
   integer :: iElementTypeStabil
   character(LEN=SYS_NAMELEN) :: sstr
   
@@ -220,9 +220,38 @@ contains
       icubM = cub_igetID(sstr)
     end if
     
+    ! Read in cubature formula for Penalty matrix
+    call parlst_getvalue_string (rproblem%rparamList,'CC-PENALTY', &
+                                'scubPenalty',sstr,'')
+    
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
+                               'icubMp',icubMp,int(CUB_GEN_AUTO))
+    else
+      icubMp = cub_igetID(sstr)
+    end if
+
+    ! Read in cubature formula for Penalty matrix with adaptive cub. formula
+    ! together with the refinement level
+    call parlst_getvalue_string (rproblem%rparamList,'CC-PENALTY', &
+                                'scubPenalty_sum',sstr,'')
+    
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
+                               'icubMpa',icubMpa,int(CUB_GEN_AUTO))
+    else
+      icubMpa = cub_igetID(sstr)
+    end if
+
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
+                             'irefinement',icubrefin,1)
+
     rproblem%rmatrixAssembly%icubA = icubA
     rproblem%rmatrixAssembly%icubB = icubB
     rproblem%rmatrixAssembly%icubM = icubM
+    rproblem%rmatrixAssembly%icubMp = icubMp
+    rproblem%rmatrixAssembly%icubMpa = icubMpa
+    rproblem%rmatrixAssembly%icubrefin = icubrefin
     
     ! Stabilisation parameters.
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -806,9 +835,10 @@ contains
     type(t_scalarCubatureInfo) :: rcubatureInfoMass
     type(t_scalarCubatureInfo) :: rcubatureInfoStokes
     type(t_scalarCubatureInfo) :: rcubatureInfoB
+    type(t_scalarCubatureInfo) :: rcubatureInfoPenalty
     
-    ! Structure for the bilinear form for assembling Stokes,...
-    ! TYPE(t_bilinearForm) :: rform
+    ! Structure for the bilinear form for assembling Penalty,...
+     TYPE(t_bilinearForm) :: rform
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
@@ -1060,6 +1090,48 @@ contains
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
+    ! -----------------------------------------------------------------------
+    ! Penalty matrices. They are used in so many cases, it is better we always
+    ! have them available.
+    ! -----------------------------------------------------------------------
+    ! Velocity
+    ! -----------------------------------------------------------------------
+
+    ! If there is an existing penalty matrix, release it.
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
+
+    ! Generate penalty matrix. The matrix has basically the same structure as
+    ! our template FEM matrix, so we can take that.
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+    ! No mass lumping. Just set up the penalty matrix.
+    call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+         rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+
+    ! For assembling of the entries, we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (Psi_j, Phi_i) for the scalar system matrix in 2D.
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .FALSE.
+    rform%Dcoefficients(1)  = rproblem%ipenalty
+
+    ! Now we can build the matrix entries.
+    ! We specify the callback function cclambda for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical data.
+    !
+    ! We pass our collection structure as well to this routine, 
+    ! so the callback routine has access to everything what is in the collection.
+    call bilf_buildMatrixScalar (rform,.TRUE.,rasmTempl%rmatrixPenalty, &
+                                 rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+
+    call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1145,6 +1217,7 @@ contains
 
     ! If there is an existing mass matrix, release it.
     call lsyssc_releaseMatrix (rasmTempl%rmatrixMass)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
     call lsyssc_releaseMatrix (rasmTempl%rmatrixMassPressure)
 
     ! Release Stokes, B1, B2,... matrices

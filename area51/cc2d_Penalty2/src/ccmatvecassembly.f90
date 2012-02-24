@@ -171,6 +171,10 @@ module ccmatvecassembly
     ! core equation. =0.0 for stationary simulations.
     real(DP) :: dalpha = 0.0_DP
     
+    ! Penalty-parameter that controls the weight of the penalty matrix in the
+    ! core equation.
+    real(DP) :: dpenalty = 0.0_DP
+
     ! THETA-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
     real(DP) :: dtheta = 0.0_DP
@@ -1038,7 +1042,58 @@ contains
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
       end if
-        
+
+
+      ! ---------------------------------------------------
+      ! Plug in the penalty matrix?
+      if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
+       
+        ! Allocate memory if necessary. Normally this should not be necessary...
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,1))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_UNDEFINED)
+        end if
+
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
+            rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
+            
+        if (.not. bshared) then
+
+          ! Allocate memory if necessary. Normally this should not be necessary...
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,2))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,2),LSYSSC_SETM_UNDEFINED)
+          end if
+
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(2,2),&
+              rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
+        end if
+       
+      end if
+      
+      ! If the submatrices A12 and A21 exist, fill them with zero.
+      ! If they do not exist, we do not have to do anything.
+      
+      ! Note: The following code speeds up the computation by switching
+      ! off some submatrices. However, this does not work with UMFPACK
+      ! since it would change the structure of the matrix. So
+      ! it is commented out here until a better solution is found.
+      ! Probably, it makes sense to pass a flag that specifies whether
+      ! or not structural changes in the matrix are allowed or not.
+!      if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
+!          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0)) then
+!        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+!        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+!      else
+!        rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+!        rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+!      end if
+      
+      if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+      end if
+              
       ! ---------------------------------------------------
       ! Plug in the Stokes matrix?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
@@ -1593,7 +1648,7 @@ contains
         end select
       
       end if ! gamma <> 0
-      
+
     end subroutine
       
     ! -----------------------------------------------------
@@ -1976,6 +2031,20 @@ contains
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
       
+
+      ! ---------------------------------------------------
+      ! Subtract the mass penalty stuff?
+      if (rnonlinearCCMatrix%dpenalty .ne. 0.0_DP) then
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
+            rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
+            -rnonlinearCCMatrix%dpenalty, 1.0_DP)
+
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
+            rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
+            -rnonlinearCCMatrix%dpenalty, 1.0_DP)
+      end if
+
+
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then

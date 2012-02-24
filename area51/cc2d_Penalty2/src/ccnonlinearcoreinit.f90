@@ -97,6 +97,8 @@ module ccnonlinearcoreinit
     
   use ccbasic
   use ccnonlinearcore
+
+  use paramlist
   
   implicit none
   
@@ -166,6 +168,10 @@ contains
   
     ! A t_nonlinearCCMatrix used for defining the matrix structure
     type(t_nonlinearCCMatrix) :: rnonlinearCCMatrix
+
+    ! A parameter to activate velocity penalty block
+    real(DP) :: dpenalty
+
     
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rlevelInfo%rdiscretisation
@@ -180,6 +186,8 @@ contains
     ! Initialise the block matrix with default values based on
     ! the discretisation.
     call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
+
+
       
     ! Let us consider the global system in detail. It has roughly
     ! the following shape:
@@ -212,6 +220,10 @@ contains
     call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
         ilev,nlmin,nlmax,rprecSpecials)
 
+    call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY',&
+                                'DPENALTY',dpenalty,0.0_DP)
+
+    rnonlinearCCMatrix%dpenalty = dpenalty ! A velocity penalty block
     rnonlinearCCMatrix%dtheta = 1.0_DP   ! A velocity block
     rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block

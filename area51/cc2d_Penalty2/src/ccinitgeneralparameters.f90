@@ -203,6 +203,7 @@ end subroutine ! end cc_initParticleDescriptor
       call parlst_readfromfile (rparamList, './data/bdconditions.dat')
       call parlst_readfromfile (rparamList, './data/timediscr.dat')
       call parlst_readfromfile (rparamList, './data/postprocessing.dat')
+      call parlst_readfromfile (rparamList, './data/penalty.dat')
     end if
   
   end subroutine
@@ -306,6 +307,8 @@ end subroutine ! end cc_initParticleDescriptor
 !</subroutine>
 
     integer :: ilvmin,ilvmax
+    real(DP) :: dLambda
+    integer :: ipenalty
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
@@ -337,6 +340,10 @@ end subroutine ! end cc_initParticleDescriptor
     
     ! Allocate memory for all the levels.
     allocate(rproblem%RlevelInfo(1:ilvmax))
+    
+    ! read in penalty parameters
+    call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY','dlambda',rproblem%dLambda,10E3_DP)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','ipenalty',rproblem%ipenalty,1)
 
     ! Type of boundary conditions
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&

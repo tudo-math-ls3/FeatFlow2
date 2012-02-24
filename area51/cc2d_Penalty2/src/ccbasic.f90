@@ -94,6 +94,9 @@ module ccbasic
     ! Precalculated mass matrix for the velocity space.
     type(t_matrixScalar) :: rmatrixMass
 
+    ! Precalculated penalty matrix for the velocity space.
+    type(t_matrixScalar) :: rmatrixPenalty
+
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
 
@@ -135,6 +138,14 @@ module ccbasic
 
     ! Cubature formula tag for the mass matrices
     integer :: icubM = CUB_GEN_AUTO
+
+    ! Cubature formula tag for the penalty matrices
+    integer :: icubMp = CUB_GEN_AUTO
+
+    ! Cubature formula tag for the penalty matrices 
+    ! with adaptive cub. form.
+    integer :: icubMpa = CUB_GEN_AUTO
+    integer :: icubrefin = 1
 
     ! Use mass lumping for the velocity
     logical :: bmassLumpingVelocity = .false.
@@ -491,8 +502,9 @@ module ccbasic
     ! simulation.
     type(t_cc_statistics) :: rstatistics
     
-    ! A penalty parameter
-    integer :: iLambda 
+    ! Penalty parameters
+    real(DP) :: dLambda 
+    integer :: ipenalty
     
     type(t_particleCollection) :: rparticleCollection
     

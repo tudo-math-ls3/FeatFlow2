@@ -259,6 +259,8 @@ contains
       rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
     end select
 
+    call collct_setvalue_parlst (rcollection, "parlst", rproblem%rparamlist, .true.)
+
   end subroutine
   
 ! ***************************************************************************
@@ -1843,5 +1845,168 @@ contains
     ! Then, a fixed timestep is used.
     
   end subroutine
+
+  !****************************************************************************************
+  subroutine cc_lambda(rdiscretisationtrial,rdiscretisationtest,rform, &
+                       nelements,npointsperelement,dpoints, &
+                       idofstrial,idofstest,rdomainintsubset, &
+                       dcoefficients,rcollection)
+
+  use domainintegration
+  use bilinearformevaluation
+  use scalarpde
+  use geometry
+     
+  !<description>
+  ! this subroutine is called during the matrix assembly. It has to compute the coefficients 
+  ! in front of the terms of the bilinear form. The routine accepts a set of elements and a set
+  ! of points on these elements (cubature points) in real coordinates. According to the terms 
+  ! in the bilinear form, the routine has to compute simultaneously for all these points and all
+  ! the terms in the bilinear form the corresponding coefficients in front of the terms.
+  !</description>
+    
+!<input>
+! the discretisation structure that defines the basic shape of the
+! triangulation with references to the underlying triangulation,
+! analytic boundary boundary description etc.; trial space.
+  type(t_spatialdiscretisation), intent(in)                   :: rdiscretisationtrial
+! the discretisation structure that defines the basic shape of the
+! triangulation with references to the underlying triangulation,
+! analytic boundary boundary description etc.; test space.
+  type(t_spatialdiscretisation), intent(in)                   :: rdiscretisationtest
+! the bilinear form which is currently being evaluated:
+  type(t_bilinearform), intent(in)                            :: rform
+! number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+! number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsperelement
+! this is an array of all points on all the elements where coefficients are needed.
+! remark: this usually coincides with rdomainsubset%p_dcubptsreal.
+! dimension(dimension,npointsperelement,nelements)
+  real(dp), dimension(:,:,:), intent(in)  :: dpoints
+! an array accepting the dof's on all elements trial in the trial space.
+! dimension(\#local dof's in trial space,nelements)
+  integer, dimension(:,:), intent(in) :: idofstrial
+! an array accepting the dof's on all elements trial in the trial space.
+! dimension(\#local dof's in test space,nelements)
+  integer, dimension(:,:), intent(in) :: idofstest
+! this is a t_domainintsubset structure specifying more detailed information
+! about the element set that is currently being integrated.
+! it's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainintsubset), intent(in)              :: rdomainintsubset
+! OPTIONAL: a collection structure to provide additional 
+! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+!</input>
+  
+!<output>
+! a list of all coefficients in front of all terms in the bilinear form - for all given points 
+! on all given elements. dimension(itermcount,npointsperelement,nelements) with itermcount the
+! number of terms in the bilinear form.
+  real(dp), dimension(:,:,:), intent(out)                      :: dcoefficients
+!</output>
+!</subroutine>
+
+!<local variables>
+  integer :: iel,ielreal,icup,ive,nve,iin,ipart,ivert,in,icount,i,ipenalty
+  real(dp) :: dxcenter, dycenter, dradius, ddist,dlambda,dx,dy,dLocAreea,dElAreea
+  real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
+  integer, dimension(:,:), pointer :: p_iverticesatelement
+  type(t_particlecollection), pointer :: p_rparticlecollection
+  type(t_geometryobject), pointer :: p_rgeometryobject
+  type(t_parlist), pointer :: p_rparlst
+  type (t_problem) :: rproblem
+
+!</local variables>
+
+! Get the parameter list.
+  p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
+
+! Get the triangulation array for the point coordinates
+    call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
+                                   p_dvertexcoordinates)
+    call storage_getbase_int2d (rdiscretisationtrial%p_rtriangulation%h_iverticesatelement,&
+                                   p_iverticesatelement)  
+    
+! Pointer to collect all variables about the object/s. We will get data about origin, shape,
+! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
+  p_rparticlecollection => collct_getvalue_particles(rcollection,'particles')
+
+! For multiple objects, we need to treat them in the same way, so loop over the number of 
+! particles. If we have only 1 particle, the loop has no effect.
+
+  do ipart=1,p_rparticlecollection%nparticles
+
+! Find the geometry of the object   
+  p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+
+! Which method is used to implement the penalty matrix? That is choosen in the .dat file and 
+! there only can be 2 ways at this moment: "full Lambda" and "fractional Lambda" methods.
+! "Full" method is the classical 0/1 for the outside/inside cubature points in one element.
+! "Fractional" method calculates an average Lambda as a fraction between element areea and 
+! common areea between element and particle, This fraction is always in the interval [0;1]
+
+! Loop over all elements and calculate the corresponding Lambda value
+    do iel=1,nelements
+      
+    select case(rproblem%ipenalty)
+    case (1)  
+      ! "Full Lambda" method
+        do icup=1,npointsperelement 
+          ! get the distance to the center
+          call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
+          ! check if it is inside      
+          if(iin .eq. 1)then 
+            dcoefficients(1,icup,iel) = rform%dcoefficients(1) 
+          else
+            dcoefficients(1,icup,iel) = 0.0_dp
+          end if
+        end do
+  
+    case (2)
+!      !"Fractional Lambda" method
+!      ! The real element
+!      ielreal = rdomainintsubset%p_ielements(iel) 
+!      ! A counter for the inside vertex of the element    
+!      in = 0     
+!      ! Get vertices coordinates and check how many are in the object
+!      do ivert=1,rdiscretisationtrial%p_rtriangulation%nnve
+!      ! Local node coordinate of an element
+!        dx = p_dvertexcoordinates(1,p_iverticesatelement(ivert,ielreal))
+!        dy = p_dvertexcoordinates(2,p_iverticesatelement(ivert,ielreal))
+!
+!      ! Check if the vertice is inside and count all inside points
+!        call geom_isingeometry (p_rgeometryobject,(/dx,dy/), iin)
+!      ! Count how many points are inside the object 
+!        if (iin .eq. 1) then
+!           in = in +1
+!        end if
+!      end do
+!
+!      ! For an element with at least one node inside the object, calculate the
+!      ! intersections nodes between element edges and object. Calculate local areea,
+!      ! element area and the fractional lambda value (default value:
+!      ! dlambda=dcoefficients(1)
+!      if (in .gt. 0) then
+!        call conectelementobject(ielreal,rdiscretisationtrial%p_rtriangulation,p_rgeometryobject,dElAreea,&
+!                                 dLocAreea)
+!      ! calculate the equivalent lambda value
+!        dlambda = rform%dcoefficients(1)*dLocAreea/dElAreea              
+!      ! give to all cubature points same fractional lambda
+!        do icup=1,npointsperelement 
+!           dcoefficients(1,icup,iel) = dlambda
+!        end do 
+!      else !(for in > 0)
+!        do icup=1,npointsperelement 
+!           dcoefficients(1,icup,iel) = 0.0_dp
+!        end do
+!      end if    
+    end select 
+ 
+   end do !(loop over elements)
+  end do !(loop over particles)
+    
+  end subroutine
+
 
 end module

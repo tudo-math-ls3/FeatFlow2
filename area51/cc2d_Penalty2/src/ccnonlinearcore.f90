@@ -401,6 +401,10 @@ module ccnonlinearcore
     ! core equation. =0.0 for stationary simulations.
     real(DP) :: dalpha = 0.0_DP
     
+    ! Penalty-parameter that controls the weight of the penalty matrix in the
+    ! core equation.
+    real(DP) :: dpenalty = 0.0_DP
+
     ! THETA-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
     real(DP) :: dtheta = 0.0_DP
@@ -659,6 +663,7 @@ contains
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
 
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
+      rnonlinearCCmatrix%dpenalty = rnonlinearIteration%dpenalty
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = rnonlinearIteration%deta
@@ -1407,6 +1412,7 @@ contains
             ilev,nlmin,nlmax,rnonlinearIteration%rprecSpecials)
           
           rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
+          rnonlinearCCMatrix%dpenalty = rnonlinearIteration%dpenalty
           rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
           rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma

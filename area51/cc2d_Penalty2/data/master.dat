@@ -43,7 +43,7 @@ spredirectory = %{sappdirectory}/pre
 # are searched for in the same subdirectory as the master.dat.
 # By default, we specify the sdatadirectory variable here as path specifier.
 
-simportdatafiles(8) = 
+simportdatafiles(9) = 
   "%{sdatadirectory}/discretisation.dat"
   "%{sdatadirectory}/linsol_cc2d.dat"
   "%{sdatadirectory}/nonlinsol_cc2d.dat"
@@ -52,7 +52,8 @@ simportdatafiles(8) =
   "%{sdatadirectory}/bdconditions.dat"
   "%{sdatadirectory}/timediscr.dat"
   "%{sdatadirectory}/postprocessing.dat"
-  
+  "%{sdatadirectory}/penalty.dat"
+
 # From this point on, it's possible to additionally define 'alternative'
 # parameter settings that overwrite settings in the DAT files. The
 # parameters here must be introduced by the corresponding section

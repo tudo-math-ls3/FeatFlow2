@@ -114,17 +114,17 @@ dwriteSolDeltaTime = 0.0
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 4
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 6
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
 # FBM activated ( 1 activate, 0 not activate)
 
-ifbm = 1
+ifbm = 0
 
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
