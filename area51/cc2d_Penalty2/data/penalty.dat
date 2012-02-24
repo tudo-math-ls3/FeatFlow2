@@ -15,7 +15,7 @@ dPenalty = 1.0
 ipenalty = 1
 
 # Penalty parameter (standard 1000)
-dlambda = 1e3
+dlambda = 1e6
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda

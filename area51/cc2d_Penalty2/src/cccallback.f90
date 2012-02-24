@@ -262,7 +262,7 @@ contains
     call collct_setvalue_parlst (rcollection, "parlst", rproblem%rparamlist, .true.)
 
     call parlst_getvalue_double (collct_getvalue_parlst (rcollection, "parlst"),'CC-PENALTY', &
-                                'dpenalty',rcollection%Dquickaccess(4),1e3_DP)
+                                'dlambda',rcollection%Dquickaccess(4),1e3_DP)
     call parlst_getvalue_int (collct_getvalue_parlst (rcollection, "parlst"),'CC-PENALTY', &
                              'ipenalty',rcollection%Iquickaccess(4),1)
 

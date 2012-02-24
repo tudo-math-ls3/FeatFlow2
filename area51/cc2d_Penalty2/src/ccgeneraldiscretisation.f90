@@ -1117,7 +1117,7 @@ contains
     rform%Idescriptors(2,1) = DER_FUNC
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .FALSE.
-    rform%Dcoefficients(1)  = rproblem%ipenalty
+    rform%Dcoefficients(1)  = rproblem%dlambda
 
     ! Now we can build the matrix entries.
     ! We specify the callback function cclambda for the coefficients.
