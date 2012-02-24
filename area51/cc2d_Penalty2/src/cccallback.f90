@@ -208,7 +208,7 @@ module cccallback
   use derivatives
   
   use ccbasic
-  
+  use collection
   implicit none
 
 contains
@@ -1856,7 +1856,7 @@ contains
   use bilinearformevaluation
   use scalarpde
   use geometry
-     
+       
   !<description>
   ! this subroutine is called during the matrix assembly. It has to compute the coefficients 
   ! in front of the terms of the bilinear form. The routine accepts a set of elements and a set
@@ -1917,41 +1917,38 @@ contains
   type(t_parlist), pointer :: p_rparlst
   type (t_problem) :: rproblem
 
-!</local variables>
+  !</local variables>
 
-! Get the parameter list.
+  ! Get the parameter list.
   p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
 
-! Get the triangulation array for the point coordinates
-    call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
-                                   p_dvertexcoordinates)
-    call storage_getbase_int2d (rdiscretisationtrial%p_rtriangulation%h_iverticesatelement,&
-                                   p_iverticesatelement)  
+  ! Get the triangulation array for the point coordinates
+  call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
+                                 p_dvertexcoordinates)
+  call storage_getbase_int2d (rdiscretisationtrial%p_rtriangulation%h_iverticesatelement,&
+                              p_iverticesatelement)  
     
-! Pointer to collect all variables about the object/s. We will get data about origin, shape,
-! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
+  ! Pointer to collect all variables about the object/s. We will get data about origin, shape,
+  ! number of objects and so on, depending on the type of object (circle, square, ellipse,etc)
   p_rparticlecollection => collct_getvalue_particles(rcollection,'particles')
 
-! For multiple objects, we need to treat them in the same way, so loop over the number of 
-! particles. If we have only 1 particle, the loop has no effect.
+  ! For multiple objects, we need to treat them in the same way, so loop over the number of 
+  ! particles. If we have only 1 particle, the loop has no effect.
+
+  call parlst_getvalue_int (p_rparlst,'CC-PENALTY','ipenalty',ipenalty,1)
 
   do ipart=1,p_rparticlecollection%nparticles
 
-! Find the geometry of the object   
-  p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
+    ! Find the geometry of the object   
+    p_rgeometryobject => p_rparticlecollection%p_rparticles(ipart)%rgeometryobject    
 
-! Which method is used to implement the penalty matrix? That is choosen in the .dat file and 
-! there only can be 2 ways at this moment: "full Lambda" and "fractional Lambda" methods.
-! "Full" method is the classical 0/1 for the outside/inside cubature points in one element.
-! "Fractional" method calculates an average Lambda as a fraction between element areea and 
-! common areea between element and particle, This fraction is always in the interval [0;1]
-
-! Loop over all elements and calculate the corresponding Lambda value
+    ! Which method is used to implement the penalty matrix? 
+    ! Loop over all elements and calculate the corresponding Lambda value
     do iel=1,nelements
       
-    select case(rproblem%ipenalty)
-    case (1)  
-      ! "Full Lambda" method
+    select case(ipenalty)
+      case (1)  
+        ! "Full Lambda" method
         do icup=1,npointsperelement 
           ! get the distance to the center
           call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
@@ -1963,7 +1960,7 @@ contains
           end if
         end do
   
-    case (2)
+      case (2)
 !      !"Fractional Lambda" method
 !      ! The real element
 !      ielreal = rdomainintsubset%p_ielements(iel) 
@@ -2001,9 +1998,8 @@ contains
 !           dcoefficients(1,icup,iel) = 0.0_dp
 !        end do
 !      end if    
-    end select 
- 
-   end do !(loop over elements)
+      end select 
+    end do !(loop over elements)
   end do !(loop over particles)
     
   end subroutine

@@ -342,7 +342,7 @@ end subroutine ! end cc_initParticleDescriptor
     allocate(rproblem%RlevelInfo(1:ilvmax))
     
     ! read in penalty parameters
-    call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY','dlambda',rproblem%dLambda,10E3_DP)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-PENALTY','dlambda',rproblem%dLambda,1E3_DP)
     call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','ipenalty',rproblem%ipenalty,1)
 
     ! Type of boundary conditions
