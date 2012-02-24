@@ -240,7 +240,7 @@ contains
   ! Collection structure to be initialised.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! In a nonstationary simulation, save the simulation time as well as the
@@ -260,6 +260,12 @@ contains
     end select
 
     call collct_setvalue_parlst (rcollection, "parlst", rproblem%rparamlist, .true.)
+
+    call parlst_getvalue_double (collct_getvalue_parlst (rcollection, "parlst"),'CC-PENALTY', &
+                                'dpenalty',rcollection%Dquickaccess(4),1e3_DP)
+    call parlst_getvalue_int (collct_getvalue_parlst (rcollection, "parlst"),'CC-PENALTY', &
+                             'ipenalty',rcollection%Iquickaccess(4),1)
+
 
   end subroutine
   
@@ -1921,6 +1927,8 @@ contains
 
   ! Get the parameter list.
   p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
+  ipenalty = rcollection%Iquickaccess(4)
+  dlambda = rcollection%Dquickaccess(4)
 
   ! Get the triangulation array for the point coordinates
   call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
@@ -1934,8 +1942,6 @@ contains
 
   ! For multiple objects, we need to treat them in the same way, so loop over the number of 
   ! particles. If we have only 1 particle, the loop has no effect.
-
-  call parlst_getvalue_int (p_rparlst,'CC-PENALTY','ipenalty',ipenalty,1)
 
   do ipart=1,p_rparticlecollection%nparticles
 
@@ -1954,7 +1960,7 @@ contains
           call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
           ! check if it is inside      
           if(iin .eq. 1)then 
-            dcoefficients(1,icup,iel) = rform%dcoefficients(1) 
+            dcoefficients(1,icup,iel) = dlambda
           else
             dcoefficients(1,icup,iel) = 0.0_dp
           end if
