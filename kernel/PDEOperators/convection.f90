@@ -196,7 +196,7 @@ module convection
     ! be used to assembly the not-weighted operator matrix.
     real(DP) :: dtheta = 1.0_DP
 
-    ! Weighting factor for the Newton matrix (Frechet derivative <tex>$ \cdot\Nabla u $</tex> of
+    ! Weighting factor for the Newton matrix (Frechet derivative <tex>$ (\Nabla u \cdot,\cdot) $</tex> of
     ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
@@ -278,23 +278,42 @@ module convection
     ! specified by the callback routine!
     real(DP) :: dbetaT = 0.0_DP
 
-    ! Weighting factor for the convective part u*gread(.).
+    ! Weighting factor for the convective part (u*grad(.).,.)
     ! =0.0: do not incorporate convective part (=Stokes problem)
     ! =1.0: incorporate full convective part (=Navier Stokes problem)
     real(DP) :: ddelta = 0.0_DP
 
-    ! Weighting factor for the transposed convective part (u^T)*grad(.).
+    ! Weighting factor for the adjoint convective part (.,u*gred(.).).
+    ! This is the adjoint operator to the convection operator above,
+    ! i.e., the convection is applied to the test space.
+    ! =0.0: do not incorporate convective part (=Stokes problem)
+    ! =1.0: incorporate full convective part (=Navier Stokes problem)
+    real(DP) :: ddeltaAdj = 0.0_DP
+
+    ! Weighting factor for the transposed convective part ((u^T)*grad(.).,.)
     ! =0.0: do not incorporate transposed convective part
     ! =1.0: incorporate full transposed convective part
     real(DP) :: ddeltaT = 0.0_DP
 
-    ! Weighting factor for the Newton matrix (grad(u))*(.)
+    ! Weighting factor for the adjoint transposed convective part (.,(u^T)*grad(.).)
+    ! =0.0: do not incorporate transposed convective part
+    ! =1.0: incorporate full transposed convective part
+    real(DP) :: ddeltaTadj = 0.0_DP
+
+    ! Weighting factor for the Newton matrix ((grad(u))*(.),.)
     ! (-> Frechet derivative <tex>$ \cdot\Nabla u $</tex> of
     ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
 
-    ! Weighting factor for the transposed Newton matrix (grad(u)^T)*(.)
+    ! Weighting factor for the adjoint Newton matrix 
+    ! (Frechet derivative <tex>$ (\Nabla u \cdot,\cdot) $</tex> of
+    ! the convective operator <tex>$ u\Nabla u $</tex> with test and trial
+    ! functions exchanged, used for preconditioning).
+    ! A value of 0.0 deactivates the Newton matrix.
+    real(DP) :: dnewtonAdj = 0.0_DP
+
+    ! Weighting factor for the transposed Newton matrix ((grad(u)^T)*(.),.)
     ! ((\Nabla u)^t\cdot)
     ! A value of 0.0 deactivates the transposed Newton matrix.
     real(DP) :: dnewtonT = 0.0_DP
@@ -11093,6 +11112,7 @@ contains
     ! inonlinComplexity = 3 does not happen up to now.
 
     if ((rconfig%ddeltaT .ne. 0.0_DP) .or. (rconfig%dnewtonT .ne. 0.0_DP) .or. &
+        (rconfig%ddeltaTadj .ne. 0.0_DP) .or. &
         (rconfig%dnewton .ne. 0.0_DP) .or. (rconfig%dbetaT .ne. 0.0_DP)) &
       inonlinComplexity = 4
 
@@ -11653,6 +11673,230 @@ contains
         end if
 
 
+        ! If ddeltaAdj != 0, set up the adjoint nonlinearity (.,U*grad(u)),
+        ! i.e., the convection is applied to the test space.
+        ! Basically, this exchanges trial and test space.
+        
+        if (rconfig%ddeltaAdj .ne. 0.0_DP) then
+
+          if (inonlinComplexity .le. 1) then
+
+            ! Build only A11, there is A11=A22.
+
+            ! Loop over the elements in the current set.
+            do IEL=1,IELmax-IELset+1
+              
+              ! The adjoint convection is defined by
+              !
+              !    ddeltaAdj * ( (trial), grad(u_1) * (test) )
+              !
+              ! which is obtained by a partial integration of the (negative) convection
+              ! exploiting the solenoidality of the vector field,
+              !
+              !     ( - grad(u_1) * (trial), (test) )
+              !         = ( (trial), grad(u_1) * (test) )
+              !
+              ! Loop over all cubature points on the current element
+              do ICUBP = 1, ncubp
+
+                ! Calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Normally, we have to take the absolut value of the determinant
+                ! of the mapping here!
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                ! But because this routine only works in 2D, we can skip
+                ! the ABS here!
+
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+                ! Current velocity in this cubature point:
+                du1loc = Dvelocity (1,ICUBP,IEL)
+                du2loc = Dvelocity (2,ICUBP,IEL)
+
+                ! We take a more detailed look onto the last scalar product
+                ! of n~_h (u_h, u_h, v_h) what we want to calculate here.
+                !
+                ! The vector u_h=(DU1,DU2) contains both velocity components,
+                ! for the X as well as for the Y velocity. On the other hand
+                ! the system matrix we want to build here will be designed for
+                ! one velocity component only! Therefore, Phi_i and Phi_j
+                ! are scalar functions, so grad(Phi_i), grad(Phi_j) are vectors
+                ! with two components. Therefore, the last scalar product is more
+                ! in detail:
+                !
+                !     ( u_h*grad Phi_j, u_h*grad Phi_i )_T
+                !
+                ! =   ( < (DU1) , (grad(Phi_j)_1) > , < (DU1) , (grad(Phi_i)_1) > )_T
+                !         (DU2) , (grad(Phi_j)_2)       (DU2) , (grad(Phi_i)_2)
+                !
+                ! =   < (DU1) , (grad(Phi_j)_1) >  *  < (DU1) , (grad(Phi_j)_1) >
+                !       (DU2) , (grad(Phi_j)_2)         (DU2) , (grad(Phi_j)_2)
+                !
+                ! =   HSUMJ * HSUMI
+                !
+                ! i.e. a product of two scalar values!
+                !
+                ! Summing up over all pairs of multiindices.
+                !
+                ! Outer loop over the DOF`s i=1..indof on our current element,
+                ! which corresponds to the basis functions Phi_i:
+
+                do IDOFE=1,indof
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! (our "O")  for function value and first derivatives for the
+                  ! current DOF into HBASIy:
+
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
+
+                  ! Calculate
+                  !
+                  !     U * grad(Phi_i)  =  < grad(Phi_i), U >
+                  !
+                  !   = ( grad(Phi_i)_1 , (DU1) )
+                  !     ( grad(Phi_i)_2   (DU2) )
+                  !
+                  ! Remember: DU1MV=DU2MV=0 in this case.
+                  !
+                  ! If ALE is active, use v=mesh velocity and calculate
+                  !
+                  !     (U-v) * grad(Phi_i)  =  < grad(Phi_i), U-v >
+                  !
+                  !   = ( grad(Phi_i)_1 , (DU1-DU1MV) )
+                  !     ( grad(Phi_i)_2   (DU2-DU2MV) )
+
+                  HSUMI = HBASI2*du1loc + HBASI3*du2loc
+
+                  ! Inner loop over the DOF`s j=1..indof, which corresponds to
+                  ! the basis function Phi_j:
+
+                  do JDOFE=1,indof
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! (out "X") for function value and first derivatives for the
+                    ! current DOF into HBASJy:
+
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
+
+                    ! Calculate
+                    !
+                    !     U * grad(Phi_j)  =  < grad(Phi_j), U >
+                    !
+                    !   = ( grad(Phi_j)_1 , (DU1) )
+                    !     ( grad(Phi_j)_2   (DU2) )
+                    !
+                    ! Remember: DU1MV=DU2MV=0 in this case.
+                    !
+                    ! If ALE is active, use v=mesh velocity and calculate
+                    !
+                    !     (U-v) * grad(Phi_j)  =  < grad(Phi_j), U-v >
+                    !
+                    !   = ( grad(Phi_j)_1 , (DU1-DU1MV) )
+                    !     ( grad(Phi_j)_2   (DU2-DU2MV) )
+                    !
+                    ! But as v is already incorporated into DVelocity,
+                    ! we do not have to worry about that.
+
+                    HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
+
+                    ! Finally calculate the contribution to the system
+                    ! matrix. Depending on the configuration of ddelta,...
+                    ! this is:
+                    !
+                    ! AH = n~_h(u_h,phi_j,phi_i)        | nonlinear part
+                    !
+                    ! For saving some numerical operations, we write:
+                    !
+                    !     HSUMJ * (Delta * HSUMI + HBASI1)
+                    !
+                    ! =   Delta * HSUMJ * HSUMI
+                    !   + HSUMJ * HBASI1
+                    !
+                    ! =   Delta * ( U*grad(Phi_j), U*grad(Phi_i) )
+                    !   + (U*grad(Phi_j),Phi_i)
+                    !
+                    ! <->   sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i) )_T
+                    !     + n_h (u_h, Phi_j, Phi_i)
+                    !
+                    ! The adjoint operator exchanges trial and test space,
+                    ! so one obtains the formula
+                    !
+                    !     HSUMI * (Delta * HSUMJ + HBASJ1)
+                    !
+                    ! plus the terms for the Stokes and Mass matrix,
+                    ! if their coefficient is <> 0.
+
+                    AH11 = rconfig%ddeltaAdj * HSUMI*(DlocalDelta(IEL)*HSUMJ+HBASJ1)
+
+                    ! Weighten the calculated value AH by the cubature
+                    ! weight OM and add it to the local matrix. After the
+                    ! loop over all DOF`s is finished, each entry contains
+                    ! the calculated integral.
+
+                    DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+
+                  end do ! IDOFE
+
+                end do ! JDOFE
+
+              end do ! ICUBP
+
+            end do ! IEL
+
+          else
+
+            ! Same loop, but affect both, A11 and A22.
+
+            ! Loop over the elements in the current set.
+            do IEL=1,IELmax-IELset+1
+
+              do ICUBP = 1, ncubp
+
+                OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+                du1loc = Dvelocity (1,ICUBP,IEL)
+                du2loc = Dvelocity (2,ICUBP,IEL)
+
+                do IDOFE=1,indof
+
+                  HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                  HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                  HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
+
+                  HSUMI = HBASI2*du1loc + HBASI3*du2loc
+
+                  do JDOFE=1,indof
+
+                    HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                    HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                    HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
+
+                    HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
+
+                    AH11 = rconfig%ddeltaAdj * HSUMI*(DlocalDelta(IEL)*HSUMJ+HBASJ1)
+
+                    DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                    DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH11
+
+                  end do ! IDOFE
+
+                end do ! JDOFE
+
+              end do ! ICUBP
+
+            end do ! IEL
+
+          end if
+
+        end if
+
+
         ! If dbeta != 0 or dalpha != 0, add the Laplace/Mass matrix to the
         ! local matrices.
         if ((.not. rconfig%bconstAlpha) .or. (rconfig%dalpha .ne. 0.0_DP) .or. &
@@ -11867,7 +12111,7 @@ contains
 
           ! Newton operator
           !
-          !    dnewton * (.) * grad(u_1)
+          !    dnewton * ( grad(u_1) * (trial), (test) )
           !  = dnewton * [ (dx DU1) (dy DU1) ]
           !              [ (dx DU2) (dy DU2) ]
           !
@@ -11974,9 +12218,107 @@ contains
 
         end if
 
+        ! Should we assemble the ajoint Newton matrices?
+        if (rconfig%dnewtonAdj .ne. 0.0_DP) then
+
+          ! The Newton operator was
+          !
+          !    dnewton * ( grad(u_1) * (trial), (test) )
+          !
+          ! The adjoint Newton operator is a bit more complicated.
+          ! It comes from the following calculation which invokes
+          ! a partial integration, exploiting solenoidality,
+          !
+          !    ( - grad(u_1) * (trial), (test) )
+          !        =    ( - ((trial)*grad) (u_1), (test) )
+          !        =    ( u_1 , ((trial)*grad) (test) )
+          !
+          ! i.e., test and trial functions are both on the right-hand
+          ! side of the scalar product. The "adjoint newton" operator
+          ! is defined as
+          !
+          !    dnewtonAdj * ( u_1 , ((trial)*grad) (test) )
+          !
+          !
+          ! Loop over the elements in the current set.
+          do IEL=1,IELmax-IELset+1
+
+            ! Loop over all cubature points on the current element
+            do ICUBP = 1, ncubp
+
+              ! Calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+              !
+              ! Normally, we have to take the absolut value of the determinant
+              ! of the mapping here!
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that is normal!
+              ! But because this routine only works in 2D, we can skip
+              ! the ABS here!
+
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+              ! Current velocity in this cubature point:
+              du1loc = Dvelocity (1,ICUBP,IEL)
+              du2loc = Dvelocity (2,ICUBP,IEL)
+
+              ! Outer loop over the DOF`s i=1..indof on our current element,
+              ! which corresponds to the basis functions Phi_i:
+
+              do IDOFE=1,indof
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! (our "O")  for function value and first derivatives for the
+                ! current DOF into HBASIy:
+
+                HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
+
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
+                ! the basis function Phi_j:
+
+                do JDOFE=1,indof
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! (out "X") for function value and first derivatives for the
+                  ! current DOF into HBASJy:
+
+                  HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                  HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                  HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
+
+                  ! Finally calculate the contribution to the system
+                  ! matrices A11, A12, A21 and A22.
+
+                  AH11 = rconfig%dnewtonAdj * du1loc * HBASJ1*HBASI2
+                  AH12 = rconfig%dnewtonAdj * du1loc * HBASJ1*HBASI3
+                  AH21 = rconfig%dnewtonAdj * du2loc * HBASJ1*HBASI2
+                  AH22 = rconfig%dnewtonAdj * du2loc * HBASJ1*HBASI3
+
+                  ! Weighten the calculated value AHxy by the cubature
+                  ! weight OM and add it to the local matrices. After the
+                  ! loop over all DOF`s is finished, each entry contains
+                  ! the calculated integral.
+
+                  DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                  DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                  DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                  DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
+
+                end do ! IDOFE
+
+              end do ! JDOFE
+
+            end do ! ICUBP
+
+          end do ! IEL
+
+        end if
+
         ! Transposed convection operator
         !
-        !  ddeltaTransposed * grad(.)^T * u_1
+        !  ddeltaTransposed * ( grad(trial)^T * u_1 , (test) )
         !  = ddeltaTransposed * [ (DU1 dx) (DU2 dx) ]
         !                       [ (DU1 dy) (DU2 dy) ]
         !
@@ -12038,6 +12380,95 @@ contains
                   AH12 = rconfig%ddeltaT * du2loc * HBASJ2*HBASI1
                   AH21 = rconfig%ddeltaT * du1loc * HBASJ3*HBASI1
                   AH22 = rconfig%ddeltaT * du2loc * HBASJ3*HBASI1
+
+                  ! Weighten the calculated value AHxy by the cubature
+                  ! weight OM and add it to the local matrices. After the
+                  ! loop over all DOF`s is finished, each entry contains
+                  ! the calculated integral.
+
+                  DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                  DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                  DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                  DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
+
+                end do ! IDOFE
+
+              end do ! JDOFE
+
+            end do ! ICUBP
+
+          end do ! IEL
+
+        end if
+
+        ! Adjoint transposed convection operator.
+        !
+        ! The standard convection operator is defined by
+        !
+        !  ( grad(trial)^T * u_1 , (test) )
+        !
+        ! By exchanging trial and test functions, one obtains the
+        ! adjoint transposed convection operator,
+        !
+        !  ddeltaTransposedAdj * ( (trial) , grad(test)^T * u_1 )
+        !
+        if (rconfig%ddeltaTadj .ne. 0.0_DP) then
+
+          ! Loop over the elements in the current set.
+          do IEL=1,IELmax-IELset+1
+
+            ! Loop over all cubature points on the current element
+            do ICUBP = 1, ncubp
+
+              ! Calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+              !
+              ! Normally, we have to take the absolut value of the determinant
+              ! of the mapping here!
+              ! In 2D, the determinant is always positive, whereas in 3D,
+              ! the determinant might be negative -- that is normal!
+              ! But because this routine only works in 2D, we can skip
+              ! the ABS here!
+
+              OM = p_Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+
+              ! Current velocity in this cubature point:
+              du1loc = Dvelocity (1,ICUBP,IEL)
+              du2loc = Dvelocity (2,ICUBP,IEL)
+
+              ! Outer loop over the DOF`s i=1..indof on our current element,
+              ! which corresponds to the basis functions Phi_i:
+
+              do IDOFE=1,indof
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! (our "O")  for function value and first derivatives for the
+                ! current DOF into HBASIy:
+
+                HBASI1 = p_Dbas(IDOFE,1,ICUBP,IEL)
+                HBASI2 = p_Dbas(IDOFE,2,ICUBP,IEL)
+                HBASI3 = p_Dbas(IDOFE,3,ICUBP,IEL)
+
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
+                ! the basis function Phi_j:
+
+                do JDOFE=1,indof
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! (out "X") for function value and first derivatives for the
+                  ! current DOF into HBASJy:
+
+                  HBASJ1 = p_Dbas(JDOFE,1,ICUBP,IEL)
+                  HBASJ2 = p_Dbas(JDOFE,2,ICUBP,IEL)
+                  HBASJ3 = p_Dbas(JDOFE,3,ICUBP,IEL)
+
+                  ! Finally calculate the contribution to the system
+                  ! matrices A11, A12, A21 and A22.
+
+                  AH11 = rconfig%ddeltaTadj * du1loc * HBASI2*HBASJ1
+                  AH12 = rconfig%ddeltaTadj * du2loc * HBASI2*HBASJ1
+                  AH21 = rconfig%ddeltaTadj * du1loc * HBASI3*HBASJ1
+                  AH22 = rconfig%ddeltaTadj * du2loc * HBASI3*HBASJ1
 
                   ! Weighten the calculated value AHxy by the cubature
                   ! weight OM and add it to the local matrices. After the
