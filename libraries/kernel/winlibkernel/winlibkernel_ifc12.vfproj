@@ -5,7 +5,7 @@
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures;$(ProjectDir)..\..\..\kernel\LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x86d.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -14,7 +14,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures;$(ProjectDir)..\..\..\kernel\LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x86.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -23,7 +23,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures;$(ProjectDir)..\..\..\kernel\LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" Interfaces="true" WarnInterfaces="true" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb" Traceback="true" BoundsCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x64d.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -32,7 +32,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)..\..\" IntermediateDirectory="$(ProjectDir)obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)\" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)..\..\..\kernel\DataStructures;$(ProjectDir)..\..\..\kernel\LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_x64.lib" IgnoreAllDefaultLibraries="true"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -60,67 +60,67 @@
 		<File RelativePath="..\..\..\kernel\ContinuousFormulation\boundarycondition.f90"/>
 		<File RelativePath="..\..\..\kernel\ContinuousFormulation\scalarpde.f90"/></Filter>
 		<Filter Name="DataStructures">
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistbase.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Dble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Int.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylist.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylist.h"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistInt_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistbase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Int.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistInt.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistInt_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistInt_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistInt_Sngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSngl.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSngl_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\arraylistSngl_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\geneticalgorithm.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\graph.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listbase.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Dble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listDble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Int.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\list.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\list.h"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listInt_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listbase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listDble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Int.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listInt.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listInt_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listInt_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listInt_Sngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\listSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listSngl.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\listSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listSngl_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\listSngl_Sngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapbase.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Dble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapDble.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Int.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\map.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\map.h"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapInt_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapbase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapDble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Dble.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Int.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapDble_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapInt.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapInt_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapInt_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapInt_Sngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\mapSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapSngl.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\mapSngl_Dble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapSngl_Int.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\mapSngl_Sngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\numbersets.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\octreebase.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\octreeDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octree.h"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\octreebase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\octreeDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octreeSngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\quadtreebase.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\quadtreeDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.h"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\quadtreebase.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\quadtreeDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtreeSngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\stackDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stack.h"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\stackDble.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackInt.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackSngl.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\template.h"/></Filter>
@@ -199,8 +199,16 @@
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanka_optcontrol.f90"/></Filter>
 		<Filter Name="LinearSystem">
 		<File RelativePath="..\..\..\kernel\LinearSystem\globalsystem.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\latxd.h"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lax79.h"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lax79intl1.h"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lax79intld.h"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lax9rowc.h"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemblock.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemscalar.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lsyssc_scalarMatVecAux.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\lsyssc_scalarMatVecAux.h"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\ltx79.h"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\matrixmodification.f90"/></Filter>
 		<Filter Name="Mathematics">
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
