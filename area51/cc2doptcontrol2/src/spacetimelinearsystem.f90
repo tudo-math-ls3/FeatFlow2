@@ -947,8 +947,8 @@ contains
 
           rnonlinearSpatialMatrix%Dygrad(1,1) = &
               dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
-          rnonlinearSpatialMatrix%Dygrad(2,2) = &
-              - dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
+          rnonlinearSpatialMatrix%DygradAdj(2,2) = &
+              dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
             rnonlinearSpatialMatrix%Dgrady(1,1) = dtheta * dnewton
             rnonlinearSpatialMatrix%DgradyT(2,2) = &
@@ -1052,20 +1052,20 @@ contains
 
             if (dnewton .ne. 0.0_DP) then
               rnonlinearSpatialMatrix%DygradT(2,1) = ddualPrimalCoupling * dtheta
-              rnonlinearSpatialMatrix%Dgrady(2,1) = -ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%DgradyAdj(2,1) = ddualPrimalCoupling * dtheta
 
               ! For Crank-Nicolson there appears a 2nd reactive term
               ! stemming from the next timestep.
 
               rnonlinearSpatialMatrix%DygradT2(2,1) = ddualPrimalCoupling * (1.0_DP-dtheta)
-              rnonlinearSpatialMatrix%Dgrady2(2,1) = -ddualPrimalCoupling * (1.0_DP-dtheta)
+              rnonlinearSpatialMatrix%DgradyAdj2(2,1) = ddualPrimalCoupling * (1.0_DP-dtheta)
             end if
             
           else
           
             if (dnewton .ne. 0.0_DP) then
               rnonlinearSpatialMatrix%DygradT(2,1) = ddualPrimalCoupling * dtheta
-              rnonlinearSpatialMatrix%Dgrady(2,1) = -ddualPrimalCoupling * dtheta
+              rnonlinearSpatialMatrix%DgradyAdj(2,1) = ddualPrimalCoupling * dtheta
             end if
           
           end if
@@ -1078,7 +1078,7 @@ contains
             ! That's the only difference to the implementation above!
             if (dnewton .ne. 0.0_DP) then
               rnonlinearSpatialMatrix%DygradT(2,1) = dterminalCondDecoupled * dtheta
-              rnonlinearSpatialMatrix%Dgrady(2,1) = -dterminalCondDecoupled * dtheta
+              rnonlinearSpatialMatrix%DgradyAdj(2,1) = dterminalCondDecoupled * dtheta
             end if
 
           end if
@@ -1119,16 +1119,16 @@ contains
         
         if (.not. bconvectionExplicit) then
 
-          rnonlinearSpatialMatrix%Dygrad(2,2) = dtimeCoupling * &
-              (- (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP))
+          rnonlinearSpatialMatrix%DygradAdj(2,2) = dtimeCoupling * &
+              (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
           rnonlinearSpatialMatrix%DgradyT(2,2) = dtimeCoupling * &
               (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
               
         else
         
-          rnonlinearSpatialMatrix%Dygrad(2,2) = dtimeCoupling * &
-              (- dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP))
+          rnonlinearSpatialMatrix%DygradAdj(2,2) = dtimeCoupling * &
+                dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
           
           rnonlinearSpatialMatrix%DgradyT(2,2) = dtimeCoupling * &
                 dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%cequation,DP)
@@ -1147,7 +1147,7 @@ contains
           ! DON'T KNOW IF THIS IS CORRECT!!!
         
           if (dnewton .ne. 0.0_DP) then
-            rnonlinearSpatialMatrix%DygradT(2,1) = dtimeCoupling * ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DygradTAdj(2,1) = dtimeCoupling * ddualPrimalCoupling * &
                 (1.0_DP-dtheta)
             rnonlinearSpatialMatrix%Dgrady(2,1) = -dtimeCoupling * ddualPrimalCoupling * &
                 (1.0_DP-dtheta)
@@ -1191,13 +1191,15 @@ contains
     
     ! The boundary integral in the dual equation has exactly the same weigt
     ! as Dygrad -- but with a negative sign, it stems from a partial integration!
-    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dygrad(2,2)
+    !rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dygrad(2,2)
+    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = 0.0_DP
 
     ! If Newton is active, we have to activate the Newton term on the boundary!
     ! Value and sign are the same as for DdualBdIntegral.
     if (dnewton .ne. 0.0_DP) then
-      rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = &
-          rnonlinearSpatialMatrix%DdualBdIntegral(2,2)
+      !rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = &
+      !    rnonlinearSpatialMatrix%DdualBdIntegral(2,2)
+      rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = 0.0_DP
     end if
     
     ! Probably scale the system entries.
@@ -1209,10 +1211,15 @@ contains
       rnonlinearSpatialMatrix%Dmass(:,:)   = dtstep * rnonlinearSpatialMatrix%Dmass(:,:)
       rnonlinearSpatialMatrix%Dstokes(:,:)   = dtstep * rnonlinearSpatialMatrix%Dstokes(:,:)
       rnonlinearSpatialMatrix%Dygrad(:,:)   = dtstep * rnonlinearSpatialMatrix%Dygrad(:,:)
+      rnonlinearSpatialMatrix%DygradAdj(:,:)   = dtstep * rnonlinearSpatialMatrix%DygradAdj(:,:)
       rnonlinearSpatialMatrix%Dgrady(:,:)  = dtstep * rnonlinearSpatialMatrix%Dgrady(:,:)
+      rnonlinearSpatialMatrix%DgradyAdj(:,:)  = dtstep * rnonlinearSpatialMatrix%DgradyAdj(:,:)
       rnonlinearSpatialMatrix%DygradT(:,:)  = dtstep * rnonlinearSpatialMatrix%DygradT(:,:)
+      rnonlinearSpatialMatrix%DygradTAdj(:,:)  = dtstep * rnonlinearSpatialMatrix%DygradTAdj(:,:)
       rnonlinearSpatialMatrix%Dgrady2(:,:) = dtstep * rnonlinearSpatialMatrix%Dgrady2(:,:)
+      rnonlinearSpatialMatrix%DgradyAdj2(:,:) = dtstep * rnonlinearSpatialMatrix%DgradyAdj2(:,:)
       rnonlinearSpatialMatrix%DygradT2(:,:) = dtstep * rnonlinearSpatialMatrix%DygradT2(:,:)
+      rnonlinearSpatialMatrix%DygradTAdj2(:,:) = dtstep * rnonlinearSpatialMatrix%DygradTAdj2(:,:)
       rnonlinearSpatialMatrix%DgradyT(:,:) = dtstep * rnonlinearSpatialMatrix%DgradyT(:,:)
       rnonlinearSpatialMatrix%DBmat(:,:)     = dtstep * rnonlinearSpatialMatrix%DBmat(:,:)
       rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = &

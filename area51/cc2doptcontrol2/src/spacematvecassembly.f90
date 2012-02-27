@@ -389,6 +389,9 @@ module spacematvecassembly
     
     ! GAMMA-parameters that switch the nonlinearity (y*grad(.)) on/off
     real(DP), dimension(2,2) :: Dygrad = 0.0_DP
+
+    ! GAMMAADJ-parameters that switch the adjoint nonlinearity (.,y*grad(.)) on/off
+    real(DP), dimension(2,2) :: DygradAdj = 0.0_DP
   
     ! NEWTON-parameters that switch the Newton term ((.)*grad(y)) on/off
     real(DP), dimension(2,2) :: Dgrady = 0.0_DP
@@ -396,11 +399,23 @@ module spacematvecassembly
     ! NEWTON-parameters that switch a 2nd Newton term ((.)*grad(y)) on/off
     real(DP), dimension(2,2) :: Dgrady2 = 0.0_DP
 
+    ! NEWTON-parameters that switch the adjoint Newton term (.,(.*grad)(y)) on/off
+    real(DP), dimension(2,2) :: DgradyAdj = 0.0_DP
+
+    ! NEWTON-parameters that switch a 2nd adjoint Newton term (.,(.*grad)(y)) on/off
+    real(DP), dimension(2,2) :: DgradyAdj2 = 0.0_DP
+
     ! GAMMAT-parameters that switch the transposed nonlinearity (y*grad(.)^T) on/off
     real(DP), dimension(2,2) :: DygradT = 0.0_DP
 
+    ! GAMMATADJ-parameters that switch the adjoint transposed nonlinearity (.,y*grad(.)^T) on/off
+    real(DP), dimension(2,2) :: DygradTAdj = 0.0_DP
+
     ! GAMMAT-parameters that switch a 2nd transposed nonlinearity (y*grad(.)^T) on/off
     real(DP), dimension(2,2) :: DygradT2 = 0.0_DP
+
+    ! GAMMATADJ-parameters that switch a 2nd transposed nonlinearity (.,y*grad(.)^T) on/off
+    real(DP), dimension(2,2) :: DygradTAdj2 = 0.0_DP
   
     ! NEWTONT-parameters that switch the transposed Newton term ((.)*grad(y)^T) on/off
     real(DP), dimension(2,2) :: DgradyT = 0.0_DP
@@ -1485,10 +1500,13 @@ contains
           
           call allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rtempMatrix,&
               rnonlinearSpatialMatrix%DidentityY(i,j),rnonlinearSpatialMatrix%Dmass(i,j),&
-              rnonlinearSpatialMatrix%Dstokes(i,j),rnonlinearSpatialMatrix%Dygrad(i,j),&
-              rnonlinearSpatialMatrix%Dgrady(i,j),rnonlinearSpatialMatrix%DygradT(i,j),&
-              rnonlinearSpatialMatrix%DgradyT(i,j),rnonlinearSpatialMatrix%DBmat(i,j),&
-              rnonlinearSpatialMatrix%DBTMat(i,j),rnonlinearSpatialMatrix%DidentityP(i,j),&
+              rnonlinearSpatialMatrix%Dstokes(i,j),&
+              rnonlinearSpatialMatrix%Dygrad(i,j),rnonlinearSpatialMatrix%DygradAdj(i,j),&
+              rnonlinearSpatialMatrix%DygradT(i,j),rnonlinearSpatialMatrix%DygradTAdj(i,j),&
+              rnonlinearSpatialMatrix%Dgrady(i,j),rnonlinearSpatialMatrix%DgradyT(i,j),&
+              rnonlinearSpatialMatrix%DgradyAdj(i,j),&
+              rnonlinearSpatialMatrix%DBmat(i,j),rnonlinearSpatialMatrix%DBTMat(i,j),&
+              rnonlinearSpatialMatrix%DidentityP(i,j),&
               rnonlinearSpatialMatrix%DdirichletBCCY(i,j),&
               rnonlinearSpatialMatrix%DdirichletBCCLambda(i,j),&
               rnonlinearSpatialMatrix%DdirichletBCCXi(i,j))
@@ -1610,9 +1628,12 @@ contains
             rvectorPrimal,rvectorPrimal,&
             rnonlinearSpatialMatrix%Dstokes(1,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradAdj(1,1),&
             dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(1,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
             dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(1,1),&
             rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
 
@@ -1672,9 +1693,12 @@ contains
             rvectorPrimal,rvectorPrimal,&
             rnonlinearSpatialMatrix%Dstokes(2,2),&
             dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+            dweightDualConvection*rnonlinearSpatialMatrix%DygradAdj(2,2),&
             dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(2,2),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
             dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
+            dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(2,2),&
             rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
 
@@ -1737,9 +1761,12 @@ contains
             rvectorPrimal,rvectorDual,&
             rnonlinearSpatialMatrix%Dstokes(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradAdj(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(2,1),&
             rcubatureInfo,rstabilisation)
             
         ! There is probably a 2nd reactive term stemming from the next time step.
@@ -1748,10 +1775,12 @@ contains
         call assembleNonlinearity (&
             rnonlinearSpatialMatrix,rtempMatrix,&
             rvectorPrimal,rvectorDual2,&
-            0.0_DP,0.0_DP,&
+            0.0_DP,0.0_DP,0.0_DP,&
             dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
+            dweightConvection*rnonlinearSpatialMatrix%DygradTAdj2(2,1),&
             dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
-            0.0_DP,rcubatureInfo,rstabilisation)
+            0.0_DP,dweightConvection*rnonlinearSpatialMatrix%DgradyAdj2(2,1),&
+            rcubatureInfo,rstabilisation)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,1)
@@ -2039,8 +2068,8 @@ contains
     ! -----------------------------------------------------
     
     subroutine allocSubmatrix (rnonlinearSpatialMatrix,cmatrixType,rflags,rsubmatrix,&
-        diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa,&
-        ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi)
+        diota,dalpha,dtheta,dygrad,dygradAdj,dygradT,dygradTAdj,dgrady,dgradyT,dgradyAdj,&
+        deta,dtau,dkappa,ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi)
         
     ! Allocates memory for a submatrix of the system matrix.
     ! The submatrix can then be inserted into a larger system matrix.
@@ -2061,8 +2090,8 @@ contains
     
     ! Coefficients in front of all operators in the system matrix.
     ! Depending on which operators are 'active', memory is allocated.
-    real(DP), intent(in) :: diota,dalpha,dtheta,dgamma,dnewton,&
-        dgammaT,dnewtonT,deta,dtau,ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi
+    real(DP), intent(in) :: diota,dalpha,dtheta,dygrad,dygradAdj,dygradT,dygradTAdj,&
+        dgrady,dgradyT,dgradyAdj,deta,dtau,ddirichletBCCY,ddirichletBCCLambda,ddirichletBCCXi
         
     ! Coefficient in front of a pressure matrix at position (3,3).
     ! Switches that pressure-matrix on/off.
@@ -2078,7 +2107,7 @@ contains
       
       if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
         ! Should we assemble Newton? If yes, we have a full-tensor matrix.
-        bfulltensor = (dnewton .ne. 0.0_DP) .or. bfulltensor
+        bfulltensor = (dgrady .ne. 0.0_DP) .or. bfulltensor
       end if
     
       ! Let's consider the global system in detail. The standard matrix It has
@@ -2425,13 +2454,13 @@ contains
 
     subroutine assembleNonlinearity (&
         rnonlinearSpatialMatrix,rmatrix,rvectorPrimalVel,rvectorNonlinearity,&
-        dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
+        dtheta,dygrad,dygradAdj,dygradT,dygradTadj,dgrady,dgradyT,dgradyAdj,&
         rcubatureInfo,rstabilisation,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
-    ! rmatrix := dgamma*N(rvector) + dgammaT*N^t(rvector) +
-    !            dnewton*N*(rvector) + dnewtonT*N*^t(rvector)
+    ! rmatrix := dygrad*N(rvector) + dygradT*N^t(rvector) +
+    !            dgrady*N*(rvector) + dgradyT*N*^t(rvector)
     !
     ! Even if no nonlinearity is present, the routine can be used to
     ! add stabilisation into the matrix.
@@ -2454,16 +2483,25 @@ contains
     real(DP), intent(in) :: dtheta
     
     ! Weight for the nonlinear term u\grad(.)
-    real(DP), intent(in) :: dgamma
+    real(DP), intent(in) :: dygrad
+
+    ! Weight for the adjoint nonlinear term (.,u\grad(.))
+    real(DP), intent(in) :: dygradAdj
 
     ! Weight for the nonlinear term u(\grad(.))^t
-    real(DP), intent(in) :: dgammaT
+    real(DP), intent(in) :: dygradT
+
+    ! Weight for the adjoint nonlinear term (.,u(\grad(.))^t)
+    real(DP), intent(in) :: dygradTAdj
 
     ! Weight for the nonlinear term (\grad(.))u
-    real(DP), intent(in) :: dnewton
+    real(DP), intent(in) :: dgrady
 
     ! Weight for the nonlinear term (\grad(.))^t u
-    real(DP), intent(in) :: dnewtonT
+    real(DP), intent(in) :: dgradyT
+
+    ! Weight for the adjoint of the nonlinear term (\grad(.))u
+    real(DP), intent(in) :: dgradyAdj
     
     ! Cubature info structure that defines how to apply cubature.
     type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
@@ -2502,8 +2540,9 @@ contains
       call lsysbl_getbase_double (rvectorNonlinearity,p_Ddata1)
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Ddata2)
              
-      if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
-          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP) .or. &
+      if ((dygrad .ne. 0.0_DP) .or. (dygradT .ne. 0.0_DP) .or. &
+          (dygradAdj .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP) .or. &
+          (dgrady .ne. 0.0_DP) .or. (dgradyT .ne. 0.0_DP) .or. (dgradyAdj .ne. 0.0_DP) .or. &
           (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) .or. &
           (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0)) then
                   
@@ -2514,8 +2553,8 @@ contains
             rnonlinearSpatialMatrix%p_rnonlinearity%dassociatedTimePrimalVel,ruserCollection)
                       
         ! Switch on the offdiagonal matrices if necessary
-        if ((dgammaT .ne. 0.0_DP) .or. &
-            (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
+        if ((dygradT .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP) .or. &
+            (dgrady .ne. 0.0_DP) .or. (dgradyT .ne. 0.0_DP)) then
           ! Switch on missing matrices. Initialise with zero when they
           ! are created the first time.
           if (rmatrix%RmatrixBlock(1,2)%dscaleFactor .eq. 0.0_DP) then
@@ -2552,14 +2591,20 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dygrad
+          rstreamlineDiffusion%ddeltaTransposed  = dygradT
+          rstreamlineDiffusion%dnewton           = dgrady
+          rstreamlineDiffusion%dnewtonTransposed = dgradyT
           
           if (rstabilisation%dupsam .ne. 0) then
             call output_line ("assembleNonlinearity: Warning. Please use the")
             call output_line ("alternative SD method for setting up the stabilised operator!!!")
+          end if
+
+          if ((dygradAdj .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP)) then
+            call output_line ("Operator not supported by this SD method!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
           end if
           
           ! Call the SD method to calculate the nonlinearity.
@@ -2581,10 +2626,13 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dygrad
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -2631,9 +2679,12 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -2676,7 +2727,7 @@ contains
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
-          rupwindStabil%dtheta = dgamma
+          rupwindStabil%dtheta = dygrad
           
           ! Apply the upwind operator.
           call conv_upwind2d (rvectorNonlinearity, rvectorNonlinearity, 1.0_DP, 0.0_DP,&
@@ -2690,7 +2741,7 @@ contains
           ! Prepare the upwind structure for the assembly of the convection.
           !rstreamlineDiffusion3%dupsam = rstabilisation%dupsam
           !rstreamlineDiffusion3%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          !rstreamlineDiffusion3%dtheta = dgamma
+          !rstreamlineDiffusion3%dtheta = dygrad
           !rstreamlineDiffusion3%ddelta = 1.0_DP
           
           ! Apply the upwind operator.
@@ -2721,10 +2772,16 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dygrad
+          rstreamlineDiffusion%ddeltaTransposed  = dygradT
+          rstreamlineDiffusion%dnewton           = dgrady
+          rstreamlineDiffusion%dnewtonTransposed = dgradyT
+          
+          if ((dygradAdj .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP)) then
+            call output_line ("Operator not supported by this SD method!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvectorNonlinearity!
@@ -2744,8 +2801,8 @@ contains
           ! Set stabilisation parameter
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
-          ! Matrix weight. Compensate for any "-" sign in dgamma!
-          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+          ! Matrix weight. Compensate for any "-" sign in dygrad!
+          rjumpStabil%dtheta = dygrad * mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
@@ -2778,10 +2835,13 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dygrad
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -2825,8 +2885,8 @@ contains
           ! Set stabilisation parameter
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
-          ! Matrix weight. Compensate for any "-" sign in dgamma!
-          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
+          ! Matrix weight. Compensate for any "-" sign in dygrad!
+          rjumpStabil%dtheta = dygrad * mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
@@ -2860,10 +2920,13 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dygrad
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -2904,15 +2967,15 @@ contains
 
           ! We use the precomputed EOJ matrix and sum it up to the
           ! existing matrix.
-          ! Matrix weight. Compensate for any "-" sign in dgamma!
+          ! Matrix weight. Compensate for any "-" sign in dygrad!
           call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(1,1),&
-              dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP,&
+              dygrad*mprim_signum(rstabilisation%dupsam),1.0_DP,&
               .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             ! Also for the Y-velocity.
             call lsyssc_matrixLinearComb(rmatrixEOJ,rmatrix%RmatrixBlock(2,2),&
-                dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP,&
+                dygrad*mprim_signum(rstabilisation%dupsam),1.0_DP,&
                 .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
           end if
 
@@ -2951,9 +3014,12 @@ contains
             
             ! Matrix weights
             rstreamlineDiffusion2%ddelta  = 0.0_DP
-            rstreamlineDiffusion2%ddeltaT = dgammaT
-            rstreamlineDiffusion2%dnewton = dnewton
-            rstreamlineDiffusion2%dnewtonT = dnewtonT
+            rstreamlineDiffusion2%ddeltaT = dygradT
+            rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+            rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+            rstreamlineDiffusion2%dnewton = dgrady
+            rstreamlineDiffusion2%dnewtonT = dgradyT
+            rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
   
             rstreamlineDiffusion2%bconstnu = .false.
             
@@ -3854,9 +3920,12 @@ contains
           rvectorPrimal,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradAdj(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady(1,1),&
           dweightConvection*rnonlinearSpatialMatrix%DgradyT(1,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(1,1),&
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)
       
@@ -3880,14 +3949,17 @@ contains
           rvectorPrimal,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,2),&
           dweightDualConvection*rnonlinearSpatialMatrix%Dygrad(2,2),&
+          dweightDualConvection*rnonlinearSpatialMatrix%DygradAdj(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(2,2),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,2),&
           dweightDualNewtonT*rnonlinearSpatialMatrix%DgradyT(2,2),&
+          dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(2,2),&
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
       
       ! 2a) Dual equation, natural boundary condition.
-      call assembleNonlinearityDefectDualBd (&
+      call assembleNonlinDefectDualBd (&
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)
       
@@ -3916,9 +3988,12 @@ contains
           rvectorPrimal,rvectorDual,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dstokes(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dygrad(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradAdj(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DygradT(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradTAdj(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%DgradyT(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(2,1),&
           rcubatureInfo,rstabilisation,dcx)
           
       ! There is probably a 2nd reactive term involved stemming from
@@ -3928,10 +4003,12 @@ contains
       
       call assembleNonlinearityDefect (&
           rnonlinearSpatialMatrix,rtempMatrix,&
-          rvectorPrimal,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,&
+          rvectorPrimal,rvectorDual2,rtempVectorX,rtempVectorB,0.0_DP,0.0_DP,0.0_DP,&
           dweightConvection*rnonlinearSpatialMatrix%DygradT2(2,1),&
+          dweightConvection*rnonlinearSpatialMatrix%DygradTAdj2(2,1),&
           dweightConvection*rnonlinearSpatialMatrix%Dgrady2(2,1),&
-          0.0_DP,rcubatureInfo,rstabilisation,dcx)
+          0.0_DP,dweightConvection*rnonlinearSpatialMatrix%DgradyAdj2(2,1),&
+          rcubatureInfo,rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -4333,7 +4410,7 @@ contains
 
     ! -----------------------------------------------------
 
-    subroutine assembleNonlinearityDefectDualBd (&
+    subroutine assembleNonlinDefectDualBd (&
         rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dweightBdIntegral,dcx)
         
     ! Assembles the convection defect for the dual on the boundary.
@@ -4390,13 +4467,13 @@ contains
 
     subroutine assembleNonlinearityDefect (&
         rnonlinearSpatialMatrix,rmatrix,rvectorPrimalVel,rvectorNonlinearity,&
-        rx,rb,dtheta,dgamma,dgammaT,dnewton,dnewtonT,&
+        rx,rb,dtheta,dygrad,dygradAdj,dygradT,dygradTadj,dgrady,dgradyT,dgradyAdj,&
         rcubatureInfo,rstabilisation,dcx,rmatrixEOJ)
         
     ! Assembles the convection matrix in the block matrix rmatrix at position (1,1):
     !
-    ! rmatrix := dgamma*N(rvector) + dgammaT*N^t(rvector) +
-    !            dnewton*N*(rvector) + dnewtonT*N*^t(rvector)
+    ! rmatrix := dygrad*N(rvector) + dygradT*N^t(rvector) +
+    !            dgrady*N*(rvector) + dgradyT*N*^t(rvector)
     !
     ! Even if no nonlinearity is present, the routine can be used to
     ! add stabilisation into the matrix.
@@ -4425,17 +4502,26 @@ contains
     real(DP), intent(in) :: dtheta
 
     ! Weight for the nonlinear term u\grad(.)
-    real(DP), intent(in) :: dgamma
+    real(DP), intent(in) :: dygrad
+
+    ! Weight for the adjoint nonlinear term (.,u\grad(.))
+    real(DP), intent(in) :: dygradAdj
 
     ! Weight for the nonlinear term u(\grad(.))^t
-    real(DP), intent(in) :: dgammaT
+    real(DP), intent(in) :: dygradT
+
+    ! Weight for the adjoint nonlinear term (.,u(\grad(.))^t)
+    real(DP), intent(in) :: dygradTAdj
 
     ! Weight for the nonlinear term (\grad(.))u
-    real(DP), intent(in) :: dnewton
+    real(DP), intent(in) :: dgrady
 
     ! Weight for the nonlinear term (\grad(.))^t u
-    real(DP), intent(in) :: dnewtonT
+    real(DP), intent(in) :: dgradyT
     
+    ! Weight for the adjoint nonlinear term (\grad(.))u
+    real(DP), intent(in) :: dgradyAdj
+
     ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
     real(DP), intent(in) :: dcx
     
@@ -4475,8 +4561,8 @@ contains
         call lsysbl_copyVector (rb,rbtemp)
       end if
                     
-      if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
-          (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP) .or. &
+      if ((dygrad .ne. 0.0_DP) .or. (dygradT .ne. 0.0_DP) .or. &
+          (dgrady .ne. 0.0_DP) .or. (dgradyT .ne. 0.0_DP) .or. (dgradyAdj .ne. 0.0_DP) .or. &
           (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%isubequation .ne. 0) .or. &
           (rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%cviscoModel .ne. 0)) then
           
@@ -4508,10 +4594,10 @@ contains
           rstreamlineDiffusion%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dygrad
+          rstreamlineDiffusion%ddeltaTransposed  = dygradT
+          rstreamlineDiffusion%dnewton           = dgrady
+          rstreamlineDiffusion%dnewtonTransposed = dgradyT
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvectorNonlinearity!
@@ -4522,6 +4608,12 @@ contains
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rx,rb,rcubatureInfo=rcubatureInfo)
+                              
+          if ((dygradAdj .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP)) then
+            call output_line ("Operator not supported by this SD method!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
         
@@ -4535,10 +4627,13 @@ contains
           rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
           
           ! Matrix weights
-          rstreamlineDiffusion2%ddelta  = dgamma
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta  = dygrad
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj = dygradTAdj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -4587,9 +4682,12 @@ contains
           
           ! Matrix weights
           rstreamlineDiffusion2%ddelta  = 0.0_DP
-          rstreamlineDiffusion2%ddeltaT = dgammaT
-          rstreamlineDiffusion2%dnewton = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddeltaAdj  = dygradAdj
+          rstreamlineDiffusion2%ddeltaT = dygradT
+          rstreamlineDiffusion2%ddeltaTadj = dygradTadj
+          rstreamlineDiffusion2%dnewton = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -4631,7 +4729,7 @@ contains
           ! is added or subtracted!
           rupwindStabil%dupsam = abs(rstabilisation%dupsam)
           rupwindStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnuConst
-          rupwindStabil%dtheta = dcx*dgamma
+          rupwindStabil%dtheta = dcx*dygrad
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
@@ -4643,7 +4741,7 @@ contains
           ! Prepare the upwind structure for the assembly of the convection.
           !rstreamlineDiffusion3%dupsam = rstabilisation%dupsam
           !rstreamlineDiffusion3%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
-          !rstreamlineDiffusion3%dtheta = dgamma*dcx
+          !rstreamlineDiffusion3%dtheta = dygrad*dcx
           !rstreamlineDiffusion3%ddelta = 1.0_DP
           
           ! Apply the upwind operator.
@@ -4673,10 +4771,16 @@ contains
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta            = dgamma
-          rstreamlineDiffusion%ddeltaTransposed  = dgammaT
-          rstreamlineDiffusion%dnewton           = dnewton
-          rstreamlineDiffusion%dnewtonTransposed = dnewtonT
+          rstreamlineDiffusion%ddelta            = dygrad
+          rstreamlineDiffusion%ddeltaTransposed  = dygradT
+          rstreamlineDiffusion%dnewton           = dgrady
+          rstreamlineDiffusion%dnewtonTransposed = dgradyT
+          
+          if ((dygradAdj .ne. 0.0_DP) .or. (dygradTAdj .ne. 0.0_DP)) then
+            call output_line ("Operator not supported by this SD method!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_assembleMatrix")
+            call sys_halt()
+          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvectorNonlinearity!
@@ -4695,8 +4799,8 @@ contains
           ! Set stabilisation parameter
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
-          ! Matrix weight. Compensate for any "-" sign in dgamma!
-          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          ! Matrix weight. Compensate for any "-" sign in dygrad!
+          rjumpStabil%dtheta = dcx*dygrad*mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
@@ -4728,10 +4832,13 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dygrad
+          rstreamlineDiffusion2%ddeltaT  = dygradT
+          rstreamlineDiffusion2%ddeltaAdj   = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj  = dygradTAdj
+          rstreamlineDiffusion2%dnewton  = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -4775,7 +4882,7 @@ contains
           rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
+          rjumpStabil%dtheta = dcx*dygrad*mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
@@ -4805,10 +4912,13 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion2%ddelta   = dgamma
-          rstreamlineDiffusion2%ddeltaT  = dgammaT
-          rstreamlineDiffusion2%dnewton  = dnewton
-          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          rstreamlineDiffusion2%ddelta   = dygrad
+          rstreamlineDiffusion2%ddeltaT  = dygradT
+          rstreamlineDiffusion2%ddeltaAdj   = dygradAdj
+          rstreamlineDiffusion2%ddeltaTAdj  = dygradTAdj
+          rstreamlineDiffusion2%dnewton  = dgrady
+          rstreamlineDiffusion2%dnewtonT = dgradyT
+          rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
@@ -4850,11 +4960,11 @@ contains
           ! the matrix -- only its sign is not incorporated, so we do that here.
           call lsyssc_scalarMatVec(rmatrixEOJ,&
               rx%RvectorBlock(1),rb%RvectorBlock(1),&
-              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+              -dcx*dygrad*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
           call lsyssc_scalarMatVec(rmatrixEOJ,&
               rx%RvectorBlock(2),rb%RvectorBlock(2),&
-              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
+              -dcx*dygrad*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
         case default
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -4891,9 +5001,12 @@ contains
             
             ! Matrix weights
             rstreamlineDiffusion2%ddelta  = 0.0_DP
-            rstreamlineDiffusion2%ddeltaT = dgammaT
-            rstreamlineDiffusion2%dnewton = dnewton
-            rstreamlineDiffusion2%dnewtonT = dnewtonT
+            rstreamlineDiffusion2%ddeltaT = dygradT
+            rstreamlineDiffusion2%ddeltaAdj   = dygradAdj
+            rstreamlineDiffusion2%ddeltaTAdj  = dygradTAdj
+            rstreamlineDiffusion2%dnewton = dgrady
+            rstreamlineDiffusion2%dnewtonT = dgradyT
+            rstreamlineDiffusion2%dnewtonAdj = dgradyAdj
   
             rstreamlineDiffusion2%bconstnu = .false.
             
@@ -7553,10 +7666,15 @@ contains
     rnonlinearSpatialMatrix%Dmass(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%Dstokes(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%Dygrad(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradAdj(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%Dgrady(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyAdj(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DygradT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradTAdj(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%Dgrady2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyAdj2(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DygradT2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradTAdj2(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DgradyT(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DBmat(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DBTmat(:,:) = 0.0_DP
@@ -7602,10 +7720,15 @@ contains
     rnonlinearSpatialMatrix%Dmass(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%Dstokes(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%Dygrad(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradAdj(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%Dgrady(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DygradT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyAdj(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradTAdj(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%Dgrady2(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DygradT2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgradyAdj2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DygradTAdj2(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DgradyT(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DBmat(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DBTmat(irow,icolumn) = 0.0_DP
