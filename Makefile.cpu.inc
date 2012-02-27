@@ -1093,12 +1093,27 @@ ifeq ($(call match,$(ID),armv7l-cortexa9-linux-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(strip $(optimise)), YES)
-CFLAGSF77LIBS := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF77)
-CFLAGSF90     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSF90)
-CFLAGSC       := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSC)
-CFLAGSCXX     := -march=armv7-a -mcpu=cortex-a9 $(CFLAGSCXX)
-LDFLAGS       := -march=armv7-a -mcpu=cortex-a9 $(LDFLAGS)
+CFLAGSF77LIBS := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSF77LIBS)
+CFLAGSF77     := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSF77)
+CFLAGSF90     := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSF90)
+CFLAGSC       := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSC)
+CFLAGSCOPROC  := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSCOPROC)
+CFLAGSCXX     := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSCXX)
+LDFLAGS       := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
+                 -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
+                 -DENABLE_CORTEXA_OPTIMISATIONS $(LDFLAGS)
 endif
 endif
 
