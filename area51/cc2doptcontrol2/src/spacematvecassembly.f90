@@ -159,6 +159,7 @@ module spacematvecassembly
   use spatialbcdef
 
   use optcontrolconvection
+  use newtonderivative
     
   implicit none
   
@@ -3154,6 +3155,7 @@ contains
       type(t_bilfMatrixAssembly) :: rmatrixAssembly
       integer(I32) :: celement,ccubType
       integer :: ccontrolConstraints
+      type(t_scalarCubatureInfo) :: rcubatureInfo
 
       ! Assemble A14/A25?
       if (dweight .ne. 0.0_DP) then
@@ -3240,6 +3242,7 @@ contains
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
             end select
+            
           case (2)
           
             ! Exact reassembly of the mass matrices.
@@ -3251,53 +3254,43 @@ contains
             ! We assemble this matrix just as a standard mass matrix with noconstant
             ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
             ! we return 0 as coefficient, otherwise 1.
-          
-            rform%itermCount = 1
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_FUNC
+            !
+            ! For alpha=0, we have bang-bang-control. In3 this case,
+            ! the Newton derivative is the zero operator, so nothing
+            ! has to be assembled here.
+            !
+            ! Alpha < 0 switches the distributed control off, so also in this
+            ! case, nothing has to be assembled.
+            if (rnonlinearSpatialMatrix%dalphaC .gt. 0.0_DP) then
 
-            ! In this case, we have nonconstant coefficients.
-            rform%ballCoeffConstant = .false.
-            rform%BconstantCoeff(:) = .false.
+              ! Create a cubature info structure that defines the cubature
+              ! rule to use.            
+              call spdiscr_createDefCubStructure (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                  rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass)
 
-            ! Prepare a collection structure to be passed to the callback
-            ! routine. We attach the vector T in the quick-access variables
-            ! so the callback routine can access it.
-            ! The bounds and the alpha value are passed in the
-            ! quickaccess-arrays.
-            call collct_init(rcollection)
-            rcollection%p_rvectorQuickAccess1 => rvector
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
 
-            ! Coefficient is dmu1=1/alpha or 0, depending on lambda
-            rcollection%DquickAccess(3)  = rnonlinearSpatialMatrix%dalphaC
-            rcollection%DquickAccess(4)  = dweight
+              ! Calculate the Newton derivative.
+              !
+              ! The weight contains -1/alpha, so we have to cancel it out here.
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
             
-            ! At first, set up A14, depending on lambda_1.
-            rcollection%IquickAccess(1) = 1
-            rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-            rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
+              ! Release the cubature structure
+              call spdiscr_releaseCubStructure(rcubatureInfo)
             
-            ! Now we can build the matrix entries.
-            ! We specify the callback function coeff_Laplace for the coefficients.
-            ! As long as we use constant coefficients, this routine is not used.
-            ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-            ! the framework will call the callback routine to get analytical
-            ! data.
-            ! The collection is passed as additional parameter. That's the way
-            ! how we get the vector to the callback routine.
-            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                rcubatureInfo,coeff_ProjMass,rcollection)
-
-            ! Now, set up A25, depending on lambda_2.
-            rcollection%IquickAccess(1) = 2
-            rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-            rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
-
-            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
-                rcubatureInfo,coeff_ProjMass,rcollection)
-            
-            ! Now we can forget about the collection again.
-            call collct_done (rcollection)
+            end if
             
           case (3)
           
@@ -5149,7 +5142,7 @@ contains
           end select
             
         case (2)
-
+        
           ! Create a matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly
           call lsyssc_duplicateMatrix (&
@@ -5159,65 +5152,48 @@ contains
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
               rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
+              
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          ! Assemble the modified mass matrices.
+          ! Clear the matrices in advance.
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
 
-          ! Cubature formula from icubStokes          
-          call spdiscr_createDefCubStructure (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
+          ! For alpha=0, we have bang-bang-control. In this case,
+          ! the Newton derivative is the zero operator, so nothing
+          ! has to be assembled here.
+          !
+          ! Alpha < 0 switches the distributed control off, so also in this
+          ! case, nothing has to be assembled.
+          if (rnonlinearSpatialMatrix%dalphaC .gt. 0.0_DP) then
+
+            ! Create a cubature info structure that defines the cubature
+            ! rule to use.            
+            call spdiscr_createDefCubStructure (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass)
+
+            ! Calculate the Newton derivative.
+            !
+            ! The operator weight is just 1.0 here; the matrix is scaled later.
+            ! However, cancel out the -1/alpha from the function weight, which
+            ! is included into the operator as part of the Newton derivative.
+            call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+            call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
           
-          rform%itermCount = 1
-          rform%Idescriptors(1,1) = DER_FUNC
-          rform%Idescriptors(2,1) = DER_FUNC
-
-          ! In this case, we have nonconstant coefficients.
-          rform%ballCoeffConstant = .false.
-          rform%BconstantCoeff(:) = .false.
-
-          ! Prepare a collection structure to be passed to the callback
-          ! routine. We attach the vector T in the quick-access variables
-          ! so the callback routine can access it.
-          ! The bounds and the alpha value are passed in the
-          ! quickaccess-arrays.
-          call collct_init(rcollection)
-          rcollection%p_rvectorQuickAccess1 => rvelocityVector
-
-          ! Coefficient is dmu1=1/alpha or 0, depending on lambda
-          rcollection%DquickAccess(3)  = rnonlinearSpatialMatrix%dalphaC
-          rcollection%DquickAccess(4)  = 1.0_DP
+            ! Release the cubature structure
+            call spdiscr_releaseCubStructure(rcubatureInfo)
           
-          ! At first, set up A14, depending on lambda_1.
-          rcollection%IquickAccess(1) = 1
-          rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-          rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
-          
-          ! Now we can build the matrix entries.
-          ! We specify the callback function coeff_Laplace for the coefficients.
-          ! As long as we use constant coefficients, this routine is not used.
-          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-          ! the framework will call the callback routine to get analytical
-          ! data.
-          ! The collection is passed as additional parameter. That's the way
-          ! how we get the vector to the callback routine.
-          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
-              rcubatureInfo,coeff_ProjMass,rcollection)
-
-          ! Now, set up A22, depending on lambda_2.
-          rcollection%IquickAccess(1) = 2
-          rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-          rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
-
-          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
-              rcubatureInfo,coeff_ProjMass,rcollection)
-          
-          ! Now we can forget about the collection again.
-          call collct_done (rcollection)
-          
-          ! Release cubature-related stuff
-          call spdiscr_releaseCubStructure (rcubatureInfo)
+          end if
           
         case (3)
         

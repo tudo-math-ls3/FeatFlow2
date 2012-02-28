@@ -9,15 +9,15 @@
 !#
 !# Routines in this module:
 !#
-!# 1.) nder_minMaxProjByCubature
+!# 1.) nwder_minMaxProjByCubature
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a cubature approach.
 !#
-!# 2.) nder_minMaxProjByMass
+!# 2.) nwder_minMaxProjByMass
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a modification of the mass matrix.
 !#
-!# 3.) nder_minMaxProjByApproxDer
+!# 3.) nwder_minMaxProjByApproxDer
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a finite difference approach in each entry.
 !#
@@ -45,9 +45,9 @@ module newtonderivative
   
   private
   
-  public :: nder_minMaxProjByCubature
-  public :: nder_minMaxProjByMass
-  public :: nder_minMaxProjByApproxDer
+  public :: nwder_minMaxProjByCubature
+  public :: nwder_minMaxProjByMass
+  public :: nwder_minMaxProjByApproxDer
   
 contains
 
@@ -632,12 +632,12 @@ contains
 
 !<subroutine>
 
-  subroutine nder_minMaxProjByCubature (dweight,rmatrix,rcubatureInfo,&
+  subroutine nwder_minMaxProjByCubature (dweight,rmatrix,rcubatureInfo,&
       dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
   
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dweight*rfunction))
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dweight*rfunction))
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rmatrix.
@@ -742,7 +742,7 @@ contains
 
 !<subroutine>
 
-  subroutine nder_minMaxProjByMass (rmassMatrix,dweight,rmatrix,&
+  subroutine nwder_minMaxProjByMass (rmassMatrix,dweight,rmatrix,&
       dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
       
 !<description>
@@ -891,7 +891,7 @@ contains
 
 !<subroutine>
 
-  subroutine nder_minMaxProjByApproxDer (dweight,rmatrix,dh,&
+  subroutine nwder_minMaxProjByApproxDer (dweight,rmatrix,dh,&
       dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
       
 !<description>
