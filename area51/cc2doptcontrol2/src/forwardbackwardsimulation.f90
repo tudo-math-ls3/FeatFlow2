@@ -2316,7 +2316,6 @@ contains
           p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
           dtimePrimal,dtimeDual,&
           rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime+ioffdiag),&
-          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime+ioffdiag))
 
       ! Create a nonlinear matrix on the current level.
@@ -3810,7 +3809,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! RHS.
@@ -3849,7 +3847,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! Current RHS
@@ -4213,7 +4210,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
           
           ! Calculate the defect. For that purpose, start with the
@@ -4250,7 +4246,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
           
           ! There is no previous timestep. Load the RHS into the defect vector
@@ -4439,7 +4434,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! Calculate the defect. For that purpose, start with the
@@ -4479,7 +4473,6 @@ contains
           call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3,&
               dtimePrimal,dtimeDual,&
               p_rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-              p_rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
               p_rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
           ! There is next timestep. Load the RHS into the defect vector

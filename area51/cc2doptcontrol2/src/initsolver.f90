@@ -3998,8 +3998,7 @@ contains
       ! in the primal equation. Neumann BC is only necessary for the dual eqn!
       call smva_initNonlinearData (rnonlinearity,rx,rx,rx,&
           rtimediscr%dtimeInit,rtimediscr%dtimeInit,&
-          rneumannBoundary,rmatrixDiscr%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
-          rdirichletBCC)
+          rneumannBoundary,rdirichletBCC)
       
       ! The initial condition is implemented as:
       !

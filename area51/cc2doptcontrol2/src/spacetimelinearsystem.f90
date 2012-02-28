@@ -1189,19 +1189,6 @@ contains
         rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ddirichletBCPenalty
     rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
     
-    ! The boundary integral in the dual equation has exactly the same weigt
-    ! as Dygrad -- but with a negative sign, it stems from a partial integration!
-    !rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = -rnonlinearSpatialMatrix%Dygrad(2,2)
-    rnonlinearSpatialMatrix%DdualBdIntegral(2,2) = 0.0_DP
-
-    ! If Newton is active, we have to activate the Newton term on the boundary!
-    ! Value and sign are the same as for DdualBdIntegral.
-    if (dnewton .ne. 0.0_DP) then
-      !rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = &
-      !    rnonlinearSpatialMatrix%DdualBdIntegral(2,2)
-      rnonlinearSpatialMatrix%DdualBdIntegralNewton(2,2) = 0.0_DP
-    end if
-    
     ! Probably scale the system entries.
     if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%csystemScaling .ne. 0) then
     
@@ -1222,10 +1209,6 @@ contains
       rnonlinearSpatialMatrix%DygradTAdj2(:,:) = dtstep * rnonlinearSpatialMatrix%DygradTAdj2(:,:)
       rnonlinearSpatialMatrix%DgradyT(:,:) = dtstep * rnonlinearSpatialMatrix%DgradyT(:,:)
       rnonlinearSpatialMatrix%DBmat(:,:)     = dtstep * rnonlinearSpatialMatrix%DBmat(:,:)
-      rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = &
-          dtstep * rnonlinearSpatialMatrix%DdualBdIntegral(:,:)
-      rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = &
-          dtstep * rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:)
       rnonlinearSpatialMatrix%DdirichletBCCY(:,:) = &
           dtstep * rnonlinearSpatialMatrix%DdirichletBCCY(:,:)
       rnonlinearSpatialMatrix%DdirichletBCCLambda(:,:) = &
@@ -1502,7 +1485,6 @@ contains
           rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3),&
           dtimePrimal,dtimeDual,&
           rspaceTimeMatrix%p_rneumannBoundary%p_RbdRegion(ieqTime),&
-          rspaceTimeMatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rspaceTimeMatrix%p_rdirichletBCCBoundary%p_RbdRegion(ieqTime))
       
       if (ieqTime .ne. neqTime) then

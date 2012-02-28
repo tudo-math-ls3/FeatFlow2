@@ -2797,7 +2797,6 @@ contains
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
           dtimePrimal,dtimeDual,&
           rsolverNode%p_rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-          rsolverNode%p_rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rsolverNode%p_rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
 
       if (rsolverNode%p_rsubnodeBlockJacobi%ssectionAlternative .eq. "") then
@@ -3591,7 +3590,6 @@ contains
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
             dtimePrimal,dtimeDual,&
             rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
             rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
       
         ! Is there a previous timestep?
@@ -3855,7 +3853,6 @@ contains
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
             dtimePrimal,dtimeDual,&
             rmatrix%p_rneumannBoundary%p_RbdRegion(iiterate),&
-            rmatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
             rmatrix%p_rdirichletBCCBoundary%p_RbdRegion(iiterate))
       
         ! Is there a nect timestep?
@@ -5172,7 +5169,6 @@ contains
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
           dtimePrimal,dtimeDual,&
           rsupermatrix%p_rneumannBoundary%p_RbdRegion(isubstep),&
-          rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator,&
           rsupermatrix%p_rdirichletBCCBoundary%p_RbdRegion(isubstep))
       
       ! Current time step?

@@ -298,10 +298,6 @@ module spacematvecassembly
     ! BC'S ARE THE SAME FOR ALL TIMESTEPS AND THIS ONE AND ONLY STRUCTURE IS ENOGH!!!
     type(t_boundaryRegionList), pointer :: p_rneumannBoundary => null()
 
-    ! Neumann boundary integral template matrix. This matrix contains the structure
-    ! of an operator that works on the Neumann boundary.
-    type(t_matrixScalar), pointer :: p_rneumannBoundaryOperator => null()
-    
     ! Definition of the Dirichlet control boundary conditions.
     type(t_boundaryRegionList), pointer :: p_rdirichletBCCBoundary => null()
 
@@ -429,14 +425,6 @@ module spacematvecassembly
     ! KAPPA-parameters that switch the I matrix in the continuity equation
     ! on/off.
     real(DP), dimension(2,2) :: DidentityP = 0.0_DP
-    
-    ! Weight for the boundary integral in the dual equation
-    ! on the Neumann boundary: (y n)(.)
-    real(DP), dimension(2,2) :: DdualBdIntegral = 0.0_DP
-
-    ! Weight for the Newton boundary integral in the dual equation
-    ! on the Neumann boundary: ((.)n) lambda
-    real(DP), dimension(2,2) :: DdualBdIntegralNewton = 0.0_DP
     
     ! Weight in front of Y in the Dirichlet boundary control term 1.
     real(DP), dimension(2,2) :: DdirichletBCCY = 0.0_DP
@@ -1701,16 +1689,6 @@ contains
             dweightConvection*rnonlinearSpatialMatrix%DgradyAdj(2,2),&
             rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
             rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
-
-        ! Assemble the additional term for the natural BDC in the dual equation.
-        call smva_assembleDualNeumannBd (rvectorPrimal,&
-            rtempMatrix%RmatrixBlock(1,1),&
-            dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-            rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-        call smva_assembleDualNeumannBd (rvectorPrimal,&
-            rtempMatrix%RmatrixBlock(2,2),&
-            dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),&
-            rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,4)
@@ -3958,11 +3936,6 @@ contains
           rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
           rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)
       
-      ! 2a) Dual equation, natural boundary condition.
-      call assembleNonlinDefectDualBd (&
-          rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
-          dweightNaturalBdcDual*rnonlinearSpatialMatrix%DdualBdIntegral(2,2),dcx)
-      
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
       
@@ -4407,61 +4380,6 @@ contains
     end if
     
   contains
-
-    ! -----------------------------------------------------
-
-    subroutine assembleNonlinDefectDualBd (&
-        rnonlinearSpatialMatrix,rmatrix,rvector,rx,rb,dweightBdIntegral,dcx)
-        
-    ! Assembles the convection defect for the dual on the boundary.
-    
-    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix.
-    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
-    
-    ! 2X2 block matrix that specifies the structure of the velocity FE space.
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
-
-    ! Velocity vector for the nonlinearity. Must be specified if
-    ! GAMMA <> 0; can be omitted if GAMMA=0.
-    type(t_vectorBlock), intent(in) :: rvector
-    
-    ! The current solution vector for the velocity (x- and y-velocity)
-    type(t_vectorBlock), intent(in) :: rx
-
-    ! The RHS vector; a defect will be created in this vector.
-    type(t_vectorBlock), intent(inout) :: rb
-    
-    ! Weight of the boudnary integral.
-    real(DP), intent(in) :: dweightBdIntegral
-    
-    ! Weight for the operator when multiplying: d = b - dcx * A x. Standard = 1.0_DP
-    real(DP), intent(in) :: dcx
-
-      ! local variables
-      real(DP) :: dweight
-      type(t_matrixScalar) :: rmatrixTemp
-    
-      if (dcx*dweightBdIntegral .eq. 0.0_DP) return
-      if (rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundaryOperator%NEQ .eq. 0) return
-    
-      ! Create an empty temp matrix for the boundary operator.
-      call lsyssc_duplicateMatrix (&
-          rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundaryOperator,&
-          rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_clearMatrix (rmatrixTemp)
-      
-      ! Create the operator
-      call smva_assembleDualNeumannBd (rvector,rmatrixTemp,dweightBdIntegral,&
-          rnonlinearSpatialMatrix%p_rnonlinearity%p_rneumannBoundary)
-      
-      ! Defect in the dual.
-      call lsyssc_scalarMatVec (rmatrixTemp, rx%RvectorBlock(1), rb%RvectorBlock(1), -dcx, 1.0_DP)
-      call lsyssc_scalarMatVec (rmatrixTemp, rx%RvectorBlock(2), rb%RvectorBlock(2), -dcx, 1.0_DP)
-      
-      call lsyssc_releaseMatrix (rmatrixTemp)
-
-    end subroutine
 
     ! -----------------------------------------------------
 
@@ -5955,7 +5873,7 @@ contains
 
   subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3,&
       dassociatedTimePrimalVel,dassociatedTimeDualVel,&
-      rneumannBoundary,rneumannBdOperator,rdirichletBCCBoundary)
+      rneumannBoundary,rdirichletBCCBoundary)
 
 !<description>
   ! Initialises a nonlinear-data structure that defines the nonlinearity
@@ -5984,9 +5902,6 @@ contains
     ! Specifies the Neumann boundary.
     type(t_boundaryRegionList), intent(in), target :: rneumannBoundary
     
-    ! Template matrix for Neumann boundary integral operators
-    type(t_matrixScalar), intent(in), target :: rneumannBdOperator
-
     ! Specifies the Dirichlet control boundary.
     type(t_boundaryRegionList), intent(in), target :: rdirichletBCCBoundary
     
@@ -6004,7 +5919,6 @@ contains
     rnonlinearData%p_rvector2 => rvector2
     rnonlinearData%p_rvector3 => rvector3
     rnonlinearData%p_rneumannBoundary => rneumannBoundary
-    rnonlinearData%p_rneumannBoundaryOperator => rneumannBdOperator
     rnonlinearData%p_rdirichletBCCBoundary => rdirichletBCCBoundary
 
   end subroutine
@@ -6282,143 +6196,6 @@ contains
     
     do i=1,size(Iidx)
       p_Ddest(Iidx(i)) = cx * p_Dsource(Iidx(i)) + cy * p_Ddest(Iidx(i))
-    end do
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine fcoeff_neumannbc (rdiscretisationTrial,&
-                  rdiscretisationTest, rform, nelements, npointsPerElement,&
-                  Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
-                  rdomainIntSubset, Dcoefficients, rcollection)
-  
-!<description>
-  ! Calculates the operator
-  !    $$ int_gamma (y n) phi_j phi_i $$
-  ! on the boundary.
-  ! Necessary term on the Neumann boundary in the dual equation,
-  ! otherwise the natural BDC would be wrong.
-!</description>
-  
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
-  type(t_bilinearForm), intent(in) :: rform
-  integer, intent(in) :: nelements
-  integer, intent(in) :: npointsPerElement
-  real(DP), dimension(:,:,:), intent(in) :: Dpoints
-  integer, intent(in) :: ibct
-  real(DP), dimension(:,:), intent(in) :: DpointPar
-  integer, dimension(:,:), intent(in) :: IdofsTrial
-  integer, dimension(:,:), intent(in) :: IdofsTest
-  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-  type(t_collection), intent(inout), optional :: rcollection
-
-  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-
-!</subroutine>
-
-    ! local variables
-    integer :: ipt,iel
-    real(DP), dimension(npointsPerElement,4) :: DtempVal
-    type(t_boundary), pointer :: p_rboundary
-    real(DP) :: dc
-    
-    p_rboundary => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)%p_rspatialDiscr%p_rboundary
-    dc = rcollection%DquickAccess(1)
-    
-    ! Evaluate the FEM functions in all the points.
-    do iel=1,nelements
-      ! y_1
-      call fevl_evaluate_mult (DER_FUNC, DtempVal(:,1), &
-          rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
-          rdomainIntSubset%p_Ielements(iel),Dpoints=Dpoints(:,:,iel))
-
-      ! y_2
-      call fevl_evaluate_mult (DER_FUNC, DtempVal(:,2), &
-          rcollection%p_rvectorQuickAccess1%RvectorBlock(2), &
-          rdomainIntSubset%p_Ielements(iel),Dpoints=Dpoints(:,:,iel))
-          
-      ! Get the normal vector using the boundary.
-      call boundary_getNormalVec2D_mult(&
-          p_rboundary, ibct, DpointPar(:,iel), &
-          DtempVal(:,3), DtempVal(:,4), cparType=BDR_PAR_LENGTH)
-          
-      ! Calculate the coefficients
-      do ipt = 1,npointsPerElement
-        Dcoefficients(1,ipt,iel) = &
-            dc * (DtempVal(ipt,1)*DtempVal(ipt,3) + DtempVal(ipt,2)*DtempVal(ipt,4))
-      end do
-      
-    end do
-
-  end subroutine
-    
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine smva_assembleDualNeumannBd (rvector,rmatrix,dc,rneumannBoundary)
-
-!<description>
-  ! This routine assembles the term
-  !    $$ int_gamma (y n) phi_j phi_i $$
-  ! on all boundary edges.
-  ! Necessary term on the Neumann boundary in the dual equation,
-  ! otherwise the natural BDC would be wrong.
-!</description>
-
-!<input>
-  ! The solution/primal velocity vector that specifies the nonlinearity in the boudnary
-  ! condition.
-  type(t_vectorBlock), intent(in), target :: rvector
-  
-  ! Multiplier for the matrix
-  real(DP), intent(in) :: dc
-  
-  ! Defines the Neumann boundary segments.
-  type(t_boundaryRegionList), intent(in) :: rneumannBoundary
-!</input>
-
-!<inputoutput>
-  ! Destination matrix where the operator should be added to.
-  type(t_matrixScalar), intent(inout), target :: rmatrix
-!</inputoutput>
-  
-!</subroutine>
-
-    ! local variables
-    integer :: i
-    type (t_collection) :: rcollection
-    type(t_bilinearForm) :: rform
-    type(t_bdRegionEntry), pointer :: p_rdualNeumannBd
-    
-    !if (dc .eq. 0.0_DP) return
-    
-    ! Prepare the collection for the assembly.
-    rcollection%p_rvectorQuickAccess1 => rvector
-    rcollection%DquickAccess(1) = dc
-    
-    ! Prepare a bilinear form.
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    rform%ballCoeffConstant = .false.
-    rform%BconstantCoeff(1) = .false.
-    rform%Dcoefficients(1:rform%itermCount)  = 1.0_DP
-    
-    ! Assemble the operator on all boundary components in rneumannBoundary.
-    p_rdualNeumannBd => rneumannBoundary%p_rdualBdHead
-    do i = 1,rneumannBoundary%nregionsDual
-      ! Set up the matrix.
-      call bilf_buildMatrixScalarBdr2D (rform, CUB_G4_1D, .false., &
-          rmatrix,fcoeff_neumannbc,p_rdualNeumannBd%rboundaryRegion, rcollection)
-
-      ! Next segment
-      p_rdualNeumannBd => p_rdualNeumannBd%p_nextBdRegion
     end do
 
   end subroutine
@@ -7679,8 +7456,6 @@ contains
     rnonlinearSpatialMatrix%DBmat(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DBTmat(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DidentityP(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DdualBdIntegral(:,:) = 0.0_DP
-    rnonlinearSpatialMatrix%DdualBdIntegralNewton(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCY(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCLambda(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCXi(:,:) = 0.0_DP
@@ -7733,8 +7508,6 @@ contains
     rnonlinearSpatialMatrix%DBmat(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DBTmat(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DidentityP(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DdualBdIntegral(irow,icolumn) = 0.0_DP
-    rnonlinearSpatialMatrix%DdualBdIntegralNewton(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCY(irow,icolumn)= 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCLambda(irow,icolumn) = 0.0_DP
     rnonlinearSpatialMatrix%DdirichletBCCXi(irow,icolumn) = 0.0_DP

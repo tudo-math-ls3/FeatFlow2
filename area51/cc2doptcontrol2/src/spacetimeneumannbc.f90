@@ -90,12 +90,6 @@ module spacetimeneumannbc
     ! Analytical definition of the Neumann boundary segments
     type(t_boundaryRegionList), dimension(:), pointer :: p_RbdRegion => null()
     
-    ! Neumann boundary integral template matrix. This matrix contains the structure
-    ! of an operator that works on the Neumann boundary. To save time, it is
-    ! saved as 'differential' matrix to the standard velocity 'template' matrix.
-    ! The matrix can be used for all timesteps as it contains a common structure.
-    type(t_matrixScalar) :: rneumannBoudaryOperator
-    
   end type
   
   !</typeblock>
@@ -170,9 +164,6 @@ contains
     nullify(rsptiNeumannBC%p_rtimeDiscr)
     nullify(rsptiNeumannBC%p_rspaceDiscr)
     nullify(rsptiNeumannBC%p_rasmTemplates)
-    if (rsptiNeumannBC%rneumannBoudaryOperator%NA .ne. 0) then
-      call lsyssc_releaseMatrix (rsptiNeumannBC%rneumannBoudaryOperator)
-    end if
   
   end subroutine
 
@@ -206,26 +197,7 @@ contains
     ! local variables
     integer :: i,j
     real(DP) :: dtimePrimal, dtimeDual, dtstep
-    type(t_bilinearForm) :: rform
     type(t_bdRegionEntry), pointer :: p_rdualNeumannBd
-    type(t_matrixScalar) :: rneumannBoudaryOperator
-    
-    ! Prepare a bilinear form.
-    rform%itermCount = 3
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    rform%Idescriptors(1,2) = DER_DERIV_X
-    rform%Idescriptors(2,2) = DER_DERIV_X
-    rform%Idescriptors(1,3) = DER_DERIV_Y
-    rform%Idescriptors(2,3) = DER_DERIV_Y
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff(1:3) = .true.
-    rform%Dcoefficients(1:rform%itermCount) = 1.0_DP
-    
-    ! Create a temp matrix for boundary integrals. At first: Full structure, zero content.
-    call lsyssc_duplicateMatrix (rsptiNeumannBC%p_rasmTemplates%rmatrixTemplateFEM,&
-        rneumannBoudaryOperator, LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call lsyssc_clearMatrix (rneumannBoudaryOperator)
     
     ! Loop through all timesteps
     do i=1,rsptiNeumannBC%NEQtime
@@ -239,39 +211,8 @@ contains
             CCSPACE_PRIMALDUAL,rglobalData,SBC_NEUMANN,&
             rsptiNeumannBC%p_rtimediscr,rsptiNeumannBC%p_rspacediscr,&
             rneumannBoundary=rsptiNeumannBC%p_RbdRegion(i))
-            
-      ! Assemble the operator on all boundary components in rneumannBoundary.
-      p_rdualNeumannBd => rsptiNeumannBC%p_RbdRegion(i)%p_rdualBdHead
-      do j = 1,rsptiNeumannBC%p_RbdRegion(i)%nregionsDual
-        ! Discretise a mass-operator on the boundary to mark the rows which may contain
-        ! boundary integrals.
-        call bilf_buildMatrixScalarBdr2D (rform, CUB_G2_1D, .false., &
-            rneumannBoudaryOperator,&
-            rboundaryRegion=p_rdualNeumannBd%rboundaryRegion)
-
-        ! Next segment
-        p_rdualNeumannBd => p_rdualNeumannBd%p_nextBdRegion
-      end do
     end do
     
-    ! Remove the matrix content and compress the matrix.
-    ! The result is a matrix with the minimum stencil that can be used for
-    ! all timesteps.
-    if (rsptiNeumannBC%rneumannBoudaryOperator%NEQ .ne. 0) then
-      call lsyssc_releaseMatrix (rsptiNeumannBC%rneumannBoudaryOperator)
-    end if
-    call lsyssc_createRowCMatrix(rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator)
-    !call lsyssc_duplicateMatrix (rneumannBoudaryOperator,rsptiNeumannBC%rneumannBoudaryOperator,&
-    !    LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-    
-    if (rsptiNeumannBC%rneumannBoudaryOperator%NEQ .ne. 0) then
-      ! If the matrix exist, release its content, we don't need it.
-      call lsyssc_releaseMatrixContent(rsptiNeumannBC%rneumannBoudaryOperator)
-    end if
-    
-    ! Release the temp matrix
-    call lsyssc_releaseMatrix (rneumannBoudaryOperator)
-  
   end subroutine
 
 end module
