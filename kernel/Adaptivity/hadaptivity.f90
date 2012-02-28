@@ -66,20 +66,22 @@
 module hadaptivity
 
 !$use omp_lib
-  use arraylist
+  use arraylistInt
+  use basicgeometry
   use boundary
   use collection
   use fsystem
+  use genoutput
   use hadaptaux
   use hadaptaux1d
   use hadaptaux2d
   use hadaptaux3d
   use io
   use linearsystemscalar
-  use map
-  use octree
+  use mapInt_Dble
+  use octreeDble
   use paramlist
-  use quadtree
+  use quadtreeDble
   use sort
   use storage
   use triangulation

@@ -75,10 +75,14 @@
 module hadaptaux1d
 
 !$use omp_lib
+  use arraylistInt
   use collection
   use fsystem
+  use genoutput
   use hadaptaux
   use linearsystemscalar
+  use storage
+  use triangulation
   
   implicit none
   

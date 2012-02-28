@@ -33,6 +33,12 @@ module stack
 
   implicit none
 
+  private
+  public :: t_stack
+  public :: stack_init
+  public :: stack_done
+  public :: stack_getbase
+
   interface stack_getbase
     module procedure stack_getbase_int
     module procedure stack_getbase_double
@@ -43,13 +49,13 @@ module stack
 !<constantblock description="Global flags for stack implementations">
   
   ! Stack for integer data
-  integer, parameter :: STACK_INT    = ST_INT
+  integer, parameter, public :: STACK_INT    = ST_INT
 
   ! Stack for double data
-  integer, parameter :: STACK_DOUBLE = ST_DOUBLE
+  integer, parameter, public :: STACK_DOUBLE = ST_DOUBLE
 
   ! Stack for single data
-  integer, parameter :: STACK_SINGLE = ST_SINGLE
+  integer, parameter, public :: STACK_SINGLE = ST_SINGLE
 
 !</constantblock>
 !</constants>

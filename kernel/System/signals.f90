@@ -17,48 +17,47 @@ module signals
 
   implicit none
   
-  ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
+  private
+  public :: fsignal
 
 !<constants>
 !<constantblock description="Types of signals">
 
-  integer, parameter :: SIGHUP    =  1   ! Hangup (POSIX).
-  integer, parameter :: SIGINT    =  2   ! Interrupt (ANSI).
-  integer, parameter :: SIGQUIT   =  3   ! Quit (POSIX).
-  integer, parameter :: SIGILL    =  4   ! Illegal instruction (ANSI).
-  integer, parameter :: SIGTRAP   =  5   ! Trace trap (POSIX).
-  integer, parameter :: SIGABRT   =  6   ! Abort (ANSI).
-  integer, parameter :: SIGIOT    =  6   ! IOT trap (4.2 BSD).
-  integer, parameter :: SIGBUS    =  7   ! BUS error (4.2 BSD).
-  integer, parameter :: SIGFPE    =  8   ! Floating-point exception (ANSI).
-  integer, parameter :: SIGKILL   =  9   ! Kill, unblockable (POSIX).
-  integer, parameter :: SIGUSR1   = 10   ! User-defined signal 1 (POSIX).
-  integer, parameter :: SIGSEGV   = 11   ! Segmentation violation (ANSI).
-  integer, parameter :: SIGUSR2   = 12   ! User-defined signal 2 (POSIX).
-  integer, parameter :: SIGPIPE   = 13   ! Broken pipe (POSIX).
-  integer, parameter :: SIGALRM   = 14   ! Alarm clock (POSIX).
-  integer, parameter :: SIGTERM   = 15   ! Termination (ANSI).
-  integer, parameter :: SIGSTKFLT = 16   ! Stack fault.
-  integer, parameter :: SIGCLD    = 17   ! Same as SIGCHLD (System V).
-  integer, parameter :: SIGCHLD   = 17   ! Child status has changed (POSIX).
-  integer, parameter :: SIGCONT   = 18   ! Continue (POSIX).
-  integer, parameter :: SIGSTOP   = 19   ! Stop, unblockable (POSIX).
-  integer, parameter :: SIGTSTP   = 20   ! Keyboard stop (POSIX).
-  integer, parameter :: SIGTTIN   = 21   ! Background read from tty (POSIX).
-  integer, parameter :: SIGTTOU   = 22   ! Background write to tty (POSIX).
-  integer, parameter :: SIGURG    = 23   ! Urgent condition on socket (4.2 BSD).
-  integer, parameter :: SIGXCPU   = 24   ! CPU limit exceeded (4.2 BSD).
-  integer, parameter :: SIGXFSZ   = 25   ! File size limit exceeded (4.2 BSD).
-  integer, parameter :: SIGVTALRM = 26   ! Virtual alarm clock (4.2 BSD).
-  integer, parameter :: SIGPROF   = 27   ! Profiling alarm clock (4.2 BSD).
-  integer, parameter :: SIGWINCH  = 28   ! Window size change (4.3 BSD, Sun).
-  integer, parameter :: SIGPOLL   = 29   ! Pollable event occurred (System V).
-  integer, parameter :: SIGIO     = 29   ! I/O now possible (4.2 BSD).
-  integer, parameter :: SIGPWR    = 30   ! Power failure restart (System V).
-  integer, parameter :: SIGSYS    = 31   ! Bad system call.
-  integer, parameter :: SIGUNUSED = 31
+  integer, parameter, public :: SIGHUP    =  1   ! Hangup (POSIX).
+  integer, parameter, public :: SIGINT    =  2   ! Interrupt (ANSI).
+  integer, parameter, public :: SIGQUIT   =  3   ! Quit (POSIX).
+  integer, parameter, public :: SIGILL    =  4   ! Illegal instruction (ANSI).
+  integer, parameter, public :: SIGTRAP   =  5   ! Trace trap (POSIX).
+  integer, parameter, public :: SIGABRT   =  6   ! Abort (ANSI).
+  integer, parameter, public :: SIGIOT    =  6   ! IOT trap (4.2 BSD).
+  integer, parameter, public :: SIGBUS    =  7   ! BUS error (4.2 BSD).
+  integer, parameter, public :: SIGFPE    =  8   ! Floating-point exception (ANSI).
+  integer, parameter, public :: SIGKILL   =  9   ! Kill, unblockable (POSIX).
+  integer, parameter, public :: SIGUSR1   = 10   ! User-defined signal 1 (POSIX).
+  integer, parameter, public :: SIGSEGV   = 11   ! Segmentation violation (ANSI).
+  integer, parameter, public :: SIGUSR2   = 12   ! User-defined signal 2 (POSIX).
+  integer, parameter, public :: SIGPIPE   = 13   ! Broken pipe (POSIX).
+  integer, parameter, public :: SIGALRM   = 14   ! Alarm clock (POSIX).
+  integer, parameter, public :: SIGTERM   = 15   ! Termination (ANSI).
+  integer, parameter, public :: SIGSTKFLT = 16   ! Stack fault.
+  integer, parameter, public :: SIGCLD    = 17   ! Same as SIGCHLD (System V).
+  integer, parameter, public :: SIGCHLD   = 17   ! Child status has changed (POSIX).
+  integer, parameter, public :: SIGCONT   = 18   ! Continue (POSIX).
+  integer, parameter, public :: SIGSTOP   = 19   ! Stop, unblockable (POSIX).
+  integer, parameter, public :: SIGTSTP   = 20   ! Keyboard stop (POSIX).
+  integer, parameter, public :: SIGTTIN   = 21   ! Background read from tty (POSIX).
+  integer, parameter, public :: SIGTTOU   = 22   ! Background write to tty (POSIX).
+  integer, parameter, public :: SIGURG    = 23   ! Urgent condition on socket (4.2 BSD).
+  integer, parameter, public :: SIGXCPU   = 24   ! CPU limit exceeded (4.2 BSD).
+  integer, parameter, public :: SIGXFSZ   = 25   ! File size limit exceeded (4.2 BSD).
+  integer, parameter, public :: SIGVTALRM = 26   ! Virtual alarm clock (4.2 BSD).
+  integer, parameter, public :: SIGPROF   = 27   ! Profiling alarm clock (4.2 BSD).
+  integer, parameter, public :: SIGWINCH  = 28   ! Window size change (4.3 BSD, Sun).
+  integer, parameter, public :: SIGPOLL   = 29   ! Pollable event occurred (System V).
+  integer, parameter, public :: SIGIO     = 29   ! I/O now possible (4.2 BSD).
+  integer, parameter, public :: SIGPWR    = 30   ! Power failure restart (System V).
+  integer, parameter, public :: SIGSYS    = 31   ! Bad system call.
+  integer, parameter, public :: SIGUNUSED = 31
 
 !</constantblock>
 !</constants>

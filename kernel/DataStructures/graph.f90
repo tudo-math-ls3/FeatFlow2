@@ -80,11 +80,12 @@
 module graph
 
 !$use omp_lib
-  use arraylist
-  use map
+  use arraylistInt
   use fsystem
   use genoutput
   use linearsystemscalar
+  use mapInt_Int
+  use mapbase
   use storage
 
   implicit none

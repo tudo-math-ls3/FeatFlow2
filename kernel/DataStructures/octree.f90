@@ -26,17 +26,16 @@ module octree
 !$use omp_lib
   use fsystem
   use genoutput
-  use octreeDble
-  use octreeSngl
+  use octreeDble, only : t_octreeDble, otree_release
+  use octreeSngl, only : t_octreeSngl, otree_release
   use storage
 
-  use octreebase, only : OTREE_FAILED,&
-                         OTREE_NOT_FOUND,&
-                         OTREE_FOUND,&
-                         OTREE_INSERTED,&
-                         OTREE_DELETED
-
   implicit none
+
+  private
+  public :: octree_init
+  public :: octree_done
+  public :: octree_getbase
 
   interface octree_getbase
     module procedure octree_getbase_dble
@@ -47,10 +46,10 @@ module octree
 !<constantblock description="Global flags for octree implementations">
   
   ! octree for double data
-  integer, parameter :: OCTREE_DOUBLE        = ST_DOUBLE
+  integer, parameter, public :: OCTREE_DOUBLE = ST_DOUBLE
   
   ! octree for single data
-  integer, parameter :: OCTREE_SINGLE        = ST_SINGLE
+  integer, parameter, public :: OCTREE_SINGLE = ST_SINGLE
 
 !</constantblock>
 !</constants>

@@ -27,23 +27,26 @@ module map
   use fsystem
   use genoutput
   use mapInt
-  use mapInt_Dble
-  use mapInt_Sngl
-  use mapInt_Int
-  use mapDble
-  use mapDble_Dble
-  use mapDble_Sngl
-  use mapDble_Int
-  use mapSngl
-  use mapSngl_Dble
-  use mapSngl_Sngl
-  use mapSngl_Int
+  use mapInt_Dble,  only : t_mapInt_Dble, map_release
+  use mapInt_Sngl,  only : t_mapInt_Sngl, map_release
+  use mapInt_Int,   only : t_mapInt_Int, map_release
+  use mapDble,      only : t_mapDble, map_release
+  use mapDble_Dble, only : t_mapDble_Dble, map_release
+  use mapDble_Sngl, only : t_mapDble_Sngl, map_release
+  use mapDble_Int,  only : t_mapDble_Int, map_release
+  use mapSngl,      only : t_mapSngl, map_release
+  use mapSngl_Dble, only : t_mapSngl_Dble, map_release
+  use mapSngl_Sngl, only : t_mapSngl_Sngl, map_release
+  use mapSngl_Int,  only : t_mapSngl_Int, map_release
   use storage
 
-  use mapbase, only : MAP_MSPEC_REVERSE,&
-                      MAP_MSPEC_EXISTS
-
   implicit none
+
+  private
+  public :: t_map
+  public :: map_init
+  public :: map_done
+  public :: map_getbase
 
   interface map_getbase
     module procedure map_getbase_int
@@ -64,23 +67,23 @@ module map
 !<constantblock description="Global flags for map implementations">
   
   ! map for integer data
-  integer, parameter :: MAP_INT           = ST_INT
-  integer, parameter :: MAP_INT_INT       = ST_INT + 100*ST_INT
-  integer, parameter :: MAP_INT_DOUBLE    = ST_INT + 100*ST_DOUBLE
-  integer, parameter :: MAP_INT_SINGLE    = ST_INT + 100*ST_SINGLE
+  integer, parameter, public :: MAP_INT           = ST_INT
+  integer, parameter, public :: MAP_INT_INT       = ST_INT + 100*ST_INT
+  integer, parameter, public :: MAP_INT_DOUBLE    = ST_INT + 100*ST_DOUBLE
+  integer, parameter, public :: MAP_INT_SINGLE    = ST_INT + 100*ST_SINGLE
 
   ! map for double data
-  integer, parameter :: MAP_DOUBLE        = ST_DOUBLE
-  integer, parameter :: MAP_DOUBLE_INT    = ST_DOUBLE + 100*ST_INT
-  integer, parameter :: MAP_DOUBLE_DOUBLE = ST_DOUBLE + 100*ST_DOUBLE
-  integer, parameter :: MAP_DOUBLE_SINGLE = ST_DOUBLE + 100*ST_SINGLE
+  integer, parameter, public :: MAP_DOUBLE        = ST_DOUBLE
+  integer, parameter, public :: MAP_DOUBLE_INT    = ST_DOUBLE + 100*ST_INT
+  integer, parameter, public :: MAP_DOUBLE_DOUBLE = ST_DOUBLE + 100*ST_DOUBLE
+  integer, parameter, public :: MAP_DOUBLE_SINGLE = ST_DOUBLE + 100*ST_SINGLE
 
 
   ! map for single data
-  integer, parameter :: MAP_SINGLE        = ST_SINGLE
-  integer, parameter :: MAP_SINGLE_INT    = ST_SINGLE + 100*ST_INT
-  integer, parameter :: MAP_SINGLE_DOUBLE = ST_SINGLE + 100*ST_DOUBLE
-  integer, parameter :: MAP_SINGLE_SINGLE = ST_SINGLE + 100*ST_SINGLE
+  integer, parameter, public :: MAP_SINGLE        = ST_SINGLE
+  integer, parameter, public :: MAP_SINGLE_INT    = ST_SINGLE + 100*ST_INT
+  integer, parameter, public :: MAP_SINGLE_DOUBLE = ST_SINGLE + 100*ST_DOUBLE
+  integer, parameter, public :: MAP_SINGLE_SINGLE = ST_SINGLE + 100*ST_SINGLE
 
 !</constantblock>
 !</constants>

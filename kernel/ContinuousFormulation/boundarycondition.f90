@@ -136,57 +136,70 @@ module boundarycondition
   
   implicit none
 
+  private
+  public :: t_bcRegion
+  public :: t_boundaryConditions
+  public :: bcond_initBC
+  public :: bcond_doneBC
+  public :: bcond_newBC
+  public :: bcond_getBCRegion
+  public :: bcond_newDirichletBConRealBD
+  public :: bcond_newFeastMirrorBConRealBD
+  public :: bcond_newPressureDropBConRealBD
+  public :: bcond_newSlipBConRealBD
+  public :: bcond_newDirichletBConFictBD
+
 !<constants>
 
 !<constantblock description="The type identifier for (linear) boundary conditions">
 
   ! Do-nothing boundary conditions (Neumann)
-  integer, parameter :: BC_DONOTHING      = 0
+  integer, parameter, public :: BC_DONOTHING      = 0
 
   ! Dirichlet boundary conditions.
   ! Dirichlet boundary conditions are always specified for exactly one
   ! equation. t_bcRegion\%nequations is set =1 and t_bcRegion\%Iequations(1)
   ! identifies the number of the equation, the boundary conditions refer to.
-  integer, parameter :: BC_DIRICHLET      = 1
+  integer, parameter, public :: BC_DIRICHLET      = 1
   
   ! Robin boundary conditions
-  integer, parameter :: BC_ROBIN          = 2
+  integer, parameter, public :: BC_ROBIN          = 2
   
   ! Pressure-drop boundary conditions
-  integer, parameter :: BC_PRESSUREDROP   = 3
+  integer, parameter, public :: BC_PRESSUREDROP   = 3
   
   ! Flux boundary conditions
-  integer, parameter :: BC_FLUX           = 4
+  integer, parameter, public :: BC_FLUX           = 4
   
   ! FEAST mirror boundary for domain decomposition
-  integer, parameter :: BC_FEASTMIRROR    = 5
+  integer, parameter, public :: BC_FEASTMIRROR    = 5
 
 !</constantblock>
 
 !<constantblock description="The type identifier for nonlinar boundary conditions">
 
   ! Slip boundary condition
-  integer, parameter :: BC_SLIP           = 100
+  integer, parameter, public :: BC_SLIP           = 100
 
 !</constantblock>
 
 !<constantblock description="The type identifier for boundary regions">
 
   ! The boundary segment is unspecified.
-  integer, parameter :: BC_RTYPE_UNDEFINED = 0
+  integer, parameter, public :: BC_RTYPE_UNDEFINED = 0
   
   ! The boundary dition region corresponds to a specific region on
   ! the real boundary.
-  integer, parameter :: BC_RTYPE_REAL      = 1
+  integer, parameter, public :: BC_RTYPE_REAL      = 1
 
   ! The boundary condition region 'lives' on the real boundary
   ! but does not correspond to a specific segment ('free' real
   ! boundar condition).
-  integer, parameter :: BC_RTYPE_FREE      = 2
+  integer, parameter, public :: BC_RTYPE_FREE      = 2
   
   ! The boundary condition region corresponds to a fictitious boundary
   ! object.
-  integer, parameter :: BC_RTYPE_FBCOBJECT = 3
+  integer, parameter, public :: BC_RTYPE_FBCOBJECT = 3
   
 !</constantblock>
 
@@ -194,11 +207,11 @@ module boundarycondition
   
   ! Default blocksize for allocating new structures in the
   ! p_RregionsSpecific / p_RregionsFree list - if the list is full.
-  integer, parameter :: BC_LISTBLOCKSIZE = 10
+  integer, parameter, public :: BC_LISTBLOCKSIZE = 10
   
   ! Maximum number of equations that are supported simultaneously by
   ! boundary conditions.
-  integer, parameter :: BC_MAXEQUATIONS = 16
+  integer, parameter, public :: BC_MAXEQUATIONS = 16
   
 !</constantblock>
 

@@ -7267,7 +7267,7 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     
     sname = svarName
-    call sys_toupper_replace (sname)
+    call sys_toupper (sname)
     
     ! Find the variable
     do i=1,size(rexport%p_SvariableNames)

@@ -73,22 +73,40 @@
 module hadaptaux
 
 !$use omp_lib
-  use arraylist
+  use arraylistInt
   use basicgeometry
   use fsystem
   use genoutput
   use linearalgebra
-  use map
-  use octree
-  use quadtree
+  use mapInt_Dble
+  use octreeDble
+  use quadtreeDble
   use sort
-  use storage
   use storage
   use triangulation
 
   implicit none
 
-  public
+  private
+  public :: t_hadapt
+  public :: hadapt_genElementsAtVertex
+  public :: hadapt_getBoundary
+  public :: hadapt_getNVE
+  public :: hadapt_getNeighboursAtElement
+  public :: hadapt_getNelOfType
+  public :: hadapt_getNodalProperty
+  public :: hadapt_getVertexCoords1D
+  public :: hadapt_getVertexCoords2D
+  public :: hadapt_getVertexCoords3D
+  public :: hadapt_getVerticesAtElement
+  public :: hadapt_setBoundary
+  public :: hadapt_setNeighboursAtElement
+  public :: hadapt_setNelOfType
+  public :: hadapt_setNodalProperty
+  public :: hadapt_setVertexCoords1D
+  public :: hadapt_setVertexCoords2D
+  public :: hadapt_setVertexCoords3D
+  public :: hadapt_setVerticesAtElement
 
 !<constants>
 
@@ -493,31 +511,12 @@ module hadaptaux
     ! Arraylist for elements-meeting-at-vertex structure
     type(t_arraylistInt) :: rElementsAtVertex
   end type t_hadapt
-  
-  public :: t_hadapt
 
   !</typeblock>
 
 !</types>
 
-  public :: hadapt_getNVE
-  public :: hadapt_setVertexCoords1D
-  public :: hadapt_getVertexCoords1D
-  public :: hadapt_setVertexCoords2D
-  public :: hadapt_getVertexCoords2D
-  public :: hadapt_setVertexCoords3D
-  public :: hadapt_getVertexCoords3D
-  public :: hadapt_setVerticesAtElement
-  public :: hadapt_getVerticesAtElement
-  public :: hadapt_setNeighboursAtElement
-  public :: hadapt_getNeighboursAtElement
-  public :: hadapt_setNelOfType
-  public :: hadapt_getNelOfType
-  public :: hadapt_setBoundary
-  public :: hadapt_getBoundary
-  public :: hadapt_setNodalProperty
-  public :: hadapt_getNodalProperty
-  public :: hadapt_genElementsAtVertex
+
 
 contains
 

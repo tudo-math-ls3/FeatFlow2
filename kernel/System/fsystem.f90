@@ -114,32 +114,113 @@ module fsystem
 
   implicit none
 
+  private
+  public :: sys_permute
+  public :: sys_halt
+  public :: sys_throwFPE
+  public :: system_init
+  public :: sys_version
+  public :: sys_toupper
+  public :: sys_tolower
+  public :: sys_upcase
+  public :: sys_lowcase
+  public :: sys_charreplace
+  public :: sys_getFreeUnit
+  public :: sys_fileExists
+  public :: sys_flush
+  public :: sys_str2Double
+  public :: sys_str2Single
+  public :: sys_smem
+  public :: sys_smemL
+  public :: sys_sl
+  public :: sys_sd
+  public :: sys_sdP
+  public :: sys_sdE
+  public :: sys_sdEP
+  public :: sys_si
+  public :: sys_si0
+  public :: sys_sli
+  public :: sys_sli0
+  public :: sys_sdL
+  public :: sys_sdEL
+  public :: sys_siL
+  public :: sys_si0L
+  public :: sys_sliL
+  public :: sys_sli0L
+  public :: sys_i03
+  public :: sys_i04
+  public :: sys_i05
+  public :: sys_i1
+  public :: sys_i2
+  public :: sys_i3
+  public :: sys_i4
+  public :: sys_i6
+  public :: sys_i8
+  public :: sys_i10
+  public :: sys_i12
+  public :: sys_i16
+  public :: sys_i64
+  public :: sys_li12
+  public :: sys_s3
+  public :: sys_s5
+  public :: sys_s6
+  public :: sys_s14
+  public :: sys_s18
+  public :: sys_s32
+  public :: sys_s54
+  public :: sys_s61
+  public :: sys_s63
+  public :: sys_s84
+  public :: sys_d
+  public :: sys_r
+  public :: sys_s2E
+  public :: sys_s4E
+  public :: sys_s6E
+  public :: sys_s10E
+  public :: sys_adjustr
+  public :: sys_adjustl
+  public :: sys_getenv_string
+  public :: sys_ncommandLineArgs
+  public :: sys_getcommandLineArg
+  public :: sys_silsb
+  public :: sys_simsb
+  public :: sys_dequote
+  public :: sys_stringToCharArray
+  public :: sys_charArrayToString
+  public :: t_realPointer
+  public :: t_real2DPointer
+  public :: t_singlePointer
+  public :: t_single2DPointer
+  public :: t_intPointer
+  public :: t_int2DPointer
+  public :: t_sysconfig
+  
 !<constants>
 
 !<constantblock description="constants for logical values">
 
   ! logical value 'true'
-  integer, parameter :: YES = 0
+  integer, parameter, public :: YES = 0
 
   ! logical value 'false'
-  integer, parameter :: NO = 1
+  integer, parameter, public :: NO = 1
 
 !</constantblock>
  
 !<constantblock description="Kind values for floats">
 
   ! kind value for 32 bit float (single precision)
-  integer, parameter :: SP = selected_real_kind(6,37)
+  integer, parameter, public :: SP = selected_real_kind(6,37)
 
   ! kind value for 64 bit float (double precision)
-  integer, parameter :: DP = selected_real_kind(15,307)
+  integer, parameter, public :: DP = selected_real_kind(15,307)
 
 #ifdef ENABLE_QUADPREC
   ! kind value for 80/128 bit float (quad precision)
-  integer, parameter :: QP = selected_real_kind(18,4931)
+  integer, parameter, public :: QP = selected_real_kind(18,4931)
 #else
   ! set QP equal to DP to avoid compiler problems
-  integer, parameter :: QP = DP
+  integer, parameter, public :: QP = DP
 #endif
   
   ! Note: Depending on the platform and the compiler, QP is either an 80
@@ -151,95 +232,95 @@ module fsystem
 !<constantblock description="Kind values for integers">
 
   ! kind value for 8 bit integer
-  integer, parameter :: I8 = selected_int_kind(2)
+  integer, parameter, public :: I8 = selected_int_kind(2)
 
   ! kind value for 16 bit integer
-  integer, parameter :: I16 = selected_int_kind(4)
+  integer, parameter, public :: I16 = selected_int_kind(4)
 
   ! kind value for 32 bit integer
-  integer, parameter :: I32 = selected_int_kind(8)
+  integer, parameter, public :: I32 = selected_int_kind(8)
 
   ! kind value for 64 bit integer
-  integer, parameter :: I64 = selected_int_kind(10)
+  integer, parameter, public :: I64 = selected_int_kind(10)
 
 !</constantblock>
 
 !<constantblock description="system flags">
 
   ! constant for a system beep
-  character(len=1), parameter :: BEEP = achar(7)
+  character(len=1), parameter, public :: BEEP = achar(7)
 
   ! constant for breaking line in a string
-  character(len=1), parameter :: NEWLINE = achar(10)
+  character(len=1), parameter, public :: NEWLINE = achar(10)
 
   ! standard length for strings in FEAT
-  integer, parameter :: SYS_STRLEN = 256
+  integer, parameter, public :: SYS_STRLEN = 256
 
   ! standard length for name strings in FEAT
-  integer, parameter :: SYS_NAMELEN = 32
+  integer, parameter, public :: SYS_NAMELEN = 32
 
   ! minimal difference to unity for real values
-  real(SP), parameter :: SYS_EPSREAL_SP = epsilon(1.0_SP)
-  real(DP), parameter :: SYS_EPSREAL_DP = epsilon(1.0_DP)
-  real(QP), parameter :: SYS_EPSREAL_QP = epsilon(1.0_QP)
+  real(SP), parameter, public :: SYS_EPSREAL_SP = epsilon(1.0_SP)
+  real(DP), parameter, public :: SYS_EPSREAL_DP = epsilon(1.0_DP)
+  real(QP), parameter, public :: SYS_EPSREAL_QP = epsilon(1.0_QP)
 
   ! minimal positive values for real variables
-  real(SP), parameter :: SYS_MINREAL_SP = tiny(1.0_SP)
-  real(DP), parameter :: SYS_MINREAL_DP = tiny(1.0_DP)
-  real(QP), parameter :: SYS_MINREAL_QP = tiny(1.0_QP)
+  real(SP), parameter, public :: SYS_MINREAL_SP = tiny(1.0_SP)
+  real(DP), parameter, public :: SYS_MINREAL_DP = tiny(1.0_DP)
+  real(QP), parameter, public :: SYS_MINREAL_QP = tiny(1.0_QP)
 
   ! maximal values for real variables
-  real(SP), parameter :: SYS_MAXREAL_SP = huge(1.0_SP)
-  real(DP), parameter :: SYS_MAXREAL_DP = huge(1.0_DP)
-  real(QP), parameter :: SYS_MAXREAL_QP = huge(1.0_QP)
+  real(SP), parameter, public :: SYS_MAXREAL_SP = huge(1.0_SP)
+  real(DP), parameter, public :: SYS_MAXREAL_DP = huge(1.0_DP)
+  real(QP), parameter, public :: SYS_MAXREAL_QP = huge(1.0_QP)
 
   ! maximal values for integer variables
-  integer,      parameter :: SYS_MAXINT = huge(1)
-  integer(I8),  parameter :: SYS_MAXI8  = huge(1_I8)
-  integer(I16), parameter :: SYS_MAXI16 = huge(1_I16)
-  integer(I32), parameter :: SYS_MAXI32 = huge(1_I32)
-  integer(I64), parameter :: SYS_MAXI64 = huge(1_I64)
+  integer,      parameter, public :: SYS_MAXINT = huge(1)
+  integer(I8),  parameter, public :: SYS_MAXI8  = huge(1_I8)
+  integer(I16), parameter, public :: SYS_MAXI16 = huge(1_I16)
+  integer(I32), parameter, public :: SYS_MAXI32 = huge(1_I32)
+  integer(I64), parameter, public :: SYS_MAXI64 = huge(1_I64)
 
   ! mathematical constant Pi
-  real(DP)           :: SYS_PI
+  real(DP), public :: SYS_PI
   
   ! internal constant for infinity
-  real(SP), parameter :: SYS_INFINITY_SP = huge(1.0_SP)
-  real(DP), parameter :: SYS_INFINITY_DP = huge(1.0_DP)
-  real(QP), parameter :: SYS_INFINITY_QP = huge(1.0_QP)
+  real(SP), parameter, public :: SYS_INFINITY_SP = huge(1.0_SP)
+  real(DP), parameter, public :: SYS_INFINITY_DP = huge(1.0_DP)
+  real(QP), parameter, public :: SYS_INFINITY_QP = huge(1.0_QP)
 
   ! increment value = 1
-  integer, parameter :: INCX = 1
+  integer, parameter, public :: INCX = 1
 
   ! flag for appending data to a file
-  integer, parameter :: SYS_APPEND = 0
+  integer, parameter, public :: SYS_APPEND = 0
 
   ! flag for replacing a file
-  integer, parameter :: SYS_REPLACE = 1
+  integer, parameter, public :: SYS_REPLACE = 1
 
 !</constantblock>
   
 !<constantblock description="system signals">
 
-  integer, parameter :: SIGILL  =  4
-  integer, parameter :: SIGTRAP =  5
-  integer, parameter :: SIGABRT =  6
-  integer, parameter :: SIGEMT  =  7
-  integer, parameter :: SIGFPE  =  8
-  integer, parameter :: SIGBUS  = 10
-  integer, parameter :: SIGSEGV = 11
+  integer, parameter, public :: SIGILL  =  4
+  integer, parameter, public :: SIGTRAP =  5
+  integer, parameter, public :: SIGABRT =  6
+  integer, parameter, public :: SIGEMT  =  7
+  integer, parameter, public :: SIGFPE  =  8
+  integer, parameter, public :: SIGBUS  = 10
+  integer, parameter, public :: SIGSEGV = 11
   
 !</constantblock>
 
 !<constantblock description="Constants for the sys_haltmode variable">
 
   ! Halts the program by the CALL sys_halt() command
-  integer, parameter :: SYS_HALT_STOP     = 0
+  integer, parameter, public :: SYS_HALT_STOP     = 0
 
   ! Halts the program by sys_throwFPE. On some compilers, this helps with
   ! debugging as the compiler will print a stack trace to the terminal
   ! that allows tracing back where an error came from.
-  integer, parameter :: SYS_HALT_THROWFPE = 1
+  integer, parameter, public :: SYS_HALT_THROWFPE = 1
   
 !</constantblock>
 
@@ -332,11 +413,11 @@ module fsystem
 
 !<publicvars>
   ! global system configuration
-  type (t_sysconfig), target, save :: sys_sysconfig
+  type (t_sysconfig), target, public, save :: sys_sysconfig
   
   ! Halt mode. This variable defines the way, sys_halt halts the program.
   ! One of the SYS_HALT_xxxx constants.
-  integer, save :: sys_haltmode = SYS_HALT_STOP
+  integer, public, save :: sys_haltmode = SYS_HALT_STOP
 
   ! The Fortran system_clock timer, like all integer timers, has a cycle
   ! time of real(max)/real(rate) seconds. After max clock cycles the
@@ -345,7 +426,7 @@ module fsystem
   !
   ! Note: Timing routines in the statistics module automatically
   ! respect this setting but do not explicitely use this variable.
-  real(DP), save :: sys_dtimeMax = 0.0_DP
+  real(DP), public, save :: sys_dtimeMax = 0.0_DP
 
 !</publicvars>
 
@@ -530,7 +611,7 @@ contains
 
 !<subroutine>
 
-  subroutine sys_version(ifeastVersionHigh, ifeastVersionMiddle, ifeastVersionLow, &
+  subroutine sys_version(ifeatVersionHigh, ifeatVersionMiddle, ifeatVersionLow, &
                          sreldate)
 
 !<description>
@@ -540,13 +621,13 @@ contains
 !<output>
 
     ! high version number
-    integer :: ifeastVersionHigh
+    integer :: ifeatVersionHigh
     
     ! middle version number
-    integer :: ifeastVersionMiddle
+    integer :: ifeatVersionMiddle
     
     ! low version number
-    integer :: ifeastVersionLow
+    integer :: ifeatVersionLow
     
     ! release date
     character(LEN=*) :: sreldate
@@ -555,9 +636,9 @@ contains
 
 !</subroutine>
 
-    ifeastVersionHigh=0
-    ifeastVersionMiddle=0
-    ifeastVersionLow=1
+    ifeatVersionHigh   = 0
+    ifeatVersionMiddle = 0
+    ifeatVersionLow    = 2
     
     sreldate="01.01.2009 RC0"
     
@@ -1257,6 +1338,8 @@ contains
     end if
   end function sys_sl
 
+!************************************************************************
+
 !<function>
 
   character (len=32) function sys_sd(dvalue, idigits) result(soutput)
@@ -1357,9 +1440,7 @@ contains
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sdP
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1404,7 +1485,6 @@ contains
     sformat = "(es24." // trim(saux) // ")"
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sdE
-
 
 !************************************************************************
 
@@ -1465,7 +1545,6 @@ contains
 
 !************************************************************************
 
-
 !<function>
 
   character (len=32) function sys_si(ivalue, idigits) result(soutput)
@@ -1511,9 +1590,7 @@ contains
 
   end function sys_si
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1558,9 +1635,7 @@ contains
     write (unit = soutput, fmt = trim(sformat)) ivalue
   end function sys_si0
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1605,9 +1680,7 @@ contains
     write (unit = soutput, fmt = trim(sformat)) ivalue
   end function sys_sli
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1652,15 +1725,12 @@ contains
     write (unit = soutput, fmt = trim(sformat)) ivalue
   end function sys_sli0
 
-
 !************************************************************************
-
 
 !************************************************************************
 ! Left-adjusted versions of the main conversion routines,
 ! just add capital L to function name
 !************************************************************************
-
 
 !<function>
 
@@ -1689,9 +1759,7 @@ contains
     soutput = adjustl(sys_sd(dvalue, idigits))
   end function sys_sdL
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1720,9 +1788,7 @@ contains
     soutput = adjustl(sys_sdE(dvalue, idigits))
   end function sys_sdEL
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1752,9 +1818,7 @@ contains
     soutput = adjustl(sys_si(ivalue, idigits))
   end function sys_siL
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1784,9 +1848,7 @@ contains
     soutput = adjustl(sys_si0(ivalue, idigits))
   end function sys_si0L
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1814,9 +1876,7 @@ contains
     soutput = adjustl(sys_sli(ivalue, idigits))
   end function sys_sliL
 
-
 !************************************************************************
-
 
 !<function>
 
@@ -1843,7 +1903,6 @@ contains
 
     soutput = adjustl(sys_sli0(ivalue, idigits))
   end function sys_sli0L
-
 
 !************************************************************************
 ! Wrapper functions to be downward-compatible
@@ -1927,7 +1986,6 @@ contains
     integer(I64) :: ivalue
     sys_li12 = trim(sys_sliL(ivalue, 12))
   end function sys_li12
-
 
   ! Now: real => string
 
@@ -2015,7 +2073,6 @@ contains
 
 !************************************************************************
 
-
 !<function>
 
   function sys_adjustr(sstring,nchars) result(soutput)
@@ -2046,7 +2103,6 @@ contains
 
 !************************************************************************
 
-
 !<function>
 
   function sys_adjustl(sstring,nchars) result(soutput)
@@ -2075,7 +2131,7 @@ contains
     
   end function
 
-  ! ***************************************************************************
+!************************************************************************
 
 !<function>
   logical function sys_getenv_string(svar, sresult)
@@ -2144,7 +2200,7 @@ contains
 
   end function sys_getenv_string
   
-! ****************************************************************************************
+!************************************************************************
 
 !<function>
   integer function sys_ncommandLineArgs()
@@ -2167,7 +2223,7 @@ contains
 
   end function
   
-! ****************************************************************************************
+!************************************************************************
 
 !<subroutine>
   subroutine sys_getcommandLineArg(iarg,soption,svalue,iformat,sdefault)
@@ -2277,7 +2333,7 @@ contains
 
   end subroutine
 
-! ****************************************************************************************
+!************************************************************************
 
 !<function>
 
@@ -2317,7 +2373,7 @@ contains
 
   end function
 
-! ****************************************************************************************
+!************************************************************************
 
 !<function>
 
@@ -2357,7 +2413,7 @@ contains
 
   end function
 
-! ****************************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -2391,7 +2447,7 @@ contains
   
   end subroutine
 
-! ****************************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -2436,7 +2492,7 @@ contains
   
   end subroutine
 
-! ****************************************************************************************
+!************************************************************************
 
 !<subroutine>
 

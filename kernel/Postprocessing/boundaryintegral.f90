@@ -46,7 +46,11 @@ module boundaryintegral
 
   implicit none
 
-  private :: ffunctionFEevaluation2D,ffunctionNormalDeriv2D
+  private
+  public :: bdint_integral2D
+  public :: bdint_integral2D_conf
+  public :: bdint_scalarBoundaryInt2D
+  public :: bdint_normalDerivativeInt2D
 
 contains
 

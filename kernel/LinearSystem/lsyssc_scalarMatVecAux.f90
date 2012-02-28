@@ -6,6 +6,32 @@ module lsyssc_scalarMatVecAux
 
   implicit none
 
+  private
+  public :: lsyssc_lax79dbledble
+  public :: lsyssc_lax79sngldble
+  public :: lsyssc_lax79dblesngl
+  public :: lsyssc_lax79snglsngl
+  public :: lsyssc_lax9rowcdbledble
+  public :: lsyssc_lax9rowcsngldble
+  public :: lsyssc_lax9rowcdblesngl
+  public :: lsyssc_lax9rowcsnglsngl
+  public :: lsyssc_lax79intl1dbledble
+  public :: lsyssc_lax79intl1sngldble
+  public :: lsyssc_lax79intl1dblesngl
+  public :: lsyssc_lax79intl1snglsngl
+  public :: lsyssc_lax79intlddbledble
+  public :: lsyssc_lax79intldsngldble
+  public :: lsyssc_lax79intlddblesngl
+  public :: lsyssc_lax79intldsnglsngl
+  public :: lsyssc_latxddbledble
+  public :: lsyssc_latxdsngldble
+  public :: lsyssc_latxddblesngl
+  public :: lsyssc_latxdsnglsngl
+  public :: lsyssc_ltx79dbledble
+  public :: lsyssc_ltx79sngldble
+  public :: lsyssc_ltx79dblesngl
+  public :: lsyssc_ltx79snglsngl
+  
 contains
 
   ! =-=-=-=-=- Double-valued matrix, double-valued vector -=-=-=-=-=

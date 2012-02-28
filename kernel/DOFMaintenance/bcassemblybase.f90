@@ -42,6 +42,8 @@ module bcassemblybase
 
   implicit none
   
+  private
+
   public :: bcasm_getVertInBdRegion
   public :: bcasm_getEdgesInBdRegion
   public :: bcasm_getElementsInBdRegion
@@ -56,8 +58,6 @@ module bcassemblybase
   interface bcasm_getElementsInBCregion
     module procedure bcasm_getElementsInBdRegion
   end interface
-
-  private
 
 contains
 

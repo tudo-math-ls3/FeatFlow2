@@ -15,6 +15,9 @@ module x
   
   implicit none
 
+  private
+  public :: x
+
 !<types>
   
   !<typeblock>
@@ -34,7 +37,7 @@ module x
   !<constantblock description="x">
 
   ! logical value 'true'
-  integer, parameter :: YES = 0
+  integer, parameter, public :: YES = 0
 
   !</constantblock>
   

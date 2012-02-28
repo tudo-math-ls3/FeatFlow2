@@ -959,7 +959,7 @@ contains
     if ((iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) .or. &
         (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_AUTO)) then
       ! Get the level from the highest 16 bit.
-      n = iand(ccubType,NOT(CUB_TP_MASK))
+      n = iand(ccubType,not(CUB_TP_MASK))
       n = ishft(n,-16)
     else
       n = 0

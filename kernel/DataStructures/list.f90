@@ -26,24 +26,27 @@ module list
 !$use omp_lib
   use fsystem
   use genoutput
-  use listInt
-  use listInt_Dble
-  use listInt_Sngl
-  use listInt_Int
-  use listDble
-  use listDble_Dble
-  use listDble_Sngl
-  use listDble_Int
-  use listSngl
-  use listSngl_Dble
-  use listSngl_Sngl
-  use listSngl_Int
+  use listInt,       only : t_listInt, list_release
+  use listInt_Dble,  only : t_listInt_Dble, list_release
+  use listInt_Sngl,  only : t_listInt_Sngl, list_release
+  use listInt_Int,   only : t_listInt_Int, list_release
+  use listDble,      only : t_listDble, list_release
+  use listDble_Dble, only : t_listDble_Dble, list_release
+  use listDble_Sngl, only : t_listDble_Sngl, list_release
+  use listDble_Int,  only : t_listDble_Int, list_release
+  use listSngl,      only : t_listSngl, list_release
+  use listSngl_Dble, only : t_listSngl_Dble, list_release
+  use listSngl_Sngl, only : t_listSngl_Sngl, list_release
+  use listSngl_Int,  only : t_listSngl_Int, list_release
   use storage
 
-  use listbase, only : LIST_LSPEC_REVERSE,&
-                       LIST_LSPEC_VIRTUAL
-
   implicit none
+
+  private
+  public :: t_list
+  public :: list_init
+  public :: list_done
+  public :: list_getbase
 
   interface list_getbase
     module procedure list_getbase_int
@@ -64,23 +67,23 @@ module list
 !<constantblock description="Global flags for list implementations">
   
   ! list for integer data
-  integer, parameter :: LIST_INT           = ST_INT
-  integer, parameter :: LIST_INT_INT       = ST_INT + 100*ST_INT
-  integer, parameter :: LIST_INT_DOUBLE    = ST_INT + 100*ST_DOUBLE
-  integer, parameter :: LIST_INT_SINGLE    = ST_INT + 100*ST_SINGLE
+  integer, parameter, public :: LIST_INT           = ST_INT
+  integer, parameter, public :: LIST_INT_INT       = ST_INT + 100*ST_INT
+  integer, parameter, public :: LIST_INT_DOUBLE    = ST_INT + 100*ST_DOUBLE
+  integer, parameter, public :: LIST_INT_SINGLE    = ST_INT + 100*ST_SINGLE
 
   ! list for double data
-  integer, parameter :: LIST_DOUBLE        = ST_DOUBLE
-  integer, parameter :: LIST_DOUBLE_INT    = ST_DOUBLE + 100*ST_INT
-  integer, parameter :: LIST_DOUBLE_DOUBLE = ST_DOUBLE + 100*ST_DOUBLE
-  integer, parameter :: LIST_DOUBLE_SINGLE = ST_DOUBLE + 100*ST_SINGLE
+  integer, parameter, public :: LIST_DOUBLE        = ST_DOUBLE
+  integer, parameter, public :: LIST_DOUBLE_INT    = ST_DOUBLE + 100*ST_INT
+  integer, parameter, public :: LIST_DOUBLE_DOUBLE = ST_DOUBLE + 100*ST_DOUBLE
+  integer, parameter, public :: LIST_DOUBLE_SINGLE = ST_DOUBLE + 100*ST_SINGLE
 
 
   ! list for single data
-  integer, parameter :: LIST_SINGLE        = ST_SINGLE
-  integer, parameter :: LIST_SINGLE_INT    = ST_SINGLE + 100*ST_INT
-  integer, parameter :: LIST_SINGLE_DOUBLE = ST_SINGLE + 100*ST_DOUBLE
-  integer, parameter :: LIST_SINGLE_SINGLE = ST_SINGLE + 100*ST_SINGLE
+  integer, parameter, public :: LIST_SINGLE        = ST_SINGLE
+  integer, parameter, public :: LIST_SINGLE_INT    = ST_SINGLE + 100*ST_INT
+  integer, parameter, public :: LIST_SINGLE_DOUBLE = ST_SINGLE + 100*ST_DOUBLE
+  integer, parameter, public :: LIST_SINGLE_SINGLE = ST_SINGLE + 100*ST_SINGLE
 
 !</constantblock>
 !</constants>

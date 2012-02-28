@@ -282,12 +282,20 @@
 module hadaptaux2d
 
 !$use omp_lib
+  use arraylistInt
+  use basicgeometry
   use collection
   use fsystem
+  use genoutput
   use hadaptaux
   use io
   use linearsystemscalar
-  use quadtree
+  use mapInt_Dble
+  use quadtreeDble
+  use quadtreebase
+  use sort
+  use storage
+  use triangulation
 
   implicit none
 

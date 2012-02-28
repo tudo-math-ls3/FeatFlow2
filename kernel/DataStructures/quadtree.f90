@@ -26,18 +26,17 @@ module quadtree
 !$use omp_lib
   use fsystem
   use genoutput
-  use quadtreeDble
-  use quadtreeSngl
+  use quadtreeDble, only : t_quadtreeDble,qtree_release
+  use quadtreeSngl, only : t_quadtreeSngl,qtree_release
   use storage
 
-  use quadtreebase, only : QTREE_FAILED,&
-                           QTREE_NOT_FOUND,&
-                           QTREE_FOUND,&
-                           QTREE_INSERTED,&
-                           QTREE_DELETED,&
-                           QTREE_REPOSITIONED
-
   implicit none
+
+  private
+  public :: t_quadtree
+  public :: quadtree_init
+  public :: quadtree_done
+  public :: quadtree_getbase
 
   interface quadtree_getbase
     module procedure quadtree_getbase_dble
@@ -48,10 +47,10 @@ module quadtree
 !<constantblock description="Global flags for quadtree implementations">
   
   ! quadtree for double data
-  integer, parameter :: QUADTREE_DOUBLE        = ST_DOUBLE
+  integer, parameter, public :: QUADTREE_DOUBLE = ST_DOUBLE
   
   ! quadtree for single data
-  integer, parameter :: QUADTREE_SINGLE        = ST_SINGLE
+  integer, parameter, public :: QUADTREE_SINGLE = ST_SINGLE
 
 !</constantblock>
 !</constants>

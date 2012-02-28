@@ -26,24 +26,27 @@ module arraylist
 !$use omp_lib
   use fsystem
   use genoutput
-  use arraylistInt
-  use arraylistInt_Dble
-  use arraylistInt_Sngl
-  use arraylistInt_Int
-  use arraylistDble
-  use arraylistDble_Dble
-  use arraylistDble_Sngl
-  use arraylistDble_Int
-  use arraylistSngl
-  use arraylistSngl_Dble
-  use arraylistSngl_Sngl
-  use arraylistSngl_Int
+  use arraylistInt,       only : t_arraylistInt, alst_release
+  use arraylistInt_Dble,  only : t_arraylistInt_Dble, alst_release
+  use arraylistInt_Sngl,  only : t_arraylistInt_Sngl, alst_release
+  use arraylistInt_Int,   only : t_arraylistInt_Int, alst_release
+  use arraylistDble,      only : t_arraylistDble, alst_release
+  use arraylistDble_Dble, only : t_arraylistDble_Dble, alst_release
+  use arraylistDble_Sngl, only : t_arraylistDble_Sngl, alst_release
+  use arraylistDble_Int,  only : t_arraylistDble_Int, alst_release
+  use arraylistSngl,      only : t_arraylistSngl, alst_release
+  use arraylistSngl_Dble, only : t_arraylistSngl_Dble, alst_release
+  use arraylistSngl_Sngl, only : t_arraylistSngl_Sngl, alst_release
+  use arraylistSngl_Int,  only : t_arraylistSngl_Int, alst_release
   use storage
 
-  use arraylistbase, only : ALST_LSPEC_REVERSE,&
-                            ALST_LSPEC_VIRTUAL
-
   implicit none
+
+  private
+  public :: t_arraylist
+  public :: alst_init
+  public :: alst_done
+  public :: alst_getbase
 
   interface alst_getbase
     module procedure alst_getbase_int
