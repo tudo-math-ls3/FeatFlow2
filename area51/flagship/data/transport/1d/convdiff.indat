@@ -11,10 +11,11 @@
 defconst: g0 = 100
 
 # Specify the initial solution
-deffunc: @initsol = 1-x ; x,t
+deffunc: @initsol = 0.0 ; x,t
 
-# Specify the exact solution
-deffunc: @exactsol = (exp(_g0)-exp(_g0*x))/(exp(_g0)-1.0); x,t
+# Specify the exact solution and its derivative
+deffunc: @exactsol_func   =  (exp(_g0)-exp(_g0*x))/(exp(_g0)-1.0); x,t
+deffunc: @exactsol_derivx =      -(_g0*exp(_g0*x))/(exp(_g0)-1.0); x,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,t
@@ -37,5 +38,6 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  'DIRICHLET_WEAK'  '1.0'  '1e3'  '-1.0'
-0.0  T  'DIRICHLET_WEAK'  '0.0'  '1e3'  '-1.0'
+0.0  T  'DIRICHLET_WEAK'  '1.0'  '4.0'  '1.0'
+0.0  T  'DIRICHLET_WEAK'  '0.0'  '4.0'  '1.0'
+#                         g_D    C^I_b  gamma

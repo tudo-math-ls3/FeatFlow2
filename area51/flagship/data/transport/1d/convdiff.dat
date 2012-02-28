@@ -111,7 +111,9 @@ ssolutionname = @initsol
 iexactsolutiontype = 1
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname(2) =
+  @exactsol_func
+  @exactsol_derivx
 
 # type of target functional
 # 0 = zero target functional
@@ -244,7 +246,7 @@ nrefineucd = 0
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/convdiff
+sucdsolution = out/convdiff_nlev%{FullMultigridSolver.nlmax}_nonsymmetric_penalty4_LED
 
 # file for UCD output of error
 sucderror = out/convdiff_error
@@ -665,7 +667,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
