@@ -79,28 +79,25 @@
 !# 2.) smva_assembleDefect
 !#     -> Set up a defect vector d:=b-A(x)x
 !#
-!# 3.) smva_projectControlTimestep
-!#     -> Projects the entries of a vector into a range of numbers.
-!#
-!# 4.) smva_initNonlinMatrix
+!# 3.) smva_initNonlinMatrix
 !#     -> Initialises a nonlinear-matrix structure with basic parameters.
 !#
-!# 5.) smva_initNonlinearData
+!# 4.) smva_initNonlinearData
 !#     -> Initialises a nonlinear-data structure.
 !#
-!# 6.) smva_clearMatrix
+!# 5.) smva_clearMatrix
 !#     -> Clears all weights in a matrix.
 !#
-!# 7.) smva_disableSubmatrix
+!# 6.) smva_disableSubmatrix
 !#     -> Disables a submatrix by setting the corresponding weights to zero.
 !#
-!# 8.) smva_clearMatrix
+!# 7.) smva_clearMatrix
 !#     -> Sets all weights in a matrix to zero
 !#
-!# 3.) smva_prepareViscoAssembly
+!# 8.) smva_prepareViscoAssembly
 !#     -> Prepare a collection for the use in ffunctionViscoModel
 !#
-!# 4.) ffunctionViscoModel
+!# 9.) ffunctionViscoModel
 !#     -> Auxiliary function that defines the nonconstant viscosity
 !# </purpose>
 !##############################################################################

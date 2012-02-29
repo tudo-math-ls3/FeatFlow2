@@ -1635,12 +1635,12 @@ contains
             select case (rconstraints%cconstraintsType)
             case (0)
               ! Constant bounds
-              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(4),&
-                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(4),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(1),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
                   rconstraints%dumin1,rconstraints%dumax1)
 
-              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(5),&
-                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(5),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(2),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   rconstraints%dumin2,rconstraints%dumax2)
 
             case (1)
@@ -1649,14 +1649,14 @@ contains
                   rvectorSol%p_rblockDiscr,rconstrSpace)
               
               ! Implement the constraints
-              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(4),&
-                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(4),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(1),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
 
-              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(5),&
-                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(5),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(2),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(2))
