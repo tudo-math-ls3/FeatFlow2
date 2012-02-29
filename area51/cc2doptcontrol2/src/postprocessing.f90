@@ -78,6 +78,7 @@ module postprocessing
   use spatialbcdef
   use spacetimevectors
   use spacematvecassembly
+  use newtonderivative
   
   use constantsoptc
   use structuresoptc
@@ -1608,6 +1609,7 @@ contains
 !</subroutine>
 
     type(t_optcconstraintsSpace) :: rconstrSpace
+    real(DP) :: dalphamult
 
     select case (rphysics%cequation)
     case (0,1)
@@ -1615,76 +1617,91 @@ contains
 
       ! Copy, scale and impose constraints if necessary.
       if (dalphaC .gt. 0.0_DP) then
+        ! Depending on the formulation, the control is calculated
+        ! either by multiplying with 1/alpha or -1/alpha.
+        select case (ispaceTimeFormulation)
+        case (0)
+          dalphamult = 1.0_DP
+        case (1)
+          dalphamult = -1.0_DP
+        end select
+        
         ! Distributed control active
         if (present(rvectorControl)) then
           call lsyssc_copyVector (rvectorSol%RvectorBlock(4),rvectorControl%RvectorBlock(1))
           call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
           
-          select case (ispaceTimeFormulation)
-          case (0)
-            call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),1.0_DP/dalphaC)
-            call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),1.0_DP/dalphaC)
-          case (1)
-            call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalphaC)
-            call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalphaC)
-          end select
-          
           if (rconstraints%ccontrolConstraints .ne. 0) then
             select case (rconstraints%cconstraintsType)
             case (0)
-              call smva_projectControlTstepConst (rvectorControl%RvectorBlock(1),&
+              ! Constant bounds
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(4),&
                   rconstraints%dumin1,rconstraints%dumax1)
-              call smva_projectControlTstepConst (rvectorControl%RvectorBlock(2),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(5),&
                   rconstraints%dumin2,rconstraints%dumax2)
+
             case (1)
               ! Initialise the space constraints.
               call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
                   rvectorSol%p_rblockDiscr,rconstrSpace)
               
               ! Implement the constraints
-              call smva_projectControlTstepVec (rvectorControl%RvectorBlock(1),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
-              call smva_projectControlTstepVec (rvectorControl%RvectorBlock(2),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(2))
-              
+
               ! Done.
               call stlin_doneSpaceConstraints (rconstrSpace)
+
             end select
           end if
         else
-          select case (ispaceTimeFormulation)
-          case (0)
-            call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),1.0_DP/dalphaC)
-            call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),1.0_DP/dalphaC)
-          case (1)
-            call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalphaC)
-            call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalphaC)
-          end select
           
           if (rconstraints%ccontrolConstraints .ne. 0) then
+          
             select case (rconstraints%cconstraintsType)
             case (0)
-              call smva_projectControlTstepConst (rvectorSol%RvectorBlock(4),&
+              ! Constant bounds
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
                   rconstraints%dumin1,rconstraints%dumax1)
-              call smva_projectControlTstepConst (rvectorSol%RvectorBlock(5),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
                   rconstraints%dumin2,rconstraints%dumax2)
+
             case (1)
               ! Initialise the space constraints.
               call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
                   rvectorSol%p_rblockDiscr,rconstrSpace)
               
               ! Implement the constraints
-              call smva_projectControlTstepVec (rvectorSol%RvectorBlock(4),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
-              call smva_projectControlTstepVec (rvectorSol%RvectorBlock(5),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(2))
               
               ! Done.
               call stlin_doneSpaceConstraints (rconstrSpace)
+              
             end select
           end if
         end if

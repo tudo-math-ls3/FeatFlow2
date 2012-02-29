@@ -52,6 +52,7 @@ module optcanalysis
   use user_callback
   use spacematvecassembly
   use spacetimelinearsystem
+  use newtonderivative
   
   use structuresoptc
     
@@ -547,30 +548,38 @@ contains
         if (dalphaC .gt. 0.0_DP) then
           ! Compute:
           ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
-          ! For that purpose, scale the lambda part and project it if necessary.
-          call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalphaC)
-          call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalphaC)
           
+          ! At first, calculate P(-1/alpha lambda) -- or nothing,
+          ! if distriobuted control is deactivated.
           if (rconstraints%ccontrolConstraints .ne. 0) then
             select case (rconstraints%cconstraintsType)
             case (0)
-              call smva_projectControlTstepConst (rtempVector%RvectorBlock(4),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
                   rconstraints%dumin1,rconstraints%dumax1)
-              call smva_projectControlTstepConst (rtempVector%RvectorBlock(5),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
                   rconstraints%dumin2,rconstraints%dumax2)
+
             case (1)
               ! Initialise the space constraints.
               call stlin_initSpaceConstraints (rconstraints,dtime,&
                   rsolution%p_rspaceDiscr,rconstrSpace)
               
               ! Implement the constraints
-              call smva_projectControlTstepVec (rtempVector%RvectorBlock(4),&
+              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
-              call smva_projectControlTstepVec (rtempVector%RvectorBlock(5),&
+
+              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(2))
-              
+
               ! Done.
               call stlin_doneSpaceConstraints (rconstrSpace)
             end select

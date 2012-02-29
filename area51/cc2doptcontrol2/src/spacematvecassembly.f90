@@ -253,8 +253,6 @@ module spacematvecassembly
   public :: smva_initNonlinMatrix
   public :: smva_assembleMatrix
   public :: smva_assembleDefect
-  public :: smva_projectControlTstepConst
-  public :: smva_projectControlTstepVec
   public :: smva_getDiscrData
   public :: smva_initNonlinearData
   public :: smva_addBdEOJvector
@@ -985,209 +983,6 @@ contains
     
     ! Release memory
     deallocate(Dfunc)
-
-  end subroutine
-
-  ! -----------------------------------------------------
-
-  subroutine massmatfilter (rmatrix, rvector, dalphaC, dmin, dmax)
-      
-  ! Filters a mass matrix. The lines in the matrix rmatrix corresponding
-  ! to all entries in the (control-)vector violating the constraints
-  ! of the problem.
-  
-  ! Matrix to be filtered
-  type(t_matrixScalar), intent(inout) :: rmatrix
-
-  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
-  ! violates the control constraints given by rnonlinearSpatialMatrix, the corresponding
-  ! lines are set to 0.
-  type(t_vectorScalar), intent(in) :: rvector
-  
-  ! ALPHA regularisation parameter from the space-time matrix
-  real(dp), intent(in) :: dalphaC
-  
-  ! minimum bound for the control
-  real(dp), intent(in) :: dmin
-
-  ! maximum bound for the control
-  real(dp), intent(in) :: dmax
-  
-    ! local variables
-    real(dp), dimension(:), pointer :: p_Ddata
-    integer, dimension(:), allocatable :: p_Idofs
-    integer :: i,nviolate
-    real(dp) :: du
-    
-    ! Cancel if distributed control not active
-    if (dalphaC .le. 0.0_DP) return
-    
-    ! Get the vector data
-    call lsyssc_getbase_double (rvector,p_Ddata)
-    
-    ! Figure out the DOF's violating the constraints
-    allocate(p_Idofs(rvector%NEQ))
-    
-    nviolate = 0
-    do i=1,rvector%NEQ
-      du = -p_Ddata(i)/dalphaC
-      if ((du .le. dmin) .or. (du .ge. dmax)) then
-        nviolate = nviolate + 1
-        p_Idofs(nviolate) = i
-      end if
-    end do
-    
-    if (nviolate .gt. 0) then
-      ! Filter the matrix
-      call mmod_replaceLinesByZero (rmatrix,p_Idofs(1:nviolate))
-    end if
-    
-    deallocate(p_Idofs)
-
-  end subroutine
-
-  ! -----------------------------------------------------
-
-  subroutine massmatfilterVar (rmatrix, rvector, dalphaC, rvectorMin, rvectorMax)
-      
-  ! Filters a mass matrix. The lines in the matrix rmatrix corresponding
-  ! to all entries in the (control-)vector violating the constraints
-  ! of the problem.
-  ! Non-constant variant.
-  
-  ! Matrix to be filtered
-  type(t_matrixScalar), intent(inout) :: rmatrix
-
-  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
-  ! violates the control constraints given by rnonlinearSpatialMatrix, the corresponding
-  ! lines are set to 0.
-  type(t_vectorScalar), intent(in) :: rvector
-  
-  ! ALPHA regularisation parameter from the space-time matrix
-  real(dp), intent(in) :: dalphaC
-  
-  ! minimum bound for the control
-  type(t_vectorScalar), intent(in) :: rvectorMin
-
-  ! maximum bound for the control
-  type(t_vectorScalar), intent(in) :: rvectorMax
-  
-    ! local variables
-    real(dp), dimension(:), pointer :: p_Ddata,p_DdataMin,p_DdataMax
-    integer, dimension(:), allocatable :: p_Idofs
-    integer :: i,nviolate
-    real(dp) :: du
-    
-    ! Cancel if distributed control not active
-    if (dalphaC .le. 0.0_DP) return
-
-    ! Get the vector data
-    call lsyssc_getbase_double (rvector,p_Ddata)
-    call lsyssc_getbase_double (rvectorMin,p_DdataMin)
-    call lsyssc_getbase_double (rvectorMax,p_DdataMax)
-    
-    ! Figure out the DOF's violating the constraints
-    allocate(p_Idofs(rvector%NEQ))
-    
-    nviolate = 0
-    do i=1,rvector%NEQ
-      du = -p_Ddata(i)/dalphaC
-      if ((du .le. p_DdataMin(i)) .or. (du .ge. p_DdataMax(i))) then
-        nviolate = nviolate + 1
-        p_Idofs(nviolate) = i
-      end if
-    end do
-    
-    if (nviolate .gt. 0) then
-      ! Filter the matrix
-      call mmod_replaceLinesByZero (rmatrix,p_Idofs(1:nviolate))
-    end if
-    
-    deallocate(p_Idofs)
-
-  end subroutine
-
-  ! -----------------------------------------------------
-
-  subroutine approxProjectionDerivative (rmatrix, rvector, dalphaC, dmin, dmax, dh)
-      
-  ! Calculates the approximative Newton matrix of the projection operator
-  ! P(-1/alpha lambda) by deriving the operator in a discrete sense.
-  
-  ! Matrix to be set up
-  type(t_matrixScalar), intent(inout) :: rmatrix
-
-  ! Vector containing a dial solution lambda. Whereever -1/alpha*lambda
-  ! violates the control constraints given by rnonlinearSpatialMatrix, the corresponding
-  ! lines are set to 0.
-  type(t_vectorScalar), intent(in) :: rvector
-  
-  ! ALPHA regularisation parameter from the space-time matrix
-  real(dp), intent(in) :: dalphaC
-  
-  ! minimum bound for the control
-  real(dp), intent(in) :: dmin
-
-  ! maximum bound for the control
-  real(dp), intent(in) :: dmax
-  
-  ! Step length for the approximative derivative
-  real(dp), intent(in) :: dh
-  
-    ! The projection operator is given by:
-    !
-    !          a, if u <= a
-    !  P(u) =  u, if a <= u <= b
-    !          b, if u >= b
-    !
-    ! The Frechet derivative of this operator can be calculated by
-    !
-    !   (P(u+h)-P(u-h))/2 = DP(u)h
-    !
-    ! with h being an arbitrary function <> 0.
-    ! Rewriting this in a discrete sense yields
-    !
-    !   ( P(u + h e_i) - P(u - h e_i) ) / (2h)  =  DP(u) h e_i
-    !
-    ! with u being the vector of the corresponding FE function.
-    ! Let us denote the matrix B:=DP(u), then we obtain by this formula:
-    !
-    !   B_ij  =  [ ( P(u + h e_j) - P(u - h e_j) ) / (2h) ]_i
-    !
-    ! If we now treat the P()-operator coponent-wise instead of vector
-    ! wise, this means:
-    !
-    !   B_ij  =  ( P(u_j+h) - P(u_j-h) ) / (2h)   , i=j
-    !            0                                , otherwise
-      
-  
-    ! local variables
-    real(dp), dimension(:), pointer :: p_Ddata, p_Dmatrix
-    integer, dimension(:), pointer :: p_Kdiagonal
-    integer :: i
-    real(DP) :: du1,du2
-    
-    ! Get the vector data
-    call lsyssc_getbase_double (rvector,p_Ddata)
-    call lsyssc_getbase_double (rmatrix,p_Dmatrix)
-    call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
-    
-    call lsyssc_clearMatrix (rmatrix)
-    
-    ! Cancel if distributed control not active
-    if (dalphaC .le. 0.0_DP) return
-    
-    ! Loop through the diagonal entries
-    do i=1,rmatrix%NEQ
-
-      ! Calculate the diagonal entry, that's it
-      
-      du1 = -min(dmax,max(dmin,-(p_Ddata(i)/dalphaC) + dh ))
-      du2 = -min(dmax,max(dmin,-(p_Ddata(i)/dalphaC) - dh ))
-      
-      p_Dmatrix(p_Kdiagonal(i)) = (du1-du2)/(2.0_DP*dh)
-    
-    end do
 
   end subroutine
 
@@ -3148,14 +2943,9 @@ contains
     
       ! local variables
       type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-      type(t_bilinearForm) :: rform
-      type(t_collection) :: rcollection
       integer, dimension(:), pointer :: p_IelementList
-      integer :: ielemHandle,nelements
-      type(t_bilfMatrixAssembly) :: rmatrixAssembly
-      integer(I32) :: celement,ccubType
       integer :: ccontrolConstraints
-      type(t_scalarCubatureInfo) :: rcubatureInfo
+      type(t_scalarCubatureInfo) :: rcubatureInfo, rcubatureInfoAdapt
 
       ! Assemble A14/A25?
       if (dweight .ne. 0.0_DP) then
@@ -3192,57 +2982,66 @@ contains
           
         else if (rnonlinearSpatialMatrix%cmatrixType .eq. 1) then
           
+          ! Constraints implemented by filtered mass matrices.
+          
           select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints)
           
           case (1)
           
-            ! Copy the entries of the mass matrix. Share the structure.
-            ! We must not share the entries as these might be changed by the caller
-            ! e.g. due to boundary conditions!
-            
-            call lsyssc_duplicateMatrix (&
-                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-                rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-          
-            call lsyssc_duplicateMatrix (&
-                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-                rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-                
-            ! Scale the entries by the weight.
-            if (dweight .ne. 1.0_DP) then
-              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,1),dweight)
-              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,2),dweight)
-            end if
+            ! Calculate the operator. This automatically creates new matrices
+            ! in the diagonal blocks of rmatrix, since the diagonal blocks
+            ! are empty at the moment.
+            !
+            ! The weight "-rnonlinearSpatialMatrix%dalphaC" is included in
+            ! dweight, so it has to be canceled out.
 
-            ! Filter the matrix. All the rows corresponding to DOF's that violate
-            ! the bounds must be set to zero.
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
               ! Constant bounds
-              call massmatfilter (rmatrix%RmatrixBlock(1,1),rvector%RvectorBlock(4),&
-                  rnonlinearSpatialMatrix%dalphaC,&
+            
+              call nwder_minMaxProjByMass (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  -rnonlinearSpatialMatrix%dalphaC*dweight,rmatrix%RmatrixBlock(1,1),&
+                  .true.,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-              call massmatfilter (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
-                  rnonlinearSpatialMatrix%dalphaC,&
+
+              call nwder_minMaxProjByMass (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  -rnonlinearSpatialMatrix%dalphaC*dweight,rmatrix%RmatrixBlock(2,2),&
+                  .true.,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
             case (1)
               ! Variable bounds
-              call massmatfilterVar (rmatrix%RmatrixBlock(1,1),rvector%RvectorBlock(4),&
-                  rnonlinearSpatialMatrix%dalphaC,&
+
+              call nwder_minMaxProjByMass (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  -rnonlinearSpatialMatrix%dalphaC*dweight,rmatrix%RmatrixBlock(1,1),&
+                  .true.,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
-              call massmatfilterVar (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
-                  rnonlinearSpatialMatrix%dalphaC,&
+
+              call nwder_minMaxProjByMass (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  -rnonlinearSpatialMatrix%dalphaC*dweight,rmatrix%RmatrixBlock(2,2),&
+                  .true.,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+
             case default
               ! Not implemented.
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
             end select
-            
+          
           case (2)
           
             ! Exact reassembly of the mass matrices.
@@ -3255,7 +3054,7 @@ contains
             ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
             ! we return 0 as coefficient, otherwise 1.
             !
-            ! For alpha=0, we have bang-bang-control. In3 this case,
+            ! For alpha=0, we have bang-bang-control. In this case,
             ! the Newton derivative is the zero operator, so nothing
             ! has to be assembled here.
             !
@@ -3273,19 +3072,42 @@ contains
               call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
 
               ! Calculate the Newton derivative.
-              !
-              ! The weight contains -1/alpha, so we have to cancel it out here.
-              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
-                  rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
-                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+              
+              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+              case (0)
+                ! Cónstant bounds
 
-              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
-                  rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
-                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+                ! The weight contains -1/alpha, so we have to cancel it out here.
+                call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+                call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+                    
+              case (1)
+                ! Variable bounds
+                
+                ! The weight contains -1/alpha, so we have to cancel it out here.
+                call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                    1.0_DP,1.0_DP,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+                call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                    1.0_DP,1.0_DP,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+              end select
             
               ! Release the cubature structure
               call spdiscr_releaseCubStructure(rcubatureInfo)
@@ -3301,41 +3123,49 @@ contains
             call lsyssc_duplicateMatrix (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                 rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+                
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
 
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
-              ! Create the matrix
-              call approxProjectionDerivative (rmatrix%RmatrixBlock(1,1), &
-                  rvector%RvectorBlock(4), rnonlinearSpatialMatrix%dalphaC,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,0.001_DP)
+              ! Constant bounds
 
-              call approxProjectionDerivative (rmatrix%RmatrixBlock(2,2), &
-                  rvector%RvectorBlock(5), rnonlinearSpatialMatrix%dalphaC,&
+              call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(1,1),0.001_DP,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+              call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(2,2),0.001_DP,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,0.001_DP)
-            case default
-              ! Not implemented.
-              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
-              call sys_halt()
-            end select
-          
-            ! Scale the entries by the weight if necessary
-            if (dweight .ne. 1.0_DP) then
-              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,1),dweight)
-              call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,2),dweight)
-            end if
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+            case (1)
+              ! Variable bounds
+
+              call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(1,1),0.001_DP,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+              call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                  rmatrix%RmatrixBlock(2,2),0.001_DP,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
             
+            end select
+
           case (4)
           
             ! Exact reassembly of the mass matrices with adaptive integration.
-          
-            ! Create an array that saves all elements on the border of the active set.
-            nelements = rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%&
-                RspatialDiscr(1)%p_rtriangulation%NEL
-            call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
-                ST_NEWBLOCK_NOINIT)
-          
+            
             ! In A11/A22 we have to create a 'projective mass matrix'.
             ! This is the derivative of a projection operator
             ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
@@ -3343,106 +3173,75 @@ contains
             ! We assemble this matrix just as a standard mass matrix with noconstant
             ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
             ! we return 0 as coefficient, otherwise 1.
-          
-            rform%itermCount = 1
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_FUNC
+            !
+            ! For alpha=0, we have bang-bang-control. In this case,
+            ! the Newton derivative is the zero operator, so nothing
+            ! has to be assembled here.
+            !
+            ! Alpha < 0 switches the distributed control off, so also in this
+            ! case, nothing has to be assembled.
+            if (rnonlinearSpatialMatrix%dalphaC .gt. 0.0_DP) then
 
-            ! In this case, we have nonconstant coefficients.
-            rform%ballCoeffConstant = .false.
-            rform%BconstantCoeff(:) = .false.
+              ! Create a cubature info structure that defines the cubature
+              ! rule to use.            
+              call spdiscr_createDefCubStructure (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                  rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass)
+                  
+              ! And another one for the adaptive cubature rule on the border
+              ! of the active set.
+              call spdiscr_createDefCubStructure (&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                  rcubatureInfoAdapt,cub_getSummedCubType(&
+                      rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass,4))
 
-            ! Prepare a collection structure to be passed to the callback
-            ! routine. We attach the vector T in the quick-access variables
-            ! so the callback routine can access it.
-            ! The bounds and the alpha value are passed in the
-            ! quickaccess-arrays.
-            call collct_init(rcollection)
-            rcollection%p_rvectorQuickAccess1 => rvector
-            
-            ! Coefficient is dmu1=1/alpha or 0, depending on lambda
-            rcollection%DquickAccess(3)  = rnonlinearSpatialMatrix%dalphaC
-            rcollection%DquickAccess(4)  = dweight
-            
-            ! At first, set up A14, depending on lambda_1.
-            rcollection%IquickAccess(1) = 1
-            rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-            rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
-            
-            ! The IquickAccess(2) element saves the handle of the element list.
-            ! IquickAccess(3) saves how many elements are collected.
-            rcollection%IquickAccess(2) = ielemhandle
-            rcollection%IquickAccess(3) = 0
-
-            ! Now we can build the matrix entries.
-            ! We specify the callback function coeff_Laplace for the coefficients.
-            ! As long as we use constant coefficients, this routine is not used.
-            ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-            ! the framework will call the callback routine to get analytical
-            ! data.
-            ! The collection is passed as additional parameter. That's the way
-            ! how we get the vector to the callback routine.
-            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                rcubatureInfo,coeff_ProjMassCollect,rcollection)
-                
-            ! Assemble a submesh matrix on the elements in the list
-            ! with a summed cubature formula.
-            ! Note: Up to now, this works only for uniform meshes!
-            if (rcollection%IquickAccess(3) .gt. 0) then
-              ! Forget the matrix we just assembled. Reassemble.
               call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
+
+              ! Calculate the Newton derivative.
               
-              celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
-              ccubType = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
-              call storage_getbase_int(ielemhandle,p_IelementList)
-              call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
-                  cub_getSummedCubType(ccubType,1))
-              call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(1,1),&
-                  p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
-              call bilf_doneAssembly(rmatrixAssembly)
+              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+              case (0)
+                ! Cónstant bounds
+
+                ! The weight contains -1/alpha, so we have to cancel it out here.
+                call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(1,1),rcubatureInfo,rcubatureInfoAdapt,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+                call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(2,2),rcubatureInfo,rcubatureInfoAdapt,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+                    
+              case (1)
+                ! Variable bounds
+                
+                ! The weight contains -1/alpha, so we have to cancel it out here.
+                call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(1,1),rcubatureInfo,rcubatureInfoAdapt,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(4),&
+                    1.0_DP,1.0_DP,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+                call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC*dweight,&
+                    rmatrix%RmatrixBlock(2,2),rcubatureInfo,rcubatureInfoAdapt,&
+                    -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvector%RvectorBlock(5),&
+                    1.0_DP,1.0_DP,&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                    rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+              end select
+            
+              ! Release the cubature structure
+              call spdiscr_releaseCubStructure(rcubatureInfoAdapt)
+              call spdiscr_releaseCubStructure(rcubatureInfo)
+            
             end if
-
-            ! Now, set up A25, depending on lambda_2.
-            rcollection%IquickAccess(1) = 2
-            rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-            rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
-
-            ! Create a new element list
-            rcollection%IquickAccess(3) = 0
-
-            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
-                rcubatureInfo,coeff_ProjMassCollect,rcollection)
             
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
-            case (0)
-              ! Assemble a submesh matrix on the elements in the list
-              ! with a summed cubature formula.
-              ! Note: Up to now, this works only for uniform meshes!
-              if (rcollection%IquickAccess(3) .gt. 0) then
-                ! Forget the matrix we just assembled. Reassemble.
-                call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
-
-                celement = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
-                ccubType = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
-                call storage_getbase_int(ielemhandle,p_IelementList)
-                call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
-                    cub_getSummedCubType(ccubType,1))
-                call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(2,2),&
-                    p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
-                call bilf_doneAssembly(rmatrixAssembly)
-              end if
-            case default
-              ! Not implemented.
-              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
-              call sys_halt()
-            end select
-
-            ! Now we can forget about the collection again.
-            call collct_done (rcollection)
-            
-            ! Release the element set.
-            call storage_free (ielemHandle)
-
           case default
           
             call output_line ('Unsupported ccontrolConstraints flag.', &
@@ -3998,11 +3797,8 @@ contains
         ! the control u.
         if (rnonlinearSpatialMatrix%Dmass(1,2) .ne. 0.0_DP) then
 
-          ! Copy our solution vector \lambda. Scale it by -1/alpha.
-          call lsysbl_deriveSubvector(rx,rtempVectorX,4,5,.false.)
-          call lsysbl_scaleVector(rtempVectorX,-rnonlinearSpatialMatrix%Dmass(1,2))
-          
-          ! Project that to the allowed range.
+          ! Apply the projection operator to (-1/alpha lambda) and sum up the 
+          ! resulting vector to the current defect.
           select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints)
           
           case (0)
@@ -4014,48 +3810,51 @@ contains
             ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
             call lsyssc_scalarMatVec (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-                rtempVectorX%RvectorBlock(1), &
-                rd%RvectorBlock(1), dcx, 1.0_DP)
+                rx%RvectorBlock(4), rd%RvectorBlock(1), &
+                -rnonlinearSpatialMatrix%Dmass(1,2)*dcx, 1.0_DP)
             call lsyssc_scalarMatVec (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-                rtempVectorX%RvectorBlock(2), &
-                rd%RvectorBlock(2), dcx, 1.0_DP)
+                rx%RvectorBlock(5), rd%RvectorBlock(2), &
+                -rnonlinearSpatialMatrix%Dmass(1,2)*dcx, 1.0_DP)
           
           case (2)
             ! Use the dual solution as right hand side and assemble a temporary vector
             ! like a right hand side. The result can be added to the defect.
-            
-            ! Temp vector.
-            call lsysbl_deriveSubvector(rx,rtempVectorB,1,2,.false.)
             
             ! Apply cubature formula icubF
             call spdiscr_createDefCubStructure (&
                 rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
                 rcubatureInfo, rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubF)
             
+            ! Apply: rd(primal) = rd(primal) + dcx * P(-1/alpha * lambda)
+            
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
-              call smva_asmProjControlTstepConst (&
-                  rcubatureInfo,rtempVectorX%RvectorBlock(1),&
+              ! Constant bounds
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),&
+                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,&
-                  rtempVectorB%RvectorBlock(1))
-              call smva_asmProjControlTstepConst (&
-                  rcubatureInfo,rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),&
+                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,&
-                  rtempVectorB%RvectorBlock(2))
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+                  
             case (1)
-              call smva_asmProjControlTstepVec (&
-                  rcubatureInfo,rtempVectorX%RvectorBlock(1),&
+              ! Variable bounds
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),&
+                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1),&
-                  rtempVectorB%RvectorBlock(1))
-              call smva_asmProjControlTstepVec (&
-                  rcubatureInfo,rtempVectorX%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),&
+                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
-                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2),&
-                  rtempVectorB%RvectorBlock(2))
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+              
             case default
               ! Not implemented.
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
@@ -4064,58 +3863,68 @@ contains
             
             call spdiscr_releaseCubStructure (rcubatureInfo)
             
-            ! Add/Subtract the assembled auxiliary vector to the defect.
-            call lsyssc_vectorLinearComb (rtempVectorB%RvectorBlock(1),rd%RvectorBlock(1),dcx,1.0_DP)
-            call lsyssc_vectorLinearComb (rtempVectorB%RvectorBlock(2),rd%RvectorBlock(2),dcx,1.0_DP)
-            
-            call lsysbl_releaseVector (rtempVectorB)
-        
           case (4)
             ! Not implemented.
+            !
+            ! Must be done similar to (2), i.e., a RHS must be calculated.
+            ! However, on the cells crossing the active set, the RHS must
+            ! be calculated with a different (summed) cubature formula.
             call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
             call sys_halt()
         
           case default
           
-            ! Project just the DOF's.
+            ! Temporary vector.
+            call lsysbl_deriveSubvector(rx,rtempVectorX,4,4,.false.)
+          
+            ! Just project the DOF's.
+            
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
             case (0)
-              call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(1),&
+              ! Constant bounds
+              call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-              call smva_projectControlTstepConst (rtempVectorX%RvectorBlock(2),&
+
+              call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+                  
             case (1)
-              call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(1),&
+              ! Variable bounds
+              call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
-              call smva_projectControlTstepVec (rtempVectorX%RvectorBlock(2),&
+
+              call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+              
             case default
               ! Not implemented.
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
             end select
             
-            ! Now multiply with the mass matrix to include it to the defect.
-            ! Note that the multiplication factor is -(-cx) = cx because
-            ! it's put on the RHS of the system for creating the defect.
-            ! d = b - cx A x = b - ... + \nu Laplace(y) - y\grad(y) - grad(p) + P(-1/alpha lambda)
-            call lsyssc_scalarMatVec (&
-                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-                rtempVectorX%RvectorBlock(1), &
-                rd%RvectorBlock(1), dcx, 1.0_DP)
-            call lsyssc_scalarMatVec (&
-                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity, &
-                rtempVectorX%RvectorBlock(2), &
-                rd%RvectorBlock(2), dcx, 1.0_DP)
-
+            ! Release temp memory
+            call lsysbl_releaseVector (rtempVectorX)
+            
           end select
                
-          call lsysbl_releaseVector (rtempVectorX)
-        
         end if
 
       else
@@ -5063,14 +4872,9 @@ contains
       ! local variables
       type(t_matrixBlock) :: rtempmatrix
       type(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
-      type(t_collection) :: rcollection
-      type(t_bilinearForm) :: rform
       integer, dimension(:), pointer :: p_IelementList
-      integer :: ielemHandle,nelements
-      type(t_bilfMatrixAssembly) :: rmatrixAssembly
-      integer(I32) :: celement,ccubType
       integer :: ccontrolConstraints
-      type(t_scalarCubatureInfo) :: rcubatureInfo
+      type(t_scalarCubatureInfo) :: rcubatureInfo, rcubatureInfoAdapt
       
       ! If we have a reactive coupling mass matrix, it gets interesting...
       if (dcx .ne. 0.0_DP) then
@@ -5097,53 +4901,58 @@ contains
              
         case (1)
         
-          call lsyssc_duplicateMatrix (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-              rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-        
-          call lsyssc_duplicateMatrix (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-              rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-           
-          call lsysbl_updateMatStrucInfo (rtempMatrix)
-             
-!          ! Scale the entries by dmu1.
-!          if (rnonlinearSpatialMatrix%dmu1 .ne. 1.0_DP) then
-!            call lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(1,1),rnonlinearSpatialMatrix%dmu1)
-!            call lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rnonlinearSpatialMatrix%dmu1)
-!          end if
-
-          ! In the case when we have constraints, filter the matrix.
-          ! All the rows corresponding to DOF's that violate
-          ! the bounds must be set to zero.
           select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
           case (0)
             ! Constant bounds
-            call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
-                rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+          
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                -rnonlinearSpatialMatrix%dalphaC,rtempMatrix%RmatrixBlock(1,1),&
+                .true.,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-            call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
-                rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                -rnonlinearSpatialMatrix%dalphaC,rtempMatrix%RmatrixBlock(2,2),&
+                .true.,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
           case (1)
             ! Variable bounds
-            call massmatfilterVar (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
-                rnonlinearSpatialMatrix%dalphaC,&
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                -rnonlinearSpatialMatrix%dalphaC,rtempMatrix%RmatrixBlock(1,1),&
+                .true.,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                1.0_DP,1.0_DP,&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
-            call massmatfilterVar (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
-                rnonlinearSpatialMatrix%dalphaC,&
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                -rnonlinearSpatialMatrix%dalphaC,rtempMatrix%RmatrixBlock(2,2),&
+                .true.,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                1.0_DP,1.0_DP,&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
                 rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+
           case default
             ! Not implemented.
             call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
             call sys_halt()
           end select
-            
+
+          call lsysbl_updateMatStrucInfo (rtempMatrix)
+             
         case (2)
         
-          ! Create a matrix with the structure we need. Share the structure
+          ! Create an empty matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
@@ -5178,18 +4987,42 @@ contains
             ! The operator weight is just 1.0 here; the matrix is scaled later.
             ! However, cancel out the -1/alpha from the function weight, which
             ! is included into the operator as part of the Newton derivative.
-            call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
-                rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,&
-                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
 
-            call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
-                rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,&
-                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
-          
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              ! Constant bounds
+
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+            case (1)
+              ! Variable bounds
+
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+              call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+            
+            end select
+              
             ! Release the cubature structure
             call spdiscr_releaseCubStructure(rcubatureInfo)
           
@@ -5207,25 +5040,51 @@ contains
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
               rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
+
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          call approxProjectionDerivative (rtempMatrix%RmatrixBlock(1,1), &
-              rvelocityVector%RvectorBlock(4),rnonlinearSpatialMatrix%dalphaC,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1,0.001_DP)
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+          case (0)
+            ! Constant bounds
 
-          call approxProjectionDerivative (rtempMatrix%RmatrixBlock(2,2), &
-              rvelocityVector%RvectorBlock(5),rnonlinearSpatialMatrix%dalphaC,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2,0.001_DP)
-        
+            call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(1,1),0.001_DP,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+            call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(2,2),0.001_DP,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+          case (1)
+            ! Variable bounds
+
+            call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(1,1),0.001_DP,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                1.0_DP,1.0_DP,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+            call nwder_minMaxProjByApproxDer (-rnonlinearSpatialMatrix%dalphaC,&
+                rtempmatrix%RmatrixBlock(2,2),0.001_DP,&
+                -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                1.0_DP,1.0_DP,&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+          
+          end select
+
           call lsysbl_updateMatStrucInfo (rtempMatrix)
             
         case (4)
         
-          ! Exact reassembly of the mass matrices with adaptive integration.
-
-          ! Create a matrix with the structure we need. Share the structure
+          ! Create an empty matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
@@ -5234,124 +5093,80 @@ contains
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
               rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
+              
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          ! Create an array that saves all elements on the border of the active set.
-          nelements = rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%&
-              RspatialDiscr(1)%p_rtriangulation%NEL
-          call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
-              ST_NEWBLOCK_NOINIT)
-        
-          ! Cubature formula from icubStokes          
-          call spdiscr_createDefCubStructure (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
-              rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubStokes)
-        
-          ! In A11/A22 we have to create a 'projective mass matrix'.
-          ! This is the derivative of a projection operator
-          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
-          ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
-          ! We assemble this matrix just as a standard mass matrix with noconstant
-          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
-          ! we return 0 as coefficient, otherwise 1.
-        
-          rform%itermCount = 1
-          rform%Idescriptors(1,1) = DER_FUNC
-          rform%Idescriptors(2,1) = DER_FUNC
+          ! Clear the matrices in advance.
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
+          call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
 
-          ! In this case, we have nonconstant coefficients.
-          rform%ballCoeffConstant = .false.
-          rform%BconstantCoeff(:) = .false.
+          ! For alpha=0, we have bang-bang-control. In this case,
+          ! the Newton derivative is the zero operator, so nothing
+          ! has to be assembled here.
+          !
+          ! Alpha < 0 switches the distributed control off, so also in this
+          ! case, nothing has to be assembled.
+          if (rnonlinearSpatialMatrix%dalphaC .gt. 0.0_DP) then
 
-          ! Prepare a collection structure to be passed to the callback
-          ! routine. We attach the vector T in the quick-access variables
-          ! so the callback routine can access it.
-          ! The bounds and the alpha value are passed in the
-          ! quickaccess-arrays.
-          call collct_init(rcollection)
-          rcollection%p_rvectorQuickAccess1 => rvelocityVector
+            ! Create a cubature info structure that defines the cubature
+            ! rule to use.            
+            call spdiscr_createDefCubStructure (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                rcubatureInfo,rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass)
 
-          ! Coefficient is dmu1=1/alpha or 0, depending on lambda
-          rcollection%DquickAccess(3)  = rnonlinearSpatialMatrix%dalphaC
-          rcollection%DquickAccess(4)  = 1.0_DP
-          
-          ! At first, set up A14, depending on lambda_1.
-          rcollection%IquickAccess(1) = 1
-          rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-          rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
-          
-          ! The IquickAccess(2) element saves the handle of the element list.
-          ! IquickAccess(3) saves how many elements are collected.
-          rcollection%IquickAccess(2) = ielemhandle
-          rcollection%IquickAccess(3) = 0
+            ! And another one for the adaptive cubature rule on the border
+            ! of the active set.
+            call spdiscr_createDefCubStructure (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rdiscrPrimalDual%RspatialDiscr(1),&
+                rcubatureInfoAdapt,cub_getSummedCubType(&
+                    rnonlinearSpatialMatrix%rdiscrData%rsettingsSpaceDiscr%icubMass,4))
 
-          ! Now we can build the matrix entries.
-          ! We specify the callback function coeff_Laplace for the coefficients.
-          ! As long as we use constant coefficients, this routine is not used.
-          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-          ! the framework will call the callback routine to get analytical
-          ! data.
-          ! The collection is passed as additional parameter. That's the way
-          ! how we get the vector to the callback routine.
-          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
-              rcubatureInfo,coeff_ProjMassCollect,rcollection)
+            ! Calculate the Newton derivative.
+            !
+            ! The operator weight is just 1.0 here; the matrix is scaled later.
+            ! However, cancel out the -1/alpha from the function weight, which
+            ! is included into the operator as part of the Newton derivative.
+
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            case (0)
+              ! Constant bounds
+
+              call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,rcubatureInfoAdapt,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+              call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,rcubatureInfoAdapt,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+            case (1)
+              ! Variable bounds
+
+              call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(1,1),rcubatureInfo,rcubatureInfoAdapt,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(4),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
+
+              call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC,&
+                  rtempmatrix%RmatrixBlock(2,2),rcubatureInfo,rcubatureInfoAdapt,&
+                  -1.0_DP/rnonlinearSpatialMatrix%dalphaC,rvelocityVector%RvectorBlock(5),&
+                  1.0_DP,1.0_DP,&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
+                  rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
+            
+            end select
               
-          ! Assemble a submesh matrix on the elements in the list
-          ! with a summed cubature formula.
-          ! Note: Up to now, this works only for uniform meshes!
-          if (rcollection%IquickAccess(3) .gt. 0) then
-            ! Forget the matrix we just assembled. Reassemble.
-            call lsyssc_clearMatrix (rtempmatrix%RmatrixBlock(1,1))
-
-            celement = &
-              rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
-            ccubType = &
-              rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
-            call storage_getbase_int(ielemhandle,p_IelementList)
-            call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
-                cub_getSummedCubType(ccubType,1))
-            call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(1,1),&
-                p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
-            call bilf_doneAssembly(rmatrixAssembly)
+            ! Release the cubature structure
+            call spdiscr_releaseCubStructure(rcubatureInfoAdapt)
+            call spdiscr_releaseCubStructure(rcubatureInfo)
+          
           end if
-
-          ! Now, set up A25, depending on lambda_2.
-          rcollection%IquickAccess(1) = 2
-          rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-          rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
-
-          ! Create a new element list
-          rcollection%IquickAccess(3) = 0
-
-          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
-              rcubatureInfo,coeff_ProjMassCollect,rcollection)
-          
-          ! Assemble a submesh matrix on the elements in the list
-          ! with a summed cubature formula.
-          ! Note: Up to now, this works only for uniform meshes!
-          if (rcollection%IquickAccess(3) .gt. 0) then
-            ! Forget the matrix we just assembled. Reassemble.
-            call lsyssc_clearMatrix (rtempmatrix%RmatrixBlock(2,2))
-
-            celement = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
-            ccubType = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
-            call storage_getbase_int(ielemhandle,p_IelementList)
-            call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
-                cub_getSummedCubType(ccubType,1))
-            call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(2,2),&
-                p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
-            call bilf_doneAssembly(rmatrixAssembly)
-          end if
-
-          ! Now we can forget about the collection again.
-          call collct_done (rcollection)
-          
-          ! Release the element set.
-          call storage_free (ielemHandle)
-          
-          ! Release cubature-related stuff
-          call spdiscr_releaseCubStructure (rcubatureInfo)
 
         case default
         
@@ -5383,88 +5198,6 @@ contains
 
   end subroutine
 
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine smva_projectControlTstepConst (rdualSolution,dumin,dumax)
-
-!<description>
-  ! Projects a dual solution vector u in such a way, that
-  ! dumin <= u <= dumax holds.
-!</description>
-
-!<input>
-  ! Minimum value for u
-  real(DP), intent(in) :: dumin
-
-  ! Maximum value for u
-  real(DP), intent(in) :: dumax
-!</input>
-
-!<inputoutput>
-  ! Vector to be restricted
-  type(t_vectorScalar), intent(inout) :: rdualSolution
-!</inputoutput>
-
-!</subroutine>
- 
-    ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata
-    integer :: i
-    
-    ! Get the vector array
-    call lsyssc_getbase_double (rdualSolution,p_Ddata)
-    
-    ! Restrict the vector
-    do i=1,rdualSolution%NEQ
-      p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
-    end do
-
-  end subroutine
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine smva_projectControlTstepVec (rdualSolution,rvectorumin,rvectorumax)
-
-!<description>
-  ! Projects a dual solution vector u in such a way, that
-  ! dumin <= u <= dumax holds.
-!</description>
-
-!<input>
-  ! Vector specifying the minimum value for u in each DOF
-  type(t_vectorScalar), intent(in) :: rvectorumin
-
-  ! Vector specifying the maximum value for u in each DOF
-  type(t_vectorScalar), intent(in) :: rvectorumax
-!</input>
-
-!<inputoutput>
-  ! Vector to be restricted
-  type(t_vectorScalar), intent(inout) :: rdualSolution
-!</inputoutput>
-
-!</subroutine>
- 
-    ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata, p_DdataMin, p_DdataMax
-    integer :: i
-    
-    ! Get the vector array
-    call lsyssc_getbase_double (rdualSolution,p_Ddata)
-    call lsyssc_getbase_double (rvectorumin,p_DdataMin)
-    call lsyssc_getbase_double (rvectorumax,p_DdataMax)
-    
-    ! Restrict the vector
-    do i=1,rdualSolution%NEQ
-      p_Ddata(i) = min(max(p_Ddata(i),p_DdataMin(i)),p_DdataMax(i))
-    end do
-
-  end subroutine
- 
   ! ***************************************************************************
 
 !<subroutine>
@@ -5712,137 +5445,6 @@ contains
 
   end subroutine
   
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine smva_asmProjControlTstepConst (rcubatureInfo,rcontrolUnrest,dumin,dumax,rprjControl)
-
-!<description>
-  ! Assembles the projected control in the dual space:
-  !   g_h = P(-1/alpha lambda) = sum g_i phi_i
-  ! with
-  !   g_i = ( -1/alpha lambda, phi_i )
-  ! This is a kind of assembly of a right hand side vector.
-  ! Uses the linearformassembly for this task.
-!</description>
-
-!<input>
-  ! Cubature information block which determines the cubature formula.
-  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
-  
-  ! Minimum value for u
-  real(DP), intent(in) :: dumin
-
-  ! Maximum value for u
-  real(DP), intent(in) :: dumax
-!</input>
-
-!<inputoutput>
-  ! The unrestricted control
-  type(t_vectorScalar), intent(inout) :: rcontrolUnrest
-
-  ! Assembled, restricted control.
-  type(t_vectorScalar), intent(inout) :: rprjControl
-!</inputoutput>
-
-!</subroutine>
-
-    type (t_linearForm) :: rlinform
-    type (t_collection) :: rcollection
-    type (t_vectorBlock), target :: rvectorTemp
-
-    ! Prepare a linearform-assembly.
-    rlinform%itermCount = 1
-    rlinform%Dcoefficients(1) = 1.0_DP
-    rlinform%Idescriptors(1) = DER_FUNC
-    
-    ! Create a temporary vector holding the solution
-    call lsysbl_createVecFromScalar (rcontrolUnrest,rvectorTemp)
-    
-    ! Prepare the collection
-    rcollection%p_rvectorQuickAccess1 => rvectorTemp
-    rcollection%DquickAccess(1) = dumin
-    rcollection%DquickAccess(2) = dumax
-    
-    ! Assemble the vector
-    call linf_buildVectorScalar(rlinform,.true.,rprjControl,rcubatureInfo,&
-        coeff_prjControl,rcollection)
-    
-    ! Release memory
-    call lsysbl_releaseVector (rvectorTemp)
- 
-  end subroutine
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine smva_asmProjControlTstepVec (rcubatureInfo,rcontrolUnrest,&
-      rvectorumin,rvectorumax,rprjControl)
-
-!<description>
-  ! Assembles the projected control in the dual space:
-  !   g_h = P(-1/alpha lambda) = sum g_i phi_i
-  ! with
-  !   g_i = ( -1/alpha lambda, phi_i )
-  ! This is a kind of assembly of a right hand side vector.
-  ! Uses the linearformassembly for this task.
-  !
-  ! Min/Max is specified via an FE function.
-!</description>
-
-!<input>
-  ! Cubature information block which determines the cubature formula.
-  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
-
-  ! Vector specifying the minimum value for u in each DOF
-  type(t_vectorScalar), intent(in) :: rvectorumin
-
-  ! Vector specifying the maximum value for u in each DOF
-  type(t_vectorScalar), intent(in) :: rvectorumax
-!</input>
-
-!<inputoutput>
-  ! The unrestricted control
-  type(t_vectorScalar), intent(inout) :: rcontrolUnrest
-
-  ! Assembled, restricted control.
-  type(t_vectorScalar), intent(inout) :: rprjControl
-!</inputoutput>
-
-!</subroutine>
-
-    type (t_linearForm) :: rlinform
-    type (t_collection) :: rcollection
-    type (t_vectorBlock), target :: rvectorTemp,rvectorTempUmin,rvectorTempUmax
-
-    ! Prepare a linearform-assembly.
-    rlinform%itermCount = 1
-    rlinform%Dcoefficients(1) = 1.0_DP
-    rlinform%Idescriptors(1) = DER_FUNC
-    
-    ! Create a temporary vector holding the solution
-    call lsysbl_createVecFromScalar (rcontrolUnrest,rvectorTemp)
-    call lsysbl_createVecFromScalar (rvectorumin,rvectorTempUmin)
-    call lsysbl_createVecFromScalar (rvectorumax,rvectorTempUmax)
-    
-    ! Prepare the collection
-    rcollection%p_rvectorQuickAccess1 => rvectorTemp
-    rcollection%p_rvectorQuickAccess2 => rvectorTempUmin
-    rcollection%p_rvectorQuickAccess3 => rvectorTempUmax
-    
-    ! Assemble the vector
-    call linf_buildVectorScalar(rlinform,.true.,rprjControl,rcubatureInfo,&
-        coeff_prjControlVec,rcollection)
-    
-    ! Release memory
-    call lsysbl_releaseVector (rvectorTemp)
-    call lsysbl_releaseVector (rvectorTempUmin)
-    call lsysbl_releaseVector (rvectorTempUmax)
- 
-  end subroutine
-
   ! ***************************************************************************
   
 !<subroutine>

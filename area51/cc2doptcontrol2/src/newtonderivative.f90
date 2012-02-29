@@ -13,13 +13,28 @@
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a cubature approach.
 !#
-!# 2.) nwder_minMaxProjByMass
+!# 2.) nwder_minMaxProjByAdaptCub
+!#     -> Calculates the Newton derivative of the minmax-Projection
+!#        using an adaptive cubature approach.
+!#
+!# 3.) nwder_minMaxProjByMass
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a modification of the mass matrix.
 !#
-!# 3.) nwder_minMaxProjByApproxDer
+!# 4.) nwder_minMaxProjByApproxDer
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a finite difference approach in each entry.
+!#
+!# 5.) nwder_rhsMinMaxProjByCubature
+!#     -> Assemble a RHS vector of the minmax-Projection
+!#        using a cubature approach.
+!#
+!# 6.) nwder_rhsMinMaxProjByMass
+!#     -> Assemble a RHS vector of the minmax-Projection
+!#        using a DOF based approach plus multiplication of a mass matrix.
+!#
+!# 7.) nwder_applyMinMaxProjByDof
+!#     -> Applied the minmax-Projection using a DOF based approach.
 !#
 !# </purpose>
 !##############################################################################
@@ -38,6 +53,7 @@ module newtonderivative
   use derivatives
   use feevaluation
   use scalarpde
+  use linearformevaluation
   use bilinearformevaluation
   use matrixmodification
   
@@ -46,8 +62,12 @@ module newtonderivative
   private
   
   public :: nwder_minMaxProjByCubature
+  public :: nwder_minMaxProjByAdaptCub
   public :: nwder_minMaxProjByMass
   public :: nwder_minMaxProjByApproxDer
+  public :: nwder_rhsMinMaxProjByCubature
+  public :: nwder_rhsMinMaxProjByMass
+  public :: nwder_applyMinMaxProjByDof
   
 contains
 
@@ -313,12 +333,12 @@ contains
     use domainintegration
     
   !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form
-    ! that assembles the Newton derivative of the MinMax projection.
-    !
-    ! Additionally to the computation of the operator, this routine
-    ! collects the elements of the active set for later re-assembly.
+    ! This routine returns the coefficients for the Newton derivative,
+    ! similar to coeff_MinMaxProj. However, elements which cross
+    ! the border of the active set are associated to the active set.
+    ! For these elements, this routine collects the elements,
+    ! which can then be assembled in a second step with a different
+    ! cubature formula.
   !</description>
     
   !<input>
@@ -395,8 +415,8 @@ contains
     ! first quick-access vector pointer in the collection.
     p_rvector => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
     
-    ! Get the element list
-    call storage_getbase_int (rcollection%IquickAccess(2),p_IelementList)
+    ! Get the element buffer
+    call storage_getbase_int (rcollection%IquickAccess(1),p_IelementList)
 
     ! Lower/upper bound specified?
     nullify(p_rvectorMin)
@@ -478,8 +498,8 @@ contains
             Dcoefficients(1,ipt,iel) = 0.0_DP
           end do
           if (nptsInactive .gt. 0) then
-            rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
-            p_IelementList(rcollection%IquickAccess(3)) = &
+            rcollection%IquickAccess(2) = rcollection%IquickAccess(2) + 1
+            p_IelementList(rcollection%IquickAccess(2)) = &
                 rdomainIntSubset%p_Ielements(iel)
           end if
         end if
@@ -528,8 +548,8 @@ contains
             Dcoefficients(1,ipt,iel) = 0.0_DP
           end do
           if (nptsInactive .gt. 0) then
-            rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
-            p_IelementList(rcollection%IquickAccess(3)) = &
+            rcollection%IquickAccess(2) = rcollection%IquickAccess(2) + 1
+            p_IelementList(rcollection%IquickAccess(2)) = &
                 rdomainIntSubset%p_Ielements(iel)
           end if
         end if
@@ -577,8 +597,8 @@ contains
             Dcoefficients(1,ipt,iel) = 0.0_DP
           end do
           if (nptsInactive .gt. 0) then
-            rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
-            p_IelementList(rcollection%IquickAccess(3)) = &
+            rcollection%IquickAccess(2) = rcollection%IquickAccess(2) + 1
+            p_IelementList(rcollection%IquickAccess(2)) = &
                 rdomainIntSubset%p_Ielements(iel)
           end if
         end if
@@ -602,8 +622,9 @@ contains
           end if
         end do
         
-        ! All points inactive? Ok.
-        ! Partially active? Remember the element.
+        ! All points inactive? Ok, return the operator.
+        ! Partially active? Remember the element and return 0.
+        ! Element will be reassembled later.
         ! Completely active? Return 0 everywhere.
         if (nptsInactive .eq.  ubound(Dcoefficients,2)) then
           do ipt = 1,ubound(Dcoefficients,2)
@@ -614,8 +635,8 @@ contains
             Dcoefficients(1,ipt,iel) = 0.0_DP
           end do
           if (nptsInactive .gt. 0) then
-            rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
-            p_IelementList(rcollection%IquickAccess(3)) = &
+            rcollection%IquickAccess(2) = rcollection%IquickAccess(2) + 1
+            p_IelementList(rcollection%IquickAccess(2)) = &
                 rdomainIntSubset%p_Ielements(iel)
           end if
         end if
@@ -637,12 +658,12 @@ contains
   
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dweight*rfunction))
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rmatrix.
   !
-  ! NOTE: THis assumes rfunctionMin and rfunctionMax to be
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
   ! discretised in the same space as rfunction!
 !</description>
 
@@ -738,16 +759,173 @@ contains
     
   end subroutine
 
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine nwder_minMaxProjByAdaptCub (dweight,rmatrix,rcubatureInfo,&
+      rcubatureInfoAdapt,dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+  
+!<description>
+  ! Assembles the Newton derivative of the operator
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  ! to be =1.
+  ! The operator is added to rmatrix. The calculation is applied
+  ! in two steps, using adaptive cubature.
+  !
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
+  ! discretised in the same space as rfunction!
+!</description>
+
+!<input>
+  ! Weight in front of the operator when being added to rmatrix.
+  real(DP), intent(in) :: dweight
+  
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFct
+  
+  ! An FE function
+  type(t_vectorScalar), intent(in) :: rfunction
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMin
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMax
+
+  ! Cubature info structure that defines how to apply cubature
+  ! in the active/inactive set
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+
+  ! Cubature info structure that defines how to apply cubature
+  ! on the border of the active set
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfoAdapt
+  
+  ! OPTIONAL: Function specifying the lower bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+
+  ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMax
+!</input>
+
+!<inputoutput>
+  ! The matrix which receives the operator.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!<inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_bilinearForm) :: rform
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    integer :: nelements, ielemHandle
+    type(t_bilfMatrixAssembly) :: rmatrixAssembly
+    integer(I32) :: ccubType, celement
+    integer, dimension(:), pointer :: p_IelementList
+    
+    ! Set up a bilinear form for the assembly of the
+    ! modified mass matrices.
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+
+    ! In this case, we have nonconstant coefficients.
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff(:) = .false.
+    
+    ! Prepare a collection structure to be passed to the callback
+    ! routine. We attach the function(s) in the quick-access variables
+    ! so the callback routine can access it.
+    !
+    ! All scalar vectors must be converted to block vectors.
+    call lsysbl_createVecFromScalar (rfunction,rvecFct)
+    rcollection%p_rvectorQuickAccess1 => rvecFct
+    
+    if (present(rfunctionMin)) then
+      call lsysbl_createVecFromScalar (rfunctionMin,rvecMin)
+      rcollection%p_rvectorQuickAccess2 => rvecMin
+    else
+      nullify(rcollection%p_rvectorQuickAccess2)
+    end if
+
+    if (present(rfunctionMax)) then
+      call lsysbl_createVecFromScalar (rfunctionMax,rvecMax)
+      rcollection%p_rvectorQuickAccess3 => rvecMax
+    else
+      nullify(rcollection%p_rvectorQuickAccess3)
+    end if
+    
+    rcollection%DquickAccess(1) = dwFct
+    rcollection%DquickAccess(2) = dweight
+    rcollection%DquickAccess(3) = dwMin
+    rcollection%DquickAccess(4) = dwMax
+
+    ! Create an array that saves all elements on the border of the active set.
+    nelements = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NEL
+    call storage_new ('', 'Ielements', nelements, ST_INT, ielemHandle, &
+        ST_NEWBLOCK_NOINIT)
+
+    ! The IquickAccess(1) element saves the handle of the element list.
+    ! IquickAccess(2) saves how many elements are collected.
+    rcollection%IquickAccess(1) = ielemHandle
+    rcollection%IquickAccess(2) = 0
+
+    ! Call the assembly routine to calculate the operator.
+    ! Simultaneously, collect the elements on the border of the
+    ! active set. Do not calculate anything on the border.
+    call bilf_buildMatrixScalar (rform,.false.,rmatrix,&
+        rcubatureInfo,coeff_MinMaxProjColl,rcollection)
+        
+    ! In a second step, assemble a submesh matrix on the elements in the list
+    ! with the extended cubature formula.
+    ! Note: Up to now, this works only for uniform meshes!
+    if (rcollection%IquickAccess(3) .gt. 0) then
+      
+      ! Get the underlying element
+      celement = rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement
+      
+      ! Get the cubature formula.
+      call spdiscr_getStdDiscrInfo(1,rcubatureInfoAdapt,&
+          rmatrix%p_rspatialDiscrTrial,ccubature=ccubType)
+      
+      ! Assemble the matrix, now using the standard assembly callback
+      ! routine coeff_MinMaxProj.
+      call storage_getbase_int(ielemhandle,p_IelementList)
+      call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,ccubType)
+      call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix,&
+          p_IelementList(1:rcollection%IquickAccess(2)),coeff_MinMaxProj,rcollection)
+      call bilf_doneAssembly(rmatrixAssembly)
+      
+    end if
+
+
+    ! Release memory
+    call storage_free (ielemHandle)
+
+    if (present(rfunctionMin)) then
+      call lsysbl_releaseVector (rvecMin)
+    end if
+
+    if (present(rfunctionMax)) then
+      call lsysbl_releaseVector (rvecMax)
+    end if
+    
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine nwder_minMaxProjByMass (rmassMatrix,dweight,rmatrix,&
+  subroutine nwder_minMaxProjByMass (rmassMatrix,dweight,rmatrix,bclear,&
       dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
       
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dweight*rfunction))
+  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dwFct*rfunction))
   ! by using filtering of a mass matrix.
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
@@ -763,6 +941,9 @@ contains
   
   ! Mass matrix.
   type(t_matrixScalar), intent(in) :: rmassMatrix
+  
+  ! If set to TRUE, rmatrix is cleared in advance.
+  logical, intent(in) :: bclear
   
   ! Weight for the function rfunction.
   real(DP), intent(in) :: dwFct
@@ -786,8 +967,8 @@ contains
 !</input>
   
 !<inputoutput>
-  ! Matrix to be filtered
-  type(t_matrixScalar), intent(inout) :: rmatrix
+  ! Matrix which receives the operator.
+  type(t_matrixScalar), intent(inout), target :: rmatrix
 !</inputoutput>  
   
 !</subroutine>
@@ -797,10 +978,23 @@ contains
     integer, dimension(:), allocatable :: p_Idofs
     integer :: i,nviolate
     real(dp) :: du
-    type(t_matrixScalar) :: rmassCopy
+    type(t_matrixScalar), target :: rmassCopy
+    type(t_matrixScalar), pointer :: p_rmatrix
     
-    ! Duplicate the mass matrix
-    call lsyssc_duplicateMatrix (rmassMatrix,rmassCopy,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    ! Duplicate the mass matrix or create a new one --
+    ! depending on whether to "clear" the matrix or not.
+    ! "Clear" is implemented here by overwriting the entries with those
+    ! of the mass matrix.
+    if (bclear) then
+      call lsyssc_duplicateMatrix (rmassMatrix,rmatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      p_rmatrix => rmatrix
+      
+      ! Mark rmassCopy as "not used".
+      rmassCopy%NA = 0
+    else
+      call lsyssc_duplicateMatrix (rmassMatrix,rmassCopy,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      p_rmatrix => rmassCopy
+    end if
     
     ! Get the vector data
     call lsyssc_getbase_double (rfunction,p_Ddata)
@@ -874,15 +1068,23 @@ contains
     
     if (nviolate .gt. 0) then
       ! Filter the matrix
-      call mmod_replaceLinesByZero (rmassCopy,p_Idofs(1:nviolate))
+      call mmod_replaceLinesByZero (p_rmatrix,p_Idofs(1:nviolate))
     end if
     
-    ! Sum up
-    call lsyssc_matrixLinearComb (rmassCopy,rmatrix,dwFct*dweight,1.0_DP,&
-      .false.,.false.,.true.,.true.)
+    ! If we created a temporary mass matrix, sum up to the original
+    ! one. Otherwise we are done after scaling the entries.
+    if (.not. bclear) then
+      ! Sum up. p_rmatrix and rmassCopy coincide.
+      call lsyssc_matrixLinearComb (rmassCopy,rmatrix,dwFct*dweight,1.0_DP,&
+        .false.,.false.,.true.,.true.)
+        
+      ! Release the copy
+      call lsyssc_releaseMatrix (rmassCopy)
+    else
+      call lsyssc_scaleMatrix (rmatrix,dwFct*dweight)
+    end if
 
     ! Release memory
-    call lsyssc_releaseMatrix (rmassCopy)
     deallocate(p_Idofs)
 
   end subroutine
@@ -896,7 +1098,7 @@ contains
       
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dweight*rfunction))
+  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dwFct*rfunction))
   ! by using an approximative derivative based on a finite difference
   ! approach in each entry.
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
@@ -1004,8 +1206,8 @@ contains
 
         ! Calculate the diagonal entry, that's it
         
-        du1 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
-        du2 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
+        du1 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
+        du2 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
         
         p_Dmatrix(p_Kdiagonal(i)) = dweight*(du1-du2)/(2.0_DP*dh)
       
@@ -1020,8 +1222,8 @@ contains
 
         ! Calculate the diagonal entry, that's it
         
-        du1 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
-        du2 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
+        du1 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
+        du2 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
         
         p_Dmatrix(p_Kdiagonal(i)) = dweight*(du1-du2)/(2.0_DP*dh)
       
@@ -1036,8 +1238,8 @@ contains
 
         ! Calculate the diagonal entry, that's it
         
-        du1 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) - dh))
-        du2 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) + dh))
+        du1 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) + dh))
+        du2 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) - dh))
         
         p_Dmatrix(p_Kdiagonal(i)) = dweight*(du1-du2)/(2.0_DP*dh)
       
@@ -1052,8 +1254,8 @@ contains
 
         ! Calculate the diagonal entry, that's it
         
-        du1 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) - dh))
-        du2 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) + dh))
+        du1 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) + dh))
+        du2 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) - dh))
         
         p_Dmatrix(p_Kdiagonal(i)) = dweight*(du1-du2)/(2.0_DP*dh)
       
@@ -1061,6 +1263,560 @@ contains
 
     end if
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine coeff_rhsMinMaxProj (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! For distributed control.
+    ! Coefficients in the bilinear form of the projection operator.
+    ! Variable constraints, given by a FEM function.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+      ! local variables
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorUmin,p_rvectorUmax
+    real(dp), dimension(:,:), allocatable :: Dfunc
+    real(dp), dimension(:), allocatable :: Dumin,Dumax
+    integer, dimension(:), allocatable :: Ielements
+    integer(I32) :: celement
+    integer :: ipt, iel
+    real(DP) :: dwFct,dweight,dwMin,dwMax
+
+    ! Get constant data    
+    dwFct = rcollection%DquickAccess(1)
+    dweight = rcollection%DquickAccess(2)
+    dwMin = rcollection%DquickAccess(3)
+    dwMax = rcollection%DquickAccess(4)
+    
+    ! Get a pointer to the FE solution from the collection.
+    ! The routine below wrote a pointer to the vector to the
+    ! first quick-access vector pointer in the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    p_rvectorUmin => rcollection%p_rvectorQuickAccess2
+    p_rvectorUmax => rcollection%p_rvectorQuickAccess3
+
+    ! Allocate memory for the function values in the cubature points.
+    ! Function value, minimum and maximum.
+    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+
+    ! Allocate temp memory for element hints
+    allocate(Ielements(ubound(Dcoefficients,2)))
+    
+    ! Calculate the function value of the solution vector in all
+    ! our cubature points:
+    !
+    ! Figure out the element type, then call the
+    ! evaluation routine for a prepared element set.
+    ! This works only if the trial space of the matrix coincides
+    ! with the FE space of the vector we evaluate!
+    
+    celement = rdomainIntSubset%celement
+    
+    call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc(:,:))
+    
+    ! Now check the function values lambda.
+    ! Return the projected control in every cubature point.
+    
+    ! Nonconstant upper/lower bound given?
+    ! Choose the appropriate loop...
+    if (associated(p_rvectorUmin) .and. associated(p_rvectorUmax)) then
+      
+      ! Allocate temp memory for min/max values for u.
+      allocate(Dumin(ubound(Dcoefficients,3)))
+      allocate(Dumax(ubound(Dcoefficients,3)))
+
+      do iel = 1,ubound(Dcoefficients,3)
+      
+        ! Evaluate min and max value of the control in the cubature points
+        ! on the current element.
+        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+        call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+            Dpoints(:,:,iel), IelementsHint=Ielements)
+
+        call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+            Dpoints(:,:,iel), IelementsHint=Ielements)
+
+        ! Calculate the projection in the cubature points
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
+                                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
+        end do
+      end do
+
+      deallocate(Dumin)
+      deallocate(Dumax)
+    
+    else if (associated(p_rvectorUmin)) then
+      
+      ! Allocate temp memory for min/max values for u.
+      allocate(Dumin(ubound(Dcoefficients,3)))
+
+      do iel = 1,ubound(Dcoefficients,3)
+      
+        ! Evaluate min and max value of the control in the cubature points
+        ! on the current element.
+        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+        call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+            Dpoints(:,:,iel), IelementsHint=Ielements)
+
+        ! Calculate the projection in the cubature points
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
+                                                dwMin*Dumin(ipt)),dwMax)
+        end do
+      end do
+
+      deallocate(Dumin)
+    
+    else if (associated(p_rvectorUmax)) then
+      
+      ! Allocate temp memory for min/max values for u.
+      allocate(Dumax(ubound(Dcoefficients,3)))
+
+      do iel = 1,ubound(Dcoefficients,3)
+      
+        ! Evaluate min and max value of the control in the cubature points
+        ! on the current element.
+        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+        call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+            Dpoints(:,:,iel), IelementsHint=Ielements)
+
+        ! Calculate the projection in the cubature points
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
+                                                dwMin),dwMax*Dumax(ipt))
+        end do
+      end do
+      
+      deallocate(Dumax)
+
+    else
+
+      ! Constant bounds
+      do iel = 1,ubound(Dcoefficients,3)
+        ! Calculate the projection in the cubature points
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),dwMin),dwMax)
+        end do
+      end do
+
+    end if
+    
+    ! Release memory
+    deallocate(Ielements)
+    deallocate(Dfunc)
+
+  end subroutine
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine nwder_rhsMinMaxProjByCubature (dweight,rvector,rcubatureInfo,&
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+  
+!<description>
+  ! Assembles the linear form
+  !   ( dweight*rfunction , test)
+  ! for the projection function
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  ! to be =1.
+  ! The operator is added to rvector.
+  !
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
+  ! discretised in the same space as rfunction!
+!</description>
+
+!<input>
+  ! Weight in front of the operator when being added to rmatrix.
+  real(DP), intent(in) :: dweight
+  
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFct
+  
+  ! An FE function
+  type(t_vectorScalar), intent(in) :: rfunction
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMin
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMax
+
+  ! Cubature info structure that defines how to apply cubature.
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+  
+  ! OPTIONAL: Function specifying the lower bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+
+  ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMax
+!</input>
+
+!<inputoutput>
+  ! The vector which receives the projection.
+  type(t_vectorScalar), intent(inout) :: rvector
+!<inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type (t_linearForm) :: rlinform
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    
+    ! Prepare a linearform-assembly.
+    rlinform%itermCount = 1
+    rlinform%Dcoefficients(1) = 1.0_DP
+    rlinform%Idescriptors(1) = DER_FUNC
+
+    ! Prepare a collection structure to be passed to the callback
+    ! routine. We attach the function(s) in the quick-access variables
+    ! so the callback routine can access it.
+    !
+    ! All scalar vectors must be converted to block vectors.
+    call lsysbl_createVecFromScalar (rfunction,rvecFct)
+    rcollection%p_rvectorQuickAccess1 => rvecFct
+    
+    if (present(rfunctionMin)) then
+      call lsysbl_createVecFromScalar (rfunctionMin,rvecMin)
+      rcollection%p_rvectorQuickAccess2 => rvecMin
+    else
+      nullify(rcollection%p_rvectorQuickAccess2)
+    end if
+
+    if (present(rfunctionMax)) then
+      call lsysbl_createVecFromScalar (rfunctionMax,rvecMax)
+      rcollection%p_rvectorQuickAccess3 => rvecMax
+    else
+      nullify(rcollection%p_rvectorQuickAccess3)
+    end if
+    
+    rcollection%DquickAccess(1) = dwFct
+    rcollection%DquickAccess(2) = dweight
+    rcollection%DquickAccess(3) = dwMin
+    rcollection%DquickAccess(4) = dwMax
+
+    ! Assemble the vector
+    call linf_buildVectorScalar(rlinform,.false.,rvector,rcubatureInfo,&
+        coeff_rhsMinMaxProj,rcollection)
+
+    ! Release memory
+    if (present(rfunctionMin)) then
+      call lsysbl_releaseVector (rvecMin)
+    end if
+
+    if (present(rfunctionMax)) then
+      call lsysbl_releaseVector (rvecMax)
+    end if
+    
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine nwder_rhsMinMaxProjByMass (dweight,rvector,rmassMatrix,rvectorTemp,&
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+  
+!<description>
+  ! Calculates 
+  !   rvector = rvector + dweight * MassMatrix * rfunction
+  ! for the projection function
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  ! to be =1.
+  ! The operator is added to rvector.
+  ! The calculation is done based on the degrees of freedom in
+  ! rfunction, which corresponds to the operator
+  ! nwder_MinMaxProjByMass.
+  !
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
+  ! discretised in the same space as rfunction!
+!</description>
+
+!<input>
+  ! Weight in front of the operator when being added to rmatrix.
+  real(DP), intent(in) :: dweight
+  
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFct
+  
+  ! The mass matrix
+  type(t_matrixScalar), intent(in) :: rmassMatrix
+  
+  ! A temporary vector.
+  type(t_vectorScalar), intent(inout) :: rvectorTemp
+  
+  ! An FE function
+  type(t_vectorScalar), intent(in) :: rfunction
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMin
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMax
+
+  ! OPTIONAL: Function specifying the lower bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+
+  ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMax
+!</input>
+
+!<inputoutput>
+  ! The vector which receives the projection.
+  type(t_vectorScalar), intent(inout) :: rvector
+!<inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type (t_linearForm) :: rlinform
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
+    integer :: i
+
+    ! Get the source and target arrays.
+    call lsyssc_getbase_double (rfunction,p_DdataIn)
+    call lsyssc_getbase_double (rvectorTemp,p_DdataOut)
+
+    ! How to compute? Nonconstant min/max available?
+    if (present(rfunctionMin) .and. present(rfunctionMax)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+      end do
+      
+    else if (present(rfunctionMin)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax)
+      end do
+
+    else if (present(rfunctionMax)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin),dwMax*p_DdataMax(i))
+      end do
+
+    else
+    
+      ! Constant bounds
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin),dwMax)
+      end do
+
+    end if
+    
+    ! Multiply by the mass matrix and sum up to rvector.
+    call lsyssc_scalarMatVec (&
+        rmassMatrix,rvectorTemp,rvector,dweight,1.0_DP)
+    
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine nwder_applyMinMaxProjByDof (dweight,rvector,&
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+  
+!<description>
+  ! Calculates 
+  !   rvector = dweight * rfunction
+  ! for the projection function
+  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  ! to be =1.
+  ! The operator is added to rvector.
+  ! The calculation is done based on the degrees of freedom in
+  ! rfunction, which corresponds to the operator
+  ! nwder_MinMaxProjByMass.
+  !
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
+  ! discretised in the same space as rfunction!
+!</description>
+
+!<input>
+  ! Weight in front of the operator when being added to rmatrix.
+  real(DP), intent(in) :: dweight
+  
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFct
+  
+  ! An FE function
+  type(t_vectorScalar), intent(in) :: rfunction
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMin
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMax
+
+  ! OPTIONAL: Function specifying the lower bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+
+  ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMax
+!</input>
+
+!<inputoutput>
+  ! The vector which receives the projection.
+  type(t_vectorScalar), intent(inout) :: rvector
+!<inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type (t_linearForm) :: rlinform
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
+    integer :: i
+
+    ! Get the source and target arrays.
+    call lsyssc_getbase_double (rfunction,p_DdataIn)
+    call lsyssc_getbase_double (rvector,p_DdataOut)
+
+    ! How to compute? Nonconstant min/max available?
+    if (present(rfunctionMin) .and. present(rfunctionMax)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+      end do
+      
+    else if (present(rfunctionMin)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax)
+      end do
+
+    else if (present(rfunctionMax)) then
+    
+      ! Get the bounding functions
+      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin),dwMax*p_DdataMax(i))
+      end do
+
+    else
+    
+      ! Constant bounds
+    
+      ! Restrict the vector
+      do i=1,rvector%NEQ
+        p_DdataOut(i) = &
+            min(max(dwFct*p_DdataIn(i),dwMin),dwMax)
+      end do
+
+    end if
+    
   end subroutine
 
 end module
