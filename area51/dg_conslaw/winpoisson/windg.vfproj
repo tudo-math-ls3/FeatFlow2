@@ -56,6 +56,7 @@
 				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File>
 		<File RelativePath="..\src\dg2d_multigridpoisson.f90"/>
 		<File RelativePath="..\src\dg2d_multigridscalar.f90"/>
+		<File RelativePath="..\src\dg2d_multigridscalaradvectiondeal.f90"/>
 		<File RelativePath="..\src\dg2d_multigridsystem.f90"/>
 		<File RelativePath="..\src\dg2d_problem.f90"/>
 		<File RelativePath="..\src\dg2d_routines.f90"/>
