@@ -51,6 +51,7 @@ module mhd_meshadaptation
   use flagship_basic
   use flagship_callback
   use fsystem
+  use genoutput
   use hadaptaux
   use hadaptivity
   use linearsystemblock

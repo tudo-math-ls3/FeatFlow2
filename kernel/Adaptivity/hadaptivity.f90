@@ -75,7 +75,7 @@ module hadaptivity
   use hadaptaux
   use hadaptaux1d
   use hadaptaux2d
-  use hadaptaux3d
+!!$  use hadaptaux3d
   use io
   use linearsystemscalar
   use mapInt_Dble
