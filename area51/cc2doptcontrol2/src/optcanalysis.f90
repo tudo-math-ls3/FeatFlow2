@@ -552,7 +552,7 @@ contains
           ! At first, calculate P(-1/alpha lambda) -- or nothing,
           ! if distriobuted control is deactivated.
           if (rconstraints%ccontrolConstraints .ne. 0) then
-            select case (rconstraints%cconstraintsType)
+            select case (rconstraints%ccontrolConstraintsType)
             case (0)
               call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
                   -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&

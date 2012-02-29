@@ -99,6 +99,11 @@
 !#
 !# 9.) ffunctionViscoModel
 !#     -> Auxiliary function that defines the nonconstant viscosity
+!#
+!# Remark: The Moreau-Yosida regularisation is nicely described here:
+!#  [Stoll, Pearson, Wathen; Preconditioners for state constrained optimal control problems
+!#   with Moreau-Yosida penalty function; 2011]
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1773,13 +1778,13 @@ contains
           roptcoperator%ccontrolProjection = &
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints
 
-          roptcoperator%cconstraintsType = &
-              rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType
+          roptcoperator%ccontrolConstraintsType = &
+              rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType
               
-          roptcoperator%dmin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-          roptcoperator%dmax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
-          roptcoperator%dmin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-          roptcoperator%dmax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
+          roptcoperator%dumin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
+          roptcoperator%dumax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
+          roptcoperator%dumin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
+          roptcoperator%dumax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
           roptcoperator%p_rumin1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1
           roptcoperator%p_rumax1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1
@@ -2921,7 +2926,7 @@ contains
     ! probably nonlinear mass matrices on the diagonal.
     ! The mass matrices are projected according to where the velocity
     ! vector -1/alphaC*rvector%RvectorBlock(4/5) (from rnonlinearSpatialMatrix)
-    ! violates the bounds dmin/dmax.
+    ! violates the bounds dumin/dumax.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix.
@@ -2992,7 +2997,7 @@ contains
             ! The weight "-rnonlinearSpatialMatrix%dalphaC" is included in
             ! dweight, so it has to be canceled out.
 
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
             
@@ -3070,7 +3075,7 @@ contains
 
               ! Calculate the Newton derivative.
               
-              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
               case (0)
                 ! Cónstant bounds
 
@@ -3124,7 +3129,7 @@ contains
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,1))
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
 
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
 
@@ -3197,7 +3202,7 @@ contains
 
               ! Calculate the Newton derivative.
               
-              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+              select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
               case (0)
                 ! Cónstant bounds
 
@@ -3825,7 +3830,7 @@ contains
             
             ! Apply: rd(primal) = rd(primal) + dcx * P(-1/alpha * lambda)
             
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
               call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),&
@@ -3876,7 +3881,7 @@ contains
           
             ! Just project the DOF's.
             
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
               call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(1),&
@@ -4133,13 +4138,13 @@ contains
         roptcoperator%ccontrolProjection = &
             rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints
 
-        roptcoperator%cconstraintsType = &
-            rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType
+        roptcoperator%ccontrolConstraintsType = &
+            rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType
 
-        roptcoperator%dmin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
-        roptcoperator%dmax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
-        roptcoperator%dmin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
-        roptcoperator%dmax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
+        roptcoperator%dumin1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1
+        roptcoperator%dumax1 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1
+        roptcoperator%dumin2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
+        roptcoperator%dumax2 = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
         roptcoperator%p_rumin1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1
         roptcoperator%p_rumax1 => rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1
@@ -4898,7 +4903,7 @@ contains
              
         case (1)
         
-          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
           case (0)
             ! Constant bounds
           
@@ -4985,7 +4990,7 @@ contains
             ! However, cancel out the -1/alpha from the function weight, which
             ! is included into the operator as part of the Newton derivative.
 
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
 
@@ -5042,7 +5047,7 @@ contains
 
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
           case (0)
             ! Constant bounds
 
@@ -5124,7 +5129,7 @@ contains
             ! However, cancel out the -1/alpha from the function weight, which
             ! is included into the operator as part of the Newton derivative.
 
-            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
 

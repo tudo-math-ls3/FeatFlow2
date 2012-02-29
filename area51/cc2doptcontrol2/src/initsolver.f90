@@ -1399,11 +1399,11 @@ contains
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         "csystemScaling",roptcontrol%csystemScaling,0)
     
-    ! Parameters defining the constraints
+    ! Parameters defining the control constraints
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         "ccontrolConstraints",roptcontrol%rconstraints%ccontrolConstraints,0)
 
-    roptcontrol%rconstraints%cconstraintsType = 0
+    roptcontrol%rconstraints%ccontrolConstraintsType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
         "dumin1",roptcontrol%rconstraints%dumin1,-1.0E10_DP)
@@ -1416,6 +1416,27 @@ contains
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
         "dumax2",roptcontrol%rconstraints%dumax2,1.0E10_DP)
+
+    ! Parameters defining the state constraints
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,0)
+
+    roptcontrol%rconstraints%cstateConstraintsType = 0
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dymin1",roptcontrol%rconstraints%dymin1,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dymax1",roptcontrol%rconstraints%dymax1,1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dymin2",roptcontrol%rconstraints%dymin2,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dymax2",roptcontrol%rconstraints%dymax2,1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        "dstateConstrReg",roptcontrol%rconstraints%dstateConstrReg,1.0_DP)
         
     ! Observation area
     call parlst_getvalue_string (rparlist,ssectionOptC,&
@@ -1550,9 +1571,14 @@ contains
     integer :: isuccess
     
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'cconstraintsType',roptcontrol%rconstraints%cconstraintsType,0)
+        'ccontrolConstraintsType',roptcontrol%rconstraints%ccontrolConstraintsType,0)
 
-    if (roptcontrol%rconstraints%cconstraintsType .eq. 1) then
+    ! DEPRECATED: ccontrolConstraintsType = cconstraintsType
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'cconstraintsType',roptcontrol%rconstraints%ccontrolConstraintsType,&
+        roptcontrol%rconstraints%ccontrolConstraintsType)
+
+    if (roptcontrol%rconstraints%ccontrolConstraintsType .eq. 1) then
       allocate (roptcontrol%rconstraints%p_rumin1)
       allocate (roptcontrol%rconstraints%p_rumax1)
       allocate (roptcontrol%rconstraints%p_rumin2)
@@ -1610,6 +1636,114 @@ contains
 
 !<subroutine>
 
+  subroutine init_initOptStateConstraints (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
+      rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
+  
+!<description>
+  ! Initialises the state constraint functions for the optimal control problem
+  ! based on the parameters in the DAT file.
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters of the optimal control can be found.
+  character(len=*), intent(in) :: ssectionOptC
+
+  ! Structure with space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Underlying spatial coarse mesh of the problem.
+  type(t_triangulation), intent(in) :: rtriaCoarse
+  
+  ! Definition of the underlying domain.
+  type(t_boundary), intent(in) :: rboundary
+
+  ! Description of the refinement of rtriaCoarse.
+  type(t_settings_refinement), intent(in) :: rrefinementSpace
+
+  ! A hierarchy of space levels for velocity+pressure (primal/dual space).
+  ! If the element of the target function matches the one of the primary
+  ! function, this hierarchy is used to save memory.
+  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+  
+  ! Underlying hierarchy of the time discretisation
+  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
+!</input>
+
+!<inputoutput>
+  ! Structure defining the parameters for the optimal control.
+  type(t_settings_optcontrol), intent(inout) :: roptcontrol
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sfunction
+    integer :: isuccess
+    
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'cstateConstraintsType',roptcontrol%rconstraints%cstateConstraintsType,0)
+
+    if (roptcontrol%rconstraints%ccontrolConstraintsType .eq. 1) then
+      allocate (roptcontrol%rconstraints%p_rymin1)
+      allocate (roptcontrol%rconstraints%p_rymax1)
+      allocate (roptcontrol%rconstraints%p_rymin2)
+      allocate (roptcontrol%rconstraints%p_rymax2)
+      
+      call parlst_getvalue_string (rparlist,ssectionOptC,&
+          'ssectionymin1',sfunction,"",bdequote=.true.)
+          
+      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymin1,&
+          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+        call sys_halt()
+      end if
+
+      call parlst_getvalue_string (rparlist,ssectionOptC,&
+          'ssectionymax1',sfunction,"",bdequote=.true.)
+
+      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymax1,&
+          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+        call sys_halt()
+      end if
+
+      call parlst_getvalue_string (rparlist,ssectionOptC,&
+          'ssectionymin2',sfunction,"",bdequote=.true.)
+
+      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymin2,&
+          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+        call sys_halt()
+      end if
+
+      call parlst_getvalue_string (rparlist,ssectionOptC,&
+          'ssectionymax2',sfunction,"",bdequote=.true.)
+
+      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymax2,&
+          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+        call sys_halt()
+      end if
+
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine init_doneOptControl (roptcontrol)
   
 !<description>
@@ -1623,8 +1757,8 @@ contains
 
 !</subroutine>
 
-    ! Release constraints
-    if (roptcontrol%rconstraints%cconstraintsType .eq. 1) then
+    ! Release control constraints
+    if (roptcontrol%rconstraints%ccontrolConstraintsType .eq. 1) then
       call ansol_done(roptcontrol%rconstraints%p_rumin1)
       call ansol_done(roptcontrol%rconstraints%p_rumax1)
       call ansol_done(roptcontrol%rconstraints%p_rumin2)
@@ -1634,6 +1768,19 @@ contains
       deallocate (roptcontrol%rconstraints%p_rumax1)
       deallocate (roptcontrol%rconstraints%p_rumin2)
       deallocate (roptcontrol%rconstraints%p_rumax2)
+    end if
+
+    ! Release state constraints
+    if (roptcontrol%rconstraints%cstateConstraintsType .eq. 1) then
+      call ansol_done(roptcontrol%rconstraints%p_rymin1)
+      call ansol_done(roptcontrol%rconstraints%p_rymax1)
+      call ansol_done(roptcontrol%rconstraints%p_rymin2)
+      call ansol_done(roptcontrol%rconstraints%p_rymax2)
+      
+      deallocate (roptcontrol%rconstraints%p_rymin1)
+      deallocate (roptcontrol%rconstraints%p_rymax1)
+      deallocate (roptcontrol%rconstraints%p_rymin2)
+      deallocate (roptcontrol%rconstraints%p_rymax2)
     end if
 
     ! Release the target function.

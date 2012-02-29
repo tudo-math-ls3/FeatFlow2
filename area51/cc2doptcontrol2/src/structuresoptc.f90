@@ -42,16 +42,22 @@ module structuresoptc
     ! =0: No constraints.
     ! =1: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-    !     Implemented by cubature point.
+    !     Implementation by DOF.
     ! =2: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-    !     Implementation by DOF.
+    !     Implemented by cubature point.
+    ! =3: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+    !     Implemented by DOF. Newton matrix is approximative.
+    ! =4: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+    !     Implemented by cubature point (more exact). Adaptive integration.
     integer :: ccontrolConstraints = 0
 
     ! Type of definition of the constraints if ccontrolConstraints <> 0.
     ! =0: constants specified in dumin1/2, dumax1/2.
     ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-    integer :: cconstraintsType = 0
+    integer :: ccontrolConstraintsType = 0
 
     ! Constraints on u_1
     real(DP) :: dumin1 = -1.0E10
@@ -72,6 +78,46 @@ module structuresoptc
     ! Discrete constraints for u_1
     type(t_vectorBlock), pointer :: p_rvectorumin => null()
     type(t_vectorBlock), pointer :: p_rvectorumax => null()
+
+
+    ! Type of constraints to apply to the state y.
+    ! =0: No constraints.
+    ! =1: Constant constraints on u active:
+    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+    !     Implementation by DOF.
+    ! =2: Constant constraints on y active:
+    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+    !     Implemented by cubature point.
+    integer :: cstateConstraints = 0
+
+    ! Type of definition of the constraints if ccontrolConstraints <> 0.
+    ! =0: constants specified in dumin1/2, dumax1/2.
+    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
+    integer :: cstateConstraintsType = 0
+
+    ! Regularisation parameter for the Moreau-Yosida regularisation
+    real(DP) :: dstateConstrReg = 1.0_DP
+
+    ! Constraints on u_1
+    real(DP) :: dymin1 = -1.0E10
+    real(DP) :: dymax1 = 1.0E10
+    
+    ! Constraints in u_2
+    real(DP) :: dymin2 = -1.0E10
+    real(DP) :: dymax2 = 1.0E10
+
+    ! Analytical constraints for u_1
+    type(t_anSolution), pointer :: p_rymin1 => null()
+    type(t_anSolution), pointer :: p_rymax1 => null()
+    
+    ! Analytical constraints for u_2
+    type(t_anSolution), pointer :: p_rymin2 => null()
+    type(t_anSolution), pointer :: p_rymax2 => null()
+    
+    ! Discrete constraints for u_1
+    type(t_vectorBlock), pointer :: p_rvectorymin => null()
+    type(t_vectorBlock), pointer :: p_rvectorymax => null()
+    
     
     ! Time used for the evaluation of the analytical constraints
     ! p_rumin1/2, p_rumax1/2.
@@ -92,16 +138,22 @@ module structuresoptc
     ! =0: No constraints.
     ! =1: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-    !     Implemented by cubature point.
+    !     Implementation by DOF.
     ! =2: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
-    !     Implementation by DOF.
+    !     Implemented by cubature point.
+    ! =3: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+    !     Implemented by DOF. Newton matrix is approximative.
+    ! =4: Constant constraints on u active: 
+    !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+    !     Implemented by cubature point (more exact). Adaptive integration.
     integer :: ccontrolConstraints = 0
 
     ! Type of definition of the constraints if ccontrolConstraints <> 0.
     ! =0: constants specified in dumin1/2, dumax1/2.
     ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-    integer :: cconstraintsType = 0
+    integer :: ccontrolConstraintsType = 0
 
     ! Constraints on u_1
     real(DP) :: dumin1 = -1.0E10
@@ -119,6 +171,40 @@ module structuresoptc
     type(t_anSolution), pointer :: p_rumin2 => null()
     type(t_anSolution), pointer :: p_rumax2 => null()
   
+    ! Type of constraints to apply to the state y.
+    ! =0: No constraints.
+    ! =1: Constant constraints on u active:
+    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+    !     Implementation by DOF.
+    ! =2: Constant constraints on y active:
+    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+    !     Implemented by cubature point.
+    integer :: cstateConstraints = 0
+
+    ! Type of definition of the constraints if ccontrolConstraints <> 0.
+    ! =0: constants specified in dumin1/2, dumax1/2.
+    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
+    integer :: cstateConstraintsType = 0
+
+    ! Regularisation parameter for the Moreau-Yosida regularisation
+    real(DP) :: dstateConstrReg = 1.0_DP
+
+    ! Constraints on u_1
+    real(DP) :: dymin1 = -1.0E10
+    real(DP) :: dymax1 = 1.0E10
+    
+    ! Constraints in u_2
+    real(DP) :: dymin2 = -1.0E10
+    real(DP) :: dymax2 = 1.0E10
+
+    ! Analytical constraints for u_1
+    type(t_anSolution), pointer :: p_rymin1 => null()
+    type(t_anSolution), pointer :: p_rymax1 => null()
+    
+    ! Analytical constraints for u_2
+    type(t_anSolution), pointer :: p_rymin2 => null()
+    type(t_anSolution), pointer :: p_rymax2 => null()
+    
   end type
 
 !</typeblock>

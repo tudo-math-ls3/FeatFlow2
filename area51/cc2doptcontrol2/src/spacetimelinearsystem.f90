@@ -432,6 +432,8 @@ contains
     integer :: idim
 
     ! Transfer all possible parameters.
+    !
+    ! Control constraints.
     rspaceConstr%dumin1 = rspaceTimeConstr%dumin1
     rspaceConstr%dumax1 = rspaceTimeConstr%dumax1
     rspaceConstr%dumin2 = rspaceTimeConstr%dumin2
@@ -443,13 +445,14 @@ contains
     rspaceConstr%p_rumax1 => rspaceTimeConstr%p_rumax1
     rspaceConstr%p_rumin2 => rspaceTimeConstr%p_rumin2
     rspaceConstr%p_rumax2 => rspaceTimeConstr%p_rumax2
-    rspaceConstr%cconstraintsType = &
-        rspaceTimeConstr%cconstraintsType
+    rspaceConstr%ccontrolConstraintsType = &
+        rspaceTimeConstr%ccontrolConstraintsType
+
     rspaceConstr%dconstrainsTime = dconstrainsTime
 
     select case (rspaceConstr%ccontrolConstraints)
     case (1:)
-      select case (rspaceConstr%cconstraintsType)
+      select case (rspaceConstr%ccontrolConstraintsType)
       case (1)
         allocate(rspaceConstr%p_rvectorumin)
         allocate(rspaceConstr%p_rvectorumax)
@@ -507,6 +510,92 @@ contains
       
         ! Prepare a projection to a vector and evaluate.
         call anprj_discrDirect (rspaceConstr%p_rvectorumin%RvectorBlock(2),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        call collct_done (rcollection)
+        
+      end select
+    end select
+    
+    ! State constraints.
+    rspaceConstr%dymin1 = rspaceTimeConstr%dymin1
+    rspaceConstr%dymax1 = rspaceTimeConstr%dymax1
+    rspaceConstr%dymin2 = rspaceTimeConstr%dymin2
+    rspaceConstr%dymax2 = rspaceTimeConstr%dymax2
+    rspaceConstr%cstateConstraints = &
+        rspaceTimeConstr%cstateConstraints
+
+    rspaceConstr%p_rymin1 => rspaceTimeConstr%p_rymin1
+    rspaceConstr%p_rymax1 => rspaceTimeConstr%p_rymax1
+    rspaceConstr%p_rymin2 => rspaceTimeConstr%p_rymin2
+    rspaceConstr%p_rymax2 => rspaceTimeConstr%p_rymax2
+    rspaceConstr%cstateConstraintsType = &
+        rspaceTimeConstr%cstateConstraintsType
+
+    rspaceConstr%dstateConstrReg = rspaceConstr%dstateConstrReg
+    
+    select case (rspaceConstr%cstateConstraints)
+    case (1:)
+      select case (rspaceConstr%cstateConstraintsType)
+      case (1)
+        allocate(rspaceConstr%p_rvectorymin)
+        allocate(rspaceConstr%p_rvectorymax)
+
+        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymin,.true.)
+        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymax,.true.)
+      
+        call collct_init (rcollection)
+
+        ! -----
+        ! U1-min
+        call ansol_prepareEval (rspaceConstr%p_rymin1,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 1
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorymin%RvectorBlock(1),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U1-max
+        call ansol_prepareEval (rspaceConstr%p_rymax1,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 1
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorymax%RvectorBlock(1),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U2-min
+        call ansol_prepareEval (rspaceConstr%p_rymin2,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 2
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorymin%RvectorBlock(2),&
+            ffunctionConstraint, rcollection)
+
+        call ansol_doneEval (rcollection,"SOL")
+
+        ! -----
+        ! U2-max
+        call ansol_prepareEval (rspaceConstr%p_rymax2,rcollection,"SOL",dconstrainsTime)
+
+        ! Set current dimension for the callback routine
+        rcollection%IquickAccess(1) = 2
+      
+        ! Prepare a projection to a vector and evaluate.
+        call anprj_discrDirect (rspaceConstr%p_rvectorymin%RvectorBlock(2),&
             ffunctionConstraint, rcollection)
 
         call ansol_doneEval (rcollection,"SOL")
@@ -1177,8 +1266,8 @@ contains
           rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumin2
       rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax2 => &
           rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumax2
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%cconstraintsType
+      rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType = &
+          rspaceTimeMatrix%rdiscrData%p_rconstraints%ccontrolConstraintsType
     
     end select
     

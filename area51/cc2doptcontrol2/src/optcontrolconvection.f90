@@ -151,19 +151,19 @@ module optcontrolconvection
     ! Type of definition of the constraints if ccontrolConstraints <> 0.
     ! =0: constants specified in dumin1/2, dumax1/2.
     ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-    integer :: cconstraintsType = 0
+    integer :: ccontrolConstraintsType = 0
 
     ! Minimum/Maximum bound for the X-control.
-    real(dp) :: dmin1 = -1E99_DP
-    real(dp) :: dmax1 = 1E99_DP
+    real(dp) :: dumin1 = -1E99_DP
+    real(dp) :: dumax1 = 1E99_DP
 
     ! Analytical constraints for u_1.
     type(t_anSolution), pointer :: p_rumin1 => null()
     type(t_anSolution), pointer :: p_rumax1 => null()
 
     ! Minimum/Maximum bound for the Y-control.
-    real(dp) :: dmin2 = -1E99_DP
-    real(dp) :: dmax2 = 1E99_DP
+    real(dp) :: dumin2 = -1E99_DP
+    real(dp) :: dumax2 = 1E99_DP
 
     ! Analytical constraints for u_2
     type(t_anSolution), pointer :: p_rumin2 => null()
@@ -2248,8 +2248,8 @@ contains
                 
                 ! Inner loop over the DOF's j=1..indof, which corresponds to
                 ! the basis function Phi_j:
-                if ((dtemp1 .ge. roptcoperator%dmin1) .and.  &
-                    (dtemp1 .le. roptcoperator%dmax1)) then
+                if ((dtemp1 .ge. roptcoperator%dumin1) .and.  &
+                    (dtemp1 .le. roptcoperator%dumax1)) then
                   do jdofe=1,ndof
                     
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2272,8 +2272,8 @@ contains
                   end do ! idofe
                 end if
 
-                if ((dtemp2 .ge. roptcoperator%dmin2) .and.  &
-                    (dtemp2 .le. roptcoperator%dmax2)) then
+                if ((dtemp2 .ge. roptcoperator%dumin2) .and.  &
+                    (dtemp2 .le. roptcoperator%dumax2)) then
                   do jdofe=1,ndof
                     
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2358,11 +2358,11 @@ contains
                   
                   ! Compute dtemp1/dtemp2. Set it to dtemp if the control is
                   ! in the bounds, otherwise to 0.
-                  if ((du1d .lt. roptcoperator%dmin1) .or. (du1d .gt. roptcoperator%dmax1)) then
+                  if ((du1d .lt. roptcoperator%dumin1) .or. (du1d .gt. roptcoperator%dumax1)) then
                     dtemp1 = 0.0_DP
                   end if
 
-                  if ((du2d .lt. roptcoperator%dmin2) .or. (du2d .gt. roptcoperator%dmax2)) then
+                  if ((du2d .lt. roptcoperator%dumin2) .or. (du2d .gt. roptcoperator%dumax2)) then
                     dtemp2 = 0.0_DP
                   end if
 
@@ -3645,12 +3645,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
                                               roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                              roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                              roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                              roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                              roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -3666,12 +3666,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -3774,12 +3774,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da11,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -3795,12 +3795,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da21,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -3905,12 +3905,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -3926,12 +3926,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4034,12 +4034,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da12,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4055,12 +4055,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4165,12 +4165,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4186,12 +4186,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4294,12 +4294,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da14,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4315,12 +4315,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da24,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4426,12 +4426,12 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4447,12 +4447,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4555,14 +4555,14 @@ contains
             call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               ! Note that dcontrolMultiplier is negative, so we have to switch
               ! the min and the max!!!
               call incorporateLocalMatVecCol (DentryA14,p_Da15,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,1,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4578,12 +4578,12 @@ contains
             call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
           else
-            select case (roptcoperator%cconstraintsType)
+            select case (roptcoperator%ccontrolConstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da25,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp,&
-                                            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-                                            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+                                            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+                                            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
             case default
               call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
               call sys_halt()
@@ -4651,7 +4651,7 @@ contains
   contains
   
     subroutine incorporateLocalMatVecCol (DaLocal,Da,Kentry,Dvelocity,ivelcomp,idof,dweight,Dtemp,&
-        dmin,dmax)
+        dumin,dumax)
     
     ! Incorporate a local matrix into a global one.
     
@@ -4681,12 +4681,12 @@ contains
 
     ! Min/Max value for the velocity. If present, the velocity will be
     ! projected to this range.
-    real(dp), intent(in), optional :: dmin,dmax
+    real(dp), intent(in), optional :: dumin,dumax
 
       ! local variables
       integer :: iel,idofe,jdofe
     
-      if (.not. present(dmin)) then
+      if (.not. present(dumin)) then
       
         do iel=1,ubound(DaLocal,3)
           ! Apply a local matrix-vector multiplication to get the column
@@ -4714,7 +4714,7 @@ contains
           do idofe = 1,ubound(DaLocal,2)
             do jdofe = 1,ubound(DaLocal,1)
               Dtemp(idofe) = Dtemp(idofe) + &
-                  DaLocal(jdofe,idofe,iel)*min(max(Dvelocity(jdofe,iel,ivelcomp),dmin),dmax)
+                  DaLocal(jdofe,idofe,iel)*min(max(Dvelocity(jdofe,iel,ivelcomp),dumin),dumax)
             end do
           end do
         
@@ -4966,17 +4966,17 @@ contains
         call calcDefect (DentryA25,roptcassemblyinfo%Idofs,p_Dx5,p_Dd2,dweight)
       else
         call calcDefect (DentryA14,roptcassemblyinfo%Idofs,p_Dx4,p_Dd1,dweight,&
-            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
         call calcDefect (DentryA24,roptcassemblyinfo%Idofs,p_Dx4,p_Dd2,dweight,&
-            roptcoperator%dmax1/roptcoperator%dcontrolMultiplier,&
-            roptcoperator%dmin1/roptcoperator%dcontrolMultiplier)
+            roptcoperator%dumax1/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dumin1/roptcoperator%dcontrolMultiplier)
         call calcDefect (DentryA15,roptcassemblyinfo%Idofs,p_Dx5,p_Dd1,dweight,&
-            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
         call calcDefect (DentryA25,roptcassemblyinfo%Idofs,p_Dx5,p_Dd2,dweight,&
-            roptcoperator%dmax2/roptcoperator%dcontrolMultiplier,&
-            roptcoperator%dmin2/roptcoperator%dcontrolMultiplier)
+            roptcoperator%dumax2/roptcoperator%dcontrolMultiplier,&
+            roptcoperator%dumin2/roptcoperator%dcontrolMultiplier)
       end if
       
     end do ! ielset
@@ -5010,7 +5010,7 @@ contains
                
   contains
     
-    subroutine calcDefect (DaLocal,KcolLocal,Dx,Dd,dweight,dmin,dmax)
+    subroutine calcDefect (DaLocal,KcolLocal,Dx,Dd,dweight,dumin,dumax)
     
     ! Calculate the local defect:
     !   Dd = Dd - DaLocal*Dx
@@ -5032,13 +5032,13 @@ contains
     
     ! Min/Max value for the velocity. If present, the velocity will be
     ! projected to this range.
-    real(dp), intent(in), optional :: dmin,dmax
+    real(dp), intent(in), optional :: dumin,dumax
     
       ! local variables
       integer :: iel,idofe,jdofe
       real(dp) :: dval
     
-      if (.not. present(dmin)) then
+      if (.not. present(dumin)) then
         do iel=1,ubound(DaLocal,3)
           do idofe=1,ubound(DaLocal,1)
             dval = 0.0_DP
@@ -5058,7 +5058,7 @@ contains
             ! so jdofe in the first index describes the column!
             do jdofe=1,ubound(DaLocal,2)
               dval = dval + DaLocal(jdofe,idofe,iel) * &
-                  min(max(Dx(KcolLocal(jdofe,iel)),dmin),dmax)
+                  min(max(Dx(KcolLocal(jdofe,iel)),dumin),dumax)
             end do
             Dd(KcolLocal(idofe,iel)) = Dd(KcolLocal(idofe,iel)) - dweight*dval
           end do

@@ -1632,7 +1632,7 @@ contains
           call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
           
           if (rconstraints%ccontrolConstraints .ne. 0) then
-            select case (rconstraints%cconstraintsType)
+            select case (rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(1),&
@@ -1670,7 +1670,7 @@ contains
           
           if (rconstraints%ccontrolConstraints .ne. 0) then
           
-            select case (rconstraints%cconstraintsType)
+            select case (rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(4),&
