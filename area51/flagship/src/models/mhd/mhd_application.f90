@@ -79,8 +79,10 @@ module mhd_application
   use solveraux
   use spatialdiscretisation
   use statistics
+  use storage
   use timestep
   use timestepaux
+  use triangulation
   use ucd
 
   ! Modules from MHD model

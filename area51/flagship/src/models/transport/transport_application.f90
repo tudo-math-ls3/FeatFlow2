@@ -139,6 +139,7 @@ module transport_application
   use collection
   use flagship_basic
   use fparser
+  use genoutput
   use graph
   use hadaptaux
   use hadaptivity
@@ -152,6 +153,7 @@ module transport_application
   use storage
   use timestep
   use timestepaux
+  use triangulation
 
   ! Modules from transport model
   use transport_basic
