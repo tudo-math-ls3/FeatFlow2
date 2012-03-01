@@ -84,6 +84,38 @@ dumax2 = 0.5 #5 #1E10 #0.01
 ssectionumin2 = 
 ssectionumax2 = 
 
+# Type of constraints to apply to the state y
+# =0: No constraints.
+# =1: Constant constraints on y active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by DOF. Moreau-Yosida regularisation.
+# =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by cubature point (more exact). Analytic Newton matrix.
+#     Moreau-Yosida regularisation.
+cstateConstraints = 0
+
+# Type of definition of the constraints if ccontrolConstraints <> 0.
+# =0: constants specified in dumin1/2, dumax1/2.
+# =1: functions defined in the sections ssectionumin1/2, ssectionumax1/2.
+cstateConstraintsType = 0
+
+# Regularisation parameter for the Moreau-Yosida regularisation
+
+dstateConstrReg = 1.0
+
+# Constraints on u_1
+dymin1 = -0.5
+dymax1 = 0.5
+
+ssectionymin1 = 
+ssectionymax1 = 
+
+# Constraints in u_2
+dymin2 = -0.5
+dymax2 = 0.5
+
+ssectionymin2 = 
+ssectionymax2 = 
+
 # Area of observation.
 # This defines an observation box in the format
 #   DobservationArea = x1 y1 x2 y2
