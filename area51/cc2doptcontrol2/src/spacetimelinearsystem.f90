@@ -534,7 +534,7 @@ contains
     rspaceConstr%cstateConstraintsType = &
         rspaceTimeConstr%cstateConstraintsType
 
-    rspaceConstr%dstateConstrReg = rspaceConstr%dstateConstrReg
+    rspaceConstr%dstateConstrReg = rspaceTimeConstr%dstateConstrReg
     
     select case (rspaceConstr%cstateConstraints)
     case (1:)

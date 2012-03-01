@@ -150,9 +150,10 @@ contains
   
     ! local variables
     type(t_vectorScalar), pointer :: p_rvector, p_rvectorMin, p_rvectorMax
-    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax
+    type(t_vectorScalar), pointer :: p_rvectorShift
+    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax, Dshift
     integer(I32) :: celement
-    real(DP) :: dwFct, dweight, dwMin, dwMax
+    real(DP) :: dwFct, dweight, dwMin, dwMax, dwShift
     integer :: iel, ipt
     
     ! Get the bounds and the multiplier from the collection
@@ -169,6 +170,7 @@ contains
     ! Lower/upper bound specified?
     nullify(p_rvectorMin)
     nullify(p_rvectorMax)
+    nullify(p_rvectorShift)
     
     if (associated(rcollection%p_rvectorQuickAccess2)) then
       p_rvectorMin => rcollection%p_rvectorQuickAccess2%RvectorBlock(1)
@@ -178,6 +180,10 @@ contains
       p_rvectorMax => rcollection%p_rvectorQuickAccess3%RvectorBlock(1)
     end if
   
+    if (associated(rcollection%p_rvectorQuickAccess3)) then
+      p_rvectorShift => rcollection%p_rvectorQuickAccess4%RvectorBlock(1)
+    end if
+
     ! Allocate memory for the function values in the cubature points:
     allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
     
@@ -195,122 +201,254 @@ contains
         rdomainIntSubset%p_revalElementSet, &
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
     
-    ! Now check the function values lambda.
-    ! If dwMin*fctmin < dweight*u < dwMax*fctMax, return dweight.
-    ! Otherwise, return 0.
-    
-    ! We have to take care of 4 cases, depending on which parameters
-    ! are specified.
-    
-    if (associated(p_rvectorMin) .and. associated(p_rvectorMax)) then
-    
-      ! Both functions nonconstant.
-      ! Allocate memory for the function values in the cubature points.
-      allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
-      allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
-      
-      ! Calculate the function value of the solution vector in all
-      ! our cubature points.
-      !
-      ! WARNING: We assume the element to be the same as rfunction!
-      call fevl_evaluate_sim (p_rvectorMin, &
-          rdomainIntSubset%p_revalElementSet, &
-          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
+    ! If a 'shift' function is present, shift the function.
+    if (associated(p_rvectorShift)) then
+      allocate(Dshift(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))    
 
-      call fevl_evaluate_sim (p_rvectorMax, &
+      call fevl_evaluate_sim (p_rvectorShift, &
           rdomainIntSubset%p_revalElementSet, &
-          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
+          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dshift)
           
-      do iel = 1,ubound(Dcoefficients,3)
-        do ipt = 1,ubound(Dcoefficients,2)
-          ! Check if the dual variable is in the bounds for the control.
-          if ((dwFct*Dfunc(ipt,iel) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
-              (dwFct*Dfunc(ipt,iel) .lt. dwMax*DfuncMax(ipt,iel))) then
-            Dcoefficients(1,ipt,iel) = dwFct*dweight
-          else
-            Dcoefficients(1,ipt,iel) = 0.0_DP
-          end if
-        end do
-      end do
-
-      ! Release memory
-      deallocate(DfuncMin)
-      deallocate(DfuncMax)
-          
-    else if (associated(p_rvectorMin)) then
-    
-      ! Minimum function nonconstant.
-      ! Allocate memory for the function values in the cubature points.
-      allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+      ! Now check the function values lambda.
+      ! If dwMin*fctmin < dweight*u < dwMax*fctMax, return dweight.
+      ! Otherwise, return 0.
       
-      ! Calculate the function value of the solution vector in all
-      ! our cubature points.
-      !
-      ! WARNING: We assume the element to be the same as rfunction!
-      call fevl_evaluate_sim (p_rvectorMin, &
-          rdomainIntSubset%p_revalElementSet, &
-          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
-
-      do iel = 1,ubound(Dcoefficients,3)
-        do ipt = 1,ubound(Dcoefficients,2)
-          ! Check if the dual variable is in the bounds for the control.
-          if ((dwFct*Dfunc(ipt,iel) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
-              (dwFct*Dfunc(ipt,iel) .lt. dwMax)) then
-            Dcoefficients(1,ipt,iel) = dwFct*dweight
-          else
-            Dcoefficients(1,ipt,iel) = 0.0_DP
-          end if
-        end do
-      end do
-
-      ! Release memory
-      deallocate(DfuncMin)
-
-    else if (associated(p_rvectorMax)) then
-    
-      ! Max functions nonconstant.
-      ! Allocate memory for the function values in the cubature points.
-      allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
       
-      ! Calculate the function value of the solution vector in all
-      ! our cubature points.
-      !
-      ! WARNING: We assume the element to be the same as rfunction!
+      if (associated(p_rvectorMin) .and. associated(p_rvectorMax)) then
+      
+        ! Both functions nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+        call fevl_evaluate_sim (p_rvectorMin, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
 
-      call fevl_evaluate_sim (p_rvectorMax, &
-          rdomainIntSubset%p_revalElementSet, &
-          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
-          
-      do iel = 1,ubound(Dcoefficients,3)
-        do ipt = 1,ubound(Dcoefficients,2)
-          ! Check if the dual variable is in the bounds for the control.
-          if ((dwFct*Dfunc(ipt,iel) .gt. dwMin) .and. &
-              (dwFct*Dfunc(ipt,iel) .lt. dwMax*DfuncMax(ipt,iel))) then
-            Dcoefficients(1,ipt,iel) = dwFct*dweight
-          else
-            Dcoefficients(1,ipt,iel) = 0.0_DP
-          end if
+        call fevl_evaluate_sim (p_rvectorMax, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
+            
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .lt. dwMax*DfuncMax(ipt,iel))) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
         end do
-      end do
 
-      ! Release memory
-      deallocate(DfuncMax)
+        ! Release memory
+        deallocate(DfuncMin)
+        deallocate(DfuncMax)
+            
+      else if (associated(p_rvectorMin)) then
+      
+        ! Minimum function nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+        call fevl_evaluate_sim (p_rvectorMin, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
+
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .lt. dwMax)) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+
+        ! Release memory
+        deallocate(DfuncMin)
+
+      else if (associated(p_rvectorMax)) then
+      
+        ! Max functions nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+
+        call fevl_evaluate_sim (p_rvectorMax, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
+            
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .gt. dwMin) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .lt. dwMax*DfuncMax(ipt,iel))) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+
+        ! Release memory
+        deallocate(DfuncMax)
+
+      else
+      
+        ! Constant Min/Max functions
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .gt. dwMin) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel)) .lt. dwMax)) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+      
+      end if
+    
+      deallocate (Dshift)
 
     else
-    
-      ! Constant Min/Max functions
-      do iel = 1,ubound(Dcoefficients,3)
-        do ipt = 1,ubound(Dcoefficients,2)
-          ! Check if the dual variable is in the bounds for the control.
-          if ((dwFct*Dfunc(ipt,iel) .gt. dwMin) .and. &
-              (dwFct*Dfunc(ipt,iel) .lt. dwMax)) then
-            Dcoefficients(1,ipt,iel) = dwFct*dweight
-          else
-            Dcoefficients(1,ipt,iel) = 0.0_DP
-          end if
+        
+      ! Now check the function values lambda.
+      ! If dwMin*fctmin < dweight*u < dwMax*fctMax, return dweight.
+      ! Otherwise, return 0.
+      
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
+      
+      if (associated(p_rvectorMin) .and. associated(p_rvectorMax)) then
+      
+        ! Both functions nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+        call fevl_evaluate_sim (p_rvectorMin, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
+
+        call fevl_evaluate_sim (p_rvectorMax, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
+            
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift) .lt. dwMax*DfuncMax(ipt,iel))) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
         end do
-      end do
-    
+
+        ! Release memory
+        deallocate(DfuncMin)
+        deallocate(DfuncMax)
+            
+      else if (associated(p_rvectorMin)) then
+      
+        ! Minimum function nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMin(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+        call fevl_evaluate_sim (p_rvectorMin, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMin)
+
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift) .gt. dwMin*DfuncMin(ipt,iel)) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift) .lt. dwMax)) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+
+        ! Release memory
+        deallocate(DfuncMin)
+
+      else if (associated(p_rvectorMax)) then
+      
+        ! Max functions nonconstant.
+        ! Allocate memory for the function values in the cubature points.
+        allocate(DfuncMax(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+        
+        ! Calculate the function value of the solution vector in all
+        ! our cubature points.
+        !
+        ! WARNING: We assume the element to be the same as rfunction!
+
+        call fevl_evaluate_sim (p_rvectorMax, &
+            rdomainIntSubset%p_revalElementSet, &
+            celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, DfuncMax)
+            
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift) .gt. dwMin) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift) .lt. dwMax*DfuncMax(ipt,iel))) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+
+        ! Release memory
+        deallocate(DfuncMax)
+
+      else
+      
+        ! Constant Min/Max functions
+        do iel = 1,ubound(Dcoefficients,3)
+          do ipt = 1,ubound(Dcoefficients,2)
+            ! Check if the dual variable is in the bounds for the control.
+            if (((dwFct*Dfunc(ipt,iel) + dwShift) .gt. dwMin) .and. &
+                ((dwFct*Dfunc(ipt,iel) + dwShift) .lt. dwMax)) then
+              Dcoefficients(1,ipt,iel) = dwFct*dweight
+            else
+              Dcoefficients(1,ipt,iel) = 0.0_DP
+            end if
+          end do
+        end do
+      
+      end if
+
     end if
     
     ! Release memory
@@ -398,9 +536,10 @@ contains
   
     ! local variables
     type(t_vectorScalar), pointer :: p_rvector, p_rvectorMin, p_rvectorMax
-    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax
+    type(t_vectorScalar), pointer :: p_rvectorShift
+    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax, Dshift
     integer(I32) :: celement
-    real(DP) :: dweight, dwMin, dwMax, dwFct
+    real(DP) :: dweight, dwMin, dwMax, dwFct, dwShift
     integer :: iel, ipt, nptsInactive
     integer, dimension(:), pointer :: p_IelementList
     
@@ -409,6 +548,7 @@ contains
     dweight = rcollection%DquickAccess(2)
     dwMin = rcollection%DquickAccess(3)
     dwMax = rcollection%DquickAccess(4)
+    dwShift = rcollection%DquickAccess(5)
     
     ! Get a pointer to the FE solution from the collection.
     ! The routine below wrote a pointer to the vector T to the
@@ -421,6 +561,7 @@ contains
     ! Lower/upper bound specified?
     nullify(p_rvectorMin)
     nullify(p_rvectorMax)
+    nullify(p_rvectorShift)
     
     if (associated(rcollection%p_rvectorQuickAccess2)) then
       p_rvectorMin => rcollection%p_rvectorQuickAccess2%RvectorBlock(1)
@@ -428,6 +569,10 @@ contains
 
     if (associated(rcollection%p_rvectorQuickAccess3)) then
       p_rvectorMax => rcollection%p_rvectorQuickAccess3%RvectorBlock(1)
+    end if
+
+    if (associated(rcollection%p_rvectorQuickAccess3)) then
+      p_rvectorShift => rcollection%p_rvectorQuickAccess4%RvectorBlock(1)
     end if
   
     ! Allocate memory for the function values in the cubature points:
@@ -446,7 +591,7 @@ contains
     call fevl_evaluate_sim (p_rvector, &
         rdomainIntSubset%p_revalElementSet, &
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
-    
+        
     ! Now check the function values lambda.
     ! If dwMin*fctmin < dwFct*u < dwMax*fctMax, return dwFct*dweight.
     ! Otherwise, return 0.
@@ -654,13 +799,15 @@ contains
 !<subroutine>
 
   subroutine nwder_minMaxProjByCubature (dweight,rmatrix,rcubatureInfo,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwShift,rfunctionShift)
   
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
-  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
-  ! to be =1.
+  !   rfunction -> 
+  !     min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
+  ! If rfunctionMin/rfunctionMax/rfunctionShift are not specified, 
+  ! they are assumed to be =1.
   ! The operator is added to rmatrix.
   !
   ! NOTE: This assumes rfunctionMin and rfunctionMax to be
@@ -693,6 +840,13 @@ contains
 
   ! OPTIONAL: Function specifying the upper bound.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
+  
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
 !</input>
 
 !<inputoutput>
@@ -705,7 +859,7 @@ contains
     ! local variables
     type(t_collection) :: rcollection
     type(t_bilinearForm) :: rform
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax, rvecShift
     
     ! Set up a bilinear form for the assembly of the
     ! modified mass matrices.
@@ -738,11 +892,22 @@ contains
     else
       nullify(rcollection%p_rvectorQuickAccess3)
     end if
+
+    if (present(rfunctionShift)) then
+      call lsysbl_createVecFromScalar (rfunctionShift,rvecShift)
+      rcollection%p_rvectorQuickAccess4 => rvecShift
+    else
+      nullify(rcollection%p_rvectorQuickAccess4)
+    end if
     
     rcollection%DquickAccess(1) = dwFct
     rcollection%DquickAccess(2) = dweight
     rcollection%DquickAccess(3) = dwMin
     rcollection%DquickAccess(4) = dwMax
+    rcollection%DquickAccess(5) = 0.0_DP
+    if (present(dwShift)) then
+      rcollection%DquickAccess(5) = dwShift
+    end if
 
     ! Call the assembly routine to calculate the operator.
     call bilf_buildMatrixScalar (rform,.false.,rmatrix,&
@@ -755,6 +920,10 @@ contains
 
     if (present(rfunctionMax)) then
       call lsysbl_releaseVector (rvecMax)
+    end if
+
+    if (present(rfunctionShift)) then
+      call lsysbl_releaseVector (rvecShift)
     end if
     
   end subroutine
@@ -864,6 +1033,10 @@ contains
     rcollection%DquickAccess(3) = dwMin
     rcollection%DquickAccess(4) = dwMax
 
+    ! Shift function currently not supported. Set to zero.
+    nullify(rcollection%p_rvectorQuickAccess4)
+    rcollection%DquickAccess(5) = 0.0
+
     ! Create an array that saves all elements on the border of the active set.
     nelements = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NEL
     call storage_new ('', 'Ielements', nelements, ST_INT, ielemHandle, &
@@ -921,11 +1094,13 @@ contains
 !<subroutine>
 
   subroutine nwder_minMaxProjByMass (rmassMatrix,dweight,rmatrix,bclear,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwShift, rfunctionShift)
       
 !<description>
   ! Assembles the Newton derivative of the operator
-  !   rfunction -> min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dwFct*rfunction))
+  !   rfunction -> 
+  !      min( dwmin*rfunctionMin  max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
   ! by using filtering of a mass matrix.
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
@@ -964,6 +1139,13 @@ contains
 
   ! OPTIONAL: Function specifying the upper bound.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
+
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
 !</input>
   
 !<inputoutput>
@@ -974,10 +1156,10 @@ contains
 !</subroutine>
   
     ! local variables
-    real(dp), dimension(:), pointer :: p_Ddata,p_DdataMin,p_DdataMax
+    real(dp), dimension(:), pointer :: p_Ddata,p_DdataMin,p_DdataMax,p_DdataShift
     integer, dimension(:), allocatable :: p_Idofs
     integer :: i,nviolate
-    real(dp) :: du
+    real(dp) :: du, dushift
     type(t_matrixScalar), target :: rmassCopy
     type(t_matrixScalar), pointer :: p_rmatrix
     
@@ -1002,6 +1184,7 @@ contains
     ! Lower/upper bound specified?
     nullify(p_DdataMin)
     nullify(p_DdataMax)
+    nullify(p_DdataShift)
     
     if (present(rfunctionMin)) then
       call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
@@ -1010,78 +1193,164 @@ contains
     if (present(rfunctionMax)) then
       call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
     end if
+
+    ! Shift function =0 by default    
+    dushift = 0.0_DP
+    if (present(dwShift)) then
+      duShift = dwShift
+    end if
+
+    if (present(rfunctionShift)) then
+      call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
+    end if
+
     
     ! Figure out the DOF's violating the constraints
     allocate(p_Idofs(rfunction%NEQ))
     
-    ! We have to take care of 4 cases, depending on which parameters
-    ! are specified.
-    if (associated(p_DdataMin) .and. associated(p_DdataMax)) then
-      
-      ! Both variable bounds specified
-      nviolate = 0
-      do i=1,rfunction%NEQ
-        du = dwFct*p_Ddata(i)
-        if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax*p_DdataMax(i))) then
-          nviolate = nviolate + 1
-          p_Idofs(nviolate) = i
-        end if
-      end do
+    if (associated(p_DdataShift)) then
 
-    else if (associated(p_DdataMin)) then
-      
-      ! Minimum specified
-      nviolate = 0
-      do i=1,rfunction%NEQ
-        du = dwFct*p_Ddata(i)
-        if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax)) then
-          nviolate = nviolate + 1
-          p_Idofs(nviolate) = i
-        end if
-      end do
-    
-    else if (associated(p_DdataMax)) then
-    
-      ! Maximum specified
-      nviolate = 0
-      do i=1,rfunction%NEQ
-        du = dwFct*p_Ddata(i)
-        if ((du .le. dwMin) .or. (du .ge. dwMax*p_DdataMax(i))) then
-          nviolate = nviolate + 1
-          p_Idofs(nviolate) = i
-        end if
-      end do
-    
-    else
-    
-      ! None specified. Constant bounds.
-      nviolate = 0
-      do i=1,rfunction%NEQ
-        du = dwFct*p_Ddata(i)
-        if ((du .le. dwMin) .or. (du .ge. dwMax)) then
-          nviolate = nviolate + 1
-          p_Idofs(nviolate) = i
-        end if
-      end do
-     
-    end if
-    
-    if (nviolate .gt. 0) then
-      ! Filter the matrix
-      call mmod_replaceLinesByZero (p_rmatrix,p_Idofs(1:nviolate))
-    end if
-    
-    ! If we created a temporary mass matrix, sum up to the original
-    ! one. Otherwise we are done after scaling the entries.
-    if (.not. bclear) then
-      ! Sum up. p_rmatrix and rmassCopy coincide.
-      call lsyssc_matrixLinearComb (rmassCopy,rmatrix,dwFct*dweight,1.0_DP,&
-        .false.,.false.,.true.,.true.)
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
+      if (associated(p_DdataMin) .and. associated(p_DdataMax)) then
         
-      ! Release the copy
-      call lsyssc_releaseMatrix (rmassCopy)
+        ! Both variable bounds specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+
+      else if (associated(p_DdataMin)) then
+        
+        ! Minimum specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else if (associated(p_DdataMax)) then
+      
+        ! Maximum specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMin) .or. (du .ge. dwMax*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else
+      
+        ! None specified. Constant bounds.
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMin) .or. (du .ge. dwMax)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+       
+      end if
+      
+      if (nviolate .gt. 0) then
+        ! Filter the matrix
+        call mmod_replaceLinesByZero (p_rmatrix,p_Idofs(1:nviolate))
+      end if
+      
+      ! If we created a temporary mass matrix, sum up to the original
+      ! one. Otherwise we are done after scaling the entries.
+      if (.not. bclear) then
+        ! Sum up. p_rmatrix and rmassCopy coincide.
+        call lsyssc_matrixLinearComb (rmassCopy,rmatrix,dwFct*dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.)
+          
+        ! Release the copy
+        call lsyssc_releaseMatrix (rmassCopy)
+      else
+        call lsyssc_scaleMatrix (rmatrix,dwFct*dweight)
+      end if
+
     else
-      call lsyssc_scaleMatrix (rmatrix,dwFct*dweight)
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
+      if (associated(p_DdataMin) .and. associated(p_DdataMax)) then
+        
+        ! Both variable bounds specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift
+          if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+
+      else if (associated(p_DdataMin)) then
+        
+        ! Minimum specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift
+          if ((du .le. dwMin*p_DdataMin(i)) .or. (du .ge. dwMax)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else if (associated(p_DdataMax)) then
+      
+        ! Maximum specified
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift
+          if ((du .le. dwMin) .or. (du .ge. dwMax*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else
+      
+        ! None specified. Constant bounds.
+        nviolate = 0
+        do i=1,rfunction%NEQ
+          du = dwFct*p_Ddata(i) + duShift
+          if ((du .le. dwMin) .or. (du .ge. dwMax)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+       
+      end if
+      
+      if (nviolate .gt. 0) then
+        ! Filter the matrix
+        call mmod_replaceLinesByZero (p_rmatrix,p_Idofs(1:nviolate))
+      end if
+      
+      ! If we created a temporary mass matrix, sum up to the original
+      ! one. Otherwise we are done after scaling the entries.
+      if (.not. bclear) then
+        ! Sum up. p_rmatrix and rmassCopy coincide.
+        call lsyssc_matrixLinearComb (rmassCopy,rmatrix,dwFct*dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.)
+          
+        ! Release the copy
+        call lsyssc_releaseMatrix (rmassCopy)
+      else
+        call lsyssc_scaleMatrix (rmatrix,dwFct*dweight)
+      end if
+    
     end if
 
     ! Release memory
@@ -1333,19 +1602,20 @@ contains
   !</subroutine>
   
       ! local variables
-    type(t_vectorBlock), pointer :: p_rvector,p_rvectorUmin,p_rvectorUmax
-    real(dp), dimension(:,:), allocatable :: Dfunc
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorUmin,p_rvectorUmax,p_rvectorShift
+    real(dp), dimension(:,:), allocatable :: Dfunc,Dshift
     real(dp), dimension(:), allocatable :: Dumin,Dumax
     integer, dimension(:), allocatable :: Ielements
     integer(I32) :: celement
     integer :: ipt, iel
-    real(DP) :: dwFct,dweight,dwMin,dwMax
+    real(DP) :: dwFct,dweight,dwMin,dwMax, dwShift
 
     ! Get constant data    
     dwFct = rcollection%DquickAccess(1)
     dweight = rcollection%DquickAccess(2)
     dwMin = rcollection%DquickAccess(3)
     dwMax = rcollection%DquickAccess(4)
+    dwShift = rcollection%DquickAccess(5)
     
     ! Get a pointer to the FE solution from the collection.
     ! The routine below wrote a pointer to the vector to the
@@ -1353,6 +1623,7 @@ contains
     p_rvector => rcollection%p_rvectorQuickAccess1
     p_rvectorUmin => rcollection%p_rvectorQuickAccess2
     p_rvectorUmax => rcollection%p_rvectorQuickAccess3
+    p_rvectorShift => rcollection%p_rvectorQuickAccess4
 
     ! Allocate memory for the function values in the cubature points.
     ! Function value, minimum and maximum.
@@ -1378,92 +1649,202 @@ contains
     ! Now check the function values lambda.
     ! Return the projected control in every cubature point.
     
-    ! Nonconstant upper/lower bound given?
-    ! Choose the appropriate loop...
-    if (associated(p_rvectorUmin) .and. associated(p_rvectorUmax)) then
-      
-      ! Allocate temp memory for min/max values for u.
-      allocate(Dumin(ubound(Dcoefficients,3)))
-      allocate(Dumax(ubound(Dcoefficients,3)))
-
-      do iel = 1,ubound(Dcoefficients,3)
-      
-        ! Evaluate min and max value of the control in the cubature points
-        ! on the current element.
-        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
-
-        call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
-            Dpoints(:,:,iel), IelementsHint=Ielements)
-
-        call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
-            Dpoints(:,:,iel), IelementsHint=Ielements)
-
-        ! Calculate the projection in the cubature points
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
-                                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
-        end do
-      end do
-
-      deallocate(Dumin)
-      deallocate(Dumax)
+    if (associated (p_rvectorShift)) then
     
-    else if (associated(p_rvectorUmin)) then
-      
-      ! Allocate temp memory for min/max values for u.
-      allocate(Dumin(ubound(Dcoefficients,3)))
+      ! Evaluate the 'shift' function
+      allocate(Dshift(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+      call fevl_evaluate_sim (p_rvectorShift%RvectorBlock(1), &
+          rdomainIntSubset%p_revalElementSet, &
+          celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dshift(:,:))
 
-      do iel = 1,ubound(Dcoefficients,3)
-      
-        ! Evaluate min and max value of the control in the cubature points
-        ! on the current element.
-        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+      ! Nonconstant upper/lower bound given?
+      ! Choose the appropriate loop...
+      if (associated(p_rvectorUmin) .and. associated(p_rvectorUmax)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumin(ubound(Dcoefficients,3)))
+        allocate(Dumax(ubound(Dcoefficients,3)))
 
-        call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
-            Dpoints(:,:,iel), IelementsHint=Ielements)
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
 
-        ! Calculate the projection in the cubature points
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
-                                                dwMin*Dumin(ipt)),dwMax)
+          call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
+          end do
         end do
-      end do
 
-      deallocate(Dumin)
-    
-    else if (associated(p_rvectorUmax)) then
+        deallocate(Dumin)
+        deallocate(Dumax)
       
-      ! Allocate temp memory for min/max values for u.
-      allocate(Dumax(ubound(Dcoefficients,3)))
+      else if (associated(p_rvectorUmin)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumin(ubound(Dcoefficients,3)))
 
-      do iel = 1,ubound(Dcoefficients,3)
-      
-        ! Evaluate min and max value of the control in the cubature points
-        ! on the current element.
-        Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
 
-        call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
-            Dpoints(:,:,iel), IelementsHint=Ielements)
+          call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
 
-        ! Calculate the projection in the cubature points
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),&
-                                                dwMin),dwMax*Dumax(ipt))
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                                dwMin*Dumin(ipt)),dwMax)
+          end do
         end do
-      end do
+
+        deallocate(Dumin)
       
-      deallocate(Dumax)
+      else if (associated(p_rvectorUmax)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumax(ubound(Dcoefficients,3)))
+
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+          call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                                dwMin),dwMax*Dumax(ipt))
+          end do
+        end do
+        
+        deallocate(Dumax)
+
+      else
+
+        ! Constant bounds
+        do iel = 1,ubound(Dcoefficients,3)
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),dwMin),dwMax)
+          end do
+        end do
+
+      end if
+
+      deallocate (DShift)
 
     else
+    
+      ! Nonconstant upper/lower bound given?
+      ! Choose the appropriate loop...
+      if (associated(p_rvectorUmin) .and. associated(p_rvectorUmax)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumin(ubound(Dcoefficients,3)))
+        allocate(Dumax(ubound(Dcoefficients,3)))
 
-      ! Constant bounds
-      do iel = 1,ubound(Dcoefficients,3)
-        ! Calculate the projection in the cubature points
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = dweight*min(max(dwFct*Dfunc(ipt,iel),dwMin),dwMax)
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+          call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
+                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
+          end do
         end do
-      end do
 
+        deallocate(Dumin)
+        deallocate(Dumax)
+      
+      else if (associated(p_rvectorUmin)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumin(ubound(Dcoefficients,3)))
+
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+          call fevl_evaluate (DER_FUNC, Dumin, p_rvectorUmin%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
+                                dwMin*Dumin(ipt)),dwMax)
+          end do
+        end do
+
+        deallocate(Dumin)
+      
+      else if (associated(p_rvectorUmax)) then
+        
+        ! Allocate temp memory for min/max values for u.
+        allocate(Dumax(ubound(Dcoefficients,3)))
+
+        do iel = 1,ubound(Dcoefficients,3)
+        
+          ! Evaluate min and max value of the control in the cubature points
+          ! on the current element.
+          Ielements(:) = rdomainIntSubset%p_Ielements(iel)
+
+          call fevl_evaluate (DER_FUNC, Dumax, p_rvectorUmax%RvectorBlock(1), &
+              Dpoints(:,:,iel), IelementsHint=Ielements)
+
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
+                                dwMin),dwMax*Dumax(ipt))
+          end do
+        end do
+        
+        deallocate(Dumax)
+
+      else
+
+        ! Constant bounds
+        do iel = 1,ubound(Dcoefficients,3)
+          ! Calculate the projection in the cubature points
+          do ipt = 1,ubound(Dcoefficients,2)
+            Dcoefficients(1,ipt,iel) = &
+                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,dwMin),dwMax)
+          end do
+        end do
+
+      end if
+      
     end if
     
     ! Release memory
@@ -1477,13 +1858,15 @@ contains
 !<subroutine>
 
   subroutine nwder_rhsMinMaxProjByCubature (dweight,rvector,rcubatureInfo,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwShift, rfunctionShift)
   
 !<description>
   ! Assembles the linear form
   !   ( dweight*rfunction , test)
   ! for the projection function
-  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  !   rfunction -> 
+  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
@@ -1518,6 +1901,13 @@ contains
 
   ! OPTIONAL: Function specifying the upper bound.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
+
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
 !</input>
 
 !<inputoutput>
@@ -1530,7 +1920,7 @@ contains
     ! local variables
     type(t_collection) :: rcollection
     type (t_linearForm) :: rlinform
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax, rvecShift
     
     ! Prepare a linearform-assembly.
     rlinform%itermCount = 1
@@ -1563,6 +1953,18 @@ contains
     rcollection%DquickAccess(2) = dweight
     rcollection%DquickAccess(3) = dwMin
     rcollection%DquickAccess(4) = dwMax
+    rcollection%DquickAccess(5) = 0.0_DP
+    
+    if (present(dwShift)) then
+      rcollection%DquickAccess(5) = dwShift
+    end if
+
+    if (present(rfunctionShift)) then
+      call lsysbl_createVecFromScalar (rfunctionShift,rvecShift)
+      rcollection%p_rvectorQuickAccess4 => rvecShift
+    else
+      nullify(rcollection%p_rvectorQuickAccess4)
+    end if
 
     ! Assemble the vector
     call linf_buildVectorScalar(rlinform,.false.,rvector,rcubatureInfo,&
@@ -1584,14 +1986,16 @@ contains
 !<subroutine>
 
   subroutine nwder_rhsMinMaxProjByMass (dweight,rvector,rmassMatrix,rvectorTemp,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwShift,rfunctionShift)
   
 !<description>
   ! Calculates 
   !   rvector = rvector + dweight * MassMatrix * rfunction
   ! for the projection function
-  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
-  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  !   rfunction -> 
+  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
+  ! If rfunctionMin/rfunctionMax/rfunctionShift are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
   ! The calculation is done based on the degrees of freedom in
@@ -1631,6 +2035,13 @@ contains
 
   ! OPTIONAL: Function specifying the upper bound.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
+
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
 !</input>
 
 !<inputoutput>
@@ -1642,60 +2053,125 @@ contains
 
     ! local variables
     type(t_collection) :: rcollection
-    type (t_linearForm) :: rlinform
     type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
     real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
+    real(DP), dimension(:), pointer :: p_DdataShift
     integer :: i
+    real(DP) :: duShift
 
     ! Get the source and target arrays.
     call lsyssc_getbase_double (rfunction,p_DdataIn)
     call lsyssc_getbase_double (rvectorTemp,p_DdataOut)
+    
+    duShift = 0.0_DP
+    if (present(dwShift)) duShift = dwShift
 
-    ! How to compute? Nonconstant min/max available?
-    if (present(rfunctionMin) .and. present(rfunctionMax)) then
+    if (present(rfunctionShift)) then
     
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
     
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
-      end do
+      ! How to compute? Nonconstant min/max available?
+      if (present(rfunctionMin) .and. present(rfunctionMax)) then
       
-    else if (present(rfunctionMin)) then
-    
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax)
-      end do
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+        end do
+        
+      else if (present(rfunctionMin)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin*p_DdataMin(i)),dwMax)
+        end do
 
-    else if (present(rfunctionMax)) then
-    
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin),dwMax*p_DdataMax(i))
-      end do
+      else if (present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin),dwMax*p_DdataMax(i))
+        end do
+
+      else
+      
+        ! Constant bounds
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),dwMin),dwMax)
+        end do
+
+      end if
 
     else
     
-      ! Constant bounds
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin),dwMax)
-      end do
+      ! How to compute? Nonconstant min/max available?
+      if (present(rfunctionMin) .and. present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+        end do
+        
+      else if (present(rfunctionMin)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin*p_DdataMin(i)),dwMax)
+        end do
 
+      else if (present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin),dwMax*p_DdataMax(i))
+        end do
+
+      else
+      
+        ! Constant bounds
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,dwMin),dwMax)
+        end do
+
+      end if
+      
     end if
     
     ! Multiply by the mass matrix and sum up to rvector.
@@ -1709,13 +2185,15 @@ contains
 !<subroutine>
 
   subroutine nwder_applyMinMaxProjByDof (dweight,rvector,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax)
+      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwShift,rfunctionShift)
   
 !<description>
   ! Calculates 
   !   rvector = dweight * rfunction
   ! for the projection function
-  !   rfunction -> min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction))
+  !   rfunction -> 
+  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
@@ -1750,6 +2228,13 @@ contains
 
   ! OPTIONAL: Function specifying the upper bound.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
+
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
 !</input>
 
 !<inputoutput>
@@ -1761,60 +2246,125 @@ contains
 
     ! local variables
     type(t_collection) :: rcollection
-    type (t_linearForm) :: rlinform
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax,rvecShift
     real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
+    real(DP), dimension(:), pointer :: p_DdataShift
     integer :: i
+    real(DP) :: dushift
 
     ! Get the source and target arrays.
     call lsyssc_getbase_double (rfunction,p_DdataIn)
     call lsyssc_getbase_double (rvector,p_DdataOut)
 
-    ! How to compute? Nonconstant min/max available?
-    if (present(rfunctionMin) .and. present(rfunctionMax)) then
-    
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
-      end do
-      
-    else if (present(rfunctionMin)) then
-    
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin*p_DdataMin(i)),dwMax)
-      end do
+    duShift = 0.0_DP
+    if (present(dwShift)) duShift = dwShift
 
-    else if (present(rfunctionMax)) then
+    if (present(rfunctionShift)) then
     
-      ! Get the bounding functions
-      call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
     
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin),dwMax*p_DdataMax(i))
-      end do
+      ! How to compute? Nonconstant min/max available?
+      if (present(rfunctionMin) .and. present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+        end do
+        
+      else if (present(rfunctionMin)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin*p_DdataMin(i)),dwMax)
+        end do
+
+      else if (present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                  dwMin),dwMax*p_DdataMax(i))
+        end do
+
+      else
+      
+        ! Constant bounds
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),dwMin),dwMax)
+        end do
+
+      end if
 
     else
     
-      ! Constant bounds
-    
-      ! Restrict the vector
-      do i=1,rvector%NEQ
-        p_DdataOut(i) = &
-            min(max(dwFct*p_DdataIn(i),dwMin),dwMax)
-      end do
+      ! How to compute? Nonconstant min/max available?
+      if (present(rfunctionMin) .and. present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+        end do
+        
+      else if (present(rfunctionMin)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin*p_DdataMin(i)),dwMax)
+        end do
 
+      else if (present(rfunctionMax)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,&
+                  dwMin),dwMax*p_DdataMax(i))
+        end do
+
+      else
+      
+        ! Constant bounds
+      
+        ! Restrict the vector
+        do i=1,rvector%NEQ
+          p_DdataOut(i) = &
+              min(max(dwFct*p_DdataIn(i) + duShift,dwMin),dwMax)
+        end do
+
+      end if
+      
     end if
     
   end subroutine

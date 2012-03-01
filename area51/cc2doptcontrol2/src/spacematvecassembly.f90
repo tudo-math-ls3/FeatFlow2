@@ -103,6 +103,7 @@
 !# Remark: The Moreau-Yosida regularisation is nicely described here:
 !#  [Stoll, Pearson, Wathen; Preconditioners for state constrained optimal control problems
 !#   with Moreau-Yosida penalty function; 2011]
+!#  [de los Reyes, Yousept; Boundary optimal flow control with state constraints, 2007]
 !#
 !# </purpose>
 !##############################################################################
@@ -3270,6 +3271,126 @@ contains
             
     end subroutine
 
+    ! -----------------------------------------------------
+
+    subroutine assembleProjectedMassBlocksDual (rnonlinearSpatialMatrix,rmatrix, &
+        rvector, dweight)
+        
+    ! Assembles a 2x2 block matrix with
+    ! probably nonlinear mass matrices on the diagonal.
+    ! The mass matrices are projected according to the Moreau-Yosida regularisation
+    ! for state constraints.
+    
+    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
+    ! about how to set up the matrix.
+    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
+    
+    ! Block matrix where the 2x2-velocity submatrix should be assembled.
+    ! The matrix is cleared on call to this routine!
+    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    
+    ! Vector that specifies where to evaluate nonlinear terms
+    type(t_vectorBlock), intent(IN), target :: rvector
+    
+    ! Weight for the (projected) mass matrices when adding them to the
+    ! system.
+    real(DP), intent(in) :: dweight
+    
+      ! local variables
+      type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+      integer, dimension(:), pointer :: p_IelementList
+      integer :: cstateConstraints
+      type(t_scalarCubatureInfo) :: rcubatureInfo, rcubatureInfoAdapt
+
+      ! Assemble A41/A52?
+      if (dweight .eq. 0.0_DP) return
+          
+      ! Switch on these matrices
+      rmatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
+      rmatrix%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
+      
+      ! Determine how to assemble...
+      cstateConstraints = rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints
+        
+      ! Calculate the usual mass matrix if conrol constraints are deactivated
+      ! or if Newton is not active.
+      if ((cstateConstraints .eq. 0) .or. &
+          (rnonlinearSpatialMatrix%cmatrixType .eq. 0)) then
+    
+        ! Nothing to do here.
+        return
+        
+      else if (rnonlinearSpatialMatrix%cmatrixType .eq. 1) then
+        
+        ! Constraints implemented by filtered mass matrices.
+        
+        select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints)
+        
+        case (1)
+        
+          ! Calculate the operator. This automatically creates new matrices
+          ! in the diagonal blocks of rmatrix, since the diagonal blocks
+          ! are empty at the moment.
+          !
+          ! The weight "-rnonlinearSpatialMatrix%dalphaC" is included in
+          ! dweight, so it has to be canceled out.
+
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraintsType)
+          case (0)
+            ! Constant bounds
+          
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dweight,rmatrix%RmatrixBlock(1,1),&
+!                .false.,1.0_DP,rvector%RvectorBlock(1),&
+!                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dweight,rmatrix%RmatrixBlock(1,1),&
+!                .false.,1.0_DP,rvector%RvectorBlock(1),&
+!                SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dweight,rmatrix%RmatrixBlock(2,2),&
+!                .false.,1.0_DP,rvector%RvectorBlock(2),&
+!                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dweight,rmatrix%RmatrixBlock(2,2),&
+!                .false.,1.0_DP,rvector%RvectorBlock(2),&
+!                SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2)
+
+          case default
+            ! Not implemented.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+          end select
+        
+        case default
+        
+          ! INFO: The other cases can be implemented similarly to
+          ! the control constraints. All routines are already there,
+          ! but just not yet used.
+        
+          call output_line ('Unsupported cstateConstraints flag.', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'assembleProjectedMassBlocks')
+          call sys_halt()
+          
+        end select
+
+      else
+      
+        call output_line ('Unsupported cmatrixType.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'assembleProjectedMassBlocks')
+        call sys_halt()
+        
+      end if
+        
+    end subroutine
+
   end subroutine
 
   ! ***************************************************************************
@@ -3953,6 +4074,150 @@ contains
                 rd,dcx*rnonlinearSpatialMatrix%Dmass(1,2),&
                 rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
           end select
+        end if
+        
+      end if
+
+      ! 5.) (Projected) mass matrix for state constraints (Moreau-Yosida regularisation)
+      !
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (  PM(l)                     )
+      !    (        PM(l)               )
+      !    (                            )
+      
+      ! What's the type of the current matrix? Is this a Newton-matrix?
+      if (rnonlinearSpatialMatrix%cmatrixType .eq. 0) then
+
+        ! No, this is a standard matrix. That means, we just have to 
+        ! calculate (  weight * max(0,y-y_max)) + weight * min(0,y-y_min)).
+        !
+        ! We multiply the weight for y (so Dmass(2,1)) by the regularisation
+        ! weight to get "weight" in the above formula. Dmass(2,1) gives us
+        ! teh sign.
+        if (rnonlinearSpatialMatrix%Dmass(2,1) .ne. 0.0_DP) then
+
+          ! Apply the projection operator to (-1/alpha lambda) and sum up the 
+          ! resulting vector to the current defect.
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints)
+          
+          case (0)
+            ! No constraints. Nothing to do.
+          
+          case (2)
+            ! Not yet implemented, although all components should be there
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+            
+          case (4)
+            ! Not implemented.
+            !
+            ! Must be done similar to (2), i.e., a RHS must be calculated.
+            ! However, on the cells crossing the active set, the RHS must
+            ! be calculated with a different (summed) cubature formula.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+        
+          case default
+          
+            ! Temporary vector.
+            call lsysbl_deriveSubvector(rx,rtempVectorX,1,1,.false.)
+          
+            ! Just project the DOF's.
+            
+            select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraintsType)
+            case (0)
+              ! Constant bounds
+              call nwder_rhsMinMaxProjByMass (&
+                  -dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+                      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+                  rd%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  1.0_DP,rx%RvectorBlock(1),&
+                  0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax1)
+
+              call nwder_rhsMinMaxProjByMass (&
+                  -dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+                      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+                  rd%RvectorBlock(4),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  1.0_DP,rx%RvectorBlock(1),&
+                  -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin1)
+
+              call nwder_rhsMinMaxProjByMass (&
+                  -dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+                      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+                  rd%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  1.0_DP,rx%RvectorBlock(2),&
+                  0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax2)
+
+              call nwder_rhsMinMaxProjByMass (&
+                  -dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+                      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+                  rd%RvectorBlock(5),&
+                  rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                  rtempVectorX%RvectorBlock(1),&
+                  1.0_DP,rx%RvectorBlock(2),&
+                  -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin2)
+                  
+            case default
+              ! Not implemented.
+              call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+              call sys_halt()
+            end select
+            
+            ! Release temp memory
+            call lsysbl_releaseVector (rtempVectorX)
+            
+          end select
+                
+        end if
+      
+      else
+
+        if (rnonlinearSpatialMatrix%Dmass(2,1) .ne. 0.0_DP) then
+          ! Yes, that's a Newton matrix. That means, we have to multiply the
+          ! vector with the derivative of the projection operator:
+          ! b-(weight * P[0,infinity]'(y-y_max)).
+          ! For that purpose, we have to assemble special mass matrices:
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints)
+          
+          case (0)
+            ! No constraints. Nothing to do.
+            
+          case (1)
+!            select case (rnonlinearSpatialMatrix%iprimalSol)
+!            case (1)
+!              call assembleDualUConstrMassDefect (&
+!                  rnonlinearSpatialMatrix,rx,&
+!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1)
+!            case (2)
+!              call assembleDualUConstrMassDefect (&
+!                  rnonlinearSpatialMatrix,rx,&
+!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2)
+!            case (3)
+!              call assembleDualUConstrMassDefect (&
+!                  rnonlinearSpatialMatrix,rx,&
+!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
+!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
+!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
+!            end select
+
+          case default
+            ! Not implemented.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+          end select
+          
         end if
         
       end if
@@ -4861,7 +5126,7 @@ contains
     real(DP), intent(IN) :: dcx
     
     ! Velocity vector field that should be used for the assembly of the
-    ! nonlinearity. Block 1 and 2 in that block vector are used as velocity
+    ! nonlinearity. Block 4 and 5 in that block vector are used as velocity
     ! field and shall contain the dual velocity field.
     type(t_vectorBlock), intent(IN), target :: rvelocityVector
 
@@ -5194,6 +5459,147 @@ contains
         call lsysbl_releaseVector (rtempvectorEval)
         call lsysbl_releaseMatrix (rtempMatrix)
       
+      end if
+      
+    end subroutine
+
+    ! ---------------------------------------------------------------
+
+    subroutine assembleDualUConstrMassDefect (&
+        rnonlinearSpatialMatrix,rvector,rdefect,dcx,rvelocityVector) !,cprojectionType)
+        
+    ! Assembles the defect arising from the projective coupling mass
+    ! matrices in the primal equation which comes from state constraints on u
+    ! if the Moreau-Yosida regularisation is active.
+    ! rdefect must have been initialised with the right hand side vector.
+    !
+    ! Let the mass matrix M~ be the usual mass matrix where u is ok
+    ! and the 0-operator where u is out of bounds.
+    ! Then, we assemble
+    !
+    !       rdefect = r(primal)defect - dcx (dmu1 M~ r(dual)vector)
+
+    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
+    ! about how the mass matrix part is weighted (dr11, dr12).
+    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
+
+    ! Solution vector.
+    type(t_vectorBlock), intent(IN) :: rvector
+    
+    ! On entry: RHS vector.
+    ! Is overwritten by the defect vector in the velocity subsystem.
+    type(t_vectorBlock), intent(INOUT) :: rdefect
+    
+    ! Multiplication factor for the whole operator A*rvector
+    real(DP), intent(IN) :: dcx
+    
+    ! Velocity vector field that should be used for the assembly of the
+    ! nonlinearity. Block 1 and 2 in that block vector are used as velocity
+    ! field and shall contain the primal velocity field.
+    type(t_vectorBlock), intent(IN), target :: rvelocityVector
+
+    ! Type of projection.
+    ! =0: Simple DOF-based projection, rows in the mass matrices are
+    !     replaced by zero (faster)
+    ! =1: Reassembly of the mass matrices, projection based on cubature points.
+    !integer, intent(in) :: cprojectionType
+
+      ! local variables
+      type(t_matrixBlock) :: rtempmatrix
+      type(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
+      integer, dimension(:), pointer :: p_IelementList
+      integer :: cstateConstraints
+      type(t_scalarCubatureInfo) :: rcubatureInfo, rcubatureInfoAdapt
+      real(DP) :: dregularisation
+      
+      ! If we have a reactive coupling mass matrix, it gets interesting...
+      if (dcx .ne. 0.0_DP) then
+
+        cstateConstraints = rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints
+        dregularisation = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg
+
+        ! The cstateConstraints defines the method how to
+        ! introduce constraints into the state.
+        select case (cstateConstraints)
+        case (0)
+          ! No state constraints
+             
+        case (1)
+          ! Moreau-Yosida regularisation.
+        
+          ! Create the operator in a temporary matrix
+          call lsysbl_createEmptyMatrix (rtempMatrix,2)
+        
+          select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraintsType)
+          case (0)
+            ! Constant bounds
+          
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dregularisation,rtempMatrix%RmatrixBlock(1,1),&
+!                .true.,&
+!                1.0_DP,rvelocityVector%RvectorBlock(1),&
+!                0.0_DP,SYS_MAXREAL_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax1)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dregularisation,rtempMatrix%RmatrixBlock(1,1),&
+!                .true.,&
+!                1.0_DP,rvelocityVector%RvectorBlock(1),&
+!                SYS_MAXREAL_DP,0.0_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin1)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dregularisation,rtempMatrix%RmatrixBlock(2,2),&
+!                .true.,&
+!                1.0_DP,rvelocityVector%RvectorBlock(2),&
+!                0.0_DP,SYS_MAXREAL_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax2)
+!
+!            call nwder_minMaxProjByMass (&
+!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+!                dregularisation,rtempMatrix%RmatrixBlock(2,2),&
+!                .true.,&
+!                1.0_DP,rvelocityVector%RvectorBlock(2),&
+!                SYS_MAXREAL_DP,0.0_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin2)
+!
+!            call lsysbl_updateMatStrucInfo(rtempMatrix)
+!
+!            ! Create a temporary block vector that points to the dual velocity.
+!            ! This has to be evaluated during the assembly.
+!            call lsysbl_deriveSubvector (rvector,rtempvectorEval,1,2,.true.)
+!            
+!            ! Create a temporary block vector for the dual defect.
+!            ! Matrix*primal velocity is subtracted from this.
+!            call lsysbl_deriveSubvector (rdefect,rtempvectorDef,4,5,.true.)
+!
+!            ! Create the defect
+!            call lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, -dcx, 1.0_DP)
+!            
+!            ! Release memory
+!            call lsysbl_releaseVector (rtempvectorDef)
+!            call lsysbl_releaseVector (rtempvectorEval)
+!            call lsysbl_releaseMatrix (rtempMatrix)
+          
+          case default
+            ! Not implemented.
+            call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+            call sys_halt()
+          end select
+
+        case (2)
+        
+          ! Not implemented.
+          call output_line("CONSTRAINTS TO BE IMPLEMENTED!!!")
+          call sys_halt()
+          
+        case default
+        
+          ! Cancel
+          call lsysbl_releaseMatrix (rtempMatrix)
+          return
+          
+        end select
+
       end if
       
     end subroutine
