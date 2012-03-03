@@ -316,12 +316,12 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/quadtree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/octree.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/stack.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/latxd.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax79.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax79intl1.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax79intld.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lax9rowc.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/ltx79.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_latxd.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79intld.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_ltx79.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVecAux.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/fmath.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h";
