@@ -264,6 +264,7 @@ module spacematvecassembly
   public :: smva_clearMatrix
   public :: smva_prepareViscoAssembly
   public :: ffunctionViscoModel
+  public :: smva_calcViscosity
 
 !<types>
 
@@ -8257,18 +8258,6 @@ contains
   ! elements (cubature points) in in real coordinates.
   ! According to the terms in the linear form, the routine has to compute
   ! simultaneously for all these points.
-  !
-  ! The following data must be passed to this routine in the collection in order
-  ! to work correctly:
-  !
-  ! IquickAccess(1) = cviscoModel
-  ! IquickAccess(2) = type of the tensor
-  ! DquickAccess(1) = nu
-  ! DquickAccess(2) = dviscoexponent
-  ! DquickAccess(3) = dviscoEps
-  ! p_rvectorQuickAccess1 => evaluation velocity vector
-  ! p_rnextCollection => user defined collection structure
-  !
 !</description>
   
 !<input>
@@ -8319,11 +8308,100 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: cviscoModel,i,j,isubEquation
-    real(DP) :: dnu,dviscoexponent,dviscoEps,dviscoYield
-    type(t_vectorBlock), pointer :: p_rvector
+    if (.not. present(rcollection)) then
+      Dcoefficients(:,:) = 0.0_DP
+      return
+    end if
+    
+    call smva_calcViscosity (Dcoefficients,cterm,&
+      rdiscretisation,nelements,npointsPerElement,&
+      Dpoints,rdomainIntSubset%p_Ielements,rcollection,&
+      rdomainIntSubset)
+      
+  end subroutine
+  
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine smva_calcViscosity (Dcoefficients,cterm,&
+      rdiscretisation,nelements,npointsPerElement,&
+      Dpoints,Ielements,rcollection,rdomainIntSubset)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! This routine calculates a teh viscosity of the equation.
+  ! The following data must be passed to this routine in the collection in order
+  ! to work correctly:
+  !
+  ! IquickAccess(1) = cviscoModel
+  ! IquickAccess(2) = type of the tensor
+  ! DquickAccess(1) = nu
+  ! DquickAccess(2) = dviscoexponent
+  ! DquickAccess(3) = dviscoEps
+  ! p_rvectorQuickAccess1 => evaluation velocity vector
+  ! p_rnextCollection => user defined collection structure
+!</description>
+  
+!<input>
+  ! Term which is to be computed.
+  ! =0: Calculate the $\nu$ values in front of the Laplace.
+  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  integer, intent(in) :: cterm
+  
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+
+  ! List of elements where to calculate
+  integer, dimension(:), intent(in) :: Ielements
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! OPTIONAL: This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in), optional :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+    ! This array has to receive the values of the coefficients
+    ! in all the points specified in Dpoints.
+    ! cterm specifies what to evaluate.
+    real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i,j
     integer, dimension(2) :: Ibounds
     real(DP), dimension(:,:,:), allocatable :: Ddata
+    integer :: cviscoModel,ctensorType
+    real(DP) :: dnu,dviscoexponent,dviscoEps,dviscoYield
+    type(t_vectorBlock), pointer :: p_rvector
     
     if (.not. present(rcollection)) then
       Dcoefficients(:,:) = 0.0_DP
@@ -8333,15 +8411,13 @@ contains
     ! Get the parameters from the collection,
     ! as specified in the call to the SD assembly routine.
     cviscoModel = rcollection%IquickAccess(1)
-    isubEquation = rcollection%IquickAccess(2)
+    ctensorType = rcollection%IquickAccess(2)
     dnu = rcollection%DquickAccess(1)
     dviscoexponent = rcollection%DquickAccess(2)
     dviscoEps = rcollection%DquickAccess(3)
     dviscoYield = rcollection%DquickAccess(4)
     p_rvector => rcollection%p_rvectorQuickAccess1
-    
-    ! p_rvector may point to NULL if there is no nonlinearity
-    
+        
     ! If we have a nonlinear viscosity, calculate
     !    z := D(u):D(u) = ||D(u)||^2
     ! The isubEquation defines the shape of the tensor, which may me
@@ -8360,17 +8436,31 @@ contains
       allocate(Ddata(Ibounds(1),Ibounds(2),5))
       
       ! Evaluate D(u).
-      call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
-                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,2))
-      call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
-                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,3))
-      call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
-                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,4))
-      call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
-                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,5))
+      if (present(rdomainIntSubset)) then
+        ! Evaluate using the domain integration structure. Faster.
+        call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+                                  rdomainIntSubset, DER_DERIV_X, Ddata(:,:,2))
+        call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
+                                  rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,3))
+        call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
+                                  rdomainIntSubset, DER_DERIV_X, Ddata(:,:,4))
+        call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
+                                  rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,5))
+      else
+        ! This routine is called outside of an integation, so we cannot
+        ! use the domain integration. Use direct evaluation. Slower.
+        call fevl_evaluate_sim (DER_DERIV_X, Ddata(:,:,2), p_rvector%RvectorBlock(1), &
+            Dpoints,Ielements)
+        call fevl_evaluate_sim (DER_DERIV_Y, Ddata(:,:,3), p_rvector%RvectorBlock(1), &
+            Dpoints,Ielements)
+        call fevl_evaluate_sim (DER_DERIV_X, Ddata(:,:,4), p_rvector%RvectorBlock(2), &
+            Dpoints,Ielements)
+        call fevl_evaluate_sim (DER_DERIV_Y, Ddata(:,:,5), p_rvector%RvectorBlock(2), &
+            Dpoints,Ielements)
+      end if
                          
       ! Calculate ||D(u)||^2 to Ddata(:,:,1):
-      select case (isubequation)
+      select case (ctensorType)
       case (0)
         ! D(u) = grad(u)
         do i=1,Ibounds(2)
@@ -8432,8 +8522,7 @@ contains
       ! Viscosity specified by the callback function getNonconstantViscosity.
       ! Call it and pass the user-defined collection.
       call user_getNonconstantViscosity (cterm,rdiscretisation, &
-          nelements,npointsPerElement,Dpoints, &
-          IdofsTest,rdomainIntSubset, &
+          nelements,npointsPerElement,Dpoints,Ielements, &
           Dcoefficients,p_rvector,rcollection%p_rnextCollection)
     
     end select

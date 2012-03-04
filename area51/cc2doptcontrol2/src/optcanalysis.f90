@@ -33,6 +33,8 @@ module optcanalysis
   use fsystem
   use genoutput
   use basicgeometry
+  use boundary
+  use cubature
   use linearsystemscalar
   use linearsystemblock
   use pprocerror
@@ -53,6 +55,8 @@ module optcanalysis
   use spacematvecassembly
   use spacetimelinearsystem
   use newtonderivative
+  use spatialbcdef
+  use spacetimedirichletbcc
   
   use structuresoptc
     
@@ -354,10 +358,101 @@ contains
 
 !******************************************************************************
 
+    subroutine ffunction_dirichletbcU (cderivative, rdiscretisation, &
+                                   DpointsRef, Dpoints, ibct, DpointPar,&
+                                   Ielements, Dvalues, rcollection)
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! Calculates the norm of the control ||u||^2 = ||1/alpha (nu partial_n lambda - xi*n)||^2
+    ! in cubature points. Used to evaluate ||u||_boundary
+  !</description>
+    
+  !<input>
+    integer, intent(in) :: cderivative
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    integer, intent(in) :: ibct
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    integer, dimension(:), intent(in) :: Ielements
+    type(t_collection), intent(inout), optional :: rcollection
+  !</input>
+  
+  !<output>
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  !</output>
+    
+  !</subroutine>
+  
+      ! local variables
+      real(DP) :: dbetaC,dnx,dny
+      type(t_vectorBlock), pointer :: p_rvector
+      integer :: iel,ipt
+      real(DP), dimension(:,:,:), allocatable :: DvecValues
+      
+      ! Dummys
+      integer, dimension(1,1) :: IdofsTest
+      
+      ! Get the data for the evaluation
+      p_rvector => rcollection%p_rvectorQuickAccess1
+      dbetaC = rcollection%DquickAccess(1)
+      
+      allocate (DvecValues(ubound(Dvalues,1),ubound(Dvalues,2),8))
+      
+      ! Calculate derivative of lambda and xi.
+      call fevl_evaluate_sim (DER_FUNC, DvecValues(:,:,1), p_rvector%RvectorBlock(6), &
+          Dpoints, Ielements)
+      call fevl_evaluate_sim (DER_DERIV2D_X, DvecValues(:,:,2), p_rvector%RvectorBlock(4), &
+          Dpoints, Ielements)
+      call fevl_evaluate_sim (DER_DERIV2D_Y, DvecValues(:,:,3), p_rvector%RvectorBlock(4), &
+          Dpoints, Ielements)
+      call fevl_evaluate_sim (DER_DERIV2D_X, DvecValues(:,:,4), p_rvector%RvectorBlock(5), &
+          Dpoints, Ielements)
+      call fevl_evaluate_sim (DER_DERIV2D_Y, DvecValues(:,:,5), p_rvector%RvectorBlock(5), &
+          Dpoints, Ielements)
+          
+      ! Calculate normal vectors
+      call boundary_getNormalVec2D_sim(rdiscretisation%p_rboundary, ibct, DpointPar, &
+          DvecValues(:,:,6), DvecValues(:,:,7), cparType=BDR_PAR_LENGTH)
+          
+      ! Calculate NU directly into the output array.
+      ! NOTE: DOES NOT YET WORK WITH NONCONSTANT COEFFICIENTS!!!
+      call smva_calcViscosity (DvecValues(:,:,8),1,&
+          rdiscretisation,ubound(Dpoints,3),ubound(Dpoints,2),&
+          Dpoints,Ielements,rcollection%p_rnextCollection)
+      
+      ! Calculate the values
+      do iel = 1,size(Ielements)
+        do ipt = 1,ubound(DpointPar,1)
+            
+          Dvalues(ipt,iel) = ( (DvecValues(ipt,iel,8)*DvecValues(ipt,iel,2)*DvecValues(ipt,iel,6) + &
+                                DvecValues(ipt,iel,8)*DvecValues(ipt,iel,3)*DvecValues(ipt,iel,7) + &
+                                DvecValues(ipt,iel,1)*DvecValues(ipt,iel,6)) ** 2 + &
+                               (DvecValues(ipt,iel,8)*DvecValues(ipt,iel,4)*DvecValues(ipt,iel,6) + &
+                                DvecValues(ipt,iel,8)*DvecValues(ipt,iel,5)*DvecValues(ipt,iel,7) + &
+                                DvecValues(ipt,iel,1)*DvecValues(ipt,iel,7)) ** 2 ) / (dbetaC*dbetaC)
+        
+        end do
+      end do
+      
+      deallocate(DvecValues)
+  
+    end subroutine 
+    
+!******************************************************************************
+
 !<subroutine>
 
-  subroutine optcana_nonstatFunctional (rglobalData,rphysics,rconstraints,rsolution,rreference,&
-      dalphaC,dbetaC,dgammaC,Derror,DobservationArea)
+  subroutine optcana_nonstatFunctional (rglobalData,rphysics,rconstraints,roptcBDC,&
+      rsolution,rreference,dalphaC,dbetaC,dgammaC,Derror,DobservationArea)
 
 !<description>
   ! This function calculates the value of the functional which is to be
@@ -387,6 +482,9 @@ contains
   ! Constraints in the optimal control problem.
   type(t_optcconstraintsSpaceTime), intent(in) :: rconstraints
   
+  ! The boundary conditions
+  type(t_optcBDC), intent(in) :: roptcBDC
+
   ! Regularisation parameter $\alpha$.
   real(DP), intent(IN) :: dalphaC
 
@@ -409,19 +507,22 @@ contains
   ! Derror(2) = ||u||_{L^2}.
   ! Derror(3) = ||y(T)-z(T)||_{L^2}.
   ! Derror(4) = J(y,u).
+  ! Derror(5) = ||u||_{L^2(Gamma_C)}.
   real(DP), dimension(:), intent(OUT) :: Derror
 !</output>
   
 !</subroutine>
     
     ! local variables
-    integer :: isubstep
+    integer :: isubstep,i
     real(DP) :: dtstep,dtime
     real(DP),dimension(2) :: Derr
     type(t_collection), target :: rcollection,rlocalcoll
     type(t_vectorBlock), target :: rtempVector, rzeroVector
     real(dp), dimension(:), pointer :: p_Dx
     type(t_optcconstraintsSpace) :: rconstrSpace
+    type(t_sptiDirichletBCCBoundary) :: rdirichletBCC
+    type(t_bdRegionEntry), pointer :: p_rbdRegionIterator
     
     ! Create a temp vector
     call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rtempVector,.true.)
@@ -433,8 +534,13 @@ contains
     ! This stores the simulation time in the collection and sets the
     ! current subvector z for the callback routines.
     call collct_init(rcollection)
+
+    ! Assemble the dirichlet control boundary conditions
+    call stdbcc_createDirichletBCCBd (rsolution%p_rspaceDiscr,rsolution%p_rtimeDiscr,&
+        rdirichletBCC)
+    call stdbcc_assembleDirichletBCCBd (roptcBDC,rdirichletBCC,rglobalData)
     
-    Derror(1:4) = 0.0_DP
+    Derror(1:5) = 0.0_DP
 
     do isubstep = 1,rsolution%NEQtime
     
@@ -584,27 +690,67 @@ contains
               call stlin_doneSpaceConstraints (rconstrSpace)
             end select
           end if
-        else
-          ! No distributed control.
-          call lsyssc_clearVector (rtempVector%RvectorBlock(4))
-          call lsyssc_clearVector (rtempVector%RvectorBlock(5))
+
+          !das hier gibt ein falsches Ergebnis1!
+          call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(4))
+          call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(5))
+                
+          ! We use the summed trapezoidal rule.
+          if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
+            Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+          else
+            Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+          end if
+          
         end if
+
+        if (dbetaC .gt. 0.0_DP) then
         
-        !das hier gibt ein falsches Ergebnis1!
-        call pperr_scalar (PPERR_L2ERROR,Derr(1),rtempVector%RvectorBlock(4))
-        call pperr_scalar (PPERR_L2ERROR,Derr(2),rtempVector%RvectorBlock(5))
-              
-        ! We use the summed trapezoidal rule.
-        if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
-          Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
-        else
-          Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+          ! Compute on the Dirichlet control boundary:
+          ! Derror(2) = ||u||_GammaC = ||-1/alpha (nu*partial_n(u) + xi*n))||^2_{L^2(GammaC)}.
+          Derr(1) = 0.0_DP
+          
+          ! Prepare the collection
+          rlocalColl%p_rnextCollection => rcollection
+          rlocalColl%DquickAccess(1) = dbetaC
+          call smva_prepareViscoAssembly (rphysics,rcollection,rtempVector)
+          
+          ! Pass rtempVector%RvectorBlock(4) as dummy, filled with 0.
+          call lsyssc_clearVector (rtempVector%RvectorBlock(4))
+          
+          ! Loop over the boundary regions where Dirichlet boundary control
+          ! is applied.
+          p_rbdRegionIterator => rdirichletBCC%p_RbdRegion(isubstep)%p_rprimalBdHead
+          do i = 1,rdirichletBCC%p_RbdRegion(isubstep)%nregionsPrimal
+          
+            ! Calculate the integral ||u||^2
+            call pperr_scalarBoundary2D (PPERR_L2ERROR, CUB_G4_1D, Derr(1),&
+                p_rbdRegionIterator%rboundaryRegion, rtempVector%RvectorBlock(4),&
+                ffunction_dirichletbcU, rlocalcoll)
+                
+            ! Next boundary region
+            p_rbdRegionIterator => p_rbdRegionIterator%p_nextBdRegion
+                
+          end do
+          
+          ! We use the summed trapezoidal rule.
+          ! Do not square Derr(1) here, since Derr(1) is already ||u||^2 !
+          if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
+            Derror(5) = Derror(5) + 0.05_DP*0.5_DP * Derr(1) * dtstep
+          else
+            Derror(5) = Derror(5) + 0.5_DP * Derr(1)  * dtstep
+          end if
+          
         end if
         
       end select
       
     end do
-    
+
+    ! Release the boundary conditions again
+    call stdbcc_releaseDirichletBCCBd(rdirichletBCC)
+
+    ! Clean up the collection
     call collct_done(rcollection)
       
     ! Normalise...
@@ -616,13 +762,24 @@ contains
     
     if (dalphaC .gt. 0.0_DP) then
       ! Calculate:
-      !    alpha/2 ||u||^2 = 1/2 ||P(lambda)||^2
-      Derror(4) = Derror(4) + 0.5_DP * Derror(2)
+      !    alpha/2 ||u||^2 = alpha/2 ||P(-1/alpha lambda)||^2
+      Derror(4) = Derror(4) + 0.5_DP * dalphaC * Derror(2)
       
-      ! Calculate ||u|| = 1/alpha ||P(lambda)||
-      Derror(2) = 1.0_DP/dalphaC * sqrt(Derror(2))
+      ! Calculate ||u|| = sqrt(||P(-1/alpha lambda)||^2)
+      Derror(2) = sqrt(Derror(2))
     else
       Derror(2) = 0.0_DP
+    end if
+
+    if (dbetaC .gt. 0.0_DP) then
+      ! Calculate:
+      !    alpha/2 ||u||^2 = beta/2 ||1/beta lambda)||^2
+      Derror(4) = Derror(4) + 0.5_DP * dbetaC * Derror(5)
+      
+      ! Calculate ||u|| = sqrt(||1/beta lambda||^2)
+      Derror(5) = sqrt(Derror(5))
+    else
+      Derror(5) = 0.0_DP
     end if
     
     ! And the rest

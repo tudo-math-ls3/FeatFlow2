@@ -3175,7 +3175,7 @@ contains
 
         ! Set up empty Dirichlet boundary control conditions.
         call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+            rsptiDirichletBCC)
             
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
@@ -3256,7 +3256,7 @@ contains
         
         ! Set up empty Dirichlet boundary control conditions.
         call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+            rsptiDirichletBCC)
 
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
@@ -3401,7 +3401,7 @@ contains
       
         ! Set up empty Dirichlet boundary control conditions.
         call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+            rsptiDirichletBCC)
       
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
@@ -3505,7 +3505,7 @@ contains
 
         ! Set up empty Dirichlet boundary control conditions.
         call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+            rsptiDirichletBCC)
         
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.
@@ -3678,7 +3678,7 @@ contains
       
         ! Set up empty Dirichlet boundary control conditions.
         call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-            rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),rsptiDirichletBCC)
+            rsptiDirichletBCC)
 
         ! Create a nonlinear space-time matrix that resembles the current
         ! forward equation.

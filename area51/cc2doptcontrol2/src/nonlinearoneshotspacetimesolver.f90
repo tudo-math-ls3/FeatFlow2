@@ -195,7 +195,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Array with Neumann boundary definitions for nonlinear boundary conditions,
+  ! Array with Dirichlet control boundary definitions for nonlinear boundary conditions,
   ! for all levels.
   type(t_sptiDirichletBCCBoundary), dimension(:), intent(inout), target :: RdirichletBCC
 !</inputoutput>
@@ -381,7 +381,7 @@ contains
     ! local variables
     integer :: nlevels, ierror, ilev
     real(dp) :: dinitDefNorm,ddefNorm,dlastDefNorm,dtempdef,delapsedReal
-    real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
+    real(DP), dimension(5) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
     logical :: bnewtonAllowed, breassembleStructure
     
     ! Some statistical data
@@ -421,7 +421,7 @@ contains
     ! Initialise the Dirichlet boundary control boundary conditions on the maximum level.
     ! Used for nonlinear boundary conditions.
     call stdbcc_createDirichletBCCBd (rdiscrData%p_rspaceDiscr,rdiscrData%p_rtimeDiscr,&
-        rdiscrData%p_rstaticSpaceAsmTempl,rsptiDirichletBCC)
+        rsptiDirichletBCC)
     call stdbcc_assembleDirichletBCCBd (rsettings%roptcBDC,rsptiDirichletBCC,rsettings%rglobalData)
     
     ! Initialise a space-time matrix of the corresponding system.
@@ -613,7 +613,7 @@ contains
       if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
         ! Subdomain is the observation area
         call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-            rsettings%rsettingsOptControl%rconstraints,&
+            rsettings%rsettingsOptControl%rconstraints,rsettings%roptcBDC,&
             rx,rsettings%rsettingsOptControl%rtargetFunction,&
             rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
             rsettings%rsettingsOptControl%dgammaC,&
@@ -621,7 +621,7 @@ contains
       else
         ! Full domain
         call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-            rsettings%rsettingsOptControl%rconstraints,&
+            rsettings%rsettingsOptControl%rconstraints,rsettings%roptcBDC,&
             rx,rsettings%rsettingsOptControl%rtargetFunction,&
             rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
             rsettings%rsettingsOptControl%dgammaC,&
@@ -631,6 +631,7 @@ contains
         call output_separator (OU_SEP_MINUS)
         call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
         call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
+        call output_line ('||u||_GammaC  = '//trim(sys_sdEL(Derror(5),10)))
         call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
         call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
       end if
@@ -923,7 +924,7 @@ contains
     if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
       ! Subdomain is the observation area
       call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-          rsettings%rsettingsOptControl%rconstraints,&
+          rsettings%rsettingsOptControl%rconstraints,rsettings%roptcBDC,&
           rx,rsettings%rsettingsOptControl%rtargetFunction,&
           rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
           rsettings%rsettingsOptControl%dgammaC,&
@@ -931,7 +932,7 @@ contains
     else
       ! Full domain
       call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-          rsettings%rsettingsOptControl%rconstraints,&
+          rsettings%rsettingsOptControl%rconstraints,rsettings%roptcBDC,&
           rx,rsettings%rsettingsOptControl%rtargetFunction,&
           rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dbetaC,&
           rsettings%rsettingsOptControl%dgammaC,&
@@ -940,6 +941,7 @@ contains
     if (rnlstsolver%ioutputLevel .ge. 1) then
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
       call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
+      call output_line ('||u||_GammaC  = '//trim(sys_sdEL(Derror(5),10)))
       call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
       call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
     end if

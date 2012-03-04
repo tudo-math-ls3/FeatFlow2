@@ -70,13 +70,10 @@ module spacetimedirichletbcc
     ! Underlying time-discretisation
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr => null()
     
-    ! Underlying assembly templates
-    type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates => null()
-    
     ! Number of unknowns in time
     integer :: NEQtime = 0
     
-    ! Analytical definition of the Neumann boundary segments
+    ! Analytical definition of the Dirichlet control boundary segments
     type(t_boundaryRegionList), dimension(:), pointer :: p_RbdRegion => null()
 
 !    ! Boundary control template matrix for the primal/dual velocity. 
@@ -105,7 +102,7 @@ contains
 
 !<subroutine>
 
-  subroutine stdbcc_createDirichletBCCBd (rspaceDiscr,rtimeDiscr,rasmTemplates,&
+  subroutine stdbcc_createDirichletBCCBd (rspaceDiscr,rtimeDiscr,&
       rsptiDirichletBCC)
 
 !<description>
@@ -119,9 +116,6 @@ contains
 
   ! Underlying time-discretisation.
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
-  
-  ! Assembly template structure.
-  type(t_staticSpaceAsmTemplates), intent(in), target :: rasmTemplates
 !</input>
 
 !<output>
@@ -134,7 +128,6 @@ contains
     ! Initialise the structure.
     rsptiDirichletBCC%p_rtimeDiscr => rtimeDiscr
     rsptiDirichletBCC%p_rspaceDiscr => rspaceDiscr
-    rsptiDirichletBCC%p_rasmTemplates => rasmTemplates
     rsptiDirichletBCC%NEQtime = rtimeDiscr%nintervals+1
     allocate(rsptiDirichletBCC%p_RbdRegion(rsptiDirichletBCC%NEQtime))
   
@@ -162,7 +155,6 @@ contains
     rsptiDirichletBCC%NEQtime = 0
     nullify(rsptiDirichletBCC%p_rtimeDiscr)
     nullify(rsptiDirichletBCC%p_rspaceDiscr)
-    nullify(rsptiDirichletBCC%p_rasmTemplates)
   
   end subroutine
 

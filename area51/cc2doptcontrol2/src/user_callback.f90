@@ -2439,8 +2439,7 @@ contains
 !<subroutine>
 
   subroutine user_getNonconstantViscosity (cterm,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset, &
+                nelements,npointsPerElement,Dpoints,Ielements, &
                 Dcoefficients,rvelocity,rcollection)
   
   use basicgeometry
@@ -2478,20 +2477,14 @@ contains
   ! Number of points per element, where the coefficients must be computed
   integer, intent(in)                                         :: npointsPerElement
   
+  ! List of elements where to calculate
+  integer, dimension(:), intent(in) :: Ielements
+
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! DIMENSION(NDIM2D,npointsPerElement,nelements)
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
-
-  ! An array accepting the DOF`s on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
-  integer, dimension(:,:), intent(in) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It is usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Current velocity vector.
   type(t_vectorBlock), intent(in) :: rvelocity

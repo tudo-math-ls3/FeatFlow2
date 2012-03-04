@@ -299,7 +299,6 @@ contains
     
       ! Create arrays for Dirichlet boundary control      
       call stdbcc_createDirichletBCCBd (p_rfeSpaceLevel%p_rdiscretisation,p_rtimeDiscr,&
-          rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
           rsolver%p_rsptiDirichletBCC(ilev))
     
     end do

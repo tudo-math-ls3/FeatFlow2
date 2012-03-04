@@ -1346,7 +1346,7 @@ contains
   real(dp) :: dtimePrimal,dtimeDual,dtstep
   real(dp) :: dtimePrimalNext,dtimeDualNext
   real(dp) :: dtimePrimalPrev,dtimeDualPrev
-  real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
+  real(DP), dimension(5) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
   type(t_spaceTimeVectorAccess) :: raccessPoolSol,raccessPoolRhs
 
     select case (rpostproc%p_rphysics%cequation)
@@ -1449,13 +1449,13 @@ contains
         if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
           ! Subdomain is the observation area
           call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-              roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
+              roptControl%rconstraints,rsettings%roptcBDC,rvector,roptcontrol%rtargetFunction,&
               roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror,&
               rsettings%rsettingsOptControl%p_DobservationArea)
         else
           ! Full domain
           call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
-              roptControl%rconstraints,rvector,roptcontrol%rtargetFunction,&
+              roptControl%rconstraints,rsettings%roptcBDC,rvector,roptcontrol%rtargetFunction,&
               roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror)
         end if
         call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
