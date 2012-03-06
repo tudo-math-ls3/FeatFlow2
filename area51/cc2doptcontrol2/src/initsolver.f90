@@ -4136,7 +4136,8 @@ contains
       call lsysbl_getbase_double (rx,p_DdataX)
       
       ! Get the guiding discretisation data.
-      call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
+      call stlin_initSpaceAssemblyFromGl (rsettings,rsettings%rfeHierPrimalDual%nlevels,&
+          rtimediscr%dtimeInit,rtimediscr%dtimeInit,rmatrixDiscr)
 
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
@@ -4196,6 +4197,8 @@ contains
         call lsyssc_scaleVector(rb%RvectorBlock(2),dtstep)
       end if
       
+      ! Release the space assembly structure.
+      call stlin_doneSpaceAssembly(rmatrixDiscr)
       
     end select
     

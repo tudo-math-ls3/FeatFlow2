@@ -662,25 +662,29 @@ contains
             case (0)
               call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
                   -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
                   rconstraints%dumin1,rconstraints%dumax1)
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
                   -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
                   rconstraints%dumin2,rconstraints%dumax2)
 
             case (1)
               ! Initialise the space constraints.
-              call stlin_initSpaceConstraints (rconstraints,dtime,&
+              call stlin_initSpaceConstraints (rconstraints,dtime,dtime,&
                   rsolution%p_rspaceDiscr,rconstrSpace)
               
               ! Implement the constraints
               call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
                   -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
+                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
                   -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&

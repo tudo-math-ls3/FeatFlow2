@@ -3095,8 +3095,8 @@ contains
         
     ! Get the assembly data on our level that allows us to create nonlinear
     ! matrices.
-    call smva_getDiscrData (rsolverNode%p_rsettings, ilevel, &
-        rsolverNode%p_rsubnodeBlockFBSOR%rdiscrData)
+    call stlin_initSpaceAssemblyFromGl (rsolverNode%p_rsettings, ilevel, &
+        0.0_DP,0.0_DP,rsolverNode%p_rsubnodeBlockFBSOR%rdiscrData)
 
     ! Allocate memory for temp vectors.
     call sptivec_initVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector,&
@@ -3202,6 +3202,9 @@ contains
     if (associated(rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess%p_rspaceDiscr)) then
       call sptivec_releaseAccessPool(rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
     end if
+    
+    ! Release the space assembly structure.
+    call stlin_doneSpaceAssembly(rsolverNode%p_rsubnodeBlockFBSOR%rdiscrData)
     
   end subroutine
   

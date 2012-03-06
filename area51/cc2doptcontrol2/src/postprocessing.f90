@@ -857,7 +857,7 @@ contains
       
         call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
             roptControl%dalphaC,roptControl%dbetaC,&
-            dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+            dtimePrimal,dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
       
         ! Write the current solution to disc as it is.
         sfilename = rpostproc%sfinalControlFileName
@@ -1066,7 +1066,8 @@ contains
 
             ! Control u = P[min/max](-1/alpha lambda)
             call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
-                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+                roptControl%dalphaC,roptControl%dbetaC,dtimePrimal,dtimeDual,&
+                roptcontrol%ispaceTimeFormulation)
             
             ! Do the projection into a vector in the discretisation
             ! if the primal space.
@@ -1075,7 +1076,7 @@ contains
           
             call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
                 roptControl%dalphaC,roptControl%dbetaC,&
-                dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+                dtimePrimal,dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
 
             call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
             call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
@@ -1153,7 +1154,8 @@ contains
 
             ! Control u = P[min/max](-1/alpha lambda)
             call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
-                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+                roptControl%dalphaC,roptControl%dbetaC,dtimePrimal,dtimeDual,&
+                roptcontrol%ispaceTimeFormulation)
             
             ! Do the projection into a vector in the discretisation
             ! if the primal space.
@@ -1162,7 +1164,7 @@ contains
           
             call optcpp_calcControl (rpostproc%p_rphysics,rvector,roptControl%rconstraints,&
                 roptControl%dalphaC,roptControl%dbetaC,&
-                dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
+                dtimePrimal,dtimeDual,roptcontrol%ispaceTimeFormulation,rcontrolVector)
 
             call lsyssc_getbase_double (rcontrolVector%RvectorBlock(1),p_Ddata)
             call lsyssc_getbase_double (rcontrolVector%RvectorBlock(2),p_Ddata2)
@@ -1242,7 +1244,8 @@ contains
 
             ! Control u = P[min/max](-1/alpha lambda)
             call optcpp_calcControl (rpostproc%p_rphysics,rprjVector,roptControl%rconstraints,&
-                roptControl%dalphaC,roptControl%dbetaC,dtimeDual,roptcontrol%ispaceTimeFormulation)
+                roptControl%dalphaC,roptControl%dbetaC,dtimePrimal,dtimeDual,&
+                roptcontrol%ispaceTimeFormulation)
             
             call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
             call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
@@ -1566,7 +1569,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_calcControl (rphysics,rvectorSol,rconstraints,dalphaC,dbetaC,&
-      dtimeDual,ispacetimeFormulation,rvectorControl)
+      dtimePrimal,dtimeDual,ispacetimeFormulation,rvectorControl)
   
 !<description>
   ! Uses the dual solution in rvectorSol to calculate the discrete
@@ -1586,9 +1589,12 @@ contains
   ! Regularisation parameter $\betaa$.
   real(DP), intent(in) :: dbetaC
   
+  ! Time corresponding to the primal solution
+  real(DP), intent(in) :: dtimePrimal
+  
   ! Time corresponding to the dual solution
   real(DP), intent(in) :: dtimeDual
-  
+
   ! Formulation of the Space-time problem.
   ! =0: Formulation for the generation of reference results from papers
   ! =1: usual formulation as specified in the DFG applicance
@@ -1637,25 +1643,29 @@ contains
               ! Constant bounds
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(1),&
                   dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
                   rconstraints%dumin1,rconstraints%dumax1)
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(2),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   rconstraints%dumin2,rconstraints%dumax2)
 
             case (1)
               ! Initialise the space constraints.
-              call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
+              call stlin_initSpaceConstraints (rconstraints,dtimeDual,dtimePrimal,&
                   rvectorSol%p_rblockDiscr,rconstrSpace)
               
               ! Implement the constraints
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(1),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
                   dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(1),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorControl%RvectorBlock(2),&
+                  dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   dalphamult*1.0_DP/dalphaC,rvectorControl%RvectorBlock(2),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&
@@ -1675,25 +1685,29 @@ contains
               ! Constant bounds
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(4),&
                   dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
                   rconstraints%dumin1,rconstraints%dumax1)
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
                   dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
                   rconstraints%dumin2,rconstraints%dumax2)
 
             case (1)
               ! Initialise the space constraints.
-              call stlin_initSpaceConstraints (rconstraints,dtimeDual,&
+              call stlin_initSpaceConstraints (rconstraints,dtimeDual,dtimePrimal,&
                   rvectorSol%p_rblockDiscr,rconstrSpace)
               
               ! Implement the constraints
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(4),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
                   dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(4),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(1),&
                   rconstrSpace%p_rvectorumax%RvectorBlock(1))
 
               call nwder_applyMinMaxProjByDof (1.0_DP,rvectorSol%RvectorBlock(5),&
+                  dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
                   dalphamult*1.0_DP/dalphaC,rvectorSol%RvectorBlock(5),&
                   1.0_DP,1.0_DP,&
                   rconstrSpace%p_rvectorumin%RvectorBlock(2),&

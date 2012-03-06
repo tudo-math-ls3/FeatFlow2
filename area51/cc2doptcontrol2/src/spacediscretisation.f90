@@ -169,8 +169,6 @@ contains
 
 !</subroutine>
 
-    integer :: i,j
-
     call spdiscr_initBlockDiscr (rdiscretisation,nequations,&
                                  rtriangulation, rboundary)
 

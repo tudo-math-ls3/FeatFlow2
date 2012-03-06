@@ -1603,12 +1603,13 @@ contains
   
       ! local variables
     type(t_vectorBlock), pointer :: p_rvector,p_rvectorUmin,p_rvectorUmax,p_rvectorShift
-    real(dp), dimension(:,:), allocatable :: Dfunc,Dshift
+    type(t_vectorBlock), pointer :: p_rvectorViol
+    real(dp), dimension(:,:), allocatable :: Dfunc,Dshift,Dviol
     real(dp), dimension(:), allocatable :: Dumin,Dumax
     integer, dimension(:), allocatable :: Ielements
     integer(I32) :: celement
     integer :: ipt, iel
-    real(DP) :: dwFct,dweight,dwMin,dwMax, dwShift
+    real(DP) :: dwFct,dweight,dwMin,dwMax, dwShift, dwViol
 
     ! Get constant data    
     dwFct = rcollection%DquickAccess(1)
@@ -1616,6 +1617,7 @@ contains
     dwMin = rcollection%DquickAccess(3)
     dwMax = rcollection%DquickAccess(4)
     dwShift = rcollection%DquickAccess(5)
+    dwViol = rcollection%DquickAccess(6)
     
     ! Get a pointer to the FE solution from the collection.
     ! The routine below wrote a pointer to the vector to the
@@ -1624,6 +1626,7 @@ contains
     p_rvectorUmin => rcollection%p_rvectorQuickAccess2
     p_rvectorUmax => rcollection%p_rvectorQuickAccess3
     p_rvectorShift => rcollection%p_rvectorQuickAccess4
+    p_rvectorViol => rcollection%p_rvectorQuickAccess5
 
     ! Allocate memory for the function values in the cubature points.
     ! Function value, minimum and maximum.
@@ -1645,11 +1648,17 @@ contains
     call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
         rdomainIntSubset%p_revalElementSet, &
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc(:,:))
+
+    ! Evaluate the 'violation' function
+    allocate(Dviol(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    call fevl_evaluate_sim (p_rvectorViol%RvectorBlock(1), &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dviol(:,:))
     
     ! Now check the function values lambda.
     ! Return the projected control in every cubature point.
     
-    if (associated (p_rvectorShift)) then
+    if ((dwShift .ne. 0.0_DP) .and. associated (p_rvectorShift)) then
     
       ! Evaluate the 'shift' function
       allocate(Dshift(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
@@ -1679,9 +1688,12 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
-                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
+          
+            call projection (dwViol*Dviol(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                dwMin*Dumin(ipt), dwMax*Dumax(ipt),&
+                dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                Dcoefficients(1,ipt,iel))
+
           end do
         end do
 
@@ -1704,9 +1716,10 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
-                                dwMin*Dumin(ipt)),dwMax)
+            call projection (dwViol*Dviol(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                dwMin*Dumin(ipt), dwMax,&
+                dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
 
@@ -1728,9 +1741,10 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
-                                dwMin),dwMax*Dumax(ipt))
+            call projection (dwViol*Dviol(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                dwMin, dwMax*Dumax(ipt),&
+                dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
         
@@ -1742,8 +1756,10 @@ contains
         do iel = 1,ubound(Dcoefficients,3)
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),dwMin),dwMax)
+            call projection (dwViol*Dviol(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                dwMin, dwMax,&
+                dwFct*Dfunc(ipt,iel) + dwShift*Dshift(ipt,iel),&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
 
@@ -1775,9 +1791,10 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
-                                dwMin*Dumin(ipt)),dwMax*Dumax(ipt))
+            call projection (dwViol*Dviol(ipt,iel) + dwShift,&
+                dwMin*Dumin(ipt), dwMax*Dumax(ipt),&
+                dwFct*Dfunc(ipt,iel) + dwShift,&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
 
@@ -1800,9 +1817,10 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
-                                dwMin*Dumin(ipt)),dwMax)
+            call projection (dwViol*Dviol(ipt,iel) + dwShift,&
+                dwMin*Dumin(ipt), dwMax,&
+                dwFct*Dfunc(ipt,iel) + dwShift,&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
 
@@ -1824,9 +1842,10 @@ contains
 
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,&
-                                dwMin),dwMax*Dumax(ipt))
+            call projection (dwViol*Dviol(ipt,iel) + dwShift,&
+                dwMin, dwMax*Dumax(ipt),&
+                dwFct*Dfunc(ipt,iel) + dwShift,&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
         
@@ -1838,8 +1857,10 @@ contains
         do iel = 1,ubound(Dcoefficients,3)
           ! Calculate the projection in the cubature points
           do ipt = 1,ubound(Dcoefficients,2)
-            Dcoefficients(1,ipt,iel) = &
-                dweight*min(max(dwFct*Dfunc(ipt,iel) + dwShift,dwMin),dwMax)
+            call projection (dwViol*Dviol(ipt,iel) + dwShift,&
+                dwMin, dwMax,&
+                dwFct*Dfunc(ipt,iel) + dwShift,&
+                Dcoefficients(1,ipt,iel))
           end do
         end do
 
@@ -1850,6 +1871,27 @@ contains
     ! Release memory
     deallocate(Ielements)
     deallocate(Dfunc)
+  
+  contains
+
+    subroutine projection (dtest,dmin,dmax,din,dout)
+    
+    ! The actual projection.
+    ! Returns dmin/dmax where dtest violates the bounds,
+    ! or din where it does not.
+    
+    real(DP), intent(in) :: dtest,dmin,dmax,din
+    real(DP), intent(out) :: dout
+    
+      if (dtest .lt. dmin) then
+        dout = dmin
+      else if (dtest .gt. dmax) then
+        dout = dmax
+      else
+        dout = din
+      end if
+    
+    end subroutine
 
   end subroutine
   
@@ -1858,15 +1900,19 @@ contains
 !<subroutine>
 
   subroutine nwder_rhsMinMaxProjByCubature (dweight,rvector,rcubatureInfo,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwFctViolate,rfunctionViolate,dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
       dwShift, rfunctionShift)
   
 !<description>
   ! Assembles the linear form
   !   ( dweight*rfunction , test)
   ! for the projection function
-  !   rfunction -> 
-  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
+  !      dwmax*rfunctionMax + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift > dwmax*rfunctionMax
+  !      dwmin*rfunctionMin + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift < dwmin*rfunctionMin
+  !      dwFct*rfunction
+  !            elsewhere
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
@@ -1879,6 +1925,14 @@ contains
   ! Weight in front of the operator when being added to rmatrix.
   real(DP), intent(in) :: dweight
   
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFctViolate
+  
+  ! An FE function specifying where the projection should be
+  ! applied. Whereever dwFctViolate*rfunctionViolate violates the bounds,
+  ! the bounds are assumed.
+  type(t_vectorScalar), intent(in) :: rfunctionViolate
+
   ! Weight for the function rfunction.
   real(DP), intent(in) :: dwFct
   
@@ -1920,7 +1974,7 @@ contains
     ! local variables
     type(t_collection) :: rcollection
     type (t_linearForm) :: rlinform
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax, rvecShift
+    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax, rvecShift, rvecViol
     
     ! Prepare a linearform-assembly.
     rlinform%itermCount = 1
@@ -1959,6 +2013,8 @@ contains
       rcollection%DquickAccess(5) = dwShift
     end if
 
+    rcollection%DquickAccess(6) = dwFctViolate
+
     if (present(rfunctionShift)) then
       call lsysbl_createVecFromScalar (rfunctionShift,rvecShift)
       rcollection%p_rvectorQuickAccess4 => rvecShift
@@ -1966,6 +2022,9 @@ contains
       nullify(rcollection%p_rvectorQuickAccess4)
     end if
 
+    call lsysbl_createVecFromScalar (rfunctionViolate,rvecViol)
+    rcollection%p_rvectorQuickAccess5 => rvecViol
+    
     ! Assemble the vector
     call linf_buildVectorScalar(rlinform,.false.,rvector,rcubatureInfo,&
         coeff_rhsMinMaxProj,rcollection)
@@ -1978,6 +2037,8 @@ contains
     if (present(rfunctionMax)) then
       call lsysbl_releaseVector (rvecMax)
     end if
+
+    call lsysbl_releaseVector (rvecViol)
     
   end subroutine
 
@@ -1986,7 +2047,7 @@ contains
 !<subroutine>
 
   subroutine nwder_rhsMinMaxProjByMass (dweight,rvector,rmassMatrix,rvectorTemp,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwFctViolate,rfunctionViolate,dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
       dwShift,rfunctionShift)
   
 !<description>
@@ -1994,7 +2055,12 @@ contains
   !   rvector = rvector + dweight * MassMatrix * rfunction
   ! for the projection function
   !   rfunction -> 
-  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
+  !      dwmax*rfunctionMax + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift > dwmax*rfunctionMax
+  !      dwmin*rfunctionMin + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift < dwmin*rfunctionMin
+  !      dwFct*rfunction
+  !            elsewhere
   ! If rfunctionMin/rfunctionMax/rfunctionShift are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
@@ -2010,17 +2076,25 @@ contains
   ! Weight in front of the operator when being added to rmatrix.
   real(DP), intent(in) :: dweight
   
-  ! Weight for the function rfunction.
-  real(DP), intent(in) :: dwFct
-  
   ! The mass matrix
   type(t_matrixScalar), intent(in) :: rmassMatrix
   
   ! A temporary vector.
   type(t_vectorScalar), intent(inout) :: rvectorTemp
   
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFct
+  
   ! An FE function
   type(t_vectorScalar), intent(in) :: rfunction
+
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFctViolate
+  
+  ! An FE function specifying where the projection should be
+  ! applied. Whereever dwFctViolate*rfunctionViolate violates the bounds,
+  ! the bounds are assumed.
+  type(t_vectorScalar), intent(in) :: rfunctionViolate
   
   ! Weight for the lower bound. If rfunctionMin is not specified,
   ! this is the lower bound.
@@ -2055,18 +2129,20 @@ contains
     type(t_collection) :: rcollection
     type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
     real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
-    real(DP), dimension(:), pointer :: p_DdataShift
+    real(DP), dimension(:), pointer :: p_DdataShift,p_DdataViol,p_DdataRhs
     integer :: i
     real(DP) :: duShift
 
     ! Get the source and target arrays.
     call lsyssc_getbase_double (rfunction,p_DdataIn)
     call lsyssc_getbase_double (rvectorTemp,p_DdataOut)
+    call lsyssc_getbase_double (rfunctionViolate,p_DdataViol)
+    call lsyssc_getbase_double (rvector,p_DdataRhs)
     
     duShift = 0.0_DP
     if (present(dwShift)) duShift = dwShift
 
-    if (present(rfunctionShift)) then
+    if ((duShift .ne. 0.0_DP) .and. present(rfunctionShift)) then
     
       call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
     
@@ -2077,11 +2153,12 @@ contains
         call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
         call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
       
-        ! Restrict the vector
+        ! Restrict the vector, componentwise
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
         
       else if (present(rfunctionMin)) then
@@ -2091,9 +2168,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin*p_DdataMin(i)),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin*p_DdataMin(i), dwMax,&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       else if (present(rfunctionMax)) then
@@ -2103,9 +2181,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin, dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       else
@@ -2114,8 +2193,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),dwMin),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin, dwMax,&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       end if
@@ -2131,9 +2212,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
         
       else if (present(rfunctionMin)) then
@@ -2143,9 +2225,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin*p_DdataMin(i)),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin*p_DdataMin(i), dwMax,&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       else if (present(rfunctionMax)) then
@@ -2155,9 +2238,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin, dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       else
@@ -2166,8 +2250,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,dwMin),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin, dwMax,&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       end if
@@ -2177,7 +2263,28 @@ contains
     ! Multiply by the mass matrix and sum up to rvector.
     call lsyssc_scalarMatVec (&
         rmassMatrix,rvectorTemp,rvector,dweight,1.0_DP)
+  
+  contains
+  
+    subroutine projection (dtest,dmin,dmax,din,dout)
     
+    ! The actual projection.
+    ! Returns dmin/dmax where dtest violates the bounds,
+    ! or din where it does not.
+    
+    real(DP), intent(in) :: dtest,dmin,dmax,din
+    real(DP), intent(out) :: dout
+    
+      if (dtest .lt. dmin) then
+        dout = dmin
+      else if (dtest .gt. dmax) then
+        dout = dmax
+      else
+        dout = din
+      end if
+    
+    end subroutine
+  
   end subroutine
 
 ! ***************************************************************************
@@ -2185,7 +2292,7 @@ contains
 !<subroutine>
 
   subroutine nwder_applyMinMaxProjByDof (dweight,rvector,&
-      dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+      dwFctViolate,rfunctionViolate,dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
       dwShift,rfunctionShift)
   
 !<description>
@@ -2193,7 +2300,12 @@ contains
   !   rvector = dweight * rfunction
   ! for the projection function
   !   rfunction -> 
-  !      min( dwmin*rfunctionMin , max(dwmax*rfunctionMax, dwFct*rfunction + dwShift*rfunctionShift))
+  !      dwmax*rfunctionMax + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift > dwmax*rfunctionMax
+  !      dwmin*rfunctionMin + dwShift*rfunctionShift
+  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift < dwmin*rfunctionMin
+  !      dwFct*rfunction
+  !            elsewhere
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
   ! to be =1.
   ! The operator is added to rvector.
@@ -2208,6 +2320,14 @@ contains
 !<input>
   ! Weight in front of the operator when being added to rmatrix.
   real(DP), intent(in) :: dweight
+  
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFctViolate
+  
+  ! An FE function specifying where the projection should be
+  ! applied. Whereever dwFctViolate*rfunctionViolate violates the bounds,
+  ! the bounds are assumed.
+  type(t_vectorScalar), intent(in) :: rfunctionViolate
   
   ! Weight for the function rfunction.
   real(DP), intent(in) :: dwFct
@@ -2248,18 +2368,19 @@ contains
     type(t_collection) :: rcollection
     type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax,rvecShift
     real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
-    real(DP), dimension(:), pointer :: p_DdataShift
+    real(DP), dimension(:), pointer :: p_DdataShift,p_DdataViol
     integer :: i
     real(DP) :: dushift
 
     ! Get the source and target arrays.
     call lsyssc_getbase_double (rfunction,p_DdataIn)
     call lsyssc_getbase_double (rvector,p_DdataOut)
+    call lsyssc_getbase_double (rfunctionViolate,p_DdataViol)
 
     duShift = 0.0_DP
     if (present(dwShift)) duShift = dwShift
 
-    if (present(rfunctionShift)) then
+    if ((duShift .ne. 0.0_DP) .and. present(rfunctionShift)) then
     
       call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
     
@@ -2270,11 +2391,12 @@ contains
         call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
         call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
       
-        ! Restrict the vector
+        ! Restrict the vector, componentwise
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
         
       else if (present(rfunctionMin)) then
@@ -2284,9 +2406,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin*p_DdataMin(i)),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin*p_DdataMin(i), dwMax,&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       else if (present(rfunctionMax)) then
@@ -2296,9 +2419,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-                  dwMin),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin, dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       else
@@ -2307,8 +2431,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),dwMin),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
+              dwMin, dwMax,&
+              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+              p_DdataOut(i))
         end do
 
       end if
@@ -2324,9 +2450,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin*p_DdataMin(i)),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
         
       else if (present(rfunctionMin)) then
@@ -2336,9 +2463,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin*p_DdataMin(i)),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin*p_DdataMin(i), dwMax,&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       else if (present(rfunctionMax)) then
@@ -2348,9 +2476,10 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,&
-                  dwMin),dwMax*p_DdataMax(i))
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin, dwMax*p_DdataMax(i),&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       else
@@ -2359,14 +2488,37 @@ contains
       
         ! Restrict the vector
         do i=1,rvector%NEQ
-          p_DdataOut(i) = &
-              min(max(dwFct*p_DdataIn(i) + duShift,dwMin),dwMax)
+          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
+              dwMin, dwMax,&
+              dwFct*p_DdataIn(i) + duShift,&
+              p_DdataOut(i))
         end do
 
       end if
       
     end if
     
+  contains
+    
+    subroutine projection (dtest,dmin,dmax,din,dout)
+    
+    ! The actual projection.
+    ! Returns dmin/dmax where dtest violates the bounds,
+    ! or din where it does not.
+    
+    real(DP), intent(in) :: dtest,dmin,dmax,din
+    real(DP), intent(out) :: dout
+    
+      if (dtest .lt. dmin) then
+        dout = dmin
+      else if (dtest .gt. dmax) then
+        dout = dmax
+      else
+        dout = din
+      end if
+    
+    end subroutine
+
   end subroutine
 
 end module

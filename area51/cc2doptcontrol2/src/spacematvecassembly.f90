@@ -256,7 +256,6 @@ module spacematvecassembly
   public :: smva_initNonlinMatrix
   public :: smva_assembleMatrix
   public :: smva_assembleDefect
-  public :: smva_getDiscrData
   public :: smva_initNonlinearData
   public :: smva_addBdEOJvector
   public :: smva_addBdEOJOperator
@@ -532,64 +531,6 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDiscrData (rsettings, ilevel, rdiscrData,rphysics)
-  
-!<description>
-  ! Fetches all discretisation data from the main program structure that is
-  ! necessary to set up nonlinear matrices.
-!</description>
-
-!<input>
-  ! The structure of the main solver
-  type(t_settings_optflow), intent(in), target :: rsettings
-  
-  ! Level where the discretisation takes place.
-  integer, intent(in) :: ilevel
-
-  ! OPTIONAL: Alternative physics definition to use.
-  ! If not present, the standard global physics settings are used.
-  type(t_settings_physics), intent(in), optional :: rphysics
-!</input>
-
-!<output>
-  ! Discretisation related data, can be used to generate nonlinear matrices.
-  type(t_spatialMatrixDiscrData), intent(out) :: rdiscrData
-!</output>
-
-!</subroutine>
-
-    ! Get level-independent data.
-    rdiscrData%rphysicsPrimal = rsettings%rphysicsPrimal
-    if (present(rphysics)) then
-      rdiscrData%rphysicsPrimal = rphysics
-    end if
-    rdiscrData%rsettingsSpaceDiscr = rsettings%rsettingsSpaceDiscr
-    rdiscrData%rstabilPrimal = rsettings%rstabilPrimal
-    rdiscrData%rstabilDual = rsettings%rstabilDual
-    rdiscrData%rconstraints = rdiscrData%rconstraints
-
-    rdiscrData%p_rdiscrPrimal => &
-        rsettings%rfeHierPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation
-
-    rdiscrData%p_rdiscrPrimalDual => &
-        rsettings%rfeHierPrimalDual%p_rfeSpaces(ilevel)%p_rdiscretisation
-    
-    rdiscrData%p_rstaticAsmTemplates => &
-        rsettings%rspaceAsmHierarchy%p_RasmTemplList(ilevel)
-
-    rdiscrData%p_rstaticAsmTemplatesOptC => &
-        rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ilevel)
-
-    rdiscrData%p_rdebugFlags => rsettings%rdebugFlags
-    
-    rdiscrData%p_DobservationArea => rsettings%rsettingsOptControl%p_DobservationArea
-
-  end subroutine
-  
-  ! ***************************************************************************
-
-!<subroutine>
-
   subroutine smva_initNonlinMatrix (rnonlinearSpatialMatrix,rglobalData,rdiscrData,rnonlinearity)
 
 !<description>
@@ -806,183 +747,6 @@ contains
           Dcoefficients(1,ipt,iel) = 0.0_DP
         end if
       end do
-    end do
-    
-    ! Release memory
-    deallocate(Dfunc)
-
-  end subroutine
-
-! ***************************************************************************
-  !<subroutine>
-
-  subroutine coeff_ProjMassCollect (rdiscretisationTrial,rdiscretisationTest,rform, &
-      nelements,npointsPerElement,Dpoints, IdofsTrial,IdofsTest,rdomainIntSubset, &
-      Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form
-    ! that assembles the projective mass matrix.
-    !
-    ! The coefficients is c=c(lambda_1) or =c(lambda_2) with
-    ! c=1/alpha if a < -1/alpha lambda_i < b and c=0 otherwise. This is the derivative
-    ! of the projection operator "-P[a,b](-1/alpha lambda_i)" on the left hand
-    ! side of the equation.
-    !
-    ! Collects the elements of the active set for later re-assembly.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
-    
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
-
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(IN)                            :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                        :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTrial
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-  
-    ! local variables
-    type(t_vectorBlock), pointer :: p_rvector
-    type(t_vectorScalar), pointer :: p_rsubvector
-    real(dp), dimension(:,:), allocatable :: Dfunc
-    integer(I32) :: celement
-    real(DP) :: da, db, dalphaC, dp1
-    integer :: ipt, iel
-    integer :: nptsInactive
-    integer, dimension(:), pointer :: p_IelementList
-    
-    ! Get the bounds and the multiplier from the collection
-    dalphaC = rcollection%DquickAccess(3)
-    dp1 = rcollection%DquickAccess(4)
-    
-    ! Forget it if alpha<=0. Not possible.
-    if (dalphaC .le. 0.0_DP) return
-    
-    ! Scale the bounds by -alpha as we analyse lambda
-    ! and not u. Change the role of min/max because of the "-"
-    ! sign!
-    da = -rcollection%DquickAccess(2)*dalphaC
-    db = -rcollection%DquickAccess(1)*dalphaC
-    
-    ! Get a pointer to the FE solution from the collection.
-    ! The routine below wrote a pointer to the vector T to the
-    ! first quick-access vector pointer in the collection.
-    p_rvector => rcollection%p_rvectorQuickAccess1
-
-    ! Do we have to analyse lambda_1 or lambda_2?
-    if (rcollection%IquickAccess(1) .eq. 1) then
-      p_rsubvector => p_Rvector%RvectorBlock(4)
-    else
-      p_rsubvector => p_Rvector%RvectorBlock(5)
-    end if
-  
-    ! Allocate memory for the function values in the cubature points:
-    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
-    
-    ! Calculate the function value of the solution vector in all
-    ! our cubature points:
-    !
-    ! Figure out the element type, then call the
-    ! evaluation routine for a prepared element set.
-    ! This works only if the trial space of the matrix coincides
-    ! with the FE space of the vector T we evaluate!
-    
-    celement = rdomainIntSubset%celement
-    
-    call fevl_evaluate_sim (p_rsubvector, &
-        rdomainIntSubset%p_revalElementSet, &
-        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
-    
-    call storage_getbase_int (rcollection%IquickAccess(2),p_IelementList)
-    
-    ! Now check the function values lambda.
-    ! If b < -1/alpha lambda < a, return 1/alpha.
-    ! Otherwise, return 0.
-    !
-    ! If we detect an element, which is on the border of the active set,
-    ! return 0 everywhere and collect the element to the element list,
-    ! so the assembly routine can assemble there on a 2nd pass later.
-    do iel = 1,ubound(Dcoefficients,3)
-      
-      ! Count the inactive points.
-      nptsInactive = 0
-      do ipt = 1,ubound(Dcoefficients,2)
-        ! Check if the dual variable is in the bounds for the control.
-        if ((Dfunc(ipt,iel) .gt. da) .and. (Dfunc(ipt,iel) .lt. db)) then
-          nptsInactive = nptsInactive + 1
-        end if
-      end do
-      
-      ! All points inactive? Ok.
-      ! Partially active? Remember the element.
-      ! Completely active? Return 0 everywhere.
-      if (nptsInactive .eq.  ubound(Dcoefficients,2)) then
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = dp1
-        end do
-      else
-        do ipt = 1,ubound(Dcoefficients,2)
-          Dcoefficients(1,ipt,iel) = 0.0_DP
-        end do
-        if (nptsInactive .gt. 0) then
-          rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
-          p_IelementList(rcollection%IquickAccess(3)) = &
-              rdomainIntSubset%p_Ielements(iel)
-        end if
-      end if
     end do
     
     ! Release memory
@@ -1528,6 +1292,11 @@ contains
           rtempMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
           rtempMatrix%RmatrixBlock(2,2)%dscaleFactor = 1.0_DP
         end if
+        
+        ! Assemble the projected mass matrices in case of state constraints
+        ! (Moreau Yosida approach).
+        call assembleProjectedMassBlocksDual (rnonlinearSpatialMatrix,rtempMatrix, &
+            rvectorPrimal, rnonlinearSpatialMatrix%Dmass(2,1))        
 
         ! Co stabilisation in the convective parts here.
         ! rstabilisation = t_convecStabilisation(&
@@ -3301,6 +3070,7 @@ contains
       type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
       integer, dimension(:), pointer :: p_IelementList
       integer :: cstateConstraints
+      real(DP) :: dstateConstraintsReg
       type(t_scalarCubatureInfo) :: rcubatureInfo, rcubatureInfoAdapt
 
       ! Assemble A41/A52?
@@ -3312,6 +3082,7 @@ contains
       
       ! Determine how to assemble...
       cstateConstraints = rnonlinearSpatialMatrix%rdiscrData%rconstraints%cstateConstraints
+      dstateConstraintsReg = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg
         
       ! Calculate the usual mass matrix if conrol constraints are deactivated
       ! or if Newton is not active.
@@ -3340,29 +3111,29 @@ contains
           case (0)
             ! Constant bounds
           
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dweight,rmatrix%RmatrixBlock(1,1),&
-!                .false.,1.0_DP,rvector%RvectorBlock(1),&
-!                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dweight,rmatrix%RmatrixBlock(1,1),&
-!                .false.,1.0_DP,rvector%RvectorBlock(1),&
-!                SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dweight,rmatrix%RmatrixBlock(2,2),&
-!                .false.,1.0_DP,rvector%RvectorBlock(2),&
-!                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dweight,rmatrix%RmatrixBlock(2,2),&
-!                .false.,1.0_DP,rvector%RvectorBlock(2),&
-!                SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2)
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                dweight*dstateConstraintsReg,rmatrix%RmatrixBlock(1,1),&
+                .false.,1.0_DP,rvector%RvectorBlock(1),&
+                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                dweight*dstateConstraintsReg,rmatrix%RmatrixBlock(1,1),&
+                .false.,1.0_DP,rvector%RvectorBlock(1),&
+                -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                dweight*dstateConstraintsReg,rmatrix%RmatrixBlock(2,2),&
+                .false.,1.0_DP,rvector%RvectorBlock(2),&
+                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                dweight*dstateConstraintsReg,rmatrix%RmatrixBlock(2,2),&
+                .false.,1.0_DP,rvector%RvectorBlock(2),&
+                -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2)
 
           case default
             ! Not implemented.
@@ -3955,26 +3726,30 @@ contains
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
             case (0)
               ! Constant bounds
-              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),&
-                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),rcubatureInfo,&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
 
-              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),&
-                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),rcubatureInfo,&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(2),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
                   
             case (1)
               ! Variable bounds
-              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),&
-                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(1),rcubatureInfo,&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(1))
 
-              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),&
-                  rcubatureInfo,-rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
+              call nwder_rhsMinMaxProjByCubature (dcx,rd%RvectorBlock(2),rcubatureInfo,&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(2),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumax%RvectorBlock(2))
@@ -4009,6 +3784,7 @@ contains
               call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(1),&
                   -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
@@ -4016,6 +3792,7 @@ contains
               call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(2),&
                   -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
@@ -4025,6 +3802,7 @@ contains
               call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(1),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(1),&
                   -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(4),&
                   1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(1),&
@@ -4033,6 +3811,7 @@ contains
               call nwder_rhsMinMaxProjByMass (dcx,rd%RvectorBlock(2),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
+                  -rnonlinearSpatialMatrix%Dmass(1,2),rvectorDual%RvectorBlock(2),&
                   -rnonlinearSpatialMatrix%Dmass(1,2),rx%RvectorBlock(5),&
                   1.0_DP,1.0_DP,&
                   rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rvectorumin%RvectorBlock(2),&
@@ -4136,7 +3915,8 @@ contains
                   rd%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
-                  1.0_DP,rx%RvectorBlock(1),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(1),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(1),&
                   0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax1)
 
               call nwder_rhsMinMaxProjByMass (&
@@ -4145,7 +3925,8 @@ contains
                   rd%RvectorBlock(4),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
-                  1.0_DP,rx%RvectorBlock(1),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(1),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(1),&
                   -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin1)
 
               call nwder_rhsMinMaxProjByMass (&
@@ -4154,7 +3935,8 @@ contains
                   rd%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
-                  1.0_DP,rx%RvectorBlock(2),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(2),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(2),&
                   0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax2)
 
               call nwder_rhsMinMaxProjByMass (&
@@ -4163,7 +3945,8 @@ contains
                   rd%RvectorBlock(5),&
                   rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
                   rtempVectorX%RvectorBlock(1),&
-                  1.0_DP,rx%RvectorBlock(2),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(2),&
+                  1.0_DP,rvectorPrimal%RvectorBlock(2),&
                   -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin2)
                   
             case default
@@ -4192,26 +3975,11 @@ contains
             ! No constraints. Nothing to do.
             
           case (1)
-!            select case (rnonlinearSpatialMatrix%iprimalSol)
-!            case (1)
-!              call assembleDualUConstrMassDefect (&
-!                  rnonlinearSpatialMatrix,rx,&
-!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
-!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
-!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector1)
-!            case (2)
-!              call assembleDualUConstrMassDefect (&
-!                  rnonlinearSpatialMatrix,rx,&
-!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
-!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
-!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector2)
-!            case (3)
-!              call assembleDualUConstrMassDefect (&
-!                  rnonlinearSpatialMatrix,rx,&
-!                  rd,dcx*rnonlinearSpatialMatrix%Dmass(2,1)*&
-!                        rnonlinearSpatialMatrix%rdiscrData%rconstraints%dstateConstrReg,&
-!                  rnonlinearSpatialMatrix%p_rnonlinearity%p_rvector3)
-!            end select
+            ! Assemble the defect using the current nonlinearity.
+            call assembleDualUConstrMassDefect (&
+                rnonlinearSpatialMatrix,rx,&
+                rd,-dcx*rnonlinearSpatialMatrix%Dmass(2,1),&
+                rvectorPrimal)
 
           case default
             ! Not implemented.
@@ -5535,51 +5303,51 @@ contains
           case (0)
             ! Constant bounds
           
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dregularisation,rtempMatrix%RmatrixBlock(1,1),&
-!                .true.,&
-!                1.0_DP,rvelocityVector%RvectorBlock(1),&
-!                0.0_DP,SYS_MAXREAL_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax1)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dregularisation,rtempMatrix%RmatrixBlock(1,1),&
-!                .true.,&
-!                1.0_DP,rvelocityVector%RvectorBlock(1),&
-!                SYS_MAXREAL_DP,0.0_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin1)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dregularisation,rtempMatrix%RmatrixBlock(2,2),&
-!                .true.,&
-!                1.0_DP,rvelocityVector%RvectorBlock(2),&
-!                0.0_DP,SYS_MAXREAL_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax2)
-!
-!            call nwder_minMaxProjByMass (&
-!                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
-!                dregularisation,rtempMatrix%RmatrixBlock(2,2),&
-!                .true.,&
-!                1.0_DP,rvelocityVector%RvectorBlock(2),&
-!                SYS_MAXREAL_DP,0.0_DP,dwShift=-1.0_DP*rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin2)
-!
-!            call lsysbl_updateMatStrucInfo(rtempMatrix)
-!
-!            ! Create a temporary block vector that points to the dual velocity.
-!            ! This has to be evaluated during the assembly.
-!            call lsysbl_deriveSubvector (rvector,rtempvectorEval,1,2,.true.)
-!            
-!            ! Create a temporary block vector for the dual defect.
-!            ! Matrix*primal velocity is subtracted from this.
-!            call lsysbl_deriveSubvector (rdefect,rtempvectorDef,4,5,.true.)
-!
-!            ! Create the defect
-!            call lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, -dcx, 1.0_DP)
-!            
-!            ! Release memory
-!            call lsysbl_releaseVector (rtempvectorDef)
-!            call lsysbl_releaseVector (rtempvectorEval)
-!            call lsysbl_releaseMatrix (rtempMatrix)
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                1.0_DP,rtempMatrix%RmatrixBlock(1,1),&
+                .true.,&
+                1.0_DP,rvelocityVector%RvectorBlock(1),&
+                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax1)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                1.0_DP,rtempMatrix%RmatrixBlock(1,1),&
+                .true.,&
+                1.0_DP,rvelocityVector%RvectorBlock(1),&
+                -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin1)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                1.0_DP,rtempMatrix%RmatrixBlock(2,2),&
+                .true.,&
+                1.0_DP,rvelocityVector%RvectorBlock(2),&
+                0.0_DP,SYS_MAXREAL_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymax2)
+
+            call nwder_minMaxProjByMass (&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixMassVelocity,&
+                1.0_DP,rtempMatrix%RmatrixBlock(2,2),&
+                .true.,&
+                1.0_DP,rvelocityVector%RvectorBlock(2),&
+                -SYS_MAXREAL_DP,0.0_DP,dwShift=-rnonlinearSpatialMatrix%rdiscrData%rconstraints%dymin2)
+
+            call lsysbl_updateMatStrucInfo(rtempMatrix)
+
+            ! Create a temporary block vector that points to the dual velocity.
+            ! This has to be evaluated during the assembly.
+            call lsysbl_deriveSubvector (rvector,rtempvectorEval,1,2,.true.)
+            
+            ! Create a temporary block vector for the dual defect.
+            ! Matrix*primal velocity is subtracted from this.
+            call lsysbl_deriveSubvector (rdefect,rtempvectorDef,4,5,.true.)
+
+            ! Create the defect
+            call lsysbl_blockMatVec (rtempmatrix, rtempvectorEval, rtempvectorDef, dcx*dregularisation, 1.0_DP)
+            
+            ! Release memory
+            call lsysbl_releaseVector (rtempvectorDef)
+            call lsysbl_releaseVector (rtempvectorEval)
+            call lsysbl_releaseMatrix (rtempMatrix)
           
           case default
             ! Not implemented.

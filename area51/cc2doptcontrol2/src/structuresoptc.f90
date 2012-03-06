@@ -75,7 +75,7 @@ module structuresoptc
     type(t_anSolution), pointer :: p_rumin2 => null()
     type(t_anSolution), pointer :: p_rumax2 => null()
     
-    ! Discrete constraints for u_1
+    ! Discrete constraints for u_1, u_2
     type(t_vectorBlock), pointer :: p_rvectorumin => null()
     type(t_vectorBlock), pointer :: p_rvectorumax => null()
 
@@ -114,14 +114,18 @@ module structuresoptc
     type(t_anSolution), pointer :: p_rymin2 => null()
     type(t_anSolution), pointer :: p_rymax2 => null()
     
-    ! Discrete constraints for u_1
+    ! Discrete constraints for u_1, u_2
     type(t_vectorBlock), pointer :: p_rvectorymin => null()
     type(t_vectorBlock), pointer :: p_rvectorymax => null()
     
     
-    ! Time used for the evaluation of the analytical constraints
+    ! Time used for the evaluation of the analytical control constraints
     ! p_rumin1/2, p_rumax1/2.
-    real(DP) :: dconstrainsTime = 0.0_DP
+    real(DP) :: dstateConstrTime = 0.0_DP
+
+    ! Time used for the evaluation of the analytical state constraints
+    ! p_rymin1/2, p_rymax1/2.
+    real(DP) :: dcontrolConstrTime = 0.0_DP
     
   end type
   

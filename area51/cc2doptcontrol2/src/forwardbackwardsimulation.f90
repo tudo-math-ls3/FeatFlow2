@@ -947,9 +947,10 @@ contains
           nlmin, nlmax, cspace, rparamlist=rparlist, ssection=ssectionLinSol2)
     end if
         
-    ! Get the assembly data on our level that allows us to create nonlinear
+    ! Prepare an assembly data on our level that allows us to create nonlinear
     ! matrices.
-    call smva_getDiscrData (rsettings, nlmax, rsimsolver%rdiscrData, rphysics)
+    call stlin_initSpaceAssemblyFromGl (rsettings, nlmax, 0.0_DP,0.0_DP,&
+        rsimsolver%rdiscrData, rphysics)
         
   end subroutine
 
@@ -977,6 +978,9 @@ contains
       ! Release also the alternative preconditioner.
       call fbsim_donePreconditioner (rsimsolver%rpreconditionerAlternative)
     end if
+
+    ! Release assembly data
+    call stlin_doneSpaceAssembly (rsimsolver%rdiscrData)
 
   end subroutine
 
@@ -1227,10 +1231,10 @@ contains
       nullify(rpreconditioner%p_rboundaryConditions)
     end if
     
-    ! Get assembly data for nonlinear matrices on all levels.
+    ! Prepare assembly data for nonlinear matrices on all levels.
     allocate(rpreconditioner%p_RassemblyData(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
     do ilev=rpreconditioner%NLMIN,rpreconditioner%NLMAX
-      call smva_getDiscrData (rsettings, ilev, &
+      call stlin_initSpaceAssemblyFromGl (rsettings, ilev, 0.0_DP,0.0_DP,&
           rpreconditioner%p_RassemblyData(ilev))
     end do
         
@@ -2075,6 +2079,9 @@ contains
     nullify(rpreconditioner%p_rprjHierarchy)
     
     ! Release assembly data.
+    do ilev=rpreconditioner%NLMAX,rpreconditioner%NLMIN
+      call stlin_doneSpaceAssembly (rpreconditioner%p_RassemblyData(ilev))
+    end do
     deallocate(rpreconditioner%p_RassemblyData)
     
     ! Release matrices on each level

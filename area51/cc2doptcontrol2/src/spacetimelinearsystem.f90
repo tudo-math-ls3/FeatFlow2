@@ -11,8 +11,10 @@
 !#
 !# The routines in this module form the basic set of routines:
 !#
-!# 1.) stlin_initSpaceAssembly / stlin_doneSpaceAssembly
-!#     -> Create/release a space assembly structure for space-time matrices
+!# 1.) stlin_initSpaceAssembly / stlin_initSpaceAssemblyFromGl / 
+!#     stlin_doneSpaceAssembly
+!#     -> Initialises/Releases a space assembly structure from a space-time
+!#        assembly structure or from the global settings
 !#
 !# 2.) stlin_initSpaceTimeMatrix
 !#     -> Create a space-time matrix
@@ -211,6 +213,7 @@ module spacetimelinearsystem
   !use spacetimediscretisation
   !use timeboundaryconditions
   use spacematvecassembly
+  use structuresoptflow
   use user_callback
   
   use matrixio
@@ -356,6 +359,7 @@ module spacetimelinearsystem
   public :: stlin_initSpaceConstraints
   public :: stlin_doneSpaceConstraints
   public :: stlin_initSpaceAssembly
+  public :: stlin_initSpaceAssemblyFromGl
   public :: stlin_doneSpaceAssembly
   public :: stlin_spaceTimeMatVec
   public :: stlin_dampDualSolution
@@ -403,18 +407,24 @@ contains
   
 !<subroutine>
 
-  subroutine stlin_initSpaceConstraints (rspaceTimeConstr,dconstrainsTime,rspaceDiscrPrimal,rspaceConstr)
+  subroutine stlin_initSpaceConstraints (&
+      rspaceTimeConstr,dcontrolConstrTime,dstateConstrTime,rspaceDiscrPrimal,rspaceConstr)
 
 !<description>
   ! Creates a discrete version of the constraints at a specific point in time.
+  ! The routine can be called multiple times; every new call updates the
+  ! data in rspaceConstr.
 !</description>
 
 !<input>
   ! Space-time assembly structure.
   type(t_optcconstraintsSpaceTime), intent(in) :: rspaceTimeConstr
   
-  ! Current time where the constraints should be applied
-  real(DP), intent(in) :: dconstrainsTime
+  ! Current time where the control constraints should be applied
+  real(DP), intent(in) :: dcontrolConstrTime
+
+  ! Current time where the state constraints should be applied
+  real(DP), intent(in) :: dstateConstrTime
   
   ! Spatial discretisation structure of the primal space.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscrPrimal
@@ -448,23 +458,27 @@ contains
     rspaceConstr%ccontrolConstraintsType = &
         rspaceTimeConstr%ccontrolConstraintsType
 
-    rspaceConstr%dconstrainsTime = dconstrainsTime
+    rspaceConstr%dcontrolConstrTime = dcontrolConstrTime
 
     select case (rspaceConstr%ccontrolConstraints)
     case (1:)
       select case (rspaceConstr%ccontrolConstraintsType)
       case (1)
-        allocate(rspaceConstr%p_rvectorumin)
-        allocate(rspaceConstr%p_rvectorumax)
-
-        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumin,.true.)
-        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumax,.true.)
+        if (.not. associated(rspaceConstr%p_rvectorumin)) then
+          allocate(rspaceConstr%p_rvectorumin)
+          call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumin,.true.)
+        end if
+        
+        if (.not. associated(rspaceConstr%p_rvectorumax)) then
+          allocate(rspaceConstr%p_rvectorumax)
+          call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorumax,.true.)
+        end if
       
         call collct_init (rcollection)
 
         ! -----
         ! U1-min
-        call ansol_prepareEval (rspaceConstr%p_rumin1,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rumin1,rcollection,"SOL",dcontrolConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 1
@@ -477,7 +491,7 @@ contains
 
         ! -----
         ! U1-max
-        call ansol_prepareEval (rspaceConstr%p_rumax1,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rumax1,rcollection,"SOL",dcontrolConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 1
@@ -490,7 +504,7 @@ contains
 
         ! -----
         ! U2-min
-        call ansol_prepareEval (rspaceConstr%p_rumin2,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rumin2,rcollection,"SOL",dcontrolConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 2
@@ -503,7 +517,7 @@ contains
 
         ! -----
         ! U2-max
-        call ansol_prepareEval (rspaceConstr%p_rumax2,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rumax2,rcollection,"SOL",dcontrolConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 2
@@ -535,22 +549,27 @@ contains
         rspaceTimeConstr%cstateConstraintsType
 
     rspaceConstr%dstateConstrReg = rspaceTimeConstr%dstateConstrReg
+    rspaceConstr%dstateConstrTime = dstateConstrTime
     
     select case (rspaceConstr%cstateConstraints)
     case (1:)
       select case (rspaceConstr%cstateConstraintsType)
       case (1)
-        allocate(rspaceConstr%p_rvectorymin)
-        allocate(rspaceConstr%p_rvectorymax)
+        if (.not. associated(rspaceConstr%p_rvectorymin)) then
+          allocate(rspaceConstr%p_rvectorymin)
+          call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymin,.true.)
+        end if
 
-        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymin,.true.)
-        call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymax,.true.)
+        if (.not. associated(rspaceConstr%p_rvectorymax)) then
+          allocate(rspaceConstr%p_rvectorymax)
+          call lsysbl_createVectorBlock(rspaceDiscrPrimal,rspaceConstr%p_rvectorymax,.true.)
+        end if
       
         call collct_init (rcollection)
 
         ! -----
         ! U1-min
-        call ansol_prepareEval (rspaceConstr%p_rymin1,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rymin1,rcollection,"SOL",dstateConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 1
@@ -563,7 +582,7 @@ contains
 
         ! -----
         ! U1-max
-        call ansol_prepareEval (rspaceConstr%p_rymax1,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rymax1,rcollection,"SOL",dstateConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 1
@@ -576,7 +595,7 @@ contains
 
         ! -----
         ! U2-min
-        call ansol_prepareEval (rspaceConstr%p_rymin2,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rymin2,rcollection,"SOL",dstateConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 2
@@ -589,7 +608,7 @@ contains
 
         ! -----
         ! U2-max
-        call ansol_prepareEval (rspaceConstr%p_rymax2,rcollection,"SOL",dconstrainsTime)
+        call ansol_prepareEval (rspaceConstr%p_rymax2,rcollection,"SOL",dstateConstrTime)
 
         ! Set current dimension for the callback routine
         rcollection%IquickAccess(1) = 2
@@ -633,6 +652,16 @@ contains
       deallocate(rspaceConstr%p_rvectorumin)
       deallocate(rspaceConstr%p_rvectorumax)
     end if
+
+    if (associated(rspaceConstr%p_rvectorymin)) then
+      
+      ! Analytical constraints active. Release the discrete constraints.
+      call lsysbl_releaseVector(rspaceConstr%p_rvectorymin)
+      call lsysbl_releaseVector(rspaceConstr%p_rvectorymax)
+      
+      deallocate(rspaceConstr%p_rvectorymin)
+      deallocate(rspaceConstr%p_rvectorymax)
+    end if
   
   end subroutine
 
@@ -641,20 +670,25 @@ contains
 !<subroutine>
 
   subroutine stlin_initSpaceAssembly (rspaceTimeDiscr,rdebugFlags,&
-      dconstrainsTime,rspaceDiscr)
+      dcontrolConstrTime,dstateConstrTime,rspaceDiscr)
 
 !<description>
   ! Creates a space-assembly data structure from the space-time assembly
   ! data structure. If analytical constraints are active, the routine
   ! invokes an L2 projection to discretise the comnstraints!
+  ! The routine can be called multiple times; every new call updates the
+  ! data in rspaceDiscr.
 !</description>
 
 !<input>
   ! Space-time assembly structure.
   type(t_spaceTimeMatrixDiscrData), intent(in) :: rspaceTimeDiscr
   
-  ! Current time where the constraints should be applied
-  real(DP), intent(in) :: dconstrainsTime
+  ! Current time where the control constraints should be applied
+  real(DP), intent(in) :: dcontrolConstrTime
+
+  ! Current time where the state constraints should be applied
+  real(DP), intent(in) :: dstateConstrTime
   
   ! Debug flags
   type(t_optcDebugFlags), target :: rdebugFlags
@@ -682,8 +716,77 @@ contains
     rspaceDiscr%p_DobservationArea => rspaceTimeDiscr%p_DobservationArea
     
     ! Initialise the constraints.
-    call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,dconstrainsTime,&
+    call stlin_initSpaceConstraints (rspaceTimeDiscr%p_rconstraints,&
+        dcontrolConstrTime,dstateConstrTime,&
         rspaceTimeDiscr%p_rdiscrPrimal,rspaceDiscr%rconstraints)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine stlin_initSpaceAssemblyFromGl (&
+      rsettings, ilevel, dcontrolConstrTime, dstateConstrTime, rdiscrData, rphysics)
+  
+!<description>
+  ! Fetches all discretisation data from the main program structure that is
+  ! necessary to set up nonlinear matrices at a certain point in time.
+!</description>
+
+!<input>
+  ! The structure of the main solver
+  type(t_settings_optflow), intent(in), target :: rsettings
+  
+  ! Level where the discretisation takes place.
+  integer, intent(in) :: ilevel
+
+  ! Current time where the control constraints should be applied
+  real(DP), intent(in) :: dcontrolConstrTime
+
+  ! Current time where the state constraints should be applied
+  real(DP), intent(in) :: dstateConstrTime
+
+  ! OPTIONAL: Alternative physics definition to use.
+  ! If not present, the standard global physics settings are used.
+  type(t_settings_physics), intent(in), optional :: rphysics
+!</input>
+
+!<output>
+  ! Discretisation related data, can be used to generate nonlinear matrices.
+  type(t_spatialMatrixDiscrData), intent(out) :: rdiscrData
+!</output>
+
+!</subroutine>
+
+    ! Get level-independent data.
+    rdiscrData%rphysicsPrimal = rsettings%rphysicsPrimal
+    if (present(rphysics)) then
+      rdiscrData%rphysicsPrimal = rphysics
+    end if
+    rdiscrData%rsettingsSpaceDiscr = rsettings%rsettingsSpaceDiscr
+    rdiscrData%rstabilPrimal = rsettings%rstabilPrimal
+    rdiscrData%rstabilDual = rsettings%rstabilDual
+
+    rdiscrData%p_rdiscrPrimal => &
+        rsettings%rfeHierPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation
+
+    rdiscrData%p_rdiscrPrimalDual => &
+        rsettings%rfeHierPrimalDual%p_rfeSpaces(ilevel)%p_rdiscretisation
+    
+    rdiscrData%p_rstaticAsmTemplates => &
+        rsettings%rspaceAsmHierarchy%p_RasmTemplList(ilevel)
+
+    rdiscrData%p_rstaticAsmTemplatesOptC => &
+        rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ilevel)
+
+    rdiscrData%p_rdebugFlags => rsettings%rdebugFlags
+    
+    rdiscrData%p_DobservationArea => rsettings%rsettingsOptControl%p_DobservationArea
+
+    ! Initialise the constraints.
+    call stlin_initSpaceConstraints (rsettings%rsettingsOptControl%rconstraints,&
+        dcontrolConstrTime, dstateConstrTime,rdiscrData%p_rdiscrPrimal,rdiscrData%rconstraints)
 
   end subroutine
 
@@ -886,7 +989,7 @@ contains
     
     ! other local variables
     real(DP) :: dnewton
-    real(DP) :: dtstep,dtheta,dtmp
+    real(DP) :: dtstep,dtheta,dtmp,dtimePrimal,dtimeDual
     integer :: ipressureFullyImplicit,cthetaschemetype
     logical :: bconvectionExplicit
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -925,8 +1028,15 @@ contains
     p_rtimeDiscr => rspaceTimeMatrix%rdiscrData%p_rtimeDiscr
    
     dtheta = p_rtimeDiscr%dtheta
-    dtstep = p_rtimeDiscr%dtstep
     neqTime = tdiscr_igetNDofGlob(p_rtimeDiscr)
+    
+    ! The timestep length is directly taken from the structure.
+    dtstep = p_rtimeDiscr%dtstep
+
+    ! Get timestep and current time
+    call tdiscr_getTimestep(rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,ieqTime+irelpos,&
+        dtimePrimal)
+    dtimeDual = dtimePrimal - (1.0_DP-dtheta)*dtstep
 
     ! The 'old' one step scheme (indicated by ITAG=1) sets up a time discretisation
     ! with all solutions located in the points in time, not inbetween.
@@ -1246,29 +1356,11 @@ contains
             
       end if
       
-      ! The dumin/dumax parameters are the same for all equations.
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1 = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%dumin1
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1 = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%dumax1
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2 = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%dumin2
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2 = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%dumax2
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%ccontrolConstraints
+      ! Initialise/Update the constraints.
+      call stlin_initSpaceConstraints (rspaceTimeMatrix%rdiscrData%p_rconstraints,&
+          dtimeDual,dtimePrimal,rspaceTimeMatrix%rdiscrData%p_rdiscrPrimal,&
+          rnonlinearSpatialMatrix%rdiscrData%rconstraints)
 
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin1 => &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumin1
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax1 => &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumax1
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumin2 => &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumin2
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%p_rumax2 => &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%p_rumax2
-      rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType = &
-          rspaceTimeMatrix%rdiscrData%p_rconstraints%ccontrolConstraintsType
-    
     end select
     
     ! General parameters.
@@ -1554,7 +1646,7 @@ contains
       ! Get a space-assembly structure from our space-time assembly structure.
       ! Necessary for assembling matrices.
       call stlin_initSpaceAssembly (rspaceTimeMatrix%rdiscrData,&
-          rspaceTimeMatrix%p_rdebugFlags,dtimeDual,rspaceDiscr)
+          rspaceTimeMatrix%p_rdebugFlags,dtimeDual,dtimePrimal,rspaceDiscr)
       
       ! Get the part of rd which is to be modified.
       if (cy .ne. 0.0_DP) then
