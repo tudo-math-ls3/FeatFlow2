@@ -39,6 +39,10 @@
 !#      -> Adds a row to a matrix containing 'ones'. This implements the
 !#         explicit condition "int_{\Omega} v = 0" into a matrix.
 !#
+!#  5.) matfil_normaliseToL20LmassMat
+!#      -> Uses a lumoed mass matrix to impose the condition
+!#         "int_{\Omega} v = 0" into a matrix.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) matfil_imposeDirichletBC
@@ -59,6 +63,7 @@ module matrixfilters
 !$use omp_lib
   use fsystem
   use storage
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
   use discretebc
@@ -1090,4 +1095,104 @@ contains
   
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine matfil_normaliseToL20LmassMat (rmatrix,rlmassMat,irow)
+  
+!<description>
+  ! Modifies a scalar matrix to impose the equation 
+  ! <tex>$\int_{\Omega} v = 0$</tex> for all <tex>$v$</tex> by using a lumped
+  ! mass matrix. This replaces row irow of the matrix rmatrix by the
+  ! diagonal of the lumped mass matrix, which realises a weighted sum of
+  ! all degrees of freedom.
+  !
+  ! This filter can be used e.g. to impose the condition <tex>$\int_{\Omega} v = 0$</tex>
+  ! to a matrix which is passed to an external linear solver (like UMFPACK)
+  ! which cannot use filtering to cope with indefiniteness!
+!</description>
+
+!<input>
+  ! A lumped mass matrix in the same FEM space as rmatrix
+  type(t_matrixScalar), intent(in) :: rlMassMat
+
+  ! Row which should be replaced
+  integer, intent(in) :: irow
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+    
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da1, p_Da2
+    integer, dimension(:), pointer :: p_Kld, p_Kdiagonal
+    integer :: i,j
+    
+    ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
+    if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
+        iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) then
+      call output_line("A copied matrix cannot be modified!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
+        call sys_halt()
+    end if
+    
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line("Virtually transposed matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
+      call sys_halt()
+    end if
+    
+    select case (rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX9)
+      ! CSR format.
+      if ((rmatrix%cdataType .ne. ST_DOUBLE) .or. &
+          (rlMassMat%cdataType .ne. ST_DOUBLE)) then
+        call output_line("Unsupported data type",&
+            OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
+        call sys_halt()
+      end if
+      
+      ! Exoand the matrix structure if necessary.
+      call mmod_expandToFullRow (rmatrix,irow)
+      
+      ! Copy the diagonal entries of the lumped mass matrix
+      ! to rmatrix.
+      select case (rmatrix%cmatrixFormat)
+      case (LSYSSC_MATRIXD)
+        ! Get the data arrays
+        call lsyssc_getbase_double (rlMassMat,p_Da1)
+        call lsyssc_getbase_double (rmatrix,p_Da2)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        
+        ! Copy the entries
+        call lalg_copyVector (p_Da1,p_Da2(p_Kld(irow):),rmatrix%NEQ)
+        
+      case (LSYSSC_MATRIX9)
+
+        ! Get the data arrays
+        call lsyssc_getbase_double (rlMassMat,p_Da1)
+        call lsyssc_getbase_double (rmatrix,p_Da2)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        call lsyssc_getbase_Kdiagonal (rlMassMat,p_Kdiagonal)
+        
+        ! Copy the entries
+        j = p_Kld(irow)-1
+        do i=1,rmatrix%NEQ
+          p_Da2(j+i) = p_Da1(p_Kdiagonal(i))
+        end do
+
+      end select
+
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
+    end select
+
+  end subroutine
+  
 end module

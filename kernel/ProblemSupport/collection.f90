@@ -730,6 +730,22 @@ module collection
     ! USER DEFINED:
     ! A quick access pointer to a vector.
     type(t_vectorBlock), pointer :: p_rvectorQuickAccess4 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess5 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess6 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess7 => null()
+
+    ! USER DEFINED:
+    ! A quick access pointer to a vector.
+    type(t_vectorBlock), pointer :: p_rvectorQuickAccess8 => null()
     
     ! USER DEFINED:
     ! A quick access pointer to a matrix.

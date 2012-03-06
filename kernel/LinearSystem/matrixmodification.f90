@@ -25,6 +25,9 @@
 !#
 !# 5.) mmod_replaceLinesByUnitBlk
 !#     -> Replaces some rows in a block matrix by unit vectors
+!#
+!# 6.) mmod_expandToFullRow
+!#     -> Expands one row of a matrix to a full row
 !# </purpose>
 !##############################################################################
 
@@ -33,6 +36,7 @@ module matrixmodification
 !$use omp_lib
   use fsystem
   use storage
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
   use genoutput
@@ -46,6 +50,7 @@ module matrixmodification
   public :: mmod_clearOffdiags
   public :: mmod_mergeLines
   public :: mmod_replaceLinesByUnitBlk
+  public :: mmod_expandToFullRow
 
 contains
  
@@ -1267,4 +1272,188 @@ contains
     
   end subroutine
     
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mmod_expandToFullRow (rmatrix,irow)
+  
+!<description>
+    ! Expands one row of a matrix to a 'full' row.
+    ! For Full matrices, this has no effect.
+    ! For sparse matrices, row irow is expanded to a full row.
+    ! If data is present in the matrix, it is appropriately re-organised.
+!</description>
+
+!<input>
+    ! Row number of a row to be expanded to a full row.-
+    integer, intent(in) :: irow
+!</input>
+
+!<inputoutput>
+    ! The matrix which is to be modified.
+    type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
+    real(DP), dimension(:), pointer :: p_Da
+    integer :: ncol,icoldiff
+
+    ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
+    if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
+        iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) then
+      call output_line("A copied matrix cannot be modified!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+        call sys_halt()
+    end if
+    
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line("Virtually transposed matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+      call sys_halt()
+    end if
+    
+    select case (rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX1)
+      ! Full matrix, nothing to be done.
+      
+    case (LSYSSC_MATRIX9)
+      ! CSR format.
+      
+      ! Get the row pointer. Figure out the number of elements
+      ! in row irow.
+      call lsyssc_getbase_Kld (rmatrix,p_Kld)
+      ncol = p_Kld(irow+1)-p_Kld(irow)
+      icoldiff = rmatrix%NCOLS - ncol
+      
+      if (icoldiff .gt. 0) then
+
+        ! We have to expand; reallocate memory.
+
+        call storage_realloc ("mmod_expandToFullRow",&
+            rmatrix%NA+icoldiff,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+
+        ! Restructure the Kcol array, move the data.
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
+            p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
+            
+        ! Restructure the data if there is any
+        if (lsyssc_hasMatrixContent(rmatrix)) then
+
+          if (rmatrix%cdataType .ne. ST_DOUBLE) then
+            call output_line("Unsupported data type",&
+                OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+            call sys_halt()
+          end if
+
+          call storage_realloc ("mmod_expandToFullRow",&
+              rmatrix%NA+icoldiff,rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+              
+          ! Move the data
+          call lsyssc_getbase_double (rmatrix,p_Da)
+          call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
+              p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
+          
+        end if
+
+        ! Restructure the Kld array.
+        call lalg_vectorAddScalar(p_Kld(irow+1:rmatrix%NEQ+1),icoldiff)
+        
+        ! Restructure the Kdiagonal array.
+        ! icoldiff must be added to the entry of row irow+1,... end,
+        ! and the entry of row irow has to be calculated appropriately.
+        call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+        call lalg_vectorAddScalar(p_Kdiagonal(irow+1:rmatrix%NEQ+1),icoldiff)
+        p_Kdiagonal(irow) = p_Kld(irow) + irow - 1
+
+        ! Fix the matrix size
+        rmatrix%NA = rmatrix%NA+icoldiff
+                
+      end if
+
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+      call sys_halt()
+    end select
+
+  contains
+  
+  ! ***************************************************************************
+
+    subroutine copyVectorInt (Ix,Iy,n)
+    
+    ! Copies an integer vector Ix: Iy = Ix.
+    ! Copies backwards; used to copy parts in a vector
+    ! to a higher address.
+
+    ! Source vector
+    integer, dimension(:), intent(in) :: Ix
+
+    ! OPTIONAL: Size of the vector
+    integer, intent(in), optional :: n
+
+    ! Destination vector
+    integer, dimension(:), intent(out) :: Iy
+
+    integer :: i
+    
+      if (.not. present(n)) then
+      
+        do i = size(Ix),1,-1
+          Iy(i) = Ix(i)
+        end do
+        
+      else
+
+        do i =  n,1,-1
+          Iy(i) = Ix(i)
+        end do
+        
+      end if
+
+    end subroutine
+
+
+  ! ***************************************************************************
+
+    subroutine copyVectorDble (Dx,Dy,n)
+    
+    ! Copies an integer vector Dx: Dy = Dx.
+    ! Copies backwards; used to copy parts in a vector
+    ! to a higher address.
+
+    ! Source vector
+    real(DP), dimension(:), intent(in) :: Dx
+
+    ! OPTIONAL: Size of the vector
+    integer, intent(in), optional :: n
+
+    ! Destination vector
+    real(DP), dimension(:), intent(out) :: Dy
+
+    integer :: i
+    
+      if (.not. present(n)) then
+      
+        do i = size(Dx),1,-1
+          Dy(i) = Dx(i)
+        end do
+        
+      else
+
+        do i =  n,1,-1
+          Dy(i) = Dx(i)
+        end do
+        
+      end if
+
+    end subroutine
+
+  end subroutine
+
 end module matrixmodification
