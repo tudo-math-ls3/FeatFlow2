@@ -1481,15 +1481,16 @@ contains
 !<subroutine>
 
   subroutine stlin_spaceTimeMatVec (rspaceTimeMatrix, rx, rd, cx, cy, &
-      cfilter, dnorm, rboundaryConditions, bprintRes)
+      cfilter, dnorm, rboundaryConditions, bprintRes,&
+      cx2, rx2)
 
 !<description>
   ! This routine performs a matrix-vector multiplication with the
   ! system matrix A defined by rspaceTimeMatrix.
-  !    rd  :=  cx A(p_rsolution) rx  +  cy rd
+  !    rd  :=  cx A(p_rsolution + cx2 * rx2) rx  +  cy rd
   ! If rspaceTimeMatrix does not specify an evaluation point for th nonlinearity
   ! in A(.), the routine calculates
-  !    rd  :=  cx A(rx) rx  +  cy rd
+  !    rd  :=  cx A(rx + cx2 * rx2) rx  +  cy rd
   ! rd is overwritten by the result.
 !</description>
 
@@ -1498,7 +1499,7 @@ contains
   type(t_ccoptSpaceTimeMatrix), intent(inout) :: rspaceTimeMatrix
 
   ! A space-time vector defining the current solution.
-  type(t_spacetimeVector), intent(IN) :: rx
+  type(t_spacetimeVector), intent(in) :: rx
   
   ! Type of filter to apply to the vectors. A combination of SPTID_FILTER_xxxx
   ! flags that specifies which type of filter is to be applied to the
@@ -1511,18 +1512,24 @@ contains
   
   ! If set to TRUE and dnorm is present, too, the residuals are printed to the
   ! terminal.
-  logical, intent(IN), optional :: bprintRes
+  logical, intent(in), optional :: bprintRes
 !</input>
 
 !<inputoutput>
   ! A second space-time vector.
-  type(t_spacetimeVector), intent(INOUT) :: rd
+  type(t_spacetimeVector), intent(inout) :: rd
   
   ! Multiplication factor for rx
-  real(DP), intent(IN) :: cx
+  real(DP), intent(in) :: cx
   
   ! Multiplication factor for rd
-  real(DP), intent(IN) :: cy
+  real(DP), intent(in) :: cy
+  
+  ! OPTIONAL: Multiplication factor for rx2
+  real(DP), intent(in), optional :: cx2
+  
+  ! OPTIONAL: Correction vector
+  type(t_spacetimeVector), intent(in), optional :: rx2
 !</inputoutput>
 
 !<output>
@@ -1539,6 +1546,7 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_vectorBlock), dimension(3) :: rtempVector
     type(t_vectorBlock), dimension(3), target :: rtempVectorEval
+    type(t_vectorBlock) :: rtempVector2
     type(t_blockDiscretisation), pointer :: p_rdiscr
     real(DP) :: dnormpart
     type(t_matrixBlock) :: rblockTemp
@@ -1581,18 +1589,8 @@ contains
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(2),.false.)
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(3),.false.)
     
-    ! Get the parts of the X-vector which are to be modified at first --
-    ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
-    ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
-    call sptivec_getTimestepData(rx, 1+0, rtempVector(2))
+    call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector2,.false.)
     
-    ! If necesary, multiply the rtempVectorX. We have to take a -1 into
-    ! account as the actual matrix multiplication routine smva_assembleDefect
-    ! introduces another -1!
-    if (cx .ne. -1.0_DP) then
-      call lsysbl_scaleVector (rtempVector(2),-cx)
-    end if
-      
     ! Now what's the evaluation point where to evaluate the nonlinearity/ies?
     ! If the structure defines an evaluation point, we take that one, so
     ! we need another temp vector that holds the evaluation point.
@@ -1611,13 +1609,67 @@ contains
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     end if
     
-    ! If a nonlinearity is involved, rtempVectorEval(1) contains the 'previous',
-    ! rtempVectorEval(2) the 'current' and rtempVectorEval(3) the 'next'
-    ! solution (relative to the current time step) where to evaluate
-    ! the nonlinearity.
-    if (associated(rspaceTimeMatrix%p_rsolution)) then
+    if (.not. associated(rspaceTimeMatrix%p_rsolution)) then
+      
+      ! Get the parts of the X-vector which are to be modified at first --
+      ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
+      ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
+      call sptivec_getTimestepData(rx, 1+0, rtempVector(2))
+      
+      ! If necessary, include the correction
+      if (present(rx2)) then
+        call sptivec_getTimestepData(rx2,1+0, rtempVector2)
+        if (.not. present(cx2)) then
+          call output_line ("Multiplication factor cx2 not specified!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"stlin_spaceTimeMatVec")
+          call sys_halt()
+        end if
+        
+        call lsysbl_vectorLinearComb (rtempVector2,rtempVector(2),cx2,1.0_DP)
+      end if
+      
+      ! If necesary, multiply the rtempVectorX. We have to take a -1 into
+      ! account as the actual matrix multiplication routine smva_assembleDefect
+      ! introduces another -1!
+      if (cx .ne. -1.0_DP) then
+        call lsysbl_scaleVector (rtempVector(2),-cx)
+      end if
+
+    else
+    
+      ! Get the parts of the X-vector which are to be modified at first --
+      ! subvector 1, 2 and 3. rtempVector(1) contains the 'previous' solution,
+      ! rtempVector(2) the 'current' and rtempVector(3) the 'next' one.
+      call sptivec_getTimestepData(rx, 1+0, rtempVector(2))
+      
+      ! If necesary, multiply the rtempVectorX. We have to take a -1 into
+      ! account as the actual matrix multiplication routine smva_assembleDefect
+      ! introduces another -1!
+      if (cx .ne. -1.0_DP) then
+        call lsysbl_scaleVector (rtempVector(2),-cx)
+      end if
+
+      ! If a nonlinearity is involved, rtempVectorEval(1) contains the 'previous',
+      ! rtempVectorEval(2) the 'current' and rtempVectorEval(3) the 'next'
+      ! solution (relative to the current time step) where to evaluate
+      ! the nonlinearity.
+
       call sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
           1+0, rtempVectorEval(2))
+
+      ! If necessary, include the correction.
+      ! This is only incorporated into the nonlinearity, not into rx.
+      if (present(rx2)) then
+        call sptivec_getTimestepData(rx2,1+0, rtempVector2)
+        if (.not. present(cx2)) then
+          call output_line ("Multiplication factor cx2 not specified!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"stlin_spaceTimeMatVec")
+          call sys_halt()
+        end if
+        
+        call lsysbl_vectorLinearComb (rtempVector2,rtempVectorEval(2),cx2,1.0_DP)
+      end if
+      
     end if
     
     ! DEBUG!!!
@@ -1673,19 +1725,47 @@ contains
         ! Read the solution of the 'next' timestep and the 'next' evaluation
         ! point.
 
-        call sptivec_getTimestepData(rx, ieqTime+1, rtempVector(3))
+        if (.not. associated(rspaceTimeMatrix%p_rsolution)) then
+          
+          call sptivec_getTimestepData(rx, ieqTime+1, rtempVector(3))
 
-        ! If necesary, multiply the rtempVectorX. We have to take a -1 into
-        ! account as the actual matrix multiplication routine smva_assembleDefect
-        ! introduces another -1!
-        if (cx .ne. -1.0_DP) then
-          call lsysbl_scaleVector (rtempVector(3),-cx)
-        end if
+          ! If necessary, include the correction
+          if (present(rx2)) then
+            call sptivec_getTimestepData(rx2,ieqTime+1, rtempVector2)
+            call lsysbl_vectorLinearComb (rtempVector2,rtempVector(3),cx2,1.0_DP)
+          end if
 
-        if (associated(rspaceTimeMatrix%p_rsolution)) then
+          ! If necesary, multiply the rtempVectorX. We have to take a -1 into
+          ! account as the actual matrix multiplication routine smva_assembleDefect
+          ! introduces another -1!
+          if (cx .ne. -1.0_DP) then
+            call lsysbl_scaleVector (rtempVector(3),-cx)
+          end if
+          
+        else
+        
+          ! Nonlinearity specified. The correction is only included into the
+          ! nonlinearity.
+
+          call sptivec_getTimestepData(rx, ieqTime+1, rtempVector(3))
+
+          ! If necesary, multiply the rtempVectorX. We have to take a -1 into
+          ! account as the actual matrix multiplication routine smva_assembleDefect
+          ! introduces another -1!
+          if (cx .ne. -1.0_DP) then
+            call lsysbl_scaleVector (rtempVector(3),-cx)
+          end if
+
+          ! Get the nonlinearity          
           call sptivec_getTimestepData(rspaceTimeMatrix%p_rsolution, &
               ieqTime+1, rtempVectorEval(3))
 
+          ! If necessary, include the correction
+          if (present(rx2)) then
+            call sptivec_getTimestepData(rx2,ieqTime+1, rtempVector2)
+            call lsysbl_vectorLinearComb (rtempVector2,rtempVectorEval(3),cx2,1.0_DP)
+          end if
+          
         end if
 
       end if
@@ -1980,6 +2060,7 @@ contains
     call lsysbl_releaseVector (rtempVector(2))
     call lsysbl_releaseVector (rtempVector(1))
     call lsysbl_releaseVector (rtempVectorD)
+    call lsysbl_releaseVector (rtempVector2)
     
     ! Release the BC's again.
     call bcasm_releaseDiscreteFBC(rdiscreteFBC)

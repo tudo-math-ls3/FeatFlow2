@@ -346,6 +346,254 @@ contains
   
 !<subroutine>
 
+  subroutine nlstslv_getStepSizeArmijoLog (rsettings,ioutputLevel,&
+      rmatrix,rcurrentVector,rdirection,rrhs,&
+      dminDescent,dminStep,dmaxStep,&
+      doldResidual,dstep)
+  
+!<description>
+  ! This routine calculates a step length for the minimisation based
+  ! on the Armijo rule using halfening the step size.
+!</description>
+
+!<input>
+  ! Settings structure with global parametes.
+  type(t_settings_optflow), intent(inout) :: rsettings
+
+  ! Current output level
+  integer, intent(in) :: ioutputLevel
+  
+  ! Matrix that specifies the operator
+  type(t_ccoptSpaceTimeMatrix) :: rmatrix
+
+  ! Current evaluation point of the nonlinearity
+  type(t_spacetimeVector), intent(in) :: rcurrentVector
+  
+  ! Search direction
+  type(t_spacetimeVector), intent(in) :: rdirection
+
+  ! RHS-vector
+  type(t_spacetimeVector), intent(in) :: rrhs
+
+  ! Minimum descent parameter; specifies the minimum relative
+  ! descent, e.g. 1E-4
+  real(DP), intent(in) :: dminDescent
+  
+  ! Minimum step length
+  real(DP), intent(in) :: dminStep
+
+  ! Maximum step length
+  real(DP), intent(in) :: dmaxStep
+  
+  ! Norm of the old residual (based on rcurrentVector)
+  real(DP), intent(in) :: doldResidual
+!</input>
+
+!<inputoutput>
+  ! Step length to use.
+  real(DP), intent(out) :: dstep
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_ccoptSpaceTimeMatrix) :: rtestmatrix
+    real(DP) :: dnewResidual
+    type(t_spacetimeVector) :: rtempVector
+
+    ! Initialise the step length by 1.0 -- or the
+    ! maximum allowed step length
+    dstep = max(dminStep,min(1.0_DP,dmaxStep))
+    
+    if (dminStep .ge. dmaxStep) then
+      ! Use that step length, nothing to calculate
+      return
+    end if
+    
+    ! Set up a new matrix based on rtestmatrix
+    rtestMatrix = rmatrix
+    
+    ! The evaluation point (nonlinearity) is the input vector.
+    nullify(rtestMatrix%p_rsolution)
+    
+    ! Loop to check the residual and the minimum step size.
+    do
+      ! Step length less than smalles allowed step size?
+      if (dstep .lt. dminStep) then
+        ! Use that step length.
+        dstep = dminStep
+        exit
+      end if
+      
+      if (ioutputLevel .ge. 2) then
+        call output_line ("Armijo: Probing step length dstep = "//&
+            trim(sys_sdEP(dstep,20,10)))
+      end if
+      
+      ! Get the new residual if calculated with step length dstep.
+      ! Create a new vector rtempVector with a temporary residual.
+      call sptivec_copyVector (rrhs,rtempVector)
+      call stlin_spaceTimeMatVec (rtestmatrix, rcurrentVector, rtempVector, &
+          -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
+          dnewResidual,rsettings%roptcBDC,.false.,dstep,rdirection)
+      
+      ! Check if the new residual is acceptable; sufficient
+      ! decrease condition in the Armijo step length control.
+      if (dnewResidual .lt. (1.0_DP - dstep*dminDescent)*doldResidual) then
+        ! We found the step length
+        exit
+      end if
+      
+      ! Otherwise, calculate the new step length by halfening the current one.
+      dstep = 0.5_DP * dstep
+      
+    end do
+    
+    ! Release memory
+    if (rtempVector%NEQtime .ne. 0) then
+      call sptivec_releaseVector(rtempVector)
+    end if
+    
+    if (ioutputLevel .ge. 1) &
+      call output_line ("Armijo: Using step length dstep   = "//&
+          trim(sys_sdEP(dstep,20,10)))
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine nlstslv_getStepSizeArmijoQP (rsettings,ioutputLevel,&
+      rmatrix,rcurrentVector,rdirection,rrhs,&
+      dminDescent,dminRedFactor,dmaxRedFactor,dminStep,dmaxStep,&
+      doldResidual,dstep)
+  
+!<description>
+  ! This routine calculates a step length for the minimisation based
+  ! on the Armijo rule using the minimisation of a 1D quadratic polynomial.
+!</description>
+
+!<input>
+  ! Settings structure with global parametes.
+  type(t_settings_optflow), intent(inout) :: rsettings
+
+  ! Current output level
+  integer, intent(in) :: ioutputLevel
+  
+  ! Matrix that specifies the operator
+  type(t_ccoptSpaceTimeMatrix) :: rmatrix
+
+  ! Current evaluation point of the nonlinearity
+  type(t_spacetimeVector), intent(in) :: rcurrentVector
+  
+  ! Search direction
+  type(t_spacetimeVector), intent(in) :: rdirection
+
+  ! RHS-vector
+  type(t_spacetimeVector), intent(in) :: rrhs
+
+  ! Minimum descent parameter; specifies the minimum relative
+  ! descent, e.g. 1E-4
+  real(DP), intent(in) :: dminDescent
+  
+  ! Minimum reduction factor for the step length; e.g. 0.1
+  real(DP), intent(in) :: dminRedFactor
+
+  ! Maximum reduction factor for the step length; e.g. 0.9
+  real(DP), intent(in) :: dmaxRedFactor
+
+  ! Minimum step length
+  real(DP), intent(in) :: dminStep
+
+  ! Maximum step length
+  real(DP), intent(in) :: dmaxStep
+  
+  ! Norm of the old residual (based on rcurrentVector)
+  real(DP), intent(in) :: doldResidual
+!</input>
+
+!<inputoutput>
+  ! Step length to use.
+  real(DP), intent(out) :: dstep
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_ccoptSpaceTimeMatrix) :: rtestmatrix
+    real(DP) :: dnewResidual
+    real(DP) :: dsteptemp
+    type(t_spacetimeVector) :: rtempVector
+
+    ! Initialise the step length by 1.0 -- or the
+    ! maximum allowed step length
+    dstep = max(dminStep,min(1.0_DP,dmaxStep))
+    
+    if (dminStep .ge. dmaxStep) then
+      ! Use that step length, nothing to calculate
+      return
+    end if
+    
+    ! Set up a new matrix based on rtestmatrix
+    rtestMatrix = rmatrix
+    
+    ! The evaluation point (nonlinearity) is the input vector.
+    nullify(rtestMatrix%p_rsolution)
+    
+    ! Loop to check the residual and the minimum step size.
+    do
+      ! Step length less than smalles allowed step size?
+      if (dstep .lt. dminStep) then
+        ! Use that step length.
+        dstep = dminStep
+        exit
+      end if
+      
+      if (ioutputLevel .ge. 2) then
+        call output_line ("Armijo: Probing step length dstep = "//&
+            trim(sys_sdEP(dstep,20,10)))
+      end if
+      
+      ! Get the new residual if calculated with step length dstep.
+      ! Create a new vector rtempVector with a temporary residual.
+      call sptivec_copyVector (rrhs,rtempVector)
+      call stlin_spaceTimeMatVec (rtestmatrix, rcurrentVector, rtempVector, &
+          -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
+          dnewResidual,rsettings%roptcBDC,.false.,dstep,rdirection)
+      
+      ! Check if the new residual is acceptable; sufficient
+      ! decrease condition in the Armijo step length control.
+      if (dnewResidual .lt. (1.0_DP - dstep*dminDescent)*doldResidual) then
+        ! We found the step length
+        exit
+      end if
+      
+      ! Otherwise, calculate the new step length based
+      ! on the minimisation of a 1D quadratic polynomial.
+      ! The step length change is bounded by the reduction factors.
+      dsteptemp = (doldResidual**2 * dstep**2) / &
+                  (dnewResidual**2 + (2.0_DP*dstep-1.0_DP) * doldResidual**2)
+                
+      dstep = max(dminRedFactor*dstep , min(dmaxRedFactor*dstep, dsteptemp))
+      
+    end do
+    
+    ! Release memory
+    if (rtempVector%NEQtime .ne. 0) then
+      call sptivec_releaseVector(rtempVector)
+    end if
+    
+    if (ioutputLevel .ge. 1) &
+      call output_line ("Armijo: Using step length dstep   = "//&
+          trim(sys_sdEP(dstep,20,10)))
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine nlstslv_solve (rsettings,rnlstsolver,rpostproc,rx,rb,rd)
   
 !<description>
@@ -380,7 +628,7 @@ contains
 
     ! local variables
     integer :: nlevels, ierror, ilev
-    real(dp) :: dinitDefNorm,ddefNorm,dlastDefNorm,dtempdef,delapsedReal
+    real(dp) :: dinitDefNorm,ddefNorm,dlastDefNorm,dtempdef,delapsedReal,dstep
     real(DP), dimension(5) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
     logical :: bnewtonAllowed, breassembleStructure
     
@@ -430,8 +678,9 @@ contains
         rmatrix,MATT_OPTCONTROL,rdiscrData,rx,rsptiNeumannBC,rsptiDirichletBCC,&
         rsettings%rglobalData,rsettings%rdebugFlags)
     
-    ! ---------------------------------------------------------------
+    ! #########################
     ! Create the initial defect
+    ! #########################
     call output_line ('NLST-Solver: Assembling the initial defect...')
 
     ! Create the actual RHS (including the BC's) in rd and assemble the defect.
@@ -455,16 +704,16 @@ contains
     if (rnlstsolver%ioutputLevel .ge. 1) &
       call output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
 
-    ! ---------------------------------------------------------------
+    ! #########################################################
+    ! Initialise the preconditioner for the nonlinear iteration
+    ! #########################################################
+
     ! Check if the Newton is allowed. This is the case if the
     ! max. number of fixed point iterations is > 0 => 1st iteration is
     ! fixed point.
     
     bnewtonAllowed = rnlstsolver%nmaxFixedPointIterations .eq. 0
 
-    ! ---------------------------------------------------------------
-    ! Start the nonlinear iteration
-    
     ! Initialise Neumann boundary conditions.
     call nlstslv_assembleNeumannBC (rsettings,rnlstsolver%p_rsptiNeumannBC)
 
@@ -507,6 +756,10 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'nlstslv_solve')
       call sys_halt()
     end if
+
+    ! #########################################################
+    ! Invoke the Nonlinear loop
+    ! #########################################################
 
     ! Here we go...
 
@@ -552,6 +805,10 @@ contains
       end if
                   
       rnlstsolver%nnonlinearIterations = rnlstsolver%nnonlinearIterations+1
+      
+      ! ###################################
+      ! Set up the inexact Newton iteration
+      ! ###################################
       
       if (rnlstsolver%ctypeNonlinearIteration .eq. CCNLS_INEXACTNEWTON) then
       
@@ -678,6 +935,10 @@ contains
         call output_separator (OU_SEP_EQUAL)
       end if
             
+      ! ################################################
+      ! Set up the preconditioner. Newton or fixed point
+      ! ################################################
+
       ! Preconditioning of the defect: d=C^{-1}d
       !
       ! Re-initialise the preconditioner matrices on all levels.
@@ -775,6 +1036,10 @@ contains
         call sys_halt()
       end if
 
+      ! ############################################
+      ! Invole the linear solver for preconditioning
+      ! ############################################
+
       call stat_clearTimer (rtimerMGStep)
       call stat_startTimer (rtimerMGStep)
       call sptils_precondDefect (rnlstsolver%p_rspaceTimePrec,rd)
@@ -784,6 +1049,45 @@ contains
       
       if (rnlstsolver%ioutputLevel .ge. 1) &
         call output_lbrk ()
+        
+      ! ##############################
+      ! Invole the step length control
+      ! ##############################
+      
+      if (rnlstSolver%ioutputLevel .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+      end if
+      
+      select case (rnlstsolver%rstepLengthControl%cstepLengthControl)
+      case (1)
+        ! Armijo step length control based on halfening the step length
+        call nlstslv_getStepSizeArmijoLog (rsettings,rnlstSolver%ioutputLevel,&
+              rmatrix,rx,rd,rb,&
+              rnlstsolver%rstepLengthControl%dminDescent,&
+              rnlstsolver%rstepLengthControl%dminStep,&
+              rnlstsolver%rstepLengthControl%dmaxStep,&
+              ddefNorm,dstep)        
+      case (2)
+        ! Armijo step length control based on a quadratic polynomial
+        call nlstslv_getStepSizeArmijoQP (rsettings,rnlstSolver%ioutputLevel,&
+              rmatrix,rx,rd,rb,&
+              rnlstsolver%rstepLengthControl%dminDescent,&
+              rnlstsolver%rstepLengthControl%dminRedFactor,&
+              rnlstsolver%rstepLengthControl%dmaxRedFactor,&
+              rnlstsolver%rstepLengthControl%dminStep,&
+              rnlstsolver%rstepLengthControl%dmaxStep,&
+              ddefNorm,dstep)        
+      case default
+        ! No step length control
+        dstep = 1.0_DP
+      end select
+      
+      if (rnlstSolver%ioutputLevel .ge. 1) then
+        call output_line ("Step length control: Chosen step length = "//&
+            trim(sys_sdEP(rnlstsolver%domega*dstep,20,10)))
+        call output_separator (OU_SEP_MINUS)
+        call output_lbrk ()
+      end if
 
       ! Count the number of linear iterations and the time for
       ! preconditioning
@@ -854,7 +1158,13 @@ contains
             sys_sdL(rnlstsolver%p_rspaceTimePrec%rtimeSpaceMatrixAssembly%delapsedReal,10))
       end if
 
-      call sptivec_vectorLinearComb (rd,rx,rnlstsolver%domega,1.0_DP)
+      ! #########################
+      ! Calculate the new iterate
+      ! #########################
+
+      ! Incorporate the correction to the solution, weighted by the
+      ! step length.
+      call sptivec_vectorLinearComb (rd,rx,rnlstsolver%domega*dstep,1.0_DP)
       
       ! Normalise the primal and dual pressure to integral mean value zero
       ! where no Neumann boundary is present.
@@ -865,6 +1175,10 @@ contains
       
       call output_separator (OU_SEP_EQUAL)
       if (rnlstsolver%ioutputLevel .ge. 2) call output_line('Nonlinear defect:')
+
+      ! ##################################
+      ! Calculate the new nonlinear defect
+      ! ##################################
 
       ! Assemble the new defect: d=b-Ax
       call sptivec_copyVector (rb,rd)

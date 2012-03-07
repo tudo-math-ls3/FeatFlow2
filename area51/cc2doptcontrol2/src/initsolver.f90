@@ -2591,7 +2591,7 @@ contains
 !</subroutine>
 
     character(len=SYS_STRLEN) :: sstr,sstrSmoother,sstrSmootherPrec
-    character(len=SYS_STRLEN) :: sstrSgrSolver,sstrSgrPrecond
+    character(len=SYS_STRLEN) :: sstrSgrSolver,sstrSgrPrecond,sstrStepLengthControl
     type(t_settings_nlstprec) :: rsettingsPrecond
     integer :: cpreconditioner
 
@@ -2680,40 +2680,65 @@ contains
     
     ! Get parameters that configure the iteration.
     call parlst_getvalue_int (rparlist,ssection,&
-        'ctypeNonlinearIteration',rnlstsolver%ctypeNonlinearIteration,1)
+        "ctypeNonlinearIteration",rnlstsolver%ctypeNonlinearIteration,1)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'cpostprocessIterates',rnlstsolver%cpostprocessIterates,0)
+        "cpostprocessIterates",rnlstsolver%cpostprocessIterates,0)
 
     call parlst_getvalue_int (rparlist, ssection, &
-        'nminIterations', rnlstsolver%nminIterations, 1)
+        "nminIterations", rnlstsolver%nminIterations, 1)
     
     call parlst_getvalue_int (rparlist, ssection, &
-        'nmaxIterations', rnlstsolver%nmaxIterations, 10)
+        "nmaxIterations", rnlstsolver%nmaxIterations, 10)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'depsRel', rnlstsolver%depsRel, 1E-5_DP)
+        "depsRel", rnlstsolver%depsRel, 1E-5_DP)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'depsAbs', rnlstsolver%depsAbs, 1E-5_DP)
+        "depsAbs", rnlstsolver%depsAbs, 1E-5_DP)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'depsDiff', rnlstsolver%depsDiff, 0.0_DP)
+        "depsDiff", rnlstsolver%depsDiff, 0.0_DP)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'domega', rnlstsolver%domega, 1.0_DP)
+        "domega", rnlstsolver%domega, 1.0_DP)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'dinexactNewtonEpsRel', rnlstsolver%dinexactNewtonEpsRel, 1.0E-2_DP)
+        "dinexactNewtonEpsRel", rnlstsolver%dinexactNewtonEpsRel, 1.0E-2_DP)
     
     call parlst_getvalue_double (rparlist, ssection, &
-        'dinexactNewtonExponent', rnlstsolver%dinexactNewtonExponent, 2.0_DP)
+        "dinexactNewtonExponent", rnlstsolver%dinexactNewtonExponent, 2.0_DP)
 
     call parlst_getvalue_int (rparlist, ssection, &
-        'nmaxFixedPointIterations', rnlstsolver%nmaxFixedPointIterations, 0)
+        "nmaxFixedPointIterations", rnlstsolver%nmaxFixedPointIterations, 0)
 
     call parlst_getvalue_double (rparlist, ssection, &
-        'depsRelFixedPoint', rnlstsolver%depsRelFixedPoint, 1.0E-1_DP)
+        "depsRelFixedPoint", rnlstsolver%depsRelFixedPoint, 1.0E-1_DP)
+
+    ! Initialise the step length control parameters
+    
+    ! Get the section with the parameters
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionStepLengthControl",sstrStepLengthControl,&
+        "TIME-STEPLENGTHCONTROL",bdequote=.true.)
+
+    call parlst_getvalue_int (rparlist, sstrStepLengthControl, &
+        "cstepLengthControl", rnlstsolver%rstepLengthControl%cstepLengthControl, 0)
+
+    call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
+        "dminDescent", rnlstsolver%rstepLengthControl%dminDescent, 1.0E-4_DP)
+
+    call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
+        "dminRedFactor", rnlstsolver%rstepLengthControl%dminRedFactor, 0.1_DP)
+
+    call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
+        "dmaxRedFactor", rnlstsolver%rstepLengthControl%dmaxRedFactor, 0.9_DP)
+
+    call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
+        "dminStep", rnlstsolver%rstepLengthControl%dminStep, 0.0_DP)
+
+    call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
+        "dmaxStep", rnlstsolver%rstepLengthControl%dmaxStep, 1.0_DP)
 
   end subroutine
 

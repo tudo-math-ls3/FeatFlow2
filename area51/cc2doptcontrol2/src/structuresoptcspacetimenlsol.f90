@@ -75,6 +75,38 @@ module structuresoptcspacetimenlsol
 
 !<typeblock>
 
+  ! Defines the parameters for the step length control
+  ! during the nonlinear iteration
+  type t_stepLengthControl
+  
+    ! Type of step length control.
+    ! =0: No step length control
+    ! =1: Armijo step length control based on the minimisation of
+    !     a quadratic polynomial
+    integer :: cstepLengthControl = 0
+
+    ! Minimum descent parameter. Standard = 1E-4
+    real(DP) :: dminDescent = 1E-4_DP
+
+    ! Minimum reduction factor per step change. Standard = 0.1
+    real(DP) :: dminRedFactor = 0.1_DP
+
+    ! Maximum reduction factor per step change. Standard = 0.9
+    real(DP) :: dmaxRedFactor = 0.9_DP
+
+    ! Minimum step length. Standard = 0.0
+    real(DP) :: dminStep = 0.0_DP
+
+    ! Maximum step length. Standard = 1.0
+    real(DP) :: dmaxStep = 1.0_DP
+  
+  end type
+
+!</typeblock>
+
+
+!<typeblock>
+
   ! Collects all parameters of the nonlinear space-time solver
   type t_nlstsolver
   
@@ -89,65 +121,57 @@ module structuresoptcspacetimenlsol
     !     preconditioner).
     ! =3: Inexact Newton. Stopping criterion of the linear solver is chosen
     !     adaptively. The stopping criteria of the linear solvers are not used.
-
     integer :: ctypeNonlinearIteration = CCNLS_NEWTON
 
     ! Whether to postprocess intermediate solutions.
     ! =1: After each nonlinear step, apply postprocessing to the solution.
-
     integer :: cpostprocessIterates = 0
 
     ! Minimum number of steps
-
     integer :: nminIterations     = 1
 
     ! Maximum number of steps
-          
     integer :: nmaxIterations     = 10
 
     ! Damping of residuals, i.e. reduction of relative error
     ! on finest grid; smaller -> more iterations
-
     real(dp) :: depsRel            = 1E-8
 
     ! Limit for residuals, i.e. absolute error on finest grid;
     ! The linear solver stops if both, absolute error < depsAbs and
     ! rel. error < depsRel
-
     real(dp) :: depsAbs            = 1E-0
-
-    ! General damping parameter when adding the preconditioned defect
-    ! to the solution in the nonlinear space-time iteration
-
-    real(dp) :: domega             = 1.0
 
     ! Limit for differences in the residuals
     real(dp) :: depsDiff           = 1E-5
 
-    ! Output level of the solver
+    ! General damping parameter when adding the preconditioned defect
+    ! to the solution in the nonlinear space-time iteration.
+    ! The step length is multiplied by this value.
+    real(dp) :: domega             = 1.0
 
+    ! Parameters for the step length control
+    type(t_stepLengthControl) :: rstepLengthControl
+
+    ! Output level of the solver
     integer :: ioutputLevel       = 2
 
     ! Maximum number of defect correction iterations before starting Newton.
     ! Standard=0=use Newton / inexact Newton immediately.
-
     integer :: nmaxFixedPointIterations = 0
 
     ! Relative convergence criterion to use for defect correction
     ! before Newton is started.
-
     real(DP) :: depsRelFixedPoint = 1E-1
 
     ! Stopping criterion for the linear solver in the inexact Newton iteration.
     ! Controls the minimum number of digits to gain in the linear solver
     ! per Newton iteration. Only used if ctypePreconditioner = 3.
-
     real(dp) :: dinexactNewtonEpsRel = 1.0E-2
 
     ! Exponent to control the stopping criterion for the linear solver in
     ! an inexact Newton iteration. =2 result in quadratic convergence,
     ! =1.5 in superlinear convergence. Only used if ctypePreconditioner = 3.
-
     real(dp) :: dinexactNewtonExponent = 2.0
   
     ! <!-- Parameters automatically maintained by the solver -->

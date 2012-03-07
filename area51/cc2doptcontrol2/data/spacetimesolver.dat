@@ -84,6 +84,9 @@ dinexactNewtonEpsRel = 1.0E-2
 
 dinexactNewtonExponent = 2.0
 
+# Name of the section defining the step length control
+ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
+
 # Name of the section defining a single-grid solver. This is used if
 # cpreconditioner=1.
 ssectionSingleGridSolver = TIME-SINGLEGRIDSOLVER
@@ -105,6 +108,41 @@ ssectionCgrSolver = TIME-SINGLEGRIDSOLVER
 
 # Name of the section defining the preconditioner of the single grid solver.
 ssectionCgrPreconditioner = TIME-SINGLEGRIDPRECOND
+
+########################
+[TIME-STEPLENGTHCONTROL]
+########################
+
+# This section defines the parameters for the step length control
+# during the nonlinear iteration.
+
+# Type of step length control.
+# =0: No step length control
+# =1: Armijo step length control based on halfening the step size
+# =2: Armijo step length control based on the minimisation of
+#     a quadratic polynomial
+
+cstepLengthControl = 0
+
+# Minimum descent parameter. Standard = 1E-4
+
+dminDescent = 1E-4
+
+# Minimum reduction factor per step change. Standard = 0.1
+
+dminRedFactor = 0.1
+
+# Maximum reduction factor per step change. Standard = 0.9
+
+dmaxRedFactor = 0.9
+
+# Minimum step length. Standard = 0.0
+
+dminStep = 0.0
+
+# Maximum step length. Standard = 1.0
+
+dmaxStep = 1.0
 
 
 ################
