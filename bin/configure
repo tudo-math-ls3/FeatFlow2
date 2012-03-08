@@ -4836,8 +4836,8 @@ sub make_dep_list {
 
 		# Add to the list if not already on the list or in 'forbidden' lists
 		my $auxBasename = &basename($aux);
-		unless ((DO_NOT_INCLUDE          =~ m/\Q$aux\E/) or
-			($HEADER_FILES_TO_COPY   =~ m/\Q$aux\E/) or
+		unless ((DO_NOT_INCLUDE          =~ m/\Q$auxBasename\E/) or
+			($HEADER_FILES_TO_COPY   =~ m/\Q$auxBasename\E/) or
 			defined(${ $headerFilesToCopyHashRef }{$auxBasename})) {
 		    # Ensure first that the current file exists.
 		    if (! -e $aux) {
