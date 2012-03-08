@@ -1,0 +1,49 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                         Stationary convection-diffusion                      #
+#                                                                              #
+#  From:   J.A.Evans, T.J.R. Hughes, and G. Sangalli. Enforcement of           #
+#          Constraints and Maximum Principles in the Variational Multiscale    #
+#          Method. Computer Methods of Applied Mechanics and Engineering,      #
+#          199 (1-4), 2009; pages 61-76.                                       #
+#                                                                              #
+# Benchmark: velocity v = (1, 1/2)/sqrt(1.25), diffusion d = 1e-3              #
+#                                                                              #
+################################################################################
+
+# Definition of user-defined constants
+defconst: CbI = 4.0
+
+# Specify the initial solution
+deffunc: @initsol = 0 ; x,y,t
+
+# Specify the velocity field
+deffunc: @velocity_x = 1.0/sqrt(1.25) ; x,y,t
+deffunc: @velocity_y = 0.5/sqrt(1.25) ; x,y,t
+
+# Specify the diffusion tensor
+deffunc: @diffusion = 1e-3 ; x,y,t
+
+# Specify the boundary conditions for the primal problem
+[bdrcond_primal]
+NBCT
+1
+NEXPR
+3
+IBCT
+1
+NCOMP
+5
+PARAMETERS
+0.15 T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
+0.2  T  'DIRICHLET_WEAK'  '4-20*x'  '_CbI'  '1.0' ; x,y,t
+3.0  T  'DIRICHLET_WEAK'  '0.0'     '_CbI'  '1.0'
+3.05 T  'DIRICHLET_WEAK'  '20-20*y' '_CbI'  '1.0' ; x,y,t
+4.0  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
+
+0.2  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
+3.0  F  'DIRICHLET_WEAK'  '0.0'     '_CbI'  '1.0'
+4.0  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'

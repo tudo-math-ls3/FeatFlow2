@@ -5,8 +5,8 @@
 #                                                                              #
 #                         Stationary convection-diffusion                      #
 #                                                                              #
-#  From:   D. Kuzmin, M. Möller, S. Turek. Algebraic Flux Correction I.        #
-#          Scalar Conservation Laws, in: D. Kuzmin, R. Löhner, S. Turek (eds.) #
+#  From:   D. Kuzmin, M. Moeller, S. Turek. Algebraic Flux Correction I.       #
+#          Scalar Conservation Laws, in: D. Kuzmin, R. Lohner, S. Turek (eds.) #
 #          Flux-Corrected Transport, Principles, Algorithms, and Applications  #
 #          Springer, Germany (2005); pages 155-206.                            #
 #                                                                              #

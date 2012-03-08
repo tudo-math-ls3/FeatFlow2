@@ -7,8 +7,8 @@
 #                                                                              #
 #  Benchmark no.1 and no.2                                                     #
 #                                                                              #
-#  From:   D. Kuzmin, M. M?ller, S. Turek. Algebraic Flux Correction I.        #
-#          Scalar Conservation Laws, in: D. Kuzmin, R. L?hner, S. Turek (eds.) #
+#  From:   D. Kuzmin, M. Moeller, S. Turek. Algebraic Flux Correction I.       #
+#          Scalar Conservation Laws, in: D. Kuzmin, R. Lohner, S. Turek (eds.) #
 #          Flux-Corrected Transport, Principles, Algorithms, and Applications  #
 #          Springer, Germany (2005); pages 155-206.                            #
 #                                                                              #
@@ -16,11 +16,11 @@
 # Benchmark no.3                                                               #
 #                                                                              #
 # From:    R. Hartmann. Adaptive FE Methods for Conservation Laws.             #
-#          In Heinrich Freist?hler and Gerald Warnecke, eds.                   #
+#          In Heinrich Freistuehler and Gerald Warnecke, eds.                  #
 #          Hyperbolic problems: theory, numerics, applications:                #
 #          Eighth international conference in Magdeburg, 2000.                 #
 #          International series of numerical mathematics 141: 495-503.         #
-#          Birkh?user, Basel 2001.                                             #
+#          Birkhaeuser, Basel 2001.                                            #
 #                                                                              #
 # Benchmark no.1 : velocity v = (cos 10deg, sin 10deg), diffusion d=1e-3       #
 #                                                                              #
@@ -110,7 +110,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = 
+sreactionname =
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -118,7 +118,7 @@ sreactionname =
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = 
+srhsname = @rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -129,7 +129,7 @@ srhsname =
 isolutiontype = 0
 
 # section name of initial solution
-ssolutionname = @initsol
+ssolutionname =
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -138,7 +138,10 @@ ssolutionname = @initsol
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = 
+sexactsolutionname(3) = 
+  @exactsol_func
+  @exactsol_derivx
+  @exactsol_derivy
 
 # type of target functional
 # 0 = zero target functional
@@ -146,10 +149,10 @@ sexactsolutionname =
 # 2 = surface integral
 # 3 = mixed volume/surface integral
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname =
 
 
 #-------------------------------------------------------------------------------

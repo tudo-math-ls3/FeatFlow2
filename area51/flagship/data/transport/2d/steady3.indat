@@ -6,11 +6,11 @@
 #                         Stationary convection-diffusion                      #
 #                                                                              #
 # From:    R. Hartmann. Adaptive FE Methods for Conservation Laws.             #
-#          In Heinrich Freistühler and Gerald Warnecke, eds.                   #
+#          In Heinrich Freistuehler and Gerald Warnecke, eds.                  #
 #          Hyperbolic problems: theory, numerics, applications:                #
 #          Eighth international conference in Magdeburg, 2000.                 #
 #          International series of numerical mathematics 141: 495-503.         #
-#          Birkhäuser, Basel 2001.                                             #
+#          Birkhaeuser, Basel 2001.                                            #
 #                                                                              #
 # Benchmark no.3 : velocity v = v(x,y)/|v(x,y)|, diffusion d=0                 #
 #                               v(x,y) = (y,1-x)   for x<1  and                #
