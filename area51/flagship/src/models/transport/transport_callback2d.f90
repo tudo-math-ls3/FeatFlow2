@@ -3204,7 +3204,7 @@ do iedge = 1, nedges
       ! Get the normal vectors in the cubature points on the boundary
       if (npointsPerElement .gt. 1) then
         call boundary_calcNormalVec2D(Dpoints, Dpoints,&
-            Dnormal(:,:,1), Dnormal(:,:,2(, 1)
+            Dnormal(:,:,1), Dnormal(:,:,2), 1)
       else
         call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct,&
             DpointPar, Dnormal(:,:,1), Dnormal(:,:,2),&

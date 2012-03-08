@@ -12010,6 +12010,8 @@ contains
         
       end if
 
+      !$omp end parallel
+
     end subroutine doOperatorEdgeDble
 
     !**************************************************************
@@ -12100,6 +12102,8 @@ contains
         
       end if
 
+      !$omp end parallel
+
     end subroutine doOperatorEdgeAFCDble
 
     !**************************************************************
@@ -12177,6 +12181,8 @@ contains
         
       end if
 
+      !$omp end parallel
+      
     end subroutine doOperatorEdgeSngl
 
     !**************************************************************
@@ -12266,6 +12272,8 @@ contains
         end do ! igroup
         
       end if
+
+      !$omp end parallel
 
     end subroutine doOperatorEdgeAFCSngl
 
