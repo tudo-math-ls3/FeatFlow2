@@ -49,6 +49,9 @@
 !# 8.) stack_pop (pop in STL)
 !#     -> Pops the entry from the top of the stack
 !#
+!# 9.) stack_contains (no equivalent in STL)
+!#     -> Checks if the stack contains a given item
+!#
 !#
 !# The following operators are available:
 !#
@@ -87,6 +90,7 @@
   public :: stack_top
   public :: stack_push
   public :: stack_pop
+  public :: stack_contains
 
   public assignment(=)
   public operator(==)
@@ -126,6 +130,10 @@
   
   interface stack_pop
     module procedure template_T(stack_pop,T)
+  end interface
+
+  interface stack_contains
+    module procedure template_T(stack_contains,T)
   end interface
 
   interface assignment(=)
@@ -433,6 +441,42 @@ contains
     rstack%istackPosition = rstack%istackPosition-1
 
   end subroutine
+
+  !************************************************************************
+
+!<function>
+
+  function template_T(stack_contains,T)(rstack, data) result(bresult)
+
+!<description>
+    ! Check if the stack contains the given data item
+!</description>
+
+!<input>
+    ! Stack
+    type(template_T(t_stack,T)), intent(in) :: rstack
+
+    ! Item to be searched for in the stack
+    TTYPE(T_TYPE), intent(in) :: data
+!</inputoutput>
+
+!<result>
+    ! True if stack contains the given data item
+    logical :: bresult
+!</result>
+!</function>
+
+    ! local variable
+    integer :: i
+
+    bresult = .false.
+
+    do i = rstack%istackPosition, 1, -1
+      bresult = (rstack%p_StackData(i) .eq. data)
+      if (bresult) return
+    end do
+
+  end function
 
   !************************************************************************
 
