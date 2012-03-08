@@ -126,6 +126,9 @@
 
 module storage
 
+#include "../feat2macros.h"
+#include "../feat2constants.h"
+
 !$use omp_lib
   use fsystem
   use fpersistence
@@ -145,12 +148,8 @@ module storage
   !*****************************************************************************
 
 #ifdef HAS_ISO_C_BINDING
-  ! The external module file iso_c_binding cannot be included by the
-  ! standard use statement since the configure script would generate a
-  ! rule for building iso_c_binding.mod from iso_c_binfing.f90 which,
-  ! of cource, does not exists. Thus, the module is hidden from configure.
-#define __external_use__(module) use module
-  __external_use__(iso_c_binding)
+  ! Include external module file iso_c_binding
+  EXTERNAL_USE(iso_c_binding)
 
 #else
 

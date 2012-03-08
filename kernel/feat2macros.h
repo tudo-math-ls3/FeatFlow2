@@ -5,7 +5,6 @@
 
 #if 0
 !##############################################################################
-!# ****************************************************************************
 !# <name> feat2macros </name>
 !# ****************************************************************************
 !#
@@ -15,5 +14,13 @@
 !# </purpose>
 !##############################################################################
 #endif
+
+#if 0
+! External module files cannot be included by the standard use
+! statement since the configure script would generate a rule for
+! compiling the file mymod.mod from mymod.f90 which, does not exist.
+#endif
+
+#define EXTERNAL_USE(module) use module
 
 #endif

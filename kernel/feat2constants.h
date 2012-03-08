@@ -1,7 +1,7 @@
 !-*- mode: f90; -*-
 
-#ifndef _FEAT2CONSTANS_H_
-#define _FEAT2CONSTANS_H_
+#ifndef _FEAT2CONSTANTS_H_
+#define _FEAT2CONSTANTS_H_
 
 #if 0
 !##############################################################################
