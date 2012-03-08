@@ -4993,7 +4993,7 @@ contains
               
           call lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          ! Clear the matrices in advance.
+          ! Clear the matrices.
           call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
           call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
 
