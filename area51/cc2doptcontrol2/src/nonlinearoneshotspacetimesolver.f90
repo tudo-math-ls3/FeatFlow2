@@ -427,7 +427,7 @@ contains
       
       if (ioutputLevel .ge. 2) then
         call output_line ("Armijo: Probing step length dstep = "//&
-            trim(sys_sdEP(dstep,20,10)))
+            trim(sys_sdEL(dstep,8))//" - Defect =",bnolinebreak=.true.)
       end if
       
       ! Get the new residual if calculated with step length dstep.
@@ -436,6 +436,10 @@ contains
       call stlin_spaceTimeMatVec (rtestmatrix, rcurrentVector, rtempVector, &
           -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
           dnewResidual,rsettings%roptcBDC,.false.,dstep,rdirection)
+
+      if (ioutputLevel .ge. 2) then
+        call output_line (" "//trim(sys_sdEL(dnewResidual,10)),cdateTimeLogPolicy = OU_DTP_NONE)
+      end if
       
       ! Check if the new residual is acceptable; sufficient
       ! decrease condition in the Armijo step length control.
@@ -456,7 +460,7 @@ contains
     
     if (ioutputLevel .ge. 1) &
       call output_line ("Armijo: Using step length dstep   = "//&
-          trim(sys_sdEP(dstep,20,10)))
+          trim(sys_sdEL(dstep,8)))
     
   end subroutine
   
@@ -552,7 +556,7 @@ contains
       
       if (ioutputLevel .ge. 2) then
         call output_line ("Armijo: Probing step length dstep = "//&
-            trim(sys_sdEP(dstep,20,10)))
+            trim(sys_sdEL(dstep,8))//" - Defect =",bnolinebreak=.true.)
       end if
       
       ! Get the new residual if calculated with step length dstep.
@@ -561,6 +565,10 @@ contains
       call stlin_spaceTimeMatVec (rtestmatrix, rcurrentVector, rtempVector, &
           -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
           dnewResidual,rsettings%roptcBDC,.false.,dstep,rdirection)
+
+      if (ioutputLevel .ge. 2) then
+        call output_line (" "//trim(sys_sdEL(dnewResidual,10)),cdateTimeLogPolicy = OU_DTP_NONE)
+      end if
       
       ! Check if the new residual is acceptable; sufficient
       ! decrease condition in the Armijo step length control.
@@ -586,7 +594,7 @@ contains
     
     if (ioutputLevel .ge. 1) &
       call output_line ("Armijo: Using step length dstep   = "//&
-          trim(sys_sdEP(dstep,20,10)))
+          trim(sys_sdEL(dstep,8)))
     
   end subroutine
   
