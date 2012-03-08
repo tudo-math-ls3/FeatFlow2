@@ -84,8 +84,18 @@ CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) 
+#
+# no optimisations
+#
 else
+#
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -DUSE_COMPILER_INTEL -O0 -g -fpe0 -assume underscore
+# the following (additional) flags make ifort super-strict and allow e.g.
+# the detection of out-of-bounds accesses. Unfortunately, they already complain
+# about such errors deep inside the numerical factorisation in UMFPACK (at
+# least in version 5.5.2, which is the only one I tested), so the use of
+# an iterative/alternative coarse grid solver is recommended.
+#CFLAGSF77LIBS := $(CFLAGSF77LIBS) -check all -debug -fp-stack-check -traceback -ftrapuv 
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
 		 -module $(OBJDIR) -C -check bounds -traceback -warn all -assume buffered_io
