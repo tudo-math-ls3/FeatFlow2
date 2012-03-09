@@ -104,6 +104,7 @@ module structuresoptcspacetimenlsol
 
 !</typeblock>
 
+  public :: t_stepLengthControl
 
 !<typeblock>
 
