@@ -22,19 +22,28 @@ ssectionPhysics = "CC-PHYSICSPRIMAL"
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
 # -1.0 = no distributed control
+# It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
+# In this case, a path following algorithm will be applied, i.e.,
+# the parameter is reduced with every nonlinear step.
 dalphaC = 0.01 # 1.0
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem
 # on the boundary (Dirichlet boundary control).
 # -1.0 = no boudary control control
+# It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
+# In this case, a path following algorithm will be applied, i.e.,
+# the parameter is reduced with every nonlinear step.
 dbetaC = 0.01 # 1.0
-
-# Penalty parameter for the dirichlet boundary control
-ddirichletBCPenalty = 4.0
 
 # Regularisation parameter for the terminal condition ||y(T)-z(T)|| in the
 # nonstationary optimal control problem.
+# It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
+# In this case, a path following algorithm will be applied, i.e.,
+# the parameter is reduced with every nonlinear step.
 dgammaC = 0.0  # 1.0
+
+# Penalty parameter for the dirichlet boundary control
+ddirichletBCPenalty = 4.0
 
 # Formulation of the Space-time problem.
 # =0: Formulation for the generation of reference results from papers

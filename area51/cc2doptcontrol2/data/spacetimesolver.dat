@@ -138,7 +138,7 @@ dmaxRedFactor = 0.9
 
 # Minimum step length. Standard = 0.0
 
-dminStep = 0.0
+dminStep = 1E-8
 
 # Maximum step length. Standard = 1.0
 

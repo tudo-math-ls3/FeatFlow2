@@ -689,8 +689,12 @@ contains
     ! #########################
     ! Create the initial defect
     ! #########################
-    call output_line ('NLST-Solver: Assembling the initial defect...')
 
+    ! Initialise path following strategies
+    call soptc_initStepPathFollower (rsettings%rsettingsOptControl,1,.false.)
+
+    call output_line ('NLST-Solver: Assembling the initial defect...')
+    
     ! Create the actual RHS (including the BC's) in rd and assemble the defect.
     call sptivec_copyVector (rb,rd)
     call trhsevl_implementBDCRHS (rsettings%rglobalData, rd, rsettings%roptcBDC)
@@ -812,7 +816,19 @@ contains
         call stat_stopTimer (rtimerPostproc)
       end if
                   
+      ! ###################################
+      ! Next step
+      ! ###################################
+                  
       rnlstsolver%nnonlinearIterations = rnlstsolver%nnonlinearIterations+1
+      
+      ! ###################################
+      ! Path following strategy
+      ! ###################################
+
+      ! Apply path following strategies, adapt parameters
+      call soptc_initStepPathFollower (rsettings%rsettingsOptControl,&
+          rnlstsolver%nnonlinearIterations,(rnlstsolver%ioutputLevel .ge. 1))
       
       ! ###################################
       ! Set up the inexact Newton iteration

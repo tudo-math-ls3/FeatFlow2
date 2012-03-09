@@ -1374,84 +1374,10 @@ contains
 
 !</subroutine>
     
-    character(len=SYS_STRLEN) :: sstring
+    ! Initialise the parameters from the parameter list.
+    call soptc_initParOptControl (rparlist,ssectionOptC,roptcontrol)
 
-    ! Alpha/Gamma parameters
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dalphaC",roptcontrol%dalphaC,-1.0_DP)
-        
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dbetaC",roptcontrol%dbetaC,-1.0_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "ddirichletBCPenalty",roptcontrol%ddirichletBCPenalty,100.0_DP)
-        
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dgammaC",roptcontrol%dgammaC,0.0_DP)
-        
-    ! Type of the formulation
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "ispaceTimeFormulation",roptcontrol%ispaceTimeFormulation,0)
-    
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "iconvectionExplicit",roptcontrol%iconvectionExplicit,0)
-
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "csystemScaling",roptcontrol%csystemScaling,0)
-    
-    ! Parameters defining the control constraints
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "ccontrolConstraints",roptcontrol%rconstraints%ccontrolConstraints,0)
-
-    roptcontrol%rconstraints%ccontrolConstraintsType = 0
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dumin1",roptcontrol%rconstraints%dumin1,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dumax1",roptcontrol%rconstraints%dumax1,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dumin2",roptcontrol%rconstraints%dumin2,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dumax2",roptcontrol%rconstraints%dumax2,1.0E10_DP)
-
-    ! Parameters defining the state constraints
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,0)
-
-    roptcontrol%rconstraints%cstateConstraintsType = 0
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymin1",roptcontrol%rconstraints%dymin1,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymax1",roptcontrol%rconstraints%dymax1,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymin2",roptcontrol%rconstraints%dymin2,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymax2",roptcontrol%rconstraints%dymax2,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dstateConstrReg",roptcontrol%rconstraints%dstateConstrReg,1.0_DP)
-        
-    ! Observation area
-    call parlst_getvalue_string (rparlist,ssectionOptC,&
-        "DobservationArea",sstring,"")
-        
-    if (sstring .ne. "") then
-      ! Read the observation area. This is a box, the parameters
-      ! have the format "x1, y1, x2, y2".
-      allocate (roptcontrol%p_DobservationArea(4))
-      read (sstring,*) &
-          roptcontrol%p_DobservationArea(1), &
-          roptcontrol%p_DobservationArea(2), &
-          roptcontrol%p_DobservationArea(3), &
-          roptcontrol%p_DobservationArea(4)
-    end if
+    ! Nothing else to do.
 
   end subroutine
 
@@ -1747,7 +1673,7 @@ contains
   subroutine init_doneOptControl (roptcontrol)
   
 !<description>
-  ! Cleans up information about constraints
+  ! Cleans up information in the optimal control structure.
 !</description>
 
 !<inputoutput>
@@ -1786,11 +1712,9 @@ contains
     ! Release the target function.
     call ansol_done(roptcontrol%rtargetFunction)
     
-    ! Release the observation area
-    if (associated(roptcontrol%p_DobservationArea)) then
-      deallocate(roptcontrol%p_DobservationArea)
-    end if
-
+    ! Clean up the parameters
+    call soptc_doneParOptControl (roptcontrol)
+    
   end subroutine
   
   ! ***************************************************************************
@@ -2735,7 +2659,7 @@ contains
         "dmaxRedFactor", rnlstsolver%rstepLengthControl%dmaxRedFactor, 0.9_DP)
 
     call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
-        "dminStep", rnlstsolver%rstepLengthControl%dminStep, 0.0_DP)
+        "dminStep", rnlstsolver%rstepLengthControl%dminStep, 1E-8_DP)
 
     call parlst_getvalue_double (rparlist, sstrStepLengthControl, &
         "dmaxStep", rnlstsolver%rstepLengthControl%dmaxStep, 1.0_DP)
