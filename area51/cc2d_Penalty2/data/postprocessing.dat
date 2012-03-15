@@ -217,11 +217,11 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 0
+iwriteBodyForces = 1
 
 # Filename for the body forces
 
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_fbm_4'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 
 # ------------------------------------------------------------------------
 # Point values
@@ -260,7 +260,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_fbm_10'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 
 # ------------------------------------------------------------------------
 # Flux values

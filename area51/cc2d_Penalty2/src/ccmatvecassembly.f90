@@ -96,7 +96,9 @@ module ccmatvecassembly
   use cccallback
   
   use pprocnavierstokes
-  
+  use matrixio
+  use vectorio
+
   implicit none
   
 !<constants>
@@ -1056,7 +1058,10 @@ contains
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
             rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
-            
+
+!        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty',&
+!                                 .false., 0, 'Penalty2_vel.txt', '(E10.2)')            
+
         if (.not. bshared) then
 
           ! Allocate memory if necessary. Normally this should not be necessary...
@@ -1649,6 +1654,10 @@ contains
       
       end if ! gamma <> 0
 
+      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'A11',&
+                                .false., 0, 'Penalty2_A11_vel.txt', '(E10.2)')            
+
+
     end subroutine
       
     ! -----------------------------------------------------
@@ -2042,6 +2051,9 @@ contains
         call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)
+
+!        call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty', .false.,&
+!                                    0, 'Penalty2_def.txt', '(E10.2)')
       end if
 
 
