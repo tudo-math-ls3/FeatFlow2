@@ -28,7 +28,7 @@ ielementType_Penalty = 3
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = G3X3
+scubPenalty = G3x3
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.

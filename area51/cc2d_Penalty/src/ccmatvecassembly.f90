@@ -93,6 +93,7 @@ module ccmatvecassembly
   use stdoperators
   
   use matrixio
+  use vectorio
   use cubature
   use ucd 
   use geometry 
@@ -1085,8 +1086,11 @@ if (rproblem%ilambda .ne. 0.0_DP) then
         else                                                 
           call bilf_buildMatrixScalar (rform,.true.,rMass1,cc_Lambda,rproblem%rcollection)
         end if                                         
+
         call lsyssc_matrixLinearComb (rMass1,rmatrix%RmatrixBlock(1,1),1.0_dp, 1.0_dp, &
                                       .false.,.false.,.true.,.true., rmatrix%RmatrixBlock(1,1))
+        call matio_writeMatrixHR (rMass1,'Penalty',.false.,0,'Penalty1_vel.txt','(E10.2)')
+
       case (2) 
 
         ! For this case we use adaptive cubature formula, so we need the cubature rule and refinement level.
@@ -1204,6 +1208,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
                 .false.,.false.,.true.,.true.)
           end if
         end if
+        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,'Stokes', &
+                                 .false.,0,'Stokes_Penalty1.txt','(E10.2)')
+
       end if
       
       ! ---------------------------------------------------
@@ -1440,6 +1447,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
+
+          call matio_writeMatrixHR (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,'EOJ', &
+                                   .false.,0,'EOJ_Penalty1.txt','(E10.2)')
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
@@ -1690,6 +1700,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
         end select
       
       end if ! gamma <> 0
+
+      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1),'A11', &
+                               .false.,0,'Penalty1_A11_vel.txt','(E10.2)')
 
 !      ! check in all velocity blocks
 !      ! get the entries of the total block matrix (1,1)
@@ -2198,6 +2211,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
           ! Multiply block22 by u2
           call lsyssc_scalarMatVec (rMass1,rvector%RvectorBlock(2), rdefect%RvectorBlock(2),-1.0_dp, 1.0_DP)
 
+!          call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty', .false.,&
+!                                    0, 'Defect1_Penalty1.txt', '(E10.2)')
+
           case (2)
             ! Extra data for this case.
             call parlst_getvalue_string (rproblem%rparamList,'CC-PENALTY','scubPenalty_sum',sstr,'')                                   
@@ -2279,6 +2295,9 @@ if (rproblem%ilambda .ne. 0.0_DP) then
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
+
+!      call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty+Stokes', .false.,&
+!                                0, 'Defect2_Penalty1.txt', '(E10.2)')
       
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?

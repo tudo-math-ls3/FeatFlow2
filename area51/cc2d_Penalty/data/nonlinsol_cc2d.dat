@@ -20,7 +20,7 @@ nminIterations     = 1
 # in nonstationary simulations: per time step.
 # Former NLMAX
 
-nmaxIterations     = 1
+nmaxIterations     = 10
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 

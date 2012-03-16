@@ -1039,6 +1039,10 @@ contains
     ! and comment in the stuff above.
     call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%rphysics%dnu)
     
+!    call matio_writeMatrixHR (rstaticInfo%rmatrixStokes,'Stokes',.false.,&
+!                             0,'Penalty1_stokes.txt','(E10.2)')
+
+
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)
     ! or as "int grad(p) phi" (special case, only for nonconstant pressure).
