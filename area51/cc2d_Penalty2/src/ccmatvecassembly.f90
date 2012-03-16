@@ -1058,9 +1058,9 @@ contains
         call lsyssc_matrixLinearComb (&
             rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
             rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
-
-!        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty',&
-!                                 .false., 0, 'Penalty2_vel.txt', '(E10.2)')            
+            
+        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty',&
+                                 .false., 0, 'Penalty2_vel.txt', '(E10.2)')            
 
         if (.not. bshared) then
 
@@ -1118,7 +1118,10 @@ contains
           end if
         end if
       end if
-      
+
+      call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, 'Stokes',&
+                               .false., 0, 'Stokes_Penalty2.txt', '(E10.2)')
+
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
       if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
@@ -1404,6 +1407,9 @@ contains
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
               rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
+
+          call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, 'EOJ', &
+                                   .false., 0, 'EOJ_Penalty2.txt', '(E10.2)')            
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
@@ -1655,8 +1661,7 @@ contains
       end if ! gamma <> 0
 
       call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'A11',&
-                                .false., 0, 'Penalty2_A11_vel.txt', '(E10.2)')            
-
+                               .false., 0, 'A11_Penalty2.txt', '(E10.2)')            
 
     end subroutine
       
@@ -2053,7 +2058,8 @@ contains
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)
 
 !        call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty', .false.,&
-!                                    0, 'Penalty2_def.txt', '(E10.2)')
+!                                    0, 'Defect1_Penalty2.txt', '(E10.2)')
+
       end if
 
 
@@ -2080,6 +2086,9 @@ contains
         ! of the nonlinearity.
         
       end if
+
+!      call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty+Stokes', .false.,&
+!                                0, 'Defect2_Penalty2.txt', '(E10.2)')
       
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!

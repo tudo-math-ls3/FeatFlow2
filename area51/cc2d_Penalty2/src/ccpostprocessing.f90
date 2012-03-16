@@ -1369,6 +1369,13 @@ end if
     
     character(SYS_STRLEN) :: sfile,sfilename
     
+    ! Polygon in gmv
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    real(DP), dimension(:,:), pointer :: p_Dvertices 
+    type(t_particleCollection), pointer :: p_rparticleCollection
+    integer(I32) :: ipolyhandle
+    integer :: ipart
+
     ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
@@ -1580,7 +1587,22 @@ end if
       end if
       
     end if
-    
+
+!   Polygon in gmv output
+    if (rproblem%iParticles .gt. 0) then
+        p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+      do ipart=1,p_rparticleCollection%nparticles
+         p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+         call geom_polygonise(p_rgeometryObject,ipolyHandle)
+        
+         ! Get the vertices
+         call storage_getbase_double2D(ipolyHandle, p_Dvertices)
+         call ucd_addPolygon(rexport,p_Dvertices,ipart+1)
+         call storage_free(ipolyHandle)
+         ipolyHandle = ST_NOHANDLE
+      end do
+    end if
+        
     ! Write out the viscosity if nonconstant
     if (rproblem%rphysics%cviscoModel .ne. 0) then
       

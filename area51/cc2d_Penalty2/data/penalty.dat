@@ -35,12 +35,12 @@ iPenalty_lump = 0
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 # ... (see discretisation.dat)
 
-ielementType_Penalty = 2
+ielementType_Penalty = 3
 
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = MID
+scubPenalty = G3x3
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.
