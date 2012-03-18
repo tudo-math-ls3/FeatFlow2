@@ -21,6 +21,6 @@
 ! compiling the file mymod.mod from mymod.f90 which, does not exist.
 #endif
 
-#define EXTERNAL_USE(module) use module
+#define FEAT2_PP_EXTERNAL_USE(module) use module
 
 #endif

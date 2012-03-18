@@ -1,5 +1,5 @@
-#ifndef _template_T_H_
-#define _template_T_H_
+#ifndef _TEMPLATE_H_
+#define _TEMPLATE_H_
 
 #if 0
 !##############################################################################
@@ -33,7 +33,16 @@
 !# Some data structures provide support for auxiliary data, e.g. a linked
 !# list is addressed via its key value but each list item has some double
 !# data. Thus, each parameter described above has a D_xxx counterpart which
-!# specifies the data part in more detail.
+!# specifies the data part in more detail, that is
+!#
+!# D         : name of the template parameter
+!# D_STORAGE : name of the storage identifier
+!#             if this constant is undefined, then the implementation is
+!#             generated for the derived type D_TYPE defined in a different
+!#             module file; for many dynamic data structures the derived type
+!#             has to provide routines to compares two items of the same type,
+!#             e.g. .eq., .ne., .gt., .lt., .ge., .le. and so on.
+!# D_TYPE    : name of the derived type
 !#
 !##############################################################################
 #endif
@@ -47,34 +56,38 @@
 #endif
 
 #if 0
-!# Macro definition for templating without data type
+!###############################################################################
+!# Macro definition for templating without auxiliary data type
+!###############################################################################
 #endif
 
-#define template_T_(name,type) name##type
-#define template_T(name,type) template_T_(name,type)
+#define FEAT2_PP_TEMPLATE_T_(name,type) name##type
+#define FEAT2_PP_TEMPLATE_T(name,type) FEAT2_PP_TEMPLATE_T_(name,type)
 
 #ifdef T_STORAGE
-#define TTYPE(t_type) t_type
+#define FEAT2_PP_TTYPE(t_type) t_type
 #else
-#define TTYPE(t_type) type(t_type)
+#define FEAT2_PP_TTYPE(t_type) type(t_type)
 #endif
 
 
 #if 0
-!# Macro definition for templating with data type
+!###############################################################################
+!# Macro definition for templating with auxiliary data type
+!###############################################################################
 #endif
 
 #ifdef D
-#define template_TD_(name,type,data) name##type##_##data
-#define template_TD(name,type,data) template_TD_(name,type,data)
+#define FEAT2_PP_TEMPLATE_TD_(name,type,data) name##type##_##data
+#define FEAT2_PP_TEMPLATE_TD(name,type,data) FEAT2_PP_TEMPLATE_TD_(name,type,data)
 #else
-#define template_TD(name,type,data) template_T_(name,type)
+#define FEAT2_PP_TEMPLATE_TD(name,type,data) FEAT2_PP_TEMPLATE_T_(name,type)
 #endif
 
 #ifdef D_STORAGE
-#define DTYPE(d_type) d_type
+#define FEAT2_PP_DTYPE(d_type) d_type
 #else
-#define DTYPE(d_type) type(d_type)
+#define FEAT2_PP_DTYPE(d_type) type(d_type)
 #endif
 
 #endif

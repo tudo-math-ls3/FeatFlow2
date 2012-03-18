@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_TD(map,T,D) </name>
+!# <name> FEAT2_PP_TEMPLATE_TD(map,T,D) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -116,13 +116,13 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
 
   private
-  public :: template_TD(t_map,T,D)
-  public :: template_TD(it_map,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(t_map,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(it_map,T,D)
   public :: map_create
   public :: map_release
   public :: map_resize
@@ -162,144 +162,144 @@
   public operator(>=)
 
   interface map_create
-    module procedure template_TD(map_create,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_create,T,D)
   end interface
 
   interface map_release
-    module procedure template_TD(map_release,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_release,T,D)
   end interface
 
   interface map_resize
-    module procedure template_TD(map_resize,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_resize,T,D)
   end interface
 
   interface map_clear
-    module procedure template_TD(map_clear,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_clear,T,D)
   end interface
 
   interface map_copy
-    module procedure template_TD(map_cpy1,T,D)
-    module procedure template_TD(map_cpy2,T,D)
-    module procedure template_TD(map_cpy3,T,D)
-    module procedure template_TD(map_cpy4,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_cpy1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_cpy2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_cpy3,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_cpy4,T,D)
   end interface
 
   interface map_swap
-    module procedure template_TD(map_swap,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_swap,T,D)
   end interface
   
   interface map_begin
-    module procedure template_TD(map_begin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_begin,T,D)
   end interface
 
   interface map_rbegin
-    module procedure template_TD(map_rbegin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_rbegin,T,D)
   end interface
   
   interface map_end
-    module procedure template_TD(map_end,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_end,T,D)
   end interface
 
   interface map_rend
-    module procedure template_TD(map_rend,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_rend,T,D)
   end interface
 
   interface map_next
-    module procedure template_TD(map_next,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_next,T,D)
   end interface
 
   interface map_prior
-    module procedure template_TD(map_prior,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_prior,T,D)
   end interface
 
   interface map_get
-    module procedure template_TD(map_get,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_get,T,D)
   end interface
 
 #ifdef D
   interface map_getbase_data
-    module procedure template_TD(map_getbase_data,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_getbase_data,T,D)
   end interface
 #endif
 
   interface map_insert
-    module procedure template_TD(map_insert1,T,D)
-    module procedure template_TD(map_insert2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_insert1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_insert2,T,D)
   end interface
   
   interface map_erase
-    module procedure template_TD(map_erase1,T,D)
-    module procedure template_TD(map_erase2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_erase1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_erase2,T,D)
   end interface
   
   interface map_size
-    module procedure template_TD(map_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_size,T,D)
   end interface
   
   interface map_max_size
-    module procedure template_TD(map_max_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_max_size,T,D)
   end interface
 
   interface map_empty
-    module procedure template_TD(map_empty,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_empty,T,D)
   end interface
   
   interface map_find
-    module procedure template_TD(map_find,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_find,T,D)
   end interface
  
   interface map_print
-    module procedure template_TD(map_print,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_print,T,D)
   end interface
   
   interface map_info
-    module procedure template_TD(map_info,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_info,T,D)
   end interface
   
   interface map_duplicate
-    module procedure template_TD(map_duplicate,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_duplicate,T,D)
   end interface
   
   interface map_restore
-    module procedure template_TD(map_restore,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_restore,T,D)
   end interface
 
   interface map_isNull
-    module procedure template_TD(map_isNull,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_isNull,T,D)
   end interface
 
   interface map_hasSpec
-    module procedure template_TD(map_hasSpec,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_hasSpec,T,D)
   end interface
   
   
   interface assignment(=)
-    module procedure template_TD(map_fassign,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(map_fassign,T,D)
   end interface
 
 
   interface operator(==)
-    module procedure template_TD(it_map_eq,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_eq,T,D)
   end interface
   
   interface operator(/=)
-    module procedure template_TD(it_map_ne,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_ne,T,D)
   end interface
 
   interface operator(<)
-    module procedure template_TD(it_map_lt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_lt,T,D)
   end interface
 
   interface operator(<=)
-    module procedure template_TD(it_map_le,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_le,T,D)
   end interface
 
   interface operator(>)
-    module procedure template_TD(it_map_gt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_gt,T,D)
   end interface
 
   interface operator(>=)
-    module procedure template_TD(it_map_ge,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_map_ge,T,D)
   end interface
 
   !************************************************************************
@@ -308,7 +308,7 @@
 
 !<typeblock>
 
-  type template_TD(t_map,T,D)
+  type FEAT2_PP_TEMPLATE_TD(t_map,T,D)
     private
     
     ! The map is realised as AVL-tree. This special kind of binary
@@ -338,7 +338,7 @@
 #endif
 
     ! Pointer to the map key
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
 
     ! Handle and pointer to the balance data
     integer :: h_Kbal = ST_NOHANDLE
@@ -361,7 +361,7 @@
 #endif
 
     ! Pointer to map auxiliary data
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
 #endif
 
   end type
@@ -372,7 +372,7 @@
 
   ! An iterator for a map
 
-  type template_TD(it_map,T,D)
+  type FEAT2_PP_TEMPLATE_TD(it_map,T,D)
     private
 
     ! Absolute position of the current element
@@ -384,7 +384,7 @@
     integer(I32) :: iSpec = 0_I32
 
     ! Pointer to the underlying map
-    type(template_TD(t_map,T,D)), pointer :: p_rmap => null()
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), pointer :: p_rmap => null()
 
   end type
 
@@ -399,9 +399,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_create,T,D)(rmap, NNA, isizeData, dfactor)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_create,T,D)(rmap, NNA, isizeData, dfactor)
 #else
-  subroutine template_TD(map_create,T,D)(rmap, NNA, dfactor)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_create,T,D)(rmap, NNA, dfactor)
 #endif
 
 !<description>
@@ -424,7 +424,7 @@ contains
 
 !<output>
     ! The map
-    type(template_TD(t_map,T,D)), intent(out) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(out) :: rmap
 !</output>
 !</subroutine>
 
@@ -491,7 +491,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_release,T,D)(rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_release,T,D)(rmap)
 
 !<description>
     ! This subroutine releases an existing map
@@ -499,7 +499,7 @@ contains
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -544,7 +544,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_resize,T,D)(rmap, NNA)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_resize,T,D)(rmap, NNA)
 
 !<description>
     ! This subroutine reallocates memory for an existing map
@@ -557,7 +557,7 @@ contains
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -565,12 +565,12 @@ contains
     integer :: NNAOld
     
 #ifndef T_STORAGE
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
 
 #ifdef D
 #ifndef D_STORAGE
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
 #endif
 #endif
 
@@ -632,7 +632,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_clear,T,D)(rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_clear,T,D)(rmap)
 
 !<description>
     ! This subroutine clears the content of the map
@@ -640,7 +640,7 @@ contains
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -657,9 +657,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_cpy1,T,D)(h_KeySrc, rmap, h_DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy1,T,D)(h_KeySrc, rmap, h_DataSrc)
 #else
-  subroutine template_TD(map_cpy1,T,D)(h_KeySrc, rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy1,T,D)(h_KeySrc, rmap)
 #endif
 
 !<description>
@@ -679,7 +679,7 @@ contains
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -720,9 +720,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_cpy2,T,D)(KeySrc, rmap, DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy2,T,D)(KeySrc, rmap, DataSrc)
 #else
-  subroutine template_TD(map_cpy2,T,D)(KeySrc, rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy2,T,D)(KeySrc, rmap)
 #endif
 
 !<description>
@@ -731,22 +731,22 @@ contains
 
 !<input>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
 #endif
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
     integer :: i
 
 #ifdef D
@@ -772,9 +772,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_cpy3,T,D)(rmap, h_KeyDest, h_DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy3,T,D)(rmap, h_KeyDest, h_DataDest)
 #else
-  subroutine template_TD(map_cpy3,T,D)(rmap, h_KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy3,T,D)(rmap, h_KeyDest)
 #endif
 
 !<description>
@@ -783,7 +783,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<inputoutput>
@@ -916,9 +916,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_cpy4,T,D)(rmap, KeyDest, DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy4,T,D)(rmap, KeyDest, DataDest)
 #else
-  subroutine template_TD(map_cpy4,T,D)(rmap, KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cpy4,T,D)(rmap, KeyDest)
 #endif
 
 !<description>
@@ -927,16 +927,16 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<inputoutput>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
 #endif
 !</inputoutput>
 !</subroutine>
@@ -1031,7 +1031,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_swap,T,D)(rmap1, rmap2)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_swap,T,D)(rmap1, rmap2)
 
 !<description>
     ! This subroutine swaps content of two maps
@@ -1039,15 +1039,15 @@ contains
     
 !<inputoutput>
     ! First map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap1
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap1
 
     ! Second map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap2
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap2
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(template_TD(t_map,T,D)) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)) :: rmap
     
     ! Swap maps
     rmap  = rmap1
@@ -1084,7 +1084,7 @@ contains
 
 !<function>
   
-  function template_TD(map_begin,T,D)(rmap) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_begin,T,D)(rmap) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the first
@@ -1093,12 +1093,12 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in), target :: rmap
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 
 !</function>
@@ -1122,7 +1122,7 @@ contains
 
 !<function>
   
-  function template_TD(map_rbegin,T,D)(rmap) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_rbegin,T,D)(rmap) result(riterator)
 
 !<description>
     ! This function returns a reverse iterator positioned to the last
@@ -1131,12 +1131,12 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in), target :: rmap
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 
 !</function>
@@ -1160,7 +1160,7 @@ contains
 
 !<function>
   
-  function template_TD(map_end,T,D)(rmap) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_end,T,D)(rmap) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the past-the-end
@@ -1169,12 +1169,12 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in), target :: rmap
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
     
@@ -1191,7 +1191,7 @@ contains
 
 !<function>
   
-  function template_TD(map_rend,T,D)(rmap) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_rend,T,D)(rmap) result(riterator)
 
 !<description>
     ! This function returns a reverse iterator referring to the
@@ -1200,12 +1200,12 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in), target :: rmap
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
     
@@ -1222,7 +1222,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_next,T,D)(riterator)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_next,T,D)(riterator)
 
 !<description>
     ! This subroutine increments the map iterator by one.
@@ -1230,7 +1230,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -1317,7 +1317,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_prior,T,D)(riterator)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_prior,T,D)(riterator)
 
 !<description>
     ! This subroutine decrements the map iterator by one.
@@ -1325,7 +1325,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -1413,7 +1413,7 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(map_getbase_data,T,D)(rmap, rposition, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_getbase_data,T,D)(rmap, rposition, p_data)
 
 !<description>
     ! This subroutine returns pointers to the data stored at the
@@ -1422,15 +1422,15 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rposition
 !</input>
 
 !<output>
     ! Data pointer
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 !</output>
 !</subroutine>
 
@@ -1445,7 +1445,7 @@ contains
 
 !<function>
 
-  function template_TD(map_get,T,D)(rmap, rposition) result(key)
+  function FEAT2_PP_TEMPLATE_TD(map_get,T,D)(rmap, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -1454,15 +1454,15 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rposition
 !</input>
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
     
@@ -1476,9 +1476,9 @@ contains
 !<function>
 
 #ifdef D
-  function template_TD(map_insert1,T,D)(rmap, key, data) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_insert1,T,D)(rmap, key, data) result(riterator)
 #else
-  function template_TD(map_insert1,T,D)(rmap, key) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_insert1,T,D)(rmap, key) result(riterator)
 #endif
 
 !<description>
@@ -1491,22 +1491,22 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout), target :: rmap
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -1607,7 +1607,7 @@ contains
 
 !<function>
 
-  function template_TD(map_insert2,T,D)(rmap, rfirst, rlast) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_insert2,T,D)(rmap, rfirst, rlast) result(riterator)
 
 !<description>
     ! This function inserts content in the range [rfirst,rlast)
@@ -1616,29 +1616,29 @@ contains
 
 !<input>
     ! Iterator referring to the first element
-    type(template_TD(it_map,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_map,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_map,T,D)) :: riter
-    TTYPE(T_TYPE) :: key
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riter
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
     
     riter = rfirst
@@ -1661,7 +1661,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_erase1,T,D)(rmap, rposition)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_erase1,T,D)(rmap, rposition)
 
 !<description>
     ! This subroutine deletes an element from the map
@@ -1669,12 +1669,12 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rposition
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
     
@@ -1753,7 +1753,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_erase2,T,D)(rmap, rfirst, rlast)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_erase2,T,D)(rmap, rfirst, rlast)
 
 !<description>
     ! This subroutine removes the elements [rfirst,rlast) from the map.
@@ -1761,20 +1761,20 @@ contains
 
 !<input>
     ! Iterator referring to the first element
-    type(template_TD(it_map,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_map,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_map,T,D)) :: riterator,ritTmp
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator,ritTmp
 
     riterator = rfirst
     do while(riterator /= rlast)
@@ -1789,7 +1789,7 @@ contains
 
 !<function>
 
-  function template_TD(map_find,T,D)(rmap, key) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(map_find,T,D)(rmap, key) result(riterator)
 
 !<description>
     ! This function searches for a given key value in the map and
@@ -1799,17 +1799,17 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 !</input>
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout), target :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout), target :: rmap
 !</inputoutput>
 
 !<result>
     ! The iterator
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -1837,7 +1837,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_print,T,D)(rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_print,T,D)(rmap)
 
 !<description>
     ! This subroutine prints the content of the map
@@ -1845,12 +1845,12 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_map,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 
     riterator = map_begin(rmap)
 
@@ -1865,7 +1865,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(map_info,T,D)(rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_info,T,D)(rmap)
 
 !<description>
     ! This subroutine outputs statistical info about the map
@@ -1873,7 +1873,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 !</subroutine>
 
@@ -1901,7 +1901,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_duplicate,T,D)(rmap, rmapBackup)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_duplicate,T,D)(rmap, rmapBackup)
 
 !<description>
     ! This subroutine makes a copy of a map in memory. It
@@ -1912,12 +1912,12 @@ contains
 
 !<input>
     ! Source map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<inputoutput>
     ! Destination map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmapBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmapBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1982,7 +1982,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_restore,T,D)(rmapBackup, rmap)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_restore,T,D)(rmapBackup, rmap)
 
 !<description>
     ! This subroutine restores a map from a previous backup.
@@ -1990,12 +1990,12 @@ contains
 
 !<input>
     ! Backup copy of the map
-    type(template_TD(t_map,T,D)), intent(in) :: rmapBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmapBackup
 !</input>
 
 !<inputoutput>
     ! Destination map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
     
@@ -2011,7 +2011,7 @@ contains
 
 !<function>
 
-  pure function template_TD(map_size,T,D)(rmap) result(isize)
+  pure function FEAT2_PP_TEMPLATE_TD(map_size,T,D)(rmap) result(isize)
 
 !<description>
     ! Returns the size of the map
@@ -2019,7 +2019,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<result>
@@ -2036,7 +2036,7 @@ contains
 
 !<function>
 
-  pure function template_TD(map_max_size,T,D)(rmap) result(imaxsize)
+  pure function FEAT2_PP_TEMPLATE_TD(map_max_size,T,D)(rmap) result(imaxsize)
 
 !<description>
     ! Returns the maximum size of the map
@@ -2044,7 +2044,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<result>
@@ -2061,7 +2061,7 @@ contains
 
 !<function>
 
-  pure function template_TD(map_empty,T,D)(rmap) result(bempty)
+  pure function FEAT2_PP_TEMPLATE_TD(map_empty,T,D)(rmap) result(bempty)
 
 !<description>
     ! Checks if the map is empty
@@ -2069,7 +2069,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<result>
@@ -2086,7 +2086,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(map_fassign,T,D)(rmapDest, rmapSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(map_fassign,T,D)(rmapDest, rmapSrc)
 
 !<description>
     ! Assigns the content of rmapSrc to rmapDest
@@ -2094,12 +2094,12 @@ contains
 
 !<input>
     ! Source map
-    type(template_TD(t_map,T,D)), intent(in) :: rmapSrc
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmapSrc
 !</input>
 
 !<output>
     ! Destination map
-    type(template_TD(t_map,T,D)), intent(out) :: rmapDest
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(out) :: rmapDest
 !</output>
 !</subroutine>
 
@@ -2127,7 +2127,7 @@ contains
 
 !<function>
 
-  pure function template_TD(map_isNull,T,D)(riterator) result(bisNull)
+  pure function FEAT2_PP_TEMPLATE_TD(map_isNull,T,D)(riterator) result(bisNull)
 
 !<description>
     ! Checks if the iterator is NULL
@@ -2135,7 +2135,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_map,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator
 !</input>
 
 !<result>
@@ -2152,7 +2152,7 @@ contains
 
 !<function>
 
-  pure function template_TD(map_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
+  pure function FEAT2_PP_TEMPLATE_TD(map_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
 
 !<description>
     ! Checks if the iterator has the given specification flag
@@ -2160,7 +2160,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_map,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator
 
     ! Specification flag
     integer(I32), intent(in) :: iSpec
@@ -2180,7 +2180,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_eq,T,D)(riterator1,riterator2) result(beq)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_eq,T,D)(riterator1,riterator2) result(beq)
 
 !<description>
     ! Compare two iterators for equality
@@ -2188,7 +2188,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2205,7 +2205,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_ne,T,D)(riterator1,riterator2) result(bne)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_ne,T,D)(riterator1,riterator2) result(bne)
 
 !<description>
     ! Compare two iterators for inequality
@@ -2213,7 +2213,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2230,7 +2230,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_lt,T,D)(riterator1,riterator2) result(blt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_lt,T,D)(riterator1,riterator2) result(blt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -2238,7 +2238,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2256,7 +2256,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_le,T,D)(riterator1,riterator2) result(ble)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_le,T,D)(riterator1,riterator2) result(ble)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -2264,7 +2264,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2282,7 +2282,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_gt,T,D)(riterator1,riterator2) result(bgt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_gt,T,D)(riterator1,riterator2) result(bgt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -2290,7 +2290,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2308,7 +2308,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_map_ge,T,D)(riterator1,riterator2) result(bge)
+  pure function FEAT2_PP_TEMPLATE_TD(it_map_ge,T,D)(riterator1,riterator2) result(bge)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -2316,7 +2316,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2354,7 +2354,7 @@ contains
 
 !<inputoutput>
     ! The binary search tree
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -2524,7 +2524,7 @@ contains
 
 !<inputoutput>
     ! The map
-    type(template_TD(t_map,T,D)), intent(inout) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
 
@@ -2708,7 +2708,7 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 !</input>
 
 !<result>
@@ -2796,10 +2796,10 @@ contains
 
 !<input>
     ! The map
-    type(template_TD(t_map,T,D)), intent(in) :: rmap
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in) :: rmap
 
     ! The iterator
-    type(template_TD(it_map,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(in) :: rposition
 !</input>
 
 !<result>

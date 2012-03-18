@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_T(octree,T) </name>
+!# <name> FEAT2_PP_TEMPLATE_T(octree,T) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -83,12 +83,12 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
   
   private
-  public :: template_T(t_octree,T)
+  public :: FEAT2_PP_TEMPLATE_T(t_octree,T)
   public :: otree_create
   public :: otree_release
   public :: otree_copy
@@ -108,75 +108,75 @@
   public :: otree_rebuild
 
   interface otree_create
-    module procedure template_T(otree_create,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_create,T)
   end interface
 
   interface otree_release
-    module procedure template_T(otree_release,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_release,T)
   end interface
 
   interface otree_copy
-    module procedure template_T(otree_cpy1,T)
-    module procedure template_T(otree_cpy2,T)
-    module procedure template_T(otree_cpy3,T)
-    module procedure template_T(otree_cpy4,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_cpy1,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_cpy2,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_cpy3,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_cpy4,T)
   end interface
 
   interface otree_insert
-    module procedure template_T(otree_insert,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_insert,T)
   end interface
 
   interface otree_delete
-    module procedure template_T(otree_delete1,T)
-    module procedure template_T(otree_delete2,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_delete1,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_delete2,T)
   end interface
   
   interface otree_find
-    module procedure template_T(otree_find,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_find,T)
   end interface
 
   interface otree_print
-    module procedure template_T(otree_print,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_print,T)
   end interface
 
   interface otree_info
-    module procedure template_T(otree_info,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_info,T)
   end interface
 
   interface otree_getDirection
-    module procedure template_T(otree_getDirection,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getDirection,T)
   end interface
 
   interface otree_getSize
-    module procedure template_T(otree_getSize,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getSize,T)
   end interface
 
   interface otree_getBoundingBox
-    module procedure template_T(otree_getBoundingBox,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getBoundingBox,T)
   end interface
 
   interface otree_getX
-    module procedure template_T(otree_getX,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getX,T)
   end interface
 
   interface otree_getY
-    module procedure template_T(otree_getY,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getY,T)
   end interface
 
   interface otree_getZ
-    module procedure template_T(otree_getZ,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_getZ,T)
   end interface
 
   interface otree_duplicate
-    module procedure template_T(otree_duplicate,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_duplicate,T)
   end interface
 
   interface otree_restore
-    module procedure template_T(otree_restore,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_restore,T)
   end interface
 
   interface otree_rebuild
-    module procedure template_T(otree_rebuild,T)
+    module procedure FEAT2_PP_TEMPLATE_T(otree_rebuild,T)
   end interface
 
 !<types>
@@ -184,7 +184,7 @@
 !<typeblock>
 
   ! A linear octree implemented as array
-  type template_T(t_octree,T)
+  type FEAT2_PP_TEMPLATE_T(t_octree,T)
     private
 
     ! Number of next free node
@@ -221,10 +221,10 @@
 #endif
 
     ! Pointer to data vector
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data => null()
 
     ! Pointer to bounding box
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox => null()
 
     ! Handle to octree structure
     !   KNODE(OTREE_STATUS,INODE) : < 0, the node has been subdivided
@@ -252,7 +252,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_create,T)(roctree, nnvt, nnnode,&
+  subroutine FEAT2_PP_TEMPLATE_T(otree_create,T)(roctree, nnvt, nnnode,&
                                         xmin, ymin, zmin, xmax, ymax, zmax,&
                                         dfactor, ndata)
   
@@ -268,7 +268,7 @@ contains
     integer, intent(in) :: nnnode
 
     ! Dimensions of the initial bounding box
-    TTYPE(T_TYPE), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
 
     ! OPTIONAL: Factor by which the octree should be enlarged if
     ! new storage has to be allocated
@@ -280,7 +280,7 @@ contains
 
 !<output>
     ! Octree structure
-    type(template_T(t_octree,T)), intent(out) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(out) :: roctree
 !</output>
 !</subroutine>
     
@@ -347,7 +347,7 @@ contains
   
 !<subroutine>
   
-  subroutine template_T(otree_release,T)(roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_release,T)(roctree)
 
 !<description>
     ! This subroutine releases an existing octree
@@ -355,7 +355,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
     
@@ -383,7 +383,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(otree_cpy3,T)(roctree, h_DataDest)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_cpy3,T)(roctree, h_DataDest)
 
 !<description>
     ! This subroutine copies the content of the octree to a handle.
@@ -394,7 +394,7 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
@@ -438,7 +438,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_cpy4,T)(roctree, DataDest)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_cpy4,T)(roctree, DataDest)
 
 !<description>
     ! This subroutine copies the content of the octree to an array.
@@ -447,12 +447,12 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
     ! Coordinate vector
-    TTYPE(T_TYPE), dimension(:,:), intent(inout) :: DataDest
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), intent(inout) :: DataDest
 !</inputoutput>
 !</subroutine>
 
@@ -479,7 +479,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(otree_cpy1,T)(h_DataSrc, roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_cpy1,T)(h_DataSrc, roctree)
 
 !<description>
     ! This subroutine copies the content of a handle to the octree.
@@ -492,13 +492,13 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
     
 #ifdef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_DataSrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_DataSrc
     
     ! Set pointer
     call storage_getbase(h_DataSrc, p_DataSrc)
@@ -517,7 +517,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(otree_cpy2,T)(DataSrc, roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_cpy2,T)(DataSrc, roctree)
 
 !<description>
     ! This subroutine copies the content of an array to the octree.
@@ -525,12 +525,12 @@ contains
 
 !<input>
     ! Coordinate vector
-    TTYPE(T_TYPE), dimension(:,:), intent(in) :: DataSrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), intent(in) :: DataSrc
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -563,7 +563,7 @@ contains
   
 !<function>
   
-  function template_T(otree_insert,T)(roctree, data, ivt, inode) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_insert,T)(roctree, data, ivt, inode) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the octree. The
@@ -577,7 +577,7 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    TTYPE(T_TYPE), dimension(3), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
 
     ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
@@ -586,7 +586,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
@@ -649,7 +649,7 @@ contains
       integer :: iresult
 
       ! local variables
-      TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
       integer :: i,jvt,jnode,nnode,isize,jresult
       
 
@@ -800,7 +800,7 @@ contains
   
 !<function>
   
-  function template_T(otree_delete1,T)(roctree, data, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_delete1,T)(roctree, data, ivt) result(iresult)
 
 !<description>
     ! This function deletes an item from the octree.
@@ -811,12 +811,12 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    TTYPE(T_TYPE), dimension(3), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
@@ -847,7 +847,7 @@ contains
       integer :: iresult
       
       ! local variables
-      TTYPE(T_TYPE), dimension(3) :: DataTmp
+      FEAT2_PP_TTYPE(T_TYPE), dimension(3) :: DataTmp
       integer, dimension(OTREE_MAX) :: Knode
       integer :: jvt,i,jnode,ipos,jpos,nemptyChildren
       
@@ -984,7 +984,7 @@ contains
 
 !<function>
 
-  function template_T(otree_delete2,T)(roctree, ivt, ivtReplace) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_delete2,T)(roctree, ivt, ivtReplace) result(iresult)
 
 !<description>
     ! This function deletes vertex with number IVT from the octree.
@@ -997,7 +997,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
@@ -1014,7 +1014,7 @@ contains
 !</function>
 
     ! local variables
-    TTYPE(T_TYPE), dimension(3) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3) :: data
     
     if (ivt .le. roctree%NVT) then
       ! Get coordinates and invoke deletion routine
@@ -1030,7 +1030,7 @@ contains
 
 !<function>
   
-  function template_T(otree_find,T)(roctree, data, inode, ipos, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_find,T)(roctree, data, inode, ipos, ivt) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the octree.
@@ -1043,10 +1043,10 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
     
     ! Coordinates that should be searched for
-    TTYPE(T_TYPE), dimension(3), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
 !</input>
 
 !<output>
@@ -1138,7 +1138,7 @@ contains
   
 !<function>
   
-  pure function template_T(otree_getDirection,T)(roctree, data, inode) result(idirection)
+  pure function FEAT2_PP_TEMPLATE_T(otree_getDirection,T)(roctree, data, inode) result(idirection)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Data.
@@ -1146,10 +1146,10 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
     
     ! Coordinates
-    TTYPE(T_TYPE), dimension(3), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
 
     ! Number of node
     integer, intent(in) :: inode
@@ -1162,7 +1162,7 @@ contains
 !</function>
     
     ! local variables
-    TTYPE(T_TYPE) :: xmid,ymid,zmid
+    FEAT2_PP_TTYPE(T_TYPE) :: xmid,ymid,zmid
 
     ! Compute midpoint of current node
     xmid=0.5*(roctree%p_BdBox(OTREE_XMIN, inode)+&
@@ -1213,7 +1213,7 @@ contains
   
 !<subroutine>
 
-  subroutine template_T(otree_print,T)(roctree, cfilename)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_print,T)(roctree, cfilename)
 
 !<description>
     ! This subroutine writes the content of the octree to a file
@@ -1222,7 +1222,7 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
     ! filename of the output file
     character(LEN=*), intent(in) :: cfilename
@@ -1230,7 +1230,7 @@ contains
 !</subroutine>
     
     ! local variables
-    TTYPE(T_TYPE) :: xmin,xmax,ymin,ymax,zmin,zmax
+    FEAT2_PP_TTYPE(T_TYPE) :: xmin,xmax,ymin,ymax,zmin,zmax
     integer :: iunit
     
     iunit = sys_getFreeUnit()
@@ -1250,9 +1250,9 @@ contains
     ! Here, the recursive print routine follows
     
     recursive subroutine print(xmin, ymin, zmin, xmax, ymax, zmax, inode)
-      TTYPE(T_TYPE), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
+      FEAT2_PP_TTYPE(T_TYPE), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
       integer, intent(in) :: inode
-      TTYPE(T_TYPE) :: xmid,ymid,zmid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmid,ymid,zmid
       integer :: i,j
 
       write(UNIT=iunit,FMT=*) 'hex'
@@ -1301,7 +1301,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_info,T)(roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_info,T)(roctree)
 
 !<description>
     ! This subroutine outputs statistical info about the octree
@@ -1309,7 +1309,7 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 !</input>
 !</subroutine>
 
@@ -1339,7 +1339,7 @@ contains
 
 !<function>
 
-  pure function template_T(otree_getSize,T)(roctree) result(nvt)
+  pure function FEAT2_PP_TEMPLATE_T(otree_getSize,T)(roctree) result(nvt)
 
 !<description>
     ! This function returns the number of vertices stored in the octree
@@ -1347,7 +1347,7 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 !</input>
 
 !<result>
@@ -1364,7 +1364,7 @@ contains
 
 !<function>
 
-  function template_T(otree_getBoundingBox,T)(roctree, inode) result(BdBox)
+  function FEAT2_PP_TEMPLATE_T(otree_getBoundingBox,T)(roctree, inode) result(BdBox)
     
 !<description>
     ! This function returns the bounding box of the specified node.
@@ -1373,7 +1373,7 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
     ! OPTIONAL: number of node for which bounding box should be returned
     integer, intent(in), optional :: inode
@@ -1381,7 +1381,7 @@ contains
 
 !<result>
     ! bounding box
-    TTYPE(T_TYPE), dimension(6) :: BdBox
+    FEAT2_PP_TTYPE(T_TYPE), dimension(6) :: BdBox
 !</result>
 !</function>
     
@@ -1402,7 +1402,7 @@ contains
 
 !<function>
 
-  elemental function template_T(otree_getX,T)(roctree, ivt) result(x)
+  elemental function FEAT2_PP_TEMPLATE_T(otree_getX,T)(roctree, ivt) result(x)
 
 !<description>
     ! This function returns the X-value at the given position.
@@ -1410,14 +1410,14 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
     ! position in the octree
     integer, intent(in) :: ivt
 !</input>
 
 !<result>
-    TTYPE(T_TYPE) :: x
+    FEAT2_PP_TTYPE(T_TYPE) :: x
 !</result>
 !</function>
 
@@ -1429,7 +1429,7 @@ contains
 
 !<function>
 
-  elemental function template_T(otree_getY,T)(roctree, ivt) result(y)
+  elemental function FEAT2_PP_TEMPLATE_T(otree_getY,T)(roctree, ivt) result(y)
 
 !<description>
     ! This function returns the Y-value at the given position.
@@ -1437,14 +1437,14 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
     ! position in the octree
     integer, intent(in) :: ivt
 !</input>
 
 !<result>
-    TTYPE(T_TYPE) :: y
+    FEAT2_PP_TTYPE(T_TYPE) :: y
 !</result>
 !</function>
 
@@ -1456,7 +1456,7 @@ contains
 
 !<function>
 
-  elemental function template_T(otree_getZ,T)(roctree, ivt) result(z)
+  elemental function FEAT2_PP_TEMPLATE_T(otree_getZ,T)(roctree, ivt) result(z)
 
 !<description>
     ! This function returns the Z-value at the given position.
@@ -1464,14 +1464,14 @@ contains
 
 !<input>
     ! Octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
     ! position in the octree
     integer, intent(in) :: ivt
 !</input>
 
 !<result>
-    TTYPE(T_TYPE) :: z
+    FEAT2_PP_TTYPE(T_TYPE) :: z
 !</result>
 !</function>
 
@@ -1483,7 +1483,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_duplicate,T)(roctree, roctreeBackup)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_duplicate,T)(roctree, roctreeBackup)
 
 !<description>
     ! This subroutine makes a copy of an octree in memory.
@@ -1494,12 +1494,12 @@ contains
 
 !<input>
     ! Source octree
-    type(template_T(t_octree,T)), intent(in) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
     ! Destination octree
-    type(template_T(t_octree,T)), intent(inout) :: roctreeBackup
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctreeBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1555,7 +1555,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_restore,T)(roctreeBackup, roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_restore,T)(roctreeBackup, roctree)
 
 !<description>
     ! This subroutine restores an octree from a previous backup.
@@ -1563,12 +1563,12 @@ contains
 
 !<input>
     ! Backup of an octree
-    type(template_T(t_octree,T)), intent(in) :: roctreeBackup
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctreeBackup
 !</input>
 
 !<inputoutput>
     ! Destination octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -1584,7 +1584,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(otree_rebuild,T)(roctree)
+  subroutine FEAT2_PP_TEMPLATE_T(otree_rebuild,T)(roctree)
 
 !<description>
     ! This subroutine rebuilds the structure of an octree
@@ -1592,7 +1592,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -1643,7 +1643,7 @@ contains
       integer, intent(in) :: inode,istart, iend
       
       ! local variables
-      TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
       integer :: i,isize,jnode,nnode,imid1,imid2,imid3,imid4,imid5,imid6,imid7
 
       
@@ -1811,7 +1811,7 @@ contains
 
     function partition(istart, iend, idim, dmid) result(imid)
 
-      TTYPE(T_TYPE), intent(in) :: dmid
+      FEAT2_PP_TTYPE(T_TYPE), intent(in) :: dmid
       integer, intent(in) :: istart, iend, idim
       integer :: imid
 
@@ -1876,7 +1876,7 @@ contains
       integer :: isplit
 
       ! local variables
-      TTYPE(T_TYPE) :: dpivot
+      FEAT2_PP_TTYPE(T_TYPE) :: dpivot
       integer :: i, j, iaux
       
       ! Initialization
@@ -1930,13 +1930,13 @@ contains
 
 !<inputoutput>
     ! Octree that should be resized
-    type(template_T(t_octree,T)) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)) :: roctree
 !</inputoutput>
 !</subroutine>
 
 #ifndef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data
 #endif
 
 #ifdef T_STORAGE
@@ -1974,13 +1974,13 @@ contains
 
 !<inputoutput>
     ! Octree that should be resized
-    type(template_T(t_octree,T)), intent(inout) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
 #ifndef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox
 #endif
 
     call storage_realloc('resizeNNODE', nnnode, roctree%h_BdBox,&

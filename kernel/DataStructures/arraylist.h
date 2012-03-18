@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_TD(arraylist,T,D) </name>
+!# <name> FEAT2_PP_TEMPLATE_TD(arraylist,T,D) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -149,13 +149,13 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
 
   private
-  public :: template_TD(t_arraylist,T,D)
-  public :: template_TD(it_arraylist,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)
   public :: alst_create,alst_createTbl
   public :: alst_release,alst_releaseTbl
   public :: alst_resize,alst_resizeTbl
@@ -207,250 +207,250 @@
   public operator(>=)
 
   interface alst_create
-    module procedure template_TD(alst_create,T,D)
-    module procedure template_TD(alst_createTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_create,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_createTbl,T,D)
   end interface
 
   interface alst_createTbl
-    module procedure template_TD(alst_createTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_createTbl,T,D)
   end interface
 
   interface alst_release
-    module procedure template_TD(alst_release,T,D)
-    module procedure template_TD(alst_releaseTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_release,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_releaseTbl,T,D)
   end interface
 
   interface alst_releaseTbl
-    module procedure template_TD(alst_releaseTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_releaseTbl,T,D)
   end interface
 
   interface alst_resize
-    module procedure template_TD(alst_resize,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_resize,T,D)
   end interface
 
   interface alst_resizeTbl
-    module procedure template_TD(alst_resizeTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_resizeTbl,T,D)
   end interface
 
   interface alst_clear
-    module procedure template_TD(alst_clear,T,D)
-    module procedure template_TD(alst_clearTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_clear,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_clearTbl,T,D)
   end interface
 
   interface alst_clearTbl
-    module procedure template_TD(alst_clearTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_clearTbl,T,D)
   end interface
   
   interface alst_copy
-    module procedure template_TD(alst_cpy1,T,D)
-    module procedure template_TD(alst_cpy2,T,D)
-    module procedure template_TD(alst_cpy3,T,D)
-    module procedure template_TD(alst_cpy4,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy3,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy4,T,D)
   end interface
 
   interface alst_copyTbl
-    module procedure template_TD(alst_cpy1Tbl,T,D)
-    module procedure template_TD(alst_cpy2Tbl,T,D)
-    module procedure template_TD(alst_cpy3Tbl,T,D)
-    module procedure template_TD(alst_cpy4Tbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy1Tbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy2Tbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy3Tbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy4Tbl,T,D)
   end interface
 
   interface alst_swap
-    module procedure template_TD(alst_swap,T,D)
-    module procedure template_TD(alst_swapTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_swap,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_swapTbl,T,D)
   end interface
 
   interface alst_swapTbl
-    module procedure template_TD(alst_swapTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_swapTbl,T,D)
   end interface
 
   interface alst_begin
-    module procedure template_TD(alst_begin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_begin,T,D)
   end interface
 
   interface alst_rbegin
-    module procedure template_TD(alst_rbegin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_rbegin,T,D)
   end interface
   
   interface alst_end
-    module procedure template_TD(alst_end,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_end,T,D)
   end interface
 
   interface alst_rend
-    module procedure template_TD(alst_rend,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_rend,T,D)
   end interface
   
   interface alst_next
-    module procedure template_TD(alst_next,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_next,T,D)
   end interface
 
   interface alst_prior
-    module procedure template_TD(alst_prior,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_prior,T,D)
   end interface
 
   interface alst_get
-    module procedure template_TD(alst_get,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_get,T,D)
   end interface
 
   interface alst_getbase_key
-    module procedure template_TD(alst_getbase_key,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_getbase_key,T,D)
   end interface
 
 #ifdef D
   interface alst_getbase_data
-    module procedure template_TD(alst_getbase_data,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_getbase_data,T,D)
   end interface
 #endif
   
   interface alst_assign
-    module procedure template_TD(alst_assign1,T,D)
-    module procedure template_TD(alst_assign2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_assign1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_assign2,T,D)
   end interface
 
   interface alst_push_front
-    module procedure template_TD(alst_push_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_push_front,T,D)
   end interface
 
   interface alst_push_back
-    module procedure template_TD(alst_push_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_push_back,T,D)
   end interface
 
   interface alst_pop_front
-    module procedure template_TD(alst_pop_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_pop_front,T,D)
   end interface
   
   interface alst_pop_back
-    module procedure template_TD(alst_pop_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_pop_back,T,D)
   end interface
 
   interface alst_front
-    module procedure template_TD(alst_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_front,T,D)
   end interface
 
   interface alst_getbase_front
-    module procedure template_TD(alst_getbase_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_getbase_front,T,D)
   end interface
 
   interface alst_back
-    module procedure template_TD(alst_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_back,T,D)
   end interface
 
   interface alst_getbase_back
-    module procedure template_TD(alst_getbase_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_getbase_back,T,D)
   end interface
 
   interface alst_insert
-    module procedure template_TD(alst_insert1,T,D)
-    module procedure template_TD(alst_insert2,T,D)
-    module procedure template_TD(alst_insert3,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_insert1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_insert2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_insert3,T,D)
   end interface
 
   interface alst_erase
-    module procedure template_TD(alst_erase1,T,D)
-    module procedure template_TD(alst_erase2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_erase1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_erase2,T,D)
   end interface
   
   interface alst_size
-    module procedure template_TD(alst_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_size,T,D)
   end interface
   
   interface alst_max_size
-    module procedure template_TD(alst_max_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_max_size,T,D)
   end interface
   
   interface alst_ntable
-    module procedure template_TD(alst_ntable,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_ntable,T,D)
   end interface
   
   interface alst_empty
-    module procedure template_TD(alst_empty,T,D)
-    module procedure template_TD(alst_emptyTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_empty,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_emptyTbl,T,D)
   end interface
 
   interface alst_emptyTbl
-    module procedure template_TD(alst_emptyTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_emptyTbl,T,D)
   end interface
   
   interface alst_find
-    module procedure template_TD(alst_find1,T,D)
-    module procedure template_TD(alst_find2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_find1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_find2,T,D)
   end interface
 
   interface alst_print
-    module procedure template_TD(alst_print,T,D)
-    module procedure template_TD(alst_printTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_print,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_printTbl,T,D)
   end interface
 
   interface alst_printTbl
-    module procedure template_TD(alst_printTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_printTbl,T,D)
   end interface
 
   interface alst_info
-    module procedure template_TD(alst_info,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_info,T,D)
   end interface
 
   interface alst_duplicate
-    module procedure template_TD(alst_duplicate,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_duplicate,T,D)
   end interface
 
   interface alst_restore
-    module procedure template_TD(alst_restore,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_restore,T,D)
   end interface
 
   interface alst_reverse
-    module procedure template_TD(alst_reverse,T,D)
-    module procedure template_TD(alst_reverseTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_reverse,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_reverseTbl,T,D)
   end interface
 
   interface alst_reverseTbl
-    module procedure template_TD(alst_reverseTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_reverseTbl,T,D)
   end interface
   
   interface alst_sort
-    module procedure template_TD(alst_sort,T,D)
-    module procedure template_TD(alst_sortTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_sort,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_sortTbl,T,D)
   end interface
 
   interface alst_sortTbl
-    module procedure template_TD(alst_sortTbl,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_sortTbl,T,D)
   end interface
 
   interface alst_isNull
-    module procedure template_TD(alst_isNull,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_isNull,T,D)
   end interface
 
   interface alst_hasSpec
-    module procedure template_TD(alst_hasSpec,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_hasSpec,T,D)
   end interface
   
   
   interface assignment(=)
-    module procedure template_TD(alst_fassign,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_fassign,T,D)
   end interface
 
   
   interface operator(==)
-    module procedure template_TD(it_alst_eq,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_eq,T,D)
   end interface
   
   interface operator(/=)
-    module procedure template_TD(it_alst_ne,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_ne,T,D)
   end interface
 
   interface operator(<)
-    module procedure template_TD(it_alst_lt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_lt,T,D)
   end interface
 
   interface operator(<=)
-    module procedure template_TD(it_alst_le,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_le,T,D)
   end interface
 
   interface operator(>)
-    module procedure template_TD(it_alst_gt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_gt,T,D)
   end interface
 
   interface operator(>=)
-    module procedure template_TD(it_alst_ge,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_alst_ge,T,D)
   end interface
 
   !************************************************************************
@@ -461,7 +461,7 @@
 
   ! An arraylist
 
-  type template_TD(t_arraylist,T,D)
+  type FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)
     private
     
     ! Number of tables that are currently stored in the arraylist
@@ -508,7 +508,7 @@
 #endif
     
     ! Pointer to the key values of the arraylist 
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
 
 #ifdef D
     ! Dimension of the auxiliary data values to be stored
@@ -519,7 +519,7 @@
 #endif
 
     ! Pointer to arraylist auxiliary data
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
 #endif
 
   end type
@@ -530,7 +530,7 @@
 
   ! An iterator for an arraylist
 
-  type template_TD(it_arraylist,T,D)
+  type FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)
     private
 
     ! Number of the table
@@ -545,7 +545,7 @@
     integer(I32) :: iSpec = 0_I32
     
     ! Pointer to the underlying arraylist
-    type(template_TD(t_arraylist,T,D)), pointer :: p_rarraylist => null()
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), pointer :: p_rarraylist => null()
 
   end type
 
@@ -560,10 +560,10 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_create,T,D)(rarraylist, nntable, NNA,&
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_create,T,D)(rarraylist, nntable, NNA,&
       isizeData, dfactor)
 #else
-  subroutine template_TD(alst_create,T,D)(rarraylist, nntable, NNA, dfactor)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_create,T,D)(rarraylist, nntable, NNA, dfactor)
 #endif
 
 !<description>
@@ -589,7 +589,7 @@ contains
 
 !<output>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(out) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(out) :: rarraylist
 !</output>
 !</subroutine>
 
@@ -657,7 +657,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_createTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_createTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine creates new table entries up to position itable.
@@ -670,7 +670,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -704,14 +704,14 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(alst_release,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_release,T,D)(rarraylist)
 
 !<description>
     ! This subroutine releases an existing arraylist
 !</description>
 
 !<inputoutput>
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -760,7 +760,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_releaseTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_releaseTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine releases a table from the arraylist
@@ -773,7 +773,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -803,7 +803,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(alst_resize,T,D)(rarraylist, NNA)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_resize,T,D)(rarraylist, NNA)
 
 !<description>
     ! This subroutine reallocates memory for an existing list
@@ -816,7 +816,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -824,12 +824,12 @@ contains
     integer :: NNAOld
     
 #ifndef T_STORAGE
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
 
 #ifdef D
 #ifndef D_STORAGE
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
 #endif
 #endif
 
@@ -886,7 +886,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_resizeTbl,T,D)(rarraylist, nntable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_resizeTbl,T,D)(rarraylist, nntable)
 
 !<description>
     ! This subroutine reallocates memory for the lookup table
@@ -899,7 +899,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -917,7 +917,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(alst_clear,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_clear,T,D)(rarraylist)
 
 !<description>
     ! This subroutine clears the content of the arraylist
@@ -925,7 +925,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -949,7 +949,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(alst_clearTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_clearTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine clears the content of the table of the arraylist
@@ -962,7 +962,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -982,9 +982,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy1,T,D)(h_TableSrc, h_KeySrc, rarraylist, h_DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy1,T,D)(h_TableSrc, h_KeySrc, rarraylist, h_DataSrc)
 #else
-  subroutine template_TD(alst_cpy1,T,D)(h_TableSrc, h_KeySrc, rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy1,T,D)(h_TableSrc, h_KeySrc, rarraylist)
 #endif
 
 !<description>
@@ -1006,7 +1006,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1051,9 +1051,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy2,T,D)(TableSrc, KeySrc, rarraylist, DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy2,T,D)(TableSrc, KeySrc, rarraylist, DataSrc)
 #else
-  subroutine template_TD(alst_cpy2,T,D)(TableSrc, KeySrc, rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy2,T,D)(TableSrc, KeySrc, rarraylist)
 #endif
 
 !<description>
@@ -1065,17 +1065,17 @@ contains
     integer, dimension(:), intent(in) :: TableSrc
 
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1111,9 +1111,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy3,T,D)(rarraylist, h_TableDest, h_KeyDest, h_DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy3,T,D)(rarraylist, h_TableDest, h_KeyDest, h_DataDest)
 #else
-  subroutine template_TD(alst_cpy3,T,D)(rarraylist, h_TableDest, h_KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy3,T,D)(rarraylist, h_TableDest, h_KeyDest)
 #endif
 
 !<description>
@@ -1122,7 +1122,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
@@ -1273,9 +1273,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy4,T,D)(rarraylist, TableDest, KeyDest, DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy4,T,D)(rarraylist, TableDest, KeyDest, DataDest)
 #else
-  subroutine template_TD(alst_cpy4,T,D)(rarraylist, TableDest, KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy4,T,D)(rarraylist, TableDest, KeyDest)
 #endif
 
 !<description>
@@ -1284,7 +1284,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
@@ -1292,11 +1292,11 @@ contains
     integer, dimension(:), intent(inout) :: TableDest
 
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
 #endif
 !</inputoutput>
 !</subroutine>
@@ -1374,9 +1374,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy1Tbl,T,D)(h_KeySrc, itable, rarraylist, h_DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy1Tbl,T,D)(h_KeySrc, itable, rarraylist, h_DataSrc)
 #else
-  subroutine template_TD(alst_cpy1Tbl,T,D)(h_KeySrc, itable, rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy1Tbl,T,D)(h_KeySrc, itable, rarraylist)
 #endif
 
 !<description>
@@ -1399,7 +1399,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1445,9 +1445,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy2Tbl,T,D)(KeySrc, itable, rarraylist, DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy2Tbl,T,D)(KeySrc, itable, rarraylist, DataSrc)
 #else
-  subroutine template_TD(alst_cpy2Tbl,T,D)(KeySrc, itable, rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy2Tbl,T,D)(KeySrc, itable, rarraylist)
 #endif
 
 !<description>
@@ -1457,20 +1457,20 @@ contains
 
 !<input>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
 
     ! Number of the table
     integer, intent(in) :: itable
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1500,9 +1500,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy3Tbl,T,D)(rarraylist, itable, h_KeyDest, h_DataDest, ncount)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy3Tbl,T,D)(rarraylist, itable, h_KeyDest, h_DataDest, ncount)
 #else
-  subroutine template_TD(alst_cpy3Tbl,T,D)(rarraylist, itable, h_KeyDest, ncount)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy3Tbl,T,D)(rarraylist, itable, h_KeyDest, ncount)
 #endif
 
 !<description>
@@ -1512,7 +1512,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1652,9 +1652,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_cpy4Tbl,T,D)(rarraylist, itable, Key, data, ncount)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy4Tbl,T,D)(rarraylist, itable, Key, data, ncount)
 #else
-  subroutine template_TD(alst_cpy4Tbl,T,D)(rarraylist, itable, Key, ncount)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_cpy4Tbl,T,D)(rarraylist, itable, Key, ncount)
 #endif
 
 !<description>
@@ -1664,7 +1664,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1672,11 +1672,11 @@ contains
 
 !<inputoutput>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(inout) :: Key
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(inout) :: Key
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: data
 #endif
 !</inputoutput>
 
@@ -1741,7 +1741,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_swap,T,D)(rarraylist1, rarraylist2)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_swap,T,D)(rarraylist1, rarraylist2)
 
 !<description>
     ! This subroutine swaps content of two arraylists
@@ -1749,15 +1749,15 @@ contains
     
 !<inputoutput>
     ! First arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist1
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist1
 
     ! Second arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist2
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist2
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(template_TD(t_arraylist,T,D)) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)) :: rarraylist
     
     ! Swap lists
     rarraylist  = rarraylist1
@@ -1792,7 +1792,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(alst_swapTbl,T,D)(rarraylist, itable, jtable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_swapTbl,T,D)(rarraylist, itable, jtable)
 
 !<description>
     ! This subroutine swaps two tables and the associated list in the
@@ -1806,7 +1806,7 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1839,7 +1839,7 @@ contains
 
 !<function>
   
-  function template_TD(alst_begin,T,D)(rarraylist, itable) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_begin,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the first list
@@ -1848,7 +1848,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1856,7 +1856,7 @@ contains
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -1884,7 +1884,7 @@ contains
 
 !<function>
   
-  function template_TD(alst_rbegin,T,D)(rarraylist, itable) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_rbegin,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
     ! This function returns a reverse iterator positioned to the last
@@ -1893,7 +1893,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1901,7 +1901,7 @@ contains
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -1929,7 +1929,7 @@ contains
 
 !<function>
   
-  function template_TD(alst_end,T,D)(rarraylist, itable) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_end,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the past-the-end
@@ -1938,7 +1938,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1946,7 +1946,7 @@ contains
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -1974,7 +1974,7 @@ contains
 
 !<function>
   
-  function template_TD(alst_rend,T,D)(rarraylist, itable) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_rend,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the element right
@@ -1983,7 +1983,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in), target :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -1991,7 +1991,7 @@ contains
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
     !</result>
 !</function>
 
@@ -2019,7 +2019,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine template_TD(alst_next,T,D)(riterator)
+  pure subroutine FEAT2_PP_TEMPLATE_TD(alst_next,T,D)(riterator)
 
 !<description>
     ! This subroutine increments the list iterator by one.
@@ -2027,7 +2027,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -2051,7 +2051,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine template_TD(alst_prior,T,D)(riterator)
+  pure subroutine FEAT2_PP_TEMPLATE_TD(alst_prior,T,D)(riterator)
 
 !<description>
     ! This subroutine decrements the list iterator by one.
@@ -2059,7 +2059,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -2083,7 +2083,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_getbase_key,T,D)(rarraylist, rposition, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_key,T,D)(rarraylist, rposition, p_key)
 
 !<description>
     ! This subroutine returns pointers to the key value stored at
@@ -2092,15 +2092,15 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 !</input>
 
 !<output>
     ! Pointer to the key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 !</output>
 !</subroutine>
     
@@ -2114,7 +2114,7 @@ contains
 #ifdef D
 !<subroutine>
 
-  subroutine template_TD(alst_getbase_data,T,D)(rarraylist, rposition, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_data,T,D)(rarraylist, rposition, p_data)
 
 !<description>
     ! This subroutine returns pointers to the key value stored at
@@ -2123,15 +2123,15 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 !</input>
 
 !<output>
     ! Pointer to the auxiliary data value
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 !</output>
 !</subroutine>
     
@@ -2148,7 +2148,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_get,T,D)(rarraylist, rposition) result(key)
+  function FEAT2_PP_TEMPLATE_TD(alst_get,T,D)(rarraylist, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -2157,15 +2157,15 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 !</input>
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
     
@@ -2179,9 +2179,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_assign1,T,D)(rarraylist, itable, n, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_assign1,T,D)(rarraylist, itable, n, key, data)
 #else
-  subroutine template_TD(alst_assign1,T,D)(rarraylist, itable, n, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_assign1,T,D)(rarraylist, itable, n, key)
 #endif
 
 !<description>
@@ -2197,17 +2197,17 @@ contains
     integer, intent(in) :: n
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -2232,7 +2232,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_assign2,T,D)(rarraylist, itable, rfirst, rlast)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_assign2,T,D)(rarraylist, itable, rfirst, rlast)
 
 !<description>
     ! This subroutine removes all existing data from the list in the
@@ -2245,24 +2245,24 @@ contains
     integer, intent(in) :: itable
 
     ! Iterator referring to the first element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-end element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     ! Clear list
@@ -2291,9 +2291,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_push_front,T,D)(rarraylist, itable, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_push_front,T,D)(rarraylist, itable, key, data)
 #else
-  subroutine template_TD(alst_push_front,T,D)(rarraylist, itable, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_push_front,T,D)(rarraylist, itable, key)
 #endif
 
 !<description>
@@ -2305,17 +2305,17 @@ contains
     integer, intent(in) :: itable
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -2379,9 +2379,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_push_back,T,D)(rarraylist, itable, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_push_back,T,D)(rarraylist, itable, key, data)
 #else
-  subroutine template_TD(alst_push_back,T,D)(rarraylist, itable, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_push_back,T,D)(rarraylist, itable, key)
 #endif
 
 !<description>
@@ -2393,17 +2393,17 @@ contains
     integer, intent(in) :: itable
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -2466,7 +2466,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_pop_front,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_pop_front,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine removes the first element from the list
@@ -2480,12 +2480,12 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
@@ -2499,7 +2499,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_pop_back,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_pop_back,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine removes the last element from the list
@@ -2513,12 +2513,12 @@ contains
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
     
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
@@ -2533,9 +2533,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key, p_data)
 #else
-  subroutine template_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_front,T,D)(rarraylist, itable, p_key)
 #endif
 
 !<description>
@@ -2545,7 +2545,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -2553,17 +2553,17 @@ contains
 
 !<output>
     ! Pointer to key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
     ! OPTIONAL: Pointer to data value
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) then
@@ -2592,7 +2592,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_front,T,D)(rarraylist, itable) result(key)
+  function FEAT2_PP_TEMPLATE_TD(alst_front,T,D)(rarraylist, itable) result(key)
 
 !<description>
     ! This function returns the key stored in the first element of the
@@ -2601,7 +2601,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -2609,12 +2609,12 @@ contains
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
@@ -2629,9 +2629,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key, p_data)
 #else
-  subroutine template_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_getbase_back,T,D)(rarraylist, itable, p_key)
 #endif
 
 !<description>
@@ -2641,7 +2641,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -2649,17 +2649,17 @@ contains
 
 !<output>
     ! Pointer to key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
     ! OPTIONAL: Pointer to data
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) then
@@ -2688,7 +2688,7 @@ contains
   
 !<function>
 
-  function template_TD(alst_back,T,D)(rarraylist, itable) result(key)
+  function FEAT2_PP_TEMPLATE_TD(alst_back,T,D)(rarraylist, itable) result(key)
 
 !<description>
     ! This function returns the key stored in the last element of the
@@ -2697,7 +2697,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -2705,12 +2705,12 @@ contains
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
@@ -2725,10 +2725,10 @@ contains
 !<function>
 
 #ifdef D
-  function template_TD(alst_insert1,T,D)(rarraylist, rposition, key, data)&
+  function FEAT2_PP_TEMPLATE_TD(alst_insert1,T,D)(rarraylist, rposition, key, data)&
                                          result(riterator)
 #else
-  function template_TD(alst_insert1,T,D)(rarraylist, rposition, key)&
+  function FEAT2_PP_TEMPLATE_TD(alst_insert1,T,D)(rarraylist, rposition, key)&
                                          result(riterator)
 #endif
 
@@ -2740,25 +2740,25 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2853,10 +2853,10 @@ contains
 !<function>
 
 #ifdef D
-  function template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key, data)&
+  function FEAT2_PP_TEMPLATE_TD(alst_insert2,T,D)(rarraylist, rposition, n, key, data)&
                                          result(riterator)
 #else
-  function template_TD(alst_insert2,T,D)(rarraylist, rposition, n, key)&
+  function FEAT2_PP_TEMPLATE_TD(alst_insert2,T,D)(rarraylist, rposition, n, key)&
                                          result(riterator)
 #endif
 
@@ -2867,28 +2867,28 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 
     ! Number of copies
     integer, intent(in) :: n
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2909,7 +2909,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_insert3,T,D)(rarraylist, rposition, rfirst, rlast)&
+  function FEAT2_PP_TEMPLATE_TD(alst_insert3,T,D)(rarraylist, rposition, rfirst, rlast)&
                                          result(riterator)
 
 !<description>
@@ -2919,32 +2919,32 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rposition
 
     ! Iterator referring to the first element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riter
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riter
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     ! Push content to the list
@@ -2968,7 +2968,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_erase1,T,D)(rarraylist, rposition) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_erase1,T,D)(rarraylist, rposition) result(riterator)
 
 !<description>
     ! This function removes the element from the arraylist at
@@ -2978,17 +2978,17 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -3038,7 +3038,7 @@ contains
 
 !<function>
 
-  function template_TD(alst_erase2,T,D)(rarraylist, rfirst, rlast) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(alst_erase2,T,D)(rarraylist, rfirst, rlast) result(riterator)
 
 !<description>
     ! This function removes the elements [rfirst,rlast) from the list
@@ -3048,20 +3048,20 @@ contains
 
 !<input>
     ! Iterator referring to the first element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_arraylist,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -3077,7 +3077,7 @@ contains
 
 !<function>
 
-  recursive function template_TD(alst_find1,T,D)(rarraylist, itable, key,&
+  recursive function FEAT2_PP_TEMPLATE_TD(alst_find1,T,D)(rarraylist, itable, key,&
                                                  rpositionGuess) result(riterator)
 
 !<description>
@@ -3088,21 +3088,21 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
     
     ! Number of the table
     integer, intent(in) :: itable
     
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
     
     ! OPTIONAL: initial guess of the position
-    type(template_TD(it_arraylist,T,D)), intent(in), optional :: rpositionGuess
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in), optional :: rpositionGuess
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -3141,7 +3141,7 @@ contains
 
 !<function>
 
-  recursive function template_TD(alst_find2,T,D)(rarraylist, itable, key,&
+  recursive function FEAT2_PP_TEMPLATE_TD(alst_find2,T,D)(rarraylist, itable, key,&
                                                  bisReverse, rpositionGuess)&
                                                  result(riterator)
 
@@ -3160,24 +3160,24 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
     
     ! Number of the table
     integer, intent(in) :: itable
     
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
     
     ! Flag: if TRUE then list is assumed in reverse order
     logical, intent(in) :: bisReverse
 
     ! OPTIONAL: initial guess of the position
-    type(template_TD(it_arraylist,T,D)), intent(in), optional :: rpositionGuess
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in), optional :: rpositionGuess
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -3233,7 +3233,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_print,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_print,T,D)(rarraylist)
 
 !<description>
     ! This subroutine prints the content of the arraylist
@@ -3241,14 +3241,14 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 !</subroutine>
 
 #ifdef T_STORAGE
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
     integer :: itable
     
     ! Loop over all tables
@@ -3276,7 +3276,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_printTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_printTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine prints the content of the given table of the arraylist
@@ -3284,7 +3284,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
     
     ! Number of the table
     integer, intent(in) :: itable
@@ -3294,7 +3294,7 @@ contains
 #ifdef T_STORAGE
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
     
     riterator = alst_begin(rarraylist, itable)
     do while (riterator /= alst_end(rarraylist, itable))
@@ -3315,7 +3315,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_info,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_info,T,D)(rarraylist)
 
 !<description>
     ! This subroutine prints information about the arraylist
@@ -3323,7 +3323,7 @@ contains
 
 !<input>
     ! arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 !</subroutine>
 
@@ -3371,7 +3371,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_duplicate,T,D)(rarraylist, rarraylistBackup)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_duplicate,T,D)(rarraylist, rarraylistBackup)
 
 !<description>
     ! This subroutine makes a copy of an arraylist in memory.
@@ -3382,12 +3382,12 @@ contains
 
 !<input>
     ! The rraylist for which a backup copy should be generated
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
     ! Backup copy arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylistBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistBackup
 !</inputoutput>
 !</subroutine>
 
@@ -3462,7 +3462,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_restore,T,D)(rarraylistBackup, rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_restore,T,D)(rarraylistBackup, rarraylist)
 
 !<description>
     ! This subroutine restores an arraylist from a previous backup.
@@ -3470,12 +3470,12 @@ contains
 
 !<input>
     ! Backup copy of the arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylistBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylistBackup
 !</input>
 
 !<inputoutput>
     ! Destination arraylist
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -3491,7 +3491,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_size,T,D)(rarraylist) result(isize)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_size,T,D)(rarraylist) result(isize)
 
 !<description>
     ! Returns the size of the arraylist
@@ -3499,7 +3499,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<result>
@@ -3516,7 +3516,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_max_size,T,D)(rarraylist) result(imaxsize)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_max_size,T,D)(rarraylist) result(imaxsize)
 
 !<description>
     ! Returns the maximum size of the arraylist
@@ -3524,7 +3524,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<result>
@@ -3541,7 +3541,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_ntable,T,D)(rarraylist) result(ntable)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_ntable,T,D)(rarraylist) result(ntable)
 
 !<description>
     ! Returns the number of tables of the arraylist
@@ -3549,7 +3549,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<result>
@@ -3566,7 +3566,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_empty,T,D)(rarraylist) result(bempty)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_empty,T,D)(rarraylist) result(bempty)
 
 !<description>
     ! Checks if the arraylist is empty
@@ -3574,7 +3574,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 !</input>
 
 !<result>
@@ -3591,7 +3591,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_emptyTbl,T,D)(rarraylist, itable) result(bempty)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_emptyTbl,T,D)(rarraylist, itable) result(bempty)
 
 !<description>
     ! Checks if the given table of the arraylist is empty
@@ -3599,7 +3599,7 @@ contains
 
 !<input>
     ! The arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
 
     ! Number of the table
     integer, intent(in) :: itable
@@ -3624,7 +3624,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_fassign,T,D)(rarraylistDest, rarraylistSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_fassign,T,D)(rarraylistDest, rarraylistSrc)
 
 !<description>
     ! Assigns the content of rarraylistSrc to rarraylistDest
@@ -3632,12 +3632,12 @@ contains
 
 !<input>
     ! Source arraylist
-    type(template_TD(t_arraylist,T,D)), intent(in) :: rarraylistSrc
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylistSrc
 !</input>
 
 !<output>
     ! Destination arraylist
-    type(template_TD(t_arraylist,T,D)), intent(out) :: rarraylistDest
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(out) :: rarraylistDest
 !</output>
 !</subroutine>
 
@@ -3671,7 +3671,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_reverse,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_reverse,T,D)(rarraylist)
 
 !<description>
     ! This subroutine reverses the ordering of the arraylist
@@ -3679,7 +3679,7 @@ contains
 
 !<inputoutput>
     ! The arraylist to be reverted
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -3697,7 +3697,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(alst_reverseTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_reverseTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine reverses the ordering of the list of the given table
@@ -3710,16 +3710,16 @@ contains
 
 !<inputoutput>
     ! The arraylist to be reverted
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_arraylist,T,D)) :: riterator
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     riterator = alst_begin(rarraylist, itable)
@@ -3743,7 +3743,7 @@ contains
   
 !<subroutine>
 
-  subroutine template_TD(alst_sort,T,D)(rarraylist)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_sort,T,D)(rarraylist)
 
 !<description>
     ! This subroutine sorts the elements in the arraylist
@@ -3751,7 +3751,7 @@ contains
 
 !<inputoutput>
     ! The arraylist to be sorted
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -3769,7 +3769,7 @@ contains
   
 !<subroutine>
 
-  subroutine template_TD(alst_sortTbl,T,D)(rarraylist, itable)
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_sortTbl,T,D)(rarraylist, itable)
 
 !<description>
     ! This subroutine sorts the elements in the list of the given table
@@ -3782,19 +3782,19 @@ contains
 
 !<inputoutput>
     ! The arraylist to be sorted
-    type(template_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
     logical :: bswapped
-    type(template_TD(it_arraylist,T,D)) :: rposition,riterator
-    TTYPE(T_TYPE), pointer :: p_key1,p_key2
-    TTYPE(T_TYPE) :: key
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition,riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key1,p_key2
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data1,p_data2
-    DTYPE(D_TYPE), dimension(:), allocatable :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data1,p_data2
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), allocatable :: data
 
     ! Allocate temporal memory
     if (rarraylist%isizeData > 0) allocate(data(rarraylist%isizeData))
@@ -3866,7 +3866,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_isNull,T,D)(riterator) result(bisNull)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_isNull,T,D)(riterator) result(bisNull)
 
 !<description>
     ! Checks if the iterator is NULL
@@ -3874,7 +3874,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator
 !</input>
 
 !<result>
@@ -3892,7 +3892,7 @@ contains
 
 !<function>
 
-  pure function template_TD(alst_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
+  pure function FEAT2_PP_TEMPLATE_TD(alst_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
 
 !<description>
     ! Checks if the iterator has the given specification flag
@@ -3900,7 +3900,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator
 
     ! Specification flag
     integer(I32), intent(in) :: iSpec
@@ -3920,7 +3920,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_eq,T,D)(riterator1,riterator2) result(beq)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_eq,T,D)(riterator1,riterator2) result(beq)
 
 !<description>
     ! Compare two iterators for equality
@@ -3928,7 +3928,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3946,7 +3946,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_ne,T,D)(riterator1,riterator2) result(bne)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_ne,T,D)(riterator1,riterator2) result(bne)
 
 !<description>
     ! Compare two iterators for inequality
@@ -3954,7 +3954,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3972,7 +3972,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_lt,T,D)(riterator1,riterator2) result(blt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_lt,T,D)(riterator1,riterator2) result(blt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -3980,7 +3980,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3999,7 +3999,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_le,T,D)(riterator1,riterator2) result(ble)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_le,T,D)(riterator1,riterator2) result(ble)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -4007,7 +4007,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -4026,7 +4026,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_gt,T,D)(riterator1,riterator2) result(bgt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_gt,T,D)(riterator1,riterator2) result(bgt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -4034,7 +4034,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -4053,7 +4053,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_alst_ge,T,D)(riterator1,riterator2) result(bge)
+  pure function FEAT2_PP_TEMPLATE_TD(it_alst_ge,T,D)(riterator1,riterator2) result(bge)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -4061,7 +4061,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>

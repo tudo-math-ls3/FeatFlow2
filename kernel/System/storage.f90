@@ -149,7 +149,7 @@ module storage
 
 #ifdef HAS_ISO_C_BINDING
   ! Include external module file iso_c_binding
-  EXTERNAL_USE(iso_c_binding)
+  FEAT2_PP_EXTERNAL_USE(iso_c_binding)
 
 #else
 

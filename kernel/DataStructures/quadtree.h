@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_T(quadtree,T) </name>
+!# <name> FEAT2_PP_TEMPLATE_T(quadtree,T) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -80,12 +80,12 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
   
   private
-  public :: template_T(t_quadtree,T)
+  public :: FEAT2_PP_TEMPLATE_T(t_quadtree,T)
   public :: qtree_create
   public :: qtree_release
   public :: qtree_copy
@@ -105,75 +105,75 @@
   public :: qtree_reposition
 
   interface qtree_create
-    module procedure template_T(qtree_create,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_create,T)
   end interface
 
   interface qtree_release
-    module procedure template_T(qtree_release,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_release,T)
   end interface
 
   interface qtree_copy
-    module procedure template_T(qtree_cpy1,T)
-    module procedure template_T(qtree_cpy2,T)
-    module procedure template_T(qtree_cpy3,T)
-    module procedure template_T(qtree_cpy4,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_cpy1,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_cpy2,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_cpy3,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_cpy4,T)
   end interface
 
   interface qtree_insert
-    module procedure template_T(qtree_insert,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_insert,T)
   end interface
 
   interface qtree_delete
-    module procedure template_T(qtree_delete1,T)
-    module procedure template_T(qtree_delete2,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_delete1,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_delete2,T)
   end interface
   
   interface qtree_find
-    module procedure template_T(qtree_find,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_find,T)
   end interface
 
   interface qtree_print
-    module procedure template_T(qtree_print,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_print,T)
   end interface
 
   interface qtree_info
-    module procedure template_T(qtree_info,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_info,T)
   end interface
 
   interface qtree_getDirection
-    module procedure template_T(qtree_getDirection,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_getDirection,T)
   end interface
 
   interface qtree_getSize
-    module procedure template_T(qtree_getSize,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_getSize,T)
   end interface
 
   interface qtree_getBoundingBox
-    module procedure template_T(qtree_getBoundingBox,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_getBoundingBox,T)
   end interface
 
   interface qtree_getX
-    module procedure template_T(qtree_getX,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_getX,T)
   end interface
 
   interface qtree_getY
-    module procedure template_T(qtree_getY,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_getY,T)
   end interface
 
   interface qtree_duplicate
-    module procedure template_T(qtree_duplicate,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_duplicate,T)
   end interface
 
   interface qtree_restore
-    module procedure template_T(qtree_restore,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_restore,T)
   end interface
 
   interface qtree_rebuild
-    module procedure template_T(qtree_rebuild,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_rebuild,T)
   end interface
 
   interface qtree_reposition
-    module procedure template_T(qtree_reposition,T)
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_reposition,T)
   end interface
 
 !<types>
@@ -181,7 +181,7 @@
 !<typeblock>
 
   ! A linear quadtree implemented as array
-  type template_T(t_quadtree,T)
+  type FEAT2_PP_TEMPLATE_T(t_quadtree,T)
     private
 
     ! Number of next free node
@@ -218,10 +218,10 @@
 #endif
 
     ! Pointer to data vector
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data => null()
 
     ! Pointer to bounding box
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox => null()
 
     ! Handle to quadtree structure
     !   KNODE(QTREE_STATUS,INODE) : < 0, the node has been subdivided
@@ -249,7 +249,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(qtree_create,T)(rquadtree, nnvt, nnnode,&
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_create,T)(rquadtree, nnvt, nnnode,&
                                         xmin, ymin, xmax, ymax, dfactor, ndata)
   
 !<description>
@@ -264,7 +264,7 @@ contains
     integer, intent(in) :: nnnode
 
     ! Dimensions of the initial bounding box
-    TTYPE(T_TYPE), intent(in) :: xmin,ymin,xmax,ymax
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: xmin,ymin,xmax,ymax
 
     ! OPTIONAL: Factor by which the quadtree should be enlarged if
     ! new storage has to be allocated
@@ -276,7 +276,7 @@ contains
 
 !<output>
     ! Quadtree structure
-    type(template_T(t_quadtree,T)), intent(out) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(out) :: rquadtree
 !</output>
 !</subroutine>
     
@@ -341,7 +341,7 @@ contains
   
 !<subroutine>
   
-  subroutine template_T(qtree_release,T)(rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_release,T)(rquadtree)
 
 !<description>
     ! This subroutine releases an existing quadtree.
@@ -349,7 +349,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
@@ -377,7 +377,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(qtree_cpy3,T)(rquadtree, h_DataDest)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_cpy3,T)(rquadtree, h_DataDest)
 
 !<description>
     ! This subroutine copies the content of the quadtree to a handle.
@@ -388,7 +388,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
@@ -432,7 +432,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(qtree_cpy4,T)(rquadtree, DataDest)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_cpy4,T)(rquadtree, DataDest)
 
 !<description>
     ! This subroutine copies the content of the quadtree to an array.
@@ -441,12 +441,12 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
     ! Coordinate vector
-    TTYPE(T_TYPE), dimension(:,:), intent(inout) :: DataDest
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), intent(inout) :: DataDest
 !</inputoutput>
 !</subroutine>
 
@@ -473,7 +473,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(qtree_cpy1,T)(h_DataSrc, rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_cpy1,T)(h_DataSrc, rquadtree)
 
 !<description>
     ! This subroutine copies the content of a handle to the quadtree.
@@ -486,13 +486,13 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
 #ifdef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_DataSrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_DataSrc
     
     ! Set pointer
     call storage_getbase(h_DataSrc, p_DataSrc)
@@ -511,7 +511,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(qtree_cpy2,T)(DataSrc, rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_cpy2,T)(DataSrc, rquadtree)
 
 !<description>
     ! This subroutine copies the content of an array to the quadtree.
@@ -519,12 +519,12 @@ contains
 
 !<input>
     ! Coordinate vector
-    TTYPE(T_TYPE), dimension(:,:), intent(in) :: DataSrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), intent(in) :: DataSrc
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
@@ -557,7 +557,7 @@ contains
   
 !<function>
   
-  function template_T(qtree_insert,T)(rquadtree, Data, ivt, inode) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_insert,T)(rquadtree, Data, ivt, inode) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the quadtree. The
@@ -571,7 +571,7 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    TTYPE(T_TYPE), dimension(2), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
 
     ! OPTIONAL: Number of the quad to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
@@ -580,7 +580,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
@@ -643,7 +643,7 @@ contains
       integer :: iresult
 
       ! local variables
-      TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
       integer :: i,jvt,jnode,nnode,isize,jresult
 
 
@@ -769,7 +769,7 @@ contains
   
 !<function>
   
-  function template_T(qtree_delete1,T)(rquadtree, Data, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_delete1,T)(rquadtree, Data, ivt) result(iresult)
 
 !<description>
     ! This function deletes an item from the quadtree.
@@ -780,12 +780,12 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    TTYPE(T_TYPE), dimension(2), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
@@ -817,7 +817,7 @@ contains
       integer :: iresult
       
       ! local variables
-      TTYPE(T_TYPE), dimension(2) :: DataTmp
+      FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: DataTmp
       integer, dimension(QTREE_MAX) :: Knode
       integer :: i,jvt,jnode,ipos,jpos,nemptyChildren
       
@@ -954,7 +954,7 @@ contains
 
 !<function>
 
-  function template_T(qtree_delete2,T)(rquadtree, ivt, ivtReplace) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_delete2,T)(rquadtree, ivt, ivtReplace) result(iresult)
 
 !<description>
     ! This function deletes vertex with number IVT from the quadtree.
@@ -967,7 +967,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
@@ -984,7 +984,7 @@ contains
 !</function>
 
     ! local variables
-    TTYPE(T_TYPE), dimension(2) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: data
     
     if (ivt .le. rquadtree%NVT) then
       ! Get coordinates and invoke deletion routine
@@ -1000,7 +1000,7 @@ contains
 
 !<function>
   
-  function template_T(qtree_find,T)(rquadtree, Data, inode, ipos, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_find,T)(rquadtree, Data, inode, ipos, ivt) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the quadtree.
@@ -1013,10 +1013,10 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
     
     ! Coordinates that should be searched
-    TTYPE(T_TYPE), dimension(2), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
 !</input>
 
 !<output>
@@ -1108,7 +1108,7 @@ contains
   
 !<function>
   
-  pure function template_T(qtree_getDirection,T)(rquadtree, Data, inode) result(idirection)
+  pure function FEAT2_PP_TEMPLATE_T(qtree_getDirection,T)(rquadtree, Data, inode) result(idirection)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Data.
@@ -1116,10 +1116,10 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
     
     ! Coordinates
-    TTYPE(T_TYPE), dimension(2), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
 
     ! Number of node
     integer, intent(in) :: inode
@@ -1132,7 +1132,7 @@ contains
 !</function>
     
     ! local variables
-    TTYPE(T_TYPE) :: xmid,ymid
+    FEAT2_PP_TTYPE(T_TYPE) :: xmid,ymid
 
     ! Compute midpoint of current node
     xmid = 0.5*(rquadtree%p_BdBox(QTREE_XMIN, inode)+&
@@ -1160,7 +1160,7 @@ contains
   
 !<subroutine>
 
-  subroutine template_T(qtree_print,T)(rquadtree, cfilename)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_print,T)(rquadtree, cfilename)
 
 !<description>
     ! This subroutine writes the content of the quadtree to a file
@@ -1169,7 +1169,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 
     ! filename of the output file
     character(LEN=*), intent(in) :: cfilename
@@ -1177,7 +1177,7 @@ contains
 !</subroutine>
     
     ! local variables
-    TTYPE(T_TYPE) :: xmin,xmax,ymin,ymax
+    FEAT2_PP_TTYPE(T_TYPE) :: xmin,xmax,ymin,ymax
     integer :: iunit
     
     iunit = sys_getFreeUnit()
@@ -1195,9 +1195,9 @@ contains
     ! Here, the recursive print routine follows
     
     recursive subroutine print(xmin, ymin, xmax, ymax, inode)
-      TTYPE(T_TYPE), intent(in) :: xmin,ymin,xmax,ymax
+      FEAT2_PP_TTYPE(T_TYPE), intent(in) :: xmin,ymin,xmax,ymax
       integer, intent(in) :: inode
-      TTYPE(T_TYPE) :: xmid,ymid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmid,ymid
       integer :: i,j
 
       write(UNIT=iunit,fmt=*) 'rect'
@@ -1231,7 +1231,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(qtree_info,T)(rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_info,T)(rquadtree)
 
 !<description>
     ! This subroutine outputs statistical info about the quadtree
@@ -1239,7 +1239,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 !</input>
 !</subroutine>
 
@@ -1269,7 +1269,7 @@ contains
 
 !<function>
 
-  pure function template_T(qtree_getSize,T)(rquadtree) result(nvt)
+  pure function FEAT2_PP_TEMPLATE_T(qtree_getSize,T)(rquadtree) result(nvt)
 
 !<description>
     ! This function returns the number of vertices stored in the quadtree
@@ -1277,7 +1277,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 !</input>
 
 !<result>
@@ -1294,7 +1294,7 @@ contains
 
 !<function>
 
-  function template_T(qtree_getBoundingBox,T)(rquadtree, inode) result(Bdbox)
+  function FEAT2_PP_TEMPLATE_T(qtree_getBoundingBox,T)(rquadtree, inode) result(Bdbox)
     
 !<description>
     ! This function returns the bounding box of the specified node.
@@ -1303,7 +1303,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 
     ! OPTIONAL: number of node for which bounding box should be returned
     integer, intent(in), optional :: inode
@@ -1311,7 +1311,7 @@ contains
 
 !<result>
     ! bounding box
-    TTYPE(T_TYPE), dimension(4) :: BdBox
+    FEAT2_PP_TTYPE(T_TYPE), dimension(4) :: BdBox
 !</result>
 !</function>
     
@@ -1332,7 +1332,7 @@ contains
 
 !<function>
 
-  elemental function template_T(qtree_getX,T)(rquadtree, ivt) result(x)
+  elemental function FEAT2_PP_TEMPLATE_T(qtree_getX,T)(rquadtree, ivt) result(x)
 
 !<description>
     ! This function returns the X-value at the given position.
@@ -1340,14 +1340,14 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 
     ! position in the quadtree
     integer, intent(in) :: ivt
 !</input>
 
 !<result>
-    TTYPE(T_TYPE) :: x
+    FEAT2_PP_TTYPE(T_TYPE) :: x
 !</result>
 !</function>
 
@@ -1359,7 +1359,7 @@ contains
 
 !<function>
 
-  elemental function template_T(qtree_getY,T)(rquadtree, ivt) result(y)
+  elemental function FEAT2_PP_TEMPLATE_T(qtree_getY,T)(rquadtree, ivt) result(y)
 
 !<description>
     ! This function returns the Y-value at the given position.
@@ -1367,14 +1367,14 @@ contains
 
 !<input>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 
     ! position in the quadtree
     integer, intent(in) :: ivt
 !</input>
 
 !<result>
-    TTYPE(T_TYPE) :: y
+    FEAT2_PP_TTYPE(T_TYPE) :: y
 !</result>
 !</function>
 
@@ -1386,7 +1386,7 @@ contains
   
 !<subroutine>
 
-  subroutine template_T(qtree_duplicate,T)(rquadtree, rquadtreeBackup)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_duplicate,T)(rquadtree, rquadtreeBackup)
 
 !<description>
     ! This subroutine makes a copy of a quadtree in memory.
@@ -1397,12 +1397,12 @@ contains
 
 !<input>
     ! Source quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
     ! Destination quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtreeBackup
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtreeBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1458,7 +1458,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(qtree_restore,T)(rquadtreeBackup, rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_restore,T)(rquadtreeBackup, rquadtree)
 
 !<description>
     ! This subroutine restores a quadtree from a previous backup.
@@ -1466,12 +1466,12 @@ contains
 
 !<input>
     ! Backup of an quadtree
-    type(template_T(t_quadtree,T)), intent(in) :: rquadtreeBackup
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in) :: rquadtreeBackup
 !</input>
 
 !<inputoutput>
     ! Destination quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
@@ -1487,7 +1487,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(qtree_rebuild,T)(rquadtree)
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_rebuild,T)(rquadtree)
 
 !<description>
     ! This subroutine rebuilds the structure of a quadtree
@@ -1495,7 +1495,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
@@ -1546,7 +1546,7 @@ contains
       integer, intent(in) :: inode, istart, iend
       
       ! local variables
-      TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
       integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3
 
       
@@ -1656,7 +1656,7 @@ contains
 
     function partition(istart, iend, idim, dmid) result(imid)
 
-      TTYPE(T_TYPE), intent(in) :: dmid
+      FEAT2_PP_TTYPE(T_TYPE), intent(in) :: dmid
       integer, intent(in) :: istart, iend, idim
       integer :: imid
 
@@ -1721,8 +1721,8 @@ contains
       integer :: isplit
 
       ! local variables
-      TTYPE(T_TYPE), dimension(2) :: Daux
-      TTYPE(T_TYPE) :: dpivot
+      FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: Daux
+      FEAT2_PP_TTYPE(T_TYPE) :: dpivot
       integer :: i, j, iaux
       
       ! Initialization
@@ -1763,7 +1763,7 @@ contains
   
 !<function>
   
-  function template_T(qtree_reposition,T)(rquadtree, DataOld, DataNew) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_reposition,T)(rquadtree, DataOld, DataNew) result(iresult)
 
 !<description>
     ! This function modifies the coordinates of an item in the quadtree.
@@ -1776,15 +1776,15 @@ contains
 
 !<input>
     ! Old coordinates of the vertex
-    TTYPE(T_TYPE), dimension(2), intent(in) :: DataOld
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: DataOld
 
     ! New coordinates of the vertex
-    TTYPE(T_TYPE), dimension(2), intent(in) :: DataNew
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: DataNew
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<result>
@@ -1829,7 +1829,7 @@ contains
       integer :: iresult
       
       ! local variables
-      TTYPE(T_TYPE), dimension(2) :: DataTmp
+      FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: DataTmp
       integer, dimension(QTREE_MAX) :: Knode
       integer :: i,jvt,jnode,ipos,jpos,nemptyChildren
       
@@ -1963,7 +1963,7 @@ contains
       integer :: iresult
 
       ! local variables
-      TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
       integer :: i,jvt,jnode,nnode,isize,jresult
 
 
@@ -2102,13 +2102,13 @@ contains
 
 !<inputoutput>
     ! Quadtree that should be resized
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
 #ifndef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_Data
 #endif
 
 #ifdef T_STORAGE
@@ -2146,13 +2146,13 @@ contains
 
 !<inputoutput>
     ! Quadtree that should be resized
-    type(template_T(t_quadtree,T)), intent(inout) :: rquadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
 #ifndef T_STORAGE
     ! local variables
-    TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:,:), pointer :: p_BdBox
 #endif
 
     call storage_realloc('resizeNNODE', nnnode, rquadtree%h_BdBox,&

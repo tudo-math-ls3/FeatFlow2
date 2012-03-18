@@ -309,7 +309,7 @@ use constant MUST_INCLUDE => "";
 my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/feat2constants.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/feat2macros.h " .
-    "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/template.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/template.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/arraylist.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/list.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/map.h " .

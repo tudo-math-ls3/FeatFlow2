@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_TD(list,T,D) </name>
+!# <name> FEAT2_PP_TEMPLATE_TD(list,T,D) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -206,13 +206,13 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
 
   private
-  public :: template_TD(t_list,T,D)
-  public :: template_TD(it_list,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(t_list,T,D)
+  public :: FEAT2_PP_TEMPLATE_TD(it_list,T,D)
   public :: list_create
   public :: list_release
   public :: list_resize
@@ -263,195 +263,195 @@
   public operator(>=)
 
   interface list_create
-    module procedure template_TD(list_create,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_create,T,D)
   end interface
 
   interface list_release
-    module procedure template_TD(list_release,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_release,T,D)
   end interface
 
   interface list_resize
-    module procedure template_TD(list_resize,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_resize,T,D)
   end interface
 
   interface list_clear
-    module procedure template_TD(list_clear,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_clear,T,D)
   end interface
 
   interface list_copy
-    module procedure template_TD(list_cpy1,T,D)
-    module procedure template_TD(list_cpy2,T,D)
-    module procedure template_TD(list_cpy3,T,D)
-    module procedure template_TD(list_cpy4,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_cpy1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_cpy2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_cpy3,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_cpy4,T,D)
   end interface
 
   interface list_swap
-    module procedure template_TD(list_swap,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_swap,T,D)
   end interface
 
   interface list_begin
-    module procedure template_TD(list_begin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_begin,T,D)
   end interface
 
   interface list_rbegin
-    module procedure template_TD(list_rbegin,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_rbegin,T,D)
   end interface
   
   interface list_end
-    module procedure template_TD(list_end,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_end,T,D)
   end interface
 
   interface list_rend
-    module procedure template_TD(list_rend,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_rend,T,D)
   end interface
 
   interface list_next
-    module procedure template_TD(list_next,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_next,T,D)
   end interface
 
   interface list_prior
-    module procedure template_TD(list_prior,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_prior,T,D)
   end interface
 
   interface list_get
-    module procedure template_TD(list_get,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_get,T,D)
   end interface
 
 interface list_getbase_key
-    module procedure template_TD(list_getbase_key,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_key,T,D)
   end interface
 
 #ifdef D
   interface list_getbase_data
-    module procedure template_TD(list_getbase_data,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_data,T,D)
   end interface
 #endif
 
   interface list_assign
-    module procedure template_TD(list_assign1,T,D)
-    module procedure template_TD(list_assign2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_assign1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_assign2,T,D)
   end interface
 
   interface list_push_front
-    module procedure template_TD(list_push_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_push_front,T,D)
   end interface
 
   interface list_push_back
-    module procedure template_TD(list_push_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_push_back,T,D)
   end interface
 
   interface list_pop_front
-    module procedure template_TD(list_pop_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_pop_front,T,D)
   end interface
   
   interface list_pop_back
-    module procedure template_TD(list_pop_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_pop_back,T,D)
   end interface
 
   interface list_front
-    module procedure template_TD(list_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_front,T,D)
   end interface
 
   interface list_getbase_front
-    module procedure template_TD(list_getbase_front,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_front,T,D)
   end interface
   
   interface list_back
-    module procedure template_TD(list_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_back,T,D)
   end interface
   
   interface list_getbase_back
-    module procedure template_TD(list_getbase_back,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_back,T,D)
   end interface
 
   interface list_insert
-    module procedure template_TD(list_insert1,T,D)
-    module procedure template_TD(list_insert2,T,D)
-    module procedure template_TD(list_insert3,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_insert1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_insert2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_insert3,T,D)
   end interface
 
   interface list_erase
-    module procedure template_TD(list_erase1,T,D)
-    module procedure template_TD(list_erase2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_erase1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_erase2,T,D)
   end interface
 
   interface list_size
-    module procedure template_TD(list_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_size,T,D)
   end interface
   
   interface list_max_size
-    module procedure template_TD(list_max_size,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_max_size,T,D)
   end interface
 
   interface list_empty
-    module procedure template_TD(list_empty,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_empty,T,D)
   end interface
   
   interface list_find
-    module procedure template_TD(list_find1,T,D)
-    module procedure template_TD(list_find2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_find1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_find2,T,D)
   end interface
 
   interface list_print
-    module procedure template_TD(list_print,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_print,T,D)
   end interface
 
   interface list_info
-    module procedure template_TD(list_info,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_info,T,D)
   end interface
   
   interface list_duplicate
-    module procedure template_TD(list_duplicate,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_duplicate,T,D)
   end interface
   
   interface list_restore
-    module procedure template_TD(list_restore,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_restore,T,D)
   end interface
   
   interface list_reverse
-    module procedure template_TD(list_reverse,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_reverse,T,D)
   end interface
 
   interface list_sort
-    module procedure template_TD(list_sort,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_sort,T,D)
   end interface
 
   interface list_isNull
-    module procedure template_TD(list_isNull,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_isNull,T,D)
   end interface
 
   interface list_hasSpec
-    module procedure template_TD(list_hasSpec,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_hasSpec,T,D)
   end interface
 
 
   interface assignment(=)
-    module procedure template_TD(list_fassign,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_fassign,T,D)
   end interface
 
   
   interface operator(==)
-    module procedure template_TD(it_list_eq,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_eq,T,D)
   end interface
   
   interface operator(/=)
-    module procedure template_TD(it_list_ne,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_ne,T,D)
   end interface
 
   interface operator(<)
-    module procedure template_TD(it_list_lt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_lt,T,D)
   end interface
 
   interface operator(<=)
-    module procedure template_TD(it_list_le,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_le,T,D)
   end interface
 
   interface operator(>)
-    module procedure template_TD(it_list_gt,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_gt,T,D)
   end interface
 
   interface operator(>=)
-    module procedure template_TD(it_list_ge,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(it_list_ge,T,D)
   end interface
 
   !************************************************************************
@@ -462,7 +462,7 @@ interface list_getbase_key
   
   ! A doubly linked list
 
-  type template_TD(t_list,T,D)
+  type FEAT2_PP_TEMPLATE_TD(t_list,T,D)
     private
 
     ! Number of elements that are currently stored in the list
@@ -488,7 +488,7 @@ interface list_getbase_key
 #endif
 
     ! Pointer to list key
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
 
     ! Handle and pointer to the list next-structure
     integer :: h_Knext = ST_NOHANDLE
@@ -507,7 +507,7 @@ interface list_getbase_key
 #endif
 
     ! Pointer to list auxiliary data
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
 #endif
     
   end type
@@ -518,7 +518,7 @@ interface list_getbase_key
 
   ! An iterator for a doubly linked list
 
-  type template_TD(it_list,T,D)
+  type FEAT2_PP_TEMPLATE_TD(it_list,T,D)
     private
 
     ! Absolute position of the current element
@@ -530,7 +530,7 @@ interface list_getbase_key
     integer(I32) :: iSpec = 0_I32
     
     ! Pointer to the underlying doubly linked list
-    type(template_TD(t_list,T,D)), pointer :: p_rlist => null()
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), pointer :: p_rlist => null()
 
   end type
 
@@ -545,9 +545,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_create,T,D)(rlist, NNA, isizeData, dfactor)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_create,T,D)(rlist, NNA, isizeData, dfactor)
 #else
-  subroutine template_TD(list_create,T,D)(rlist, NNA, dfactor)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_create,T,D)(rlist, NNA, dfactor)
 #endif
 
 !<description>
@@ -570,7 +570,7 @@ contains
 
 !<output>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(out) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(out) :: rlist
 !</output>
 !</subroutine>
 
@@ -633,7 +633,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(list_release,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_release,T,D)(rlist)
 
 !<description>
     ! This subroutine releases an existing list
@@ -641,7 +641,7 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -683,7 +683,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_TD(list_resize,T,D)(rlist, NNA)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_resize,T,D)(rlist, NNA)
 
 !<description>
     ! This subroutine reallocates memory for an existing list
@@ -696,7 +696,7 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -704,12 +704,12 @@ contains
     integer :: NNAOld
     
 #ifndef T_STORAGE
-    TTYPE(T_TYPE), dimension(:), pointer :: p_Key
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
 
 #ifdef D
 #ifndef D_STORAGE
-    DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data
 #endif
 #endif
 
@@ -767,7 +767,7 @@ contains
 
 !<subroutine>
   
-  pure subroutine template_TD(list_clear,T,D)(rlist)
+  pure subroutine FEAT2_PP_TEMPLATE_TD(list_clear,T,D)(rlist)
 
 !<description>
     ! This subroutine clears the content of the list
@@ -775,7 +775,7 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -793,9 +793,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_cpy1,T,D)(h_KeySrc, rlist, h_DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy1,T,D)(h_KeySrc, rlist, h_DataSrc)
 #else
-  subroutine template_TD(list_cpy1,T,D)(h_KeySrc, rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy1,T,D)(h_KeySrc, rlist)
 #endif
 
 !<description>
@@ -815,7 +815,7 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -856,9 +856,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_cpy2,T,D)(KeySrc, rlist, DataSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy2,T,D)(KeySrc, rlist, DataSrc)
 #else
-  subroutine template_TD(list_cpy2,T,D)(KeySrc, rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy2,T,D)(KeySrc, rlist)
 #endif
 
 !<description>
@@ -867,17 +867,17 @@ contains
 
 !<input>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(in) :: KeySrc
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(in), optional :: DataSrc
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -907,9 +907,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_cpy3,T,D)(rlist, h_KeyDest, h_DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy3,T,D)(rlist, h_KeyDest, h_DataDest)
 #else
-  subroutine template_TD(list_cpy3,T,D)(rlist, h_KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy3,T,D)(rlist, h_KeyDest)
 #endif
 
 !<description>
@@ -918,7 +918,7 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
@@ -1051,9 +1051,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_cpy4,T,D)(rlist, KeyDest, DataDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy4,T,D)(rlist, KeyDest, DataDest)
 #else
-  subroutine template_TD(list_cpy4,T,D)(rlist, KeyDest)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cpy4,T,D)(rlist, KeyDest)
 #endif
 
 !<description>
@@ -1062,16 +1062,16 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! Array with key values
-    TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), intent(inout) :: KeyDest
 
 #ifdef D
     ! OPTIONAL: Array with data values
-    DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), intent(inout), optional :: DataDest
 #endif
 !</inputoutput>
 !</subroutine>
@@ -1122,7 +1122,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_swap,T,D)(rlist1, rlist2)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_swap,T,D)(rlist1, rlist2)
 
 !<description>
     ! This subroutine swaps content of two lists
@@ -1130,15 +1130,15 @@ contains
     
 !<inputoutput>
     ! First linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist1
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist1
 
     ! Second linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist2
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist2
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(template_TD(t_list,T,D)) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)) :: rlist
     
     ! Swap lists
     rlist  = rlist1
@@ -1173,7 +1173,7 @@ contains
 
 !<function>
   
-  function template_TD(list_begin,T,D)(rlist) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_begin,T,D)(rlist) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the first
@@ -1182,12 +1182,12 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in), target :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in), target :: rlist
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 
 !</function>
@@ -1205,7 +1205,7 @@ contains
 
 !<function>
   
-  function template_TD(list_rbegin,T,D)(rlist) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_rbegin,T,D)(rlist) result(riterator)
 
 !<description>
     ! This function returns a reverse iterator positioned to the last
@@ -1214,12 +1214,12 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in), target :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in), target :: rlist
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 
 !</function>
@@ -1237,7 +1237,7 @@ contains
 
 !<function>
   
-  function template_TD(list_end,T,D)(rlist) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_end,T,D)(rlist) result(riterator)
 
 !<description>
     ! This function returns an iterator referring to the past-the-end
@@ -1246,12 +1246,12 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in), target :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in), target :: rlist
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
     
@@ -1268,7 +1268,7 @@ contains
 
 !<function>
   
-  function template_TD(list_rend,T,D)(rlist) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_rend,T,D)(rlist) result(riterator)
 
 !<description>
     ! This function returns a reverse iterator referring to the
@@ -1277,12 +1277,12 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in), target :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in), target :: rlist
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
     
@@ -1299,7 +1299,7 @@ contains
 
 !<subroutine>
   
-  pure subroutine template_TD(list_next,T,D)(riterator)
+  pure subroutine FEAT2_PP_TEMPLATE_TD(list_next,T,D)(riterator)
 
 !<description>
     ! This subroutine increments the list iterator by one.
@@ -1307,7 +1307,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -1331,7 +1331,7 @@ contains
 
 !<subroutine>
   
-  pure subroutine template_TD(list_prior,T,D)(riterator)
+  pure subroutine FEAT2_PP_TEMPLATE_TD(list_prior,T,D)(riterator)
 
 !<description>
     ! This subroutine decrements the list iterator by one.
@@ -1339,7 +1339,7 @@ contains
 
 !<inputoutput>
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(inout) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
     
@@ -1363,7 +1363,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_getbase_key,T,D)(rlist, rposition, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_key,T,D)(rlist, rposition, p_key)
 
 !<description>
     ! This subroutine returns pointers to the key value stored at
@@ -1372,15 +1372,15 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 !</input>
 
 !<output>
     ! Pointer to the key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 !</output>
 !</subroutine>
     
@@ -1394,7 +1394,7 @@ contains
 #ifdef D
 !<subroutine>
 
-  subroutine template_TD(list_getbase_data,T,D)(rlist, rposition, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_data,T,D)(rlist, rposition, p_data)
 
 !<description>
     ! This subroutine returns pointers to the auxiliary data value
@@ -1403,15 +1403,15 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 !</input>
 
 !<output>
     ! Pointer to the data
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 !</output>
 !</subroutine>
 
@@ -1429,7 +1429,7 @@ contains
 
 !<function>
 
-  function template_TD(list_get,T,D)(rlist, rposition) result(key)
+  function FEAT2_PP_TEMPLATE_TD(list_get,T,D)(rlist, rposition) result(key)
 
 !<description>
     ! This functions return the key stored at the position addressed
@@ -1438,15 +1438,15 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 !</input>
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
     
@@ -1460,9 +1460,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_assign1,T,D)(rlist, n, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_assign1,T,D)(rlist, n, key, data)
 #else
-  subroutine template_TD(list_assign1,T,D)(rlist, n, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_assign1,T,D)(rlist, n, key)
 #endif
 
 !<description>
@@ -1475,17 +1475,17 @@ contains
     integer, intent(in) :: n
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -1510,7 +1510,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_assign2,T,D)(rlist, rfirst, rlast)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_assign2,T,D)(rlist, rfirst, rlast)
 
 !<description>
     ! This subroutine removes all existing data from the list and
@@ -1519,24 +1519,24 @@ contains
 
 !<input>
     ! Iterator referring to the first element
-    type(template_TD(it_list,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-end element
-    type(template_TD(it_list,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     ! Clear list
@@ -1565,9 +1565,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_push_front,T,D)(rlist, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_push_front,T,D)(rlist, key, data)
 #else
-  subroutine template_TD(list_push_front,T,D)(rlist, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_push_front,T,D)(rlist, key)
 #endif
 
 !<description>
@@ -1576,17 +1576,17 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -1640,9 +1640,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_push_back,T,D)(rlist, key, data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_push_back,T,D)(rlist, key, data)
 #else
-  subroutine template_TD(list_push_back,T,D)(rlist, key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_push_back,T,D)(rlist, key)
 #endif
 
 !<description>
@@ -1651,17 +1651,17 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -1714,7 +1714,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_pop_front,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_pop_front,T,D)(rlist)
 
 !<description>
     ! This subroutine removes the first element from the list
@@ -1722,12 +1722,12 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
     
     ! Check if list is empty
     if (list_empty(rlist)) return
@@ -1741,7 +1741,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_pop_back,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_pop_back,T,D)(rlist)
 
 !<description>
     ! This subroutine removes the last element from the list
@@ -1749,12 +1749,12 @@ contains
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
     
     ! Check if list is empty
     if (list_empty(rlist)) return
@@ -1769,9 +1769,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_getbase_front,T,D)(rlist, p_key, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_front,T,D)(rlist, p_key, p_data)
 #else
-  subroutine template_TD(list_getbase_front,T,D)(rlist, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_front,T,D)(rlist, p_key)
 #endif
 
 !<description>
@@ -1781,22 +1781,22 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<output>
     ! Pointer  to key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
     ! OPTIONAL: Pointer to data
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 
     ! Check if list is empty
     if (list_empty(rlist)) then
@@ -1825,7 +1825,7 @@ contains
 
 !<function>
 
-  function template_TD(list_front,T,D)(rlist) result(key)
+  function FEAT2_PP_TEMPLATE_TD(list_front,T,D)(rlist) result(key)
 
 !<description>
     ! This function returns the key stored in the first element
@@ -1833,17 +1833,17 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 
     ! Check if list is empty
     if (list_empty(rlist)) return
@@ -1858,9 +1858,9 @@ contains
 !<subroutine>
 
 #ifdef D
-  subroutine template_TD(list_getbase_back,T,D)(rlist, p_key, p_data)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_back,T,D)(rlist, p_key, p_data)
 #else
-  subroutine template_TD(list_getbase_back,T,D)(rlist, p_key)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_getbase_back,T,D)(rlist, p_key)
 #endif
 
 !<description>
@@ -1870,22 +1870,22 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<output>
     ! Pointer to key value
-    TTYPE(T_TYPE), pointer :: p_key
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
     ! OPTIONAL: Pointer to data
-    DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer, optional :: p_data
 #endif
 !</output>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 
     ! Check if list is empty
     if (list_empty(rlist)) then
@@ -1914,7 +1914,7 @@ contains
   
 !<function>
 
-  function template_TD(list_back,T,D)(rlist) result(key)
+  function FEAT2_PP_TEMPLATE_TD(list_back,T,D)(rlist) result(key)
 
 !<description>
     ! This function returns the key stored in the last element
@@ -1922,17 +1922,17 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<result>
     ! key value
-    TTYPE(T_TYPE) :: key
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 
     ! Check if list is empty
     if (list_empty(rlist)) return
@@ -1947,10 +1947,10 @@ contains
 !<function>
 
 #ifdef D
-  function template_TD(list_insert1,T,D)(rlist, rposition, key, data)&
+  function FEAT2_PP_TEMPLATE_TD(list_insert1,T,D)(rlist, rposition, key, data)&
                                          result(riterator)
 #else
-  function template_TD(list_insert1,T,D)(rlist, rposition, key)&
+  function FEAT2_PP_TEMPLATE_TD(list_insert1,T,D)(rlist, rposition, key)&
                                          result(riterator)
 #endif
 
@@ -1961,25 +1961,25 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout), target :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout), target :: rlist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2066,10 +2066,10 @@ contains
 !<function>
 
 #ifdef D
-  function template_TD(list_insert2,T,D)(rlist, rposition, n, key, data)&
+  function FEAT2_PP_TEMPLATE_TD(list_insert2,T,D)(rlist, rposition, n, key, data)&
                                          result(riterator)
 #else
-  function template_TD(list_insert2,T,D)(rlist, rposition, n, key)&
+  function FEAT2_PP_TEMPLATE_TD(list_insert2,T,D)(rlist, rposition, n, key)&
                                          result(riterator)
 #endif
 
@@ -2080,27 +2080,27 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 
     ! Number of copies
     integer, intent(in) :: n
 
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
 #ifdef D
     ! OPTIONAL: Data
-    DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), intent(in), optional :: data
 #endif
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !<result>
     ! The new iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2121,7 +2121,7 @@ contains
 
 !<function>
 
-  function template_TD(list_insert3,T,D)(rlist, rposition, rfirst, rlast)&
+  function FEAT2_PP_TEMPLATE_TD(list_insert3,T,D)(rlist, rposition, rfirst, rlast)&
                                          result(riterator)
 
 !<description>
@@ -2131,31 +2131,31 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_list,T,D)), intent(in) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rposition
 
     ! Iterator referring to the first element
-    type(template_TD(it_list,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_list,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !<result>
     ! The new iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riter
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riter
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     ! Push content to the list
@@ -2179,7 +2179,7 @@ contains
 
 !<function>
 
-  function template_TD(list_erase1,T,D)(rlist, rposition) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_erase1,T,D)(rlist, rposition) result(riterator)
 
 !<description>
     ! This function removes the element from the list at rposition and
@@ -2189,17 +2189,17 @@ contains
 
 !<input>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: rposition
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2246,7 +2246,7 @@ contains
 
 !<function>
 
-  function template_TD(list_erase2,T,D)(rlist, rfirst, rlast) result(riterator)
+  function FEAT2_PP_TEMPLATE_TD(list_erase2,T,D)(rlist, rfirst, rlast) result(riterator)
 
 !<description>
     ! This function removes the elements [rfirst,rlast) from the list
@@ -2256,20 +2256,20 @@ contains
 
 !<input>
     ! Iterator referring to the first element
-    type(template_TD(it_list,T,D)), intent(in) :: rfirst
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rfirst
 
     ! Iterator referring to the past-the-last element
-    type(template_TD(it_list,T,D)), intent(in) :: rlast
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rlast
 !</input>
 
 !<inputoutput>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
     ! The new iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2285,7 +2285,7 @@ contains
 
 !<function>
 
-  recursive function template_TD(list_find1,T,D)(rlist, key, rpositionGuess)&
+  recursive function FEAT2_PP_TEMPLATE_TD(list_find1,T,D)(rlist, key, rpositionGuess)&
                                                  result(riterator)
 
 !<description>
@@ -2296,18 +2296,18 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 
     ! OPTIONAL: initial guess of the position
-    type(template_TD(it_list,T,D)), intent(in), optional :: rpositionGuess
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in), optional :: rpositionGuess
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2346,7 +2346,7 @@ contains
 
 !<function>
 
-  recursive function template_TD(list_find2,T,D)(rlist, key, bisReverse,&
+  recursive function FEAT2_PP_TEMPLATE_TD(list_find2,T,D)(rlist, key, bisReverse,&
                                                  rpositionGuess) result(riterator)
 
 !<description>
@@ -2362,21 +2362,21 @@ contains
 
 !<input>
     ! key value
-    TTYPE(T_TYPE), intent(in) :: key
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
 
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 
     ! Flag: if TRUE then list is assumed in reverse order
     logical, intent(in) :: bisReverse
 
     ! OPTIONAL: initial guess of the position
-    type(template_TD(it_list,T,D)), intent(in), optional :: rpositionGuess
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in), optional :: rpositionGuess
 !</input>
 
 !<result>
     ! The iterator
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
 
@@ -2430,7 +2430,7 @@ contains
 
   !************************************************************************
 
-  subroutine template_TD(list_print,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_print,T,D)(rlist)
 
 !<description>
     ! This subroutine prints the content of the list
@@ -2438,14 +2438,14 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 !</subroutine>
 
 #ifdef T_STORAGE
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 
     riterator = list_begin(rlist)
     do while (riterator /= list_end(rlist))
@@ -2466,7 +2466,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_info,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_info,T,D)(rlist)
 
 !<description>
     ! This subroutine prints information about the list
@@ -2474,7 +2474,7 @@ contains
 
 !<input>
     ! list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 !</subroutine>
 
@@ -2512,7 +2512,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_duplicate,T,D)(rlist, rlistBackup)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_duplicate,T,D)(rlist, rlistBackup)
 
 !<description>
     ! This subroutine makes a copy of an list in memory.
@@ -2523,12 +2523,12 @@ contains
 
 !<input>
     ! The rraylist for which a backup copy should be generated
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! Backup copy list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlistBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistBackup
 !</inputoutput>
 !</subroutine>
 
@@ -2596,7 +2596,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_restore,T,D)(rlistBackup, rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_restore,T,D)(rlistBackup, rlist)
 
 !<description>
     ! This subroutine restores an list from a previous backup.
@@ -2604,12 +2604,12 @@ contains
 
 !<input>
     ! Backup copy of the list
-    type(template_TD(t_list,T,D)), intent(in) :: rlistBackup
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlistBackup
 !</input>
 
 !<inputoutput>
     ! Destination list
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -2625,7 +2625,7 @@ contains
 
 !<function>
 
-  pure function template_TD(list_size,T,D)(rlist) result(isize)
+  pure function FEAT2_PP_TEMPLATE_TD(list_size,T,D)(rlist) result(isize)
 
 !<description>
     ! Returns the size of the list
@@ -2633,7 +2633,7 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<result>
@@ -2650,7 +2650,7 @@ contains
 
 !<function>
 
-  pure function template_TD(list_max_size,T,D)(rlist) result(imaxsize)
+  pure function FEAT2_PP_TEMPLATE_TD(list_max_size,T,D)(rlist) result(imaxsize)
 
 !<description>
     ! Returns the maximum size of the list
@@ -2658,7 +2658,7 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<result>
@@ -2675,7 +2675,7 @@ contains
 
 !<function>
 
-  pure function template_TD(list_empty,T,D)(rlist) result(bempty)
+  pure function FEAT2_PP_TEMPLATE_TD(list_empty,T,D)(rlist) result(bempty)
 
 !<description>
     ! Checks if the list is empty
@@ -2683,7 +2683,7 @@ contains
 
 !<input>
     ! The linked list
-    type(template_TD(t_list,T,D)), intent(in) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlist
 !</input>
 
 !<result>
@@ -2700,7 +2700,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_fassign,T,D)(rlistDest, rlistSrc)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_fassign,T,D)(rlistDest, rlistSrc)
 
 !<description>
     ! Assigns the content of rlistSrc to rlistDest
@@ -2708,12 +2708,12 @@ contains
 
 !<input>
     ! Source list
-    type(template_TD(t_list,T,D)), intent(in) :: rlistSrc
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in) :: rlistSrc
 !</input>
 
 !<output>
     ! Destination list
-    type(template_TD(t_list,T,D)), intent(out) :: rlistDest
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(out) :: rlistDest
 !</output>
 !</subroutine>
 
@@ -2754,7 +2754,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_reverse,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_reverse,T,D)(rlist)
 
 !<description>
     ! This subroutine reverses the ordering of the list
@@ -2762,16 +2762,16 @@ contains
 
 !<inputoutput>
     ! The linked list to be reverted
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(template_TD(it_list,T,D)) :: riterator
-    TTYPE(T_TYPE), pointer :: p_key
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
 
     riterator = list_begin(rlist)
@@ -2795,7 +2795,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_TD(list_sort,T,D)(rlist)
+  subroutine FEAT2_PP_TEMPLATE_TD(list_sort,T,D)(rlist)
 
 !<description>
     ! This subroutine sorts the elements in the list
@@ -2803,19 +2803,19 @@ contains
 
 !<inputoutput>
     ! The linked list to be sorted
-    type(template_TD(t_list,T,D)), intent(inout) :: rlist
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
     ! local variable
     logical :: bswapped
-    type(template_TD(it_list,T,D)) :: rposition,riterator
-    TTYPE(T_TYPE), pointer :: p_key1,p_key2
-    TTYPE(T_TYPE) :: key
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition,riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key1,p_key2
+    FEAT2_PP_TTYPE(T_TYPE) :: key
 
 #ifdef D
-    DTYPE(D_TYPE), dimension(:), pointer :: p_data1,p_data2
-    DTYPE(D_TYPE), dimension(:), allocatable :: data
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data1,p_data2
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), allocatable :: data
 
     ! Allocate temporal memory
     if (rlist%isizeData > 0) allocate(data(rlist%isizeData))
@@ -2887,7 +2887,7 @@ contains
 
 !<function>
 
-  pure function template_TD(list_isNull,T,D)(riterator) result(bisNull)
+  pure function FEAT2_PP_TEMPLATE_TD(list_isNull,T,D)(riterator) result(bisNull)
 
 !<description>
     ! Checks if the iterator is NULL
@@ -2895,7 +2895,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_list,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator
 !</input>
 
 !<result>
@@ -2913,7 +2913,7 @@ contains
 
 !<function>
 
-  pure function template_TD(list_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
+  pure function FEAT2_PP_TEMPLATE_TD(list_hasSpec,T,D)(riterator,iSpec) result(bhasSpec)
 
 !<description>
     ! Checks if the iterator has the given specification flag
@@ -2921,7 +2921,7 @@ contains
 
 !<input>
     ! Iterator
-    type(template_TD(it_list,T,D)), intent(in) :: riterator
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator
 
     ! Specification flag
     integer(I32), intent(in) :: iSpec
@@ -2941,7 +2941,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_eq,T,D)(riterator1,riterator2) result(beq)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_eq,T,D)(riterator1,riterator2) result(beq)
 
 !<description>
     ! Compare two iterators for equality
@@ -2949,7 +2949,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2966,7 +2966,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_ne,T,D)(riterator1,riterator2) result(bne)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_ne,T,D)(riterator1,riterator2) result(bne)
 
 !<description>
     ! Compare two iterators for inequality
@@ -2974,7 +2974,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -2991,7 +2991,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_lt,T,D)(riterator1,riterator2) result(blt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_lt,T,D)(riterator1,riterator2) result(blt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -2999,7 +2999,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3017,7 +3017,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_le,T,D)(riterator1,riterator2) result(ble)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_le,T,D)(riterator1,riterator2) result(ble)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -3025,7 +3025,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3043,7 +3043,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_gt,T,D)(riterator1,riterator2) result(bgt)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_gt,T,D)(riterator1,riterator2) result(bgt)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -3051,7 +3051,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>
@@ -3069,7 +3069,7 @@ contains
 
 !<function>
 
-  pure function template_TD(it_list_ge,T,D)(riterator1,riterator2) result(bge)
+  pure function FEAT2_PP_TEMPLATE_TD(it_list_ge,T,D)(riterator1,riterator2) result(bge)
 
 !<description>
     ! Checks lexicographical ordering of two iterators
@@ -3077,7 +3077,7 @@ contains
 
 !<input>
     ! Iterators
-    type(template_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: riterator1,riterator2
 !</input>
 
 !<result>

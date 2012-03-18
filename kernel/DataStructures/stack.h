@@ -5,7 +5,7 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> template_T(stack,T) </name>
+!# <name> FEAT2_PP_TEMPLATE_T(stack,T) </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -76,12 +76,12 @@
 !# </purpose>
 !##############################################################################
 
-#include "template.h"
+#include "../template.h"
 
   implicit none
 
   private
-  public :: template_T(t_stack,T)
+  public :: FEAT2_PP_TEMPLATE_T(t_stack,T)
   public :: stack_create
   public :: stack_release
   public :: stack_clear
@@ -101,67 +101,67 @@
   public operator(>=)
 
   interface stack_create
-    module procedure template_T(stack_create,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_create,T)
   end interface
 
   interface stack_release
-    module procedure template_T(stack_release,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_release,T)
   end interface
 
   interface stack_clear
-    module procedure template_T(stack_clear,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_clear,T)
   end interface
 
   interface stack_empty
-    module procedure template_T(stack_empty,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_empty,T)
   end interface
 
   interface stack_size
-    module procedure template_T(stack_size,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_size,T)
   end interface
 
   interface stack_top
-    module procedure template_T(stack_top,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_top,T)
   end interface
 
   interface stack_push
-    module procedure template_T(stack_push,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_push,T)
   end interface
   
   interface stack_pop
-    module procedure template_T(stack_pop,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_pop,T)
   end interface
 
   interface stack_contains
-    module procedure template_T(stack_contains,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_contains,T)
   end interface
 
   interface assignment(=)
-    module procedure template_T(stack_fassign,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_fassign,T)
   end interface
 
   interface operator(==)
-    module procedure template_T(stack_eq,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_eq,T)
   end interface
   
   interface operator(/=)
-    module procedure template_T(stack_ne,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_ne,T)
   end interface
 
   interface operator(<)
-    module procedure template_T(stack_lt,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_lt,T)
   end interface
 
   interface operator(<=)
-    module procedure template_T(stack_le,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_le,T)
   end interface
 
   interface operator(>)
-    module procedure template_T(stack_gt,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_gt,T)
   end interface
 
   interface operator(>=)
-    module procedure template_T(stack_ge,T)
+    module procedure FEAT2_PP_TEMPLATE_T(stack_ge,T)
   end interface
 
 !<types>
@@ -169,7 +169,7 @@
 !<typeblock>
 
   ! Type block for holding a dynamic stack
-  type template_T(t_stack,T)
+  type FEAT2_PP_TEMPLATE_T(t_stack,T)
     private
 
     ! Size of stack
@@ -184,7 +184,7 @@
 #endif
 
     ! Pointer to stack data
-    TTYPE(T_TYPE), dimension(:), pointer :: p_StackData => null()
+    FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_StackData => null()
 
   end type
 
@@ -198,7 +198,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_create,T)(rstack, isize)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_create,T)(rstack, isize)
 
 !<description>
     ! Creates a stack with prescribed initial memory
@@ -211,7 +211,7 @@ contains
 
 !<output>
     ! Stack
-    type(template_T(t_stack,T)), intent(out) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(out) :: rstack
 !</output>
 !</subroutine>
 
@@ -232,7 +232,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_release,T)(rstack)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_release,T)(rstack)
 
 !<description>
     ! Release a stack
@@ -240,7 +240,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(template_T(t_stack,T)), intent(inout) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -262,7 +262,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_clear,T)(rstack)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_clear,T)(rstack)
 
 !<description>
     ! Clear stack, i.e., reset stack pointer to zero
@@ -270,7 +270,7 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(template_T(t_stack,T)), intent(inout) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -282,7 +282,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_Empty,T)(rstack) result(bempty)
+  pure function FEAT2_PP_TEMPLATE_T(stack_Empty,T)(rstack) result(bempty)
 
 !<description>
     ! Checks if the stack is empty
@@ -290,7 +290,7 @@ contains
 
 !<input>
     ! Stack
-    type(template_T(t_stack,T)), intent(in) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -307,7 +307,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_size,T)(rstack) result(isize)
+  pure function FEAT2_PP_TEMPLATE_T(stack_size,T)(rstack) result(isize)
 
 !<description>
     ! Returns the stack size
@@ -315,7 +315,7 @@ contains
 
 !<input>
     ! Stack
-    type(template_T(t_stack,T)), intent(in) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -332,7 +332,7 @@ contains
 
 !<subroutine>
   
-  subroutine template_T(stack_push,T)(rstack, data)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_push,T)(rstack, data)
 
 !<description>
     ! Add a new value to the top of the stack
@@ -340,12 +340,12 @@ contains
     
 !<input>
     ! Data to be pushed onto the stack
-    TTYPE(T_TYPE), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: data
 !</input>
 
 !<inputoutput>
     ! Stack
-    type(template_T(t_stack,T)), intent(inout) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -389,7 +389,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_top,T)(rstack, data)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_top,T)(rstack, data)
 
 !<description>
     ! Return value from top of the stack
@@ -397,12 +397,12 @@ contains
 
 !<input>
     ! Stack
-    type(template_T(t_stack,T)), intent(in) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack
 !</input>
 
 !<output>
     ! Data on top of the stack
-    TTYPE(T_TYPE), intent(out) :: data
+    FEAT2_PP_TTYPE(T_TYPE), intent(out) :: data
 !</output>
 !</subroutine>
 
@@ -420,7 +420,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_pop,T)(rstack, data)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_pop,T)(rstack, data)
 
 !<description>
     ! Remove a value from the top of the stack
@@ -428,12 +428,12 @@ contains
 
 !<inputoutput>
     ! Stack
-    type(template_T(t_stack,T)), intent(inout) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 
 !<output>
     ! Item removed from the top of the stack
-    TTYPE(T_TYPE), intent(out) :: data
+    FEAT2_PP_TTYPE(T_TYPE), intent(out) :: data
 !</output>
 !</subroutine>
     
@@ -446,7 +446,7 @@ contains
 
 !<function>
 
-  function template_T(stack_contains,T)(rstack, data) result(bresult)
+  function FEAT2_PP_TEMPLATE_T(stack_contains,T)(rstack, data) result(bresult)
 
 !<description>
     ! Check if the stack contains the given data item
@@ -454,10 +454,10 @@ contains
 
 !<input>
     ! Stack
-    type(template_T(t_stack,T)), intent(in) :: rstack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack
 
     ! Item to be searched for in the stack
-    TTYPE(T_TYPE), intent(in) :: data
+    FEAT2_PP_TTYPE(T_TYPE), intent(in) :: data
 !</inputoutput>
 
 !<result>
@@ -482,7 +482,7 @@ contains
 
 !<subroutine>
 
-  subroutine template_T(stack_fassign,T)(rstackDest,rstackSrc)
+  subroutine FEAT2_PP_TEMPLATE_T(stack_fassign,T)(rstackDest,rstackSrc)
 
 !<description>
     ! Assigns the content of rstackSrc to rstackDest
@@ -490,12 +490,12 @@ contains
 
 !<input>
     ! Source stack
-    type(template_T(t_stack,T)), intent(in) :: rstackSrc
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstackSrc
 !</input>
 
 !<output>
     ! Destination stack
-    type(template_T(t_stack,T)), intent(out) :: rstackDest
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(out) :: rstackDest
 !</output>
 !</subroutine>
 
@@ -515,7 +515,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_eq,T)(rstack1,rstack2) result(beq)
+  pure function FEAT2_PP_TEMPLATE_T(stack_eq,T)(rstack1,rstack2) result(beq)
 
 !<description>
     ! Compare two stacks for equality
@@ -523,7 +523,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
@@ -555,7 +555,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_ne,T)(rstack1,rstack2) result(bne)
+  pure function FEAT2_PP_TEMPLATE_T(stack_ne,T)(rstack1,rstack2) result(bne)
 
 !<description>
     ! Compare two stacks for non-equality
@@ -563,7 +563,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
@@ -595,7 +595,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_lt,T)(rstack1,rstack2) result(blt)
+  pure function FEAT2_PP_TEMPLATE_T(stack_lt,T)(rstack1,rstack2) result(blt)
 
 !<description>
     ! Checks lexicographical ordering of two stacks
@@ -603,7 +603,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
@@ -633,7 +633,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_le,T)(rstack1,rstack2) result(ble)
+  pure function FEAT2_PP_TEMPLATE_T(stack_le,T)(rstack1,rstack2) result(ble)
 
 !<description>
     ! Checks lexicographical ordering of two stacks
@@ -641,7 +641,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
@@ -671,7 +671,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_gt,T)(rstack1,rstack2) result(bgt)
+  pure function FEAT2_PP_TEMPLATE_T(stack_gt,T)(rstack1,rstack2) result(bgt)
 
 !<description>
     ! Checks lexicographical ordering of two stacks
@@ -679,7 +679,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
@@ -709,7 +709,7 @@ contains
 
 !<function>
 
-  pure function template_T(stack_ge,T)(rstack1,rstack2) result(bge)
+  pure function FEAT2_PP_TEMPLATE_T(stack_ge,T)(rstack1,rstack2) result(bge)
 
 !<description>
     ! Checks lexicographical ordering of two stacks
@@ -717,7 +717,7 @@ contains
 
 !<input>
     ! Stacks
-    type(template_T(t_stack,T)), intent(in) :: rstack1,rstack2
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in) :: rstack1,rstack2
 !</input>
 
 !<result>
