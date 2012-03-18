@@ -96,6 +96,8 @@ CSWITCHES = -O -I/usr/X11R6/include -L/usr/X11R6/lib
 
 TRILIBDEFS = -DTRILIBRARY
 
+F90SWITCHES = -g -fbounds-check
+
 # The action starts here.
 
 all: $(BIN)triangle\
@@ -105,7 +107,7 @@ all: $(BIN)triangle\
      $(BIN)showme
 
 $(BIN)gridgen1d: $(SRC)gridgen1d.f90
-	$(F90) -o $(BIN)gridgen1d $(SRC)gridgen1d.f90
+	$(F90) $(F90SWITCHES) -o $(BIN)gridgen1d $(SRC)gridgen1d.f90
 
 $(BIN)gridgencirc2d: $(SRC)gridgencirc2d.f90
 	$(F90) $(F90SWITCHES) -o $(BIN)gridgencirc2d $(SRC)gridgencirc2d.f90

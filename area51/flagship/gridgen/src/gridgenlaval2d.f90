@@ -60,8 +60,11 @@ program gridgenlaval2d
   real(DP) :: dy1      = 13.0_DP
   integer :: nsegments = 10
 
+  ! Total number of fixed points
+  integer, parameter :: ncoords = 22
+
   ! Coordinates
-  real(DP), dimension(2,18) :: Dpoints
+  real(DP), dimension(2,ncoords) :: Dpoints
 
   ! Definition of output filename
   character(len=80) :: cfilename = "grid"
@@ -75,7 +78,7 @@ program gridgenlaval2d
   logical :: brewrite
   real(DP) :: domega,dsegmentlen,dx,dy,dpar
   integer :: i,i1,i2,i3,i4,ibdc,iel,ipoint,isubpoint,ivt
-  integer :: nel,nmt,npoints,nsubsegments,nvt
+  integer :: nel,npoints,nsubsegments,nvt,npar
   
   !-----------------------------------------------------------------------------
   ! Initialize mathematical constant(s)
@@ -106,9 +109,10 @@ program gridgenlaval2d
       write(*,'(A,T30,A)') '-h1, --height1','height of the inlet chamber'
       write(*,'(A,T30,A)') '-h2, --height2','height of the inlet chamber'
       write(*,'(A,T30,A)') '-h3, --height3','height of the outlet chamber'
+      write(*,'(A,T30,A)') '-l,  --length','length of the nozzle (without outlet chamber)'
       write(*,'(A,T30,A)') '-r0, --radius0','radius of the inlet'
       write(*,'(A,T30,A)') '-r1, --radius1','radius of the circle segment'
-      write(*,'(A,T30,A)') '-s,c --segment','number of segments of the circle segment'
+      write(*,'(A,T30,A)') '-s,  --segment','number of segments of the circle segment'
       write(*,'(A,T30,A)') '-x1'            ,'horizontal position of the circle segment'
       write(*,'(A,T30,A)') '-y1'            ,'vertical position of the circle segment'
       write(*,'(A,T30,A)') '-w1, --width1' ,'width of the inlet chamber'
@@ -145,6 +149,10 @@ program gridgenlaval2d
     case('-h3','--height3')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dheight3
+
+    case('-l','--length')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) dlength
 
     case('-r0','--radius0')
       call get_command_argument(i+1, cbuffer)
@@ -234,6 +242,20 @@ program gridgenlaval2d
   Dpoints(1,10:18) =  Dpoints(1,9:1:-1)
   Dpoints(2,10:18) = -Dpoints(2,9:1:-1)
 
+  Dpoints(1,19) = Dpoints(1,18)
+  Dpoints(2,19) = min(Dpoints(2,18),&
+                      0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)
+
+  Dpoints(1,20) = Dpoints(1,18)
+  Dpoints(2,20) = 0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0-dradius0
+
+  Dpoints(1,21) = Dpoints(1,18)
+  Dpoints(2,21) = 0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0+dradius0
+
+  Dpoints(1,22) = Dpoints(1,18)
+  Dpoints(2,22) = max(Dpoints(2,1),&
+                      0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0-dradius0)
+
   !-----------------------------------------------------------------------------
   ! Generate PRM-file
   !-----------------------------------------------------------------------------
@@ -250,7 +272,11 @@ program gridgenlaval2d
                                 + merge(2,0,dheight3 > 0.0_DP)&
                                 + merge(2,0,dwidth1  > 0.0_DP)&
                                 + merge(2,0,dwidth2  > 0.0_DP)&
-                                + merge(2,0,dwidth3  > 0.0_DP)
+                                + merge(2,0,dwidth3  > 0.0_DP)&
+                                + merge(2,1,dheight0 > 0.0_DP)*&
+                                  merge(2,1,dradius0 > 0.0_DP)&
+                                - merge(2,0,Dpoints(2,18) <&
+                                    0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)
   write(100,'(A)') trim(adjustl(cbuffer1))
   write(100,'(A)') 'ITYP NSPLINE NPAR'
   if (dwidth1  > 0) write(100,'(A)') '1 1 2 '
@@ -269,14 +295,20 @@ program gridgenlaval2d
   else
     write(100,'(A)') '1 1 2 ' ! outlet boundary without chamber
   end if
-  write(100,'(A)') '1 1 2 '   ! lower converging chamber
-  write(100,'(A)') '2 1 3 '   ! lower circle segment
+  write(100,'(A)') '1 1 2 '   ! upper converging chamber
+  write(100,'(A)') '2 1 3 '   ! upper circle segment
   if (dheight2 > 0) write(100,'(A)') '1 1 2 '
   if (dwidth2  > 0) write(100,'(A)') '1 1 2 '
   if (dheight1 > 0) write(100,'(A)') '1 1 2 '
   if (dwidth1  > 0) write(100,'(A)') '1 1 2 '
-  write(100,'(A)') '1 1 2 '   ! left boundary inlet chamber
 
+  ! left boundary inlet chamber
+  do ipoint = 1, merge(2,1,dheight0 > 0.0_DP)*merge(2,1,dradius0 > 0.0_DP)&
+                -merge(2,0,Dpoints(2,18) <&
+                       0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)+1
+    write(100,'(A)') '1 1 2 '
+  end do
+  
   write(100,'(A)') 'PARAMETERS'
   ! Line segment
   if (dwidth1 > 0.0_DP) then
@@ -432,12 +464,28 @@ program gridgenlaval2d
     write(cbuffer2, cFormat) Dpoints(2,18)-Dpoints(2,17)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
-  ! Line segment
+  
+  ! Line segment(s)
   write(cbuffer1, cFormat) Dpoints(1,18)
   write(cbuffer2, cFormat) Dpoints(2,18)
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
-  write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,18)
-  write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,18)
+  
+  do ipoint = 19, ncoords
+    ! Check if points coincide
+    if (sqrt((Dpoints(1,ipoint)-Dpoints(1,ipoint-1)**2) +&
+             (Dpoints(2,ipoint)-Dpoints(2,ipoint-1)**2)) .le. 1e-12) cycle
+    
+    write(cbuffer1, cFormat) Dpoints(1,ipoint)-Dpoints(1,ipoint-1)
+    write(cbuffer2, cFormat) Dpoints(2,ipoint)-Dpoints(2,ipoint-1)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+
+    write(cbuffer1, cFormat) Dpoints(1,ipoint)
+    write(cbuffer2, cFormat) Dpoints(2,ipoint)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+  end do
+  
+  write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,ncoords)
+  write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,ncoords)
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   
   close(100)
@@ -466,20 +514,27 @@ program gridgenlaval2d
   write(100, '(A)') trim(adjustl(cbuffer1))//' 2 1 1'
 
   ! Initialize the number of points
-  npoints = 0  
+  npoints = 0; npar = 0
 
   ! Write vertex coordinates
-  do ipoint = 1, 18
+  do ipoint = 1, ncoords
+
+    ! Check if points coincide
+    if (sqrt((Dpoints(1,ipoint)-Dpoints(1,mod(ipoint,ncoords)+1))**2 +&
+             (Dpoints(2,ipoint)-Dpoints(2,mod(ipoint,ncoords)+1))**2) .le. 1e-12) cycle
    
     ! Increase number of points by one
     npoints = npoints+1
  
+    ! Increase number of boundary parameter
+    npar = npar+1
+
     ! Fill buffers
     write(cbuffer1, '(I10)') npoints
     write(cbuffer2, cFormat) Dpoints(1,ipoint)
     write(cbuffer3, cFormat) Dpoints(2,ipoint)
-    write(cbuffer4, cFormat) real(ipoint-1,DP)
-    
+    write(cbuffer4, cFormat) real(npar-1,DP)
+
     ! Write line to file
     write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
                       trim(adjustl(cbuffer2))//' '//&
@@ -490,10 +545,10 @@ program gridgenlaval2d
     ! average distance; note that we must distinguish between points
     ! on a straight line and those on a circular segment
     select case(ipoint)
-    case(1:4,6:12,14:18)
+    case(1:4,6:12,14:ncoords)
       ! Compute line segment length
-      dsegmentlen = sqrt((Dpoints(1,mod(ipoint,18)+1)-Dpoints(1,ipoint))**2+&
-                         (Dpoints(2,mod(ipoint,18)+1)-Dpoints(2,ipoint))**2)
+      dsegmentlen = sqrt((Dpoints(1,mod(ipoint,ncoords)+1)-Dpoints(1,ipoint))**2+&
+                         (Dpoints(2,mod(ipoint,ncoords)+1)-Dpoints(2,ipoint))**2)
 
       ! Compute number of auxiliary segments
       nsubsegments = nint(dsegmentlen/ddist)
@@ -510,10 +565,10 @@ program gridgenlaval2d
         ! Fill buffer
         write(cbuffer1, '(I10)') npoints
         write(cbuffer2, cFormat) Dpoints(1,ipoint) +&
-                         domega*(Dpoints(1,mod(ipoint,18)+1)-Dpoints(1,ipoint))
+                         domega*(Dpoints(1,mod(ipoint,ncoords)+1)-Dpoints(1,ipoint))
         write(cbuffer3, cFormat) Dpoints(2,ipoint) +&
-                         domega*(Dpoints(2,mod(ipoint,18)+1)-Dpoints(2,ipoint))
-        write(cbuffer4, cFormat) real(ipoint-1,DP)+domega
+                         domega*(Dpoints(2,mod(ipoint,ncoords)+1)-Dpoints(2,ipoint))
+        write(cbuffer4, cFormat) real(npar-1,DP)+domega
     
         ! Write line to file
         write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
@@ -542,7 +597,7 @@ program gridgenlaval2d
         write(cbuffer1, '(I10)')  npoints
         write(cbuffer2, cFormat)  dx1+dradius1*cos(pi-dangle1*domega)
         write(cbuffer3, cFormat) -dy1+dradius1*sin(pi-dangle1*domega)
-        write(cbuffer4, cFormat)  real(ipoint-1,DP)+domega
+        write(cbuffer4, cFormat)  real(npar-1,DP)+domega
     
         ! Write line to file
         write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
@@ -597,7 +652,7 @@ program gridgenlaval2d
 
     write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
                       trim(adjustl(cbuffer2))//' '//&
-                      trim(adjustl(cbuffer3))//' 0'
+                      trim(adjustl(cbuffer3))//' 1'
   end do
 
   ! Write number of holes
@@ -607,7 +662,7 @@ program gridgenlaval2d
   close(100)
 
   ! Now, the number of total points is known and needs to be updated
-  if ((npoints .ne. 18) .and. .not.brewrite) then
+  if ((npoints .ne. ncoords) .and. .not.brewrite) then
     brewrite = .true.
     goto 1
   end if
@@ -632,10 +687,6 @@ program gridgenlaval2d
   read(100, fmt=*) nel
   close(100)
   
-  open(unit=100, file=trim(adjustl(cfilename))//'.1.edge')
-  read(100, fmt=*) nmt
-  close(100)
-
   !-----------------------------------------------------------------------------
   ! Generate TRI-file
   !-----------------------------------------------------------------------------
