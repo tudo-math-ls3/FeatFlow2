@@ -2266,6 +2266,7 @@ end if
         do k=1,ubound(p_DcubPtsRef,1)
 !          p_DcubPtsRef(k,i) = Dxi(i,k)
           p_DcubPtsRef(k,i) = Dpoints(k,i)
+!          p_DcubPtsRef(k,i) = Dpoints(i,k)
         end do
       end do
       

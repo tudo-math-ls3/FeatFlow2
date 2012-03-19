@@ -18,7 +18,7 @@ MSHOW_Initialisation = 2
 MT_OutputLevel = 2
 
 # Log file for messages. ='': No log file output.
-smsgLog = '%{slogdirectory}/output_fbm_10.log'
+smsgLog = '%{slogdirectory}/output_1000.log'
 
 # Log file for error messages; usually coincides with smsgLog to print
 # errors into the same log file as standard messages.

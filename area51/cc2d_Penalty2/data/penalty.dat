@@ -6,7 +6,7 @@
 #   - 0.0 - not active
 #   - 1.0 - active
 
-dPenalty = 0.0
+dPenalty = 1.0
 
 # Penalty method
 #   - 1 - full-Lambda (standard)
@@ -15,7 +15,7 @@ dPenalty = 0.0
 ipenalty = 1
 
 # Penalty parameter (standard 1000)
-dlambda = 1000
+dlambda = 1000000000
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
@@ -35,12 +35,12 @@ iPenalty_lump = 0
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 # ... (see discretisation.dat)
 
-ielementType_Penalty = 3
+ielementType_Penalty = 2
 
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = G3x3
+scubPenalty = MID
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.

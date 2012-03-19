@@ -1,6 +1,7 @@
 #!/bin/bash
 
-for NLMAX in 5 6 7 8 9 10;do
+for NLMAX in 7;do
+for DLAMBDA in 1e3 1e4 1e5 1e6 1e7 1e8;do
 
 cat >./data/discretisation.dat <<END_OF_DATA
 
@@ -120,13 +121,17 @@ dwriteSolDeltaTime = 0.0
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 4
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
 NLMAX              = ${NLMAX}
 
 # ------------------------------------------------------------------------
+
+# Activate fbm
+
+ifbm = 0
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
@@ -269,7 +274,7 @@ drhsMultiplyY = 1.0
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 
-ielementType = 3
+ielementType = 2
 
 # ------------------------------------------------------------------------
 
@@ -479,12 +484,12 @@ ioutputUCD = 0
 # For a value <> 0, the solution is projected down to the desired
 # level and written out there (saves disc space).
 
-ilevelUCD = 0
+ilevelUCD = 1
 
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = '%{spostdirectory}/u.gmv'
+sfilenameUCD = '%{spostdirectory}/u.${Dlambda}.${NLMAX}.vtk'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -583,19 +588,19 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 1
+ierrorAnalysisL2 = 0
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisH1 = 1
+ierrorAnalysisH1 = 0
 
 # Calculate the kinetic energy.
 # =0: Don't calculate
 # =1: Calculate the energy
 
-icalcKineticEnergy = 1
+icalcKineticEnergy = 0
 
 # Cubature formula for error analysis. E.g. "AUTO_G3" for 3-point Gauss.
 # ="": use default cubature formula.
@@ -604,9 +609,9 @@ scubError          =
 
 # Whether to write the L2/H1-error and/or kinetic energy to a file
 
-iwriteErrorAnalysisL2 = 1
-iwriteErrorAnalysisH1 = 1
-iwriteKineticEnergy = 1
+iwriteErrorAnalysisL2 = 0
+iwriteErrorAnalysisH1 = 0
+iwriteKineticEnergy = 0
 
 # Filename for the L2/H1-error/kinetic energy if iwriteerrorAnalysisXXXX = 1
 
@@ -656,11 +661,11 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 0
+iwriteBodyForces = 1
 
 # Filename for the body forces
 
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_fbm_${NLMAX}'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_${DLAMBDA}_${NLMAX}'
 
 # ------------------------------------------------------------------------
 # Point values
@@ -699,7 +704,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_fbm_${NLMAX}'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_${DLAMBDA}_${NLMAX}'
 
 # ------------------------------------------------------------------------
 # Flux values
@@ -744,15 +749,15 @@ cat >./data/output.dat <<END_OF_DATA
 
 # Level of output when reading parameters from the INI files.
 # =0=1: no output, =2: print parameters of .INI files to terminal
-MSHOW_Initialisation = 2
+MSHOW_Initialisation = 0
 
 # level of output to terminal
 # =0: no output, =1: basic output; =2: standard output; 
 # >=3: extended output with more and more details
-MT_OutputLevel = 2
+MT_OutputLevel = 1
 
 # Log file for messages. ='': No log file output.
-smsgLog = '%{slogdirectory}/output_fbm_${NLMAX}.log'
+smsgLog = '%{slogdirectory}/output_${DLAMBDA}_${NLMAX}.log'
 
 # Log file for error messages; usually coincides with smsgLog to print
 # errors into the same log file as standard messages.
@@ -764,6 +769,64 @@ serrorLog = ''
 sbenchLog = ''
 
 END_OF_DATA
+
+cat >./data/penalty.dat <<END_OF_DATA
+############
+[CC-PENALTY]
+############
+
+# Activate penalty method and choose the way of calculating penalty parameter
+#   - 0.0 - not active
+#   - 1.0 - active
+
+dPenalty = 1.0
+
+# Penalty method
+#   - 1 - full-Lambda (standard)
+#   - 2 - fractional Lambda
+
+ipenalty = 1
+
+# Penalty parameter (standard 1000)
+dlambda = 1e6
+
+# itypePenaltyAssem indicates how to assemble Penalty matrix
+#   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
+#   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
+
+itypePenaltyAssem = 1
+
+# Generation of penalty matrix. 0=real mass,1 = HRZ mass
+iPenalty_lump = 0
+
+# Element type 
+#  0 = Q1~(E031) / Q1~(E031) / Q0
+#  1 = Q1~(E030) / Q1~(E030) / Q0
+#  2 = Q1~(EM31) / Q1~(EM31) / Q0
+#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+#  4 = Q2 (E013) / Q2 (E013) / QP1
+#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# ... (see discretisation.dat)
+
+ielementType_Penalty = 2
+
+# cubature formula for Penalty matrix. 
+# ="": use default cubature formula.
+
+scubPenalty = G3X3
+
+# adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
+# ="": use default cubature formula.
+
+scubPenalty_sum = TRZ
+
+# ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
+
+ilocalrefinement     = 5
+
+END_OF_DATA
+
 ./cc2d
- 
+
+done
 done

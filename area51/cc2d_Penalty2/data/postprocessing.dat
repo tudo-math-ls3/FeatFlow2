@@ -144,7 +144,7 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 1
+ierrorAnalysisL2 = 0
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
@@ -188,7 +188,7 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 # =4: Calculate using volume forces with extended method, supporting mixed
 #     meshes, general elements and nonlinear viscosity.
 
-icalcBodyForces = 3
+icalcBodyForces = 0
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic

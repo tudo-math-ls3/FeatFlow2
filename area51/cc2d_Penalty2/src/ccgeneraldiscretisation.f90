@@ -1130,10 +1130,6 @@ contains
     ! so the callback routine has access to everything what is in the collection.
     call bilf_buildMatrixScalar (rform,.TRUE.,rasmTempl%rmatrixPenalty, &
                                  rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
-    ! matrix output                                 
- !   call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty',&
- !                            .false., 0, 'penalty.txt', '(E10.2)')
-
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
     
   end subroutine
