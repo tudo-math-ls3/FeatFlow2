@@ -1059,8 +1059,8 @@ contains
             rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
             rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
             
-        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty',&
-                                 .false., 0, 'Penalty2_vel.txt', '(E10.2)')            
+!        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty',&
+!                                 .false., 0, 'Penalty2_vel.txt', '(E10.2)')            
 
         if (.not. bshared) then
 
@@ -1119,8 +1119,8 @@ contains
         end if
       end if
 
-      call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, 'Stokes',&
-                               .false., 0, 'Stokes_Penalty2.txt', '(E10.2)')
+!      call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, 'Stokes',&
+!                               .false., 0, 'Stokes_Penalty2.txt', '(E10.2)')
 
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
@@ -1408,8 +1408,8 @@ contains
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rmatrix%RmatrixBlock(1,1),&
               rnonlinearCCMatrix%dtheta,1.0_DP,.false.,.false.,.true.,.true.)
 
-          call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, 'EOJ', &
-                                   .false., 0, 'EOJ_Penalty2.txt', '(E10.2)')            
+!          call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, 'EOJ', &
+!                                   .false., 0, 'EOJ_Penalty2.txt', '(E10.2)')            
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
@@ -1660,8 +1660,8 @@ contains
       
       end if ! gamma <> 0
 
-      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'A11',&
-                               .false., 0, 'A11_Penalty2.txt', '(E10.2)')            
+!      call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'A11',&
+!                               .false., 0, 'A11_Penalty2.txt', '(E10.2)')            
 
     end subroutine
       

@@ -6,7 +6,7 @@
 #   - 0.0 - not active
 #   - 1.0 - active
 
-dPenalty = 1.0
+dPenalty = 0.0
 
 # Penalty method
 #   - 1 - full-Lambda (standard)
