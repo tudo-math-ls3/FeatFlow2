@@ -69,16 +69,16 @@ IncShear = 1
 iMass= 1
 iMassLumpType= 0 
 ielementType = 4
- NLMIN = 2
- NLMAX = 2
- RE = 1
- lambda = 1
- mu = 1
- nSo = 0.75
- nFo = 0.25
- rhoFR = 1
- rhoSR = 1
-kFo = 0.0625
+ NLMIN = 1
+ NLMAX = 6
+ RE = 1E3
+ mu = 5.583E6
+ lambda = 8.375E6
+ rhoSR = 2E3
+ rhoFR = 1E3
+ nSo = 0.67
+ nFo = 0.33
+kFo = 1E-5
 ctypeInitialSolution = 0
 #################
 [CC-LINEARSOLVER]
@@ -94,10 +94,10 @@ depsRel            = 1E-10
 #####################
 [TIME-DISCRETISATION]
 #####################
-itimedependence = 0                     # ISTAT
+itimedependence = 1                     # ISTAT
 dtimeInit = 0.0 
-dtimeMax  = 500
-dtimeStep = 1.0
+dtimeMax  = 0.15
+dtimeStep = 5.0E-4
 dtimeStepTheta = 1
 dminTimeDerivative = 1.0E-13
 ipressureFullyImplicit = 1
@@ -105,32 +105,109 @@ ipressureFullyImplicit = 1
 [CC2D-NONLINEAR]
 ################
 nmaxIterations     = 5
-depsD_u     = 1.0E-3
-depsD_vS    = 1.0E-3
-depsD_vF    = 1.0E-3
-depsDiv     = 1.0E-3
-depsUR      = 1.0E-3
-depsVSR     = 1.0E-3
-depsVFR     = 1.0E-3
-depsPR      = 1.0E-3
+depsD_u     = 1.0E-5
+depsD_vS    = 1.0E-5
+depsD_vF    = 1.0E-5
+depsDiv     = 1.0E-5
+depsUR      = 1.0E-5
+depsVSR     = 1.0E-5
+depsVFR     = 1.0E-5
+depsPR      = 1.0E-5
 ###################
 [CC-POSTPROCESSING]
 ###################
-ioutputUCD = 1
-ierrorAnalysisL2 = 1
-ierrorAnalysisH1 = 1
+ioutputUCD = 0
+ierrorAnalysisL2 = 0
+ierrorAnalysisH1 = 0
+cevaluatePointValues(72) =
+   1.0  9.500000  2  0
+   1.0  9.600000  2  0
+   1.0  9.700000  2  0
+   1.0  9.800000  2  0
+   1.0  9.806250  2  0
+   1.0  9.812500  2  0
+   1.0  9.818750  2  0
+   1.0  9.825000  2  0
+   1.0  9.831250  2  0
+   1.0  9.837500  2  0
+   1.0  9.843750  2  0
+   1.0  9.850000  2  0
+   1.0  9.856250  2  0
+   1.0  9.862500  2  0
+   1.0  9.868750  2  0
+   1.0  9.875000  2  0
+   1.0  9.881250  2  0
+   1.0  9.887500  2  0
+   1.0  9.893750  2  0
+   1.0  9.900000  2  0
+   1.0  9.906250  2  0
+   1.0  9.912500  2  0
+   1.0  9.918750  2  0
+   1.0  9.925000  2  0
+   1.0  9.931250  2  0
+   1.0  9.937500  2  0
+   1.0  9.943750  2  0
+   1.0  9.950000  2  0
+   1.0  9.956250  2  0
+   1.0  9.962500  2  0
+   1.0  9.968750  2  0
+   1.0  9.975000  2  0
+   1.0  9.981250  2  0
+   1.0  9.987500  2  0
+   1.0  9.993750  2  0
+   1.0 10.000000  2  0
+# pressures
+   1.0  9.500000  7  0
+   1.0  9.600000  7  0
+   1.0  9.700000  7  0
+   1.0  9.800000  7  0
+   1.0  9.806250  7  0
+   1.0  9.812500  7  0
+   1.0  9.818750  7  0
+   1.0  9.825000  7  0
+   1.0  9.831250  7  0
+   1.0  9.837500  7  0
+   1.0  9.843750  7  0
+   1.0  9.850000  7  0
+   1.0  9.856250  7  0
+   1.0  9.862500  7  0
+   1.0  9.868750  7  0
+   1.0  9.875000  7  0
+   1.0  9.881250  7  0
+   1.0  9.887500  7  0
+   1.0  9.893750  7  0
+   1.0  9.900000  7  0
+   1.0  9.906250  7  0
+   1.0  9.912500  7  0
+   1.0  9.918750  7  0
+   1.0  9.925000  7  0
+   1.0  9.931250  7  0
+   1.0  9.937500  7  0
+   1.0  9.943750  7  0
+   1.0  9.950000  7  0
+   1.0  9.956250  7  0
+   1.0  9.962500  7  0
+   1.0  9.968750  7  0
+   1.0  9.975000  7  0
+   1.0  9.981250  7  0
+   1.0  9.987500  7  0
+   1.0  9.993750  7  0
+   1.0 10.000000  7  0
+iwritePointValues = 0
 #############
 [PARAMTRIANG]
 #############
-sParametrisation = '%{spredirectory}/quadhighdegree.prm'
-sMesh = '%{spredirectory}/quadhighdegree.tri'
+#sParametrisation = '%{spredirectory}/quadhighdegree.prm'
+#sMesh = '%{spredirectory}/quadhighdegree.tri'
+sParametrisation = '%{spredirectory}/markert1.prm'
+sMesh = '%{spredirectory}/markert1.tri'
 ##############
 [BDCONDITIONS]
 ##############
-ineumannBoundary = -1
+ineumannBoundary = 1  # for fluid only
 bdComponent1(4)=
-   1.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
-   2.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
-   3.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
-   4.0  3  1 1 0 0 1 1  'A' 'A' 'A' 'A' 'A' 'A'
+   1.0  3  0 1 0 1 0 1  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   2.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   3.0  3  0 0 0 0 0 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
+   4.0  3  1 0 1 0 1 0  'D0' 'D0' 'D0' 'D0' 'D0' 'D0'
 

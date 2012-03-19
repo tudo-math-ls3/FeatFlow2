@@ -53,7 +53,7 @@ bdExpressions(7) =
   'Umax'   0    0.3
   'D0'     0    0.0
   'D2'     0    2
-  'D1'     0    1.0E-5
+  'D1'     0    -0.375E-5
   'ParProfile'     2    0.3 # 'Umax * 4.0*r*(1-r)'
   'ParProfExpr'   -1    '4.0*0.3*L*(1.0-L)'
 

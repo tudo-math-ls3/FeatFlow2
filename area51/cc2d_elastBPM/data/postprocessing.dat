@@ -238,8 +238,6 @@ sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 #     0.15 0.2 3 0
 #     0.25 0.2 3 0
 
-cevaluatePointValues(0) =
-
 # Whether to write the point values to a file
 
 iwritePointValues = 0
