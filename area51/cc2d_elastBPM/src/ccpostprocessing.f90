@@ -1156,7 +1156,7 @@ contains
     integer, dimension(:), allocatable :: Ider
     character(LEN=SYS_STRLEN) :: sparam
     character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues,stemp
-    character(LEN=10), dimension(7,3), parameter :: Sfctnames = reshape (&
+    character(LEN=10), dimension(3,7), parameter :: Sfctnames = reshape (&
       (/ "      uS1 ","    uS1_x ","    uS1_y " , &
          "      uS2 ","    uS2_x ","    uS2_y " , &
          "      vS1 ","    vS1_x ","    vS1_y " , &
@@ -1164,7 +1164,8 @@ contains
          "      vF1 ","    vF1_x ","    vF1_y " , &
          "      vF2 ","    vF2_x ","    vF2_y " , &
          "        p ","      p_x ","      p_y " /) ,&
-       (/ 7,3 /) )
+       (/ 3,7 /) )
+
 
 
     ! Get the number of points to evaluate
@@ -1407,6 +1408,10 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
     real(DP), dimension(:), pointer :: p_Ddata3,p_Ddata4
     real(DP), dimension(:), pointer :: p_Ddata5,p_Ddata6
+! ################# added by obaid to plot the distorted mesh ###########
+    real(DP), Dimension(:,:), pointer :: p_DvertexCoords
+    type(t_triangulation) :: rmyNewTriangulation
+! #######################################################################
 
     ! A pointer to the triangulation.
     type(t_triangulation), pointer :: p_rtriangulation
@@ -1430,7 +1435,7 @@ contains
     integer(I32) :: ieltype
     
     ! Parameters used for the moving frame formulation
-    integer :: imovingFrame
+    integer :: imovingFrame, i
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     
     character(SYS_STRLEN) :: sfile,sfilename
@@ -1562,14 +1567,19 @@ contains
     ! From the attached discretisation, get the underlying triangulation
     ! of that level
     p_rtriangulation => rproblem%RlevelInfo(ilevelUCD)%rtriangulation
-    
+! #####################  added to allow for deformed mesh plotting  ############
+    call tria_duplicate (p_rtriangulation, rmyNewTriangulation,&
+	  iand (TR_SHARE_ALL, not(TR_SHARE_DVERTEXCOORDS)))
+! ##############################################################################
     ! Start UCD export to GMV file:
     call output_lbrk ()
     call output_line ('Writing visualisation file: '//sfile)
     
     select case (ioutputUCD)
     case (1)
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+! ############### added to allow for plotting of the deformation ################
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rmyNewTriangulation,sfile)
+!       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rmyNewTriangulation,sfile)
 
     case (2)
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
@@ -1604,6 +1614,16 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata4)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata5)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata6)
+
+! ##################  added by obaid to plot the deformed mesh  ###########################
+
+    call storage_getbase_double2D(rmyNewTriangulation%h_DvertexCoords, p_DvertexCoords) 
+    ! add displacements
+   do i = 1,p_rtriangulation%NVT
+     p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + 1.0_DP*p_Ddata(i)
+     p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + 1.0_DP*p_Ddata2(i)
+   end do 
+! #########################################################################################
     
     ! Moving frame velocity subtraction deactivated, gives pictures
     ! that can hardly be interpreted.
@@ -1687,6 +1707,9 @@ contains
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
+! #################  added to allow for deformed mesh plotting  ############
+    call tria_done(rmyNewTriangulation)
+! ##########################################################################
     
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)

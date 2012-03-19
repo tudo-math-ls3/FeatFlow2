@@ -890,10 +890,10 @@ contains
     else
       dtime = 0.0_DP
     end if
-!        Dcoefficients(:,:,:) = 0.0_DP
+       Dcoefficients(:,:,:) = 0.0_DP
 
 
-       Dcoefficients(1,:,:) = 21.0_DP/4.0_DP - 9.81_DP*Dpoints(1,:,:)
+!        Dcoefficients(1,:,:) = 21.0_DP/4.0_DP - 9.81_DP*Dpoints(1,:,:)
     
 
   end subroutine
@@ -982,9 +982,9 @@ contains
       dtime = 0.0_DP
     end if
 
-!          Dcoefficients(:,:,:) = 0.0_DP
+         Dcoefficients(:,:,:) = 0.0_DP
 
-       Dcoefficients(1,:,:) = 9.81_DP*Dpoints(2,:,:) - 6.0_DP
+!        Dcoefficients(1,:,:) = 9.81_DP*Dpoints(2,:,:) - 6.0_DP
 
   end subroutine
 
@@ -1251,9 +1251,9 @@ contains
       dtime = 0.0_DP
     end if
 
-!       Dcoefficients(:,:,:) = 0.0_DP
+      Dcoefficients(:,:,:) = 0.0_DP
 
-         Dcoefficients(1,:,:) = 9.81_DP*Dpoints(1,:,:) - 0.25_DP
+!          Dcoefficients(1,:,:) = 9.81_DP*Dpoints(1,:,:) - 0.25_DP
 
   end subroutine
 
@@ -1342,9 +1342,9 @@ contains
       dtime = 0.0_DP
     end if
 
-!        Dcoefficients(:,:,:) =0.0_DP
+       Dcoefficients(:,:,:) =0.0_DP
     
-      Dcoefficients(1,:,:) = -9.81_DP*Dpoints(2,:,:)
+!       Dcoefficients(1,:,:) = -9.81_DP*Dpoints(2,:,:)
 
   end subroutine
 
@@ -1437,6 +1437,117 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
+
+!  ***************************************************************************************
+
+!/***/  added by Obaid for surface force
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine RHS_2D_surf (rdiscretisation, rform, nel, nptsPerEl, &
+                               Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
+                               Dcoefficients, rcollection)
+    
+    use fsystem
+    use boundary
+    use collection
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function g
+    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the
+    ! surface forces in x- or y-direction (nonzero Neumann boundary conditions).
+!</description>
+
+!<input>
+    ! discretisation structure
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! linear form to be evaluated
+    type(t_linearForm), intent(in) :: rform
+    
+    ! number of elements where the coefficients are to be computed
+    integer, intent(in) :: nel
+    
+    ! number of points per element where the coefficients are to be computed
+    integer, intent(in) :: nptsPerEl
+    
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, nptsPerEl, nel)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! index of the boundary component that contains the points
+    integer, intent(in) :: ibct
+    
+    ! parameter values (LENGTH PARAMETRISATION) of the points on the boundary component
+    ! DIMENSION(nptsPerEl, nel)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nel)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! structure providing more detailed information about the current element set
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! array of coefficients of the terms in the linear form for all given points on
+    ! all given elements, DIMENSION(itermCount, nptsPerEl, nel)
+    ! with itermCount the number of terms in the linear form
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+    ! local variables
+    real(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+    else
+      dtime = 0.0_DP
+    end if
+
+!</output>
+!</subroutine>
+
+    ! local variables
+    !/***/ real(DP), dimension(:,:,:), pointer :: DstressTensor
+
+
+!     ! in rcollection%IquickAccess(1) the current component is stored
+!     icomp = rcollection%IquickAccess(1)
+! 
+!     ! in rcollection%IquickAccess(2) the current segment number is stored
+!     iseg = rcollection%IquickAccess(2)
+
+
+! taken from Marker paper: comparison of monolithic and splitting solution schemes ....
+! ! Markert figure: 8
+!     if (dtime .ge. 0.0_DP .and. dtime .le. 0.04_DP) then
+!       Dcoefficients(1,:,:) = -1.0E5_DP*sin(25.0_DP*sys_pi*dtime)
+!     else
+!       Dcoefficients(1,:,:) = 0.0_DP
+!     end if
+
+! Markert figure 3
+     Dcoefficients(1,:,:) = -1.0E3_DP*( 1.0_DP - cos(20.0_DP*sys_pi*dtime) )
+
+  end subroutine RHS_2D_surf
+
+
+! ****************************************************************************************
+
 
 !<subroutine>
 

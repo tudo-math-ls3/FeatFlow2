@@ -1850,7 +1850,14 @@ contains
     integer :: imovingFrame
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     type(t_collection) :: rlocalcoll
+! ################## added by obaid #########################
+    ! variable for selecting a specifig boundary region
+    type(t_boundaryRegion) :: rboundaryRegion
+    call boundary_createRegion(rproblem%rboundary, 1, 3, rboundaryRegion)
+! 1: boundary componet (for holed cylinder, we have 2 components)
+! 3: boundary segment
 
+! ###########################################################
 
     dnSrhoSR = rproblem%rphysics%dnSo*rproblem%rphysics%drhoSR
     dnFrhoFR = rproblem%rphysics%dnFo*rproblem%rphysics%drhoFR
@@ -2083,6 +2090,14 @@ contains
                 p_rdiscretisation%RspatialDiscr(7),rlinform,.false.,&
                 rrhs%RvectorBlock(7),coeff_RHS_p,&
                 rproblem%rcollection)
+
+! #####################   added by Obaid   ##############################
+      rboundaryRegion%dminParam = 2.0_DP
+      rboundaryRegion%dmaxParam = 3.0_DP
+      call linf_buildVectorScalarBdr2d(rlinform, CUB_G2_1D, .false., &
+          rrhs%RvectorBlock(2), RHS_2D_surf, rboundaryRegion, rproblem%rcollection)
+
+! #######################################################################
                              
 !       ! Is the moving-frame formulatino active?
 !       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&

@@ -151,7 +151,7 @@ contains
 !</subroutine>
 
     ! local variables
-    logical :: bNeumann,isNeumann,isDirichlet
+    logical :: bNeumann,isNeumann,isDirichlet,isSlip!,isMixed
     integer :: i,k,n,ityp,ivalue,ibdComponent,isegment,iintervalEnds
     integer, dimension(6) :: ibctyp ! 6: nblocks-1
     integer :: icount,iexptyp
@@ -329,18 +329,19 @@ contains
             rboundaryRegion%dmaxParamBC = &
               boundary_dgetMaxParVal(p_rboundary, ibdComponent)
             rboundaryRegion%iproperties = iintervalEnds
-	    read(cstr,*) dvalue,iintervalEnds,(ibctyp(n),n=1,6)
+	    read(cstr,*) dvalue,iintervalEnds,(ibctyp(n),n=1,6)        
 	    isNeumann =   .false.
 	    isDirichlet = .false.
+            isSlip = .false.
+! 	    isMixed = .false.
+	    
 	    Do n=1,6  !/***/ by obaid
               if (ibctyp(n).eq. 0) isNeumann   = .true.
 	      if (ibctyp(n).eq. 1) isDirichlet = .true.
-            end do
+            end do 
             
 !             ! Now, which type of BC is to be created?
-!             select case (ibctyp(1))
              if (isNeumann) then  !/***/ by obaid
-!             
 !             case (0)
 !               ! Usually there is Neumann boundary in this region, but we can not be
 !               ! sure. Check if, on the highest level, there is at least one edge
@@ -348,11 +349,9 @@ contains
 !               ! have found Neumann boundary. If no, the segment is just too
 !               ! small to be considered as Neumann boundary.
 !               
-              call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
-                                            rboundaryRegion, &
-                                            IminIndex,ImaxIndex,icount)
+              call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, icount)
               if (icount .gt. 0) bNeumann = .true.
-              end if !/***/ isNeumann
+              end if
 
               if (isDirichlet) then
 !             
@@ -398,7 +397,7 @@ contains
 !               end if
               
               
-              Do k=1,6
+                Do k=1,6
 		rcoll%IquickAccess(1) = ibctyp(k)
  		if (ibctyp(k) .eq. 1) then
               ! If the type is a double precision value, set the DquickAccess(4)
@@ -702,7 +701,7 @@ contains
           
           ! Form a boundary condition segment that covers that boundary part
           if (dpar2 .ge. dpar1) then
-            
+!/***!     need to be reviewed        
             ! Now, which type of BC is to be created?
             select case (ibctyp(1))
             
@@ -713,13 +712,7 @@ contains
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
-              if (((icomponent .eq. 0) .and. ((sbdex(1) .ne. '') .or. (sbdex(2) .ne. '') .or. &
-		                              (sbdex(3) .ne. '') .or. (sbdex(4) .ne. '') .or. &
-					      (sbdex(5) .ne. '') .or. (sbdex(6) .ne. ''))) .or. &
-                  ((icomponent .eq. 1) .and. (sbdex(1) .ne. '')) .or. &
-                  ((icomponent .eq. 2) .and. (sbdex(2) .ne. '')) .or. &
-                  ((icomponent .eq. 3) .and. (sbdex(3) .ne. '')) .or. &
-                  ((icomponent .eq. 4) .and. (sbdex(4) .ne. '')) .or. &
+              if (((icomponent .eq. 0) .and. ((sbdex(5) .ne. '') .or. (sbdex(6) .ne. ''))) .or. &
                   ((icomponent .eq. 5) .and. (sbdex(5) .ne. '')) .or. &
                   ((icomponent .eq. 6) .and. (sbdex(6) .ne. ''))) then
               
@@ -929,7 +922,7 @@ contains
             dwhere, rcollection%SquickAccess(1),dtime,&
             rcollection%DquickAccess(5:6),rcollection%DquickAccess(7:8),&
             rcollection)
-            
+!/***/ need to be reviewed            
         if (imovingFrame .ne. 0) then
           ! Moving frame formulation active. Add the frame velocity to the
           ! Dirichlet boundary conditions.
@@ -957,7 +950,7 @@ contains
                                     DmframeVel,DmframeAcc,rcollection)
     
     ! Solution component for which the expression is evaluated.
-    ! 1 = X-velocity, 2 = y-velocity,...
+    ! 5 = X-velocity, 6 = y-velocity,...
     integer, intent(in) :: icomponent
     
     ! Discretisation structure of the underlying discretisation

@@ -957,28 +957,52 @@ contains
       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !
-
+!/***/1: This is done here temporary and must be modified
+!
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+! !
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(2,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+! !
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+! !
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+! !
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(6,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+! !
+!       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+!                   rmatrix%RmatrixBlock(4,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!
           
 !       if (.not. bdecoupled) then
            
         ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
-        ! A22 is identical to A11! So mirror A55 to A66 sharing the
+        ! A66 is identical to A55! So mirror A55 to A66 sharing the
         ! structure and the content.
+
+!/***/2  to allow for slip conditions, this must be commented out !!
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,3),&
-                    rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                    rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 !
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,5),&
-                    rmatrix%RmatrixBlock(2,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                    rmatrix%RmatrixBlock(2,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 !
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(3,3),&
-                    rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                    rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY) !/***/share o copy ?
+!
+        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
+                    rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 !
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,3),&
-                    rmatrix%RmatrixBlock(6,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                    rmatrix%RmatrixBlock(6,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 !
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(3,1),&
-                    rmatrix%RmatrixBlock(4,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!                   
+                    rmatrix%RmatrixBlock(4,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+                  
 !       else
       
 !         ! Otherwise, create another copy of the template matrix.
@@ -1007,8 +1031,8 @@ contains
         ! If X- and Y-fluid velocity is to be treated in a 'coupled' way, the matrix
         ! A55 is identical to A66! So mirror A55 to A66 sharing the
         ! structure and the content.
-        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
-                    rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)                 
+!         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(5,5),&
+!                     rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)                 
       else      
         ! Otherwise, create another copy of the template matrix.
         call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
@@ -1232,6 +1256,7 @@ contains
       bshared = (lsyssc_isMatrixContentShared(&
                     rmatrix%RmatrixBlock(5,5),&
                     rmatrix%RmatrixBlock(6,6)))
+! print*, bshared
 ! *****************************************************           
       ! Allocate memory if necessary. Normally this should not be necessary...
       ! A55:
@@ -1278,29 +1303,29 @@ contains
 !
 
       if (.not. bshared) then
-!         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
-!           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
-!         end if
-!
-!         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,6))) then
-!           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,6),LSYSSC_SETM_UNDEFINED)
-!         end if
-!
-!         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,4))) then
-!           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
-!         end if
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
+        end if
+
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,6))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,6),LSYSSC_SETM_UNDEFINED)
+        end if
+
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,4))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
+        end if
 !
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,6))) then
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,6),LSYSSC_SETM_UNDEFINED)
         end if
 !
-!         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
-!           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
-!         end if
-!
-!         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,2))) then
-!           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
-!         end if
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
+        end if
+
+        if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,2))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
+        end if
 !
       end if
 
@@ -1335,25 +1360,49 @@ contains
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,3),LSYSSC_SETM_UNDEFINED)
       end if
 !
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
+      end if
+!
       if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(1,5))) then
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(1,5),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,6))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,6),LSYSSC_SETM_UNDEFINED)
       end if
 !
       if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,3))) then
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,3),LSYSSC_SETM_UNDEFINED)
       end if
 !
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,4))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
+      end if
+!
       if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,5))) then
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,5),LSYSSC_SETM_UNDEFINED)
+      end if
+!
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,6))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,6),LSYSSC_SETM_UNDEFINED)
       end if
 !
       if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(5,3))) then
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(5,3),LSYSSC_SETM_UNDEFINED)
       end if
 !
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
+      end if
+!
       if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(3,1))) then
 	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(3,1),LSYSSC_SETM_UNDEFINED)
       end if
+      if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,2))) then
+	call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
+      end if
+!
 
       if (.not. bshared) then
         if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,6))) then
@@ -1374,6 +1423,13 @@ contains
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,3))
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,1))
+!
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,4))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,6))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,4))
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,2))
       
       if (.not. bshared) then
 	call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
@@ -1398,41 +1454,41 @@ contains
             rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
 
             
-!         if (.not. bshared) then
+        if (.not. bshared) then
 
-          ! Allocate memory if necessary. Normally this should not be necessary...
-!           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
-!             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
-!           end if
+!           Allocate memory if necessary. Normally this should not be necessary...
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,4))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,4),LSYSSC_SETM_UNDEFINED)
+          end if
+
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,6))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,6),LSYSSC_SETM_UNDEFINED)
+          end if
+
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,4))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
+          end if
+
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
+          end if
+
+          if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,2))) then
+            call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
+          end if
+! 	Plug in the other 3 mass matrices x alpha
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,4),&
+              rnonlinearCCMatrix%dalpha*dnSrhoSR,0.0_DP,.false.,.false.,.true.,.true.)
+
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,6),&
+              rnonlinearCCMatrix%dalpha*dnFrhoFR,0.0_DP,.false.,.false.,.true.,.true.)
 !
-!           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(2,6))) then
-!             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(2,6),LSYSSC_SETM_UNDEFINED)
-!           end if
-!
-!           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,4))) then
-!             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
-!           end if
-!
-!           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(6,4))) then
-!             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(6,4),LSYSSC_SETM_UNDEFINED)
-!           end if
-!
-!           if (.not. lsyssc_hasMatrixContent (rmatrix%RmatrixBlock(4,2))) then
-!             call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
-!           end if
-!	Plug in the other 3 mass matrices x alpha
-!           call lsyssc_matrixLinearComb (&
-!               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,4),&
-!               rnonlinearCCMatrix%dalpha*dnSrhoSR,0.0_DP,.false.,.false.,.true.,.true.)
-!
-!           call lsyssc_matrixLinearComb (&
-!               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,6),&
-!               rnonlinearCCMatrix%dalpha*dnFrhoFR,0.0_DP,.false.,.false.,.true.,.true.)
-! !
-!           call lsyssc_matrixLinearComb (&
-!               rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
-!               rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
-!         end if
+          call lsyssc_matrixLinearComb (&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,2),&
+              rnonlinearCCMatrix%dalpha,0.0_DP,.false.,.false.,.true.,.true.)
+        end if
         
       end if
       
@@ -1517,29 +1573,29 @@ contains
             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(5,3),&
             rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
 ! !       .......................
-! 	if (.not. bshared) then
-! !       .......................
-!     ! K_24
-! 	  call lsyssc_matrixLinearComb (&
-! 	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,4),&
-! 	      rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
-!     ! K_26
-! 	  call lsyssc_matrixLinearComb (&
-! 	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,6),&
-! 	      rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
-!     ! K_44
-! 	  call lsyssc_matrixLinearComb (&
-! 	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,4),&
-! 	      rnonlinearCCMatrix%dtheta*(-1.0_DP),1.0_DP,.false.,.false.,.true.,.true.)
-!     ! K_66^\hat
-! 	  call lsyssc_matrixLinearComb (&
-!             rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,6),&
-!             rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
-!     ! K_64
-! 	  call lsyssc_matrixLinearComb (&
-! 	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,4),&
-! 	      rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
-! 	end if
+	if (.not. bshared) then
+!       .......................
+    ! K_24
+	  call lsyssc_matrixLinearComb (&
+	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,4),&
+	      rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
+    ! K_26
+	  call lsyssc_matrixLinearComb (&
+	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(2,6),&
+	      rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
+    ! K_44
+	  call lsyssc_matrixLinearComb (&
+	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(4,4),&
+	      rnonlinearCCMatrix%dtheta*(-1.0_DP),1.0_DP,.false.,.false.,.true.,.true.)
+    ! K_66^\hat
+	  call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,6),&
+            rnonlinearCCMatrix%dtheta*dnF2kF,1.0_DP,.false.,.false.,.true.,.true.)
+    ! K_64
+	  call lsyssc_matrixLinearComb (&
+	      rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rmatrix%RmatrixBlock(6,4),&
+	      rnonlinearCCMatrix%dtheta*(-dnF2kF),1.0_DP,.false.,.false.,.true.,.true.)
+	end if
       end if
 
       ! ---------------------------------------------------
