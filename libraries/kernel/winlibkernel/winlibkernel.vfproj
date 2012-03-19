@@ -121,8 +121,7 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stack.h"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stackInt.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\stackSngl.f90"/>
-		<File RelativePath="..\..\..\kernel\DataStructures\template.h"/></Filter>
+		<File RelativePath="..\..\..\kernel\DataStructures\stackSngl.f90"/></Filter>
 		<Filter Name="DOFMaintenance">
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassembly.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassemblybase.f90"/>
@@ -194,6 +193,7 @@
 		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemblock.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemscalar.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\lsyssc_scalarMatVecAux.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\matrixcheck.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSystem\matrixmodification.f90"/></Filter>
 		<Filter Name="Mathematics">
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
