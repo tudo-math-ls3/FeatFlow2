@@ -15,7 +15,7 @@ dPenalty = 1.0
 ipenalty = 1
 
 # Penalty parameter (standard 1000)
-dlambda = 1000000000
+dlambda = 1000
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
@@ -40,7 +40,7 @@ ielementType_Penalty = 2
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = MID
+scubPenalty = MID_2D
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.
