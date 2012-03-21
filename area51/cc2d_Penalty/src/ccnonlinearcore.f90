@@ -1455,12 +1455,12 @@ contains
  
          if (ilev .eq. NLMAX) then
            if (iblockA11 .ne. 0) then
-           call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1),&
-                                     'A11',.false.,0,'A11_'//sys_siL(ilev,1)//'.txt','(E10.2)')
+!           call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1),&
+!                             'A11',.false.,0,'A11_'//sys_siL(ilev,1)//'.txt','(E10.2)')
            end if
            if (iblockA22 .ne. 0) then
-           call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(2,2),&
-                                     'A22',.false.,0,'A22_'//sys_siL(ilev,1)//'.txt','(E10.2)')
+!           call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(2,2),&
+!                            'A22',.false.,0,'A22_'//sys_siL(ilev,1)//'.txt','(E10.2)')
            end if
          end if
 

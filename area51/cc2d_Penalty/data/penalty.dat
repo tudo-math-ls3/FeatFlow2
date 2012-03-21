@@ -28,7 +28,7 @@ ielementType_Penalty = 2
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = MID
+scubPenalty = MID_2D
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.

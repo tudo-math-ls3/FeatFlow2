@@ -35,7 +35,7 @@ ctypeInitialSolution = 0
 # =0,-1,-2,...: File sinitialSolutionFilename specifies a solution on 
 #               level (NLMAX+iinitialSolutionLevel).
 
-iinitialSolutionlevel = 3
+iinitialSolutionlevel = 0
 
 # Name/path of file with the initial solution
 
@@ -98,7 +98,7 @@ NLMIN              = 2
 
 # maximum mg-level = levl of computation of nonlinear iteration
 
-NLMAX              = 7
+NLMAX              = 5
 
 # ------------------------------------------------------------------------
 
