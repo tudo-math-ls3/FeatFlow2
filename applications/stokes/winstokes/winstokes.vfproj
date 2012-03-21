@@ -39,7 +39,8 @@
 		<File RelativePath="..\src\stokes2d_method1_mg.f90"/>
 		<File RelativePath="..\src\stokes2d_method1_schur.f90"/>
 		<File RelativePath="..\src\stokes2d_method2_gv.f90"/>
-		<File RelativePath="..\src\stokes2d_method2_sv.f90"/></Filter>
+		<File RelativePath="..\src\stokes2d_method2_sv.f90"/>
+		<File RelativePath="..\src\stokes2d_method3_block.f90"/></Filter>
 		<Filter Name="3D">
 		<File RelativePath="..\src\dom3d_c3d0.f90"/>
 		<File RelativePath="..\src\dom3d_cube.f90"/>
