@@ -1923,7 +1923,7 @@ contains
     end if
 
     ! Cubature formula. Only one cubature formula supported.
-    ccubature = rcubatureInfo%p_RinfoBlocks(1)%ccubature
+    ccubature = p_rcubatureInfo%p_RinfoBlocks(1)%ccubature
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
