@@ -1117,7 +1117,8 @@ contains
     rform%Idescriptors(1,1) = DER_FUNC
     rform%Idescriptors(2,1) = DER_FUNC
     ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .FALSE.
+    rform%ballCoeffConstant = .false.
+    rform%BconstantCoeff = .false.
     rform%Dcoefficients(1)  = rproblem%dlambda
 
     ! Now we can build the matrix entries.
