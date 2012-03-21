@@ -94,8 +94,9 @@ module feevaluation2
     ! Number of local DOF`s in the trial/test space
     integer :: ndof = 0
     
-    ! Maximum derivative to be computed
-    integer :: nmaxDerivative = 0
+    ! Maximum derivative to be computed.
+    ! =-1: Automatic, evaluate all up to the highest possible derivative.
+    integer :: nmaxDerivative = -1
     
     ! Last index in Bder which is set to TRUE.
     integer :: nmaxDerivativeIdx = 0
@@ -329,7 +330,7 @@ contains
     integer :: i
     
     do i=1,nentries
-      if (associated(Rlist(nentries)%p_rdiscr,rentry)) then
+      if (associated(Rlist(i)%p_rdiscr,rentry)) then
         containsDiscr = i
         return
       end if
@@ -405,6 +406,7 @@ contains
       ifirstNode = 1
       i = size(rmatrix%RmatrixBlock)
       allocate (p_RdiscrNodes(i))
+      ndiscrNodes = 0
       
     end if
     

@@ -97,7 +97,7 @@ contains
 !<subroutine>
 
   subroutine bma_fcalc_Mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,rcollection)
+      npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
     ! Calculates the Mass operator in all diagonal matrices.
@@ -122,6 +122,10 @@ contains
     
     ! Number of elements
     integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -175,7 +179,7 @@ contains
               ! (1st derivatives) by the cubature weight and sum up
               ! into the local matrices.
               p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                  p_DcubWeight(icubp,iel) * dbasI*dbasJ
+                  p_DcubWeight(icubp,iel) * dbasJ*dbasI
                                             
             end do ! idofe
             
@@ -194,7 +198,7 @@ contains
 !<subroutine>
 
   subroutine bma_fcalc_Laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,rcollection)
+      npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
     ! Calculates the Laplace operator in all diagonal matrices
@@ -219,6 +223,10 @@ contains
     
     ! Number of elements
     integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -279,7 +287,7 @@ contains
                 ! (1st derivatives) by the cubature weight and sum up
                 ! into the local matrices.
                 p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    p_DcubWeight(icubp,iel) * dbasIx*dbasJx
+                    p_DcubWeight(icubp,iel) * dbasJx*dbasIx
                                               
               end do ! idofe
               
@@ -321,7 +329,7 @@ contains
                 ! (1st derivatives) by the cubature weight and sum up
                 ! into the local matrices.
                 p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    p_DcubWeight(icubp,iel) * ( dbasIx*dbasJx + dbasIy*dbasJy )
+                    p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
                                               
               end do ! idofe
               
@@ -365,7 +373,7 @@ contains
                 ! (1st derivatives) by the cubature weight and sum up
                 ! into the local matrices.
                 p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    p_DcubWeight(icubp,iel) * ( dbasIx*dbasJx + dbasIy*dbasJy + dbasIz*dbasJz )
+                    p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
                                               
               end do ! idofe
               
@@ -632,7 +640,7 @@ contains
     integer :: i
     
     do i=1,nentries
-      if (Ilist(nentries) .eq. ientry) then
+      if (Ilist(i) .eq. ientry) then
         containsInt = i
         return
       end if
@@ -651,7 +659,7 @@ contains
     integer :: i
     
     do i=1,nentries
-      if (associated(Rlist(nentries)%p_rdiscr,rentry)) then
+      if (associated(Rlist(i)%p_rdiscr,rentry)) then
         containsDiscr = i
         return
       end if
@@ -732,6 +740,12 @@ contains
             
             if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
               call output_line ("Matrix data type not supported",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareFemData")
+              call sys_halt()
+            end if
+            
+            if (.not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(i,j))) then
+              call output_line ("Empty submatrix, no data allocated!",&
                   OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareFemData")
               call sys_halt()
             end if
@@ -886,10 +900,6 @@ contains
     deallocate(rassemblyData%p_RfemData)
     deallocate(rassemblyData%p_RmatrixData)
         
-    ! Initialise the element set; can be simultaneously used for all
-    ! FEM spaces, it is element independent.
-    call elprep_done(rassemblyData%revalElementSet)
-
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
     
@@ -915,7 +925,7 @@ contains
   type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyDataTemplate
 
   ! A matrix assembly structure.
-  type(t_bmaMatrixAssembly), intent(out) :: rmatrixAssembly
+  type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
 
   ! Template vector data structure. rvectorData is created based
   ! on the data in this structure.
@@ -1170,6 +1180,15 @@ contains
     ! Remember current element distribution
     rmatrixAssembly%ielementDistr = ielementDistr
     
+    ! Initialise the template structure which is used during the
+    ! actual matrix assembly.
+    call bma_initAssemblyData(rmatrixAssembly%rassemblyDataTemplate,&
+        rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
+      
+    ! Get the transformation from the first FEM data structure.
+    rmatrixAssembly%ctrafoType = &
+        rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
+    
     ! Get the cubature formula on the reference element
     rmatrixAssembly%ccubType = ccubType
     rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
@@ -1186,18 +1205,9 @@ contains
     ! Number of simultaneously processed elements
     rmatrixAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
     
-    ! Initialise the template structure which is used during the
-    ! actual matrix assembly.
-    call bma_initAssemblyData(rmatrixAssembly%rassemblyDataTemplate,&
-        rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
-      
     ! Get the evaluation tag by "OR"-ing all those from the FEM spaces
     ! and the option fields.
     rmatrixAssembly%cevaluationTag = 0
-    
-    ! Get the transformation from the first FEM data structure.
-    rmatrixAssembly%ctrafoType = &
-        rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
     
     if (iand(cflags,BMA_CALC_REALCOORDS) .ne. 0) then
       ! Calculate real world coordinates of the cubature points
@@ -1608,7 +1618,7 @@ contains
     do ielStart = 1,size(IelementList),rmatrixAssembly%nelementsPerBlock
 
       ! End of the current block
-      ielMax = min(ielStart+rmatrixAssembly%nelementsPerBlock,size(IelementList))
+      ielMax = min(ielStart-1+rmatrixAssembly%nelementsPerBlock,size(IelementList))
     
       ! Calculate the indices of the matrix entries to be modified,
       ! i.e., set up the local matrices.
@@ -1622,7 +1632,7 @@ contains
     
       ! Use the callback routine to calculate the local matrix entries.
       call fcalcLocalMatrices(rassemblyData%p_RmatrixData,rassemblyData,rmatrixAssembly,&
-          rmatrixAssembly%ncubp,size(IelementList),revalVectors,rcollection)
+          rmatrixAssembly%ncubp,ielMax-ielStart+1,revalVectors,rcollection)
       
       ! Incorporate the local matrices into the global one.
       ! NOTE: This cannot be done in parallel!
