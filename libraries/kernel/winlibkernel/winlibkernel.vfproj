@@ -133,6 +133,9 @@
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\extstdassemblyinfo.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\feevaluation2.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\blockmatassembly.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\blockmatassemblybase.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\boundaryaux.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretefbc.f90"/>
