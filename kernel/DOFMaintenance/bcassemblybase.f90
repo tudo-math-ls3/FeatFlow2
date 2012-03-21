@@ -1508,6 +1508,22 @@ contains
           
         end if
 
+      case (EL_Q3T_2D)
+      
+        ! The Q3T-element is only integral mean value based.
+        ! On the one hand, we have integral mean values over the edges.
+        ! On the other hand, we have integral mean values of function*parameter
+        ! value on the edge.
+        !
+        ! Edge inside?
+        if ( iedge .ne. 0 ) then
+          
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+          Idofs(ilocalEdge+2*nve,ielidx) = -abs(Idofs(ilocalEdge+2*nve,ielidx))
+          
+        end if
       case default
         call output_line('Unsupported element!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsInBDRegion')

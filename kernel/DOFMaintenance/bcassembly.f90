@@ -936,7 +936,7 @@ contains
     
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
     
-    real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2
+    real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2,dval3
     integer :: nve,nnve,nvbd
     
     integer ::iidx
@@ -946,6 +946,15 @@ contains
     ! Used for Q2T.
     real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
     real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
+
+    ! Position of cubature points for 3-point Gauss formula on an edge.
+    ! Used for Q3T
+    real(DP), parameter :: Q3G1 = -0.7745966692414834_DP !-SQRT(3.0_DP/5.0_DP)
+    real(DP), parameter :: Q3G2 =  0.0_DP
+    real(DP), parameter :: Q3G3 =  0.7745966692414834_DP ! SQRT(3.0_DP/5.0_DP)
+    real(DP), parameter :: Q3W1 =  0.5555555555555556_DP ! 5/9
+    real(DP), parameter :: Q3W2 =  0.8888888888888888_DP ! 8/9
+    real(DP), parameter :: Q3W3 =  0.5555555555555556_DP ! 5/9
     
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
@@ -1665,7 +1674,7 @@ contains
             end if
             
           end if
-                                      
+
         else
           
           ! Edge midpoint based element.
@@ -1808,6 +1817,129 @@ contains
 
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+          end if
+          
+        end if
+
+      case (EL_Q3T_2D)
+      
+        ! The Q3T-element is only integral mean value based.
+        ! On the one hand, we have integral mean values over the edges.
+        ! On the other hand, we have integral mean values of function*parameter
+        ! value on the edge.
+        !
+        ! Edge inside?
+        if ( iedge .ne. 0 ) then
+          
+          ! We neet to set up two values for each edge E: On one hand the
+          ! integral mean value as for Q1T (with x:[-1,1]->E):
+          !             1/|E| int_[-1,1] v(x(t)) dt
+          ! which is called '0th moment', on the other hand the '1st moment',
+          ! which is the integral mean value:
+          !             1/|E| int_[-1,1] v(x(t)) * t dt
+          ! We do this by a 2-point gauss formula by asking the callback routine
+          ! for function values in the Gauss points.
+          !
+          ! Prepare the calculation of the parameter value of the point where
+          ! we evaluate the boundary.
+          !
+          ! 1st Gauss point
+          if (associated(p_DvertexParameterValue)) then
+
+            ! Number of vertices on the current boundary component?
+            nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
+                    p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+                    
+            ! Get the start- and end-parameter value of the vertices on the edge.
+            dpar1 = p_DvertexParameterValue(I)
+            if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
+              dpar2 = p_DvertexParameterValue(I+1)
+            else
+              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
+                  rboundaryRegion%iboundCompIdx)
+            end if
+
+            ! Calculate the position of the first Gauss point on that edge.
+            call mprim_linearRescale(Q3G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+          else
+            ! Dummy; hopefully this is never used...
+            dpar = Q3G1
+          end if
+          
+          ! Get the value in the Gauss point
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,dpar, Dvalues,rcollection)
+          dval1 = Dvalues(1)
+          
+          ! 2nd Gauss point
+          if (associated(p_DvertexParameterValue)) then
+
+            ! Calculate the position of the 2nd Gauss point on that edge.
+            call mprim_linearRescale(Q3G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+          else
+            ! Dummy; hopefully this is never used...
+            dpar = Q3G2
+          end if
+          
+          ! Get the value in the Gauss point
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,dpar, Dvalues,rcollection)
+          dval2 = Dvalues(1)
+          
+          ! 3rd Gauss point
+          if (associated(p_DvertexParameterValue)) then
+
+            ! Calculate the position of the 2nd Gauss point on that edge.
+            call mprim_linearRescale(Q3G3,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+          else
+            ! Dummy; hopefully this is never used...
+            dpar = Q3G3
+          end if
+          
+          ! Get the value in the Gauss point
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,dpar, Dvalues,rcollection)
+          dval3 = Dvalues(1)
+
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
+            
+            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+
+              ! Compute the integral mean value of the 0th moment -- that
+              ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
+              ! This is the same value as for Q1T, but we do the integration
+              ! manually by using Gauss.
+              dval = Q3W1*dval1 + Q3W2*dval2 + Q3W3*dval3
+              
+              ! Save the computed value
+              DdofValue(ilocalEdge,ielidx) = dval
+              
+              ! Calculate the integral mean value of the 1st moment:
+              !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
+              dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3W3
+            
+              ! Save the computed value
+              DdofValue(ilocalEdge+nve,ielidx) = dval
+
+              ! Calculate the integral mean value of the 2nd moment:
+              dval = (Q3W1*dval1*(Q3G1**2 - 1.0_DP) &
+                   +  Q3W2*dval2*(Q3G2**2 - 1.0_DP) &
+                   +  Q3W3*dval3*(Q3G3**2 - 1.0_DP)) * 0.5_DP
+            
+              ! Save the computed value
+              DdofValue(ilocalEdge+2*nve,ielidx) = dval
+
+            end if
+            
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+            Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+            Idofs(ilocalEdge+2*nve,ielidx) = -abs(Idofs(ilocalEdge+2*nve,ielidx))
           end if
           
         end if

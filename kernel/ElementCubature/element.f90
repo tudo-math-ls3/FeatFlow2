@@ -341,22 +341,22 @@ module element
 
 !<constantblock description="Element identifiers for 1D elements">
 
-  ! ID of constant conforming line FE, P0
+  ! ID of constant discontinous line FE, P0
   integer(I32), parameter, public :: EL_P0_1D   = EL_1D + 0
   integer(I32), parameter, public :: EL_E000_1D = EL_P0_1D
   
-  ! ID of linear conforming line FE, P1
+  ! ID of linear H1-conforming line FE, P1
   integer(I32), parameter, public :: EL_P1_1D   = EL_1D + 1
   integer(I32), parameter, public :: EL_E001_1D = EL_P1_1D
   
-  ! ID of quadratic conforming line FE, P2
+  ! ID of quadratic H1-conforming line FE, P2
   integer(I32), parameter, public :: EL_P2_1D   = EL_1D + 2
   integer(I32), parameter, public :: EL_E002_1D = EL_P2_1D
   
-  ! ID of cubic conforming line FE, 3,1-Spline
+  ! ID of cubic H2-conforming line FE, 3,1-Spline
   integer(I32), parameter, public :: EL_S31_1D  = EL_1D + 17
   
-  ! ID of conforming line FE, Pn, 1 <= n <= 256
+  ! ID of H1-conforming line FE, Pn, 1 <= n <= 256
   integer(I32), parameter, public :: EL_PN_1D   = EL_1D + 128
   
   ! Discontinuous Galerkin taylor basis element - constant.
@@ -375,25 +375,25 @@ module element
   ! unspecified element
   integer(I32), parameter, public :: EL_UNDEFINED = -1
 
-  ! ID of constant conforming triangular FE, P0
+  ! ID of constant discontinous triangular FE, P0
   integer(I32), parameter, public :: EL_P0      = EL_2D + 0
   integer(I32), parameter, public :: EL_E000    = EL_P0
   integer(I32), parameter, public :: EL_P0_2D   = EL_P0
   integer(I32), parameter, public :: EL_E000_2D = EL_P0
 
-  ! ID of linear conforming triangular FE, P1
+  ! ID of linear H1-conforming triangular FE, P1
   integer(I32), parameter, public :: EL_P1      = EL_2D + 1
   integer(I32), parameter, public :: EL_E001    = EL_P1
   integer(I32), parameter, public :: EL_P1_2D   = EL_P1
   integer(I32), parameter, public :: EL_E001_2D = EL_P1
 
-  ! ID of quadratic conforming triangular FE, P2
+  ! ID of quadratic H1-conforming triangular FE, P2
   integer(I32), parameter, public :: EL_P2      = EL_2D + 2
   integer(I32), parameter, public :: EL_E002    = EL_P2
   integer(I32), parameter, public :: EL_P2_2D   = EL_P2
   integer(I32), parameter, public :: EL_E002_2D = EL_P2
 
-  ! ID of cubic conforming triangular FE, P3
+  ! ID of cubic H1-conforming triangular FE, P3
   integer(I32), parameter, public :: EL_P3      = EL_2D + 3
   integer(I32), parameter, public :: EL_E003    = EL_P3
   integer(I32), parameter, public :: EL_P3_2D   = EL_P3
@@ -403,25 +403,25 @@ module element
   integer(I32), parameter, public :: EL_P1T     = EL_2D + 20
   integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
 
-  ! ID of constant conforming quadrilateral FE, Q0
+  ! ID of constant discontinous quadrilateral FE, Q0
   integer(I32), parameter, public :: EL_Q0      = EL_2D + 10
   integer(I32), parameter, public :: EL_E010    = EL_Q0
   integer(I32), parameter, public :: EL_Q0_2D   = EL_Q0
   integer(I32), parameter, public :: EL_E010_2D = EL_Q0
 
-  ! ID of bilinear conforming quadrilateral FE, Q1
+  ! ID of bilinear H1-conforming quadrilateral FE, Q1
   integer(I32), parameter, public :: EL_Q1      = EL_2D + 11
   integer(I32), parameter, public :: EL_E011    = EL_Q1
   integer(I32), parameter, public :: EL_Q1_2D   = EL_Q1
   integer(I32), parameter, public :: EL_E011_2D = EL_Q1
 
-  ! ID of biquadratic conforming quadrilateral FE, Q2
+  ! ID of biquadratic H1-conforming quadrilateral FE, Q2
   integer(I32), parameter, public :: EL_Q2      = EL_2D + 13
   integer(I32), parameter, public :: EL_E013    = EL_Q2
   integer(I32), parameter, public :: EL_Q2_2D   = EL_Q2
   integer(I32), parameter, public :: EL_E013_2D = EL_Q2
 
-  ! ID of bicubic conforming quadrilateral FE, Q3
+  ! ID of bicubic H1-conforming quadrilateral FE, Q3
   integer(I32), parameter, public :: EL_Q3      = EL_2D + 14
   integer(I32), parameter, public :: EL_E014    = EL_Q3
   integer(I32), parameter, public :: EL_Q3_2D   = EL_Q3
@@ -458,10 +458,13 @@ module element
   integer(I32), parameter, public :: EL_Q2T     = EL_2D + 35
   integer(I32), parameter, public :: EL_Q2T_2D  = EL_Q2T
 
+  ! General rotated bicubic <tex>$\tilde Q_3$</tex> element, all variants.
+  integer(I32), parameter, public :: EL_Q3T_2D  = EL_2D + 36
+
   ! General rotated biquadratic <tex>$\tilde Q_2$</tex> element with bubble, all variants.
   integer(I32), parameter, public :: EL_Q2TB    = EL_2D + 37
   integer(I32), parameter, public :: EL_Q2TB_2D = EL_Q2TB
-  
+
   ! Quadrilateral <tex>$Q_1$</tex> element with one hanging node. In the property
   ! bitfield of the element identifier, the local number of the edge where there
   ! is a hanging node must be encoded! (i.e. one must add a corresponding
@@ -486,40 +489,40 @@ module element
 
 !<constantblock description="Element identifiers for 3D elements">
 
-  ! ID of constant conforming tetrahedral FE, P0
+  ! ID of constant discontinous tetrahedral FE, P0
   integer(I32), parameter, public :: EL_P0_3D   = EL_3D + 0
   integer(I32), parameter, public :: EL_E000_3D = EL_P0_3D
   
-  ! ID of linear conforming tetrahedral FE, P1
+  ! ID of linear H1-conforming tetrahedral FE, P1
   integer(I32), parameter, public :: EL_P1_3D   = EL_3D + 1
   integer(I32), parameter, public :: EL_E001_3D = EL_P1_3D
 
-  ! ID of quadratic conforming tetrahedral FE, P2
+  ! ID of quadratic H1-conforming tetrahedral FE, P2
   integer(I32), parameter, public :: EL_P2_3D   = EL_3D + 2
   integer(I32), parameter, public :: EL_E002_3D = EL_P2_3D
 
-  ! ID of constant conforming hexahedral FE, Q0
+  ! ID of constant discontinous hexahedral FE, Q0
   integer(I32), parameter, public :: EL_Q0_3D   = EL_3D + 10
   integer(I32), parameter, public :: EL_E010_3D = EL_Q0_3D
 
-  ! ID of trilinear conforming hexahedral FE, Q1
+  ! ID of trilinear H1-conforming hexahedral FE, Q1
   integer(I32), parameter, public :: EL_Q1_3D   = EL_3D + 11
   integer(I32), parameter, public :: EL_E011_3D = EL_Q1_3D
   
-  ! ID of triquadratic conforming hexahedral FE, Q2
+  ! ID of triquadratic H1-conforming hexahedral FE, Q2
   integer(I32), parameter, public :: EL_Q2_3D   = EL_3D + 13
   integer(I32), parameter, public :: EL_E013_3D = EL_Q2_3D
 
-  ! ID of constant conforming pyramid FE, Y0 = Q0
+  ! ID of constant discontinous pyramid FE, Y0 = Q0
   integer(I32), parameter, public :: EL_Y0_3D   = EL_3D + 60
   
-  ! ID of sub-trilinear conforming pyramid FE, Y1 \subset Q1
+  ! ID of sub-trilinear H1-conforming pyramid FE, Y1 \subset Q1
   integer(I32), parameter, public :: EL_Y1_3D   = EL_3D + 61
   
-  ! ID of constant conforming prism FE, R0 = Q0
+  ! ID of constant discontinous prism FE, R0 = Q0
   integer(I32), parameter, public :: EL_R0_3D   = EL_3D + 70
   
-  ! ID of sub-trilinear conforming prism FE, R1 \subset Q1
+  ! ID of sub-trilinear H1-conforming prism FE, R1 \subset Q1
   integer(I32), parameter, public :: EL_R1_3D   = EL_3D + 71
 
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
@@ -628,6 +631,12 @@ module element
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
   integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
   
+  ! ID of rotated bicubic nonconforming quadrilateral FE, Q3~
+  integer(I32), parameter, public :: EL_E051_2D = EL_Q3T_2D
+
+  ! ID of rotated bicubic nonconforming quadrilateral FE, Q3~, non-parametric version
+  integer(I32), parameter, public :: EL_EN51_2D = EL_Q3T_2D + EL_NONPARAMETRIC
+
   ! ID of <tex>$Q_2$</tex> element with hierarchical basis functions.
   ! WARNING: Do not use this element, as it is highly experimental and is not
   ! yet supported by the majority of the kernel routines!
@@ -680,7 +689,7 @@ module element
   integer, parameter, public :: EL_MAXNDOF_PER_VERT = 2
   
   ! Maximum number of DOFs per edge.
-  integer, parameter, public :: EL_MAXNDOF_PER_EDGE = 2
+  integer, parameter, public :: EL_MAXNDOF_PER_EDGE = 3
   
   ! Maximum number of DOFs per face.
   integer, parameter, public :: EL_MAXNDOF_PER_FACE = 3
@@ -837,8 +846,13 @@ contains
     else if (selem .eq. "EL_Q2TB" .or. selem .eq. "EL_Q2TB_2D" .or. &
              selem .eq. "EL_EB50" .or. selem .eq. "EL_EB50_2D") then
       elem_igetID = EL_EB50_2D
-    else if (selem .eq. "EL_EM50" .or. selem .eq. "EL_EM50_2D") then
+    else if (selem .eq. "EL_EM50" .or. selem .eq. "EL_EM50_2D" .or. &
+             selem .eq. "EL_EN50_2D") then
       elem_igetID = EL_EM50_2D
+    else if (selem .eq. "EL_Q3T_2D" .or. selem .eq. "EL_E051_2D") then
+      elem_igetID = EL_E051_2D
+    else if (selem .eq. "EL_EN51_2D") then
+      elem_igetID = EL_EN51_2D
     else if (selem .eq. "EL_DG_T0_2D") then
       elem_igetID = EL_DG_T0_2D
     else if (selem .eq. "EL_DG_T1_2D") then
@@ -1015,10 +1029,14 @@ contains
       sname = 'EL_E032_2D'
     case (EL_E050_2D)       ! alias: EL_Q2T_2D
       sname = 'EL_E050_2D'
-    case (EL_EN50_2D)
-      sname = 'EL_EN50_2D'  ! non-parametric variant of EL_E050_2D
-    case (EL_EB50_2D)
-      sname = 'EL_EB50_2D'  ! alias: EL_Q2TB_2D
+    case (EL_EN50_2D)       ! non-parametric variant of EL_E050_2D; alias EL_EM50_2D
+      sname = 'EL_EN50_2D'
+    case (EL_EB50_2D)       ! alias: EL_Q2TB_2D
+      sname = 'EL_EB50_2D'
+    case (EL_E051_2D)       ! alias: EL_Q3T_2D
+      sname = 'EL_E051_2D'
+    case (EL_EN51_2D)       ! non-parametric variant of EL_E051_2D
+      sname = 'EL_EN51_2D'
     ! discontinous Galerkin elements
     case (EL_DG_T0_2D)
       sname = 'EL_DG_T0_2D'
@@ -1174,6 +1192,9 @@ contains
     case (EL_Q2TB)
       ! local DOFs for EB50
       elem_igetNDofLoc = 10
+    case (EL_Q3T_2D)
+      ! local DOFs for Ex51
+      elem_igetNDofLoc = 15
     case (EL_DG_T0_2D)
       ! local DOFs for 1D DG Taylor constant
       elem_igetNDofLoc = 1
@@ -1365,6 +1386,10 @@ contains
       ! local DOFs for EB50
       ndofAtEdges    = 8
       ndofAtElement  = 2
+    case (EL_Q3T_2D)
+      ! local DOFs for Ex51
+      ndofAtEdges    = 12
+      ndofAtElement  = 3
     case (EL_DG_T0_2D)
       ! local DOFs for 2D DG Taylor constant
       ndofAtElement = 1
@@ -1504,7 +1529,7 @@ contains
       ! Triangular elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
           EL_DG_Q1_2D, EL_DG_Q2_2D)
       ! These work on the reference quadrilateral
@@ -1515,8 +1540,9 @@ contains
     case (EL_Q1 +EL_NONPARAMETRIC, &
           EL_Q1T+EL_NONPARAMETRIC, &
           EL_Q1TB+EL_NONPARAMETRIC,&
-          EL_Q2T+EL_NONPARAMETRIC)
-      ! EM11, EM30, EM31, EM50; these work in real coordinates
+          EL_Q2T+EL_NONPARAMETRIC,&
+          EL_Q3T_2D+EL_NONPARAMETRIC)
+      ! EM11, EM30, EM31, EM50, EN51; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
     
     ! 3D Element types
@@ -1582,7 +1608,7 @@ contains
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D, &
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
           EL_DG_Q1_2D,  EL_DG_Q2_2D)
       ! Bilinear quadrilateral transformation, 2D.
@@ -1728,6 +1754,9 @@ contains
     case (EL_Q2T,EL_Q2TB)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
+    case (EL_Q3T_2D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
     case (EL_DG_T0_2D)
       ! Function
       elem_getMaxDerivative = 1
@@ -1810,7 +1839,7 @@ contains
 !!$    case (EL_P0_1D, EL_P0, EL_P0_3D)
 !!$      ! No information about Jacobian necessary
 !!$      elem_getEvaluationTag = 0
-    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D)
+    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D, EL_Q3T_2D)
       ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
@@ -1944,7 +1973,7 @@ contains
       ishp = BGEOM_SHAPE_TRIA
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
           EL_DG_Q1_2D, EL_DG_Q2_2D)
       ! 2D Quadrilateral
@@ -2146,6 +2175,10 @@ contains
       case (EL_EB50)
         call elem_EB50 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EN50_2D)
+        bwrapSim2 = .true.
+      !case (EL_E051_2D)
+      !  bwrapSim2 = .true.
+      case (EL_EN51_2D)
         bwrapSim2 = .true.
       case (EL_DG_T0_2D)
         call elem_DG_T0_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -3031,6 +3064,12 @@ contains
     
     case (EL_EM50)
       call elem_eval_EN50_2D(celement, revalElementSet, Bder, Dbas)
+    
+    !case (EL_E051_2D)
+    !  call elem_eval_E051_2D(celement, revalElementSet, Bder, Dbas)
+    
+    case (EL_EN51_2D)
+      call elem_eval_EN51_2D(celement, revalElementSet, Bder, Dbas)
          
     case (EL_DG_T0_2D)
       call elem_DG_T0_2D_sim (celement, revalElementSet%p_Dcoords, &
