@@ -1,0 +1,132 @@
+[TRIANGULATION]
+
+# We want to solve our problem on level ...
+nlmin = 8
+nlmax = 8
+
+# Name of the parametrisation file
+#prmname = ./pre/BADQUAD.prm
+#prmname = ./pre/NONCARTQUAD.prm
+prmname = ./pre/QUAD.prm
+#prmname = ./pre/QUADROT.prm
+#prmname = ./pre/rect_01x0.1_quads.prm
+#prmname = ./pre/quadm5t5.prm
+#prmname = ./pre/isentrvort.prm
+#prmname = ./pre/zehnm.prm
+#prmname = ./pre/threezylindergrob.prm
+#prmname = ./pre/RECT2x1.prm
+#prmname = ./pre/QUAD4x4.prm
+#prmname = ./pre/bartsimpson.prm
+#prmname = ./pre/dedeobstacle.prm
+#prmname = ./pre/damv1.prm
+#prmname = ./pre/ramp_5deg_inlet_quads.prm
+#prmname = ./pre/ramp_5deg_quads.prm
+#prmname = ./pre/gammchannel_quads.prm
+
+# Name of the triangulation file
+#triname = ./pre/BADQUAD.tri
+#triname = ./pre/NONCARTQUAD.tri
+triname = ./pre/QUAD.tri
+#triname = ./pre/QUADROT.tri
+#triname = ./pre/rect_01x0.1_quads.tri
+#triname = ./pre/quadm5t5.tri
+#triname = ./pre/isentrvort.tri
+#triname = ./pre/zehnm.tri
+#triname = ./pre/threezylindergrob.tri
+#triname = ./pre/RECT2x1.tri
+#triname = ./pre/QUAD4x4.tri
+#triname = ./pre/bartsimpson.tri
+#triname = ./pre/dedeobstacle.tri
+#triname = ./pre/damv1.tri
+#triname = ./pre/ramp_5deg_inlet_quads.tri
+#triname = ./pre/ramp_5deg_quads.tri
+#triname = ./pre/gammchannel_quads.tri
+
+# What kind of finite elements do we use?
+# 0: DG T0
+# 1: DG T1
+# 2: DG T2
+# 3: DG Q1
+# 4: DG Q2
+FEkind = 3
+
+
+[TIMESTEPPING]
+
+# Timestepsize
+dt = 1000000000000
+
+# Final time
+ttfinal = 3.0
+
+# Theta for theta-scheme
+# 0.5 : Crank Nicolson
+theta = 1.0
+
+
+[SOLVER]
+
+
+
+[METHOD]
+# What limiter to use
+# 0: No limiter
+limiter = 0
+
+# What kind of time stepping to use
+#  1: RK SSP 3rd order
+#  2: dGP(2) 3rd/4th order
+#  3: Theta scheme (using MC as preconditioner)
+#  4: Classical RK of 4th order
+#  5: Implicit linear convection
+#  6: Implicit Burgers equation
+#  7: Implicit system (decoupled)
+#  8: Implicit Euler equations
+#  9: Implicit linear convection Newton-like implementation
+# 10: Implicit Euler equations Newton-like implementation
+timestepping = 10
+
+# What type to build the RHS
+rhstype = 1
+# 1: Blockwise
+# 2: Scalarwise
+
+
+
+[PROBLEM]
+# Number of variables (komponents of the system)
+nvar2d = 3
+
+# Set initial condition
+# You can use a function parser, depending on x and y
+# Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
+ic  = 0
+
+# Set data at the inlet
+inlet = if(y=0,if(x<1,1,0),0)
+incond = 1
+
+# Gravitational constant
+gravconst = 1.0
+
+
+[OUTPUT]
+
+# How fine shall be the DG output file (Default = 3)
+extrapoints = 0
+
+# Name of output file
+ofile = ./gmv/u2d
+
+# Type of output
+# 1 = gmv
+# 2 = vtk
+outtype = 2
+
+# Create files for video?
+# 0: No
+# 1: Yes
+makevideo = 0
+
+# Make gmv snapshot every ... seconds (should be n*dt)
+videotimestep = 0.005
