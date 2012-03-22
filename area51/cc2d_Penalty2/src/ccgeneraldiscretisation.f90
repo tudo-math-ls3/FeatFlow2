@@ -176,7 +176,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,j,ielementType,icubA,icubB,icubM,icubMp,icubMpa,icubrefin
+  integer :: i,j,ielementType,ielementType_penalty,icubA,icubB,icubM,icubMp,icubMpa,icubrefin
   integer :: iElementTypeStabil
   character(LEN=SYS_NAMELEN) :: sstr
   
@@ -193,6 +193,9 @@ contains
     ! Which cubature formula should be used?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iElementType',ielementType,3)
+    ! Maybe Penalty uses other element type
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
+                              'iElementType_penalty',ielementType_penalty,3)
 
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
@@ -305,19 +308,34 @@ contains
       ! stabilisation. A value of -1 means: use the same element(s).
       ! In this case, we have to initialise rdiscretisationUEOStabil.
       if (iElementTypeStabil .ne. -1) then
-        call cc_getDiscretisation (iElementTypeStabil,p_rdiscretisation,&
-            rsourceDiscretisation=rproblem%RlevelInfo(i)%rdiscretisationStabil)
+        call cc_getDiscretisation (iElementTypeStabil,rproblem%RlevelInfo(i)%rdiscretisationStabil,&
+            rsourceDiscretisation=p_rdiscretisation)
       else
         call spdiscr_deriveBlockDiscr (p_rdiscretisation,&
             rproblem%RlevelInfo(i)%rdiscretisationStabil)
       end if
-      
+
+      ! Probably initialise the element type that is to be used for the penalty
+      if (iElementType_penalty .ne. ielementType) then
+        call cc_getDiscretisation (iElementType_penalty,rproblem%RlevelInfo(i)%rdiscretisationPenalty,&
+            rsourceDiscretisation=p_rdiscretisation)
+        ! Add a reference of the velocity discretisation to the rasmTempl structure.
+        call spdiscr_duplicateDiscrSc (&
+            rproblem%RlevelInfo(i)%rdiscretisationPenalty%RspatialDiscr(1), &
+            rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationPenalty, .true.)
+      else
+        call spdiscr_deriveBlockDiscr (p_rdiscretisation,&
+            rproblem%RlevelInfo(i)%rdiscretisationPenalty)
+      end if
+            
       ! Add a reference of the velocity discretisation to the rasmTempl
       ! structure. The actual block structure we keep in the levelInfo-structure.
       call spdiscr_duplicateDiscrSc (&
           rproblem%RlevelInfo(i)%rdiscretisationStabil%RspatialDiscr(1), &
           rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationStabil, .true.)
-      
+
+
+                
       ! -----------------------------------------------------------------------
       ! Mass matrices. They are used in so many cases, it is better we always
       ! have them available.
@@ -593,6 +611,7 @@ contains
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisationStabil)
       call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationStabil)
+      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationPenalty)
       
       ! Release dynamic level information
       call cc_doneDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
@@ -839,7 +858,11 @@ contains
     type(t_scalarCubatureInfo) :: rcubatureInfoPenalty
     
     ! Structure for the bilinear form for assembling Penalty,...
-     TYPE(t_bilinearForm) :: rform
+     type(t_bilinearForm) :: rform
+    ! Calculating mass of penalty matrix
+     type(t_vectorScalar) :: rones1,rones2
+     real(dp) :: dvalue
+
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
@@ -1129,8 +1152,27 @@ contains
     !
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is in the collection.
-    call bilf_buildMatrixScalar (rform,.TRUE.,rasmTempl%rmatrixPenalty, &
+
+    rasmTempl%rmatrixPenalty%p_rspatialdiscrTrial => rasmTempl%rdiscretisationPenalty
+    rasmTempl%rmatrixPenalty%p_rspatialdiscrTest => rasmTempl%rdiscretisationPenalty
+
+    call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                  rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+
+    ! Calculate areea of penalty object using the matrix entries.
+ 
+    call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
+    call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
+    call lsyssc_clearVector(rones1,1.0_dp)
+    call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty, rones1, rones2, 1.0_DP, 0.0_DP)
+    dvalue=lsyssc_scalarProduct (rones1, rones2)
+    write(*,*)'No of elements: ',rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL
+    write(*,*) 'Area value =',dvalue
+    call lsyssc_releaseVector(rones1)
+    call lsyssc_releaseVector(rones2)
+
+    call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
+
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
     
   end subroutine

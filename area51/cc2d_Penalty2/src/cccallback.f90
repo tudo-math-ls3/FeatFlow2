@@ -1862,6 +1862,7 @@ contains
   use bilinearformevaluation
   use scalarpde
   use geometry
+  use io
        
   !<description>
   ! this subroutine is called during the matrix assembly. It has to compute the coefficients 
@@ -1922,6 +1923,11 @@ contains
   type(t_geometryobject), pointer :: p_rgeometryobject
   type(t_parlist), pointer :: p_rparlst
   type (t_problem) :: rproblem
+  character(len=SYS_STRLEN) :: sfilenameindofs
+  character(len=SYS_STRLEN) :: stemp
+  integer :: iunit
+  logical :: bfileExists 
+  integer :: cflag
 
   !</local variables>
 
@@ -1950,8 +1956,16 @@ contains
 
     ! Which method is used to implement the penalty matrix? 
     ! Loop over all elements and calculate the corresponding Lambda value
+    cflag = SYS_REPLACE
+    sfilenameindofs = 'indofs'
+    read(sfilenameindofs,*) sfilenameindofs
+    call io_openFileForWriting(sfilenameindofs, iunit,SYS_REPLACE, bfileExists,.true.)
+    if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+      ! Write a headline
+      write (iunit,'(A)') '# element dof coeff'
+    end if
+
     do iel=1,nelements
-      
     select case(ipenalty)
       case (1)  
         ! "Full Lambda" method
@@ -1961,11 +1975,16 @@ contains
           ! check if it is inside      
           if(iin .eq. 1)then 
             dcoefficients(1,icup,iel) = dlambda
+            stemp = '' //&
+                    trim(sys_siL(iel,4)) // ' ' // &
+                    trim(sys_siL(icup,1)) // ' ' // &
+                    trim(sys_sdEL(dcoefficients(1,icup,iel),1))
+            write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)          
           else
             dcoefficients(1,icup,iel) = 0.0_dp
           end if
         end do
-  
+
       case (2)
 !      !"Fractional Lambda" method
 !      ! The real element
@@ -2006,6 +2025,8 @@ contains
 !      end if    
       end select 
     end do !(loop over elements)
+    close (iunit)
+
   end do !(loop over particles)
     
   end subroutine

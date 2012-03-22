@@ -105,6 +105,10 @@ module ccbasic
     ! is activated, otherwise this coincides with the default discretisation
     ! of the velocity space.
     type(t_spatialDiscretisation) :: rdiscretisationStabil
+
+    ! An object specifying the discretisation in the velocity space
+    ! to be used for penalty matrix.
+    type(t_spatialDiscretisation) :: rdiscretisationPenalty
     
     ! Precomputed matrix for edge stabilisation. Only active if
     ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
@@ -261,6 +265,9 @@ module ccbasic
     ! stabilisation. Only used if edge stabilisation is activated, otherwise
     ! this coincides with rdiscretisation.
     type(t_blockDiscretisation) :: rdiscretisationStabil
+
+    ! An object specifying the block discretisation to be used for Penalty.
+    type(t_blockDiscretisation) :: rdiscretisationPenalty
 
     ! Temporary vector in the size of the RHS/solution vector on that level.
     type(t_vectorBlock) :: rtempVector

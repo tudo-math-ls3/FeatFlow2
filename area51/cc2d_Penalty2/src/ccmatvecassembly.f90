@@ -1059,9 +1059,6 @@ contains
             rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(1,1),&
             rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
             
-        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty, 'Penalty2',&
-                                 .false., 0, 'Penalty2.txt', '(E10.2)')            
-
         if (.not. bshared) then
 
           ! Allocate memory if necessary. Normally this should not be necessary...
