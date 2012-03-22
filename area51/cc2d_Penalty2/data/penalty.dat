@@ -6,7 +6,7 @@
 #   - 0.0 - not active
 #   - 1.0 - active
 
-dPenalty = 1.0
+dPenalty = 0.0
 
 # Penalty method
 #   - 1 - full-Lambda (standard)
@@ -15,7 +15,7 @@ dPenalty = 1.0
 ipenalty = 1
 
 # Penalty parameter (standard 1000)
-dlambda = 1000
+dlambda = 1000000000
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda

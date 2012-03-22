@@ -1153,9 +1153,7 @@ contains
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is in the collection.
 
-    rasmTempl%rmatrixPenalty%p_rspatialdiscrTrial => rasmTempl%rdiscretisationPenalty
-    rasmTempl%rmatrixPenalty%p_rspatialdiscrTest => rasmTempl%rdiscretisationPenalty
-
+    call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
     call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                  rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
 
@@ -1171,7 +1169,7 @@ contains
     call lsyssc_releaseVector(rones1)
     call lsyssc_releaseVector(rones2)
 
-    call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
+!    call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
 
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
     
