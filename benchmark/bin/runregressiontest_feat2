@@ -34,6 +34,7 @@
 # lidong2:      15 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.5
 # lidong2:      45 7 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.6
 # lidong2:      15 8 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-gcc-goto --compiler-version=4.7
+# lidong2:      45 8 * * *      /home/featflow/bin/runregressiontest_feat2 --slave  --testsuite alltests --id=pc64-penryn-linux-pgi-acml --compiler-version=12.3
 #
 #
 # Written by sven.buijssen@math.tu-dortmund.de
@@ -472,9 +473,16 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite
-		pc64-penryn-linux-pgi-*)
+		pc64-penryn-linux-pgi-*12.3)
 		    modules=""
-		    modules="$modules gotoblas/shared/64"
+		    modules="$modules pgi/12.3-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi12
+		    COMPILERNAME="PGI 12.3"
+		    ;;
+
+		# PGI compiler suite
+		pc64-penryn-linux-pgi-*|pc64-penryn-linux-pgi-*11*)
+		    modules=""
 		    modules="$modules pgi/11.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
 		    COMPILERNAME="PGI 11.10"
