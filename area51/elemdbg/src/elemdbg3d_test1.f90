@@ -379,19 +379,21 @@ contains
       call lsysbl_createVecBlockIndMat(rmatrix, rvecTmp, .true.)
       
       ! Set up discrete BCs
-      call bcasm_initDiscreteBC(rdiscreteBC)
-      call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, &
-                                      MSHREG_IDX_ALL)
+      if(itest .ne. 301) then
+        call bcasm_initDiscreteBC(rdiscreteBC)
+        call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, &
+                                        MSHREG_IDX_ALL)
       
-      ! Describe Dirichlet BCs on that mesh region
-      call bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, &
-                           rmeshRegion, getBoundaryValues3D, rcollect)
-      call mshreg_done(rmeshRegion)
+        ! Describe Dirichlet BCs on that mesh region
+        call bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, &
+                             rmeshRegion, getBoundaryValues3D, rcollect)
+        call mshreg_done(rmeshRegion)
 
-      ! Assign BCs
-      rmatrix%p_rdiscreteBC => rdiscreteBC
-      rvecSol%p_rdiscreteBC => rdiscreteBC
-      rvecRhs%p_rdiscreteBC => rdiscreteBC
+        ! Assign BCs
+        rmatrix%p_rdiscreteBC => rdiscreteBC
+        rvecSol%p_rdiscreteBC => rdiscreteBC
+        rvecRhs%p_rdiscreteBC => rdiscreteBC
+      end if
       
       ! Store statistics
       Istat(1,ilvl) = rmatrix%NEQ

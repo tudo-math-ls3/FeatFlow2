@@ -341,23 +341,25 @@ contains
       call lsysbl_createVecBlockIndMat(rmatrix, rvecTmp, .true.)
       
       ! Set up discrete BCs
-      call bcasm_initDiscreteBC(rdiscreteBC)
-      select case(isolution)
-      case(0)
-        ! u(x) = sin(pi*x) => homogene Dirichlet BCs
-        call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
-      case(1)
-        ! u(x) = x => 0/1 Dirichlet BCs
-        call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 1.0_DP)
-      case(2)
-        ! u(x) = (exp(nu)-exp(x*nu)) / (exp(nu)-1) => 1/0 Dirichlet BCs
-        call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 1.0_DP, 0.0_DP)
-      end select
+      if(itest .ne. 101) then
+        call bcasm_initDiscreteBC(rdiscreteBC)
+        select case(isolution)
+        case(0)
+          ! u(x) = sin(pi*x) => homogene Dirichlet BCs
+          call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
+        case(1)
+          ! u(x) = x => 0/1 Dirichlet BCs
+          call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 1.0_DP)
+        case(2)
+          ! u(x) = (exp(nu)-exp(x*nu)) / (exp(nu)-1) => 1/0 Dirichlet BCs
+          call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 1.0_DP, 0.0_DP)
+        end select
 
-      ! Assign BCs
-      rmatrix%p_rdiscreteBC => rdiscreteBC
-      rvecSol%p_rdiscreteBC => rdiscreteBC
-      rvecRhs%p_rdiscreteBC => rdiscreteBC
+        ! Assign BCs
+        rmatrix%p_rdiscreteBC => rdiscreteBC
+        rvecSol%p_rdiscreteBC => rdiscreteBC
+        rvecRhs%p_rdiscreteBC => rdiscreteBC
+      end if
       
       ! Store statistics
       Istat(1,ilvl) = rmatrix%NEQ

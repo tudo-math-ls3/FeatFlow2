@@ -383,25 +383,27 @@ contains
       call lsysbl_createVecBlockIndMat(rmatrix, rvecTmp, .true.)
       
       ! Set up discrete BCs
-      call bcasm_initDiscreteBC(rdiscreteBC)
-      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
-      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
-      call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
-      call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-           rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
+      if(itest .ne. 201) then
+        call bcasm_initDiscreteBC(rdiscreteBC)
+        call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+             rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
+        call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+             rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
+        call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+             rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
+        call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+             rboundaryRegion,rdiscreteBC,getBoundaryValues2D,rcollect)
                                
-      ! Assign BCs
-      rmatrix%p_rdiscreteBC => rdiscreteBC
-      rvecSol%p_rdiscreteBC => rdiscreteBC
-      rvecRhs%p_rdiscreteBC => rdiscreteBC
-      
+        ! Assign BCs
+        rmatrix%p_rdiscreteBC => rdiscreteBC
+        rvecSol%p_rdiscreteBC => rdiscreteBC
+        rvecRhs%p_rdiscreteBC => rdiscreteBC
+      end if
+
       ! Store statistics
       Istat(1,ilvl) = rmatrix%NEQ
       Istat(2,ilvl) = rmatrix%rmatrixBlock(1,1)%NA
