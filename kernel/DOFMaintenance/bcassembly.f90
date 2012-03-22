@@ -1011,7 +1011,7 @@ contains
     else
       ! All elements are of the samne type. Get it in advance.
       celement = p_rspatialDiscr%RelementDistr(1)%celement
-      nve = elem_igetNVE (celement)
+      nve = tria_getNVE (p_rtriangulation,1)
     end if
     
     ! Get a new BC entry
@@ -1099,7 +1099,7 @@ contains
       ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
         celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
-        nve = elem_igetNVE (celement)
+        nve = tria_getNVE (p_IverticesAtElement,ielidx)
       end if
         
       ilocaledge = 0
@@ -1166,7 +1166,7 @@ contains
           Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
         end if
         
-      case (EL_P1,EL_Q1)
+      case (EL_P1,EL_Q1,EL_QPWL4T_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then

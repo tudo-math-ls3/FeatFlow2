@@ -366,6 +366,10 @@ module cubature
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
   integer(I32), parameter, public :: CUB_G6_2D = 218
 
+  ! quad divided into 4 triangles, piecewise 3-point Gauss formula
+  ! on each triangle, degree = 3, ncubp = 12
+  integer(I32), parameter, public :: CUB_P4TG3_2D = 220
+
 !</constantblock>
 
 !<constantblock variable="ccubType" description="2D formulas, tri">
@@ -609,6 +613,8 @@ contains
     cub_igetID=CUB_PG2X2
   else if (scub .eq. "PG3X3") then
     cub_igetID=CUB_PG3X3
+  else if (scub .eq. "P4TG3_2D") then
+    cub_igetID=CUB_P4TG3_2D
   else if (scub .eq. "G6_2D") then
     cub_igetID=CUB_G6_2D
     
@@ -802,6 +808,8 @@ contains
       sname = 'PG2X2'
     case (CUB_PG3X3)
       sname = 'PG3X3'
+    case (CUB_P4TG3_2D)
+      sname = 'P4TG3_2D'
     case (CUB_PTRZ)
       sname = 'PTRZ'
 
@@ -1101,7 +1109,7 @@ contains
       n = 7
     case (CUB_G3_2D,CUB_PTRZ,CUB_SIMPSON)
       n = 9
-    case (CUB_G)
+    case (CUB_G,CUB_P4TG3_2D)
       n = 12
     case (CUB_G4_2D,CUB_PG2X2,CUB_3_8)
       n = 16
@@ -3352,6 +3360,91 @@ contains
     Domega(36)=  0.1975308641975310_DP
     
     ncubp     =  36
+    
+  case (CUB_P4TG3_2D)
+  
+    ! We have four triangles in the quad
+    !
+    ! -1,1              1,1
+    !   +-------------+    
+    !   | \    T3   / |    
+    !   |   \     /   |    
+    !   |     \ /     |    
+    !   | T4   X   T2 |    
+    !   |     / \     |    
+    !   |   /     \   |    
+    !   | /    T1   \ |    
+    !   +-------------+    
+    ! -1,-1             1,-1
+    !
+    ! On each triangle, there is an independent 3-point Gauss formula.
+    
+#define P1(a,b,c) 0.6666666666666667_DP*(a)+0.1666666666666667_DP*(b)+0.1666666666666667_DP*(c)
+#define P2(a,b,c) 0.1666666666666667_DP*(a)+0.6666666666666667_DP*(b)+0.1666666666666667_DP*(c)
+#define P3(a,b,c) 0.1666666666666667_DP*(a)+0.1666666666666667_DP*(b)+0.6666666666666667_DP*(c)
+
+    ! Triangle T1
+    Dxi(1,1)  =  P1(-1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(1,2)  =  P1(-1.0_DP,-1.0_DP, 0.0_DP)
+
+    Dxi(2,1)  =  P2(-1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(2,2)  =  P2(-1.0_DP,-1.0_DP, 0.0_DP)
+
+    Dxi(3,1)  =  P3(-1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(3,2)  =  P3(-1.0_DP,-1.0_DP, 0.0_DP)
+
+    ! Triangle T2
+    Dxi(4,1)  =  P1( 1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(4,2)  =  P1(-1.0_DP, 1.0_DP, 0.0_DP)
+
+    Dxi(5,1)  =  P2( 1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(5,2)  =  P2(-1.0_DP, 1.0_DP, 0.0_DP)
+
+    Dxi(6,1)  =  P3( 1.0_DP, 1.0_DP, 0.0_DP)
+    Dxi(6,2)  =  P3(-1.0_DP, 1.0_DP, 0.0_DP)
+
+    ! Triangle T3
+    Dxi(7,1)  =  P1( 1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(7,2)  =  P1( 1.0_DP, 1.0_DP, 0.0_DP)
+
+    Dxi(8,1)  =  P2( 1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(8,2)  =  P2( 1.0_DP, 1.0_DP, 0.0_DP)
+
+    Dxi(9,1)  =  P3( 1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(9,2)  =  P3( 1.0_DP, 1.0_DP, 0.0_DP)
+
+    ! Triangle T4
+    Dxi(10,1)  =  P1(-1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(10,2)  =  P1( 1.0_DP,-1.0_DP, 0.0_DP)
+
+    Dxi(11,1)  =  P2(-1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(11,2)  =  P2( 1.0_DP,-1.0_DP, 0.0_DP)
+
+    Dxi(12,1)  =  P3(-1.0_DP,-1.0_DP, 0.0_DP)
+    Dxi(12,2)  =  P3( 1.0_DP,-1.0_DP, 0.0_DP)
+    
+    ! Cubature weight is 1/3*area of the triangle.
+    ! The triangle area is 1/4 * |[-1,1]^2| = 1/4*4 = 1.
+    ! So the weight is constantly =1/3.
+    
+    Domega(1) =  1.0_DP/3.0_DP
+    Domega(2) =  1.0_DP/3.0_DP
+    Domega(3) =  1.0_DP/3.0_DP
+    Domega(4) =  1.0_DP/3.0_DP
+    Domega(5) =  1.0_DP/3.0_DP
+    Domega(6) =  1.0_DP/3.0_DP
+    Domega(7) =  1.0_DP/3.0_DP
+    Domega(8) =  1.0_DP/3.0_DP
+    Domega(9) =  1.0_DP/3.0_DP
+    Domega(10) =  1.0_DP/3.0_DP
+    Domega(11) =  1.0_DP/3.0_DP
+    Domega(12) =  1.0_DP/3.0_DP
+  
+    ncubp     =  12
+    
+#undef P1
+#undef P2
+#undef P3
     
   case(CUB_SIMPSON)
     Dxi(1,1)  = -1.0_DP

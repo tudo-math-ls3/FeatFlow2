@@ -245,6 +245,11 @@ module transformation
   ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation
   ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedra)
   integer, parameter, public :: TRAFO_ID_MQUADCUBE    = 12
+
+  ! Piecewise linear transformation for cubic shaped elements
+  ! (2D-quadrilaterals, 3D-hexahedra), divided in 4 (quad) or 6 (hexa)
+  ! simplices, respectively.
+  integer, parameter, public :: TRAFO_ID_PWLINSIMCUBE  = 20
 !</constantblock>
 
 
@@ -487,7 +492,7 @@ contains
         ! 3 DOF`s in the transformation (given by the corners of the element)
         trafo_igetReferenceDimension = 3
       
-      case (TRAFO_ID_MLINCUBE)
+      case (TRAFO_ID_MLINCUBE,TRAFO_ID_PWLINSIMCUBE)
         ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         ! 4 DOF`s in the transformation (given by the corners of the element)
@@ -583,6 +588,11 @@ contains
         ! -> Bilinear quadrilateral transformation.
         ! 4 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 4
+        
+      case (TRAFO_ID_PWLINSIMCUBE)
+        ! Piecewise linear transformation with 4 or 6 subelements.
+        ! 5 points, the corners plus the barycenter
+        trafo_igetNVE = 5
       
       end select
       
@@ -706,6 +716,14 @@ contains
         ! Transfer the corners of the element.
         Dcoords (1:NDIM2D,1:4) = p_DvertexCoords(1:NDIM2D,&
                                     p_IverticesAtElement(1:4,iel))
+
+      case (TRAFO_ID_PWLINSIMCUBE)
+        ! Piecewise linear with 4 or 6 subelements.
+        ! Transfer the corners of the element plus the barycenter
+        Dcoords (1:NDIM2D,1:4) = p_DvertexCoords(1:NDIM2D,&
+                                    p_IverticesAtElement(1:4,iel))
+        Dcoords (1,5) = 0.25_DP*sum(Dcoords(1,1:4))
+        Dcoords (2,5) = 0.25_DP*sum(Dcoords(2,1:4))
       
       end select
 
@@ -880,6 +898,24 @@ contains
           end do
         end do
         !$omp end parallel do
+
+      case (TRAFO_ID_PWLINSIMCUBE)
+        !$omp parallel do private(ipoint) &
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
+        do iel=1,size(Ielements)
+          
+          ! Piecewise linear transformation with 4 subelements.
+          ! Corners and barycenter.
+          Dcoords (1:NDIM2D,5,iel) = 0.0_DP
+          
+          do ipoint = 1,4
+            Dcoords (1:NDIM2D,ipoint,iel) = &
+              p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
+            Dcoords (1:NDIM2D,5,iel) = Dcoords (1:NDIM2D,5,iel) + &
+                0.25_DP*Dcoords (1:NDIM2D,ipoint,iel)
+          end do
+        end do
+        !$omp end parallel do
       
       end select
 
@@ -969,10 +1005,10 @@ contains
   ! reference element for one point. The element is given
   ! as a list of corner points in Dcoords.
   !
-  ! For the point DpointsRef, the following information is calculated:
+  ! For the point DpointRef, the following information is calculated:
   ! 1.) Determinant of the mapping from the reference to the real element,
   ! 2.) the Jacobian matrix of the mapping,
-  ! 3.) if the parameter DpointsReal is present: coordinates of the mapped
+  ! 3.) if the parameter DpointReal is present: coordinates of the mapped
   !     points on the real element(s).
 !</description>
 
@@ -1106,6 +1142,181 @@ contains
                                 DpointReal(1),DpointReal(2))
       end if
       
+    case (TRAFO_ID_PWLINSIMCUBE)
+
+      ! Piecewise linear transformation with 4 subelements,
+      ! Quad element.
+      !
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointReal)) then
+      
+        ! This mapping is piecewisely defined.
+        ! At first, we have to figure out in which subelement
+        ! we are. We have the following situation:
+        !
+        ! -1,1              1,1       a3                a2
+        !   +-------------+             +-------------+
+        !   | \    T3   / |             | \         / |
+        !   |   \     /   |             |   \     /   |
+        !   |     \ /     |             |     \ /     |
+        !   | T4   X   T2 |     ->      |      X MP   |
+        !   |     / \     |             |     / \     |
+        !   |   /     \   |             |   /     \   |
+        !   | /    T1   \ |             | /         \ |
+        !   +-------------+             +-------------+
+        ! -1,-1             1,-1      a0                a1
+        !
+        ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+        ! Calculate the line a0->a2 and chech whether it is left
+        ! or right. Calculate the line a1->a3 and check whether it is
+        ! left or right. That way, we know in which subtriangle the
+        ! point is.
+        
+        ! Compute the distance vector of the point to the element midpoint
+        if (DpointRef(2) .le. DpointRef(1)) then
+          ! We are in T1 or T2.
+          if (DpointRef(2) .le. -DpointRef(1)) then
+            ! We are in T1.
+            ! Use a linear mapping of T1 into real world coordinates.
+            ! The linear mapping is given by
+            !      x_real = A x_ref + b
+            ! Due to "0" -> element midpoint, there is b=MP.
+            ! The matrix A is the Jacobian of the mapping and to be
+            ! computed. It can be obtained via the conditions
+            !    A (-1,-1)^t = (a0 - MP_real)
+            !    A ( 1,-1)^t = (a1 - MP_real)
+            
+            dax = Dcoords(1,1) - Dcoords(1,5)
+            day = Dcoords(2,1) - Dcoords(2,5)
+            dbx = Dcoords(1,2) - Dcoords(1,5)
+            dby = Dcoords(2,2) - Dcoords(2,5)
+            
+            Djac(1) = -0.5_DP*dax + 0.5_DP*dbx
+            Djac(2) = -0.5_DP*day + 0.5_DP*dby
+            Djac(3) = -0.5_DP*dax - 0.5_DP*dbx
+            Djac(4) = -0.5_DP*day - 0.5_DP*dby
+
+          else
+            ! We are in T2
+            dax = Dcoords(1,2) - Dcoords(1,5)
+            day = Dcoords(2,2) - Dcoords(2,5)
+            dbx = Dcoords(1,3) - Dcoords(1,5)
+            dby = Dcoords(2,3) - Dcoords(2,5)
+
+            Djac(1) =  0.5_DP*dax + 0.5_DP*dbx
+            Djac(2) =  0.5_DP*day + 0.5_DP*dby
+            Djac(3) = -0.5_DP*dax + 0.5_DP*dbx
+            Djac(4) = -0.5_DP*day + 0.5_DP*dby
+            
+          end if
+        else
+          ! We are in T3 or T4
+          if (DpointRef(2) .gt. -DpointRef(1)) then
+            ! We are in T3
+            dax = Dcoords(1,3) - Dcoords(1,5)
+            day = Dcoords(2,3) - Dcoords(2,5)
+            dbx = Dcoords(1,4) - Dcoords(1,5)
+            dby = Dcoords(2,4) - Dcoords(2,5)
+            
+            Djac(1) =  0.5_DP*dax - 0.5_DP*dbx
+            Djac(2) =  0.5_DP*day - 0.5_DP*dby
+            Djac(3) =  0.5_DP*dax + 0.5_DP*dbx
+            Djac(4) =  0.5_DP*day + 0.5_DP*dby
+          else
+            ! We are in T4
+            dax = Dcoords(1,4) - Dcoords(1,5)
+            day = Dcoords(2,4) - Dcoords(2,5)
+            dbx = Dcoords(1,1) - Dcoords(1,5)
+            dby = Dcoords(2,1) - Dcoords(2,5)
+            
+            Djac(1) = -0.5_DP*dax - 0.5_DP*dbx
+            Djac(2) = -0.5_DP*day - 0.5_DP*dby
+            Djac(3) =  0.5_DP*dax - 0.5_DP*dbx
+            Djac(4) =  0.5_DP*day - 0.5_DP*dby
+          end if
+        end if
+      
+        ! Determinant of the Jacobian                
+        ddetj = Djac(1)*Djac(4) &
+              - Djac(2)*Djac(3)
+      else
+
+        ! Compute the distance vector of the point to the element midpoint
+        if (DpointRef(2) .le. DpointRef(1)) then
+          ! We are in T1 or T2.
+          if (DpointRef(2) .le. -DpointRef(1)) then
+            ! We are in T1.
+            ! Use a linear mapping of T1 into real world coordinates.
+            ! The linear mapping is given by
+            !      x_real = A x_ref + b
+            ! Due to "0" -> element midpoint, there is b=MP.
+            ! The matrix A is the Jacobian of the mapping and to be
+            ! computed. It can be obtained via the conditions
+            !    A (-1,-1)^t = (a0 - MP_real)
+            !    A ( 1,-1)^t = (a1 - MP_real)
+            
+            dax = Dcoords(1,1) - Dcoords(1,5)
+            day = Dcoords(2,1) - Dcoords(2,5)
+            dbx = Dcoords(1,2) - Dcoords(1,5)
+            dby = Dcoords(2,2) - Dcoords(2,5)
+            
+            Djac(1) = -0.5_DP*dax + 0.5_DP*dbx
+            Djac(2) = -0.5_DP*day + 0.5_DP*dby
+            Djac(3) = -0.5_DP*dax - 0.5_DP*dbx
+            Djac(4) = -0.5_DP*day - 0.5_DP*dby
+
+          else
+            ! We are in T2
+            dax = Dcoords(1,2) - Dcoords(1,5)
+            day = Dcoords(2,2) - Dcoords(2,5)
+            dbx = Dcoords(1,3) - Dcoords(1,5)
+            dby = Dcoords(2,3) - Dcoords(2,5)
+
+            Djac(1) =  0.5_DP*dax + 0.5_DP*dbx
+            Djac(2) =  0.5_DP*day + 0.5_DP*dby
+            Djac(3) = -0.5_DP*dax + 0.5_DP*dbx
+            Djac(4) = -0.5_DP*day + 0.5_DP*dby
+            
+          end if
+        else
+          ! We are in T3 or T4
+          if (DpointRef(2) .gt. -DpointRef(1)) then
+            ! We are in T3
+            dax = Dcoords(1,3) - Dcoords(1,5)
+            day = Dcoords(2,3) - Dcoords(2,5)
+            dbx = Dcoords(1,4) - Dcoords(1,5)
+            dby = Dcoords(2,4) - Dcoords(2,5)
+            
+            Djac(1) =  0.5_DP*dax - 0.5_DP*dbx
+            Djac(2) =  0.5_DP*day - 0.5_DP*dby
+            Djac(3) =  0.5_DP*dax + 0.5_DP*dbx
+            Djac(4) =  0.5_DP*day + 0.5_DP*dby
+          else
+            ! We are in T4
+            dax = Dcoords(1,4) - Dcoords(1,5)
+            day = Dcoords(2,4) - Dcoords(2,5)
+            dbx = Dcoords(1,1) - Dcoords(1,5)
+            dby = Dcoords(2,1) - Dcoords(2,5)
+            
+            Djac(1) = -0.5_DP*dax - 0.5_DP*dbx
+            Djac(2) = -0.5_DP*day - 0.5_DP*dby
+            Djac(3) =  0.5_DP*dax - 0.5_DP*dbx
+            Djac(4) =  0.5_DP*day - 0.5_DP*dby
+          end if
+        end if
+      
+        ! Determinant of the Jacobian                
+        ddetj = Djac(1)*Djac(4) &
+              - Djac(2)*Djac(3)
+                        
+        ! Calculate the real world coordinates of the point
+        DpointReal(1) = Djac(1)*DpointRef(1) &
+                      + Djac(3)*DpointRef(2) + Dcoords(1,5)
+        DpointReal(2) = Djac(2)*DpointRef(1) &
+                      + Djac(4)*DpointRef(2) + Dcoords(2,5)
+            
+      end if
+
     end select
   
   case (NDIM3D)
@@ -1441,6 +1652,189 @@ contains
 
       end if
       
+    case (TRAFO_ID_PWLINSIMCUBE)
+    
+      ! Piecewise linear transformation with 4 subelements,
+      ! Quad element.
+      !
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        ! This mapping is piecewisely defined.
+        ! At first, we have to figure out in which subelement
+        ! we are. We have the following situation:
+        !
+        ! -1,1              1,1       a3                a2
+        !   +-------------+             +-------------+
+        !   | \    T3   / |             | \         / |
+        !   |   \     /   |             |   \     /   |
+        !   |     \ /     |             |     \ /     |
+        !   | T4   X   T2 |     ->      |      X MP   |
+        !   |     / \     |             |     / \     |
+        !   |   /     \   |             |   /     \   |
+        !   | /    T1   \ |             | /         \ |
+        !   +-------------+             +-------------+
+        ! -1,-1             1,-1      a0                a1
+        !
+        ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+        ! Calculate the line a0->a2 and chech whether it is left
+        ! or right. Calculate the line a1->a3 and check whether it is
+        ! left or right. That way, we know in which subtriangle the
+        ! point is.
+        
+        do ipt=1,npointsPerEl
+          
+          ! Compute the distance vector of the point to the element midpoint
+          if (DpointsRef(2,ipt) .le. DpointsRef(1,ipt)) then
+            ! We are in T1 or T2.
+            if (DpointsRef(2,ipt) .le. -DpointsRef(1,ipt)) then
+              ! We are in T1.
+              ! Use a linear mapping of T1 into real world coordinates.
+              ! The linear mapping is given by
+              !      x_real = A x_ref + b
+              ! Due to "0" -> element midpoint, there is b=MP.
+              ! The matrix A is the Jacobian of the mapping and to be
+              ! computed. It can be obtained via the conditions
+              !    A (-1,-1)^t = (a0 - MP_real)
+              !    A ( 1,-1)^t = (a1 - MP_real)
+              
+              dax = Dcoords(1,1) - Dcoords(1,5)
+              day = Dcoords(2,1) - Dcoords(2,5)
+              dbx = Dcoords(1,2) - Dcoords(1,5)
+              dby = Dcoords(2,2) - Dcoords(2,5)
+              
+              Djac(1,ipt) = -0.5_DP*dax + 0.5_DP*dbx
+              Djac(2,ipt) = -0.5_DP*day + 0.5_DP*dby
+              Djac(3,ipt) = -0.5_DP*dax - 0.5_DP*dbx
+              Djac(4,ipt) = -0.5_DP*day - 0.5_DP*dby
+
+            else
+              ! We are in T2
+              dax = Dcoords(1,2) - Dcoords(1,5)
+              day = Dcoords(2,2) - Dcoords(2,5)
+              dbx = Dcoords(1,3) - Dcoords(1,5)
+              dby = Dcoords(2,3) - Dcoords(2,5)
+
+              Djac(1,ipt) =  0.5_DP*dax + 0.5_DP*dbx
+              Djac(2,ipt) =  0.5_DP*day + 0.5_DP*dby
+              Djac(3,ipt) = -0.5_DP*dax + 0.5_DP*dbx
+              Djac(4,ipt) = -0.5_DP*day + 0.5_DP*dby
+              
+            end if
+          else
+            ! We are in T3 or T4
+            if (DpointsRef(2,ipt) .gt. -DpointsRef(1,ipt)) then
+              ! We are in T3
+              dax = Dcoords(1,3) - Dcoords(1,5)
+              day = Dcoords(2,3) - Dcoords(2,5)
+              dbx = Dcoords(1,4) - Dcoords(1,5)
+              dby = Dcoords(2,4) - Dcoords(2,5)
+              
+              Djac(1,ipt) =  0.5_DP*dax - 0.5_DP*dbx
+              Djac(2,ipt) =  0.5_DP*day - 0.5_DP*dby
+              Djac(3,ipt) =  0.5_DP*dax + 0.5_DP*dbx
+              Djac(4,ipt) =  0.5_DP*day + 0.5_DP*dby
+            else
+              ! We are in T4
+              dax = Dcoords(1,4) - Dcoords(1,5)
+              day = Dcoords(2,4) - Dcoords(2,5)
+              dbx = Dcoords(1,1) - Dcoords(1,5)
+              dby = Dcoords(2,1) - Dcoords(2,5)
+              
+              Djac(1,ipt) = -0.5_DP*dax - 0.5_DP*dbx
+              Djac(2,ipt) = -0.5_DP*day - 0.5_DP*dby
+              Djac(3,ipt) =  0.5_DP*dax - 0.5_DP*dbx
+              Djac(4,ipt) =  0.5_DP*day - 0.5_DP*dby
+            end if
+          end if
+        
+          ! Determinant of the Jacobian                
+          Ddetj(ipt) = Djac(1,ipt)*Djac(4,ipt) &
+                          - Djac(2,ipt)*Djac(3,ipt)
+        end do
+      
+      else
+
+        do ipt=1,npointsPerEl
+        
+          ! Compute the distance vector of the point to the element midpoint
+          if (DpointsRef(2,ipt) .le. DpointsRef(1,ipt)) then
+            ! We are in T1 or T2.
+            if (DpointsRef(2,ipt) .le. -DpointsRef(1,ipt)) then
+              ! We are in T1.
+              ! Use a linear mapping of T1 into real world coordinates.
+              ! The linear mapping is given by
+              !      x_real = A x_ref + b
+              ! Due to "0" -> element midpoint, there is b=MP.
+              ! The matrix A is the Jacobian of the mapping and to be
+              ! computed. It can be obtained via the conditions
+              !    A (-1,-1)^t = (a0 - MP_real)
+              !    A ( 1,-1)^t = (a1 - MP_real)
+              
+              dax = Dcoords(1,1) - Dcoords(1,5)
+              day = Dcoords(2,1) - Dcoords(2,5)
+              dbx = Dcoords(1,2) - Dcoords(1,5)
+              dby = Dcoords(2,2) - Dcoords(2,5)
+              
+              Djac(1,ipt) = -0.5_DP*dax + 0.5_DP*dbx
+              Djac(2,ipt) = -0.5_DP*day + 0.5_DP*dby
+              Djac(3,ipt) = -0.5_DP*dax - 0.5_DP*dbx
+              Djac(4,ipt) = -0.5_DP*day - 0.5_DP*dby
+
+            else
+              ! We are in T2
+              dax = Dcoords(1,2) - Dcoords(1,5)
+              day = Dcoords(2,2) - Dcoords(2,5)
+              dbx = Dcoords(1,3) - Dcoords(1,5)
+              dby = Dcoords(2,3) - Dcoords(2,5)
+
+              Djac(1,ipt) =  0.5_DP*dax + 0.5_DP*dbx
+              Djac(2,ipt) =  0.5_DP*day + 0.5_DP*dby
+              Djac(3,ipt) = -0.5_DP*dax + 0.5_DP*dbx
+              Djac(4,ipt) = -0.5_DP*day + 0.5_DP*dby
+              
+            end if
+          else
+            ! We are in T3 or T4
+            if (DpointsRef(2,ipt) .gt. -DpointsRef(1,ipt)) then
+              ! We are in T3
+              dax = Dcoords(1,3) - Dcoords(1,5)
+              day = Dcoords(2,3) - Dcoords(2,5)
+              dbx = Dcoords(1,4) - Dcoords(1,5)
+              dby = Dcoords(2,4) - Dcoords(2,5)
+              
+              Djac(1,ipt) =  0.5_DP*dax - 0.5_DP*dbx
+              Djac(2,ipt) =  0.5_DP*day - 0.5_DP*dby
+              Djac(3,ipt) =  0.5_DP*dax + 0.5_DP*dbx
+              Djac(4,ipt) =  0.5_DP*day + 0.5_DP*dby
+            else
+              ! We are in T4
+              dax = Dcoords(1,4) - Dcoords(1,5)
+              day = Dcoords(2,4) - Dcoords(2,5)
+              dbx = Dcoords(1,1) - Dcoords(1,5)
+              dby = Dcoords(2,1) - Dcoords(2,5)
+              
+              Djac(1,ipt) = -0.5_DP*dax - 0.5_DP*dbx
+              Djac(2,ipt) = -0.5_DP*day - 0.5_DP*dby
+              Djac(3,ipt) =  0.5_DP*dax - 0.5_DP*dbx
+              Djac(4,ipt) =  0.5_DP*day - 0.5_DP*dby
+            end if
+          end if
+        
+          ! Determinant of the Jacobian                
+          Ddetj(ipt) = Djac(1,ipt)*Djac(4,ipt) &
+                     - Djac(2,ipt)*Djac(3,ipt)
+                          
+          ! Calculate the real world coordinates of the point
+          DpointsReal(1,ipt) = Djac(1,ipt)*DpointsRef(1,ipt) &
+                             + Djac(3,ipt)*DpointsRef(2,ipt) + Dcoords(1,5)
+          DpointsReal(2,ipt) = Djac(2,ipt)*DpointsRef(1,ipt) &
+                             + Djac(4,ipt)*DpointsRef(2,ipt) + Dcoords(2,5)
+          
+        end do
+
+      end if
+
     end select
  
   case (NDIM3D)
@@ -1686,7 +2080,7 @@ contains
 
   ! local variables
   integer :: iel, ipt
-  real(DP) :: dax, day, dbx, dby, dcx, dcy
+  real(DP) :: dax, day, dbx, dby, dcx, dcy, ddistx, ddisty
   
   ! auxiliary factors for the bilinear quad mapping
   real(DP), dimension(TRAFO_NAUXJACMAX) :: DjacPrep
@@ -1906,6 +2300,197 @@ contains
           
         end do ! iel
         !$omp end parallel do
+
+      end if
+
+    case (TRAFO_ID_PWLINSIMCUBE)
+    
+      ! Piecewise linear transformation with 4 subelements,
+      ! Quad element.
+      !
+      ! Calculate with or without coordinates?
+      if (.not. present(DpointsReal)) then
+      
+        ! This mapping is piecewisely defined.
+        ! At first, we have to figure out in which subelement
+        ! we are. We have the following situation:
+        !
+        ! -1,1              1,1       a3                a2
+        !   +-------------+             +-------------+
+        !   | \    T3   / |             | \         / |
+        !   |   \     /   |             |   \     /   |
+        !   |     \ /     |             |     \ /     |
+        !   | T4   X   T2 |     ->      |      X MP   |
+        !   |     / \     |             |     / \     |
+        !   |   /     \   |             |   /     \   |
+        !   | /    T1   \ |             | /         \ |
+        !   +-------------+             +-------------+
+        ! -1,-1             1,-1      a0                a1
+        !
+        ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+        ! Calculate the line a0->a2 and chech whether it is left
+        ! or right. Calculate the line a1->a3 and check whether it is
+        ! left or right. That way, we know in which subtriangle the
+        ! point is.
+        
+        do iel = 1,nelements
+          
+          do ipt=1,npointsPerEl
+          
+            ! Compute the distance vector of the point to the element midpoint
+            if (DpointsRef(2,ipt,iel) .le. DpointsRef(1,ipt,iel)) then
+              ! We are in T1 or T2.
+              if (DpointsRef(2,ipt,iel) .le. -DpointsRef(1,ipt,iel)) then
+                ! We are in T1.
+                ! Use a linear mapping of T1 into real world coordinates.
+                ! The linear mapping is given by
+                !      x_real = A x_ref + b
+                ! Due to "0" -> element midpoint, there is b=MP.
+                ! The matrix A is the Jacobian of the mapping and to be
+                ! computed. It can be obtained via the conditions
+                !    A (-1,-1)^t = (a0 - MP_real)
+                !    A ( 1,-1)^t = (a1 - MP_real)
+                
+                dax = Dcoords(1,1,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,1,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,2,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,2,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) = -0.5_DP*dax + 0.5_DP*dbx
+                Djac(2,ipt,iel) = -0.5_DP*day + 0.5_DP*dby
+                Djac(3,ipt,iel) = -0.5_DP*dax - 0.5_DP*dbx
+                Djac(4,ipt,iel) = -0.5_DP*day - 0.5_DP*dby
+
+              else
+                ! We are in T2
+                dax = Dcoords(1,2,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,2,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,3,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,3,iel) - Dcoords(2,5,iel)
+
+                Djac(1,ipt,iel) =  0.5_DP*dax + 0.5_DP*dbx
+                Djac(2,ipt,iel) =  0.5_DP*day + 0.5_DP*dby
+                Djac(3,ipt,iel) = -0.5_DP*dax + 0.5_DP*dbx
+                Djac(4,ipt,iel) = -0.5_DP*day + 0.5_DP*dby
+                
+              end if
+            else
+              ! We are in T3 or T4
+              if (DpointsRef(2,ipt,iel) .gt. -DpointsRef(1,ipt,iel)) then
+                ! We are in T3
+                dax = Dcoords(1,3,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,3,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,4,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,4,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) =  0.5_DP*dax - 0.5_DP*dbx
+                Djac(2,ipt,iel) =  0.5_DP*day - 0.5_DP*dby
+                Djac(3,ipt,iel) =  0.5_DP*dax + 0.5_DP*dbx
+                Djac(4,ipt,iel) =  0.5_DP*day + 0.5_DP*dby
+              else
+                ! We are in T4
+                dax = Dcoords(1,4,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,4,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,1,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,1,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) = -0.5_DP*dax - 0.5_DP*dbx
+                Djac(2,ipt,iel) = -0.5_DP*day - 0.5_DP*dby
+                Djac(3,ipt,iel) =  0.5_DP*dax - 0.5_DP*dbx
+                Djac(4,ipt,iel) =  0.5_DP*day - 0.5_DP*dby
+              end if
+            end if
+          
+            ! Determinant of the Jacobian                
+            Ddetj(ipt,iel) = Djac(1,ipt,iel)*Djac(4,ipt,iel) &
+                           - Djac(2,ipt,iel)*Djac(3,ipt,iel)
+          end do
+          
+        end do
+      
+      else
+
+        do iel = 1,nelements
+          
+          do ipt=1,npointsPerEl
+          
+            ! Compute the distance vector of the point to the element midpoint
+            if (DpointsRef(2,ipt,iel) .le. DpointsRef(1,ipt,iel)) then
+              ! We are in T1 or T2.
+              if (DpointsRef(2,ipt,iel) .le. -DpointsRef(1,ipt,iel)) then
+                ! We are in T1.
+                ! Use a linear mapping of T1 into real world coordinates.
+                ! The linear mapping is given by
+                !      x_real = A x_ref + b
+                ! Due to "0" -> element midpoint, there is b=MP.
+                ! The matrix A is the Jacobian of the mapping and to be
+                ! computed. It can be obtained via the conditions
+                !    A (-1,-1)^t = (a0 - MP_real)
+                !    A ( 1,-1)^t = (a1 - MP_real)
+                
+                dax = Dcoords(1,1,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,1,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,2,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,2,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) = -0.5_DP*dax + 0.5_DP*dbx
+                Djac(2,ipt,iel) = -0.5_DP*day + 0.5_DP*dby
+                Djac(3,ipt,iel) = -0.5_DP*dax - 0.5_DP*dbx
+                Djac(4,ipt,iel) = -0.5_DP*day - 0.5_DP*dby
+
+              else
+                ! We are in T2
+                dax = Dcoords(1,2,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,2,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,3,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,3,iel) - Dcoords(2,5,iel)
+
+                Djac(1,ipt,iel) =  0.5_DP*dax + 0.5_DP*dbx
+                Djac(2,ipt,iel) =  0.5_DP*day + 0.5_DP*dby
+                Djac(3,ipt,iel) = -0.5_DP*dax + 0.5_DP*dbx
+                Djac(4,ipt,iel) = -0.5_DP*day + 0.5_DP*dby
+                
+              end if
+            else
+              ! We are in T3 or T4
+              if (DpointsRef(2,ipt,iel) .gt. -DpointsRef(1,ipt,iel)) then
+                ! We are in T3
+                dax = Dcoords(1,3,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,3,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,4,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,4,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) =  0.5_DP*dax - 0.5_DP*dbx
+                Djac(2,ipt,iel) =  0.5_DP*day - 0.5_DP*dby
+                Djac(3,ipt,iel) =  0.5_DP*dax + 0.5_DP*dbx
+                Djac(4,ipt,iel) =  0.5_DP*day + 0.5_DP*dby
+              else
+                ! We are in T4
+                dax = Dcoords(1,4,iel) - Dcoords(1,5,iel)
+                day = Dcoords(2,4,iel) - Dcoords(2,5,iel)
+                dbx = Dcoords(1,1,iel) - Dcoords(1,5,iel)
+                dby = Dcoords(2,1,iel) - Dcoords(2,5,iel)
+                
+                Djac(1,ipt,iel) = -0.5_DP*dax - 0.5_DP*dbx
+                Djac(2,ipt,iel) = -0.5_DP*day - 0.5_DP*dby
+                Djac(3,ipt,iel) =  0.5_DP*dax - 0.5_DP*dbx
+                Djac(4,ipt,iel) =  0.5_DP*day - 0.5_DP*dby
+              end if
+            end if
+          
+            ! Determinant of the Jacobian                
+            Ddetj(ipt,iel) = Djac(1,ipt,iel)*Djac(4,ipt,iel) &
+                           - Djac(2,ipt,iel)*Djac(3,ipt,iel)
+                           
+            ! Calculate the real world coordinates of the point
+            DpointsReal(1,ipt,iel) = Djac(1,ipt,iel)*DpointsRef(1,ipt,iel) &
+                                   + Djac(3,ipt,iel)*DpointsRef(2,ipt,iel) + Dcoords(1,5,iel)
+            DpointsReal(2,ipt,iel) = Djac(2,ipt,iel)*DpointsRef(1,ipt,iel) &
+                                   + Djac(4,ipt,iel)*DpointsRef(2,ipt,iel) + Dcoords(2,5,iel)
+            
+          end do
+          
+        end do
 
       end if
       
@@ -4067,6 +4652,12 @@ contains
         !
         ! This is a little bit more complicated, we need the whole
         ! transformation. The Djac / Ddetj information is ignored.
+        call trafo_calctrafo (ctrafoType,Dcoord,&
+                              DpointRef,Djac,Ddetj,Dpoint)
+                              
+      case (TRAFO_ID_PWLINSIMCUBE)
+      
+        ! Use the full transformation to compute that
         call trafo_calctrafo (ctrafoType,Dcoord,&
                               DpointRef,Djac,Ddetj,Dpoint)
         

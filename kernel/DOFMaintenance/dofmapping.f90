@@ -250,6 +250,9 @@ contains
     case (EL_QP1)
       ! 3 DOF`s in the midpoint of the element.
       NDFG_uniform2D = 3*rtriangulation%NEL
+    case (EL_QPWL4T_2D)
+      ! 1 DOF in each vertex and one in the element midpoint
+      NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NEL
     case (EL_P1T, EL_Q1T)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
@@ -651,6 +654,11 @@ contains
           ! DOF`s in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T(p_2darray, IelIdx, IdofGlob)
+          return
+        case (EL_QPWL4T_2D)
+          ! DOF`s in the vertices and element midpoints
+          call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+          call dof_locGlobUniMult_QPWL4T(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NVT)
           return
         case (EL_Q1TB)
           ! DOF`s in the edges
@@ -1167,6 +1175,58 @@ contains
       ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_QPWL4T(IverticesAtElement, IelIdx, IdofGlob, NVT)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be quadrilateral, piecewise linear
+  ! P1 elements.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+  
+  ! Total number of vertices
+  integer, intent(in) :: NVT
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,j
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
+      ! corners.
+      IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
+      IdofGlob(5,i) = NVT + IelIdx(i)
     end do
 
   end subroutine

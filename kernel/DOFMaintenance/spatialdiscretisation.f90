@@ -856,6 +856,12 @@ contains
     ioperation = SPDISC_OPTP_MASS
     if (present(iopertype)) ioperation = iopertype
 
+    if (celement .eq. EL_QPWL4T_2D) then
+      ! Piecewise linear cubature on sub-triangles on a quad
+      ccubType = CUB_P4TG3_2D
+      return
+    end if
+
     select case (elem_igetDimension(celement))
     case (NDIM1D)
     
