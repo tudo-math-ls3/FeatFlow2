@@ -145,6 +145,8 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassembly.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassemblybase.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bilinearformevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\blockmatassemblybase.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\blockmatassembly.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\boundaryaux.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretefbc.f90"/>
@@ -153,6 +155,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\domainintegration.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\extstdassemblyinfo.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\feevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\feevaluation2.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\linearformevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\matrixfilters.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\multileveloperators.f90"/>
