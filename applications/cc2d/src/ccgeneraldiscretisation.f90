@@ -51,11 +51,6 @@
 !# 1.) cc_getDiscretisation
 !#     -> Initialise a block discretisation structure according to
 !#        an element type combination.
-!#
-!# 2.) cc_deriveDiscretisation
-!#     -> Derives a block discretisation structure according to
-!#        an element type combination from an existing discretisation
-!#        structure.
 !# </purpose>
 !##############################################################################
 
@@ -275,8 +270,9 @@ contains
       ! stabilisation. A value of -1 means: use the same element(s).
       ! In this case, we have to initialise rdiscretisationUEOStabil.
       if (iElementTypeStabil .ne. -1) then
-        call cc_getDiscretisation (iElementTypeStabil,p_rdiscretisation,&
-            rsourceDiscretisation=rproblem%RlevelInfo(i)%rdiscretisationStabil)
+        call cc_getDiscretisation (iElementTypeStabil,&
+            rproblem%RlevelInfo(i)%rdiscretisationStabil,&
+            rsourceDiscretisation=p_rdiscretisation)
       else
         call spdiscr_deriveBlockDiscr (p_rdiscretisation,&
             rproblem%RlevelInfo(i)%rdiscretisationStabil)
