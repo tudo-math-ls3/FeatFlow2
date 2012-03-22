@@ -226,10 +226,10 @@ contains
       ! DOF`s in the vertices
       NDFG_uniform2D = rtriangulation%NVT
     case (EL_DG_P1_2D)
-      ! DOF`s in the vertices
+      ! DOF`s in the elements
       NDFG_uniform2D = rtriangulation%NEL*3
     case (EL_DG_Q1_2D)
-      ! Each element has 4 DOFs in the vertices
+      ! DOF`s in the elements
       NDFG_uniform2D = rtriangulation%NEL*4
     case (EL_DG_Q2_2D)
       ! Each element has 9 DOFS
@@ -268,10 +268,10 @@ contains
     case (EL_DG_T0_2D)
       ! DOF`s in the cell midpoints
       NDFG_uniform2D = rtriangulation%NEL
-    case (EL_DG_T1_2D)
+    case (EL_DG_T1_2D, EL_DCTP1_2D, EL_DCQP1_2D)
       ! DOF`s in the cell midpoints
       NDFG_uniform2D = 3*rtriangulation%NEL
-    case (EL_DG_T2_2D)
+    case (EL_DG_T2_2D, EL_DCTP2_2D, EL_DCQP2_2D)
       ! DOF`s in the cell midpoints
       NDFG_uniform2D = 6*rtriangulation%NEL
     end select
@@ -678,11 +678,11 @@ contains
           ! DOF`s for DG_T0_1D
           call dof_locGlobUniMult_DG_T0_2D(IelIdx, IdofGlob)
           return
-        case (EL_DG_T1_2D)
+        case (EL_DG_T1_2D, EL_DCTP1_2D, EL_DCQP1_2D)
           ! DOF`s for DG_T1_1D
           call dof_locGlobUniMult_DG_T1_2D(IelIdx, IdofGlob)
           return
-        case (EL_DG_T2_2D)
+        case (EL_DG_T2_2D, EL_DCTP2_2D, EL_DCQP2_2D)
           ! DOF`s for DG_T2_1D
           call dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
           return

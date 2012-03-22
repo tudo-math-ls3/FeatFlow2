@@ -72,6 +72,8 @@ module element_quad2d
   public :: elem_eval_EB50_2D
   public :: elem_eval_EN50_2D
   public :: elem_eval_EN51_2D
+  public :: elem_eval_DCQP1_2D
+  public :: elem_eval_DCQP2_2D
   public :: elem_DG_T0_2D
   public :: elem_DG_T0_2D_mult
   public :: elem_DG_T0_2D_sim
@@ -12808,6 +12810,330 @@ contains
           
         end do ! ipt
         
+      end if ! derivatives evaluation
+
+    end do ! iel
+    !$omp end parallel do
+    
+    ! That is it
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_DCQP1_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The DCQP1_2D element is specified by three polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y }
+  !
+  ! As the QP1 element is discontinous, the basis polynomials do not have to
+  ! fulfill any special conditions - they are simply defined as:
+  !
+  !  P1 (x,y,z) = 1
+  !  P2 (x,y,z) = x
+  !  P3 (x,y,z) = y
+
+  ! Corner vertice and edge midpoint coordinates
+  real(DP), dimension(NDIM2D, 4) :: Dvert
+  
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM2D,NDIM2D) :: Ds
+  real(DP), dimension(NDIM2D) :: Dr
+  real(DP) :: ddets
+
+  ! other local variables
+  integer :: iel,ipt
+  real(DP) :: dx,dy
+
+    ! Loop over all elements
+    !$omp parallel do default(shared)&
+    !$omp private(Dr,Ds,Dvert,ddets,dx,dy,ipt)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+    do iel = 1, reval%nelements
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Fetch vertice coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+      ! Fetch the four corner vertices for that element
+      Dvert(1:2,1:4) = reval%p_Dcoords(1:2,1:4,iel)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! This is a P1 transformation from the real element onto our
+      ! 'reference' element.
+      dr(1) = 0.25_DP * (Dvert(1,1) + Dvert(1,2) + Dvert(1,3) + Dvert(1,4))
+      dr(2) = 0.25_DP * (Dvert(2,1) + Dvert(2,2) + Dvert(2,3) + Dvert(2,4))
+      ds(1,1) =   0.5_DP * (Dvert(2,3) + Dvert(2,4)) - dr(2)
+      ds(1,2) = -(0.5_DP * (Dvert(1,3) + Dvert(1,4)) - dr(1))
+      ds(2,1) = -(0.5_DP * (Dvert(2,2) + Dvert(2,3)) - dr(2))
+      ds(2,2) =   0.5_DP * (Dvert(1,2) + Dvert(1,3)) - dr(1)
+      ddets = 1.0_DP / (ds(1,1)*ds(2,2) - ds(1,2)*ds(2,1))
+      Ds = ddets * Ds
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_FUNC2D)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          ! Apply inverse affine trafo to get (x,y)
+          dx = ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+          dy = ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC2D,ipt,iel) = 1.0_DP
+          Dbas(2,DER_FUNC2D,ipt,iel) = dx
+          DBas(3,DER_FUNC2D,ipt,iel) = dy
+
+        end do ! ipt
+
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          ! Evaluate derivatives
+          Dbas(1,DER_DERIV2D_X,ipt,iel) = 0.0_DP
+          Dbas(1,DER_DERIV2D_Y,ipt,iel) = 0.0_DP
+          Dbas(2,DER_DERIV2D_X,ipt,iel) = ds(1,1)
+          Dbas(2,DER_DERIV2D_Y,ipt,iel) = ds(1,2)
+          Dbas(3,DER_DERIV2D_X,ipt,iel) = ds(2,1)
+          Dbas(3,DER_DERIV2D_Y,ipt,iel) = ds(2,2)
+
+        end do ! ipt
+
+      end if ! derivatives evaluation
+
+    end do ! iel
+    !$omp end parallel do
+    
+    ! That is it
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_DCQP2_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The DCQP2_2D element is specified by six polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y, x^2, y^2, x*y }
+  !
+  ! As the DCQP2_2D element is discontinous, the basis polynomials do not have to
+  ! fulfill any special conditions - they are simply defined as:
+  !
+  !  P1 (x,y,z) = 1
+  !  P2 (x,y,z) = x
+  !  P3 (x,y,z) = y
+  !  P4 (x,y,z) = x^2
+  !  P5 (x,y,z) = y^2
+  !  P6 (x,y,z) = x*y
+
+  ! Corner vertice and edge midpoint coordinates
+  real(DP), dimension(NDIM2D, 4) :: Dvert
+  
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM2D,NDIM2D) :: Ds
+  real(DP), dimension(NDIM2D) :: Dr
+  real(DP) :: ddets
+
+  ! other local variables
+  integer :: iel,ipt
+  real(DP) :: dx,dy
+
+    ! Loop over all elements
+    !$omp parallel do default(shared)&
+    !$omp private(Dr,Ds,Dvert,ddets,dx,dy,ipt)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+    do iel = 1, reval%nelements
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Fetch vertice coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+      ! Fetch the four corner vertices for that element
+      Dvert(1:2,1:4) = reval%p_Dcoords(1:2,1:4,iel)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! This is a P1 transformation from the real element onto our
+      ! 'reference' element.
+      dr(1) = 0.25_DP * (Dvert(1,1) + Dvert(1,2) + Dvert(1,3) + Dvert(1,4))
+      dr(2) = 0.25_DP * (Dvert(2,1) + Dvert(2,2) + Dvert(2,3) + Dvert(2,4))
+      ds(1,1) =   0.5_DP * (Dvert(2,3) + Dvert(2,4)) - dr(2)
+      ds(1,2) = -(0.5_DP * (Dvert(1,3) + Dvert(1,4)) - dr(1))
+      ds(2,1) = -(0.5_DP * (Dvert(2,2) + Dvert(2,3)) - dr(2))
+      ds(2,2) =   0.5_DP * (Dvert(1,2) + Dvert(1,3)) - dr(1)
+      ddets = 1.0_DP / (ds(1,1)*ds(2,2) - ds(1,2)*ds(2,1))
+      Ds = ddets * Ds
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_FUNC2D)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          ! Apply inverse affine trafo to get (x,y)
+          dx = ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+          dy = ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC2D,ipt,iel) = 1.0_DP
+          Dbas(2,DER_FUNC2D,ipt,iel) = dx
+          DBas(3,DER_FUNC2D,ipt,iel) = dy
+          Dbas(4,DER_FUNC2D,ipt,iel) = dx*dx
+          DBas(5,DER_FUNC2D,ipt,iel) = dy*dy
+          Dbas(6,DER_FUNC2D,ipt,iel) = dx*dy
+
+        end do ! ipt
+
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          ! Apply inverse affine trafo to get (x,y)
+          dx = ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+          dy = ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+
+          ! Evaluate derivatives
+          Dbas(1,DER_DERIV2D_X,ipt,iel) = 0.0_DP
+          Dbas(1,DER_DERIV2D_Y,ipt,iel) = 0.0_DP
+          Dbas(2,DER_DERIV2D_X,ipt,iel) = ds(1,1)
+          Dbas(2,DER_DERIV2D_Y,ipt,iel) = ds(1,2)
+          Dbas(3,DER_DERIV2D_X,ipt,iel) = ds(2,1)
+          Dbas(3,DER_DERIV2D_Y,ipt,iel) = ds(2,2)
+          Dbas(4,DER_DERIV2D_X,ipt,iel) = 2.0_DP * dx * ds(1,1)
+          Dbas(4,DER_DERIV2D_Y,ipt,iel) = 2.0_DP * dx * ds(1,2)
+          Dbas(5,DER_DERIV2D_X,ipt,iel) = 2.0_DP * dy * ds(2,1)
+          Dbas(5,DER_DERIV2D_Y,ipt,iel) = 2.0_DP * dy * ds(2,2)
+          Dbas(6,DER_DERIV2D_X,ipt,iel) = ds(1,1)*dy + ds(2,1)*dx
+          Dbas(6,DER_DERIV2D_Y,ipt,iel) = ds(1,2)*dy + ds(2,2)*dx
+
+        end do ! ipt
+
       end if ! derivatives evaluation
 
     end do ! iel

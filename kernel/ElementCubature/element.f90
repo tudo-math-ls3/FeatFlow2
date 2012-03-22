@@ -485,6 +485,24 @@ module element
   ! Discontinuous Galerkin taylor basis element - quadratic.
   integer(I32), parameter, public :: EL_DG_T2_2D   = EL_2D + 62
 
+  ! Discontinuous constant triangle element, P0dc
+  integer(I32), parameter, public :: EL_DCTP0_2D = EL_P0_2D
+
+  ! Discontinous linear triangle element, P1dc
+  integer(I32), parameter, public :: EL_DCTP1_2D = EL_2D + 71
+
+  ! Discontinous quadratic triangle element, P2dc
+  integer(I32), parameter, public :: EL_DCTP2_2D = EL_2D + 72
+
+  ! Discontinous constant quadrilateral element, P0dc
+  integer(I32), parameter, public :: EL_DCQP0_2D = EL_Q0_2D
+
+  ! Discontinous linear quadrilateral element, P1dc
+  integer(I32), parameter, public :: EL_DCQP1_2D = EL_2D + 81 !+ EL_NONPARAMETRIC
+
+  ! Discontinous quadratic quadrilateral element, P2dc
+  integer(I32), parameter, public :: EL_DCQP2_2D = EL_2D + 82 !+ EL_NONPARAMETRIC
+
 !</constantblock>
 
 !<constantblock description="Element identifiers for 3D elements">
@@ -794,7 +812,13 @@ contains
     else if (selem .eq. "EL_P1T" .or. selem .eq. "EL_P1T_2D" .or. &
              selem .eq. "EL_E020" .or. selem .eq. "EL_E020_2D") then
       elem_igetID = EL_P1T_2D
-    
+    else if (selem .eq. "EL_DCTP0_2D") then
+      elem_igetID = EL_DCTP0_2D ! coincides with EL_P0_2D
+    else if (selem .eq. "EL_DCTP1_2D") then
+      elem_igetID = EL_DCTP1_2D
+    else if (selem .eq. "EL_DCTP2_2D") then
+      elem_igetID = EL_DCTP2_2D
+
     ! -= 2D Quadrilateral Elements =-
     else if (selem .eq. "EL_Q0" .or. selem .eq. "EL_Q0_2D" .or. &
              selem .eq. "EL_E010" .or. selem .eq. "EL_E010_2D") then
@@ -859,6 +883,12 @@ contains
       elem_igetID = EL_DG_T1_2D
     else if (selem .eq. "EL_DG_T2_2D") then
       elem_igetID = EL_DG_T2_2D
+    else if (selem .eq. "EL_DCQP0_2D") then
+      elem_igetID = EL_DCQP0_2D ! coincides with EL_Q0_2D
+    else if (selem .eq. "EL_DCQP1_2D") then
+      elem_igetID = EL_DCQP1_2D
+    else if (selem .eq. "EL_DCQP2_2D") then
+      elem_igetID = EL_DCQP2_2D
     
     ! -= 3D Tetrahedron Elements =-
     else if (selem .eq. "EL_P0_3D" .or. selem .eq. "EL_E000_3D") then
@@ -972,7 +1002,7 @@ contains
       sname = 'EL_DG_T2_1D'
 
     ! -= 2D Triangle Elements =-
-    case (EL_P0_2D)
+    case (EL_P0_2D)   ! alias: EL_DCTP0_2D
       sname = 'EL_P0_2D'
     case (EL_P1_2D)
       sname = 'EL_P1_2D'
@@ -982,6 +1012,10 @@ contains
       sname = 'EL_P3_2D'
     case (EL_P1T_2D)
       sname = 'EL_P1T_2D'
+    case (EL_DCTP1_2D)
+      sname = 'EL_DCTP1_2D'
+    case (EL_DCTP2_2D)
+      sname = 'EL_DCTP2_2D'
 
     ! -= 2D Quadrilateral Elements =-
     ! H1-conforming elements
@@ -996,7 +1030,7 @@ contains
     case (EL_Q3_2D)         ! not implemented
       sname = 'EL_Q3_2D'
     ! discontinous elements
-    case (EL_Q0_2D)
+    case (EL_Q0_2D)         ! alias: EL_DCQP0_2D
       sname = 'EL_Q0_2D'
     case (EL_QP1_2D)
       sname = 'EL_QP1_2D'
@@ -1004,6 +1038,10 @@ contains
       sname = 'EL_QP1NP_2D'
     case (EL_QP1NPD_2D)
       sname = 'EL_QP1NPD_2D'
+    case (EL_DCQP1_2D)
+      sname = 'EL_DCQP1_2D'
+    case (EL_DCQP2_2D)
+      sname = 'EL_DCQP2_2D'
     ! H1-nonconforming elements
     case (EL_E030_2D)       ! alias: EL_Q1T_2D
       sname = 'EL_E030_2D'
@@ -1119,139 +1157,16 @@ contains
 
 !</function>
 
-    select case (elem_getPrimaryElement(celement))
-    
-    ! -= 1D Line Elements =-
-    case (EL_P0_1D)
-      ! local DOFs for 1D P0
-      elem_igetNDofLoc = 1
-    case (EL_P1_1D)
-      ! local DOFs for 1D P1
-      elem_igetNDofLoc = 2
-    case (EL_P2_1D)
-      ! local DOFs for 1D P2
-      elem_igetNDofLoc = 3
-    case (EL_S31_1D)
-      ! local DOFs for 1D S31
-      elem_igetNDofLoc = 4
-    case (EL_PN_1D)
-      ! local DOFs for 1D Pn
-      elem_igetNDofLoc = 1 + iand(ishft(celement,-16),255_I32)
-    case (EL_DG_T0_1D)
-      ! local DOFs for 1D DG Taylor constant
-      elem_igetNDofLoc = 1
-    case (EL_DG_T1_1D)
-      ! local DOFs for 1D DG Taylor linear
-      elem_igetNDofLoc = 2
-    case (EL_DG_T2_1D)
-      ! local DOFs for 1D DG Taylor quadratic
-      elem_igetNDofLoc = 3
-    
-    ! -= 2D Triangle Elements =-
-    case (EL_P0)
-      ! local DOFs for P0
-      elem_igetNDofLoc = 1
-    case (EL_P1,EL_DG_P1_2D)
-      ! local DOFs for P1
-      elem_igetNDofLoc = 3
-    case (EL_P2)
-      ! local DOFs for P2
-      elem_igetNDofLoc = 6
-    case (EL_P3)
-      ! local DOFs for P3
-      elem_igetNDofLoc = 9
-    case (EL_P1T)
-      ! local DOFs for Ex20
-      elem_igetNDofLoc = 3
+  ! local variables
+  integer :: ndofAtVertices, ndofAtEdges, ndofAtFaces, ndofAtElement
 
-    ! -= 2D Quadrilateral Elements =-
-    case (EL_Q0)
-      ! local DOFs for Q0
-      elem_igetNDofLoc = 1
-    case (EL_Q1,EL_DG_Q1_2D)
-      ! local DOFs for Q1
-      elem_igetNDofLoc = 4
-    case (EL_Q2,EL_DG_Q2_2D)
-      ! local DOFs for Q2
-      elem_igetNDofLoc = 9
-    case (EL_Q3)
-      ! local DOFs for Q3
-      elem_igetNDofLoc = 16
-    case (EL_QP1)
-      ! local DOFs for QP1
-      elem_igetNDofLoc = 3
-    case (EL_Q1T)
-      ! local DOFs for Ex30, Ex31
-      elem_igetNDofLoc = 4
-    case (EL_Q1TB)
-      ! local DOFs for EB30 / E032
-      elem_igetNDofLoc = 5
-    case (EL_Q2T)
-      ! local DOFs for Ex50
-      elem_igetNDofLoc = 9
-    case (EL_Q2TB)
-      ! local DOFs for EB50
-      elem_igetNDofLoc = 10
-    case (EL_Q3T_2D)
-      ! local DOFs for Ex51
-      elem_igetNDofLoc = 15
-    case (EL_DG_T0_2D)
-      ! local DOFs for 1D DG Taylor constant
-      elem_igetNDofLoc = 1
-    case (EL_DG_T1_2D)
-      ! local DOFs for 1D DG Taylor linear
-      elem_igetNDofLoc = 3
-    case (EL_DG_T2_2D)
-      ! local DOFs for 1D DG Taylor quadratic
-      elem_igetNDofLoc = 6
-    
-    ! -= 3D Tetrahedron Elements =-
-    case (EL_P0_3D)
-      ! local DOFs for 3D P0, Q0, Y0, R0
-      elem_igetNDofLoc = 1
-    case (EL_P1_3D)
-      ! local DOFs for 3D P1
-      elem_igetNDofLoc = 4
-    
-    ! -= 3D Hexahedron Elements =-
-    case (EL_Q0_3D)
-      ! local DOFs for 3D Q0
-      elem_igetNDofLoc = 1
-    case (EL_Q1_3D)
-      ! local DOFs for 3D Q1
-      elem_igetNDofLoc = 8
-    case (EL_Q2_3D)
-      ! local DOFs for 3D Q2
-      elem_igetNDofLoc = 27
-    case (EL_QP1_3d)
-      ! local DOFs for 3D QP1
-      elem_igetNDofLoc = 4
-    case (EL_Q1T_3D)
-      ! local DOFs for 3D Ex30
-      elem_igetNDofLoc = 6
-    case (EL_Q2T_3D)
-      ! local DOFs for 3D Ex50
-      elem_igetNDofLoc = 19
+    ! calculate number of DOFs per entity
+    call elem_igetNDofLocAssignment(celement, &
+        ndofAtVertices, ndofAtEdges, ndofAtFaces, ndofAtElement)
 
-    ! -= 3D Pyramid Elements =-
-    case (EL_Y0_3D)
-      ! local DOFs for 3D Y0
-      elem_igetNDofLoc = 1
-    case (EL_Y1_3D)
-      ! local DOFs for 3D Y1
-      elem_igetNDofLoc = 5
-    
-    ! -= 3D Prism Elements =-
-    case (EL_R0_3D)
-      ! local DOFs for 3D R0
-      elem_igetNDofLoc = 1
-    case (EL_R1_3D)
-      ! local DOFs for 3D R1
-      elem_igetNDofLoc = 6
-      
-    case default
-      elem_igetNDofLoc = 0
-    end select
+    ! sum up the local DOFs
+    elem_igetNDofLoc = ndofAtVertices + ndofAtEdges + ndofAtFaces + ndofAtElement
+
 
   end function
 
@@ -1347,9 +1262,11 @@ contains
       ! local DOFs for P1~
       ndofAtEdges    = 3
 
-    case (EL_DG_P1_2D)
+    case (EL_DG_P1_2D,EL_DCTP1_2D)
       ! local DOFs for P1
       ndofAtElement = 3
+    case (EL_DCTP2_2D)
+      ndofAtElement = 6
     
     ! -= 2D Quadrilateral Elements =-
     case (EL_Q0)
@@ -1393,10 +1310,10 @@ contains
     case (EL_DG_T0_2D)
       ! local DOFs for 2D DG Taylor constant
       ndofAtElement = 1
-    case (EL_DG_T1_2D)
+    case (EL_DG_T1_2D,EL_DCQP1_2D)
       ! local DOFs for 2D DG Taylor linear
       ndofAtElement = 3
-    case (EL_DG_T2_2D)
+    case (EL_DG_T2_2D,EL_DCQP2_2D)
       ! local DOFs for 2D DG Taylor quadratic
       ndofAtElement = 6
       
@@ -1517,60 +1434,77 @@ contains
 
 !</function>
 
-    select case (iand(celement,EL_ELNRMASK+EL_NONPARAMETRIC))
-    ! 1D Element types
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D,&
-          EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
-      ! Line elements
+    ! Determine the coordinate system based on the element's shape and its parametricity flag.
+    select case(elem_igetShape(celement))
+    case (BGEOM_SHAPE_LINE)
+      ! 1D line element: reference coordinates
       elem_igetCoordSystem = TRAFO_CS_REF1D
-    
-    ! 2D Element Types
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
-      ! Triangular elements work in barycentric coordinates
-      elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
-          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D, EL_DG_Q2_2D)
-      ! These work on the reference quadrilateral
-      elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
-    case (EL_QP1NP,EL_QP1NPD)
-      ! EL_QP1NP works in real coordinates
-      elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
-    case (EL_Q1 +EL_NONPARAMETRIC, &
-          EL_Q1T+EL_NONPARAMETRIC, &
-          EL_Q1TB+EL_NONPARAMETRIC,&
-          EL_Q2T+EL_NONPARAMETRIC,&
-          EL_Q3T_2D+EL_NONPARAMETRIC)
-      ! EM11, EM30, EM31, EM50, EN51; these work in real coordinates
-      elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
-    
-    ! 3D Element types
-    case (EL_P0_3D, EL_P1_3D)
-      ! Tetrahedral elements work in barycentric coordinates
-      elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
-          EL_Q1T_3D, EL_Q2T_3D)
-      ! These work on the reference hexahedron
-      elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
-    case (EL_Y0_3D, EL_Y1_3D)
-      ! These work on the reference pyramid
-      elem_igetCoordSystem = TRAFO_CS_REF3DPYRA
-    case (EL_R0_3D, EL_R1_3D)
-      ! These work on the reference prism
-      elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
-    case (EL_Q1T_3D+EL_NONPARAMETRIC,&
-          EL_Q2T_3D+EL_NONPARAMETRIC)
-      ! EM30, EM50; these work in real coordinates
-      elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
-    case (EL_QP1NP_3D)
-      ! EM30, EM50; these work in real coordinates
-      elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
-      
+
+    case (BGEOM_SHAPE_TRIA)
+      ! 2D triangle element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
+      else
+        ! barycentric coordinates
+        elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
+      end if
+
+    case (BGEOM_SHAPE_QUAD)
+      ! 2D quadrilateral element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
+      else
+        ! reference coordinates
+        elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
+      end if
+
+    case (BGEOM_SHAPE_TETRA)
+      ! 3D tetrahedral element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL3DTETRA
+      else
+        ! barycentric coordinates
+        elem_igetCoordSystem = TRAFO_CS_BARY3DTETRA
+      end if
+
+    case (BGEOM_SHAPE_HEXA)
+      ! 3D hexahedral element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
+      else
+        ! reference coordinates
+        elem_igetCoordSystem = TRAFO_CS_REF3DHEXA
+      end if
+
+    case (BGEOM_SHAPE_PYRA)
+      ! 3D pyramid element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL3DPYRA
+      else
+        ! reference coordinates
+        elem_igetCoordSystem = TRAFO_CS_REF3DPYRA
+      end if
+
+    case (BGEOM_SHAPE_PRISM)
+      ! 3D prism element
+      if(elem_isNonparametric(celement)) then
+        ! real coordinates
+        elem_igetCoordSystem = TRAFO_CS_REAL3DPRISM
+      else
+        ! reference coordinates
+        elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
+      end if
+
     case default
       elem_igetCoordSystem = TRAFO_CS_UNDEFINED
+
     end select
-  
+
   end function
 
   ! ***************************************************************************
@@ -1596,44 +1530,29 @@ contains
 
 !</function>
 
-    select case (elem_getPrimaryElement(celement))
-    
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D,&
-          EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
-      ! Linear line transformation, 1D
+    ! Determine the trafo type based on the shape ID of the element.
+    ! Note: This only works if the element uses the default transformation.
+    ! Elements using special transformation, e.g. isoparametric or piecewise
+    ! affine quadrilateral/hexahedral transformation, need to be handled
+    ! specially here.
+
+    select case(elem_igetShape(celement))
+    case (BGEOM_SHAPE_LINE)
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
-    
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
-      ! Linear triangular transformation, 2D
+    case (BGEOM_SHAPE_TRIA)
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
-      
-    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D, &
-          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D,  EL_DG_Q2_2D)
-      ! Bilinear quadrilateral transformation, 2D.
+    case (BGEOM_SHAPE_QUAD)
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
-    
-    case (EL_P0_3D, EL_P1_3D)
-      ! Linear tetrahedral transrormation, 3D
+    case (BGEOM_SHAPE_TETRA)
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
-    
-    case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
-          EL_Q1T_3D, EL_Q2T_3D)
-      ! Trilinear hexahedral transformation, 3D
+    case (BGEOM_SHAPE_HEXA)
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
-    
-    case (EL_Y0_3D, EL_Y1_3D)
-      ! Sub-Trilinear pyramid transformation, 3D
+    case (BGEOM_SHAPE_PYRA)
       elem_igetTrafoType = TRAFO_ID_MLINPYRAMID + TRAFO_DIM_3D
-    
-    case (EL_R0_3D, EL_R1_3D)
-      ! Sub-Trilinear prism transformation, 3D
+    case (BGEOM_SHAPE_PRISM)
       elem_igetTrafoType = TRAFO_ID_MLINPRISM + TRAFO_DIM_3D
-    
     case default
       elem_igetTrafoType = TRAFO_ID_UNKNOWN
-      
     end select
 
   end function
@@ -1766,7 +1685,10 @@ contains
     case (EL_DG_T2_2D)
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 6
-    
+    case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+
     ! -= 3D elements =-
     case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
       ! Function
@@ -1893,8 +1815,18 @@ contains
  
 !</function>
  
-    inonpar = iand(celement,EL_NONPARAMETRIC) .ne. 0
-  
+    select case(celement)
+    case (EL_DCQP1_2D, EL_DCQP2_2D)
+      ! There exists no parametric counterpart to these elements, so these do
+      ! not have the EL_NONPARAMETRIC flag set although the are nonparametric.
+      inonpar = .true.
+
+    case default
+      ! by default, a non-parametric element has the EL_NONPARAMETRIC mask set
+      inonpar = iand(celement,EL_NONPARAMETRIC) .ne. 0
+
+    end select
+
   end function
 
   !************************************************************************
@@ -1930,7 +1862,7 @@ contains
   !</input>
  
 !</function>
- 
+
     ! To get the standard identifier, we just have to mask out all bits
     ! except for bit 0..9. These 10 bits encode the standard element
     ! identifier plus dimension.
@@ -1942,7 +1874,7 @@ contains
   
 !<function>
 
-  integer(I32) function elem_igetShape(celement) result(ishp)
+  elemental integer(I32) function elem_igetShape(celement) result(ishp)
   
 !<description>
   ! This function returns the element shape identifier for a given element
@@ -1968,14 +1900,15 @@ contains
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
     
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D,&
+          EL_DCTP1_2D, EL_DCTP2_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D, EL_DG_Q2_2D)
+          EL_DG_Q1_2D, EL_DG_Q2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     
@@ -1999,7 +1932,7 @@ contains
     case default
       ! Unknown
       ishp = BGEOM_SHAPE_UNKNOWN
-      
+
     end select
 
   end function
@@ -2186,6 +2119,8 @@ contains
         call elem_DG_T1_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T2_2D)
         call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+        bwrapSim2 = .true.
 
       ! 3D elements
       case (EL_P0_3D)
@@ -2953,13 +2888,13 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
-    case (EL_P1,EL_DG_P1_2D)
+    case (EL_P1,EL_DG_P1_2D, EL_DCTP1_2D)
       call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
     
-    case (EL_P2)
+    case (EL_P2, EL_DCTP2_2D)
       call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
@@ -2970,7 +2905,7 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     ! *****************************************************
     ! 2D quadrilateral elements
     case (EL_Q0)
@@ -3088,6 +3023,12 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+
+    case (EL_DCQP1_2D)
+      call elem_eval_DCQP1_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_DCQP2_2D)
+      call elem_eval_DCQP2_2D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D tetrahedron elements
