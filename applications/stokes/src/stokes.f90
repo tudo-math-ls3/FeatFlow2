@@ -124,16 +124,16 @@ program stokes
   ! Stokes, they are commented out by default.
 
   ! Call the problem to solve. 2d navier-stokes 1:
-  call output_lbrk()
-  call output_line('Calculating 2D Navier-Stokes-Problem 1 - multigrid')
-  call output_line('--------------------------------------------------')
-  call navst2d_1_mg
+  ! call output_lbrk()
+  ! call output_line('Calculating 2D Navier-Stokes-Problem 1 - multigrid')
+  ! call output_line('--------------------------------------------------')
+  ! call navst2d_1_mg
 
   ! Call the problem to solve. 3d navier-stokes 1:
-  call output_lbrk()
-  call output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
-  call output_line('--------------------------------------------------')
-  call navst3d_1_mg
+  ! call output_lbrk()
+  ! call output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
+  ! call output_line('--------------------------------------------------')
+  ! call navst3d_1_mg
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
