@@ -31,7 +31,7 @@ ipostprocTimeInterpSolution = 1
 # 4=Matlab
 # 5=binary GMV
 
-ioutputUCD = 1
+ioutputUCD = 0
 
 # Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
@@ -217,7 +217,7 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 1
+iwriteBodyForces = 0
 
 # Filename for the body forces
 
@@ -260,7 +260,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_1e9_bench2m55_8'
 
 # ------------------------------------------------------------------------
 # Flux values
@@ -288,5 +288,4 @@ iwriteFluxValues = 0
 # Filename for the point values
 
 sfilenameFluxValues = '%{ssolutiondirectory}/flux'
-
 

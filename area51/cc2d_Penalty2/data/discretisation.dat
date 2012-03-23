@@ -118,13 +118,13 @@ NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 5
+NLMAX              = 8
 
 # ------------------------------------------------------------------------
 
 # Activate fbm
 
-ifbm = 1
+ifbm = 0
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
@@ -283,12 +283,12 @@ ielementType = 3
 # REMARK: To use Q2 with EOJ stabilisation and VANKA smoother, damp
 # the VANKA with domega=0.5.
 
-iUpwind = 0
+iUpwind = 3
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
-dUpsam = 0.25
+dUpsam = 0.01
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.
 
@@ -431,4 +431,5 @@ iintARIndicatorEX3YVel   = 1
 # standard = 20.0
 
 dintARboundEX3YVel       = 20.0
+
 

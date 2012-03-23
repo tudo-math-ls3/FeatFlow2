@@ -862,7 +862,7 @@ contains
     ! Calculating mass of penalty matrix
      type(t_vectorScalar) :: rones1,rones2
      real(dp) :: dvalue
-
+     integer :: iareea
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
@@ -1158,16 +1158,21 @@ contains
                                  rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
 
     ! Calculate areea of penalty object using the matrix entries.
- 
-    call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
-    call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
-    call lsyssc_clearVector(rones1,1.0_dp)
-    call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty, rones1, rones2, 1.0_DP, 0.0_DP)
-    dvalue=lsyssc_scalarProduct (rones1, rones2)
-    write(*,*)'No of elements: ',rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL
-    write(*,*) 'Area value =',dvalue
-    call lsyssc_releaseVector(rones1)
-    call lsyssc_releaseVector(rones2)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
+          'iareea',iareea,0)
+    if (iareea .eq. 1) then
+      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
+      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
+      call lsyssc_clearVector(rones1,1.0_dp)
+      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,&
+                                rones1, rones2, 1.0_DP, 0.0_DP)
+      dvalue=lsyssc_scalarProduct (rones1, rones2)
+      write(*,*)'No of elements :', & 
+                 rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL
+      write(*,*) 'Area value =',dvalue
+      call lsyssc_releaseVector(rones1)
+      call lsyssc_releaseVector(rones2)
+    end if 
 
 !    call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
 

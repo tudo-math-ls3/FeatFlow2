@@ -1,10 +1,10 @@
 #!/bin/bash
 
-for NLMAX in 7;do
-for DLAMBDA in 1e3 1e4 1e5 1e6 1e7 1e8;do
+for MESH in bench1_fbm; do
+for NLMAX in 4 5; do
+for DLAMBDA in 1e3 1e6 1e9; do
 
 cat >./data/discretisation.dat <<END_OF_DATA
-
 # ------------------------------------------------------------------------
 # Spatial discretization
 #
@@ -121,7 +121,7 @@ dwriteSolDeltaTime = 0.0
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 3
+NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
@@ -274,7 +274,7 @@ drhsMultiplyY = 1.0
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 
-ielementType = 2
+ielementType = 3
 
 # ------------------------------------------------------------------------
 
@@ -439,6 +439,33 @@ iintARIndicatorEX3YVel   = 1
 
 dintARboundEX3YVel       = 20.0
 
+
+END_OF_DATA
+
+cat >./data/paramtriang.dat <<END_OF_DATA
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+[PARAMTRIANG]
+
+# Filename of the parametrisation of the domain
+sParametrisation = '%{spredirectory}/${MESH}.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/${MESH}.tri'
+
+# Whether to convert the mesh into a pure triangular mesh or not
+iconvertToTriangleMesh = 0
+
+# This defines a percentage factor (0..1) how far the fine mesh
+# is disturbed. Should usually be set to 0.0 except for debug
+# purposes.
+ddisturbMeshFactor = 0.0
+
 END_OF_DATA
 
 cat >./data/postprocessing.dat <<END_OF_DATA
@@ -475,7 +502,7 @@ ipostprocTimeInterpSolution = 1
 # 4=Matlab
 # 5=binary GMV
 
-ioutputUCD = 0
+ioutputUCD = 1
 
 # Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
@@ -484,12 +511,12 @@ ioutputUCD = 0
 # For a value <> 0, the solution is projected down to the desired
 # level and written out there (saves disc space).
 
-ilevelUCD = 1
+ilevelUCD = 0
 
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = '%{spostdirectory}/u.${Dlambda}.${NLMAX}.vtk'
+sfilenameUCD = '%{spostdirectory}/u.${DLAMBDA}.${MESH}.${NLMAX}.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -632,7 +659,7 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 # =4: Calculate using volume forces with extended method, supporting mixed
 #     meshes, general elements and nonlinear viscosity.
 
-icalcBodyForces = 3
+icalcBodyForces = 0
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic
@@ -661,11 +688,11 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 1
+iwriteBodyForces = 0
 
 # Filename for the body forces
 
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_${DLAMBDA}_${NLMAX}'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 
 # ------------------------------------------------------------------------
 # Point values
@@ -704,7 +731,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_${DLAMBDA}_${NLMAX}'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_${DLAMBDA}_${MESH}_${NLMAX}'
 
 # ------------------------------------------------------------------------
 # Flux values
@@ -733,41 +760,6 @@ iwriteFluxValues = 0
 
 sfilenameFluxValues = '%{ssolutiondirectory}/flux'
 
-
-END_OF_DATA
-
-cat >./data/output.dat <<END_OF_DATA
-
-# ------------------------------------------------------------------------
-# Output parameters
-# 
-# This file contains parameters configuring the general output
-# of the program.
-# ------------------------------------------------------------------------
-
-[GENERALOUTPUT]
-
-# Level of output when reading parameters from the INI files.
-# =0=1: no output, =2: print parameters of .INI files to terminal
-MSHOW_Initialisation = 0
-
-# level of output to terminal
-# =0: no output, =1: basic output; =2: standard output; 
-# >=3: extended output with more and more details
-MT_OutputLevel = 1
-
-# Log file for messages. ='': No log file output.
-smsgLog = '%{slogdirectory}/output_${DLAMBDA}_${NLMAX}.log'
-
-# Log file for error messages; usually coincides with smsgLog to print
-# errors into the same log file as standard messages.
-# ='': Use the same log file as smsgLog
-serrorLog = ''
-
-# Log file for messages used in regression test benchmarks.
-# ='': No benchmark output (standard)
-sbenchLog = ''
-
 END_OF_DATA
 
 cat >./data/penalty.dat <<END_OF_DATA
@@ -788,7 +780,7 @@ dPenalty = 1.0
 ipenalty = 1
 
 # Penalty parameter (standard 1000)
-dlambda = 1e6
+dlambda = ${DLAMBDA}
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
@@ -813,7 +805,7 @@ ielementType_Penalty = 2
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = G3X3
+scubPenalty = MID_2D
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.
@@ -823,10 +815,10 @@ scubPenalty_sum = TRZ
 # ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
 
 ilocalrefinement     = 5
-
 END_OF_DATA
 
 ./cc2d
 
+done
 done
 done
