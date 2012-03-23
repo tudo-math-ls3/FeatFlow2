@@ -1177,17 +1177,6 @@ contains
       cflag = SYS_APPEND           
       call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
 
-      if (.not. bfileExists) then
-        write(iunit,'(A)') 'Level  Volume'
-      end if
-
-      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
-      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
-      call lsyssc_clearVector(rones1,1.0_dp)
-      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
-      dvalue=lsyssc_scalarProduct (rones1, rones2)
-      dvalue = dvalue/rproblem%dlambda
-      
       dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
                rproblem%RLEVELINFO(2)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
 
@@ -1202,8 +1191,22 @@ contains
         end do
       end if
 
+      if ((dlevel .eq. dble(nlmin)) .or. (.not. bfileExists)) then
+        write(iunit,'(A)') 'Level  Lambda Volume'
+      end if
+
+      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
+      call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
+      call lsyssc_clearVector(rones1,1.0_dp)
+      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
+      dvalue=lsyssc_scalarProduct (rones1, rones2)
+      dvalue = dvalue/rproblem%dlambda
+      
+
       dlevel = nlmin + i             
-      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
+      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) //'  '// &
+                                           trim(sys_sdL(rproblem%dlambda,3) //'  '//
+                                           trim(sys_sdEL(dvalue,6))
       call lsyssc_releaseVector(rones1)
       call lsyssc_releaseVector(rones2)
 
