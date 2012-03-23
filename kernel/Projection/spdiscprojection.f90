@@ -1211,7 +1211,7 @@ contains
       ctrafo = elem_igetTrafoType(celement)
       
       ! Get the number of vertices per element
-      NVE = elem_igetNVE(celement)
+      NVE = tria_getNVE(p_rtria, p_IelemList(1))
 
       ! Get the number of basis functions and derivatives
       NBAS = elem_igetNDofLoc(celement)
@@ -1422,7 +1422,7 @@ contains
       ctrafo = elem_igetTrafoType(celement)
       
       ! Get the number of vertices per element
-      NVE = elem_igetNVE(celement)
+      NVE = tria_getNVE(p_rtria, p_IelemList(1))
 
       ! Get the number of basis functions and derivatives
       NBAS = elem_igetNDofLoc(celement)
