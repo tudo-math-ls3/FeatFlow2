@@ -1193,7 +1193,7 @@ contains
 
       dlevel = nlmin + i             
 
-      if ((dlevel .ne. dble(nlmin)).or.(.not. bfileExists)) then
+      if ((dlevel .eq. dble(nlmin)).or.(.not. bfileExists)) then
         write(iunit,'(A)') 'Level  Volume'
       end if
 
