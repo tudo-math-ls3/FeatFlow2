@@ -1191,8 +1191,10 @@ contains
         end do
       end if
 
-      if ((dlevel .eq. dble(nlmin)) .or. (.not. bfileExists)) then
-        write(iunit,'(A)') 'Level  Lambda Volume'
+      dlevel = nlmin + i             
+
+      if ((dlevel .ne. dble(nlmin)).or.(.not. bfileExists)) then
+        write(iunit,'(A)') 'Level  Volume'
       end if
 
       call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
@@ -1201,12 +1203,7 @@ contains
       call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
       dvalue=lsyssc_scalarProduct (rones1, rones2)
       dvalue = dvalue/rproblem%dlambda
-      
-
-      dlevel = nlmin + i             
-      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) //'  '// &
-                                           trim(sys_sdL(rproblem%dlambda,3) //'  '//
-                                           trim(sys_sdEL(dvalue,6))
+      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
       call lsyssc_releaseVector(rones1)
       call lsyssc_releaseVector(rones2)
 
