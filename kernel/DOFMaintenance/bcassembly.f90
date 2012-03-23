@@ -1166,7 +1166,7 @@ contains
           Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
         end if
         
-      case (EL_P1,EL_Q1,EL_QPWL4T_2D)
+      case (EL_P1,EL_Q1,EL_QPW4P1_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
