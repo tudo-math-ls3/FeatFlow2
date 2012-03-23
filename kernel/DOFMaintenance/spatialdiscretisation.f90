@@ -862,6 +862,12 @@ contains
       return
     end if
 
+    if (celement .eq. EL_QPW4P2_2D) then
+      ! Piecewise linear cubature on sub-triangles on a quad
+      ccubType = CUB_P4TG3_2D
+      return
+    end if
+
     select case (elem_igetDimension(celement))
     case (NDIM1D)
     

@@ -1273,7 +1273,7 @@ contains
         end if
 
 
-      case (EL_P2,EL_Q2)
+      case (EL_P2,EL_Q2,EL_QPW4P2_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then

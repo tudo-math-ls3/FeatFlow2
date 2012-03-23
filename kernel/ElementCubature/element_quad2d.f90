@@ -63,6 +63,7 @@ module element_quad2d
   public :: elem_eval_Q2H_2D
   public :: elem_eval_QP1_2D
   public :: elem_eval_QPW4P1_2D
+  public :: elem_eval_QPW4P2_2D
   public :: elem_eval_QPW4DCP1_2D
   public :: elem_eval_E030_2D
   public :: elem_eval_EB30_2D
@@ -10026,11 +10027,8 @@ contains
   integer, parameter :: NBAS = 4
 
   ! Local variables
-  real(DP) :: ddet,dx,dy
+  real(DP) :: ddet,dx,dy,a11,a12,a21,a22
   integer :: i,j
-  
-  ! derivatives on reference element
-  real(DP), dimension(NBAS,NDIM2D) :: DrefDer
   
     ! Calculate function values?
     if(Bder(DER_FUNC2D)) then
@@ -10103,7 +10101,7 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
 
       ! Loop through all elements
-      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy)&
+      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy,a11,a12,a21,a22)&
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
@@ -10113,6 +10111,10 @@ contains
           ! Get the point coordinates
           dx = reval%p_DpointsRef(1,i,j)
           dy = reval%p_DpointsRef(2,i,j)
+          a11 = reval%p_Djac(1,i,j)
+          a21 = reval%p_Djac(2,i,j)
+          a12 = reval%p_Djac(3,i,j)
+          a22 = reval%p_Djac(4,i,j)
           
           ! Get jacobian determinant
           ddet = 1.0_DP / reval%p_Ddetj(i,j)
@@ -10123,32 +10125,32 @@ contains
             if (dy .le. -dx) then
               ! We are in T1.
               
-              Dbas(1,DER_DERIV2D_X,i,j) = ((-0.5_DP)*reval%p_Djac(4,i,j) - (-0.5_DP)*reval%p_Djac(2,i,j))*ddet
-              Dbas(2,DER_DERIV2D_X,i,j) = (( 0.5_DP)*reval%p_Djac(4,i,j) - (-0.5_DP)*reval%p_Djac(2,i,j))*ddet
+              Dbas(1,DER_DERIV2D_X,i,j) = ((-0.5_DP)*a22 - (-0.5_DP)*a21)*ddet
+              Dbas(2,DER_DERIV2D_X,i,j) = (( 0.5_DP)*a22 - (-0.5_DP)*a21)*ddet
               Dbas(3,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas(4,DER_DERIV2D_X,i,j) = 0.0_DP
-              Dbas(5,DER_DERIV2D_X,i,j) = (-(1.0_DP)*reval%p_Djac(2,i,j))*ddet
+              Dbas(5,DER_DERIV2D_X,i,j) = (-(1.0_DP)*a21)*ddet
 
-              Dbas(1,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*reval%p_Djac(3,i,j) + (-0.5_DP)*reval%p_Djac(1,i,j))*ddet
-              Dbas(2,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*reval%p_Djac(3,i,j) + (-0.5_DP)*reval%p_Djac(1,i,j))*ddet
+              Dbas(1,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*a12 + (-0.5_DP)*a11)*ddet
+              Dbas(2,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*a12 + (-0.5_DP)*a11)*ddet
               Dbas(3,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas(4,DER_DERIV2D_Y,i,j) = 0.0_DP
-              Dbas(5,DER_DERIV2D_Y,i,j) = ((1.0_DP)*reval%p_Djac(1,i,j))*ddet
+              Dbas(5,DER_DERIV2D_Y,i,j) = ((1.0_DP)*a11)*ddet
 
             else
               ! We are in T2
 
               Dbas(1,DER_DERIV2D_X,i,j) = 0.0_DP
-              Dbas(2,DER_DERIV2D_X,i,j) = (( 0.5_DP)*reval%p_Djac(4,i,j) - (-0.5_DP)*reval%p_Djac(2,i,j))*ddet
-              Dbas(3,DER_DERIV2D_X,i,j) = (( 0.5_DP)*reval%p_Djac(4,i,j) - ( 0.5_DP)*reval%p_Djac(2,i,j))*ddet
+              Dbas(2,DER_DERIV2D_X,i,j) = (( 0.5_DP)*a22 - (-0.5_DP)*a21)*ddet
+              Dbas(3,DER_DERIV2D_X,i,j) = (( 0.5_DP)*a22 - ( 0.5_DP)*a21)*ddet
               Dbas(4,DER_DERIV2D_X,i,j) = 0.0_DP
-              Dbas(5,DER_DERIV2D_X,i,j) = ((-1.0_DP)*reval%p_Djac(4,i,j))*ddet
+              Dbas(5,DER_DERIV2D_X,i,j) = ((-1.0_DP)*a22)*ddet
 
               Dbas(1,DER_DERIV2D_Y,i,j) = 0.0_DP
-              Dbas(2,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*reval%p_Djac(3,i,j) + (-0.5_DP)*reval%p_Djac(1,i,j))*ddet
-              Dbas(3,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*reval%p_Djac(3,i,j) + ( 0.5_DP)*reval%p_Djac(1,i,j))*ddet
+              Dbas(2,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*a12 + (-0.5_DP)*a11)*ddet
+              Dbas(3,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*a12 + ( 0.5_DP)*a11)*ddet
               Dbas(4,DER_DERIV2D_Y,i,j) = 0.0_DP
-              Dbas(5,DER_DERIV2D_Y,i,j) = (-(-1.0_DP)*reval%p_Djac(3,i,j))*ddet
+              Dbas(5,DER_DERIV2D_Y,i,j) = (-(-1.0_DP)*a12)*ddet
               
             end if
           else
@@ -10158,30 +10160,30 @@ contains
 
               Dbas(1,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas(2,DER_DERIV2D_X,i,j) = 0.0_DP
-              Dbas(3,DER_DERIV2D_X,i,j) = (( 0.5_DP)*reval%p_Djac(4,i,j) - (0.5_DP)*reval%p_Djac(2,i,j))*ddet
-              Dbas(4,DER_DERIV2D_X,i,j) = ((-0.5_DP)*reval%p_Djac(4,i,j) - (0.5_DP)*reval%p_Djac(2,i,j))*ddet
-              Dbas(5,DER_DERIV2D_X,i,j) = (-(-1.0_DP)*reval%p_Djac(2,i,j))*ddet
+              Dbas(3,DER_DERIV2D_X,i,j) = (( 0.5_DP)*a22 - (0.5_DP)*a21)*ddet
+              Dbas(4,DER_DERIV2D_X,i,j) = ((-0.5_DP)*a22 - (0.5_DP)*a21)*ddet
+              Dbas(5,DER_DERIV2D_X,i,j) = (-(-1.0_DP)*a21)*ddet
 
               Dbas(1,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas(2,DER_DERIV2D_Y,i,j) = 0.0_DP
-              Dbas(3,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*reval%p_Djac(3,i,j) + (0.5_DP)*reval%p_Djac(1,i,j))*ddet
-              Dbas(4,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*reval%p_Djac(3,i,j) + (0.5_DP)*reval%p_Djac(1,i,j))*ddet
-              Dbas(5,DER_DERIV2D_Y,i,j) = ((-1.0_DP)*reval%p_Djac(1,i,j))*ddet
+              Dbas(3,DER_DERIV2D_Y,i,j) = (-( 0.5_DP)*a12 + (0.5_DP)*a11)*ddet
+              Dbas(4,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*a12 + (0.5_DP)*a11)*ddet
+              Dbas(5,DER_DERIV2D_Y,i,j) = ((-1.0_DP)*a11)*ddet
 
             else
               ! We are in T4
 
-              Dbas(1,DER_DERIV2D_X,i,j) = ((-0.5_DP)*reval%p_Djac(4,i,j) - (-0.5_DP)*reval%p_Djac(2,i,j))*ddet
+              Dbas(1,DER_DERIV2D_X,i,j) = ((-0.5_DP)*a22 - (-0.5_DP)*a21)*ddet
               Dbas(2,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas(3,DER_DERIV2D_X,i,j) = 0.0_DP
-              Dbas(4,DER_DERIV2D_X,i,j) = ((-0.5_DP)*reval%p_Djac(4,i,j) - (0.5_DP)*reval%p_Djac(2,i,j))*ddet
-              Dbas(5,DER_DERIV2D_X,i,j) = ((1.0_DP)*reval%p_Djac(4,i,j))*ddet
+              Dbas(4,DER_DERIV2D_X,i,j) = ((-0.5_DP)*a22 - (0.5_DP)*a21)*ddet
+              Dbas(5,DER_DERIV2D_X,i,j) = ((1.0_DP)*a22)*ddet
 
-              Dbas(1,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*reval%p_Djac(3,i,j) + (-0.5_DP)*reval%p_Djac(1,i,j))*ddet
+              Dbas(1,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*a12 + (-0.5_DP)*a11)*ddet
               Dbas(2,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas(3,DER_DERIV2D_Y,i,j) = 0.0_DP
-              Dbas(4,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*reval%p_Djac(3,i,j) + (0.5_DP)*reval%p_Djac(1,i,j))*ddet
-              Dbas(5,DER_DERIV2D_Y,i,j) = (-(1.0_DP)*reval%p_Djac(3,i,j))*ddet
+              Dbas(4,DER_DERIV2D_Y,i,j) = (-(-0.5_DP)*a12 + (0.5_DP)*a11)*ddet
+              Dbas(5,DER_DERIV2D_Y,i,j) = (-(1.0_DP)*a12)*ddet
               
             end if
           end if
@@ -10490,6 +10492,361 @@ contains
               Dbas( 9,DER_DERIV2D_Y,i,j) = -reval%p_Djac(3,i,j)*ddet
               Dbas(10,DER_DERIV2D_Y,i,j) =  reval%p_Djac(3,i,j)*ddet
               Dbas(11,DER_DERIV2D_Y,i,j) = -reval%p_Djac(3,i,j)*ddet
+              
+            end if
+          end if
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+      
+    end if
+  
+  end subroutine
+  
+  !************************************************************************
+  
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+ subroutine elem_eval_QPW4P2_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! This element is piecewisely defined by 4 triangles in one
+  ! quad. There are 13 local DOFs: 
+  !  - the four corners
+  !  - the four edge midpoints
+  !  - the element center
+  !  - the four edge midpoints of the inner edges
+  ! On every triangle, we have a P2 space.
+  !
+  !  -1,1                           1,1
+  !    (4)-----------(7)-----------(3)
+  !     |`.                       ,'|
+  !     |  `.                   ,'  |
+  !     |    `.       T3      ,'    |
+  !     |     (13)         (12)     |
+  !     |        `.       ,'        |
+  !     |          `.   ,'          |
+  !    (8)   T4      (9)      T2   (6)
+  !     |          ,'   `.          |
+  !     |        ,'       `.        |
+  !     |     (10)         (11)     |
+  !     |    ,'       T1      `.    |
+  !     |  ,'                   `.  |
+  !     |,'                       `.|
+  !    (1)-----------(5)-----------(2)
+  ! -1,-1                           1,-1  
+  !
+  ! For every point we have to decide in which
+  ! sub-triangle we are.
+  !
+  ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+  ! Calculate the line a0->a2 and chech whether it is left
+  ! or right. Calculate the line a1->a3 and check whether it is
+  ! left or right. That way, we know in which subtriangle the
+  ! point is.
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 4
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy,a11,a12,a21,a22
+  integer :: i,j
+  
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+      
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dx,dy)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+
+          ! Figure out in which triangle we are
+          if (dy .le. dx) then
+            ! We are in T1 or T2.
+            if (dy .le. -dx) then
+              ! We are in T1.
+              
+              Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 2,DER_FUNC2D,i,j) = dx/6-dy/6+dx**2/2-dx*dy/3-dy**2/6
+              Dbas( 3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 4,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 5,DER_FUNC2D,i,j) = -dx**2+dy**2
+              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 9,DER_FUNC2D,i,j) = 1+2*dx+dy+2*dx*dy
+              Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx*dy-2*dy**2
+              Dbas(11,DER_FUNC2D,i,j) = -2.E0/3.E0*dx+2.E0/3.E0*dy-2.E0/3.E0*dx*dy+2.E0/3.E0*dy**2
+              Dbas(12,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(13,DER_FUNC2D,i,j) = 0.0_DP
+
+            else
+              ! We are in T2
+
+              Dbas( 1,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 2,DER_FUNC2D,i,j) = dx/6-dy/6-dx**2/6-dx*dy/3+dy**2/2
+              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 4,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 6,DER_FUNC2D,i,j) = dx**2-dy**2
+              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 9,DER_FUNC2D,i,j) = 1-dx-2*dy+2*dx*dy
+              Dbas(10,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(11,DER_FUNC2D,i,j) = -2.E0/3.E0*dx+2.E0/3.E0*dy+2.E0/3.E0*dx**2-2.E0/3.E0*dx*dy
+              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx**2-2*dx*dy
+              Dbas(13,DER_FUNC2D,i,j) = 0.0_DP
+              
+            end if
+          else
+            ! We are in T3 or T4
+            if (dy .gt. -dx) then
+              ! We are in T3
+
+              Dbas( 1,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 4,DER_FUNC2D,i,j) = dx/2-dy/2+dx**2/2-dx*dy+dy**2/2
+              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 7,DER_FUNC2D,i,j) = -dx**2+dy**2
+              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 9,DER_FUNC2D,i,j) = 1-3*dy+2*dy**2
+              Dbas(10,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(11,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx*dy-2*dy**2
+              Dbas(13,DER_FUNC2D,i,j) = -2*dx+2*dy+2*dx*dy-2*dy**2
+
+            else
+              ! We are in T4
+
+              Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 4,DER_FUNC2D,i,j) = dx/2-dy/2+dx**2/2-dx*dy+dy**2/2
+              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 8,DER_FUNC2D,i,j) = dx**2-dy**2
+              Dbas( 9,DER_FUNC2D,i,j) = 1+3*dx+2*dx**2
+              Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx**2-2*dx*dy
+              Dbas(11,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(12,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(13,DER_FUNC2D,i,j) = -2*dx+2*dy-2*dx**2+2*dx*dy
+              
+            end if
+          end if
+
+        end do ! i
+      
+      end do ! j
+      !$omp end parallel do
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy,a11,a12,a21,a22)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          
+          a11 = reval%p_Djac(1,i,j)
+          a21 = reval%p_Djac(2,i,j)
+          a12 = reval%p_Djac(3,i,j)
+          a22 = reval%p_Djac(4,i,j)
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! Figure out in which triangle we are
+          if (dy .le. dx) then
+            ! We are in T1 or T2.
+            if (dy .le. -dx) then
+              ! We are in T1.
+              
+              Dbas( 1,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy+1+2*dx)/2
+              Dbas( 2,DER_DERIV2D_X,i,j) = ddet*(a22+6*a22*dx-2*a22*dy+a21+2*a21*dx+2*a21*dy)/6
+              Dbas( 3,DER_DERIV2D_X,i,j) = 0
+              Dbas( 4,DER_DERIV2D_X,i,j) = 0
+              Dbas( 5,DER_DERIV2D_X,i,j) = -2*ddet*(a22*dx+a21*dy)
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0
+              Dbas( 9,DER_DERIV2D_X,i,j) = -ddet*(-2*a22-2*a22*dy+a21+2*a21*dx)
+              Dbas(10,DER_DERIV2D_X,i,j) = 2*ddet*(-a22-dy*a22+a21+a21*dx+2*a21*dy)
+              Dbas(11,DER_DERIV2D_X,i,j) = 2.0_DP/3.0_DP*ddet*(-a22-dy*a22-a21+a21*dx-2*a21*dy)
+              Dbas(12,DER_DERIV2D_X,i,j) = 0
+              Dbas(13,DER_DERIV2D_X,i,j) = 0
+                                           
+              Dbas( 1,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy+1+2*dx)/2
+              Dbas( 2,DER_DERIV2D_Y,i,j) = -ddet*(a12+6*a12*dx-2*a12*dy+a11+2*a11*dx+2*a11*dy)/6
+              Dbas( 3,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 4,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 2*ddet*(a12*dx+dy*a11)
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 9,DER_DERIV2D_Y,i,j) = ddet*(-2*a12-2*dy*a12+a11+2*a11*dx)
+              Dbas(10,DER_DERIV2D_Y,i,j) = -2*ddet*(-a12-dy*a12+a11+a11*dx+2*dy*a11)
+              Dbas(11,DER_DERIV2D_Y,i,j) = -2.0_DP/3.0_DP*ddet*(-a12-dy*a12-a11+a11*dx-2*dy*a11)
+              Dbas(12,DER_DERIV2D_Y,i,j) = 0
+              Dbas(13,DER_DERIV2D_Y,i,j) = 0
+
+            else
+              ! We are in T2
+
+              Dbas( 1,DER_DERIV2D_X,i,j) = 0
+              Dbas( 2,DER_DERIV2D_X,i,j) = -ddet*(-a22+2*a22*dx+2*a22*dy-a21-2*a21*dx+6*a21*dy)/6
+              Dbas( 3,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy-1+2*dx)/2
+              Dbas( 4,DER_DERIV2D_X,i,j) = 0
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0
+              Dbas( 6,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+a21*dy)
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0
+              Dbas( 9,DER_DERIV2D_X,i,j) = -ddet*(a22-2*a22*dy-2*a21+2*a21*dx)
+              Dbas(10,DER_DERIV2D_X,i,j) = 0
+              Dbas(11,DER_DERIV2D_X,i,j) = 2.0_DP/3.0_DP*ddet*(-a22+2*a22*dx-a22*dy-a21+a21*dx)
+              Dbas(12,DER_DERIV2D_X,i,j) = -2*ddet*(-a22+2*a22*dx+a22*dy+a21-a21*dx)
+              Dbas(13,DER_DERIV2D_X,i,j) = 0
+                                           
+              Dbas( 1,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 2,DER_DERIV2D_Y,i,j) = ddet*(-a12+2*a12*dx+2*a12*dy-a11-2*a11*dx+6*a11*dy)/6
+              Dbas( 3,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy-1+2*dx)/2
+              Dbas( 4,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 6,DER_DERIV2D_Y,i,j) = -2*ddet*(a12*dx+a11*dy)
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 9,DER_DERIV2D_Y,i,j) = ddet*(a12-2*dy*a12-2*a11+2*a11*dx)
+              Dbas(10,DER_DERIV2D_Y,i,j) = 0
+              Dbas(11,DER_DERIV2D_Y,i,j) = -2.0_DP/3.0_DP*ddet*(-a12+2*a12*dx-dy*a12-a11+a11*dx)
+              Dbas(12,DER_DERIV2D_Y,i,j) = 2*ddet*(-a12+2*a12*dx+dy*a12+a11-a11*dx)
+              Dbas(13,DER_DERIV2D_Y,i,j) = 0
+              
+            end if
+          else
+            ! We are in T3 or T4
+            if (dy .gt. -dx) then
+              ! We are in T3
+
+              Dbas( 1,DER_DERIV2D_X,i,j) = 0
+              Dbas( 2,DER_DERIV2D_X,i,j) = 0
+              Dbas( 3,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy-1+2*dx)/2
+              Dbas( 4,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy+1+2*dx)/2
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0
+              Dbas( 7,DER_DERIV2D_X,i,j) = -2*ddet*(a22*dx+a21*dy)
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0
+              Dbas( 9,DER_DERIV2D_X,i,j) = -a21*ddet*(-3+4*dy)
+              Dbas(10,DER_DERIV2D_X,i,j) = 0
+              Dbas(11,DER_DERIV2D_X,i,j) = 0
+              Dbas(12,DER_DERIV2D_X,i,j) = 2*ddet*(a22-a22*dy-a21+a21*dx+2*a21*dy)
+              Dbas(13,DER_DERIV2D_X,i,j) = -2*ddet*(a22-dy*a22+a21+a21*dx-2*a21*dy)
+                                           
+              Dbas( 1,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 2,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 3,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy-1+2*dx)/2
+              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-2*dy+1+2*dx)/2
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 2*ddet*(a12*dx+a11*dy)
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 9,DER_DERIV2D_Y,i,j) = a11*ddet*(-3+4*dy)
+              Dbas(10,DER_DERIV2D_Y,i,j) = 0
+              Dbas(11,DER_DERIV2D_Y,i,j) = 0
+              Dbas(12,DER_DERIV2D_Y,i,j) = -2*ddet*(a12-dy*a12-a11+a11*dx+2*a11*dy)
+              Dbas(13,DER_DERIV2D_Y,i,j) = 2*ddet*(a12-dy*a12+a11+a11*dx-2*a11*dy)
+
+            else
+              ! We are in T4
+
+              Dbas( 1,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy+1+2*dx)/2
+              Dbas( 2,DER_DERIV2D_X,i,j) = 0
+              Dbas( 3,DER_DERIV2D_X,i,j) = 0
+              Dbas( 4,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy+1+2*dx)/2
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0
+              Dbas( 8,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+dy*a21)
+              Dbas( 9,DER_DERIV2D_X,i,j) = a22*ddet*(3+4*dx)
+              Dbas(10,DER_DERIV2D_X,i,j) = -2*ddet*(a22+2*a22*dx+a22*dy-a21-a21*dx)
+              Dbas(11,DER_DERIV2D_X,i,j) = 0
+              Dbas(12,DER_DERIV2D_X,i,j) = 0
+              Dbas(13,DER_DERIV2D_X,i,j) = -2*ddet*(a22+2*a22*dx-a22*dy+a21+a21*dx)
+                                           
+              Dbas( 1,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy+1+2*dx)/2
+              Dbas( 2,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 3,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-2*dy+1+2*dx)/2
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 8,DER_DERIV2D_Y,i,j) = -2*ddet*(a12*dx+a11*dy)
+              Dbas( 9,DER_DERIV2D_Y,i,j) = -a12*ddet*(3+4*dx)
+              Dbas(10,DER_DERIV2D_Y,i,j) = 2*ddet*(a12+2*a12*dx+a12*dy-a11-a11*dx)
+              Dbas(11,DER_DERIV2D_Y,i,j) = 0
+              Dbas(12,DER_DERIV2D_Y,i,j) = 0
+              Dbas(13,DER_DERIV2D_Y,i,j) = 2*ddet*(a12+2*a12*dx-a12*dy+a11+a11*dx)
               
             end if
           end if
