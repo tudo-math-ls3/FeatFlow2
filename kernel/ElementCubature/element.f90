@@ -429,6 +429,9 @@ module element
   
   ! ID of piecewise linear element, 4 triangles in a quad
   integer(I32), parameter, public :: EL_QPW4P1_2D = EL_2D + 15
+
+  ! ID of piecewise discontinous linear element, 4 triangles in a quad
+  integer(I32), parameter, public :: EL_QPW4DCP1_2D = EL_2D + 17
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
@@ -716,7 +719,7 @@ module element
   integer, parameter, public :: EL_MAXNDOF_PER_FACE = 3
   
   ! Maximum number of DOFs per element.
-  integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 6
+  integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 11
 
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 1x1-matrix=1 elements
@@ -894,6 +897,8 @@ contains
       elem_igetID = EL_DCQP1_2D
     else if (selem .eq. "EL_DCQP2_2D") then
       elem_igetID = EL_DCQP2_2D
+    else if (selem .eq. "EL_QPW4DCP1_2D") then
+      elem_igetID = EL_QPW4DCP1_2D
     
     ! -= 3D Tetrahedron Elements =-
     else if (selem .eq. "EL_P0_3D" .or. selem .eq. "EL_E000_3D") then
@@ -1089,6 +1094,8 @@ contains
       sname = 'EL_DG_T1_2D'
     case (EL_DG_T2_2D)
       sname = 'EL_DG_T2_2D'
+    case (EL_QPW4DCP1_2D)
+      sname = 'EL_QPW4DCP1_2D'
 
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
@@ -1326,11 +1333,11 @@ contains
     case (EL_DG_T2_2D,EL_DCQP2_2D)
       ! local DOFs for 2D DG Taylor quadratic
       ndofAtElement = 6
-      
     case (EL_DG_Q1_2D)
       ! local DOFs for DG Q1
       ndofAtElement = 4
-    
+    case (EL_QPW4DCP1_2D)
+      ndofAtElement = 11
       
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
@@ -1546,7 +1553,7 @@ contains
     ! affine quadrilateral/hexahedral transformation, need to be handled
     ! specially here.
 
-    if (celement .eq. EL_QPW4P1_2D) then
+    if (celement .eq. EL_QPW4P1_2D .or. celement .eq. EL_QPW4DCP1_2D) then
       elem_igetTrafoType = TRAFO_ID_PWLINSIMCUBE + TRAFO_DIM_2D
       return
     end if
@@ -1704,6 +1711,9 @@ contains
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 6
     case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_QPW4DCP1_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
 
@@ -1926,7 +1936,8 @@ contains
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D, EL_DG_Q2_2D, EL_QPW4P1_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+          EL_DG_Q1_2D, EL_DG_Q2_2D, EL_QPW4P1_2D, &
+          EL_DCQP1_2D, EL_DCQP2_2D, EL_QPW4DCP1_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     
@@ -2140,6 +2151,8 @@ contains
       case (EL_DG_T2_2D)
         call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+        bwrapSim2 = .true.
+      case (EL_QPW4DCP1_2D)
         bwrapSim2 = .true.
 
       ! 3D elements
@@ -3053,6 +3066,9 @@ contains
 
     case (EL_DCQP2_2D)
       call elem_eval_DCQP2_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_QPW4DCP1_2D)
+      call elem_eval_QPW4DCP1_2D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D tetrahedron elements

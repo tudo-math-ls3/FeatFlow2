@@ -277,6 +277,9 @@ contains
     case (EL_DG_T2_2D, EL_DCTP2_2D, EL_DCQP2_2D)
       ! DOF`s in the cell midpoints
       NDFG_uniform2D = 6*rtriangulation%NEL
+    case (EL_QPW4DCP1_2D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform2D = 11*rtriangulation%NEL
     end select
     
     end function
@@ -693,6 +696,9 @@ contains
         case (EL_DG_T2_2D, EL_DCTP2_2D, EL_DCQP2_2D)
           ! DOF`s for DG_T2_1D
           call dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
+          return
+        case (EL_QPW4DCP1_2D)
+          call dof_locGlobUniMult_QPW4DCP1_2D(IelIdx, IdofGlob)
           return
         end select
         
@@ -2574,7 +2580,50 @@ contains
     end do
 
   end subroutine
- 
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_QPW4DCP1_2D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T2_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,j
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      do j = 1, 11
+        IdofGlob(j,i) = 11*(IelIdx(i)-1) + j
+      end do
+    end do
+
+  end subroutine
+   
   ! ***************************************************************************
   
 !<subroutine>
