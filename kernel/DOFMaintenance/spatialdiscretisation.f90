@@ -856,7 +856,7 @@ contains
     ioperation = SPDISC_OPTP_MASS
     if (present(iopertype)) ioperation = iopertype
 
-    if (celement .eq. EL_QPWL4T_2D) then
+    if (celement .eq. EL_QPW4P1_2D) then
       ! Piecewise linear cubature on sub-triangles on a quad
       ccubType = CUB_P4TG3_2D
       return

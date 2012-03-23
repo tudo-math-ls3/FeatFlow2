@@ -250,7 +250,7 @@ contains
     case (EL_QP1)
       ! 3 DOF`s in the midpoint of the element.
       NDFG_uniform2D = 3*rtriangulation%NEL
-    case (EL_QPWL4T_2D)
+    case (EL_QPW4P1_2D)
       ! 1 DOF in each vertex and one in the element midpoint
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NEL
     case (EL_P1T, EL_Q1T)
@@ -655,10 +655,10 @@ contains
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T(p_2darray, IelIdx, IdofGlob)
           return
-        case (EL_QPWL4T_2D)
+        case (EL_QPW4P1_2D)
           ! DOF`s in the vertices and element midpoints
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-          call dof_locGlobUniMult_QPWL4T(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NVT)
+          call dof_locGlobUniMult_QPW4P1(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NVT)
           return
         case (EL_Q1TB)
           ! DOF`s in the edges
@@ -1183,7 +1183,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine dof_locGlobUniMult_QPWL4T(IverticesAtElement, IelIdx, IdofGlob, NVT)
+  pure subroutine dof_locGlobUniMult_QPW4P1(IverticesAtElement, IelIdx, IdofGlob, NVT)
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob

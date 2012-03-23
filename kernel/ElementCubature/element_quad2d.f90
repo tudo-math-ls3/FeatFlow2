@@ -62,7 +62,7 @@ module element_quad2d
   public :: elem_eval_Q2_2D
   public :: elem_eval_Q2H_2D
   public :: elem_eval_QP1_2D
-  public :: elem_eval_QPWL4T_2D
+  public :: elem_eval_QPW4P1_2D
   public :: elem_eval_E030_2D
   public :: elem_eval_EB30_2D
   public :: elem_eval_Q1TBNP_2D
@@ -9955,7 +9955,7 @@ contains
   pure &
 #endif
 
- subroutine elem_eval_QPWL4T_2D (celement, reval, Bder, Dbas)
+ subroutine elem_eval_QPW4P1_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic
