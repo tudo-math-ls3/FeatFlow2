@@ -40,7 +40,7 @@ ielementType_Penalty = 3
 # cubature formula for Penalty matrix. 
 # ="": use default cubature formula.
 
-scubPenalty = Gaus_3x3
+scubPenalty = G3x3
 
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.
@@ -51,6 +51,11 @@ scubPenalty_sum = TRZ
 
 ilocalrefinement     = 5
 
-# Calculate the mass of the penalty matrix
+# Calculate the mass of the penalty matrix (default 0 / 1 for activation)
 
-iareea = 0
+iarea = 1
+
+# Output the penalty matrix to txt file (default 0 / 1 for activation)
+
+ipenmat = 0
+sfilenamePenaltyMatrix = '%{ssolutiondirectory}/PenaltyMatrix'

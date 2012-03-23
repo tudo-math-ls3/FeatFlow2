@@ -94,6 +94,7 @@ module ccgeneraldiscretisation
   use cccallback
   use ccnonlinearcoreinit
   use matrixio
+  use io
 
   implicit none
   
@@ -861,8 +862,10 @@ contains
      type(t_bilinearForm) :: rform
     ! Calculating mass of penalty matrix
      type(t_vectorScalar) :: rones1,rones2
-     real(dp) :: dvalue
-     integer :: iareea
+     real(dp) :: dvalue,dlevel,dtemp
+     integer :: i,nlmin,iunit,iarea,ipenmat,cflag,ielementType,ielementType_penalty
+     character(len=SYS_STRLEN) :: sfilenamePenaltyMatrix
+     logical :: bfileExists
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
@@ -1153,28 +1156,65 @@ contains
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is in the collection.
 
-    call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
+    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','IELEMENTTYPE',ielementType,3)
+    call parlst_getvalue_int(rproblem%rparamList,'CC-PENALTY','IELEMENTTYPE_PENALTY',ielementType_penalty,ielementType)
+    call parlst_getvalue_int(rproblem%rparamList,'CC-DISCRETISATION','NLMIN',nlmin,1)
+
+    if (ielementType_penalty .ne. ielementType) then
+      call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
+    end if
+
     call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                  rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
 
     ! Calculate areea of penalty object using the matrix entries.
-    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
-          'iareea',iareea,0)
-    if (iareea .eq. 1) then
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
+    if (iarea .ne. 0) then
+      ! Open file for output
+      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
+      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+
+      cflag = SYS_APPEND           
+      call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
+
+      if (.not. bfileExists) then
+        write(iunit,'(A)') 'Level  Volume'
+      end if
+
       call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones1,.true.,.true.)
       call lsyssc_createVecIndMat (rasmTempl%rmatrixPenalty,rones2,.true.)
       call lsyssc_clearVector(rones1,1.0_dp)
-      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,&
-                                rones1, rones2, 1.0_DP, 0.0_DP)
+      call lsyssc_scalarMatVec (rasmTempl%rmatrixPenalty,rones1, rones2, 1.0_DP, 0.0_DP)
       dvalue=lsyssc_scalarProduct (rones1, rones2)
-      write(*,*)'No of elements :', & 
-                 rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL
-      write(*,*) 'Area value =',dvalue
+      dvalue = dvalue/rproblem%dlambda
+      
+      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+               rproblem%RLEVELINFO(2)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
+
+      if (dlevel .lt. 4.0_dp) then
+        i = 0
+      else
+        i = 0
+        dtemp = dlevel
+        do while (dtemp .ge. 4.0_dp)
+          dtemp = dtemp / 4.0_dp
+          i = i+1
+        end do
+      end if
+
+      dlevel = nlmin + i             
+      write(iunit,ADVANCE='YES',FMT='(A)') trim(sys_sdL(dlevel,1)) // ' '  // trim(sys_sdEL(dvalue,6))
       call lsyssc_releaseVector(rones1)
       call lsyssc_releaseVector(rones2)
-    end if 
 
-!    call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
+      close(iunit)
+    end if 
+    
+    ! Output the matrix for every level
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IPENMAT',ipenmat,0)
+    if (ipenmat .ne. 0) then
+      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
+    end if
 
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
     
@@ -1331,6 +1371,7 @@ contains
     integer :: i
   
     ! Initialise all levels...
+
     do i=rproblem%NLMIN,rproblem%NLMAX
 
       ! Generate the matrices on this level.
