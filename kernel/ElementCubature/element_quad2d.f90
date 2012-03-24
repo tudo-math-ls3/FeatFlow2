@@ -499,6 +499,18 @@ contains
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
+  !
+  ! We have to compute the basis functions in the points.
+  ! I.e., we have to evaluate
+  !
+  !    phi_k(x) = Pk(sigma^-1(x)) = Pk^(x^)
+  !
+  ! with x being the real world coordinates, x^ the coordinates
+  ! in the reference element and sigma: x^ -> x the mapping
+  ! between the reference and the real element.
+  ! So just evaluate the basis functions in the points x^ 
+  ! on the reference element
+  
 !  if (el_bder(DER_FUNC)) then
     Dbas(1,DER_FUNC) = 0.25E0_DP*(1E0_DP-dx)*(1E0_DP-dy)
     Dbas(2,DER_FUNC) = 0.25E0_DP*(1E0_DP+dx)*(1E0_DP-dy)
@@ -511,7 +523,44 @@ contains
   ! derivative of the polynomials and multiplying them with the
   ! inverse of the transformation matrix (in each point) as
   ! stated above.
+  !
+  ! We have to evaluate "grad(phi(x))". This is done by
+  ! using the chain rule as follows:
+  !
+  !    grad(phi_k(x))^T = D phi_k(x)
+  !                     = D Pk(sigma^-1(x))
+  !                     = D Pk(x^) * D sigma^-1(x)
+  !
+  ! Now note that the Jacobian "D sigma(x^)" of the mapping
+  ! between the reference and the real element is given in Djac:
+  !
+  !    D sigma(x^) = ( Djac(1) Djac(3) )
+  !                  ( Djac(2) Djac(4) )
+  !
+  ! Its inverse then reads
+  !
+  !    D sigma^-1(x) = 1/det ( -Djac(4)  Djac(3) )
+  !                          (  Djac(2) -Djac(1) )
+  !
+  ! with det = Djac(1)*Djac(4) - Djac(2)*Djac(3).
+  ! So all in all, the derivative can be computed as follows:
+  !
+  !    grad(phi_k(x))^T = D Pk(x^) * D sigma^-1(x)
+  !                     = ( dx(Pk(x^)) dy(Pk(x^)) ) * 1/det ( -Djac(4)  Djac(3) )
+  !                                                         (  Djac(2) -Djac(1) )
+  ! i.e., we have
+  !
+  !   dx(phi_k(x)) = 1/det ( -dx(Pk(x^))*Djac(4) + dy(Pk(x^))*Djac(2) )
+  !   dy(phi_k(x)) = 1/det (  dx(Pk(x^))*Djac(3) - dy(Pk(x^))*Djac(1) )
+  !
+  
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+
+    ! We take ddet = 0.25/det and thus, put the constant factor 0.25
+    ! in front of the basis functions into this multiplier.
+    ! Dhelp receives the derivatives dx(Pk(x^)) and dy(Pk(x^))
+    ! without the constant factor 0.25 (saves some multiplications).
+
     dxj = 0.25E0_DP / ddetj
     
     ! x- and y-derivatives on reference element
@@ -9140,6 +9189,19 @@ contains
     ! Calculate function values?
     if(Bder(DER_FUNC2D)) then
       
+      ! If function values are desired, calculate them.
+      !
+      ! We have to compute the basis functions in the points.
+      ! I.e., we have to evaluate
+      !
+      !    phi_k(x) = Pk(sigma^-1(x)) = Pk^(x^)
+      !
+      ! with x being the real world coordinates, x^ the coordinates
+      ! in the reference element and sigma: x^ -> x the mapping
+      ! between the reference and the real element.
+      ! So just evaluate the basis functions in the points x^ 
+      ! on the reference element
+      
       ! Loop through all elements
       !$omp parallel do default(shared) private(i,dx,dy)&
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
@@ -9167,6 +9229,41 @@ contains
     
     ! Calculate derivatives?
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+      ! If x-or y-derivatives are desired, calculate them.
+      ! The values of the derivatives are calculated by taking the
+      ! derivative of the polynomials and multiplying them with the
+      ! inverse of the transformation matrix (in each point) as
+      ! stated above.
+      !
+      ! We have to evaluate "grad(phi(x))". This is done by
+      ! using the chain rule as follows:
+      !
+      !    grad(phi_k(x))^T = D phi_k(x)
+      !                     = D Pk(sigma^-1(x))
+      !                     = D Pk(x^) * D sigma^-1(x)
+      !
+      ! Now note that the Jacobian "D sigma(x^)" of the mapping
+      ! between the reference and the real element is given in Djac:
+      !
+      !    D sigma(x^) = ( Djac(1) Djac(3) )
+      !                  ( Djac(2) Djac(4) )
+      !
+      ! Its inverse then reads
+      !
+      !    D sigma^-1(x) = 1/det ( -Djac(4)  Djac(3) )
+      !                          (  Djac(2) -Djac(1) )
+      !
+      ! with det = Djac(1)*Djac(4) - Djac(2)*Djac(3).
+      ! So all in all, the derivative can be computed as follows:
+      !
+      !    grad(phi_k(x))^T = D Pk(x^) * D sigma^-1(x)
+      !                     = ( dx(Pk(x^)) dy(Pk(x^)) ) * 1/det ( -Djac(4)  Djac(3) )
+      !                                                         (  Djac(2) -Djac(1) )
+      ! i.e., we have
+      !
+      !   dx(phi_k(x)) = 1/det ( -dx(Pk(x^))*Djac(4) + dy(Pk(x^))*Djac(2) )
+      !   dy(phi_k(x)) = 1/det (  dx(Pk(x^))*Djac(3) - dy(Pk(x^))*Djac(1) )
 
       ! Loop through all elements
       !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy)&
