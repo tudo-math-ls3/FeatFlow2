@@ -135,10 +135,16 @@ module feevaluation2
     ! so Ddata(:,:,DER_DERIV2D_X) specifies the first X-derivative.
     real(DP), dimension(:,:,:), pointer :: p_Ddata => null()
     
-    ! Reference to the vector
+    ! Reference to the vector or NULL, if there is no vector
+    ! associated. The latter case appears for `dummy` vectors.
+    ! Dummy vectors provide additional temporary memory which is
+    ! preallocated and which can be arbitrarily used by the callback
+    ! routines.
     type(t_vectorScalar), pointer :: p_rvector => null()
     
-    ! Maximum derivative to be computed
+    ! Maximum derivative to be computed.
+    ! If this is =0, nmaxDerivativeIdx>0 and p_rvector=>null(), this vector
+    ! is a dummy vector.
     integer :: nmaxDerivative = 0
 
     ! Last index of the corresponding Bder array which is set to TRUE.
@@ -1170,6 +1176,73 @@ contains
 
 !<subroutine>
 
+  subroutine fev2_addDummyVectorToEvalList(revalVectors,nsubarrays)
+
+!<description>
+  ! Adds a scalar dummy entry to the list of vectors to be evaluated.
+  ! During the evaluation, memory is allocated for this dummy entry, which
+  ! allows the assembly routines to compute intermediate data.
+  ! However, since no actual vector is associated, no FEM function is
+  ! evaluated in the cubature points, thus the `evaluation` does not need
+  ! computational time.
+  ! Note that the allocated memory stays uninitialised until given
+  ! free.
+!</description>
+
+!<input>
+  ! OPTIONAL: Number of subarrays.
+  ! If not specified, there is exactly on e subarray allocated.
+  ! If specified, there are nsubarray memory blocks allocated in memory
+  ! and associated to this dummy vector.
+  integer, intent(in), optional :: nsubarrays
+!</input>
+
+!<inputoutput>
+  ! List of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    type(t_fev2VectorData), dimension(:), pointer :: p_RvectorData 
+
+    ! Add a dummy entry
+    if (revalVectors%ncount .eq. 0) then
+      allocate(revalVectors%p_RvectorData(16))
+    else
+      if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
+        ! Reallocate
+        allocate(revalVectors%p_RvectorData(size(revalVectors%p_RvectorData)))
+        p_RvectorData(1:revalVectors%ncount) = &
+            revalVectors%p_RvectorData(1:revalVectors%ncount)
+        deallocate(revalVectors%p_RvectorData)
+        revalVectors%p_RvectorData => p_RvectorData
+      end if
+    end if
+    
+    ! Append
+    revalVectors%ncount = revalVectors%ncount + 1
+    
+    ! Nullify the pointer to mark it as dummy.
+    nullify(revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector)
+    
+    ! Maximum derivative to be calculated. Set to zero here.
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = 0
+    
+    ! Number of subarrays is saved to nmaxDerivativeIndex
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = 1
+    
+    if (present(nsubarrays)) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = nsubarrays
+    end if
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
   subroutine fev2_releaseVectorList(revalVectors)
 
 !<description>
@@ -1234,20 +1307,29 @@ contains
     
     do i=1,revalVectors%ncount
 
-      ! Maximum index in Bder
-      call fev2_getBderSize(&
-          revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim,&
-          revalVectors%p_RvectorData(i)%nmaxDerivative,nmaxDerivativeIdx)
-      revalVectors%p_RvectorData%nmaxDerivativeIdx = nmaxDerivativeIdx
-    
+      if (revalVectors%p_RvectorData(i)%nmaxDerivative .gt. 0) then
+        ! Standard vector with data.
+        
+        ! Maximum index in Bder
+        call fev2_getBderSize(&
+            revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim,&
+            revalVectors%p_RvectorData(i)%nmaxDerivative,nmaxDerivativeIdx)
+        revalVectors%p_RvectorData%nmaxDerivativeIdx = nmaxDerivativeIdx
+      
+        ! Remember the index of the discretisation in the list
+        revalVectors%p_RvectorData(i)%iidxFemData = &
+            containsDiscr (RfemData,nentries,&
+                          revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr)
+      else
+        ! Dummy vector, just allocate memory in advance.
+        ! nmaxDerivativeIdx specifies the number of subarrays to allocate.
+        nmaxDerivativeIdx = revalVectors%p_RvectorData(i)%nmaxDerivativeIdx
+      
+      end if
+
       ! Allocate memory for the point values
       allocate (revalVectors%p_RvectorData(i)%p_Ddata(&
           npointsPerElement,nelements,nmaxDerivativeIdx))
-      
-      ! Remember the index of the discretisation in the list
-      revalVectors%p_RvectorData%iidxFemData = &
-          containsDiscr (RfemData,nentries,&
-                         revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr)
     
     end do
         
