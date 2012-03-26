@@ -2054,8 +2054,8 @@ contains
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dpenalty, 1.0_DP)
 
-        call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty2', .false.,&
-                                    0, 'Defect_Penalty2.txt', '(E10.2)')
+!        call vecio_writeVectorHR (rvector%RvectorBlock(1), 'Penalty2', .false.,&
+!                                    0, 'Defect_Penalty2.txt', '(E10.2)')
 
       end if
 

@@ -1863,6 +1863,7 @@ contains
   use scalarpde
   use geometry
   use io
+  use ccobject
        
   !<description>
   ! this subroutine is called during the matrix assembly. It has to compute the coefficients 
@@ -1923,18 +1924,16 @@ contains
   type(t_geometryobject), pointer :: p_rgeometryobject
   type(t_parlist), pointer :: p_rparlst
   type (t_problem) :: rproblem
-  character(len=SYS_STRLEN) :: sfilenameindofs
-  character(len=SYS_STRLEN) :: stemp
-  integer :: iunit
-  logical :: bfileExists 
-  integer :: cflag
-
   !</local variables>
 
   ! Get the parameter list.
   p_rparlst => collct_getvalue_parlst (rcollection, "parlst")
   ipenalty = rcollection%Iquickaccess(4)
   dlambda = rcollection%Dquickaccess(4)
+
+  ! Read some data parameters
+!  parlst_getvalue_int (p_rparlst,'CC-PENALTY','IOUTPUTDOFS',iOutputDofs,0)
+!  parlst_getvalue_string (p_rparlst,'CC-PENALTY','INSIDEDOFS',sfilenameindofs,'''''')
 
   ! Get the triangulation array for the point coordinates
   call storage_getbase_double2d (rdiscretisationtrial%p_rtriangulation%h_dvertexcoords,&
@@ -1956,80 +1955,60 @@ contains
 
     ! Which method is used to implement the penalty matrix? 
     ! Loop over all elements and calculate the corresponding Lambda value
-    cflag = SYS_REPLACE
-    sfilenameindofs = 'indofs'
-    read(sfilenameindofs,*) sfilenameindofs
-    call io_openFileForWriting(sfilenameindofs, iunit,SYS_REPLACE, bfileExists,.true.)
-    if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
-      ! Write a headline
-      write (iunit,'(A)') '# element dof coeff'
-    end if
+    select case(ipenalty)
+    case (1) ! "Full Lambda" method
 
     do iel=1,nelements
-    select case(ipenalty)
-      case (1)  
-        ! "Full Lambda" method
-        do icup=1,npointsperelement 
-          ! get the distance to the center
-          call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
-          ! check if it is inside      
-          if(iin .eq. 1)then 
-            dcoefficients(1,icup,iel) = dlambda
-            stemp = '' //&
-                    trim(sys_siL(iel,4)) // ' ' // &
-                    trim(sys_siL(icup,1)) // ' ' // &
-                    trim(sys_sdEL(dcoefficients(1,icup,iel),1))
-            write (iunit,ADVANCE='YES',FMT='(A)') trim(stemp)          
-          else
+      do icup=1,npointsperelement 
+        ! get the distance to the center
+        call geom_isingeometry (p_rgeometryobject, (/dpoints(1,icup,iel),dpoints(2,icup,iel)/), iin)
+        ! check if it is inside      
+        if (iin .eq. 1)then 
+          dcoefficients(1,icup,iel) = dlambda
+         else
             dcoefficients(1,icup,iel) = 0.0_dp
           end if
-        end do
-
-      case (2)
-!      !"Fractional Lambda" method
-!      ! The real element
-!      ielreal = rdomainintsubset%p_ielements(iel) 
-!      ! A counter for the inside vertex of the element    
-!      in = 0     
-!      ! Get vertices coordinates and check how many are in the object
-!      do ivert=1,rdiscretisationtrial%p_rtriangulation%nnve
-!      ! Local node coordinate of an element
-!        dx = p_dvertexcoordinates(1,p_iverticesatelement(ivert,ielreal))
-!        dy = p_dvertexcoordinates(2,p_iverticesatelement(ivert,ielreal))
-!
-!      ! Check if the vertice is inside and count all inside points
-!        call geom_isingeometry (p_rgeometryobject,(/dx,dy/), iin)
-!      ! Count how many points are inside the object 
-!        if (iin .eq. 1) then
-!           in = in +1
-!        end if
-!      end do
-!
-!      ! For an element with at least one node inside the object, calculate the
-!      ! intersections nodes between element edges and object. Calculate local areea,
-!      ! element area and the fractional lambda value (default value:
-!      ! dlambda=dcoefficients(1)
-!      if (in .gt. 0) then
-!        call conectelementobject(ielreal,rdiscretisationtrial%p_rtriangulation,p_rgeometryobject,dElAreea,&
-!                                 dLocAreea)
-!      ! calculate the equivalent lambda value
-!        dlambda = rform%dcoefficients(1)*dLocAreea/dElAreea              
-!      ! give to all cubature points same fractional lambda
-!        do icup=1,npointsperelement 
-!           dcoefficients(1,icup,iel) = dlambda
-!        end do 
-!      else !(for in > 0)
-!        do icup=1,npointsperelement 
-!           dcoefficients(1,icup,iel) = 0.0_dp
-!        end do
-!      end if    
-      end select 
+      end do
     end do !(loop over elements)
-    close (iunit)
+          
+    case (2) ! "Fractional Lambda" method
+
+    do iel=1,nelements
+      ielreal = rdomainintsubset%p_ielements(iel) 
+      ! A counter for the inside vertex of the element    
+      in = 0  
+      ! Get vertices coordinates and check how many are in the object
+      do ivert=1,rdiscretisationtrial%p_rtriangulation%nnve
+      ! Local node coordinate of an element
+        dx = p_dvertexcoordinates(1,p_iverticesatelement(ivert,ielreal))
+        dy = p_dvertexcoordinates(2,p_iverticesatelement(ivert,ielreal))
+
+      ! Check if the vertice is inside and count all inside points
+        call geom_isingeometry (p_rgeometryobject,(/dx,dy/), iin)
+      ! Count how many points are inside the object 
+        if (iin .eq. 1) then
+           in = in +1
+        end if
+      end do
+
+      if (in .gt. 0) then
+        call cc_fracLambda(ielreal,rdiscretisationtrial%p_rtriangulation,p_rgeometryobject,dlambda)
+
+      ! calculate the equivalent lambda value
+        dlambda = rform%dcoefficients(1)*dlambda              
+      ! give to all cubature points same fractional lambda
+        do icup=1,npointsperelement 
+           dcoefficients(1,icup,iel) = dlambda
+        end do 
+      else !(for in > 0)
+        do icup=1,npointsperelement 
+           dcoefficients(1,icup,iel) = 0.0_dp
+        end do
+      end if    
+    end do !(loop over elements)
+    end select 
 
   end do !(loop over particles)
-    
   end subroutine
-
 
 end module
