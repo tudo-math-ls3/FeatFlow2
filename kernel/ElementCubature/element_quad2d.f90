@@ -10686,9 +10686,6 @@ contains
   ! left or right. That way, we know in which subtriangle the
   ! point is.
 
-  ! Parameter: number of local basis functions
-  integer, parameter :: NBAS = 4
-
   ! Local variables
   real(DP) :: ddet,dx,dy,a11,a12,a21,a22
   integer :: i,j
@@ -10713,23 +10710,6 @@ contains
             ! We are in T1 or T2.
             if (dy .le. -dx) then
               ! We are in T1.
-              
-              Dbas( 1,DER_FUNC2D,i,j) = 0
-              Dbas( 2,DER_FUNC2D,i,j) = -dx/2+dy/2+dx**2/2-dx*dy+dy**2/2
-              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
-              Dbas( 4,DER_FUNC2D,i,j) = 0
-              Dbas( 5,DER_FUNC2D,i,j) = 0
-              Dbas( 6,DER_FUNC2D,i,j) = dx**2-dy**2
-              Dbas( 7,DER_FUNC2D,i,j) = 0
-              Dbas( 8,DER_FUNC2D,i,j) = 0
-              Dbas( 9,DER_FUNC2D,i,j) = 1-3*dx+2*dx**2
-              Dbas(10,DER_FUNC2D,i,j) = 0
-              Dbas(11,DER_FUNC2D,i,j) = 2*dx-2*dy-2*dx**2+2*dx*dy
-              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx**2-2*dx*dy
-              Dbas(13,DER_FUNC2D,i,j) = 0
-
-            else
-              ! We are in T2
 
               Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
               Dbas( 2,DER_FUNC2D,i,j) = -dx/2+dy/2+dx**2/2-dx*dy+dy**2/2
@@ -10743,6 +10723,23 @@ contains
               Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx*dy-2*dy**2
               Dbas(11,DER_FUNC2D,i,j) = 2*dx-2*dy+2*dx*dy-2*dy**2
               Dbas(12,DER_FUNC2D,i,j) = 0
+              Dbas(13,DER_FUNC2D,i,j) = 0
+
+            else
+              ! We are in T2
+              
+              Dbas( 1,DER_FUNC2D,i,j) = 0
+              Dbas( 2,DER_FUNC2D,i,j) = -dx/2+dy/2+dx**2/2-dx*dy+dy**2/2
+              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 4,DER_FUNC2D,i,j) = 0
+              Dbas( 5,DER_FUNC2D,i,j) = 0
+              Dbas( 6,DER_FUNC2D,i,j) = dx**2-dy**2
+              Dbas( 7,DER_FUNC2D,i,j) = 0
+              Dbas( 8,DER_FUNC2D,i,j) = 0
+              Dbas( 9,DER_FUNC2D,i,j) = 1-3*dx+2*dx**2
+              Dbas(10,DER_FUNC2D,i,j) = 0
+              Dbas(11,DER_FUNC2D,i,j) = 2*dx-2*dy-2*dx**2+2*dx*dy
+              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx**2-2*dx*dy
               Dbas(13,DER_FUNC2D,i,j) = 0
               
             end if
