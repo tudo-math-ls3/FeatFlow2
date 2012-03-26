@@ -10714,36 +10714,36 @@ contains
             if (dy .le. -dx) then
               ! We are in T1.
               
-              Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
-              Dbas( 2,DER_FUNC2D,i,j) = dx/6-dy/6+dx**2/2-dx*dy/3-dy**2/6
-              Dbas( 3,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 4,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 5,DER_FUNC2D,i,j) = -dx**2+dy**2
-              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 9,DER_FUNC2D,i,j) = 1+2*dx+dy+2*dx*dy
-              Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx*dy-2*dy**2
-              Dbas(11,DER_FUNC2D,i,j) = -2.E0/3.E0*dx+2.E0/3.E0*dy-2.E0/3.E0*dx*dy+2.E0/3.E0*dy**2
-              Dbas(12,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas(13,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 1,DER_FUNC2D,i,j) = 0
+              Dbas( 2,DER_FUNC2D,i,j) = -dx/2+dy/2+dx**2/2-dx*dy+dy**2/2
+              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 4,DER_FUNC2D,i,j) = 0
+              Dbas( 5,DER_FUNC2D,i,j) = 0
+              Dbas( 6,DER_FUNC2D,i,j) = dx**2-dy**2
+              Dbas( 7,DER_FUNC2D,i,j) = 0
+              Dbas( 8,DER_FUNC2D,i,j) = 0
+              Dbas( 9,DER_FUNC2D,i,j) = 1-3*dx+2*dx**2
+              Dbas(10,DER_FUNC2D,i,j) = 0
+              Dbas(11,DER_FUNC2D,i,j) = 2*dx-2*dy-2*dx**2+2*dx*dy
+              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx**2-2*dx*dy
+              Dbas(13,DER_FUNC2D,i,j) = 0
 
             else
               ! We are in T2
 
-              Dbas( 1,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 2,DER_FUNC2D,i,j) = dx/6-dy/6-dx**2/6-dx*dy/3+dy**2/2
-              Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
-              Dbas( 4,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 6,DER_FUNC2D,i,j) = dx**2-dy**2
-              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 9,DER_FUNC2D,i,j) = 1-dx-2*dy+2*dx*dy
-              Dbas(10,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas(11,DER_FUNC2D,i,j) = -2.E0/3.E0*dx+2.E0/3.E0*dy+2.E0/3.E0*dx**2-2.E0/3.E0*dx*dy
-              Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx**2-2*dx*dy
-              Dbas(13,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
+              Dbas( 2,DER_FUNC2D,i,j) = -dx/2+dy/2+dx**2/2-dx*dy+dy**2/2
+              Dbas( 3,DER_FUNC2D,i,j) = 0
+              Dbas( 4,DER_FUNC2D,i,j) = 0
+              Dbas( 5,DER_FUNC2D,i,j) = -dx**2+dy**2
+              Dbas( 6,DER_FUNC2D,i,j) = 0
+              Dbas( 7,DER_FUNC2D,i,j) = 0
+              Dbas( 8,DER_FUNC2D,i,j) = 0
+              Dbas( 9,DER_FUNC2D,i,j) = 1+3*dy+2*dy**2
+              Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx*dy-2*dy**2
+              Dbas(11,DER_FUNC2D,i,j) = 2*dx-2*dy+2*dx*dy-2*dy**2
+              Dbas(12,DER_FUNC2D,i,j) = 0
+              Dbas(13,DER_FUNC2D,i,j) = 0
               
             end if
           else
@@ -10751,17 +10751,17 @@ contains
             if (dy .gt. -dx) then
               ! We are in T3
 
-              Dbas( 1,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 1,DER_FUNC2D,i,j) = 0
+              Dbas( 2,DER_FUNC2D,i,j) = 0
               Dbas( 3,DER_FUNC2D,i,j) = -dx/2-dy/2+dx**2/2+dx*dy+dy**2/2
               Dbas( 4,DER_FUNC2D,i,j) = dx/2-dy/2+dx**2/2-dx*dy+dy**2/2
-              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 5,DER_FUNC2D,i,j) = 0
+              Dbas( 6,DER_FUNC2D,i,j) = 0
               Dbas( 7,DER_FUNC2D,i,j) = -dx**2+dy**2
-              Dbas( 8,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 8,DER_FUNC2D,i,j) = 0
               Dbas( 9,DER_FUNC2D,i,j) = 1-3*dy+2*dy**2
-              Dbas(10,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas(11,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(10,DER_FUNC2D,i,j) = 0
+              Dbas(11,DER_FUNC2D,i,j) = 0
               Dbas(12,DER_FUNC2D,i,j) = 2*dx+2*dy-2*dx*dy-2*dy**2
               Dbas(13,DER_FUNC2D,i,j) = -2*dx+2*dy+2*dx*dy-2*dy**2
 
@@ -10769,17 +10769,17 @@ contains
               ! We are in T4
 
               Dbas( 1,DER_FUNC2D,i,j) = dx/2+dy/2+dx**2/2+dx*dy+dy**2/2
-              Dbas( 2,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 2,DER_FUNC2D,i,j) = 0
+              Dbas( 3,DER_FUNC2D,i,j) = 0
               Dbas( 4,DER_FUNC2D,i,j) = dx/2-dy/2+dx**2/2-dx*dy+dy**2/2
-              Dbas( 5,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 6,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas( 7,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas( 5,DER_FUNC2D,i,j) = 0
+              Dbas( 6,DER_FUNC2D,i,j) = 0
+              Dbas( 7,DER_FUNC2D,i,j) = 0
               Dbas( 8,DER_FUNC2D,i,j) = dx**2-dy**2
               Dbas( 9,DER_FUNC2D,i,j) = 1+3*dx+2*dx**2
               Dbas(10,DER_FUNC2D,i,j) = -2*dx-2*dy-2*dx**2-2*dx*dy
-              Dbas(11,DER_FUNC2D,i,j) = 0.0_DP
-              Dbas(12,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(11,DER_FUNC2D,i,j) = 0
+              Dbas(12,DER_FUNC2D,i,j) = 0
               Dbas(13,DER_FUNC2D,i,j) = -2*dx+2*dy-2*dx**2+2*dx*dy
               
             end if
@@ -10822,63 +10822,63 @@ contains
               ! We are in T1.
               
               Dbas( 1,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy+1+2*dx)/2
-              Dbas( 2,DER_DERIV2D_X,i,j) = ddet*(a22+6*a22*dx-2*a22*dy+a21+2*a21*dx+2*a21*dy)/6
-              Dbas( 3,DER_DERIV2D_X,i,j) = 0
-              Dbas( 4,DER_DERIV2D_X,i,j) = 0
+              Dbas( 2,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy-1+2*dx)/2
+              Dbas( 3,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 4,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas( 5,DER_DERIV2D_X,i,j) = -2*ddet*(a22*dx+a21*dy)
-              Dbas( 6,DER_DERIV2D_X,i,j) = 0
-              Dbas( 7,DER_DERIV2D_X,i,j) = 0
-              Dbas( 8,DER_DERIV2D_X,i,j) = 0
-              Dbas( 9,DER_DERIV2D_X,i,j) = -ddet*(-2*a22-2*a22*dy+a21+2*a21*dx)
-              Dbas(10,DER_DERIV2D_X,i,j) = 2*ddet*(-a22-dy*a22+a21+a21*dx+2*a21*dy)
-              Dbas(11,DER_DERIV2D_X,i,j) = 2.0_DP/3.0_DP*ddet*(-a22-dy*a22-a21+a21*dx-2*a21*dy)
-              Dbas(12,DER_DERIV2D_X,i,j) = 0
-              Dbas(13,DER_DERIV2D_X,i,j) = 0
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 9,DER_DERIV2D_X,i,j) = -a21*ddet*(3+4*dy)
+              Dbas(10,DER_DERIV2D_X,i,j) = 2*ddet*(-a22-a22*dy+a21+a21*dx+2*a21*dy)
+              Dbas(11,DER_DERIV2D_X,i,j) = -2*ddet*(-a22-dy*a22-a21+a21*dx-2*a21*dy)
+              Dbas(12,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas(13,DER_DERIV2D_X,i,j) = 0.0_DP
                                            
-              Dbas( 1,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy+1+2*dx)/2
-              Dbas( 2,DER_DERIV2D_Y,i,j) = -ddet*(a12+6*a12*dx-2*a12*dy+a11+2*a11*dx+2*a11*dy)/6
-              Dbas( 3,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 4,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 5,DER_DERIV2D_Y,i,j) = 2*ddet*(a12*dx+dy*a11)
-              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 9,DER_DERIV2D_Y,i,j) = ddet*(-2*a12-2*dy*a12+a11+2*a11*dx)
-              Dbas(10,DER_DERIV2D_Y,i,j) = -2*ddet*(-a12-dy*a12+a11+a11*dx+2*dy*a11)
-              Dbas(11,DER_DERIV2D_Y,i,j) = -2.0_DP/3.0_DP*ddet*(-a12-dy*a12-a11+a11*dx-2*dy*a11)
-              Dbas(12,DER_DERIV2D_Y,i,j) = 0
-              Dbas(13,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 1,DER_DERIV2D_Y,i,j) = ddet*(-a12+a11)*(1+2*dx+2*dy)/2
+              Dbas( 2,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-1+2*dx-2*dy)/2
+              Dbas( 3,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 4,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 2*ddet*(a12*dx+a11*dy)
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 9,DER_DERIV2D_Y,i,j) = a11*ddet*(3+4*dy)
+              Dbas(10,DER_DERIV2D_Y,i,j) = -2*ddet*(-a12-dy*a12+a11+a11*dx+2*a11*dy)
+              Dbas(11,DER_DERIV2D_Y,i,j) = 2*ddet*(-a12-dy*a12-a11+a11*dx-2*a11*dy)
+              Dbas(12,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas(13,DER_DERIV2D_Y,i,j) = 0.0_DP
 
             else
               ! We are in T2
 
-              Dbas( 1,DER_DERIV2D_X,i,j) = 0
-              Dbas( 2,DER_DERIV2D_X,i,j) = -ddet*(-a22+2*a22*dx+2*a22*dy-a21-2*a21*dx+6*a21*dy)/6
+              Dbas( 1,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 2,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy-1+2*dx)/2
               Dbas( 3,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy-1+2*dx)/2
-              Dbas( 4,DER_DERIV2D_X,i,j) = 0
-              Dbas( 5,DER_DERIV2D_X,i,j) = 0
-              Dbas( 6,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+a21*dy)
-              Dbas( 7,DER_DERIV2D_X,i,j) = 0
-              Dbas( 8,DER_DERIV2D_X,i,j) = 0
-              Dbas( 9,DER_DERIV2D_X,i,j) = -ddet*(a22-2*a22*dy-2*a21+2*a21*dx)
-              Dbas(10,DER_DERIV2D_X,i,j) = 0
-              Dbas(11,DER_DERIV2D_X,i,j) = 2.0_DP/3.0_DP*ddet*(-a22+2*a22*dx-a22*dy-a21+a21*dx)
+              Dbas( 4,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 6,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+dy*a21)
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 9,DER_DERIV2D_X,i,j) = a22*ddet*(-3+4*dx)
+              Dbas(10,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas(11,DER_DERIV2D_X,i,j) = -2*ddet*(-a22+2*a22*dx-a22*dy-a21+a21*dx)
               Dbas(12,DER_DERIV2D_X,i,j) = -2*ddet*(-a22+2*a22*dx+a22*dy+a21-a21*dx)
-              Dbas(13,DER_DERIV2D_X,i,j) = 0
+              Dbas(13,DER_DERIV2D_X,i,j) = 0.0_DP
                                            
-              Dbas( 1,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 2,DER_DERIV2D_Y,i,j) = ddet*(-a12+2*a12*dx+2*a12*dy-a11-2*a11*dx+6*a11*dy)/6
-              Dbas( 3,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy-1+2*dx)/2
-              Dbas( 4,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 1,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 2,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-1+2*dx-2*dy)/2
+              Dbas( 3,DER_DERIV2D_Y,i,j) = ddet*(-a12+a11)*(-1+2*dx+2*dy)/2
+              Dbas( 4,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas( 6,DER_DERIV2D_Y,i,j) = -2*ddet*(a12*dx+a11*dy)
-              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 9,DER_DERIV2D_Y,i,j) = ddet*(a12-2*dy*a12-2*a11+2*a11*dx)
-              Dbas(10,DER_DERIV2D_Y,i,j) = 0
-              Dbas(11,DER_DERIV2D_Y,i,j) = -2.0_DP/3.0_DP*ddet*(-a12+2*a12*dx-dy*a12-a11+a11*dx)
-              Dbas(12,DER_DERIV2D_Y,i,j) = 2*ddet*(-a12+2*a12*dx+dy*a12+a11-a11*dx)
-              Dbas(13,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 9,DER_DERIV2D_Y,i,j) = -a12*ddet*(-3+4*dx)
+              Dbas(10,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas(11,DER_DERIV2D_Y,i,j) = 2*ddet*(-a12+2*a12*dx-a12*dy-a11+a11*dx)
+              Dbas(12,DER_DERIV2D_Y,i,j) = -2*ddet*(a12-2*a12*dx-a12*dy-a11+a11*dx)
+              Dbas(13,DER_DERIV2D_Y,i,j) = 0.0_DP
               
             end if
           else
@@ -10886,63 +10886,63 @@ contains
             if (dy .gt. -dx) then
               ! We are in T3
 
-              Dbas( 1,DER_DERIV2D_X,i,j) = 0
-              Dbas( 2,DER_DERIV2D_X,i,j) = 0
+              Dbas( 1,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 2,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas( 3,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy-1+2*dx)/2
               Dbas( 4,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy+1+2*dx)/2
-              Dbas( 5,DER_DERIV2D_X,i,j) = 0
-              Dbas( 6,DER_DERIV2D_X,i,j) = 0
-              Dbas( 7,DER_DERIV2D_X,i,j) = -2*ddet*(a22*dx+a21*dy)
-              Dbas( 8,DER_DERIV2D_X,i,j) = 0
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 7,DER_DERIV2D_X,i,j) = -2*ddet*(a22*dx+dy*a21)
+              Dbas( 8,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas( 9,DER_DERIV2D_X,i,j) = -a21*ddet*(-3+4*dy)
-              Dbas(10,DER_DERIV2D_X,i,j) = 0
-              Dbas(11,DER_DERIV2D_X,i,j) = 0
-              Dbas(12,DER_DERIV2D_X,i,j) = 2*ddet*(a22-a22*dy-a21+a21*dx+2*a21*dy)
-              Dbas(13,DER_DERIV2D_X,i,j) = -2*ddet*(a22-dy*a22+a21+a21*dx-2*a21*dy)
+              Dbas(10,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas(11,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas(12,DER_DERIV2D_X,i,j) = 2*ddet*(a22-dy*a22-a21+a21*dx+2*dy*a21)
+              Dbas(13,DER_DERIV2D_X,i,j) = -2*ddet*(a22-dy*a22+a21+a21*dx-2*dy*a21)
                                            
-              Dbas( 1,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 2,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 3,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy-1+2*dx)/2
-              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-2*dy+1+2*dx)/2
-              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 1,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 2,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 3,DER_DERIV2D_Y,i,j) = ddet*(-a12+a11)*(-1+2*dx+2*dy)/2
+              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(1+2*dx-2*dy)/2
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas( 7,DER_DERIV2D_Y,i,j) = 2*ddet*(a12*dx+a11*dy)
-              Dbas( 8,DER_DERIV2D_Y,i,j) = 0
+              Dbas( 8,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas( 9,DER_DERIV2D_Y,i,j) = a11*ddet*(-3+4*dy)
-              Dbas(10,DER_DERIV2D_Y,i,j) = 0
-              Dbas(11,DER_DERIV2D_Y,i,j) = 0
-              Dbas(12,DER_DERIV2D_Y,i,j) = -2*ddet*(a12-dy*a12-a11+a11*dx+2*a11*dy)
+              Dbas(10,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas(11,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas(12,DER_DERIV2D_Y,i,j) = -2*ddet*(a12-a12*dy-a11+a11*dx+2*a11*dy)
               Dbas(13,DER_DERIV2D_Y,i,j) = 2*ddet*(a12-dy*a12+a11+a11*dx-2*a11*dy)
 
             else
               ! We are in T4
 
               Dbas( 1,DER_DERIV2D_X,i,j) = ddet*(a22-a21)*(2*dy+1+2*dx)/2
-              Dbas( 2,DER_DERIV2D_X,i,j) = 0
-              Dbas( 3,DER_DERIV2D_X,i,j) = 0
+              Dbas( 2,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 3,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas( 4,DER_DERIV2D_X,i,j) = ddet*(a22+a21)*(-2*dy+1+2*dx)/2
-              Dbas( 5,DER_DERIV2D_X,i,j) = 0
-              Dbas( 6,DER_DERIV2D_X,i,j) = 0
-              Dbas( 7,DER_DERIV2D_X,i,j) = 0
-              Dbas( 8,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+dy*a21)
+              Dbas( 5,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 6,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 7,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_X,i,j) = 2*ddet*(a22*dx+a21*dy)
               Dbas( 9,DER_DERIV2D_X,i,j) = a22*ddet*(3+4*dx)
               Dbas(10,DER_DERIV2D_X,i,j) = -2*ddet*(a22+2*a22*dx+a22*dy-a21-a21*dx)
-              Dbas(11,DER_DERIV2D_X,i,j) = 0
-              Dbas(12,DER_DERIV2D_X,i,j) = 0
+              Dbas(11,DER_DERIV2D_X,i,j) = 0.0_DP
+              Dbas(12,DER_DERIV2D_X,i,j) = 0.0_DP
               Dbas(13,DER_DERIV2D_X,i,j) = -2*ddet*(a22+2*a22*dx-a22*dy+a21+a21*dx)
                                            
-              Dbas( 1,DER_DERIV2D_Y,i,j) = -ddet*(a12-a11)*(2*dy+1+2*dx)/2
-              Dbas( 2,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 3,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(-2*dy+1+2*dx)/2
-              Dbas( 5,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 6,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 7,DER_DERIV2D_Y,i,j) = 0
-              Dbas( 8,DER_DERIV2D_Y,i,j) = -2*ddet*(a12*dx+a11*dy)
+              Dbas( 1,DER_DERIV2D_Y,i,j) = ddet*(-a12+a11)*(1+2*dx+2*dy)/2
+              Dbas( 2,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 3,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 4,DER_DERIV2D_Y,i,j) = -ddet*(a12+a11)*(1+2*dx-2*dy)/2
+              Dbas( 5,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 6,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 7,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas( 8,DER_DERIV2D_Y,i,j) = -2*ddet*(a12*dx+dy*a11)
               Dbas( 9,DER_DERIV2D_Y,i,j) = -a12*ddet*(3+4*dx)
-              Dbas(10,DER_DERIV2D_Y,i,j) = 2*ddet*(a12+2*a12*dx+a12*dy-a11-a11*dx)
-              Dbas(11,DER_DERIV2D_Y,i,j) = 0
-              Dbas(12,DER_DERIV2D_Y,i,j) = 0
+              Dbas(10,DER_DERIV2D_Y,i,j) = -2*ddet*(-a12-2*a12*dx-a12*dy+a11+a11*dx)
+              Dbas(11,DER_DERIV2D_Y,i,j) = 0.0_DP
+              Dbas(12,DER_DERIV2D_Y,i,j) = 0.0_DP
               Dbas(13,DER_DERIV2D_Y,i,j) = 2*ddet*(a12+2*a12*dx-a12*dy+a11+a11*dx)
               
             end if
