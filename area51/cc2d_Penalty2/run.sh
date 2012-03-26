@@ -1,10 +1,9 @@
 #!/bin/bash
 
-for MESH in bench1_fbm; do
-for NLMAX in 4 5; do
-for DLAMBDA in 1e3 1e6 1e9; do
+for NLMAX in 4 5 6 7 8; do
+for DLAMBDA in 1e9; do
 
-cat >./data/discretisation.dat <<END_OF_DATA
+cat >./data/discretisation.dat << END_OF_DATA
 # ------------------------------------------------------------------------
 # Spatial discretization
 #
@@ -438,37 +437,74 @@ iintARIndicatorEX3YVel   = 1
 # standard = 20.0
 
 dintARboundEX3YVel       = 20.0
-
-
 END_OF_DATA
 
-cat >./data/paramtriang.dat <<END_OF_DATA
-# ------------------------------------------------------------------------
-# Parametrization and triangulation
-#
-# This file contains parameters about the parametrization and
-# (coarse grid) triangulation of the problem.
-# ------------------------------------------------------------------------
+cat >./data/penalty.dat << END_OF_DATA
+############
+[CC-PENALTY]
+############
 
-[PARAMTRIANG]
+# Activate penalty method and choose the way of calculating penalty parameter
+#   - 0.0 - not active
+#   - 1.0 - active
 
-# Filename of the parametrisation of the domain
-sParametrisation = '%{spredirectory}/${MESH}.prm'
+dPenalty = 1.0
 
-# Filename of the coarse grid mesh
-sMesh = '%{spredirectory}/${MESH}.tri'
+# Penalty method
+#   - 1 - full-Lambda (standard)
+#   - 2 - fractional Lambda
 
-# Whether to convert the mesh into a pure triangular mesh or not
-iconvertToTriangleMesh = 0
+ipenalty = 1
 
-# This defines a percentage factor (0..1) how far the fine mesh
-# is disturbed. Should usually be set to 0.0 except for debug
-# purposes.
-ddisturbMeshFactor = 0.0
+# Penalty parameter (standard 1000)
+dlambda = ${DLAMBDA}
 
+# itypePenaltyAssem indicates how to assemble Penalty matrix
+#   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
+#   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
+
+itypePenaltyAssem = 1
+
+# Generation of penalty matrix. 0=real mass,1 = HRZ mass
+iPenalty_lump = 0
+
+# Element type 
+#  0 = Q1~(E031) / Q1~(E031) / Q0
+#  1 = Q1~(E030) / Q1~(E030) / Q0
+#  2 = Q1~(EM31) / Q1~(EM31) / Q0
+#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+#  4 = Q2 (E013) / Q2 (E013) / QP1
+#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# ... (see discretisation.dat)
+
+ielementType_Penalty = 3
+
+# cubature formula for Penalty matrix. 
+# ="": use default cubature formula.
+
+scubPenalty = G3x3
+
+# adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
+# ="": use default cubature formula.
+
+scubPenalty_sum = TRZ
+
+# ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
+
+ilocalrefinement     = 5
+
+# Calculate the mass of the penalty matrix (default 0 / 1 for activation)
+
+iarea = 0
+sfilenamePenaltyMatrix_Vol = '%{ssolutiondirectory}/PenaltyMatrix_Vol'
+
+# Output the penalty matrix to txt file (default 0 / 1 for activation)
+
+ipenmat = 0
+sfilenamePenaltyMatrix = '%{ssolutiondirectory}/PenaltyMatrix'
 END_OF_DATA
 
-cat >./data/postprocessing.dat <<END_OF_DATA
+cat > ./data/postprocessing.dat << END_OF_DATA
 
 # ------------------------------------------------------------------------
 # Postprocessing
@@ -502,7 +538,7 @@ ipostprocTimeInterpSolution = 1
 # 4=Matlab
 # 5=binary GMV
 
-ioutputUCD = 1
+ioutputUCD = 0
 
 # Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
@@ -516,7 +552,7 @@ ilevelUCD = 0
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = '%{spostdirectory}/u.${DLAMBDA}.${MESH}.${NLMAX}.gmv'
+sfilenameUCD = '%{spostdirectory}/u.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -731,7 +767,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_${DLAMBDA}_${MESH}_${NLMAX}'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_G3x3_voll_${NLMAX}_${DLAMBDA}'
 
 # ------------------------------------------------------------------------
 # Flux values
@@ -762,63 +798,41 @@ sfilenameFluxValues = '%{ssolutiondirectory}/flux'
 
 END_OF_DATA
 
-cat >./data/penalty.dat <<END_OF_DATA
-############
-[CC-PENALTY]
-############
+cat > ./data/output.dat << END_OF_DATA
 
-# Activate penalty method and choose the way of calculating penalty parameter
-#   - 0.0 - not active
-#   - 1.0 - active
+# ------------------------------------------------------------------------
+# Output parameters
+# 
+# This file contains parameters configuring the general output
+# of the program.
+# ------------------------------------------------------------------------
 
-dPenalty = 1.0
+[GENERALOUTPUT]
 
-# Penalty method
-#   - 1 - full-Lambda (standard)
-#   - 2 - fractional Lambda
+# Level of output when reading parameters from the INI files.
+# =0=1: no output, =2: print parameters of .INI files to terminal
+MSHOW_Initialisation = 2
 
-ipenalty = 1
+# level of output to terminal
+# =0: no output, =1: basic output; =2: standard output; 
+# >=3: extended output with more and more details
+MT_OutputLevel = 2
 
-# Penalty parameter (standard 1000)
-dlambda = ${DLAMBDA}
+# Log file for messages. ='': No log file output.
+smsgLog = '%{slogdirectory}/output_${NLMAX}_${DLAMBDA}.log'
 
-# itypePenaltyAssem indicates how to assemble Penalty matrix
-#   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
-#   - 2 means two bilinear forms combining simple cub. formula with adaptive cub. formula
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as smsgLog
+serrorLog = ''
 
-itypePenaltyAssem = 1
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchLog = ''
 
-# Generation of penalty matrix. 0=real mass,1 = HRZ mass
-iPenalty_lump = 0
-
-# Element type 
-#  0 = Q1~(E031) / Q1~(E031) / Q0
-#  1 = Q1~(E030) / Q1~(E030) / Q0
-#  2 = Q1~(EM31) / Q1~(EM31) / Q0
-#  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
-#  4 = Q2 (E013) / Q2 (E013) / QP1
-#  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
-# ... (see discretisation.dat)
-
-ielementType_Penalty = 2
-
-# cubature formula for Penalty matrix. 
-# ="": use default cubature formula.
-
-scubPenalty = MID_2D
-
-# adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
-# ="": use default cubature formula.
-
-scubPenalty_sum = TRZ
-
-# ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
-
-ilocalrefinement     = 5
 END_OF_DATA
 
-./cc2d
+./cc2d_Penalty
 
-done
 done
 done

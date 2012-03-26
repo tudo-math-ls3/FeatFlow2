@@ -260,7 +260,7 @@ iwritePointValues = 1
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_1e9_bench2m55_8'
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues_G3x3_voll_4_1e9'
 
 # ------------------------------------------------------------------------
 # Flux values

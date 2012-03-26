@@ -16,7 +16,7 @@ LC_ALL=C
 export LC_ALL
 
 ../../bin/configure \
-	--appname=cc2d \
+	--appname=cc2d_Penalty \
 	--programfile=src/cc2d.f90 \
         --srclist_app="`ls src/*.f90`" \
 	"$@"

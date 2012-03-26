@@ -864,7 +864,7 @@ contains
      type(t_vectorScalar) :: rones1,rones2
      real(dp) :: dvalue,dlevel,dtemp
      integer :: i,nlmin,iunit,iarea,ipenmat,cflag,ielementType,ielementType_penalty
-     character(len=SYS_STRLEN) :: sfilenamePenaltyMatrix
+     character(len=SYS_STRLEN) :: sfilenamePenaltyMatrix,sfilenamePenaltyMatrix_Vol,stemp
      logical :: bfileExists
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
@@ -1171,8 +1171,8 @@ contains
     call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
     if (iarea .ne. 0) then
       ! Open file for output
-      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
-      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix_Vol',sfilenamePenaltyMatrix_Vol,'''''')
+      read(sfilenamePenaltyMatrix_Vol,*) sfilenamePenaltyMatrix_Vol
 
       cflag = SYS_APPEND           
       call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
@@ -1213,7 +1213,11 @@ contains
     ! Output the matrix for every level
     call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IPENMAT',ipenmat,0)
     if (ipenmat .ne. 0) then
-      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, 'Penalty2.txt', '(E10.2)')            
+      ! Open file for output
+      call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
+      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+      stemp = sfilenamePenaltyMatrix // '.txt'
+      call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
     end if
 
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)

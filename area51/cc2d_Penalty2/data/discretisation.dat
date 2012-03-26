@@ -118,7 +118,7 @@ NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 8
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
@@ -431,5 +431,3 @@ iintARIndicatorEX3YVel   = 1
 # standard = 20.0
 
 dintARboundEX3YVel       = 20.0
-
-

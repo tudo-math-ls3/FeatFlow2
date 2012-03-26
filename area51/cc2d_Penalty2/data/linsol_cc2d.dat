@@ -160,11 +160,11 @@ dalphaMax          = 10.0
 
 # Number of pre- and postsmoothing steps
 
-nsmoothingSteps    = 4
+nsmoothingSteps    = 400
 
 # Relaxation parameter
 
-domega             = 1.0
+domega             = 0.8
 
 # Output level of the solver
 # = 2:extended output
