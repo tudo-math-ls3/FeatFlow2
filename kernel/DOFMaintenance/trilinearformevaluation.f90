@@ -500,7 +500,7 @@ contains
   real(DP), dimension(:,:,:,:), pointer :: p_DbasFunc,p_DbasTrial
   
   ! Number of entries in the matrix - for quicker access
-  integer :: NA,NVE
+  integer :: NA
   integer :: NEQ
   
   ! Type of transformation from the reference to the real element
@@ -718,13 +718,14 @@ contains
     call lsyssc_getbase_double(rvector,p_Ddata)
 
     ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_relementDistrTrial%celement)
-    if (NVE .ne. elem_igetNVE(p_relementDistrTest%celement)) then
+    if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
+        elem_igetShape(p_relementDistrTest%celement)) then
       call output_line('Element spaces incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     end if
-    if (NVE .ne. elem_igetNVE(p_relementDistrFunc%celement)) then
+    if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
+        elem_igetShape(p_relementDistrFunc%celement)) then
       call output_line('Element spaces incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
@@ -1441,7 +1442,7 @@ contains
     ! Get the number of vertices of the element, specifying the transformation
     ! form the reference to the real element.
     rmatrixAssembly%NVE = elem_igetNVE(celementTest)
-    if (rmatrixAssembly%NVE .ne. elem_igetNVE(celementTrial)) then
+    if (elem_igetShape(celementTest) .ne. elem_igetShape(celementTrial)) then
       call output_line ('Element spaces incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'trilf_initAssembly')
       call sys_halt()

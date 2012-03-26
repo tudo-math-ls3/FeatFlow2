@@ -858,13 +858,13 @@ contains
 
     if (celement .eq. EL_QPW4P1_2D) then
       ! Piecewise linear cubature on sub-triangles on a quad
-      ccubType = CUB_P4TG3_2D
+      ccubType = CUB_QPW4G3T_2D
       return
     end if
 
     if (celement .eq. EL_QPW4P2_2D) then
       ! Piecewise linear cubature on sub-triangles on a quad
-      ccubType = CUB_P4TG3_2D
+      ccubType = CUB_QPW4G3T_2D
       return
     end if
 

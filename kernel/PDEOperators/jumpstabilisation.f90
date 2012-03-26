@@ -382,9 +382,9 @@ contains
     ! Triangle elements? Quad elements?
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
-    ! Get the number of corner vertices of the element
-    if (NVE .ne. elem_igetNVE(rmatrixScalar%p_rspatialDiscrTrial%&
-        RelementDistr(1)%celement)) then
+    ! Assure thath the element spaces are compatible
+    if (elem_igetShape(p_relementDistribution%celement) .ne. &
+        (rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
       call sys_halt()
@@ -1943,8 +1943,9 @@ contains
     ! Triangle elements? Quad elements?
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
-    ! Get the number of corner vertices of the element
-    if (NVE .ne. elem_igetNVE(p_relementDistribution%celement)) then
+    ! Assure that the element spaces are compatible
+    if (elem_igetShape(p_relementDistribution%celement) .ne. &
+        elem_igetShape(p_relementDistribution%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'conv_ueoJumpStabil2d_double_uni')
       call sys_halt()
@@ -2656,9 +2657,9 @@ contains
     ! Triangle elements? Quad elements?
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
-    ! Get the number of corner vertices of the element
-    if (NVE .ne. elem_igetNVE(rmatrixScalar%p_rspatialDiscrTrial%&
-        RelementDistr(1)%celement)) then
+    ! Assure that the element spaces are compatible
+    if (elem_igetShape(p_relementDistribution%celement) .ne. &
+        elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
       call sys_halt()
@@ -3656,8 +3657,9 @@ contains
     ! Triangle elements? Quad elements?
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
-    ! Get the number of corner vertices of the element
-    if (NVE .ne. elem_igetNVE(p_relementDistribution%celement)) then
+    ! Assure that the element spaces are compatible
+    if (elem_igetShape(p_relementDistribution%celement) .ne. &
+        elem_igetShape(p_relementDistribution%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'conv_ueoJumpStabil2d_double_uni')
       call sys_halt()

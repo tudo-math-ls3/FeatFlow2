@@ -193,6 +193,7 @@ module cubature
 !$use omp_lib
   use fsystem
   use basicgeometry
+  use geometryaux
   use genoutput
 
   implicit none
@@ -368,7 +369,27 @@ module cubature
 
   ! quad divided into 4 triangles, piecewise 3-point Gauss formula
   ! on each triangle, degree = 3, ncubp = 12
-  integer(I32), parameter, public :: CUB_P4TG3_2D = 220
+  integer(I32), parameter, public :: CUB_QPW4G3T_2D = 220
+
+  ! quad divided into 4 triangles, piecewise 3-point Gauss formula
+  ! on each triangle, originating from a quad cubature formula;
+  ! degree = 2, ncubp = 16
+  integer(I32), parameter, public :: CUB_QPW4QG2T_2D = 222
+
+  ! quad divided into 4 triangles, piecewise 3-point Gauss formula
+  ! on each triangle, originating from a quad cubature formula;
+  ! degree = 3, ncubp = 36
+  integer(I32), parameter, public :: CUB_QPW4QG3T_2D = 223
+
+  ! quad divided into 4 triangles, piecewise 3-point Gauss formula
+  ! on each triangle, originating from a quad cubature formula;
+  ! degree = 4, ncubp = 64
+  integer(I32), parameter, public :: CUB_QPW4QG4T_2D = 224
+
+  ! quad divided into 4 triangles, piecewise 3-point Gauss formula
+  ! on each triangle, originating from a quad cubature formula;
+  ! degree = 5, ncubp = 100
+  integer(I32), parameter, public :: CUB_QPW4QG5T_2D = 225
 
 !</constantblock>
 
@@ -390,6 +411,18 @@ module cubature
 
   ! Vertices, midpoints, center, degree = 4, ncubp = 7
   integer(I32), parameter, public :: CUB_VMC = 254
+  
+  ! Quadrilateral 2-point Gauss formula mapped to a triangle
+  integer(I32), parameter, public :: CUB_QG2_T = 262
+
+  ! Quadrilateral 3-point Gauss formula mapped to a triangle
+  integer(I32), parameter, public :: CUB_QG3_T = 263
+
+  ! Quadrilateral 4-point Gauss formula mapped to a triangle
+  integer(I32), parameter, public :: CUB_QG4_T = 264
+
+  ! Quadrilateral 5-point Gauss formula mapped to a triangle
+  integer(I32), parameter, public :: CUB_QG5_T = 265
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, hexa">
@@ -613,8 +646,16 @@ contains
     cub_igetID=CUB_PG2X2
   else if (scub .eq. "PG3X3") then
     cub_igetID=CUB_PG3X3
-  else if (scub .eq. "P4TG3_2D") then
-    cub_igetID=CUB_P4TG3_2D
+  else if (scub .eq. "QPW4G3T_2D") then
+    cub_igetID=CUB_QPW4G3T_2D
+  else if (scub .eq. "QPW4QG2T_2D") then
+    cub_igetID=CUB_QPW4QG2T_2D
+  else if (scub .eq. "QPW4QG2T_2D") then
+    cub_igetID=CUB_QPW4QG2T_2D
+  else if (scub .eq. "QPW4QG2T_2D") then
+    cub_igetID=CUB_QPW4QG2T_2D
+  else if (scub .eq. "QPW4QG2T_2D") then
+    cub_igetID=CUB_QPW4QG2T_2D
   else if (scub .eq. "G6_2D") then
     cub_igetID=CUB_G6_2D
     
@@ -629,6 +670,14 @@ contains
     cub_igetID=CUB_G3MP_T
   else if (scub .eq. "VMC") then
     cub_igetID=CUB_VMC
+  else if (scub .eq. "QG2_T") then
+    cub_igetID=CUB_QG2_T
+  else if (scub .eq. "QG3_T") then
+    cub_igetID=CUB_QG3_T
+  else if (scub .eq. "QG4_T") then
+    cub_igetID=CUB_QG4_T
+  else if (scub .eq. "QG5_T") then
+    cub_igetID=CUB_QG5_T
 
   ! 3D-formulas, hexahedron
   else if (scub .eq. "G1_3D") then
@@ -808,8 +857,16 @@ contains
       sname = 'PG2X2'
     case (CUB_PG3X3)
       sname = 'PG3X3'
-    case (CUB_P4TG3_2D)
-      sname = 'P4TG3_2D'
+    case (CUB_QPW4G3T_2D)
+      sname = 'QPW4G3T_2D'
+    case (CUB_QPW4QG2T_2D)
+      sname = 'QPW4QG2T_2D'
+    case (CUB_QPW4QG3T_2D)
+      sname = 'QPW4QG3T_2D'
+    case (CUB_QPW4QG4T_2D)
+      sname = 'QPW4QG4T_2D'
+    case (CUB_QPW4QG5T_2D)
+      sname = 'QPW4QG5T_2D'
     case (CUB_PTRZ)
       sname = 'PTRZ'
 
@@ -824,6 +881,14 @@ contains
       sname = 'CUB_G3MP_T'
     case (CUB_VMC)
       sname = 'VMC'
+    case (CUB_QG2_T)
+      sname = 'CUB_QG2_T'
+    case (CUB_QG3_T)
+      sname = 'CUB_QG3_T'
+    case (CUB_QG4_T)
+      sname = 'CUB_QG4_T'
+    case (CUB_QG5_T)
+      sname = 'CUB_QG5_T'
 
     ! 3D formulas, hexahedron
     case (CUB_G1_3D)
@@ -1097,6 +1162,14 @@ contains
       n = 3
     case (CUB_VMC)
       n = 7
+    case (CUB_QG2_T)
+      n = 4
+    case (CUB_QG3_T)
+      n = 9
+    case (CUB_QG4_T)
+      n = 16
+    case (CUB_QG5_T)
+      n = 25
     
     ! -= 2D Quadrilateral Formulas =-
     case (CUB_G1_2D)
@@ -1109,7 +1182,7 @@ contains
       n = 7
     case (CUB_G3_2D,CUB_PTRZ,CUB_SIMPSON)
       n = 9
-    case (CUB_G,CUB_P4TG3_2D)
+    case (CUB_G,CUB_QPW4G3T_2D)
       n = 12
     case (CUB_G4_2D,CUB_PG2X2,CUB_3_8)
       n = 16
@@ -1117,6 +1190,14 @@ contains
       n = 25
     case (CUB_G6_2D,CUB_PG3X3)
       n = 36
+    case (CUB_QPW4QG2T_2D)
+      n = 16
+    case (CUB_QPW4QG3T_2D)
+      n = 36
+    case (CUB_QPW4QG4T_2D)
+      n = 64
+    case (CUB_QPW4QG5T_2D)
+      n = 100
       
     ! -= 3D Tetrahedron Formulas =-
     case (CUB_G1_3D_T)
@@ -1254,6 +1335,12 @@ contains
           !   "vertices - edges + (elements+1) = 2"
           ! The number of centers is simply the number of elements.
           n = 2*(n+4**nreflevels)-1
+
+        case (CUB_QG2_T,CUB_QG3_T,CUB_QG4_T,CUB_QG5_T)
+        
+          ! This is the Gauss formula from quads mapped to
+          ! triangles. All points are inner points.
+          n = n * (cub_getRefElements(ccubType))**nreflevels
 
         case default
           
@@ -2443,7 +2530,7 @@ contains
       
         ! Deallocate temporal memory
         deallocate(DpointsRef)
-
+        
       case default
         call output_line ('Unsupported element.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubature')
@@ -2599,7 +2686,7 @@ contains
 
 !<subroutine>
 
-  subroutine cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
+  recursive subroutine cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
 
 !<description>
   ! This routine initialises the coordinates and weight fields according
@@ -2647,6 +2734,7 @@ contains
 
   ! local variables
   integer :: i
+  real(DP), dimension(CUB_MAXCUBP,4) :: DxiAux
   
   select case (ccubType)
 
@@ -2807,7 +2895,8 @@ contains
     
     ncubp     =  6
     
-  !2D cubature formulas
+  ! #################################################################
+  ! 2D cubature formulas
   case (CUB_G1X1)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
@@ -3361,7 +3450,7 @@ contains
     
     ncubp     =  36
     
-  case (CUB_P4TG3_2D)
+  case (CUB_QPW4G3T_2D)
   
     ! We have four triangles in the quad
     !
@@ -3445,6 +3534,146 @@ contains
 #undef P1
 #undef P2
 #undef P3
+
+  case(CUB_QPW4QG2T_2D)
+
+#define RWCOORDS(d1,d2,d3,x1,x2,x3) (d1)*(x1) + (d2)*(x2) + (d3)*(x3)
+  
+    ! This is a piecewise cubature formula.
+    ! At first, compute the cubature formula of the corresponding
+    ! triangular element
+    call cub_getCubPoints(CUB_QG2_T, ncubp, DxiAux, Domega)
+        
+    ! Next, map the cubature points onto the four sub-triangles
+    ! and compute the quad coordinates
+    do i=1,ncubp
+      Dxi(i+0*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+0*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+
+      Dxi(i+1*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+1*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+2*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+2*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+3*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+3*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+
+      ! The standard reference triangle has volume (1*1)/2 = 1/2.
+      ! The sub-triangle has size (2*1)/2 = 1.
+      ! So the weights must be multiplied with 2.
+      Domega(i+3*ncubp) = Domega(i)*2.0_DP
+      Domega(i+2*ncubp) = Domega(i)*2.0_DP
+      Domega(i+1*ncubp) = Domega(i)*2.0_DP
+      Domega(i+0*ncubp) = Domega(i)*2.0_DP
+
+    end do
+    
+    ncubp = 4*ncubp
+    
+  case(CUB_QPW4QG3T_2D)
+  
+    ! This is a piecewise cubature formula.
+    ! At first, compute the cubature formula of the corresponding
+    ! triangular element
+    call cub_getCubPoints(CUB_QG3_T, ncubp, DxiAux, Domega)
+        
+    ! Next, map the cubature points onto the four sub-triangles
+    ! and compute the quad coordinates
+    do i=1,ncubp
+      Dxi(i+0*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+0*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+
+      Dxi(i+1*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+1*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+2*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+2*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+3*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+3*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+
+      ! The standard reference triangle has volume (1*1)/2 = 1/2.
+      ! The sub-triangle has size (2*1)/2 = 1.
+      ! So the weights must be multiplied with 2.
+      Domega(i+3*ncubp) = Domega(i)*2.0_DP
+      Domega(i+2*ncubp) = Domega(i)*2.0_DP
+      Domega(i+1*ncubp) = Domega(i)*2.0_DP
+      Domega(i+0*ncubp) = Domega(i)*2.0_DP
+
+    end do
+    
+    ncubp = 4*ncubp
+
+  case(CUB_QPW4QG4T_2D)
+  
+    ! This is a piecewise cubature formula.
+    ! At first, compute the cubature formula of the corresponding
+    ! triangular element
+    call cub_getCubPoints(CUB_QG4_T, ncubp, DxiAux, Domega)
+        
+    ! Next, map the cubature points onto the four sub-triangles
+    ! and compute the quad coordinates
+    do i=1,ncubp
+      Dxi(i+0*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+0*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+
+      Dxi(i+1*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+1*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+2*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+2*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+3*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+3*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+
+      ! The standard reference triangle has volume (1*1)/2 = 1/2.
+      ! The sub-triangle has size (2*1)/2 = 1.
+      ! So the weights must be multiplied with 2.
+      Domega(i+3*ncubp) = Domega(i)*2.0_DP
+      Domega(i+2*ncubp) = Domega(i)*2.0_DP
+      Domega(i+1*ncubp) = Domega(i)*2.0_DP
+      Domega(i+0*ncubp) = Domega(i)*2.0_DP
+
+    end do
+    
+    ncubp = 4*ncubp
+
+  case(CUB_QPW4QG5T_2D)
+  
+    ! This is a piecewise cubature formula.
+    ! At first, compute the cubature formula of the corresponding
+    ! triangular element
+    call cub_getCubPoints(CUB_QG5_T, ncubp, DxiAux, Domega)
+        
+    ! Next, map the cubature points onto the four sub-triangles
+    ! and compute the quad coordinates
+    do i=1,ncubp
+      Dxi(i+0*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+0*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+
+      Dxi(i+1*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+      Dxi(i+1*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+2*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+2*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP, 1.0_DP,0.0_DP)
+
+      Dxi(i+3*ncubp,1) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3),-1.0_DP,-1.0_DP,0.0_DP)
+      Dxi(i+3*ncubp,2) = RWCOORDS(DxiAux(i,1),DxiAux(i,2),DxiAux(i,3), 1.0_DP,-1.0_DP,0.0_DP)
+
+      ! The standard reference triangle has volume (1*1)/2 = 1/2.
+      ! The sub-triangle has size (2*1)/2 = 1.
+      ! So the weights must be multiplied with 2.
+      Domega(i+3*ncubp) = Domega(i)*2.0_DP
+      Domega(i+2*ncubp) = Domega(i)*2.0_DP
+      Domega(i+1*ncubp) = Domega(i)*2.0_DP
+      Domega(i+0*ncubp) = Domega(i)*2.0_DP
+
+    end do
+    
+    ncubp = 4*ncubp
+    
+#undef RWCOORDS
     
   case(CUB_SIMPSON)
     Dxi(1,1)  = -1.0_DP
@@ -3530,7 +3759,8 @@ contains
     Domega(16) = 0.0625_DP
     ncubp     = 16
     
-  !triangle cubature formulas
+  ! #################################################################
+  ! triangle cubature formulas
   case(CUB_G1_T)
     Dxi(1,1)  =  0.3333333333333333_DP
     Dxi(1,2)  =  0.3333333333333333_DP
@@ -3627,6 +3857,47 @@ contains
 
     ncubp     =  7
 
+  case (CUB_QG2_T)
+    ! Quadrilateral 2-point Gauss formula,
+    ! mapped on a triangle.
+    !
+    ! Get the QUAD formula
+    call cub_getCubPoints(CUB_G2X2, ncubp, DxiAux, Domega)
+    
+    ! Map to the reference triangle
+    call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
+    
+  case (CUB_QG3_T)
+    ! Quadrilateral 3-point Gauss formula,
+    ! mapped on a triangle.
+    !
+    ! Get the QUAD formula
+    call cub_getCubPoints(CUB_G3X3, ncubp, DxiAux, Domega)
+    
+    ! Map to the reference triangle
+    call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
+
+  case (CUB_QG4_T)
+    ! Quadrilateral 2-point Gauss formula,
+    ! mapped on a triangle.
+    !
+    ! Get the QUAD formula
+    call cub_getCubPoints(CUB_G4X4, ncubp, DxiAux, Domega)
+    
+    ! Map to the reference triangle
+    call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
+
+  case (CUB_QG5_T)
+    ! Quadrilateral 5-point Gauss formula,
+    ! mapped on a triangle.
+    !
+    ! Get the QUAD formula
+    call cub_getCubPoints(CUB_G5X5, ncubp, DxiAux, Domega)
+    
+    ! Map to the reference triangle
+    call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
+
+  ! #################################################################
   ! 3D cubature formulas
 
   case(CUB_G1_3D)
@@ -3902,6 +4173,7 @@ contains
 
     ncubp     =  27
 
+  ! #################################################################
   ! tetrahedra
   case(CUB_G1_3D_T)
     Dxi(1,1)  =  0.25_DP
@@ -4098,6 +4370,7 @@ contains
     
     ncubp = 15
 
+  ! #################################################################
   ! pyramid
   case(CUB_G1_3D_Y)
     Dxi(1,1) = 0.0_DP
@@ -4202,11 +4475,117 @@ contains
     ncubp = 6
 
   case default
-    call output_line('Unknown cubature type!',&
-                     OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubPoints')
+    call output_line("Unknown cubature type!",&
+                     OU_CLASS_ERROR,OU_MODE_STD,"cub_getCubPoints")
     call sys_halt()
   end select
    
   end subroutine cub_getCubPoints
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine cub_map2DQuadCub2TriCub (DxiQuad,DxiTri,Domega,ncubp)
+  
+!<description>
+  ! This subroutine maps an arbitrary 2D quadrilateral cubature
+  ! formula into a triangular formular. The approach merges two points
+  ! in the quad and recalculates the cubature weights based on a linear
+  ! mapping between the two reference elements.
+!</description>
+
+!<input>
+  ! Number of cubature points
+  integer, intent(in) :: ncubp
+
+  ! Cubature points on the quadrilateral reference element [-1,1]^2.
+  real(DP), dimension(:,:), intent(in) :: DxiQuad
+!</input>
+
+!<inputoutput>
+  ! Cubature points on the triangular reference element
+  ! in barycentric coordinates.
+  real(DP), dimension(:,:), intent(out) :: DxiTri
+
+  ! On input: Cubature weights on the quad reference element.
+  ! On output: Cubature weights on the triangular reference element
+  real(DP), dimension(:), intent(inout) :: Domega
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    real(DP) :: ddet,dx,dy
+    real(DP), dimension(2,3), parameter :: DrefTri = &
+        (/0.0_DP,0.0_DP,1.0_DP,0.0_DP,0.0_DP,1.0_DP/)
+
+
+    ! The approach is very simple.
+    ! One creates a bilinear mapping between the two reference
+    ! elements such that
+    !
+    !   sigma(-1,-1) = (0,0)
+    !   sigma( 1,-1) = (1,0)
+    !   sigma( 1, 1) = (1,0)
+    !   sigma(-1, 1) = (0,1)
+    !
+    ! i.e., points (1,-1) and (1,1) are merged.
+    !    
+    !               ^
+    !  -1,1         |        1,1            0,1
+    !     D---------+---------C              D.
+    !     |         |         |              | `.
+    !     O---X-----+-----X---O              `.  `.
+    !     |         |         |              | `-. `.
+    !     |         |         |              |    `X `.
+    !  ---+---------+---------+---->         |      `. `.
+    !     |         |         |              |        `-.`.
+    !     |         |         |    ----->    |           `X`.
+    !     O---X-----+-----X---O     sigma    ...___        `.`.
+    !     |         |         |              |     X`---..X__`-:.
+    !     A---------+---------B              A---------O----------BC
+    !  -1,-1        |        1,-1          0,0                    1,0
+    !
+    ! With these conditions, the mapping reads:
+    !
+    !   sigma(x,y) = [ 1/2 + 1/2*x                   ]
+    !                [ 1/4 - 1/4*x + 1/4*y - 1/4*x*y ]
+    !
+    ! This leads to the Jacobian
+    !
+    !  Dsigma(x,y) = [ -1/4 - 1/4*y ]
+    !                [  1/4 - 1/4*x ]
+    !
+    ! with the Jacobian determinant
+    !
+    !  det(Dsigma) = 1/8 - 1/8*x
+    !              = 1/8 ( 1 - x )
+    !
+    ! The cubature points transform according to sigma.
+    ! The cubature weights transform according to the
+    ! Jacobian of sigma.
+    
+    ! Loop over all points
+    do i=1,ncubp
+      ! Calculate the Jacobian of the mapping between the two
+      ! reference elements
+      ddet = 0.125_DP*(1.0_DP - DxiQuad(i,1))
+      
+      ! Calculate the new weight
+      Domega(i) = ddet * Domega(i)
+      
+      ! Calculate the new x/y coordinate of the point
+      dx = 0.5_DP + 0.5_DP * DxiQuad(i,1)
+          
+      dy = 0.25_DP - 0.25_DP * DxiQuad(i,1) + 0.25_DP*DxiQuad(i,2) &
+         - 0.25_DP * DxiQuad(i,1) * DxiQuad(i,2)
+          
+      ! Calculate the barycentric coordinates of the point
+      call gaux_getBarycentricCoords_tri2D(&
+          DrefTri,dx,dy,DxiTri(i,1),DxiTri(i,2),DxiTri(i,3))
+    end do
+
+  end subroutine
 
 end module

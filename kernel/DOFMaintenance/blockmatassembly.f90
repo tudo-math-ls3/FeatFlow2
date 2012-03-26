@@ -1154,6 +1154,7 @@ contains
 !</subroutine>
 
     integer :: i
+    integer(I32) :: cshape
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -1229,13 +1230,16 @@ contains
 
     ! Get and check information about the elements.
     ! NVE can be obtained by any of the elements.
-    rmatrixAssembly%NVE = elem_igetNVE(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+    rmatrixAssembly%NVE = &
+        elem_igetNVE(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+    cshape = &
+        elem_igetShape(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
 
     ! Check that all elements have the same NVE. Otherwise,
     ! something is wrong.
     do i=2,size(rmatrixAssembly%rassemblyDataTemplate%p_RfemData)
-      if (rmatrixAssembly%NVE .ne. &
-          elem_igetNVE(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
+      if (cshape .ne. &
+          elem_igetShape(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
         call output_line ("Element spaces incompatible!",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_initAssembly")
         call sys_halt()

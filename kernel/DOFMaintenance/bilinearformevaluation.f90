@@ -305,9 +305,6 @@ module bilinearformevaluation
     ! Maximum number of elements to handle simultaneously.
     integer :: nelementsPerBlock
     
-    ! Number of vertices per element
-    integer :: NVE
-    
     ! Type of element to evaluate in the trial and test space.
     integer(I32) :: celementTrial
     integer(I32) :: celementTest
@@ -900,7 +897,7 @@ contains
   
   ! local variables
   integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
-  integer :: IDOFE, JDOFE, i, IHELP,NVE
+  integer :: IDOFE, JDOFE, i, IHELP
   integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
 
@@ -1143,10 +1140,10 @@ contains
     indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
     
     ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(p_relementDistrTest%celement)
-    if (NVE .ne. elem_igetNVE(p_relementDistrTrial%celement)) then
-      call output_line ('Element spaces incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
+    if (elem_igetShape(p_relementDistrTest%celement) .ne. &
+        elem_igetShape(p_relementDistrTrial%celement)) then
+      call output_line ("Element spaces incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatStructure9_conf")
       call sys_halt()
     end if
     
@@ -1656,7 +1653,7 @@ contains
 
   ! local variables
   integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
-  integer :: IDOFE, JDOFE, i, IHELP,NVE, nelemBlockCount, IELidx
+  integer :: IDOFE, JDOFE, i, IHELP, nelemBlockCount, IELidx
   integer :: IELneighIdxJ
   integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
@@ -1888,10 +1885,10 @@ contains
   indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
   
   ! Get the number of corner vertices of the element
-  NVE = elem_igetNVE(p_relementDistrTrial%celement)
-  if (NVE .ne. elem_igetNVE(p_relementDistrTest%celement)) then
-    call output_line ('Element spaces incompatible!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
+  if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
+      elem_igetShape(p_relementDistrTest%celement)) then
+    call output_line ("Element spaces incompatible!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatStructure9_conf")
     call sys_halt()
   end if
   
@@ -5364,10 +5361,9 @@ contains
 
     ! Get the number of vertices of the element, specifying the transformation
     ! form the reference to the real element.
-    rmatrixAssembly%NVE = elem_igetNVE(celementTest)
-    if (rmatrixAssembly%NVE .ne. elem_igetNVE(celementTrial)) then
-      call output_line ('Element spaces incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+    if (elem_igetShape(celementTest) .ne. elem_igetShape(celementTrial)) then
+      call output_line ("Element spaces incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
       call sys_halt()
     end if
     

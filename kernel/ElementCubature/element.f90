@@ -1428,9 +1428,37 @@ contains
 
 !</function>
 
-    ! NVE coincides with that NVE from the transformation.
-    ! Use the transformation routine to determine that value!
-    elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(celement))
+    ! Determine the coordinate system based on the element's shape and its parametricity flag.
+    select case(elem_igetShape(celement))
+    case (BGEOM_SHAPE_LINE)
+      ! 1D line element: reference coordinates
+      elem_igetNVE = 2
+
+    case (BGEOM_SHAPE_TRIA)
+      ! 2D triangle element
+      elem_igetNVE = 3
+
+    case (BGEOM_SHAPE_QUAD)
+      ! 2D quadrilateral element
+      elem_igetNVE = 4
+
+    case (BGEOM_SHAPE_TETRA)
+      ! 3D tetrahedral element
+      elem_igetNVE = 4
+
+    case (BGEOM_SHAPE_HEXA)
+      ! 3D hexahedral element
+      elem_igetNVE = 8
+
+    case (BGEOM_SHAPE_PYRA)
+      ! 3D pyramid element
+      elem_igetNVE = 5
+
+    case (BGEOM_SHAPE_PRISM)
+      ! 3D prism element
+      elem_igetNVE = 6
+
+    end select
 
   end function
 
