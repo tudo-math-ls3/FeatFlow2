@@ -650,12 +650,12 @@ contains
     cub_igetID=CUB_QPW4G3T_2D
   else if (scub .eq. "QPW4QG2T_2D") then
     cub_igetID=CUB_QPW4QG2T_2D
-  else if (scub .eq. "QPW4QG2T_2D") then
-    cub_igetID=CUB_QPW4QG2T_2D
-  else if (scub .eq. "QPW4QG2T_2D") then
-    cub_igetID=CUB_QPW4QG2T_2D
-  else if (scub .eq. "QPW4QG2T_2D") then
-    cub_igetID=CUB_QPW4QG2T_2D
+  else if (scub .eq. "QPW4QG3T_2D") then
+    cub_igetID=CUB_QPW4QG3T_2D
+  else if (scub .eq. "QPW4QG4T_2D") then
+    cub_igetID=CUB_QPW4QG4T_2D
+  else if (scub .eq. "QPW4QG5T_2D") then
+    cub_igetID=CUB_QPW4QG5T_2D
   else if (scub .eq. "G6_2D") then
     cub_igetID=CUB_G6_2D
     
@@ -1729,7 +1729,7 @@ contains
 !</subroutine>
 
   ! local variables for wrapper
-  real(DP), dimension(CUB_MAXCUBP,4) :: Dxi
+  real(DP), dimension(:,:), allocatable :: Dxi
   integer :: i,j,k,l,ncubp
   
   ! Auxiliary arrays for Gauss-Legendre rules
@@ -1925,6 +1925,12 @@ contains
       ! OLD INTERFACE WRAPPER
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       case default
+
+        ! fetch number of cubature points
+        ncubpts = cub_igetNumPts(ccubType)
+
+        ! allocate Dxi array
+        allocate(Dxi(ncubpts,4))
     
         ! call old routine
         call cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
@@ -1935,7 +1941,10 @@ contains
             Dpoints(i,j) = Dxi(j,i)
           end do
         end do
-        
+
+        ! deallocate Dxi array
+        deallocate(Dxi)
+
         ! And get out of here
         return
         
