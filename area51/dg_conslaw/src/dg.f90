@@ -21,6 +21,7 @@ program dg
   use dg2d_multigridsystem
   use dg2d_multigridpoisson
   use dg2d_multigridscalaradvectiondeal
+  use dg2d_mgscpoissonde
 
   implicit none
 
@@ -81,11 +82,17 @@ program dg
 !  call output_line ('----------------------------------')
 !  call dg2d_mgpoisson
   
-  ! Call the problem to solve. Linear convection, as in DealII:
+!  ! Call the problem to solve. Linear convection, as in DealII:
+!  call output_lbrk ()
+!  call output_line ('Linear convection equation, multigrid solver')
+!  call output_line ('--------------------------------------------')
+!  call dg2d_multigridscalaradvectiondeal_run
+
+  ! Call the problem to solve. Poisson equation, as in DealII:
   call output_lbrk ()
-  call output_line ('Linear convection equation, multigrid solver')
+  call output_line ('Poisson equation, multigrid solver')
   call output_line ('--------------------------------------------')
-  call dg2d_multigridscalaradvectiondeal_run
+  call dg2d_dgmpd_run
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

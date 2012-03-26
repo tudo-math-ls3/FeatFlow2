@@ -11,6 +11,7 @@
 			  DCoefficients,&
 			  IelementList,&
         normal,&
+        DedgeLength,&
         rintSubSet,&
         rcollection )
     
@@ -38,6 +39,7 @@
     
   !<input>
   real(DP), dimension(:,:), intent(in) :: normal
+  real(dp), dimension(:), intent(in) :: DedgeLength
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   integer, dimension(:), intent(in) :: IelementList
   !</input>

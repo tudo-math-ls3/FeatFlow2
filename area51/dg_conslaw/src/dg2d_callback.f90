@@ -9866,6 +9866,449 @@ contains
   end subroutine
   
   
+  
+  
+  
+  
+  !<subroutine>
+
+    subroutine dgmpd_fcoeff_MatrixScalarMgCell (rdiscretisationTrial,&
+                  rdiscretisationTest, rform, nelements, npointsPerElement,&
+                  Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
+                  Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use collection
+    use domainintegration
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    use fsystem
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    integer :: iel, ipoint
+    real(dp) :: dx, dy, beta1, beta2
+
+    ! Loop over all elements and cubature points
+    do iel = 1, size(Dpoints,3)
+       do ipoint = 1, size(Dpoints,2)
+
+          ! Get coordinates
+          dx = rdomainIntSubset%p_DcubPtsReal(1,ipoint,iel)
+          dy = rdomainIntSubset%p_DcubPtsReal(2,ipoint,iel)
+
+          ! Set coefficients (the velocity vector)
+          Dcoefficients(1,ipoint,iel) = 1.0_dp
+          Dcoefficients(2,ipoint,iel) = 1.0_dp
+
+       end do
+    end do
+   
+  end subroutine
+
+
+!<subroutine>
+
+    subroutine dgmpd_flux_dg_MatrixScalarMgEdge (&
+			  DCoefficients,&
+			  IelementList,&
+        normal,&
+        DedgeLength,&
+        rintSubSet,&
+        rcollection )
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    use linearsystemscalar
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coeffitients for all combinations of trial and testfunctions in (i/1)
+    ! and outside (a/2) of the first element (so in the second element).
+    ! If we are at the boundary, only the i,i (1,1) combination is written,
+    ! as the other combination of trial/test functions do not exist.
+    ! For an edge on the boundary, it is Ielementlist(iedge) = 0.
+    !
+    ! DCoefficients
+    ! (2 sides for the trial functions, 2 sides for the test functions,
+    !  iterm, icubp, iedge)
+  !</description>
+    
+  !<input>
+  real(DP), dimension(:,:), intent(in) :: normal
+  real(dp), dimension(:), intent(in) :: DedgeLength
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+  integer, dimension(:), intent(in) :: IelementList
+  !</input>
+  
+  !<inputoutput>
+  type(t_collection), intent(inout), target, optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+  ! The coeffitient
+  ! Dimension: 2,2,nterms,ncubp,nedges
+  ! DCoefficients
+  ! (2 sides for the trial functions, 2 sides for the test functions,
+  !  iterm, icubp, iedge)
+  real(DP), dimension(:,:,:,:,:), intent(out) :: DCoefficients
+  !</output>
+    
+  !</subroutine>
+  
+  integer :: nterms, ncubaturepoints, nedges, iedge, ipoint
+  real(dp) :: dsigmaf, dpolgrad
+  
+  ! Get size of Dcoeffitients
+  nterms = size(DCoefficients,3)
+  ncubaturepoints = size(DCoefficients,4)
+  nedges = size(DCoefficients,5)
+  
+  ! Reset Dcoeffitients
+  DCoefficients = 0.0_dp
+  
+  
+  ! Loop over the edges
+  do iedge = 1, nedges
+    ! Loop over the quadrature points
+    do ipoint = 1, ncubaturepoints
+      
+      if (IelementList(iedge).ne.0) then
+        ! Inner edge
+        
+        ! Term 1: u,v
+        DCoefficients(1,1,1,ipoint,iedge) = 1.0_dp
+        DCoefficients(2,1,1,ipoint,iedge) = -1.0_dp
+        DCoefficients(1,2,1,ipoint,iedge) = -1.0_dp
+        DCoefficients(2,2,1,ipoint,iedge) = 1.0_dp
+        
+        dpolgrad = real(rcollection%Iquickaccess(1))
+        dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
+        DCoefficients(:,:,1,ipoint,iedge) = & 
+                   DCoefficients(:,:,1,ipoint,iedge) * dsigmaf
+        
+        ! Term 2: u_x,v
+        DCoefficients(1,1,2,ipoint,iedge) = normal(1,iedge)
+        DCoefficients(2,1,2,ipoint,iedge) = normal(1,iedge)
+        DCoefficients(1,2,2,ipoint,iedge) = -normal(1,iedge)
+        DCoefficients(2,2,2,ipoint,iedge) = -normal(1,iedge)
+        
+        DCoefficients(:,:,2,ipoint,iedge) = & 
+                   DCoefficients(:,:,2,ipoint,iedge) * (-0.5_dp)
+        
+        ! Term 3: u_y,v
+        DCoefficients(1,1,3,ipoint,iedge) = normal(2,iedge)
+        DCoefficients(2,1,3,ipoint,iedge) = normal(2,iedge)
+        DCoefficients(1,2,3,ipoint,iedge) = -normal(2,iedge)
+        DCoefficients(2,2,3,ipoint,iedge) = -normal(2,iedge)
+        
+        DCoefficients(:,:,3,ipoint,iedge) = & 
+                   DCoefficients(:,:,3,ipoint,iedge) * (-0.5_dp)
+        
+        ! Term 4: u,v_x
+        DCoefficients(1,1,4,ipoint,iedge) = normal(1,iedge)
+        DCoefficients(2,1,4,ipoint,iedge) = -normal(1,iedge)
+        DCoefficients(1,2,4,ipoint,iedge) = normal(1,iedge)
+        DCoefficients(2,2,4,ipoint,iedge) = -normal(1,iedge)
+        
+        DCoefficients(:,:,4,ipoint,iedge) = & 
+                   DCoefficients(:,:,4,ipoint,iedge) * (-0.5_dp)
+        
+        ! Term 5: u,v_y
+        DCoefficients(1,1,5,ipoint,iedge) = normal(2,iedge)
+        DCoefficients(2,1,5,ipoint,iedge) = -normal(2,iedge)
+        DCoefficients(1,2,5,ipoint,iedge) = normal(2,iedge)
+        DCoefficients(2,2,5,ipoint,iedge) = -normal(2,iedge)
+        
+        DCoefficients(:,:,5,ipoint,iedge) = & 
+                   DCoefficients(:,:,5,ipoint,iedge) * (-0.5_dp)
+
+      else
+        ! Boundary edge
+
+        ! Term 1: u,v
+        dpolgrad = real(rcollection%Iquickaccess(1))
+        dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
+        DCoefficients(1,1,1,ipoint,iedge) = 2.0_dp * dsigmaf
+        
+        ! Term 2: u_x,v
+        DCoefficients(1,1,2,ipoint,iedge) = -normal(1,iedge)
+        
+        ! Term 3: u_y,v
+        DCoefficients(1,1,3,ipoint,iedge) = -normal(2,iedge)
+        
+        ! Term 4: u,v_x
+        DCoefficients(1,1,4,ipoint,iedge) = -normal(1,iedge)
+        
+        ! Term 5: u,v_y
+        DCoefficients(1,1,5,ipoint,iedge) = -normal(2,iedge)     
+      
+      end if
+      
+    end do
+  end do
+  
+end subroutine
+
+
+
+
+  
+  
+  
+  
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine dgmpd_VectorScalarMg (rdiscretisation,rform, &
+       nelements,npointsPerElement,Dpoints, &
+       IdofsTest,rdomainIntSubset,&
+       Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+    !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !</description>
+
+    !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+
+    !</input>
+
+    !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+    !</output>
+
+    !</subroutine>
+
+    !    u(x,y) = 16*x*(1-x)*y*(1-y)
+    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
+    !Dcoefficients (1,:,:) = 32.0_DP * &
+    !     ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+    !     Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+    
+    Dcoefficients (1,:,:) = 1.0_dp
+    
+
+  end subroutine 
+  
+  
+  
+  
+  !<subroutine>
+
+    subroutine dgmpd_flux_dg_VectorScalarMgEdge (&
+              Dcoefficients,&
+              IelementList,&
+              Dnormal,&
+              DedgeLength,&
+              rintSubSet,&
+              rcollection )
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    use linearsystemscalar
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    ! These are, for \int f * v ds (with rhs f and testfct v)
+    ! \int dcoeff(1,...) f^i * v^i + \int dcoeff(2,...) f^a * v^a ds
+    ! Where i=inside first element, a=outside first element.
+    ! The normal is the one for the first element, -normal for second.
+  !</description>
+    
+  !<input>
+  real(DP), dimension(:,:), intent(in) :: Dnormal
+  real(DP), dimension(:), intent(in) :: DedgeLength
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
+  integer, dimension(:) , intent(in) :: IelementList
+  !</input>
+  
+  !<inputoutput>
+  type(t_collection), intent(inout), target, optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
+  ! Dimension: 2 (testfcts on each side of the edge),nterms,ncubpoints,nedges
+  real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+  
+  
+  
+  integer :: nterms, ncubaturepoints, nedges, iedge, ipoint
+  real(dp) :: dsigmaf, dpolgrad, g
+  
+  ! Get size of Dcoeffitients
+  nterms = size(DCoefficients,2)
+  ncubaturepoints = size(DCoefficients,3)
+  nedges = size(DCoefficients,4)
+  
+  ! Reset Dcoeffitients
+  DCoefficients = 0.0_dp
+  
+  
+  ! Loop over the edges
+  do iedge = 1, nedges
+    ! Loop over the quadrature points
+    do ipoint = 1, ncubaturepoints
+      
+      if (IelementList(iedge).ne.0) then
+        ! Inner edge
+        
+        ! Here is nothing to do
+        
+      else
+        ! Boundary edge
+
+        ! Term 1: v
+        dpolgrad = real(rcollection%Iquickaccess(1))
+        dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
+        g = 0.0_dp ! value on boundary
+        DCoefficients(1,1,ipoint,iedge) = 2.0_dp * dsigmaf * g
+        
+        ! Term 2: v_x
+        g = 0.0_dp
+        DCoefficients(1,2,ipoint,iedge) = -Dnormal(1,iedge) * g
+        
+        ! Term 3: v_y
+        g = 0.0_dp
+        DCoefficients(1,3,ipoint,iedge) = -Dnormal(2,iedge) * g
+      
+      end if
+      
+    end do
+  end do
+  
+  end subroutine
+  
 
 
 end module dg2d_callback

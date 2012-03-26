@@ -16444,7 +16444,8 @@ contains
     ! Allocate space for the flux variables DIM(2,2,ialbet,ncubp,elementsperblock)
     ! 2 testfunctions on each side, 2trialfunctions on each side,
     ! iterm, iquadpoint, iedge
-    allocate(DCoefficients(2,2,rlocalMatrixAssembly(1)%rform%itermcount,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
+    allocate(DCoefficients(2,2,rlocalMatrixAssembly(1)%rform%itermcount,ncubp,&
+             rlocalMatrixAssembly(1)%nelementsPerBlock))
 
     !    ! Get some more pointers to local data.
     !    p_Kentry => rlocalMatrixAssembly%p_Kentry
@@ -16769,6 +16770,7 @@ contains
             IelementList(2,IELset:IELmax),&
             !p_Dside,&
             raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
+            raddTriaData%p_DedgeLength(Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
        rintSubset,&
             rcollection )
@@ -17168,5 +17170,809 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_de
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  !****************************************************************************
+
+  !<subroutine>
+
+  subroutine linf_dg_buildVectorScalarEdge2d_de (rform, ccubType, bclear,&
+       rvectorScalar,&
+       raddTriaData,&
+       flux_dg_buildVectorScEdge2D_sim,&
+       rcollection)
+
+    !<description>
+    ! This routine assembles the entries of a vector according to the linear form
+    ! \int_{elementboundary} dg_flux_function * \phi ds
+    ! The flux function is given as a callback routine and is dependend on the
+    ! two values of the solution on the edge, according to the left and right
+    ! element
+    !
+    ! If bclear=TRUE, the vector is cleared before the assembly and any
+    ! sorting of the entries is switched off - the vector is set up unsorted.
+    !
+    ! If bclear=FALSE, the vector must be unsorted when this routine is called,
+    ! otherwise an error is thrown.
+    !</description>
+
+    !<input>
+    ! The linear form specifying the underlying PDE of the discretisation.
+    type(t_linearForm), intent(in) :: rform
+
+    ! A line cubature formula CUB_xxxx_1D to be used for line integration.
+    integer(I32), intent(in) :: ccubType
+
+    ! Whether to clear the vector before calculating the entries.
+    ! If .FALSE., the new entries are added to the existing entries.
+    logical, intent(in) :: bclear
+
+    ! Additional triangulation data
+    type(t_additionalTriaData), intent(in) :: raddTriaData
+
+    ! OPTIONAL: A collection structure. This structure is
+    ! given to the callback function for calculating the function
+    ! which should be discretised in the linear form.
+    type(t_collection), intent(inout), target, optional :: rcollection
+
+    ! A callback routine for the function to be discretised.
+    include 'intf_flux_dg_buildVectorScEdge2D_de.inc'
+    optional :: flux_dg_buildVectorScEdge2D_sim
+    !</input>
+
+    !<inputoutput>
+    ! The linear form vector. Calculated entries are imposed to this vector.
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
+    !</inputoutput>
+
+    !</subroutine>
+
+    ! local variables
+    type(t_linfVectorAssembly), dimension(2) :: rvectorAssembly
+    type(t_boundary), pointer :: p_rboundary
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IedgeList
+    integer, dimension(:,:), pointer :: p_IlocalEdgeNumber
+    integer :: ielementDistr, NMT, NVT, iedge
+
+    ! If the vector does not exist, stop here.
+    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
+       call output_line('Vector not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
+       call sys_halt()
+    end if
+
+    ! The vector must be unsorted, otherwise we can not set up the vector.
+    if (rvectorScalar%isortStrategy .gt. 0) then
+       call output_line('Vector must be unsorted!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
+       call sys_halt()
+    end if
+
+    ! Clear the vector if necessary.
+    if (bclear) call lsyssc_clearVector (rvectorScalar)
+
+    ! The vector must provide a discretisation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+       call output_line('No discretisation associated!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
+       call sys_halt()
+    end if
+
+    ! The discretisation must provide a triangulation structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+       call output_line('No triangulation associated!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
+       call sys_halt()
+    end if
+
+    ! The discretisation must provide a boundary structure
+    if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
+       call output_line('No boundary associated!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d_de')
+       call sys_halt()
+    end if
+
+    ! Set pointers for quicker access
+    p_rboundary => rvectorScalar%p_rspatialDiscr%p_rboundary
+    p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
+
+    ! Do we have a uniform triangulation? Would simplify a lot...
+    if (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+
+       select case(rvectorScalar%cdataType)
+
+       case(ST_DOUBLE)
+
+          ! Get number of vertices in the triangulation
+          NVT = p_rtriangulation%NVT
+
+          ! Get number of edges belonging to elements
+          NMT = p_rtriangulation%NMT
+
+          ! Allocate the edgelist
+          allocate(p_IedgeList(NMT))
+
+          ! All edges
+          forall (iedge = 1:NMT) p_IedgeList(iedge)=iedge
+
+          ! Initialise the vectorAssembly structures
+          call linf_initAssembly(rvectorAssembly(1), rform,&
+               rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+               ccubType, LINF_NELEMSIM)
+!          call linf_initAssembly(rvectorAssembly(2), rform,&
+!               rvectorScalarSol%p_rspatialDiscr%RelementDistr(1)%celement,&
+!               ccubType, LINF_NELEMSIM)
+          call dg_initAssembly_reverseCubPoints(rvectorAssembly(2), rform,&
+               rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
+               ccubType, LINF_NELEMSIM)
+
+          ! Assemble the data for all elements in this element distribution
+          call linf_dg_assembleSubmeshVectorScalarEdge2d_de (rvectorAssembly,&
+               rvectorScalar,&
+               p_IedgeList(1:NMT),raddTriaData,&
+               flux_dg_buildVectorScEdge2D_sim,&
+               rcollection&
+               )
+
+
+          ! Release the assembly structure.
+          call linf_doneAssembly(rvectorAssembly(1))
+          call linf_doneAssembly(rvectorAssembly(2))
+
+          ! Deallocate the edgelist
+          deallocate(p_IedgeList)
+
+       case DEFAULT
+          call output_line('Single precision vectors currently not supported!',&
+               OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
+          call sys_halt()
+       end select
+
+    else
+       call output_line('General discretisation not implemented!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
+       call sys_halt()
+    end if
+
+  end subroutine linf_dg_buildVectorScalarEdge2d_de
+
+
+  !****************************************************************************
+
+  !<subroutine>
+
+  subroutine linf_dg_assembleSubmeshVectorScalarEdge2d_de (rvectorAssembly,&
+       rvector,&
+       IedgeList, raddTriaData,&
+       flux_dg_buildVectorScEdge2D_sim,&
+       rcollection)
+
+    !<description>
+
+    ! Assembles the vector entries for a submesh by integration over the given edges.
+
+    !</description>
+
+    !<input>
+
+    ! List of edges where to assemble the linear form.
+    integer, dimension(:), intent(in), target :: IedgeList
+
+    ! Additional triangulation data
+    type(t_additionalTriaData), intent(in) :: raddTriaData
+
+    ! A callback routine which is able to calculate the values of the
+    ! function $f$ which is to be discretised.
+    include 'intf_flux_dg_buildVectorScEdge2D_de.inc'
+    optional :: flux_dg_buildVectorScEdge2D_sim
+
+    !</input>
+
+    !<inputoutput>
+
+    ! A vector assembly structure prepared with linf_initAssembly.
+    type(t_linfVectorAssembly), dimension(2), intent(inout), target :: rvectorAssembly
+
+    ! A vector where to assemble the contributions to.
+    type(t_vectorScalar), intent(inout) :: rvector
+
+    ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+    ! callback function for nonconstant coefficients to provide additional
+    ! information.
+    type(t_collection), intent(inout), target, optional :: rcollection
+    !</inputoutput>
+
+    !</subroutine>
+
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_Ddata, p_DdataSol
+    integer :: indof,ncubp
+
+    ! local data of every processor when using OpenMP
+    integer :: IELset,IELmax,ibdc,k
+    integer :: iel,icubp,ialbet,ia,idofe
+    real(DP) :: domega,daux1,daux2,dlen
+    real(DP) :: dval1, dval2
+    integer(I32) :: cevaluationTag
+    type(t_linfVectorAssembly), dimension(2), target :: rlocalVectorAssembly
+    type(t_domainIntSubset), dimension(2) :: rintSubset
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    integer, dimension(:),pointer :: p_Idescriptors
+    integer, dimension(:,:), pointer :: p_Idofs
+    type(t_evalElementSet), pointer :: p_revalElementSet
+
+    ! A small vector holding only the additive contributions of
+    ! one element
+    real(DP), dimension(2,EL_MAXNBAS) :: DlocalData
+
+    ! Arrays for cubature points 1D->2D
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D_1, Dxi1D_2
+    real(DP), dimension(:,:,:,:), allocatable :: Dxi2D,DpointsRef
+
+    ! Element list, where to assemble the form
+    integer, dimension(:,:), allocatable, target :: IelementList
+
+    integer(i32) :: icoordSystem
+
+    ! Chooses the element on side ... of the edge
+    integer :: iside
+
+    ! Number of edges
+    integer :: NMT
+
+    ! Vertices per element
+    integer :: NVE
+
+    integer :: ive
+
+    ! Pointer to Ielementsatedge in the triangulation
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge
+
+    ! Pointer to IverticesAtEdge in the triangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+
+    ! Pointer to the vertex coordinates
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+
+    ! Pointer to IverticesAtEelement in the triangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    !    ! Array for the solution values in the cubature points
+    !    real(DP), dimension(:,:,:), allocatable :: DsolVals
+
+    ! Array for the normal vectors
+    real(DP), dimension(:,:), allocatable :: normal
+
+    ! Temp variables for the coordinates of the vertices
+    real(DP) :: dxl1, dxl2, dyl1, dyl2
+
+    ! The Jacobian matrix of the mapping for each point.
+    ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
+    real(DP), dimension(:,:,:), allocatable :: Djac
+
+    ! Jacobian determinants of the mapping for all the points from the
+    ! reference element to the real element.
+    ! DIMENSION(npointsPerEl,nelements)
+    real(DP), dimension(:,:), allocatable :: Ddetj
+
+    ! Array receiving the coordinates of the points in DpointsRef,
+    ! mapped from the reference element to the real element.
+    ! If not specified, they are not computed.
+    ! DIMENSION(#space dimensions,npointsPerEl,nelements)
+    real(DP), dimension(:,:,:), allocatable :: DpointsReal
+
+    ! The coordinates of the corner edges of the elements for the transformation
+    ! DIMENSION(#space dimensions,NVE,nelements)
+    real(DP), dimension(:,:,:), allocatable :: Dcoords
+
+    integer(I32) :: ctrafotype
+
+    ! Space for the coefficients
+    ! 2 testfunctions (1 for each side of the edge),
+    ! ialbet,ncubp,nedges
+    real(DP), dimension(:,:,:,:), allocatable :: Dcoefficients
+
+
+    ! Copy the assembly data to the local assembly data,
+    ! where we can allocate memory.
+    ! For single processor machines, this is actually boring and nonsense.
+    ! But using OpenMP, here we get a local copy of the vector
+    ! assembly structure to where we can add some local data which
+    ! is released upon return without changing the original assembly
+    ! stucture or disturbing the data of the other processors.
+    rlocalVectorAssembly(1) = rvectorAssembly(1)
+    rlocalVectorAssembly(2) = rvectorAssembly(2)
+
+    call linf_allocAssemblyData(rlocalVectorAssembly(1))
+    call linf_allocAssemblyData(rlocalVectorAssembly(2))
+
+    ! Get pointers to elements at edge
+    call storage_getbase_int2D(&
+         rvector%p_rspatialDiscr%p_rtriangulation%h_IelementsAtEdge,&
+         p_IelementsAtEdge)
+
+    ! Get pointers to the vertex coordinates
+    call storage_getbase_double2D(&
+         rvector%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
+         p_DvertexCoords)
+
+    ! Get pointers to vertices at edge
+    call storage_getbase_int2D(&
+         rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
+         p_IverticesAtEdge)
+
+    ! Get pointers to vertices at elements
+    call storage_getbase_int2D(&
+         rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
+         p_IverticesAtElement)
+
+    ! Get the elements adjacent to the given edges
+    allocate(IelementList(3,size(IedgeList)))
+    IelementList(1:2,1:size(IedgeList))=p_IelementsAtEdge(1:2,IedgeList(:))
+
+    ! Copy the second component and replace 0s by 1s
+    IelementList(3,size(IedgeList))=IelementList(2,size(IedgeList))
+    do iel = 1,size(IedgeList)
+       IelementList(3,iel)=max(IelementList(2,iel),1)
+    end do
+
+    ! Get some pointers for faster access
+    call lsyssc_getbase_double (rvector, p_Ddata)
+    indof = rvectorAssembly(1)%indof
+    ncubp = rvectorAssembly(1)%ncubp
+    NVE = rvectorAssembly(1)%NVE
+
+    !    ! Allocate space for the solution values in the cubature points
+    !    allocate(DsolVals(2,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+
+    !    ! Allocate space for the jacobi matrices in the cubature points
+    !    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+    !
+    !    ! Allocate space for the determinants of the jacobi matrices in the cubature points
+    !    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+    !
+    !    ! Allocate space for the integration points on the real elements
+    !    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+
+    !    ! Allocate space for normal vectors
+    !    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+    !
+    !    ! Allocate space for edge length
+    !    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+
+    !    ! The coordinates of the corner edges of the elements for the transformation
+    !    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
+
+
+
+
+
+
+    !    ! Get some more pointers to local data.
+    !    p_Domega => rlocalVectorAssembly%p_Domega
+    !    p_Dbas => rlocalVectorAssembly%p_Dbas
+    !    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
+    !    p_DcubPtsRef => rlocalVectorAssembly%p_DcubPtsRef
+    !    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
+    !    p_Idofs => rlocalVectorAssembly%p_Idofs
+    !    p_revalElementSet => rlocalVectorAssembly%revalElementSet
+
+    ! Transpose the coordinate array such that we get coordinates we
+    ! can work with in the mapping between 1D and 2D.
+    do k = 1, ubound(rlocalVectorAssembly(1)%p_DcubPtsRef,1)
+       do icubp = 1,ncubp
+          Dxi1D_1(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
+          Dxi1D_2(icubp,k) = rlocalVectorAssembly(2)%p_DcubPtsRef(k,icubp)
+       end do
+    end do
+
+    ! Allocate memory for the cubature points in 2D.
+    allocate(Dxi2D(ncubp,NDIM2D+1,2,rlocalVectorAssembly(1)%nelementsPerBlock))
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM2D+1,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock,2))
+
+    ! Allocate space for the flux variables DIM(2,nterms,ncubp,elementsperblock)
+    allocate(Dcoefficients(2,rlocalVectorAssembly(1)%rform%itermcount,ncubp,&
+             rlocalVectorAssembly(1)%nelementsPerBlock))
+
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly(1)%celement)
+
+    ! Get type of transformation
+    ctrafotype = elem_igetTrafoType(rlocalVectorAssembly(1)%celement)
+
+    ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so nelementsPerBlock local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !
+    !%OMP do schedule(static,1)
+    do IELset = 1, size(IedgeList), rlocalVectorAssembly(1)%nelementsPerBlock
+
+       ! We always handle nelementsPerBlock elements simultaneously.
+       ! How many elements have we actually here?
+       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+       ! elements simultaneously.
+
+       IELmax = min(size(IedgeList),IELset-1+rlocalVectorAssembly(1)%nelementsPerBlock)
+
+       ! Map the 1D cubature points to the edges in 2D.
+       do iel = 1,IELmax-IELset+1
+          call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(1,Iedgelist(IELset+iel-1)), &
+               ncubp, Dxi1D_1, Dxi2D(:,:,1,iel))
+          call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
+               ncubp, Dxi1D_2, Dxi2D(:,:,2,iel))
+       end do
+
+       ! Transpose the coordinate array such that we get coordinates we
+       ! can work with.
+       do iside = 1,2
+          do iel = 1,IELmax-IELset+1
+             do icubp = 1,ncubp
+                do k = 1,ubound(DpointsRef,1)
+                   DpointsRef(k,icubp,iel,iside) = Dxi2D(icubp,k,iside,iel)
+                end do
+             end do
+          end do
+       end do
+
+       ! --------------------- DOF SEARCH PHASE ------------------------
+
+       ! The outstanding feature with finite elements is: A basis
+       ! function for a DOF on one element has common support only
+       ! with the DOF`s on the same element! E.g. for Q1:
+       !
+       !        #. . .#. . .#. . .#
+       !        .     .     .     .
+       !        .  *  .  *  .  *  .
+       !        #-----O-----O. . .#
+       !        |     |     |     .
+       !        |     | iel |  *  .
+       !        #-----X-----O. . .#
+       !        |     |     |     .
+       !        |     |     |  *  .
+       !        #-----#-----#. . .#
+       !
+       ! --> On element iel, the basis function at "X" only interacts
+       !     with the basis functions in "O". Elements in the
+       !     neighbourhood ("*") have no support, therefore we only have
+       !     to collect all "O" DOF`s.
+       !
+       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
+       !
+       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+       ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
+            IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%p_Idofs)
+       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
+            IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%p_Idofs)
+
+       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+
+       ! To calculate the element contributions, we have to evaluate
+       ! the elements to give us the values of the basis functions
+       ! in all the DOF`s in all the elements in our set.
+
+       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+       ! the elements later. All of them can be combined with OR, what will give
+       ! a combined evaluation tag.
+       cevaluationTag = rlocalVectorAssembly(1)%cevaluationTag
+
+       ! The cubature points are already initialised by 1D->2D mapping.
+       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+       ! Calculate all information that is necessary to evaluate the
+       ! finite element on all cells of our subset. This includes the
+       ! coordinates of the points on the cells.
+       call elprep_prepareSetForEvaluation (&
+            rlocalVectorAssembly(1)%revalElementSet,&
+            cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+            IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%ctrafoType, &
+            DpointsRef=DpointsRef(:,:,:,1))
+       call elprep_prepareSetForEvaluation (&
+            rlocalVectorAssembly(2)%revalElementSet,&
+            cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+            IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%ctrafoType, &
+            DpointsRef=DpointsRef(:,:,:,2))
+
+       ! Calculate the values of the basis functions.
+       call elem_generic_sim2 (rlocalVectorAssembly(1)%celement, &
+            rlocalVectorAssembly(1)%revalElementSet,&
+            rlocalVectorAssembly(1)%Bder, &
+            rlocalVectorAssembly(1)%p_Dbas)
+       call elem_generic_sim2 (rlocalVectorAssembly(2)%celement, &
+            rlocalVectorAssembly(2)%revalElementSet,&
+            rlocalVectorAssembly(2)%Bder, &
+            rlocalVectorAssembly(2)%p_Dbas)
+
+
+
+       ! ********** Get solution values in the cubature points *************
+       !call lsyssc_getbase_double(rvectorSol,p_DdataSol)
+
+       !      ! Now that we have the basis functions, we want to have the function values.
+       !      ! We get them by multiplying the FE-coefficients with the values of the
+       !      ! basis functions and summing up.
+       !      do iel = 1,IELmax-IELset+1
+       !        do icubp = 1,ncubp
+       !          ! Calculate the value in the point
+       !          dval1 = 0.0_DP
+       !          dval2 = 0.0_DP
+       !          do idofe = 1,indof
+       !            dval1 = dval1 + &
+       !                   p_DdataSol(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) &
+       !                   * rlocalVectorAssembly(1)%p_Dbas(idofe,DER_FUNC,icubp,iel)
+       !            dval2 = dval2 + &
+       !                   p_DdataSol(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) &
+       !                   * rlocalVectorAssembly(2)%p_Dbas(idofe,DER_FUNC,icubp,iel)
+       !          end do
+       !          ! Save the value in the point
+       !          DsolVals(1,icubp,iel) = dval1
+       !          DsolVals(2,icubp,iel) = dval2
+       !        end do
+       !      end do
+
+
+
+
+
+       !     ! Set values at boundary
+       !     do iel = 1,IELmax-IELset+1
+       !      if(IelementList(2,IELset+iel-1).eq.0) then
+       !        DsolVals(2,1:ncubp,iel) = 0.0_DP
+       !      end if
+       !
+       !      end do
+
+
+       ! ---------------------- Get values of the flux function --------------
+
+
+       !      ! Now it is time to call our coefficient function to calculate the
+       !      ! function values in the cubature points:
+       !      if (present(fcoeff_buildVectorScBdr2D_sim)) then
+       !        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+       !        rintSubset%ielementDistribution = 0
+       !        rintSubset%ielementStartIdx = IELset
+       !        rintSubset%p_Ielements => IelementList(IELset:IELmax)
+       !        rintSubset%p_IdofsTrial => p_Idofs
+       !        rintSubset%celement = rlocalVectorAssembly%celement
+       !        call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
+       !            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+       !            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+       !            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
+       !            p_Idofs, rintSubset, &
+       !            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+       !        call domint_doneIntegration (rintSubset)
+       !      else
+       !        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+       !      end if
+
+
+
+
+
+       !      ! Fill the corner coordinates of the elements
+       !      do iel = 1,IELmax-IELset+1
+       !        do ive = 1, NVE
+       !          Dcoords(1:ndim2d,ive,iel)=&
+       !                   p_DvertexCoords(1:ndim2d,p_IverticesAtElement(ive,IelementList(1,IELset+iel-1)))
+       !        end do
+       !      end do
+       !
+       !
+       !      ! The numerical flux function needs the x- and y- values
+       !      ! So we have to call the mapping from the reference- to the real element
+       !      call trafo_calctrafo_sim (ctrafoType,IELmax-IELset+1,ncubp,Dcoords,&
+       !                                DpointsRef(1:ndim2d,:,1:IELmax-IELset+1,1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
+       !                                Ddetj(1:ncubp,1:IELmax-IELset+1),&
+       !                                DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1))
+
+
+
+
+
+
+
+
+
+
+       ! If the flux function needs other, than just the function values from the solution
+       ! (for example the derivatives), we will give an evalElementSet to it
+       ! This is filled here
+
+       call domint_initIntegrationByEvalSet (rlocalVectorAssembly(1)%revalElementSet, rintSubset(1))
+       call domint_initIntegrationByEvalSet (rlocalVectorAssembly(2)%revalElementSet, rintSubset(2))
+       !rintSubset(1)%ielementDistribution = 0
+       rintSubset(1)%ielementStartIdx = IELset
+       rintSubset(1)%p_Ielements => IelementList(1,IELset:IELmax)
+       rintSubset(1)%p_IdofsTrial => rlocalVectorAssembly(1)%p_Idofs
+       rintSubset(1)%celement = rlocalVectorAssembly(1)%celement
+       !rintSubset(2)%ielementDistribution = 0
+       rintSubset(2)%ielementStartIdx = IELset
+       rintSubset(2)%p_Ielements => IelementList(2,IELset:IELmax)
+       rintSubset(2)%p_IdofsTrial => rlocalVectorAssembly(2)%p_Idofs
+       rintSubset(2)%celement = rlocalVectorAssembly(2)%celement
+
+
+
+
+
+
+
+       call flux_dg_buildVectorScEdge2D_sim (&
+            Dcoefficients(:,:,:,1:IELmax-IELset+1),&
+            IelementList(2,IELset:IELmax),&
+            raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
+            raddTriaData%p_Dedgelength(Iedgelist(IELset:IELmax)),&
+            rintSubset,&
+            rcollection )
+
+
+       call domint_doneIntegration (rintSubset(1))
+       call domint_doneIntegration (rintSubset(2))
+
+       ! --------------------- DOF COMBINATION PHASE ------------------------
+
+       ! Values of all basis functions calculated. Now we can start
+       ! to integrate!
+       !
+       ! Loop through elements in the set and for each element,
+       ! loop through the DOF`s and cubature points to calculate the
+       ! integral:
+
+       do iel = 1,IELmax-IELset+1
+
+          ! We make a 'local' approach, i.e. we calculate the values of the
+          ! integral into the vector DlocalData and add them later into
+          ! the large solution vector.
+
+          ! Clear the output vector.
+          DlocalData(1:2,1:indof) = 0.0_DP
+
+          ! Get the length of the edge. Let us use the parameter values
+          ! on the boundary for that purpose; this is a more general
+          ! implementation than using simple lines as it will later
+          ! support isoparametric elements.
+          !
+          ! The length of the current edge serves as a "determinant"
+          ! in the cubature, so we have to divide it by 2 as an edge on
+          ! the unit interval [-1,1] has length 2.
+          dlen = 0.5_DP*raddTriaData%p_Dedgelength(Iedgelist(IELset+iel-1))
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1, ncubp
+
+             ! Calculate the current weighting factor in the cubature
+             ! formula in that cubature point.
+
+             !domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+             !domega2 = dlen * rlocalVectorAssembly(2)%p_Domega(icubp)
+             domega = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+
+
+             ! Loop over the additive factors in the bilinear form.
+             do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
+
+                ! Get from Idescriptors the type of the derivatives for the
+                ! test and trial functions. The summand we calculate
+                ! here will be:
+                !
+                ! int_...  f * ( phi_i )_IA
+                !
+                ! -> IA=0: function value,
+                !      =1: first derivative,
+                !      =2: 2nd derivative,...
+                !    as defined in the module 'derivative'.
+
+                ia = rlocalVectorAssembly(1)%rform%Idescriptors(ialbet)
+
+                ! Multiply domega with the coefficient of the form.
+                ! This gives the actual value to multiply the
+                ! function value with before summing up to the integral.
+                ! Get the precalculated coefficient from the coefficient array.
+                daux1 = domega * Dcoefficients(1,ialbet,icubp,iel)
+                daux2 = domega * Dcoefficients(2,ialbet,icubp,iel)
+
+                ! Now loop through all possible combinations of DOF`s
+                ! in the current cubature point.
+
+                do idofe = 1,indof
+
+                   ! Get the value of the basis function
+                   ! phi_o in the cubature point.
+                   ! Them multiply:
+                   !    DBAS(..) * AUX
+                   ! ~= phi_i * coefficient * cub.weight
+                   ! Summing this up gives the integral, so the contribution
+                   ! to the vector.
+                   !
+                   ! Simply summing up DBAS(..) * AUX would give
+                   ! the additive contribution for the vector. We save this
+                   ! contribution in the local array.
+
+                   DlocalData(1,idofe) = DlocalData(1,idofe)+&
+                        rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux1
+
+                   !              if(IelementList(2,IELset+iel-1).ne.0) then
+                   !                DlocalData(2,idofe) = DlocalData(2,idofe)+&
+                   !                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
+                   !              end if
+
+                   DlocalData(2,idofe) = DlocalData(2,idofe)+&
+                        rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2* real(min(1,IelementList(2,IELset+iel-1)))
+
+
+                end do ! idofe
+
+             end do ! ialbet
+
+          end do ! icubp
+
+          ! Incorporate the local vector into the global one.
+          ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+          ! the IdofsTest array.
+          do idofe = 1,indof
+
+             p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) =&
+                  p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) +&
+                  DlocalData(1,idofe)
+             p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) =&
+                  p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) +&
+                  DlocalData(2,idofe)
+          end do
+
+       end do ! iel
+
+    end do ! IELset
+
+
+
+
+    ! Release the local vector assembly structure
+    call linf_releaseAssemblyData(rlocalVectorAssembly(1))
+    call linf_releaseAssemblyData(rlocalVectorAssembly(2))
+
+    ! Deallocate memory
+    deallocate(Dxi2D,DpointsRef,IelementList)!,DsolVals,edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
+    deallocate(Dcoefficients)
+
+  end subroutine 
 
 end module dg2d_routines
