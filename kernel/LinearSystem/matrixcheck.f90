@@ -65,7 +65,7 @@ contains
 
 !<subroutin>
 
-  subroutine mchk_isDiagDominant(rmatrix, ccheckType, bresult)
+  subroutine mchk_isDiagDominant(rmatrix, ccheckType, dtreshold, bresult)
 
 !<description>
     ! This subroutine checks if the matrix is (strictly/irreducibly)
@@ -80,6 +80,10 @@ contains
 
     ! One of the MCHK_DIAGONALDOMINANT_XXX constants
     integer, intent(in) :: ccheckType
+
+    ! OPTIONAL: entries which are smaller than the given treshold
+    ! value are not considered in the check.
+    real(DP), intent(in), optional :: dtreshold
 !</input>
 
 !<output>
@@ -92,11 +96,21 @@ contains
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
+    integer, dimension(:), pointer :: p_IsccIdx, p_Iscc
     integer :: nscc
     logical :: bresult1
 
-    integer, dimension(:), pointer :: p_IsccIdx, p_Iscc
-
+    ! Check if matrix is square matrix
+    if (rmatrix%NCOLS .ne. rmatrix%NEQ) then
+      if (present(bresult)) then
+        bresult = .false.
+      else
+        call output_line('Matrix is not square matrix!',&
+            OU_CLASS_MSG,OU_MODE_STD,'mchk_isDiagDominant')
+      end if
+      return
+    end if
+    
     ! What matrix type are we?
     select case(rmatrix%cmatrixFormat)
       
@@ -160,12 +174,8 @@ contains
     ! Special check if matrix is irreducible
     if (bresult1 .and.&
         ccheckType .eq. MCHK_DIAGDOMINANT_IRREDUCIBLE) then
-      call mchk_calcStrongConnComp(rmatrix, .true., nscc, 1.0_DP, p_IsccIdx, p_Iscc)
+      call mchk_calcStrongConnComp(rmatrix, .true., nscc, dtreshold, p_IsccIdx, p_Iscc)
       bresult1 = (nscc .eq. 1)
-
-      print *, p_IsccIdx
-      print *, p_Iscc
-      stop
     end if
 
     ! Report outcome of check?
@@ -228,7 +238,7 @@ contains
       !$omp parallel do default(shared) private(dtmp,ddiag,ia)&
       !$omp reduction(.and. : ballDiagDominance,ballStrictDiagDominance)&
       !$omp reduction(.or.  : banyDiagDominance,banyStrictDiagDominance)
-      do ieq = 1, NEQ
+      do ieq = 1,NEQ
 
         ! Compute absolute row sum
         dtmp = 0.0_DP
@@ -286,7 +296,7 @@ contains
       !$omp parallel do default(shared) private(ftmp,fdiag,ia)&
       !$omp reduction(.and. : ballDiagDominance,ballStrictDiagDominance)&
       !$omp reduction(.or.  : banyDiagDominance,banyStrictDiagDominance)
-      do ieq = 1, NEQ
+      do ieq = 1,NEQ
 
         ! Compute absolute row sum
         ftmp = 0.0_SP
@@ -324,7 +334,7 @@ contains
 
 !<subroutin>
 
-  subroutine mchk_isMMatrix(rmatrix, dtolerance, bresult)
+  subroutine mchk_isMMatrix(rmatrix, dtreshold, bresult)
 
 !<description>
     ! This subroutine checks if the matrix satisfies the sufficient
@@ -337,9 +347,9 @@ contains
     ! Scalar matrix
     type(t_matrixScalar), intent(in) :: rmatrix
 
-    ! OPTIONAL: entries which are smaller than the given tolerance
+    ! OPTIONAL: entries which are smaller than the given treshold
     ! value are not considered in the check.
-    real(DP), intent(in), optional :: dtolerance
+    real(DP), intent(in), optional :: dtreshold
 !</input>
 
 !<output>
@@ -349,14 +359,16 @@ contains
 !</subroutine>
 
     ! local variable
+    type(t_matrixScalar) :: rmatrixDense
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
-    real(DP) :: dtol
+    integer, dimension(:), allocatable :: Iperm
+    real(DP) :: dtrhold
     logical :: bresult1
-
-    dtol = 0.0_DP
-    if (present(dtolerance)) dtol = dtolerance
+    
+    dtrhold = 0.0_DP
+    if (present(dtreshold)) dtrhold = dtreshold
 
     ! --------------------------------------------------------------------------
     ! Sufficient conditions for square matrices to be M-matrix are as follows:
@@ -385,7 +397,7 @@ contains
     end if
     
     ! Check if matrix is Z-matrix
-    call mchk_isZmatrix(rmatrix, dtol, bresult1)
+    call mchk_isZmatrix(rmatrix, dtrhold, bresult1)
 
     if (.not.bresult1) then
       if (present(bresult)) then
@@ -414,12 +426,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call check_signMat79Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
-            dtol, p_Kld, p_Kcol, p_Da, bresult1)
+            dtrhold, p_Kld, p_Kcol, p_Da, bresult1)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call check_signMat79Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
-            real(dtol,SP), p_Kld, p_Kcol, p_Fa, bresult1)
+            real(dtrhold,SP), p_Kld, p_Kcol, p_Fa, bresult1)
         
       case default
         call output_line('Unsupported data type!',&
@@ -439,12 +451,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call check_signMat79Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
-            dtol, p_Kdiagonal, p_Kcol, p_Da, bresult1)
+            dtrhold, p_Kdiagonal, p_Kcol, p_Da, bresult1)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call check_signMat79Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
-            real(dtol,SP), p_Kdiagonal, p_Kcol, p_Fa, bresult1)
+            real(dtrhold,SP), p_Kdiagonal, p_Kcol, p_Fa, bresult1)
         
       case default
         call output_line('Unsupported data type!',&
@@ -466,7 +478,7 @@ contains
     if (bresult1) then
       ! Check if matrix is strictly diagonally dominant (cf. #1)
       call mchk_isDiagDominant(rmatrix,&
-          MCHK_DIAGDOMINANT_STRICT, bresult1)
+          MCHK_DIAGDOMINANT_STRICT, dtreshold, bresult1)
       
       if (bresult1) then
         ! Report outcome of check?
@@ -481,7 +493,7 @@ contains
       
       ! Check if matrix is irreducibly diagonally dominant (cf. #2)
       call mchk_isDiagDominant(rmatrix,&
-          MCHK_DIAGDOMINANT_IRREDUCIBLE, bresult1)
+          MCHK_DIAGDOMINANT_IRREDUCIBLE, dtreshold, bresult1)
       
       if (bresult1) then
         ! Report outcome of check?
@@ -496,13 +508,55 @@ contains
     end if
     
     ! If we end up here, then matrix A does not satisfy the sufficient
-    ! condition of an M-matrix but nontheless A can be an M-matrix. Let
-    ! us check if all principal minors are positive (time consuming!).
-    call output_line('Checking sign of all principal minors (time consuming)!',&
+    ! condition of an M-matrix but nontheless A can be an M-matrix.
+    call output_line('Check did not return a definite answer. Thus, '//&
+        'we permform an extensive check (time consuming)!',&
         OU_CLASS_MSG,OU_MODE_STD,'mchk_isMMatrix')
     
-    pause
+    ! Duplicate matrix and convert it to full matrix
+    call lsyssc_duplicateMatrix(rmatrix, rmatrixDense,&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+    call lsyssc_convertMatrix(rmatrixDense, LSYSSC_MATRIX1, .true.)
+    
+    ! Allocate memory for permutation vector
+    allocate(Iperm(rmatrixDense%NEQ))
+    
+    select case(rmatrixDense%cdataType)
+    case(ST_DOUBLE)
+      call lsyssc_getbase_double(rmatrixDense, p_Da)
+      bresult1 = check_InverseMat1Dble(rmatrix%NEQ, rmatrix%NCOLS,&
+          p_Da, Iperm, dtrhold)
 
+    case(ST_SINGLE)
+      call lsyssc_getbase_single(rmatrixDense, p_Fa)
+      bresult1 = check_InverseMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS,&
+          p_Fa, Iperm, real(dtrhold,SP))
+
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mchk_isMMatrix')
+      call sys_halt()
+    end select
+    
+    ! Release temporal memory
+    call lsyssc_releaseMatrix(rmatrixDense)
+
+    ! Deallocate temporal memory
+    deallocate(Iperm)
+
+    ! Report outcome of check?
+    if (present(bresult)) then
+      bresult = bresult1
+    else
+      if (bresult1) then
+        call output_line('Matrix is an M-matrix!',&
+            OU_CLASS_MSG,OU_MODE_STD,'mchk_isMMatrix')
+      else
+        call output_line('Matrix is not an M-matrix!',&
+            OU_CLASS_MSG,OU_MODE_STD,'mchk_isMMatrix')
+      end if
+    end if
+    
   contains
 
     ! Here, the real working routines start
@@ -510,11 +564,11 @@ contains
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 7/9
 
-    pure subroutine check_signMat79Dble(NEQ, dscale, dtolerance, Kdiagonal,&
+    pure subroutine check_signMat79Dble(NEQ, dscale, dtreshold, Kdiagonal,&
                                         Kcol, Da, bresult)
 
       integer, intent(in) :: NEQ
-      real(DP), intent(in) :: dscale,dtolerance
+      real(DP), intent(in) :: dscale,dtreshold
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: Kdiagonal, Kcol
       logical, intent(out) :: bresult
@@ -527,17 +581,17 @@ contains
       
       if (dscale .eq. 1.0_DP) then
         !$omp parallel do default(shared) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if diagonal entry is strictly positive
-          if (abs(Da(Kdiagonal(ieq))) .le. dtolerance) cycle
+          if (abs(Da(Kdiagonal(ieq))) .le. dtreshold) cycle
           bresult = (bresult .and. Da(Kdiagonal(ieq)) .gt. 0.0_DP)
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if diagonal entry is strictly positive
-          if (abs(dscale*Da(Kdiagonal(ieq))) .le. dtolerance) cycle
+          if (abs(dscale*Da(Kdiagonal(ieq))) .le. dtreshold) cycle
           bresult = (bresult .and. dscale*Da(Kdiagonal(ieq)) .gt. 0.0_DP)
         end do
         !$omp end paralle do
@@ -548,11 +602,11 @@ contains
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 7/9
 
-    pure subroutine check_signMat79Sngl(NEQ, fscale, ftolerance, Kdiagonal,&
+    pure subroutine check_signMat79Sngl(NEQ, fscale, ftreshold, Kdiagonal,&
                                         Kcol, Fa, bresult)
 
       integer, intent(in) :: NEQ
-      real(SP), intent(in) :: fscale,ftolerance
+      real(SP), intent(in) :: fscale,ftreshold
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: Kdiagonal, Kcol
       logical, intent(out) :: bresult
@@ -565,17 +619,17 @@ contains
       
       if (fscale .eq. 1.0_SP) then
         !$omp parallel do default(shared) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if diagonal entry is strictly positive
-          if (abs(Fa(Kdiagonal(ieq))) .le. ftolerance) cycle
+          if (abs(Fa(Kdiagonal(ieq))) .le. ftreshold) cycle
           bresult = (bresult .and. Fa(Kdiagonal(ieq)) .gt. 0.0_SP)
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if diagonal entry is strictly positive
-          if (abs(fscale*Fa(Kdiagonal(ieq))) .le. ftolerance) cycle
+          if (abs(fscale*Fa(Kdiagonal(ieq))) .le. ftreshold) cycle
           bresult = (bresult .and. fscale*Fa(Kdiagonal(ieq)) .gt. 0.0_SP)
         end do
         !$omp end paralle do
@@ -583,13 +637,239 @@ contains
       
     end subroutine check_signMat79Sngl
 
+    !***************************************************************************
+    ! Compute LU-factorisation of double-valued dense matrix and check
+    ! if inverse matrix exists and all of its entries are non-negative
+
+    function check_InverseMat1Dble(NEQ, NCOLS, DA, Iperm, dtreshold)&
+        result(bresult)
+
+      integer, intent(in) :: NEQ,NCOLS
+      real(DP), intent(in) :: dtreshold
+
+      real(DP), dimension(NEQ,NCOLS), intent(inout) :: Da
+      integer, dimension(:), intent(inout) :: Iperm
+
+      logical :: bresult
+
+      ! local variables
+      real(DP), dimension(:), allocatable :: Db,Dx
+      integer :: iaux,icol,ieq,ipiv,jeq,iuv
+      real(DP) :: daux
+
+
+      ! Initialisation
+      bresult = .true.
+
+      ! Compute the LU-decomposition of matrix using Gaussian
+      ! elimination with partial pivoting
+
+      do ieq = 1,NEQ
+        Iperm(ieq) = ieq
+      end do
+
+      ! Perform Gaussian elimination
+      row: do ieq = 1,NEQ
+        
+        ! Row-wise pivoting
+        ipiv = ieq
+        
+        do jeq = ieq,NEQ
+          if (abs(Da(Iperm(jeq),ieq)) .gt. abs(Da(Iperm(ipiv),ieq))) then
+            ipiv = jeq
+          end if
+        end do
+        
+        ! Swap rows IPIV <-> IEQ
+        if (Iperm(ipiv) .ne. Iperm(ieq)) then
+          iaux        = Iperm(ieq)
+          Iperm(ieq)  = Iperm(ipiv)
+          Iperm(ipiv) = iaux
+        end if
+        
+        ! Get pivot element
+        daux = Da(Iperm(ieq),ieq)
+        
+        ! Check for zero determinant
+        if (abs(daux) .le. SYS_EPSREAL_DP) then
+          ! Matrix is not invertible
+          bresult = .false.
+          return
+        end if
+        
+        ! Elimination step
+        col: do jeq = ieq+1,NEQ
+          Da(Iperm(jeq),ieq) = Da(Iperm(jeq),ieq) / daux
+          do icol = ieq+1,NCOLS
+            Da(Iperm(jeq),icol) = Da(Iperm(jeq),icol)&
+                                - Da(Iperm(ieq),icol)*Da(Iperm(jeq),ieq)
+          end do
+        end do col
+      end do row
+
+      ! Allocate temporal memory
+      allocate(Db(NEQ),Dx(NCOLS))
+
+      ! Loop over all unit vectors and compute inverse matrix
+      ! column-by-column
+      do iuv = 1,NEQ
+
+        ! Initialise i-th unit vector
+        Db = 0.0_DP
+        Db(iuv) = 1.0_DP
+
+        ! Forward substitution
+        do ieq = 1,NEQ-1
+          do jeq = ieq+1,NEQ
+            Db(Iperm(jeq)) = Db(Iperm(jeq))-Db(Iperm(ieq))*Da(Iperm(jeq),ieq)
+          end do
+        end do
+
+        ! Initialise solution
+        Dx = 0.0_DP
+        
+        ! Backward substitution
+        do ieq = NEQ,1,-1
+          Dx(Iperm(ieq)) = Db(Iperm(ieq))
+          do jeq = ieq+1,NEQ
+            Dx(Iperm(ieq)) = Dx(Iperm(ieq)) - Da(Iperm(ieq),jeq)*Dx(Iperm(jeq))
+          end do
+          Dx(Iperm(ieq)) = Dx(Iperm(ieq)) / Da(Iperm(ieq),ieq)
+
+          ! Check if entry is negative
+          if (Dx(Iperm(ieq)) .lt. -dtreshold) then
+            bresult = .false.
+            deallocate(Db,Dx)
+            return
+          end if
+        end do
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(Db,Dx)
+      
+    end function check_InverseMat1Dble
+
+    !***************************************************************************
+    ! Compute LU-factorisation of single-valued dense matrix and check
+    ! if inverse matrix exists and all of its entries are non-negative
+
+    function check_InverseMat1Sngl(NEQ, NCOLS, FA, Iperm, ftreshold)&
+        result(bresult)
+
+      integer, intent(in) :: NEQ,NCOLS
+      real(SP), intent(in) :: ftreshold
+
+      real(SP), dimension(NEQ,NCOLS), intent(inout) :: Fa
+      integer, dimension(:), intent(inout) :: Iperm
+
+      logical :: bresult
+
+      ! local variables
+      real(SP), dimension(:), allocatable :: Fb,Fx
+      integer :: iaux,icol,ieq,ipiv,jeq,iuv
+      real(SP) :: faux
+
+
+      ! Initialisation
+      bresult = .true.
+
+      ! Compute the LU-decomposition of matrix using Gaussian
+      ! elimination with partial pivoting
+
+      do ieq = 1,NEQ
+        Iperm(ieq) = ieq
+      end do
+
+      ! Perform Gaussian elimination
+      row: do ieq = 1,NEQ
+        
+        ! Row-wise pivoting
+        ipiv = ieq
+        
+        do jeq = ieq,NEQ
+          if (abs(Fa(Iperm(jeq),ieq)) .gt. abs(Fa(Iperm(ipiv),ieq))) then
+            ipiv = jeq
+          end if
+        end do
+        
+        ! Swap rows IPIV <-> IEQ
+        if (Iperm(ipiv) .ne. Iperm(ieq)) then
+          iaux        = Iperm(ieq)
+          Iperm(ieq)  = Iperm(ipiv)
+          Iperm(ipiv) = iaux
+        end if
+        
+        ! Get pivot element
+        faux = Fa(Iperm(ieq),ieq)
+        
+        ! Check for zero determinant
+        if (abs(faux) .le. SYS_EPSREAL_SP) then
+          ! Matrix is not invertible
+          bresult = .false.
+          return
+        end if
+        
+        ! Elimination step
+        col: do jeq = ieq+1,NEQ
+          Fa(Iperm(jeq),ieq) = Fa(Iperm(jeq),ieq) / faux
+          do icol = ieq+1,NCOLS
+            Fa(Iperm(jeq),icol) = Fa(Iperm(jeq),icol)&
+                                - Fa(Iperm(ieq),icol)*Fa(Iperm(jeq),ieq)
+          end do
+        end do col
+      end do row
+
+      ! Allocate temporal memory
+      allocate(Fb(NEQ),Fx(NCOLS))
+
+      ! Loop over all unit vectors and compute inverse matrix
+      ! column-by-column
+      do iuv = 1,NEQ
+
+        ! Initialise i-th unit vector
+        Fb = 0.0_SP
+        Fb(iuv) = 1.0_SP
+
+        ! Forward substitution
+        do ieq = 1,NEQ-1
+          do jeq = ieq+1,NEQ
+            Fb(Iperm(jeq)) = Fb(Iperm(jeq))-Fb(Iperm(ieq))*Fa(Iperm(jeq),ieq)
+          end do
+        end do
+
+        ! Initialise solution
+        Fx = 0.0_SP
+        
+        ! Backward substitution
+        do ieq = NEQ,1,-1
+          Fx(Iperm(ieq)) = Fb(Iperm(ieq))
+          do jeq = ieq+1,NEQ
+            Fx(Iperm(ieq)) = Fx(Iperm(ieq)) - Fa(Iperm(ieq),jeq)*Fx(Iperm(jeq))
+          end do
+          Fx(Iperm(ieq)) = Fx(Iperm(ieq)) / Fa(Iperm(ieq),ieq)
+
+          ! Check if entry is negative
+          if (Fx(Iperm(ieq)) .lt. -dtreshold) then
+            bresult = .false.
+            deallocate(Fb,Fx)
+            return
+          end if
+        end do
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(Fb,Fx)
+      
+    end function check_InverseMat1Sngl
+
   end subroutine mchk_isMMatrix
   
   ! ***************************************************************************
 
 !<subroutin>
 
-  subroutine mchk_isZMatrix(rmatrix, dtolerance, bresult)
+  subroutine mchk_isZMatrix(rmatrix, dtreshold, bresult)
 
 !<description>
     ! This subroutine checks if the matrix is a Z-matrix.
@@ -597,10 +877,10 @@ contains
     !
     ! $$ A=(a_{ij}),\quad a_{ij}\le 0\, \forall j\ne i $$
     !
-    ! If the optional parameter dtolerance is present, then the above
+    ! If the optional parameter dtreshold is present, then the above
     ! condition is relaxed as follows:
     !
-    ! $$ A=(a_{ij}),\quad a_{ij}\le -|dtolerance|\, \forall j\ne i $$
+    ! $$ A=(a_{ij}),\quad a_{ij}\le -|dtreshold|\, \forall j\ne i $$
     !
     ! If the optional parameter bresult is present, then the result
     ! is returned. Otherwise, the outcome of the test is printed.
@@ -610,9 +890,9 @@ contains
     ! Scalar matrix
     type(t_matrixScalar), intent(in) :: rmatrix
 
-    ! OPTIONAL: entries which are smaller than the given tolerance
+    ! OPTIONAL: entries which are smaller than the given treshold
     ! value are not considered in the check.
-    real(DP), intent(in), optional :: dtolerance
+    real(DP), intent(in), optional :: dtreshold
 !</input>
 
 !<output>
@@ -625,11 +905,11 @@ contains
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
-    real(DP) :: dtol
+    real(DP) :: dtrhold
     logical :: bresult1
 
-    dtol = 0.0_DP
-    if (present(dtolerance)) dtol = dtolerance
+    dtrhold = 0.0_DP
+    if (present(dtreshold)) dtrhold = dtreshold
 
     ! Check if all off-diagonal entries are non-positive
     
@@ -648,12 +928,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call check_signMat7Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
-            dtol, p_Kld, p_Kcol, p_Da, bresult1)
+            dtrhold, p_Kld, p_Kcol, p_Da, bresult1)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call check_signMat7Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
-            real(dtol,SP), p_Kld, p_Kcol, p_Fa, bresult1)
+            real(dtrhold,SP), p_Kld, p_Kcol, p_Fa, bresult1)
 
       case default
         call output_line('Unsupported data type!',&
@@ -674,12 +954,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call check_signMat9Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
-            dtol, p_Kld, p_Kcol, p_Kdiagonal, p_Da, bresult1)
+            dtrhold, p_Kld, p_Kcol, p_Kdiagonal, p_Da, bresult1)
         
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call check_signMat9Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
-            real(dtol,SP),p_Kld, p_Kcol, p_Kdiagonal, p_Fa, bresult1)
+            real(dtrhold,SP),p_Kld, p_Kcol, p_Kdiagonal, p_Fa, bresult1)
         
       case default
         call output_line('Unsupported data type!',&
@@ -713,11 +993,11 @@ contains
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 7
 
-    pure subroutine check_signMat7Dble(NEQ, dscale, dtolerance, Kld, Kcol,&
+    pure subroutine check_signMat7Dble(NEQ, dscale, dtreshold, Kld, Kcol,&
                                        Da, bresult)
 
       integer, intent(in) :: NEQ
-      real(DP), intent(in) :: dscale,dtolerance
+      real(DP), intent(in) :: dscale,dtreshold
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: Kld, Kcol
       logical, intent(out) :: bresult
@@ -730,20 +1010,20 @@ contains
 
       if (dscale .eq. 1.0_DP) then
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq)+1, Kld(ieq+1)-1
-            if (abs(Da(ia)) .le. dtolerance) cycle
+            if (abs(Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. Da(ia) .le. 0.0_DP)
           end do
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq)+1, Kld(ieq+1)-1
-            if (abs(dscale*Da(ia)) .le. dtolerance) cycle
+            if (abs(dscale*Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. dscale*Da(ia) .le. 0.0_DP)
           end do
         end do
@@ -755,11 +1035,11 @@ contains
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 7
 
-    pure subroutine check_signMat7Sngl(NEQ, fscale, ftolerance, Kld, Kcol,&
+    pure subroutine check_signMat7Sngl(NEQ, fscale, ftreshold, Kld, Kcol,&
                                        Fa, bresult)
 
       integer, intent(in) :: NEQ
-      real(SP), intent(in) :: fscale,ftolerance
+      real(SP), intent(in) :: fscale,ftreshold
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: Kld, Kcol
       logical, intent(out) :: bresult
@@ -772,20 +1052,20 @@ contains
 
       if (fscale .eq. 1.0_SP) then
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq)+1, Kld(ieq+1)-1
-            if (abs(Fa(ia)) .le. ftolerance) cycle
+            if (abs(Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. Fa(ia) .le. 0.0_SP)
           end do
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq)+1, Kld(ieq+1)-1
-            if (abs(fscale*Fa(ia)) .le. ftolerance) cycle
+            if (abs(fscale*Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. fscale*Fa(ia) .le. 0.0_SP)
           end do
         end do
@@ -797,11 +1077,11 @@ contains
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 9
 
-    pure subroutine check_signMat9Dble(NEQ, dscale, dtolerance, Kld, Kcol,&
+    pure subroutine check_signMat9Dble(NEQ, dscale, dtreshold, Kld, Kcol,&
                                        Kdiagonal, Da, bresult)
 
       integer, intent(in) :: NEQ
-      real(DP), intent(in) :: dscale,dtolerance
+      real(DP), intent(in) :: dscale,dtreshold
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       logical, intent(out) :: bresult
@@ -814,28 +1094,28 @@ contains
 
       if (dscale .eq. 1.0_DP) then
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq), Kdiagonal(ieq)-1
-            if (abs(Da(ia)) .le. dtolerance) cycle
+            if (abs(Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. Da(ia) .le. 0.0_DP)
           end do
           do ia = Kdiagonal(ieq)+1, Kld(ieq+1)-1
-            if (abs(Da(ia)) .le. dtolerance) cycle
+            if (abs(Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. Da(ia) .le. 0.0_DP)
           end do
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq), Kdiagonal(ieq)-1
-            if (abs(dscale*Da(ia)) .le. dtolerance) cycle
+            if (abs(dscale*Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. dscale*Da(ia) .le. 0.0_DP)
           end do
           do ia = Kdiagonal(ieq)+1, Kld(ieq+1)-1
-            if (abs(dscale*Da(ia)) .le. dtolerance) cycle
+            if (abs(dscale*Da(ia)) .le. dtreshold) cycle
             bresult = (bresult .and. dscale*Da(ia) .le. 0.0_DP)
           end do
         end do
@@ -847,11 +1127,11 @@ contains
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 9
 
-    pure subroutine check_signMat9Sngl(NEQ, fscale, ftolerance, Kld, Kcol,&
+    pure subroutine check_signMat9Sngl(NEQ, fscale, ftreshold, Kld, Kcol,&
                                        Kdiagonal, Fa, bresult)
 
       integer, intent(in) :: NEQ
-      real(SP), intent(in) :: fscale,ftolerance
+      real(SP), intent(in) :: fscale,ftreshold
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       logical, intent(out) :: bresult
@@ -864,28 +1144,28 @@ contains
 
       if (fscale .eq. 1.0_SP) then
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq), Kdiagonal(ieq)-1
-            if (abs(Fa(ia)) .le. ftolerance) cycle
+            if (abs(Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. Fa(ia) .le. 0.0_SP)
           end do
           do ia = Kdiagonal(ieq)+1, Kld(ieq+1)-1
-            if (abs(Fa(ia)) .le. ftolerance) cycle
+            if (abs(Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. Fa(ia) .le. 0.0_SP)
           end do
         end do
         !$omp end paralle do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
-        do ieq = 1, NEQ
+        do ieq = 1,NEQ
           ! Check if off-diagonal entries are non-positive
           do ia = Kld(ieq), Kdiagonal(ieq)-1
-            if (abs(fscale*Fa(ia)) .le. ftolerance) cycle
+            if (abs(fscale*Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. fscale*Fa(ia) .le. 0.0_SP)
           end do
           do ia = Kdiagonal(ieq)+1, Kld(ieq+1)-1
-            if (abs(fscale*Fa(ia)) .le. ftolerance) cycle
+            if (abs(fscale*Fa(ia)) .le. ftreshold) cycle
             bresult = (bresult .and. fscale*Fa(ia) .le. 0.0_SP)
           end do
         end do
@@ -900,7 +1180,7 @@ contains
 
 !<subroutine>
 
-  subroutine mchk_calcStrongConnComp(rmatrix, bdata, nscc, dtolerance,&
+  subroutine mchk_calcStrongConnComp(rmatrix, bdata, nscc, dtreshold,&
                                      p_IsccIdx, p_Iscc)
 
 !<desciption>
@@ -918,8 +1198,8 @@ contains
     logical, intent(in) :: bdata
 
     ! OPTIONAL: If bdata=true, then matrix coefficients with absolute
-    ! value smaller than the given tolerance are considered zero
-    real(DP), intent(in), optional :: dtolerance
+    ! value smaller than the given treshold are considered zero
+    real(DP), intent(in), optional :: dtreshold
 !</input>
 
 !<output>
@@ -939,16 +1219,16 @@ contains
     integer, dimension(:), allocatable :: Index,LowLink
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
-    real(DP) :: dtol
+    real(DP) :: dtrhold
     integer :: ieq,idx
 
-    dtol = 0.0_DP
-    if (present(dtolerance)) dtol = dtolerance
+    dtrhold = 0.0_DP
+    if (present(dtreshold)) dtrhold = dtreshold
 
     ! Initialisation
     call stack_create(rstack, rmatrix%NEQ)
     
-    allocate(Index(rmatrix%NEQ), LowLink(rmatrix%NEQ))
+    allocate(index(rmatrix%NEQ), LowLink(rmatrix%NEQ))
     call lalg_clearVector(Index)
     idx  = 1
     nscc = 0
@@ -969,11 +1249,11 @@ contains
           
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
-          
+         
           ! Tarjan`s algorithm based on the double-valued matrix
           ! coefficients
           do ieq = 1, rmatrix%NEQ
-            if (Index(ieq) .eq. 0)&
+            if (index(ieq) .eq. 0)&
                 call strongconnectMat79Dble(rstack, p_Kld, p_Kcol, p_Da, ieq,&
                                             Index, LowLink, idx, nscc)
           end do
@@ -991,7 +1271,7 @@ contains
             ! Tarjan`s algorithm based on the double-valued matrix
             ! coefficients
             do ieq = 1, rmatrix%NEQ
-              if (Index(ieq) .eq. 0)&
+              if (index(ieq) .eq. 0)&
                   call strongconnectMat79Dble(rstack, p_Kld, p_Kcol, p_Da, ieq,&
                                               Index, LowLink, idx, nscc,&
                                               p_IsccIdx, p_Iscc)
@@ -1004,7 +1284,7 @@ contains
           ! Tarjan`s algorithm based on the double-valued matrix
           ! coefficients
           do ieq = 1, rmatrix%NEQ
-            if (Index(ieq) .eq. 0)&
+            if (index(ieq) .eq. 0)&
                 call strongconnectMat79Sngl(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
                                             Index, LowLink, idx, nscc)
           end do
@@ -1022,7 +1302,7 @@ contains
             ! Tarjan`s algorithm based on the double-valued matrix
             ! coefficients
             do ieq = 1, rmatrix%NEQ
-              if (Index(ieq) .eq. 0)&
+              if (index(ieq) .eq. 0)&
                   call strongconnectMat79Sngl(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
                                               Index, LowLink, idx, nscc,&
                                               p_IsccIdx, p_Iscc)
@@ -1039,7 +1319,7 @@ contains
         
         ! Tarjan`s algorithm based on the sparsity graph
         do ieq = 1, rmatrix%NEQ
-          if (Index(ieq) .eq. 0)&
+          if (index(ieq) .eq. 0)&
               call strongconnectMat79(rstack, p_Kld, p_Kcol, ieq,&
                                       Index, LowLink, idx, nscc)
         end do
@@ -1056,7 +1336,7 @@ contains
           
           ! Tarjan`s algorithm based on the sparsity graph
           do ieq = 1, rmatrix%NEQ
-            if (Index(ieq) .eq. 0)&
+            if (index(ieq) .eq. 0)&
                 call strongconnectMat79(rstack, p_Kld, p_Kcol, ieq,&
                                         Index, LowLink, idx, nscc,&
                                         p_IsccIdx, p_Iscc)
@@ -1098,7 +1378,7 @@ contains
       integer :: ia,jeq,iidx
      
       ! Set the depth index for IEQ to the smallest unused index
-      Index(ieq)   = idx
+      index(ieq)   = idx
       LowLink(ieq) = idx
       idx = idx+1
       call stack_push(rstack, ieq)
@@ -1107,7 +1387,7 @@ contains
       do ia = Kld(ieq), Kld(ieq+1)-1
         jeq = Kcol(ia)
         
-        if (Index(jeq) .eq. 0) then
+        if (index(jeq) .eq. 0) then
           ! Successor JEQ has not yet been visited; recurse on it
           call strongconnectMat79(rstack, Kld, Kcol, jeq, Index,&
                                   LowLink, idx, nscc, IsccIdx, Iscc)
@@ -1116,7 +1396,7 @@ contains
         elseif (stack_contains(rstack, jeq)) then
           ! Successor JEQ is in the stack and hence in the current
           ! strongly connected component
-          LowLink(ieq) = min(LowLink(ieq), Index(jeq))
+          LowLink(ieq) = min(LowLink(ieq), index(jeq))
         end if
       end do
 
@@ -1125,7 +1405,7 @@ contains
 
       if (present(IsccIdx) .and. present(Iscc)) then
     
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           iidx = IsccIdx(nscc)
           scc1: do
@@ -1139,7 +1419,7 @@ contains
 
       else
         
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           scc2: do
             call stack_pop(rstack, jeq)
@@ -1171,17 +1451,17 @@ contains
       integer :: ia,jeq,iidx
      
       ! Set the depth index for IEQ to the smallest unused index
-      Index(ieq)   = idx
+      index(ieq)   = idx
       LowLink(ieq) = idx
       idx = idx+1
       call stack_push(rstack, ieq)
 
       ! Consider successor of IEQ
       do ia = Kld(ieq), Kld(ieq+1)-1
-        if (abs(Da(ia)) .le. dtol) cycle
+        if (abs(Da(ia)) .le. dtrhold) cycle
         jeq = Kcol(ia)
         
-        if (Index(jeq) .eq. 0) then
+        if (index(jeq) .eq. 0) then
           ! Successor JEQ has not yet been visited; recurse on it
           call strongconnectMat79Dble(rstack, Kld, Kcol, Da, jeq, Index,&
                                       LowLink, idx, nscc, IsccIdx, Iscc)
@@ -1190,7 +1470,7 @@ contains
         elseif (stack_contains(rstack, jeq)) then
           ! Successor JEQ is in the stack and hence in the current
           ! strongly connected component
-          LowLink(ieq) = min(LowLink(ieq), Index(jeq))
+          LowLink(ieq) = min(LowLink(ieq), index(jeq))
         end if
       end do
 
@@ -1199,7 +1479,7 @@ contains
 
       if (present(IsccIdx) .and. present(Iscc)) then
     
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           iidx = IsccIdx(nscc)
           scc1: do
@@ -1213,7 +1493,7 @@ contains
 
       else
         
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           scc2: do
             call stack_pop(rstack, jeq)
@@ -1245,17 +1525,17 @@ contains
       integer :: ia,jeq,iidx
      
       ! Set the depth index for IEQ to the smallest unused index
-      Index(ieq)   = idx
+      index(ieq)   = idx
       LowLink(ieq) = idx
       idx = idx+1
       call stack_push(rstack, ieq)
 
       ! Consider successor of IEQ
       do ia = Kld(ieq), Kld(ieq+1)-1
-        if (abs(Fa(ia)) .le. real(dtol,SP)) cycle
+        if (abs(Fa(ia)) .le. real(dtrhold,SP)) cycle
         jeq = Kcol(ia)
         
-        if (Index(jeq) .eq. 0) then
+        if (index(jeq) .eq. 0) then
           ! Successor JEQ has not yet been visited; recurse on it
           call strongconnectMat79Sngl(rstack, Kld, Kcol, Fa, jeq, Index,&
                                       LowLink, idx, nscc, IsccIdx, Iscc)
@@ -1264,7 +1544,7 @@ contains
         elseif (stack_contains(rstack, jeq)) then
           ! Successor JEQ is in the stack and hence in the current
           ! strongly connected component
-          LowLink(ieq) = min(LowLink(ieq), Index(jeq))
+          LowLink(ieq) = min(LowLink(ieq), index(jeq))
         end if
       end do
 
@@ -1273,7 +1553,7 @@ contains
 
       if (present(IsccIdx) .and. present(Iscc)) then
     
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           iidx = IsccIdx(nscc)
           scc1: do
@@ -1287,7 +1567,7 @@ contains
 
       else
         
-        if (LowLink(ieq) .eq. Index(ieq)) then
+        if (LowLink(ieq) .eq. index(ieq)) then
           nscc = nscc+1
           scc2: do
             call stack_pop(rstack, jeq)
