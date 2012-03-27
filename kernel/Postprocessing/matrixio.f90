@@ -221,7 +221,7 @@ contains
 
 !<subroutine>
   subroutine matio_writeMatrix1_Dble (Da, nrow, ncol, sarray, &
-                                       bnoZero, ifile, sfile, sformat,dthreshold)
+                                      bnoZero, ifile, sfile, sformat,dthreshold)
   
   !<description>
     ! Write full double precision matrix into a text file.
@@ -325,8 +325,8 @@ contains
   
 !<subroutine>
   subroutine matio_writeMatrix79_Dble (Da, Icol, Irow, &
-                                        nrow, ncol, sarray, &
-                                        bnoZero, ifile, sfile, sformat,dthreshold)
+                                       nrow, ncol, sarray, &
+                                       bnoZero, ifile, sfile, sformat,dthreshold)
   
   !<description>
     ! Write sparse double precision matrix in matrix format 9 or
@@ -1436,7 +1436,7 @@ contains
       if (present(Da)) then
         do ieq=1,neq
           do icol=1,ncols
-            ddata = Da(ncols*(ieq-1)+icol)
+            ddata = Da((icol-1)*neq+ieq)
             if (abs(ddata) .ge. dthres) then
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                   ieq,icol,ddata
@@ -1447,7 +1447,7 @@ contains
         do ieq=1,neq
           do icol=1,ncols
             write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                ieq,icol,Da(ncols*(ieq-1)+icol)
+                ieq,icol,Da((icol-1)*neq+ieq)
           end do
         end do
       end if
@@ -1466,10 +1466,10 @@ contains
       if (present(Fa)) then
         do ieq=1,neq
           do icol=1,ncols
-            fdata = Fa(ncols*(ieq-1)+icol)
+            fdata = Fa((icol-1)*neq+ieq)
             if (abs(fdata) .ge. dthres) then
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                  ieq,icol,Fa(ncols*(ieq-1)+icol)
+                  ieq,icol,fdata
             end if
           end do
         end do
@@ -1477,7 +1477,7 @@ contains
         do ieq=1,neq
           do icol=1,ncols
             write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                ieq,icol,Fa(ncols*(ieq-1)+icol)
+                ieq,icol,Fa((icol-1)*neq+ieq)
           end do
         end do
       end if
