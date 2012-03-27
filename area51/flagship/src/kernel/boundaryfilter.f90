@@ -3262,13 +3262,6 @@ contains
     ! Check if there are strong boundary conditions
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
-    ! Check if vector and boundary description are compatible
-    if (rvector%NVAR .ne. rboundaryCondition%nmaxExpressions) then
-      call output_line('Vector and boundary description are not compatible',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarExplicit')
-      call sys_halt()
-    end if
-
     ! Check if vector is sorted?
     if (rvector%isortStrategy .gt. 0) then
       bisSorted = .true.
@@ -4770,14 +4763,6 @@ contains
 
     ! Check if there are strong boundary conditions
     if (.not.rboundaryCondition%bStrongBdrCond) return
-
-    ! Check if solution and boundary description are compatible
-    if (rsolution%NVAR .ne. rboundaryCondition%nmaxExpressions .or.&
-        rdefect%NVAR   .ne. rboundaryCondition%nmaxExpressions) then
-      call output_line('Solution vector and boundary description are not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
-      call sys_halt()
-    end if
 
     ! Check if matrix is sorted?
     if (rmatrix%isortStrategy .gt. 0) then
