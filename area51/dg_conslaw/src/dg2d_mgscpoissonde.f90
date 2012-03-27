@@ -414,8 +414,8 @@ contains
        rform%Idescriptors(2,1) = DER_DERIV_X
        rform%Idescriptors(1,2) = DER_DERIV_Y
        rform%Idescriptors(2,2) = DER_DERIV_Y
-       rform%ballCoeffConstant = .true.
-       rform%BconstantCoeff = .true.
+       rform%ballCoeffConstant = .false.
+       rform%BconstantCoeff = .false.
        !rcollection%p_rvectorQuickAccess1 => rsolBlock
        
        ! Type of finite element to use
@@ -429,14 +429,6 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'')
           call sys_halt()
        end if
-
-       call lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(1,1),-1.0_DP)
-
-
-       ! Create temporary empty solution vector which is needed to build the matrices
-      call lsyssc_createVecIndMat (p_rmatrix%RmatrixBlock(1,1),rvectorSolTemp,.true.)
-
-
 
        ! Next calculate the edge terms
        rform%itermCount = 5
@@ -459,10 +451,10 @@ contains
             rproblem%RlevelInfo(i)%raddTriaData,&
             dgmpd_flux_dg_MatrixScalarMgEdge,&
             rproblem%rcollection)!, cconstrType)
-       
-       ! Deallocate temporary solution vector
-       call lsyssc_releaseVector (rvectorSolTemp)
 
+!       call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1), '',&
+!                                  .true., 0, 'test.txt','(E20.10)')
+  
     end do
     
 
@@ -498,7 +490,7 @@ contains
     rlinformedge%itermCount = 3
     rlinformedge%Idescriptors(1) = DER_FUNC2D
     rlinformedge%Idescriptors(2) = DER_DERIV_X
-    rlinformedge%Idescriptors(2) = DER_DERIV_Y
+    rlinformedge%Idescriptors(3) = DER_DERIV_Y
     rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%rvector
     rproblem%rcollection%Iquickaccess(1) = rproblem%ipolDeg
     
@@ -694,8 +686,8 @@ contains
         p_rcoarseGridSolver%depsRel = 1.0e-12
         p_rcoarseGridSolver%depsAbs = 1.0e-12
         
-!        ! Set the output level of the solver to 2 for some output
-!        p_rcoarseGridSolver%ioutputLevel = 2
+        ! Set the output level of the solver to 2 for some output
+        p_rcoarseGridSolver%ioutputLevel = 2
         
 
 !        ! Set up UMFPACK coarse grid solver.
@@ -1070,10 +1062,10 @@ contains
     sofile = './gmv/u2d'
 
     ! Output solution to gmv file
-    call dg2gmv(p_rvector%Rvectorblock(1),0,sofile,-1)
+    call dg2gmv(p_rvector%Rvectorblock(1),3,sofile,-1)
 
     ! Output solution to vtk file
-    call dg2vtk(p_rvector%Rvectorblock(1),0,sofile,-1)
+    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
 
   end subroutine
   

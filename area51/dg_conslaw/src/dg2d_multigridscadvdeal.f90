@@ -27,7 +27,7 @@
 !# </purpose>
 !##############################################################################
 
-module dg2d_multigridscalaradvectiondeal
+module dg2d_multigridscadvdeal
 
   use fsystem
   use stdoperators

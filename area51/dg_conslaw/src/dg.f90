@@ -20,7 +20,7 @@ program dg
   use dg2d_multigridscalar
   use dg2d_multigridsystem
   use dg2d_multigridpoisson
-  use dg2d_multigridscalaradvectiondeal
+  use dg2d_multigridscadvdeal
   use dg2d_mgscpoissonde
 
   implicit none
@@ -104,5 +104,6 @@ program dg
   call storage_done()
   
   pause
+  
 
 end program

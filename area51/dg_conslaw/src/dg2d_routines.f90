@@ -17885,8 +17885,7 @@ contains
              !domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
              !domega2 = dlen * rlocalVectorAssembly(2)%p_Domega(icubp)
              domega = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
-
-
+    
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
 
