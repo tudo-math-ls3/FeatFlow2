@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+/**
+ * Allocate a block of memory on the heap
+ */
 int storage_malloc(void **ptr, size_t size)
 {
   *ptr = (void*) malloc(size);
@@ -14,6 +17,9 @@ int storage_malloc(void **ptr, size_t size)
   return 0;
 }
 
+/**
+ * Deallocate a block of memory on the heap.
+ */
 int storage_free(void **ptr)
 {
   free(*ptr);
