@@ -10198,7 +10198,7 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
 
       ! Loop through all elements
-      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy,a11,a12,a21,a22)&
+      !$omp parallel do default(shared) private(i,ddet,dx,dy,a11,a12,a21,a22)&
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
@@ -10463,7 +10463,7 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
 
       ! Loop through all elements
-      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy)&
+      !$omp parallel do default(shared) private(i,ddet,dx,dy)&
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
@@ -10793,7 +10793,7 @@ contains
     if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
 
       ! Loop through all elements
-      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy,a11,a12,a21,a22)&
+      !$omp parallel do default(shared) private(i,ddet,dx,dy,a11,a12,a21,a22)&
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
