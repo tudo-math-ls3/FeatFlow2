@@ -87,7 +87,7 @@ extern "C"
 {
   void coproc_checkErrors(__CHAR *label);
 
-  int coproc_init(int deviceNumber=0);
+  int coproc_init(int deviceNumber);
   
   int coproc_getSizeOf(int cdatatype,
 		       size_t isize);

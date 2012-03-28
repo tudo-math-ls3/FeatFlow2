@@ -53,7 +53,7 @@ extern "C" {
  * Initialisation of the CUDA subsystem
  *******************************************************************************
  */
-int coproc_init(int deviceNumber)
+int coproc_init(int deviceNumber=0)
 {
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);
@@ -62,13 +62,7 @@ int coproc_init(int deviceNumber)
       __coproc__error__("No CUDA device found");
       return 1;
     }
-  if (deviceNumber >= deviceCount)
-    {
-      fprintf(stderr, "Choose device ID between 0 and %d!\n", deviceCount-1);
-      return 1;
-    }
-  cudaSetDevice(deviceNumber);
-  
+
   int i = 0;
   printf("Available devices:\n");
   for (i=0 ; i < deviceCount ; ++i)
@@ -86,6 +80,16 @@ int coproc_init(int deviceNumber)
       printf("   Mapping of host memory:  %s\n",        prop.canMapHostMemory == 1 ?
 	                                                "supported" : "not supported");
     }
+  
+  deviceNumber = max(deviceNumber,0);
+  if (deviceNumber >= deviceCount)
+    {
+      fprintf(stderr, "Choose device ID between 0 and %d!\n", deviceCount-1);
+      return 1;
+    }
+  else
+    cudaSetDevice(deviceNumber);
+  
   printf("Selected device: %d\n", deviceNumber);
   coproc_checkErrors("coproc_init");
   return 0;

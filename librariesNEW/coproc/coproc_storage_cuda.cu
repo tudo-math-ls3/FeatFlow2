@@ -233,7 +233,7 @@ extern "C" {
 int coproc_memcpyHostToHostAsync(void *h_ptrSrc, 
 				 void *h_ptrDest,
 				 size_t size,
-				 cudaStream_t stream)
+				 cudaStream_t stream=0)
 {
   cudaMemcpyAsync(h_ptrDest, h_ptrSrc,
 		  size, cudaMemcpyHostToHost, stream);
@@ -245,7 +245,7 @@ extern "C" {
   __INT FNAME(coproc_memcpyhosttohosteasync)(void **h_ptrSrc,
 					     void **h_ptrDest,
 					     __SIZET *size,
-					     __I64 *stream=0)
+					     __I64 *stream)
   {
     return (__INT) coproc_memcpyHostToHostAsync(*h_ptrSrc, *h_ptrDest, *size,
 						(cudaStream_t)(*stream));
@@ -286,7 +286,7 @@ extern "C" {
 int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
 				   void *d_ptrDest,
 				   size_t size,
-				   cudaStream_t stream)
+				   cudaStream_t stream=0)
 {
   cudaMemcpyAsync(d_ptrDest, h_ptrSrc,
 		  size, cudaMemcpyHostToDevice, stream);
@@ -298,7 +298,7 @@ extern "C" {
   __INT FNAME(coproc_memcpyhosttodeviceasync)(void **h_ptrSrc,
 					      void **d_ptrDest,
 					      __SIZET *size,
-					      __I64 *stream=0)
+					      __I64 *stream)
   {
     return (__INT) coproc_memcpyHostToDeviceAsync(*h_ptrSrc, *d_ptrDest, *size,
 						  (cudaStream_t)(*stream));
@@ -339,7 +339,7 @@ extern "C" {
 int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
 				   void *h_ptrDest,
 				   size_t size,
-				   cudaStream_t stream)
+				   cudaStream_t stream=0)
 {
   cudaMemcpyAsync(h_ptrDest, d_ptrSrc,
 		  size, cudaMemcpyDeviceToHost,stream);
@@ -351,7 +351,7 @@ extern "C" {
   __INT FNAME(coproc_memcpydevicetohostasync)(void **d_ptrSrc,
 					      void **h_ptrDest,
 					      __SIZET *size,
-					      __I64 *stream=0)
+					      __I64 *stream)
   {
     return (__INT) coproc_memcpyDeviceToHostAsync(*d_ptrSrc, *h_ptrDest, *size,
 						  (cudaStream_t)*stream);
@@ -395,7 +395,7 @@ extern "C" {
 int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
 				     void *d_ptrDest,
 				     size_t size,
-				     cudaStream_t stream)
+				     cudaStream_t stream=0)
 {
   if (d_ptrDest != d_ptrSrc) {
     cudaMemcpyAsync(d_ptrDest, d_ptrSrc,
@@ -410,7 +410,7 @@ extern "C" {
   __INT FNAME(coproc_memcpydevicetodeviceasync)(void **d_ptrSrc,
 						void **d_ptrDest,
 						__SIZET *size,
-						__I64 *stream=0)
+						__I64 *stream)
   {
     return (__INT) coproc_memcpyDeviceToDeviceAsync(*d_ptrSrc, *d_ptrDest, *size,
 						    (cudaStream_t)*stream);
@@ -457,7 +457,7 @@ int coproc_combineSingleOnDevice(void *d_ptrSrc1,
 				 void *d_ptrSrc2,
 				 void *d_ptrDest,
 				 size_t size,
-				 cudaStream_t stream)
+				 cudaStream_t stream=0)
 {
   __SP *ptrSrc1 = (__SP*)(d_ptrSrc1);
   __SP *ptrSrc2 = (__SP*)(d_ptrSrc2);
@@ -479,7 +479,7 @@ extern "C" {
 					    void **d_ptrSrc2,
 					    void **d_ptrDest,
 					    __SIZET *size,
-					    __I64 *stream=0)
+					    __I64 *stream)
   {
     return (__INT) coproc_combineSingleOnDevice(*d_ptrSrc1, *d_ptrSrc2,
 						*d_ptrDest, *size,
@@ -495,7 +495,7 @@ int coproc_combineDoubleOnDevice(void *d_ptrSrc1,
 				 void *d_ptrSrc2,
 				 void *d_ptrDest,
 				 size_t size,
-				 cudaStream_t stream)
+				 cudaStream_t stream=0)
 {
   __DP *ptrSrc1 = (__DP*)(d_ptrSrc1);
   __DP *ptrSrc2 = (__DP*)(d_ptrSrc2);
@@ -517,7 +517,7 @@ extern "C" {
 					    void **d_ptrSrc2,
 					    void **d_ptrDest,
 					    __SIZET *size,
-					    __I64 *stream=0)
+					    __I64 *stream)
   {
     return (__INT) coproc_combineDoubleOnDevice(*d_ptrSrc1, *d_ptrSrc2,
 						*d_ptrDest, *size,
@@ -533,7 +533,7 @@ int coproc_combineQuadOnDevice(void *d_ptrSrc1,
 			       void *d_ptrSrc2,
 			       void *d_ptrDest,
 			       size_t size,
-			       cudaStream_t stream)
+			       cudaStream_t stream=0)
 {
   __QP *ptrSrc1 = (__QP*)(d_ptrSrc1);
   __QP *ptrSrc2 = (__QP*)(d_ptrSrc2);
@@ -555,7 +555,7 @@ extern "C" {
 					  void **d_ptrSrc2,
 					  void **d_ptrDest,
 					  __SIZET *size,
-					  __I64 *stream=0)
+					  __I64 *stream)
   {
     return (__INT) coproc_combineQuadOnDevice(*d_ptrSrc1, *d_ptrSrc2,
 					      *d_ptrDest, *size,
@@ -571,7 +571,7 @@ int coproc_combineIntegerOnDevice(void *d_ptrSrc1,
 				  void *d_ptrSrc2,
 				  void *d_ptrDest,
 				  size_t size,
-				  cudaStream_t stream)
+				  cudaStream_t stream=0)
 {
   __INT *ptrSrc1 = (__INT*)(d_ptrSrc1);
   __INT *ptrSrc2 = (__INT*)(d_ptrSrc2);
@@ -593,7 +593,7 @@ extern "C" {
 					     void **d_ptrSrc2,
 					     void **d_ptrDest,
 					     __SIZET *size,
-					     __I64 *stream=0)
+					     __I64 *stream)
   {
     return (__INT) coproc_combineIntegerOnDevice(*d_ptrSrc1, *d_ptrSrc2,
 						 *d_ptrDest, *size,
@@ -609,7 +609,7 @@ int coproc_combineInt8OnDevice(void *d_ptrSrc1,
 			       void *d_ptrSrc2,
 			       void *d_ptrDest,
 			       size_t size,
-			       cudaStream_t stream)
+			       cudaStream_t stream=0)
 {
   __I8 *ptrSrc1 = (__I8*)(d_ptrSrc1);
   __I8 *ptrSrc2 = (__I8*)(d_ptrSrc2);
@@ -631,7 +631,7 @@ extern "C" {
 					  void **d_ptrSrc2,
 					  void **d_ptrDest,
 					  __SIZET *size,
-					  __I64 *stream=0)
+					  __I64 *stream)
   {
     return (__INT) coproc_combineInt8OnDevice(*d_ptrSrc1, *d_ptrSrc2,
 					      *d_ptrDest, *size,
@@ -647,7 +647,7 @@ int coproc_combineInt16OnDevice(void *d_ptrSrc1,
 				void *d_ptrSrc2,
 				void *d_ptrDest,
 				size_t size,
-				cudaStream_t stream)
+				cudaStream_t stream=0)
 {
   __I16 *ptrSrc1 = (__I16*)(d_ptrSrc1);
   __I16 *ptrSrc2 = (__I16*)(d_ptrSrc2);
@@ -669,7 +669,7 @@ extern "C" {
 					   void **d_ptrSrc2,
 					   void **d_ptrDest,
 					   __SIZET *size,
-					   __I64 *stream=0)
+					   __I64 *stream)
   {
     return (__INT) coproc_combineInt16OnDevice(*d_ptrSrc1, *d_ptrSrc2,
 					       *d_ptrDest, *size,
@@ -685,7 +685,7 @@ int coproc_combineInt32OnDevice(void *d_ptrSrc1,
 				void *d_ptrSrc2,
 				void *d_ptrDest,
 				size_t size,
-				cudaStream_t stream)
+				cudaStream_t stream=0)
 {
   __I32 *ptrSrc1 = (__I32*)(d_ptrSrc1);
   __I32 *ptrSrc2 = (__I32*)(d_ptrSrc2);
@@ -707,7 +707,7 @@ extern "C" {
 					   void **d_ptrSrc2,
 					   void **d_ptrDest,
 					   __SIZET *size,
-					   __I64 *stream=0)
+					   __I64 *stream)
   {
     return (__INT) coproc_combineInt32OnDevice(*d_ptrSrc1, *d_ptrSrc2,
 					       *d_ptrDest, *size,
@@ -723,7 +723,7 @@ int coproc_combineInt64OnDevice(void *d_ptrSrc1,
 				void *d_ptrSrc2,
 				void *d_ptrDest,
 				size_t size,
-				cudaStream_t stream)
+				cudaStream_t stream=0)
 {
   __I64 *ptrSrc1 = (__I64*)(d_ptrSrc1);
   __I64 *ptrSrc2 = (__I64*)(d_ptrSrc2);
@@ -745,7 +745,7 @@ extern "C" {
 					   void **d_ptrSrc2,
 					   void **d_ptrDest,
 					   __SIZET *size,
-					   __I64 *stream=0)
+					   __I64 *stream)
   {
     return (__INT) coproc_combineInt64OnDevice(*d_ptrSrc1, *d_ptrSrc2,
 					       *d_ptrDest, *size,
@@ -761,7 +761,7 @@ int coproc_combineLogicalOnDevice(void *d_ptrSrc1,
 				  void *d_ptrSrc2,
 				  void *d_ptrDest,
 				  size_t size,
-				  cudaStream_t stream)
+				  cudaStream_t stream=0)
 {
   __LOGICAL *ptrSrc1 = (__LOGICAL*)(d_ptrSrc1);
   __LOGICAL *ptrSrc2 = (__LOGICAL*)(d_ptrSrc2);
@@ -783,7 +783,7 @@ extern "C" {
 					     void **d_ptrSrc2,
 					     void **d_ptrDest,
 					     __SIZET *size,
-					     __I64 *stream=0)
+					     __I64 *stream)
   {
     return (__INT) coproc_combineLogicalOnDevice(*d_ptrSrc1, *d_ptrSrc2,
 						 *d_ptrDest, *size,

@@ -42,7 +42,7 @@ extern "C"
   int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
 				     void *d_ptrDest,
 				     size_t size,
-				     cudaStream_t stream=0);
+				     cudaStream_t stream);
   
   int coproc_memcpyDeviceToHost(void *d_ptrSrc,
 				void *h_ptrDest,
@@ -51,7 +51,7 @@ extern "C"
   int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
 				     void *h_ptrDest,
 				     size_t size,
-				     cudaStream_t stream=0);
+				     cudaStream_t stream);
   
   int coproc_memcpyDeviceToDevice(void *d_ptrSrc,
 				  void *d_ptrDest,
@@ -60,7 +60,7 @@ extern "C"
   int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
 				       void *d_ptrDest,
 				       size_t size,
-				       cudaStream_t stream=0);
+				       cudaStream_t stream);
   
   int coproc_combinesingleOnDevice(void *d_ptrSrc1,
 				   void *d_ptrSrc2,
