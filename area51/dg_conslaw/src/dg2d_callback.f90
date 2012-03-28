@@ -10200,13 +10200,13 @@ end subroutine
 
     !</subroutine>
 
-    !    u(x,y) = 16*x*(1-x)*y*(1-y)
-    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-    Dcoefficients (1,:,:) = 32.0_DP * &
-         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
-         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+!    !    u(x,y) = 16*x*(1-x)*y*(1-y)
+!    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
+!    Dcoefficients (1,:,:) = 32.0_DP * &
+!         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+!         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
     
-    !Dcoefficients (1,:,:) = 1.0_dp
+    Dcoefficients (1,:,:) = 1.0_dp
     
 
   end subroutine 

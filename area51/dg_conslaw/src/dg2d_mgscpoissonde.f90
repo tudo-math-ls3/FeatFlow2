@@ -1066,6 +1066,13 @@ contains
 
     ! Output solution to vtk file
     call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+    
+    
+    
+!    ! Output matrix
+!    call matio_writeMatrixHR (rproblem%RlevelInfo(rproblem%ilvmax)%rmatrix%RmatrixBlock(1,1),&
+!                              'System Matrix',&
+!                              .true., 0, './matrix.txt', '(E20.10)')
 
   end subroutine
   

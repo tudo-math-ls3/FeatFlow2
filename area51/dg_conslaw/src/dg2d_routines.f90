@@ -17031,8 +17031,8 @@ contains
                       !                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
                       !
 
-                      dtriali = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ia,icubp,iel)
-                      dtriala = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ia,icubp,iel)
+                      dtriali = rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
+                      dtriala = rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
 
                       ! Trial (i), test (i)
                       p_Dentryii(jdofe,idofe,iel) = &
