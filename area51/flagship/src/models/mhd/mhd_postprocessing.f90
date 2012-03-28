@@ -243,7 +243,7 @@ contains
 
     ! Here, the working routine follows
 
-    ! **************************************************************************
+    !**************************************************************************
     ! This subroutine outputs the solution given by the array Ddata
 
     subroutine outputSolution(rexport, Ddata, csuffix, btracers)

@@ -9,7 +9,7 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) hydro_calcFluxGal2d_sim
+!# 1.) hydro_calcFluxGalerkin2d_sim
 !#     -> Computes fluxes for standard Galerkin scheme
 !#
 !# 2.) hydro_calcFluxGalNoBdr2d_sim
@@ -52,7 +52,7 @@
 !# 11.) hydro_calcMatGalMatD2d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 12.) hydro_calcMatGal2d_sim
+!# 12.) hydro_calcMatGalerkin2d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
 !# 13.) hydro_calcMatScDissMatD2d_sim
@@ -247,7 +247,7 @@ module hydro_callback2d
 
   private
 
-  public :: hydro_calcFluxGal2d_sim
+  public :: hydro_calcFluxGalerkin2d_sim
   public :: hydro_calcFluxGalNoBdr2d_sim
   public :: hydro_calcFluxScDiss2d_sim
   public :: hydro_calcFluxScDissDiSp2d_sim
@@ -258,7 +258,7 @@ module hydro_callback2d
   public :: hydro_calcMatDiagMatD2d_sim
   public :: hydro_calcMatDiag2d_sim
   public :: hydro_calcMatGalMatD2d_sim
-  public :: hydro_calcMatGal2d_sim
+  public :: hydro_calcMatGalerkin2d_sim
   public :: hydro_calcMatScDissMatD2d_sim
   public :: hydro_calcMatScDiss2d_sim
   public :: hydro_calcMatRoeDissMatD2d_sim
@@ -299,13 +299,18 @@ module hydro_callback2d
   public :: hydro_coeffVectorBdr2d_sim
   
   ! CUDA wrapper routines
+  public :: hydro_calcDivVecGalerkin2d_cuda
   public :: hydro_calcDivVecScDiss2d_cuda
-  public :: hydro_calcDivMatScDiss2d_cuda
   public :: hydro_calcDivVecScDissDiSp2d_cuda
   public :: hydro_calcDivVecRoeDiss2d_cuda
   public :: hydro_calcDivVecRoeDissDiSp2d_cuda
   public :: hydro_calcDivVecRusDiss2d_cuda
   public :: hydro_calcDivVecRusDissDiSp2d_cuda
+
+  public :: hydro_calcDivMatGalerkin2d_cuda
+  public :: hydro_calcDivMatScDiss2d_cuda
+  public :: hydro_calcDivMatRoeDiss2d_cuda
+  public :: hydro_calcDivMatRusDiss2d_cuda
 
 contains
 
@@ -313,7 +318,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxGal2d_sim(DdataAtEdge, DcoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalerkin2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -446,7 +451,7 @@ contains
 #endif
     end do
 
-  end subroutine hydro_calcFluxGal2d_sim
+  end subroutine hydro_calcFluxGalerkin2d_sim
 
   !*****************************************************************************
 
@@ -738,7 +743,139 @@ contains
 
   end subroutine hydro_calcFluxScDiss2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecGalerkin2d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the standard Galerkin
+    ! discretisation in 2D.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxGalerkin2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset, istream)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+    
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecGalerkin2d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecGalerkin2d_cuda
+
+  !***************************************************************************
 
 !<subroutine>
 
@@ -858,7 +995,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
     
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -875,7 +1012,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivMatScDiss2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+  subroutine hydro_calcDivMatGalerkin2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
 
     use afcstabbase
@@ -885,8 +1022,9 @@ contains
     use linearsystemblock
 
 !<description>
-    ! This subroutine assembles the discrete operator for systems of
-    ! equations using the group finite element formulation by Fletcher.
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using scalar artificial viscosities proportional to the spectral
+    ! radius (largest eigenvalue) of the Roe-matrix.
 !</description>
 
 !<input>
@@ -932,6 +1070,160 @@ contains
     type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
     type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
     type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatGalerkin2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatGalerkin2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatScDiss2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using scalar artificial viscosities proportional to the spectral
+    ! radius (largest eigenvalue) of the Roe-matrix.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
         
     ! Check if diagonal structure is available on device and copy it otherwise
     cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
@@ -1017,6 +1309,760 @@ contains
 #endif
     
   end subroutine hydro_calcDivMatScDiss2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatScDissDiSp2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using scalar artificial viscosities proportional to the spectral
+    ! radius (largest eigenvalue) of the Roe-matrix, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatScDissDiSp2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatScDissDiSp2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRoeDiss2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using tensorial artificial viscosities of Roe-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRoeDiss2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRoeDiss2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRoeDissDiSp2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using tensorial artificial viscosities of Roe-type, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRoeDissDiSp2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRoeDissDiSp2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRusDiss2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using scalar artificial viscosities of Rusanov-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRusDiss2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRusDiss2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRusDissDiSp2d_cuda(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
+      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the discrete low-order operator in 2D
+    ! using scalar artificial viscosities of Rusanov-type, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+
+    print *, "Hello, here we are!"
+    stop
+        
+    ! Check if diagonal structure is available on device and copy it otherwise
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    if (.not.storage_isAssociated(cptr_IdiagList)) then
+      call gfem_copyH2D_IdiagList(rgroupFEMSet, .true.)
+      cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    end if
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+        
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtDiag)) then
+      call gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, .true.)
+      cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., p_MemPtr=cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, bclear, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NVAR, rgroupFEMSet%ncoeffsAtDiag)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NVAR, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset)
+    end do
+    
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false.)
+
+    deallocate(cptr_Da)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRusDissDiSp2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRusDissDiSp2d_cuda
 
   !*****************************************************************************
 
@@ -1203,7 +2249,7 @@ contains
 
   end subroutine hydro_calcFluxScDissDiSp2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -1324,7 +2370,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -1619,7 +2665,7 @@ contains
 
   end subroutine hydro_calcFluxRoeDiss2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -1738,7 +2784,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2108,7 +3154,7 @@ contains
 
   end subroutine hydro_calcFluxRoeDissDiSp2d_sim
  
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2228,7 +3274,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2435,7 +3481,7 @@ contains
 
   end subroutine hydro_calcFluxRusDiss2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2554,7 +3600,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2763,7 +3809,7 @@ contains
 
   end subroutine hydro_calcFluxRusDissDiSp2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2883,7 +3929,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -3260,7 +4306,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcMatGal2d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGalerkin2d_sim(DdataAtEdge,&
       DcoeffsAtEdge, IedgeList, dscale, nedges,&
       DmatrixAtEdge, rcollection)
 
@@ -3530,7 +4576,7 @@ contains
 #endif
     end do
       
-  end subroutine hydro_calcMatGal2d_sim
+  end subroutine hydro_calcMatGalerkin2d_sim
 
   !*****************************************************************************
 
@@ -7966,7 +9012,7 @@ contains
     
   end subroutine hydro_calcLinfBdrCond2D
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -8949,7 +9995,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
 
     subroutine doEvaluateAtBdrScalar(iderType, n, Dvalues, rvectorScalar,&
         m, DpointsPar, ibdc, cparType, rboundaryRegion)
@@ -8971,7 +10017,7 @@ contains
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
 
     subroutine doEvaluateAtBdrBlock(iderType, n1, n2, Dvalues, rvectorBlock,&
         m, DpointsPar, ibdc, cparType, rboundaryRegion)

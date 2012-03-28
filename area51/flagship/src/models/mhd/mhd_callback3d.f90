@@ -9,7 +9,7 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) mhd_calcFluxGal3d_sim
+!# 1.) mhd_calcFluxGalerkin3d_sim
 !#     -> Computes fluxes for standard Galerkin scheme
 !#
 !# 2.) mhd_calcFluxGalNoBdr3d_sim
@@ -51,7 +51,7 @@
 !# 11.) mhd_calcMatGalMatD3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 12.) mhd_calcMatGal3d_sim
+!# 12.) mhd_calcMatGalerkin3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
 !# 13.) mhd_calcMatScDissMatD3d_sim
@@ -262,7 +262,7 @@ module mhd_callback3d
   implicit none
 
   private
-  public :: mhd_calcFluxGal3d_sim
+  public :: mhd_calcFluxGalerkin3d_sim
   public :: mhd_calcFluxGalNoBdr3d_sim
   public :: mhd_calcFluxScDiss3d_sim
   public :: mhd_calcFluxScDissDiSp3d_sim
@@ -273,7 +273,7 @@ module mhd_callback3d
   public :: mhd_calcMatDiagMatD3d_sim
   public :: mhd_calcMatDiag3d_sim
   public :: mhd_calcMatGalMatD3d_sim
-  public :: mhd_calcMatGal3d_sim
+  public :: mhd_calcMatGalerkin3d_sim
   public :: mhd_calcMatScDissMatD3d_sim
   public :: mhd_calcMatScDiss3d_sim
   public :: mhd_calcMatRoeDissMatD3d_sim
@@ -319,7 +319,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxGal3d_sim(DdataAtEdge, DcoeffsAtEdge,&
+  pure subroutine mhd_calcFluxGalerkin3d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -530,7 +530,7 @@ contains
 #endif
     end do
 
-  end subroutine mhd_calcFluxGal3d_sim
+  end subroutine mhd_calcFluxGalerkin3d_sim
 
   !*****************************************************************************
 
@@ -2484,7 +2484,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcMatGal3d_sim(DdataAtEdge,&
+  pure subroutine mhd_calcMatGalerkin3d_sim(DdataAtEdge,&
       DcoeffsAtEdge, IedgeList, dscale, nedges,&
       DmatrixAtEdge, rcollection)
 
@@ -2521,7 +2521,7 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine mhd_calcMatGal3d_sim
+  end subroutine mhd_calcMatGalerkin3d_sim
 
   !*****************************************************************************
 

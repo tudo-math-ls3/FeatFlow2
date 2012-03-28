@@ -9,7 +9,7 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) mhd_calcFluxGal1d_sim
+!# 1.) mhd_calcFluxGalerkin1d_sim
 !#     -> Computes fluxes for standard Galerkin scheme
 !#
 !# 2.) mhd_calcFluxGalNoBdr1d_sim
@@ -37,7 +37,7 @@
 !# 8.) mhd_calcMatGalMatD1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 9.) mhd_calcMatGal1d_sim
+!# 9.) mhd_calcMatGalerkin1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
 !# 10.) mhd_calcMatScDissMatD1d_sim
@@ -237,7 +237,7 @@ module mhd_callback1d
   implicit none
 
   private
-  public :: mhd_calcFluxGal1d_sim
+  public :: mhd_calcFluxGalerkin1d_sim
   public :: mhd_calcFluxGalNoBdr1d_sim
   public :: mhd_calcFluxScDiss1d_sim
   public :: mhd_calcFluxRoeDiss1d_sim
@@ -245,7 +245,7 @@ module mhd_callback1d
   public :: mhd_calcMatDiagMatD1d_sim
   public :: mhd_calcMatDiag1d_sim
   public :: mhd_calcMatGalMatD1d_sim
-  public :: mhd_calcMatGal1d_sim
+  public :: mhd_calcMatGalerkin1d_sim
   public :: mhd_calcMatScDissMatD1d_sim
   public :: mhd_calcMatScDiss1d_sim
   public :: mhd_calcMatRoeDissMatD1d_sim
@@ -294,7 +294,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxGal1d_sim(DdataAtEdge, DcoeffsAtEdge,&
+  pure subroutine mhd_calcFluxGalerkin1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -417,7 +417,7 @@ contains
 #endif
     end do
 
-  end subroutine mhd_calcFluxGal1d_sim
+  end subroutine mhd_calcFluxGalerkin1d_sim
 
   !*****************************************************************************
 
@@ -1501,7 +1501,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcMatGal1d_sim(DdataAtEdge,&
+  pure subroutine mhd_calcMatGalerkin1d_sim(DdataAtEdge,&
       DcoeffsAtEdge, IedgeList, dscale, nedges,&
       DmatrixAtEdge, rcollection)
 
@@ -1549,7 +1549,7 @@ contains
       DmatrixAtEdge(:,:,idx) = 0.0
     end do
    
-  end subroutine mhd_calcMatGal1d_sim
+  end subroutine mhd_calcMatGalerkin1d_sim
 
   !*****************************************************************************
 
@@ -4415,7 +4415,7 @@ contains
 
   end subroutine mhd_calcLinfBdrCond1D
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 

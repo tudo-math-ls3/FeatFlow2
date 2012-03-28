@@ -1,4 +1,4 @@
-!-*- mode: f90; -*-
+
 
 #ifndef _HYDRO_CALLBACK_H_
 #define _HYDRO_CALLBACK_H_
@@ -28,13 +28,13 @@
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-#define __fcb_calcVectorEdgeSys__(callbackRoutine)	\
+#define COPROC_FCB_CALCVECTOREDGESYS(callbackRoutine)	\
   ,fcb_calcVectorEdgeSys=callbackRoutine
-#define __fcb_calcOperatorEdgeSys__(callbackRoutine)	\
+#define COPROC_FCB_CALCOPERATOREDGESYS(callbackRoutine)	\
   ,fcb_calcOperatorEdgeSys=callbackRoutine
 #else
-#define __fcb_calcVectorEdgeSys__(callbackRoutine)
-#define __fcb_calcOperatorEdgeSys__(callbackRoutine)
+#define COPROC_FCB_CALCVECTOREDGESYS(callbackRoutine)
+#define COPROC_FCB_CALCOPERATOREDGESYS(callbackRoutine)
 #endif
 
 #endif

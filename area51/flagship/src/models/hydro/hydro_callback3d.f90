@@ -9,7 +9,7 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) hydro_calcFluxGal3d_sim
+!# 1.) hydro_calcFluxGalerkin3d_sim
 !#     -> Computes fluxes for standard Galerkin scheme
 !#
 !# 2.) hydro_calcFluxGalNoBdr3d_sim
@@ -52,7 +52,7 @@
 !# 11.) hydro_calcMatGalMatD3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 12.) hydro_calcMatGal3d_sim
+!# 12.) hydro_calcMatGalerkin3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
 !# 13.) hydro_calcMatScDissMatD3d_sim
@@ -222,7 +222,7 @@ module hydro_callback3d
 
   private
 
-  public :: hydro_calcFluxGal3d_sim
+  public :: hydro_calcFluxGalerkin3d_sim
   public :: hydro_calcFluxGalNoBdr3d_sim
   public :: hydro_calcFluxScDiss3d_sim
   public :: hydro_calcFluxScDissDiSp3d_sim
@@ -233,7 +233,7 @@ module hydro_callback3d
   public :: hydro_calcMatDiagMatD3d_sim
   public :: hydro_calcMatDiag3d_sim
   public :: hydro_calcMatGalMatD3d_sim
-  public :: hydro_calcMatGal3d_sim
+  public :: hydro_calcMatGalerkin3d_sim
   public :: hydro_calcMatScDissMatD3d_sim
   public :: hydro_calcMatScDiss3d_sim
   public :: hydro_calcMatRoeDissMatD3d_sim
@@ -270,6 +270,8 @@ module hydro_callback3d
   public :: hydro_trafoNodalDenPreVel3d_sim
   public :: hydro_calcBoundaryvalues3d
 
+  ! CUDA wrapper routines
+  public :: hydro_calcDivVecGalerkin3d_cuda
   public :: hydro_calcDivVecScDiss3d_cuda
   public :: hydro_calcDivVecScDissDiSp3d_cuda
   public :: hydro_calcDivVecRoeDiss3d_cuda
@@ -283,7 +285,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxGal3d_sim(DdataAtEdge, DcoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalerkin3d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -455,7 +457,7 @@ contains
 #endif
     end do
 
-  end subroutine hydro_calcFluxGal3d_sim
+  end subroutine hydro_calcFluxGalerkin3d_sim
 
   !*****************************************************************************
 
@@ -808,7 +810,139 @@ contains
 
   end subroutine hydro_calcFluxScDiss3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecGalerkin3d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the standard Galerkin
+    ! discretisation in 3D.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxGalerkin3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset, istream)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecGalerkin3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecGalerkin3d_cuda
+
+  !***************************************************************************
 
 !<subroutine>
 
@@ -928,7 +1062,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -1168,7 +1302,7 @@ contains
 
   end subroutine hydro_calcFluxScDissDiSp3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -1289,7 +1423,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -1701,7 +1835,7 @@ contains
 
   end subroutine hydro_calcFluxRoeDiss3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -1820,7 +1954,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2316,7 +2450,7 @@ contains
 
   end subroutine hydro_calcFluxRoeDissDiSp3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2436,7 +2570,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -2694,7 +2828,7 @@ contains
 
   end subroutine hydro_calcFluxRusDiss3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2813,7 +2947,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -3073,7 +3207,7 @@ contains
 
   end subroutine hydro_calcFluxRusDissDiSp3d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3193,7 +3327,7 @@ contains
     call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
 
     ! Ensure data consistency
-    call coproc_synchroniseStream(istream)
+    call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
 
 #else
@@ -3727,7 +3861,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcMatGal3d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGalerkin3d_sim(DdataAtEdge,&
       DcoeffsAtEdge, IedgeList, dscale, nedges,&
       DmatrixAtEdge, rcollection)
 
@@ -4211,7 +4345,7 @@ contains
 #endif
     end do
 
-  end subroutine hydro_calcMatGal3d_sim
+  end subroutine hydro_calcMatGalerkin3d_sim
 
   !*****************************************************************************
 

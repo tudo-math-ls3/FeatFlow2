@@ -9,7 +9,7 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) hydro_calcFluxGal1d_sim
+!# 1.) hydro_calcFluxGalerkin1d_sim
 !#     -> Computes fluxes for standard Galerkin scheme
 !#
 !# 2.) hydro_calcFluxGalNoBdr1d_sim
@@ -37,7 +37,7 @@
 !# 8.) hydro_calcMatGalMatD1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 9.) hydro_calcMatGal1d_sim
+!# 9.) hydro_calcMatGalerkin1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
 !# 10.) hydro_calcMatScDissMatD1d_sim
@@ -227,7 +227,7 @@ module hydro_callback1d
 
   private
 
-  public :: hydro_calcFluxGal1d_sim
+  public :: hydro_calcFluxGalerkin1d_sim
   public :: hydro_calcFluxGalNoBdr1d_sim
   public :: hydro_calcFluxScDiss1d_sim
   public :: hydro_calcFluxRoeDiss1d_sim
@@ -235,7 +235,7 @@ module hydro_callback1d
   public :: hydro_calcMatDiagMatD1d_sim
   public :: hydro_calcMatDiag1d_sim
   public :: hydro_calcMatGalMatD1d_sim
-  public :: hydro_calcMatGal1d_sim
+  public :: hydro_calcMatGalerkin1d_sim
   public :: hydro_calcMatScDissMatD1d_sim
   public :: hydro_calcMatScDiss1d_sim
   public :: hydro_calcMatRoeDissMatD1d_sim
@@ -281,7 +281,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxGal1d_sim(DdataAtEdge, DcoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalerkin1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -380,7 +380,7 @@ contains
 #endif
     end do
 
-  end subroutine hydro_calcFluxGal1d_sim
+  end subroutine hydro_calcFluxGalerkin1d_sim
 
   !*****************************************************************************
 
@@ -1264,7 +1264,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcMatGal1d_sim(DdataAtEdge,&
+  pure subroutine hydro_calcMatGalerkin1d_sim(DdataAtEdge,&
       DcoeffsAtEdge, IedgeList, dscale, nedges,&
       DmatrixAtEdge, rcollection)
 
@@ -1406,7 +1406,7 @@ contains
 #endif
     end do
 
-  end subroutine hydro_calcMatGal1d_sim
+  end subroutine hydro_calcMatGalerkin1d_sim
 
   !*****************************************************************************
 
@@ -5005,7 +5005,7 @@ contains
 
   end subroutine hydro_calcLinfBdrCond1D
   
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 

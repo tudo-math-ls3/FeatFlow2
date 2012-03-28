@@ -635,21 +635,21 @@ contains
         case (NDIM1D)
           call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution, mhd_calcMatGal1d_sim, dscale, .true.,&
+              rsolution, mhd_calcMatGalerkin1d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               mhd_calcMatDiag1d_sim, rcollection=rcollection)
 
         case (NDIM2D)
           call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution, mhd_calcMatGal2d_sim, dscale, .true.,&
+              rsolution, mhd_calcMatGalerkin2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               mhd_calcMatDiag2d_sim, rcollection=rcollection)
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution, mhd_calcMatGal3d_sim, dscale, .true.,&
+              rsolution, mhd_calcMatGalerkin3d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               mhd_calcMatDiag3d_sim, rcollection=rcollection)
 
@@ -2723,7 +2723,7 @@ contains
 
   end subroutine mhd_calcCorrectionFCT
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2962,7 +2962,7 @@ contains
     
   end subroutine mhd_limitEdgewiseVelocity
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3201,7 +3201,7 @@ contains
 
   end subroutine mhd_limitEdgewiseMomentum
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3440,7 +3440,7 @@ contains
 
   end subroutine mhd_limitEdgewiseMagfield
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3561,7 +3561,7 @@ contains
     
   end subroutine mhd_coeffVectorFE
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3690,7 +3690,7 @@ contains
     
   end subroutine mhd_coeffVectorAnalytic
 
-  ! *****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -3852,19 +3852,19 @@ contains
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution,&
-              mhd_calcFluxGal1d_sim, dscale, bclear, rvector, rcollection)
+              mhd_calcFluxGalerkin1d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM2D)
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution,&
-              mhd_calcFluxGal2d_sim, dscale, bclear, rvector, rcollection)
+              mhd_calcFluxGalerkin2d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM3D)
           call gfsys_buildVectorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution,&
-              mhd_calcFluxGal3d_sim, dscale, bclear, rvector, rcollection)
+              mhd_calcFluxGalerkin3d_sim, dscale, bclear, rvector, rcollection)
         end select
 
         !-----------------------------------------------------------------------
@@ -3893,19 +3893,19 @@ contains
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                mhd_calcFluxGal1d_sim, dscale, bclear, rvector, rcollection)
+                mhd_calcFluxGalerkin1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                mhd_calcFluxGal2d_sim, dscale, bclear, rvector, rcollection)
+                mhd_calcFluxGalerkin2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                mhd_calcFluxGal3d_sim, dscale, bclear, rvector, rcollection)
+                mhd_calcFluxGalerkin3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
           !---------------------------------------------------------------------

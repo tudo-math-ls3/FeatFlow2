@@ -1808,7 +1808,7 @@ do iedge = 1, nedges
 
   end subroutine transp_calcMatUpwConvD2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -2628,7 +2628,7 @@ do iedge = 1, nedges
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
         DpointsPar, ibdc, cparType, rboundaryRegion)
@@ -2647,7 +2647,7 @@ do iedge = 1, nedges
     
   end subroutine transp_coeffVecBdrConvP2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -3467,7 +3467,7 @@ do iedge = 1, nedges
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
         DpointsPar, ibdc, cparType, rboundaryRegion)
@@ -6248,7 +6248,7 @@ do iedge = 1, nedges
 
   end subroutine transp_calcMatUpwSTBurgP2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -7062,7 +7062,7 @@ do iedge = 1, nedges
     
   end subroutine transp_calcMatUpwSTBLevP2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -7844,7 +7844,7 @@ do iedge = 1, nedges
 
   end subroutine transp_calcMatUpwBurgP2d_sim
 
-  ! ***************************************************************************
+  !***************************************************************************
 
 !<subroutine>
 
@@ -8564,7 +8564,7 @@ do iedge = 1, nedges
     ! terms of their parameter values. This ugly trick is necessary
     ! since we have to pass the 2d-array Dvalues and DpointsPar to a
     ! subroutine which accepts only 1d-arrays.
-    ! ***************************************************************************
+    !***************************************************************************
     
     subroutine doEvaluateAtBdr2d(iderType, n, Dvalues, rvectorScalar,&
         DpointsPar, ibdc, cparType, rboundaryRegion)

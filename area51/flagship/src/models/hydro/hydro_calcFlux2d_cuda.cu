@@ -910,7 +910,6 @@ __global__ void hydro_calcFlux2d_knl(Td *CoeffsAtEdge,
       
       // Local variables
       Td DataAtEdge[2*NVAR2D];
-      Td Diff[NVAR2D];
       
       // Get solution values at edge endpoints
       gather_DataAtEdge<isystemformat>::
@@ -945,29 +944,108 @@ __global__ void hydro_calcFlux2d_knl(Td *CoeffsAtEdge,
 	calc_eval(Fx_ij,Fy_ij,DataAtEdge,ui,uj,vi,vj,pi,pj);
 #endif
 
+      Td Diff[NVAR2D];
       // Compute the artificial viscosities
       calc_Dissipation<idissipationtype>::
 	eval(Diff,CoeffsAtEdge,DataAtEdge,ui,uj,vi,vj,pi,pj,iedgeset+idx,nedge,ncoeff);
       
-      Td FluxesAtEdge[2*NVAR2D];
       // Build both contributions into the fluxes
 #ifdef HYDRO_USE_IBP
       calc_FluxesAtEdge::
-	eval(FluxesAtEdge,CoeffsAtEdge,Fxi,Fxj,Fyi,Fyj,Diff,scale,iedgeset+idx,ncoeff,nedge);
+	eval(DataAtEdge,CoeffsAtEdge,Fxi,Fxj,Fyi,Fyj,Diff,scale,iedgeset+idx,ncoeff,nedge);
 #else
       calc_FluxesAtEdge::
-	eval(FluxesAtEdge,CoeffsAtEdge,Fx_ij,Fy_ij,Diff,scale,iedgeset+idx,ncoeff,nedge);
+	eval(DataAtEdge,CoeffsAtEdge,Fx_ij,Fy_ij,Diff,scale,iedgeset+idx,ncoeff,nedge);
 #endif
         
       // Build fluxes into nodal vector
       scatter_FluxesAtEdge<isystemformat>::
-	eval(FluxesAtEdge,Dy,i,j,neq);
+	eval(DataAtEdge,Dy,i,j,neq);
     }
 }
 
 /*******************************************************************************
  * External C functions which can be called from the Fortran code
  *******************************************************************************/
+
+template <typename Td, typename Ti>
+inline
+int hydro_calcFluxGalerkin2d_cuda(__SIZET *d_CoeffsAtEdge,
+				  __SIZET *d_IedgeList,
+				  __SIZET *d_Dx,
+				  __SIZET *d_Dy,
+				  Td scale,
+				  Ti nblocks,
+				  Ti neq,
+				  Ti nvar,
+				  Ti nedge, 
+				  Ti ncoeff,
+				  Ti nedges,
+				  Ti iedgeset,
+				  cudaStream_t stream=0)
+{
+  Td *Dx = (Td*)(*d_Dx);
+  Td *Dy = (Td*)(*d_Dy);
+  Td *CoeffsAtEdge = (Td*)(*d_CoeffsAtEdge);
+  Ti *IedgeList = (Ti*)(*d_IedgeList);
+  
+  // Define number of threads per block
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil((nedges)/(double)(block.x));
+  
+  if (nblocks == 1) {
+    hydro_calcFlux2d_knl
+      <Td,Ti,SYSTEM_SEGREGATED,DISSIPATION_ZERO>
+      <<<grid, block, 0, stream>>>(CoeffsAtEdge,
+				   IedgeList,
+				   Dx, Dy, scale,
+				   neq, nvar,
+				   nedge, ncoeff,
+				   nedges, iedgeset);
+  } else {
+    hydro_calcFlux2d_knl
+      <Td,Ti,SYSTEM_ALLCOUPLED,DISSIPATION_ZERO>
+      <<<grid, block, 0, stream>>>(CoeffsAtEdge,
+				   IedgeList,
+				   Dx, Dy, scale, 
+				   neq, nvar,
+				   nedge, ncoeff,
+				   nedges, iedgeset);
+  }
+  coproc_checkErrors("hydro_calcFluxGalerkin2d_cuda");
+  return 0;
+}
+
+/*******************************************************************************/
+extern "C"
+{
+  __INT FNAME(hydro_calcfluxgalerkin2d_cuda)(__SIZET *d_CoeffsAtEdge,
+					     __SIZET *d_IedgeList,
+					     __SIZET *d_Dx,
+					     __SIZET *d_Dy,
+#ifdef HAS_CUDADOUBLEPREC
+					     __DP *scale,
+#else
+					     __SP *scale,
+#endif
+					     __INT *nblocks,
+					     __INT *neq,
+					     __INT *nvar,
+					     __INT *nedge,
+					     __INT *ncoeff,
+					     __INT *nedges,
+					     __INT *iedgeset,
+					     __I64 *stream)
+  {
+    return (__INT) hydro_calcFluxGalerkin2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
+						 *scale, *nblocks, *neq, *nvar, *nedge,
+						 *ncoeff, *nedges, *iedgeset, 
+						 (cudaStream_t)(*stream));
+  }
+}
 
 template <typename Td, typename Ti>
 inline
@@ -983,7 +1061,7 @@ int hydro_calcFluxScDiss2d_cuda(__SIZET *d_CoeffsAtEdge,
 				Ti ncoeff,
 				Ti nedges,
 				Ti iedgeset,
-				cudaStream_t stream)
+				cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
@@ -1039,7 +1117,7 @@ extern "C"
 					   __INT *ncoeff,
 					   __INT *nedges,
 					   __INT *iedgeset,
-					   __I64 *stream=0)
+					   __I64 *stream)
   {
     return (__INT) hydro_calcFluxScDiss2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
 					       *scale, *nblocks, *neq, *nvar, *nedge,
@@ -1064,7 +1142,7 @@ int hydro_calcFluxScDissDiSp2d_cuda(__SIZET *d_CoeffsAtEdge,
 				    Ti ncoeff,
 				    Ti nedges,
 				    Ti iedgeset,
-				    cudaStream_t stream)
+				    cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
@@ -1119,7 +1197,7 @@ extern "C" {
 					       __INT *ncoeff,
 					       __INT *nedges, 
 					       __INT *iedgeset,
-					       __I64 *stream=0)
+					       __I64 *stream)
   {
     return (__INT) hydro_calcFluxScDissDiSp2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
 						   *scale, *nblocks, *neq, *nvar, *nedge,
@@ -1144,7 +1222,7 @@ int hydro_calcFluxRoeDiss2d_cuda(__SIZET *d_CoeffsAtEdge,
 				 Ti ncoeff,
 				 Ti nedges, 
 				 Ti iedgeset,
-				 cudaStream_t stream)
+				 cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
@@ -1199,7 +1277,7 @@ extern "C" {
 					    __INT *ncoeff,
 					    __INT *nedges, 
 					    __INT *iedgeset,
-					    __I64 *stream=0)
+					    __I64 *stream)
   {
     return (__INT) hydro_calcFluxRoeDiss2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
 						*scale, *nblocks, *neq, *nvar, *nedge,
@@ -1224,7 +1302,7 @@ int hydro_calcFluxRoeDissDiSp2d_cuda(__SIZET *d_CoeffsAtEdge,
 				     Ti ncoeff,
 				     Ti nedges, 
 				     Ti iedgeset,
-				     cudaStream_t stream)
+				     cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
@@ -1279,7 +1357,7 @@ extern "C" {
 						__INT *ncoeff,
 						__INT *nedges, 
 						__INT *iedgeset,
-						__I64 *stream=0)
+						__I64 *stream)
   {
     return (__INT) hydro_calcFluxRoeDissDiSp2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
 						    *scale, *nblocks, *neq, *nvar, *nedge,
@@ -1304,7 +1382,7 @@ int hydro_calcFluxRusDiss2d_cuda(__SIZET *d_CoeffsAtEdge,
 				 Ti ncoeff,
 				 Ti nedges, 
 				 Ti iedgeset,
-				 cudaStream_t stream)
+				 cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
@@ -1359,7 +1437,7 @@ extern "C" {
 					    __INT *ncoeff,
 					    __INT *nedges, 
 					    __INT *iedgeset,
-					    __I64 *stream=0)
+					    __I64 *stream)
   {
     return (__INT)hydro_calcFluxRusDiss2d_cuda(d_CoeffsAtEdge, d_IedgeList, d_Dx, d_Dy,
 					       *scale, *nblocks, *neq, *nvar, *nedge,
@@ -1384,7 +1462,7 @@ int hydro_calcFluxRusDissDiSp2d_cuda(__SIZET *d_CoeffsAtEdge,
 				     Ti ncoeff,
 				     Ti nedges, 
 				     Ti iedgeset,
-				     cudaStream_t stream)
+				     cudaStream_t stream=0)
 {
   Td *Dx = (Td*)(*d_Dx);
   Td *Dy = (Td*)(*d_Dy);
