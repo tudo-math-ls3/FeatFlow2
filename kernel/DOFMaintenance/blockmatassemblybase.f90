@@ -307,8 +307,8 @@ module blockmatassemblybase
     ! Number of local DOF`s in the test space
     integer :: ndofTest = 0
     
-    ! Number of variables per matrix entry. Only for interleaved
-    ! matrices. =1 for non-interleaved matrices.
+    ! Number of variables per vector entry. Only for interleaved
+    ! vectors. =1 for non-interleaved vectors.
     integer :: nvar = 1
 
     !<!--

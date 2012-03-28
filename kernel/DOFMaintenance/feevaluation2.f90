@@ -128,12 +128,33 @@ module feevaluation2
   ! This structure saves the values of a FEM function in a set
   ! of points on a set of elements. Used, e.g., for nonlinearities.
   type t_fev2VectorData
+
+    ! Specifies whether the corresponding vector is interleaved.
+    ! =.FALSE.: Vector is not interleaved. The local vector entries
+    !           can be found in p_Ddata. p_DdataIntl is undefined.
+    ! =.TRUE.:  Vector is interleaved. The local vector entries
+    !           can be found in p_DdataIntl. p_Ddata is undefined.
+    logical :: bisInterleaved = .false.
   
     ! Pointer to an array with values in all cubature points.
-    !   Ddata(npointsPerElement,nelements,nmaxDerivativeIdx)
+    !   Ddata(npointsPerElement,nelements,nmaxDerivativeIdx).
+    !
     ! The last index specifies the type of the derivative,
     ! so Ddata(:,:,DER_DERIV2D_X) specifies the first X-derivative.
+    !
+    ! NOTE: Only for non-Interleaved vectors, there is p_Ddata=>null for
+    ! interleaved vectors. In this case, p_DentryIntl defines the vector data.
     real(DP), dimension(:,:,:), pointer :: p_Ddata => null()
+
+    ! Pointer to an array with values in all cubature points.
+    !   p_DdataIntl(nvar,npointsPerElement,nelements,nmaxDerivativeIdx).
+    !
+    ! The last index specifies the type of the derivative,
+    ! so p_DdataIntl(:,:,:,DER_DERIV2D_X) specifies the first X-derivative.
+    !
+    ! NOTE: Only for Interleaved vectors, there is p_DdataIntl=>null for
+    ! non-interleaved vectors. In this case, p_Dentry defines the vector data.
+    real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl => null()
     
     ! Reference to the vector or NULL, if there is no vector
     ! associated. The latter case appears for `dummy` vectors.
@@ -141,6 +162,10 @@ module feevaluation2
     ! preallocated and which can be arbitrarily used by the callback
     ! routines.
     type(t_vectorScalar), pointer :: p_rvector => null()
+    
+    ! Number of variables per vector entry. Only for interleaved
+    ! vectors. =1 for non-interleaved vectors.
+    integer :: nvar = 1
     
     ! Maximum derivative to be computed.
     ! If this is =0, nmaxDerivativeIdx>0 and p_rvector=>null(), this vector
@@ -1170,13 +1195,19 @@ contains
     ! Maximum derivative to be calculated
     revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = nmaxDerivative
     
+    ! Variables per vector entry (for interleaved vectors)
+    if (rvector%nvar .ne. 1) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%bisInterleaved = .true.
+      revalVectors%p_RvectorData(revalVectors%ncount)%nvar = rvector%nvar
+    end if
+    
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine fev2_addDummyVectorToEvalList(revalVectors,nsubarrays)
+  subroutine fev2_addDummyVectorToEvalList(revalVectors,nsubarrays,nvar)
 
 !<description>
   ! Adds a scalar dummy entry to the list of vectors to be evaluated.
@@ -1195,6 +1226,10 @@ contains
   ! If specified, there are nsubarray memory blocks allocated in memory
   ! and associated to this dummy vector.
   integer, intent(in), optional :: nsubarrays
+  
+  ! OPTINOAL: Number of variables per vector entry.
+  ! If set to > 1, a memory block for interleaved access is created.
+  integer, intent(in), optional :: nvar
 !</input>
 
 !<inputoutput>
@@ -1235,6 +1270,12 @@ contains
     
     if (present(nsubarrays)) then
       revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = nsubarrays
+    end if
+    
+    ! Create an interleaved memory block?
+    if (present(nvar)) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%bisInterleaved = .true.
+      revalVectors%p_RvectorData(revalVectors%ncount)%nvar = nvar
     end if
     
   end subroutine
@@ -1294,6 +1335,7 @@ contains
 
     ! local variables
     integer :: i, nentries, nmaxDerivativeIdx, npointsPerElement, nelements
+    type(t_fev2VectorData), pointer :: p_rvectorData
     
     ! For every vector to evaluate, allocate memory for the
     ! values in the points.
@@ -1306,30 +1348,38 @@ contains
     revalVectors%nelements = nelements
     
     do i=1,revalVectors%ncount
+    
+      p_rvectorData => revalVectors%p_RvectorData(i)
 
-      if (revalVectors%p_RvectorData(i)%nmaxDerivative .gt. 0) then
+      if (p_rvectorData%nmaxDerivative .gt. 0) then
         ! Standard vector with data.
         
         ! Maximum index in Bder
         call fev2_getBderSize(&
-            revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim,&
-            revalVectors%p_RvectorData(i)%nmaxDerivative,nmaxDerivativeIdx)
-        revalVectors%p_RvectorData%nmaxDerivativeIdx = nmaxDerivativeIdx
+            p_rvectorData%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim,&
+            p_rvectorData%nmaxDerivative,nmaxDerivativeIdx)
+        p_rvectorData%nmaxDerivativeIdx = nmaxDerivativeIdx
       
         ! Remember the index of the discretisation in the list
-        revalVectors%p_RvectorData(i)%iidxFemData = &
+        p_rvectorData%iidxFemData = &
             containsDiscr (RfemData,nentries,&
-                          revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr)
+                           p_rvectorData%p_rvector%p_rspatialDiscr)
       else
         ! Dummy vector, just allocate memory in advance.
         ! nmaxDerivativeIdx specifies the number of subarrays to allocate.
-        nmaxDerivativeIdx = revalVectors%p_RvectorData(i)%nmaxDerivativeIdx
+        nmaxDerivativeIdx = p_rvectorData%nmaxDerivativeIdx
       
       end if
 
-      ! Allocate memory for the point values
-      allocate (revalVectors%p_RvectorData(i)%p_Ddata(&
-          npointsPerElement,nelements,nmaxDerivativeIdx))
+      ! Allocate memory for the point values.
+      if (.not. p_rvectorData%bisInterleaved) then
+        ! Non-interleaved data
+        allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
+      else
+        ! Interleaved data
+        allocate (p_rvectorData%p_DdataIntl(&
+            p_rvectorData%nvar,npointsPerElement,nelements,nmaxDerivativeIdx))
+      end if
     
     end do
         
@@ -1359,6 +1409,10 @@ contains
       ! Release memory.
       if (associated(revalVectors%p_RvectorData(i)%p_Ddata)) then
         deallocate(revalVectors%p_RvectorData(i)%p_Ddata)
+      end if
+
+      if (associated(revalVectors%p_RvectorData(i)%p_DdataIntl)) then
+        deallocate(revalVectors%p_RvectorData(i)%p_DdataIntl)
       end if
       
       revalVectors%p_RvectorData(i)%iidxFemData = 0
@@ -1393,7 +1447,7 @@ contains
 
     ! local variables
     integer :: ibas, ivector, npoints, nelements, nentries, iel, ipt
-    integer :: ndof, ideriv, nderiv
+    integer :: ndof, ideriv, nderiv, nvar, ivar
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP) :: dval
     type(t_fev2FemData), pointer :: p_rfemData
@@ -1401,6 +1455,7 @@ contains
     integer, dimension(:,:), pointer :: p_Idofs
     real(DP), dimension(:), pointer :: p_DvecData
     real(DP), dimension(:,:,:), pointer :: p_Ddata
+    real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl
     
     npoints = revalVectors%npointsPerElement
     nelements = revalVectors%nelements
@@ -1419,28 +1474,62 @@ contains
       ndof = p_rfemData%ndof
       p_Dbas => p_rfemData%p_Dbas
       p_Idofs => p_rfemData%p_Idofs
-      p_Ddata => p_rvectorData%p_Ddata
       nderiv = p_rvectorData%nmaxDerivativeIdx
       call lsyssc_getbase_double (p_rvectorData%p_rvector,p_DvecData)
       
-      ! Loop over the derivatives, basis functions, sum up to the point value
-      ! in every cubature point.
-      do iel = 1,nelements
-        do ideriv = 1,nderiv
-          do ipt = 1,npoints
-          
-            dval = 0.0_DP
-            do ibas = 1,ndof
-              dval = dval + &
-                  p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
-            end do
+      if (.not. p_rvectorData%bisInterleaved) then
+
+        p_Ddata => p_rvectorData%p_Ddata
+      
+        ! Loop over the derivatives, basis functions, sum up to the point value
+        ! in every cubature point.
+        do iel = 1,nelements
+          do ideriv = 1,nderiv
+            do ipt = 1,npoints
             
-            ! Save the value
-            p_Ddata(ipt,iel,ideriv) = dval
-          
+              dval = 0.0_DP
+              do ibas = 1,ndof
+                dval = dval + &
+                    p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+              end do
+              
+              ! Save the value
+              p_Ddata(ipt,iel,ideriv) = dval
+            
+            end do
           end do
         end do
-      end do
+        
+      else
+        
+        ! Interleaved specification
+        nvar = p_rvectorData%nvar
+
+        p_DdataIntl => p_rvectorData%p_DdataIntl
+      
+        ! Loop over the derivatives, basis functions, sum up to the point value
+        ! in every cubature point.
+        do iel = 1,nelements
+          do ideriv = 1,nderiv
+            do ipt = 1,npoints
+              do ivar = 1,nvar
+            
+                dval = 0.0_DP
+                do ibas = 1,ndof
+                  dval = dval + &
+                      p_DvecData(nvar*(p_Idofs(ibas,iel)-1)+ivar)*p_Dbas(ibas,ideriv,ipt,iel)
+                end do
+                
+                ! Save the value
+                p_DdataIntl(ivar,ipt,iel,ideriv) = dval
+                
+              end do
+            
+            end do
+          end do
+        end do
+      
+      end if
       
     end do
         
