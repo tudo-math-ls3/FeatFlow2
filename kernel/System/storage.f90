@@ -2041,6 +2041,11 @@ contains
 
 #endif
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
+
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
@@ -2150,6 +2155,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
+    p_rnode%chostMemPtr = C_NULL_PTR
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new1Dfixed')
 #endif
@@ -2191,6 +2197,11 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'storage_new1Dfixed')
       call sys_halt()
     end select
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
 
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -2382,6 +2393,11 @@ contains
 
 #endif
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
+
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
@@ -2492,6 +2508,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
+    p_rnode%chostMemPtr = C_NULL_PTR
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new2Dfixed')
 #endif
@@ -2533,6 +2550,11 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_new2Dfixed')
       call sys_halt()
     end select
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
 
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -2744,6 +2766,11 @@ contains
 
 #endif
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
+
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
@@ -2854,6 +2881,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
+    p_rnode%chostMemPtr = C_NULL_PTR
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new3Dfixed')
 #endif
@@ -2915,6 +2943,11 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_new2Dfixed')
       call sys_halt()
     end select
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Unassign pointer in device memory
+    p_rnode%cdeviceMemPtr = C_NULL_PTR
+#endif
 
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -14980,6 +15013,7 @@ contains
         ! Nasty trick but quick!
         goto 100
       else
+        rstorageNode%chostMemPtr = C_NULL_PTR
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
@@ -15177,6 +15211,7 @@ contains
         ! Nasty trick but quick
         goto 200
       else
+        rstorageNode%chostMemPtr = C_NULL_PTR
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
@@ -15417,6 +15452,7 @@ contains
         ! Nasty trick but quick
         goto 300
       else
+        rstorageNode%chostMemPtr = C_NULL_PTR
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
