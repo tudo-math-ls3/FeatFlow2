@@ -8797,7 +8797,7 @@ contains
             if (present(p_MemPtr))&
                 p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
           elseif (present(p_MemPtr)) then
-            p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+            call storage_nullify(p_MemPtr(i,j))
           end if
         end do
       end do
@@ -8811,7 +8811,7 @@ contains
             if (present(p_MemPtr))&
                 p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
           elseif (present(p_MemPtr)) then
-            p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+            call storage_nullify(p_MemPtr(i,j))
           end if
         end do
       end do
