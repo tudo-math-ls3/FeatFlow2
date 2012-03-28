@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> stokes2d_method0_simple </name>
+!# <name> stokes2d_method3_block </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -56,7 +56,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_Stokes(RmatrixData,rassemblyData,rmatrixAssembly,&
+  subroutine st2d3_fcalc_Stokes(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -94,7 +94,7 @@ contains
 !<subroutine>
 
     ! Local variables
-    real(DP) :: dbasJ, dval, dbasIx, dbasIy, dbasJx, dbasJy
+    real(DP) :: dbasJ, dval, dbasIx, dbasIy, dbasJx, dbasJy, dnu
     integer :: iel, icubp, idofe, jdofe
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA11,p_DlocalMatrixA22
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA13,p_DlocalMatrixA23
@@ -103,6 +103,9 @@ contains
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA13,p_DbasTestA13
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixDataA11,p_rmatrixDataA22,p_rmatrixDataA13
+  
+    ! Viscosity
+    dnu = rcollection%DquickAccess(1)
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -149,7 +152,7 @@ contains
             ! Multiply the values of the basis functions
             ! (1st derivatives) by the cubature weight and sum up
             ! into the local matrices.
-            dval = p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+            dval = dnu * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
             p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
             p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
                                           
@@ -213,6 +216,132 @@ contains
 
   end subroutine
 
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine st2d3_fcalc_rhs(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the Mass operator in all diagonal matrices.
+!</description>
+
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+    
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+    
+    ! Number of elements
+    integer, intent(in) :: nelements
+    
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+    
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dbasI, dval1, dval2, dval3
+    integer :: iel, icubp, idofe
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2,p_DlocalVector3
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData2,p_rvectorData3
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    p_rvectorData1 => RvectorData(1)
+    p_rvectorData2 => RvectorData(2)
+    p_rvectorData3 => RvectorData(3)
+    p_DlocalVector1 => RvectorData(1)%p_Dentry
+    p_DlocalVector2 => RvectorData(2)%p_Dentry
+    p_DlocalVector3 => RvectorData(3)%p_Dentry
+    p_DbasTest1 => RvectorData(1)%p_DbasTest
+    p_DbasTest3 => RvectorData(3)%p_DbasTest
+    
+    ! Calculate the RHS of the momentum equation
+    
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! which corresponds to the (test) basis functions Phi_i:
+        do idofe=1,p_rvectorData1%ndofTest
+        
+          ! Fetch the contributions of the (test) basis functions Phi_i
+          ! into dbasI
+          dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
+          
+          ! Values of the velocity RHS for the X1 and X2 component
+          dval1 = 0.0_DP
+          dval2 = 0.0_DP
+          
+          ! Multiply the values of the basis functions
+          ! (1st derivatives) by the cubature weight and sum up
+          ! into the local vectors.
+          p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+              p_DcubWeight(icubp,iel) * dval1 * dbasI
+          p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+              p_DcubWeight(icubp,iel) * dval2 * dbasI
+          
+        end do ! jdofe
+
+      end do ! icubp
+    
+    end do ! iel
+    
+    ! Calculate the RHS of the continuity equation
+    
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! which corresponds to the (test) basis functions Phi_i:
+        do idofe=1,p_rvectorData3%ndofTest
+        
+          ! Fetch the contributions of the (test) basis functions Phi_i
+          ! into dbasI
+          dbasI = p_DbasTest3(idofe,DER_FUNC,icubp,iel)
+          
+          ! Value of the pressure RHS
+          dval3 = 0.0_DP 
+
+          ! Multiply the values of the basis functions
+          ! by the cubature weight and sum up into the local vectors.
+          p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel) + &
+              p_DcubWeight(icubp,iel) * dval3 * dbasI
+          
+        end do ! jdofe
+
+      end do ! icubp
+    
+    end do ! iel
+    
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -250,10 +379,6 @@ contains
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation,rprjDiscretisation
     
-    ! A bilinear and linear form describing the analytic problem to solve
-    type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinform
-
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrix
@@ -287,6 +412,9 @@ contains
     
     ! Error indicator during initialisation of the solver
     integer :: ierror
+    
+    ! Collection structure for callback routines
+    type(t_collection) :: rcollection
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -432,8 +560,11 @@ contains
     ! Create a block matrix entries
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
+    ! Pass dnu via rcollection
+    rcollection%DquickAccess(1) = dnu
+    
     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
-          bma_fcalc_Stokes,rcubatureInfo=rcubatureInfo)
+          st2d3_fcalc_Stokes,rcubatureInfo=rcubatureInfo,rcollection=rcollection)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create RHS and solution vectors
@@ -444,23 +575,9 @@ contains
     call lsysbl_createVectorBlock (rdiscretisation,rrhs,.true.)
     call lsysbl_createVectorBlock (rdiscretisation,rvector,.true.)
 
-    ! The vector structure is ready but the entries are missing.
-    ! So the next thing is to calculate the content of that vector.
-    !
-    ! At first set up the corresponding linear form (f,Phi_j):
-    rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC
-    
-    ! ... and then discretise the RHS to the first two subvectors of
-    ! the block vector using the discretisation structure of the
-    ! corresponding blocks.
-    !
-    ! Note that the vector is unsorted after calling this routine!
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                  rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
-
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
-                  rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
+    ! Assemble the right hand side.
+    call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+          st2d3_fcalc_rhs,rcubatureInfo=rcubatureInfo,rcollection=rcollection)
                                 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Assembly of matrices/vectors finished
@@ -754,7 +871,7 @@ contains
     ! We can now start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        trim(sucddir)//'/u2d_0_simple.vtk')
+        trim(sucddir)//'/u2d_3_block.vtk')
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
