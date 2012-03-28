@@ -17838,7 +17838,7 @@ contains
         end select
 
         ! Synchronise stream
-        call coproc_synchroniseStream(istreamTmp)
+        call coproc_synchronizeStream(istreamTmp)
 
         ! Release temporal memory block ...
         call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)
