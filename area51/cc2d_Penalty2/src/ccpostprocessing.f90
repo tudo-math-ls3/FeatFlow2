@@ -1367,7 +1367,7 @@ end if
     integer :: imovingFrame
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     
-    character(SYS_STRLEN) :: sfile,sfilename
+    character(SYS_STRLEN) :: sfile,sfilep,sfilename
     
     ! Polygon in gmv
     type(t_geometryObject), pointer :: p_rgeometryObject
@@ -1460,12 +1460,19 @@ end if
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                  'SFILENAMEUCD', sfile, '')
-                                 
     ! Remove possible ''-characters
     read(sfile,*) sfilename
-    
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
+
+    if (ioutputUCD .eq. 3) then
+      call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                  'sfilenameUCDpolygon', sfilep, '')
+      ! Remove possible ''-characters
+      read(sfilep,*) sfilename
+      ! Create the actual filename
+      sfilep = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
+    end if
                                  
     ! Now we have a Q1/Q1/Q0 solution in rprjVector -- on the level NLMAX.
     ! The next step is to project it down to level ilevelUCD.
@@ -1489,7 +1496,7 @@ end if
       call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
     case (3)
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile,sfilep)
 
     case (5)
       call ucd_startBGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)

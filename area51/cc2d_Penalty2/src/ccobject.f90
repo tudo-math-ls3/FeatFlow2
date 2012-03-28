@@ -12,9 +12,9 @@
 !#         discretisation which are totally inside the penalty object or
 !#         only intersects with it. For all other elements, the default 
 !#         value is 0.
-!#         
-!#
-!#
+!# 2) cc_cutoff         
+!#      -> creates a list of elements which satisfy a condition regarding
+!#         the placement of DOFs with respect with penalty object
 !#
 !#
 !#
@@ -32,6 +32,13 @@ use fsystem
 use storage
 use geometry
 use triangulation
+use ccbasic
+use basicgeometry
+use cubature
+use derivatives
+use dofmapping
+use element
+
 
 implicit none
 
@@ -205,6 +212,76 @@ contains
   
   deallocate (PolyPoints)              
 
+  end subroutine
+
+!--------------------------------------------------------------------------------------------------
+!
+    subroutine cc_cutoff(rgeometryObject,rmatrix,h_IelementList,listsize,nodes_in)   
+!
+!--------------------------------------------------------------------------------------------------
+!
+    type(t_geometryObject), pointer, intent(in)  ::  rgeometryObject    
+    type(t_matrixscalar), intent(IN), target :: rmatrix 
+    integer, intent(in), optional :: nodes_in
+    integer, intent (out) :: h_IelementList
+    integer, intent (out) :: listsize
+
+ 
+! <local variables>
+    integer :: i,j,icount,iin,iel,ivertices
+    real(dp), dimension(:,:), pointer :: p_DvertexCoordinates   
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_Ielements
+    real(dp), dimension(2) :: dcoords
+! </local>    
+
+    h_IelementList = ST_NOHANDLE
+    
+    call storage_new('cc_cutoff', 'h_IelementList', rmatrix%p_rspatialdiscrTrial%p_rtriangulation%NEL, &
+                     ST_INT, h_IelementList,ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int (h_IelementList, p_Ielements)
+        
+    listsize = 0
+    iel = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NEL
+    do i=1,iel
+      call storage_getbase_double2d (rmatrix%p_rspatialDiscrTrial%p_rtriangulation%h_DvertexCoords, &
+                                     p_DvertexCoordinates)
+      call storage_getbase_int2d (rmatrix%p_rspatialDiscrTrial%p_rtriangulation%h_IverticesAtElement,&
+                                 p_IverticesAtElement)
+    ! Check how many vertices of the element are inside the particle 
+      icount = 0
+      ivertices = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NNEE
+      do j=1,ivertices
+        dcoords(1) = p_DvertexCoordinates(1,p_IverticesAtElement(j,i))
+        dcoords(2) = p_DvertexCoordinates(2,p_IverticesAtElement(j,i))                           
+
+        call geom_isInGeometry (rgeometryObject,dcoords, iin)
+        if (iin .eq. 1) then
+          icount=icount+1
+        end if    
+      end do
+      
+      select case (nodes_in)
+      
+      case (1) ! 0 or 4 nodes inside for normal cubature formula
+        if ((icount.eq.0).or.(icount .eq. 4))then
+          p_Ielements(listsize+1)=i
+          listsize = listsize+1
+        end if
+        
+      case default ! 1-3 nodes inside for adaptive cubature formula
+        if ((icount.gt.0).and.(icount .lt. 4))then
+          p_Ielements(listsize+1)=i
+          listsize = listsize+1
+        end if  
+        
+      end select  
+    end do
+
+    if (listsize .gt. 0) then 
+      call storage_realloc ("cc_cutoff", listsize, h_IelementList,ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int(h_IelementList,p_Ielements)
+    end if
   end subroutine
 
 end module

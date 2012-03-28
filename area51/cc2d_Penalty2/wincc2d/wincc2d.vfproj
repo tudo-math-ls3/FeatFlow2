@@ -59,6 +59,7 @@
 		<File RelativePath="..\src\ccnonlinearcore.f90"/>
 		<File RelativePath="..\src\ccnonlinearcoreinit.f90"/>
 		<File RelativePath="..\src\ccnonstationary.f90"/>
+		<File RelativePath="..\src\ccobject.f90"/>
 		<File RelativePath="..\src\ccpostprocessing.f90"/>
 		<File RelativePath="..\src\ccstationary.f90"/>
 		<File RelativePath="..\src\cctimeanalysis.f90"/></Filter></Filter>

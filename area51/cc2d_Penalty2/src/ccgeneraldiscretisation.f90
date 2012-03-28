@@ -95,6 +95,9 @@ module ccgeneraldiscretisation
   use ccnonlinearcoreinit
   use matrixio
   use io
+  use linearsystemscalar
+
+  use ccobject
 
   implicit none
   
@@ -228,7 +231,7 @@ contains
     ! Read in cubature formula for Penalty matrix
     call parlst_getvalue_string (rproblem%rparamList,'CC-PENALTY', &
                                 'scubPenalty',sstr,'')
-    
+   
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
                                'icubMp',icubMp,int(CUB_GEN_AUTO))
@@ -239,7 +242,7 @@ contains
     ! Read in cubature formula for Penalty matrix with adaptive cub. formula
     ! together with the refinement level
     call parlst_getvalue_string (rproblem%rparamList,'CC-PENALTY', &
-                                'scubPenalty_sum',sstr,'')
+                                'scubPenaltySum',sstr,'')
     
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY',&
@@ -856,16 +859,24 @@ contains
     type(t_scalarCubatureInfo) :: rcubatureInfoMass
     type(t_scalarCubatureInfo) :: rcubatureInfoStokes
     type(t_scalarCubatureInfo) :: rcubatureInfoB
-    type(t_scalarCubatureInfo) :: rcubatureInfoPenalty
+    type(t_scalarCubatureInfo) :: rcubatureInfoPenalty, rcubatureInfoPenaltyAdapt
     
     ! Structure for the bilinear form for assembling Penalty,...
      type(t_bilinearForm) :: rform
+     type(t_geometryObject), pointer :: p_rgeometryObject
+     type(t_particleCollection), pointer :: p_rparticleCollection
     ! Calculating mass of penalty matrix
      type(t_vectorScalar) :: rones1,rones2
      real(dp) :: dvalue,dlevel,dtemp
-     integer :: i,nlmin,iunit,iarea,ipenmat,cflag,ielementType,ielementType_penalty
+     integer :: i,nlmin,iunit,iarea,ipenmat,cflag,ielementType,ielementType_penalty,itypePenaltyAssem,&
+                listsize
      character(len=SYS_STRLEN) :: sfilenamePenaltyMatrix,sfilenamePenaltyMatrix_Vol,stemp
      logical :: bfileExists
+     integer :: h_IelementList, h_elListOld
+     ! temporary matrix
+     type(t_matrixScalar) :: rmatrixTemp
+
+     h_IelementList = ST_NOHANDLE
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
@@ -1124,8 +1135,15 @@ contains
     ! Velocity
     ! -----------------------------------------------------------------------
 
+    ! We only assemble penalty part if there is a penalty object to describe
+    if (rproblem%iparticles .gt. 0) then
+      p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+      ! For more then 1 particle, do loop
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
+
     ! If there is an existing penalty matrix, release it.
     call lsyssc_releaseMatrix (rasmTempl%rmatrixPenalty)
+    call lsyssc_releaseMatrix (rmatrixTemp)
 
     ! Generate penalty matrix. The matrix has basically the same structure as
     ! our template FEM matrix, so we can take that.
@@ -1133,8 +1151,18 @@ contains
                 rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
     ! No mass lumping. Just set up the penalty matrix.
-    call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
-         rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-PENALTY','itypePenaltyAssem',itypePenaltyAssem,1)
+    
+    select case (itypePenaltyAssem)
+      case (1)     
+       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+      case (2)
+       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+           rcubatureInfoPenalty,rproblem%rmatrixAssembly%icubMp)
+       call spdiscr_createDefCubStructure (rasmTempl%rmatrixPenalty%p_rspatialDiscrTrial,&
+           rcubatureInfoPenaltyAdapt,rproblem%rmatrixAssembly%icubMpa)
+    end select
 
     ! For assembling of the entries, we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (Psi_j, Phi_i) for the scalar system matrix in 2D.
@@ -1164,8 +1192,46 @@ contains
       call lsyssc_assignDiscrDirectMat(rasmTempl%rmatrixPenalty,rasmTempl%rdiscretisationPenalty)
     end if
 
-    call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
-                                 rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+    select case (itypePenaltyAssem)
+      case (1)
+        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+      case (2)
+        call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                                     rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        ! Calculate all entries with the standard cubature formula
+        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+        listsize = 0
+        ! First evaluate the entries for the DOFs inside the element which are totally inside the object
+        ! or totally outside the object. This elements will be linked with the simple cubature formula
+        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
+        ! Extract the entries which intersects with the interface of penalty object
+        if (listsize .gt. 0) then
+          h_elListOld = rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList
+          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+          rcubatureInfoPenalty%p_RinfoBlocks(1)%NEL = listsize
+          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+                                       rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
+          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 0.0_DP, &
+                                        .false.,.false.,.true.,.true.)
+          rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+  
+          h_elListOld = rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList
+          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_IelementList
+          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%NEL = listsize
+          call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
+                                       rcubatureInfoPenaltyAdapt,cc_Lambda,rproblem%rcollection)
+          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+!          call lsyssc_matrixLinearComb (rmatrixTemp,rasmTempl%rmatrixPenalty,1.0_dp,1,0_dp, &
+!                                        rmatrixTemp,1.0_DP,.false.,.false.,.true.,.true.)  
+        end if
+        call storage_free (h_IelementList)       
+
+        ! Copy the temp matrix to Penalty matrix
+ !       call lsyssc_matrixLinearComb (rmatrixTemp,1,0_dp,rasmTempl%rmatrixPenalty,0.0_dp,rasmTempl%rmatrixPenalty,&
+ !                                    .false.,.false.,.true.,.true.)
+    end select
 
     ! Calculate areea of penalty object using the matrix entries.
     call parlst_getvalue_int (rproblem%rparamList,'CC-PENALTY','IAREA',iarea,0)
@@ -1221,7 +1287,8 @@ contains
     end if
 
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
-    
+    end if ! (iParticle)
+       
   end subroutine
 
   ! ***************************************************************************
