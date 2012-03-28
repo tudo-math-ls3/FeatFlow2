@@ -1084,7 +1084,7 @@ sub check_options {
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
 	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
@@ -1421,7 +1421,7 @@ sub create_feastAppMakefile {
 	map { $coprocs{$_} = $_; } @{ $entry };
 
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21') {
+			'cuda20', 'cuda21', 'cuda30') {
 	    print MAKEFILE_HDL
 		"HAS_" . uc($entry) . "          = ";
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
@@ -1754,7 +1754,7 @@ sub create_feastAppMakefile {
 
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21') {
+			'cuda20', 'cuda21', 'cuda30') {
 	    if (defined($coprocs{$entry})) {
 		print MAKEFILE_HDL
 		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
@@ -5087,8 +5087,8 @@ sub show_help {
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
 	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
-	"                    cuda13, cuda20, cuda21. Note that the cpu identifier must\n" .
-	"                    always be set if coprocessor support is requested.\n" .
+	"                    cuda13, cuda20, cuda21, cuda30. Note that the cpu identifier\n" .
+	"                    must always be set if coprocessor support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
         "--cuda=<file>       CUDA compiler\n" .
         "--cxx=<file>        C++ compiler\n" .

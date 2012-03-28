@@ -59,6 +59,9 @@ endif
 ifeq ($(strip $(HAS_CUDA21)),YES)
 CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_21 -code=compute_21 -m64  -DHAS_CUDADOUBLEPREC
 endif
+ifeq ($(strip $(HAS_CUDA30)),YES)
+CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_30 -code=compute_30 -m64  -DHAS_CUDADOUBLEPREC
+endif
 
 
 # Set default type of integer variables explicitly
