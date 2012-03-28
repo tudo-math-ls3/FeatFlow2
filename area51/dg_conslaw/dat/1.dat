@@ -1,8 +1,8 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmin = 5
-nlmax = 5
+nlmin = 1
+nlmax = 8
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm

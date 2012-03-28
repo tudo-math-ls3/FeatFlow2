@@ -10499,187 +10499,169 @@ contains
   !<subroutine>
 
   subroutine dg_bilf_initAssembly_reverseCubPoints(rmatrixAssembly,rform,celementTest,&
-       celementTrial,ccubType,nelementsPerBlock)
-
-    !<description>
-    ! Initialise a matrix assembly structure for assembling a bilinear form.
-    !</description>
-
-    !<input>
-    ! The bilinear form specifying the underlying PDE of the discretisation.
-    type(t_bilinearForm), intent(in) :: rform
-
-    ! Type of element in the test space.
-    integer(I32), intent(in) :: celementTest
-
-    ! Type of element in the trial space.
-    integer(I32), intent(in) :: celementTrial
-
-    ! Type of cubature formula to use.
-    integer(I32), intent(in) :: ccubType
-
-    ! Optional: Maximum number of elements to process simultaneously.
-    ! If not specified, BILF_NELEMSIM is assumed.
-    integer, intent(in), optional :: nelementsPerBlock
-    !</input>
-
-    !<output>
-    ! A matrix assembly structure.
-    type(t_bilfMatrixAssembly), intent(out) :: rmatrixAssembly
-    !</output>
-
-    !</subroutine>
-
-    ! local variables
-    real(dp) :: dtemp
-    real(dp), dimension(2) :: dtemp2
-
-    logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl
-    integer :: i,i1
-
-    ! Initialise the structure.
-    rmatrixAssembly%rform = rform
-    rmatrixAssembly%ccubType = ccubType
-    rmatrixAssembly%nelementsPerBlock = BILF_NELEMSIM
-    if (present(nelementsPerBlock)) &
-         rmatrixAssembly%nelementsPerBlock = nelementsPerBlock
-    rmatrixAssembly%celementTrial = celementTrial
-    rmatrixAssembly%celementTest = celementTest
-
-    ! Get the number of local DOF`s for trial and test functions
-    rmatrixAssembly%indofTrial = elem_igetNDofLoc(celementTrial)
-    rmatrixAssembly%indofTest = elem_igetNDofLoc(celementTest)
-
-    ! Which derivatives of basis functions are needed?
-    ! Check the descriptors of the bilinear form and set BDERxxxx
-    ! according to these.
-    BderTrialTempl = .false.
-    BderTestTempl = .false.
-
-    ! Loop through the additive terms
-    do i=1,rform%itermCount
-       ! The desriptor Idescriptors gives directly the derivative
-       ! which is to be computed! Build templates for BDER.
-       ! We do not compute the actual BDER here, as there might be some special
-       ! processing if trial/test functions are identical!
-       !
-       ! At first build the descriptors for the trial functions
-       I1=rform%Idescriptors(1,I)
-
-       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-          call output_line ('Invalid descriptor!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
-          call sys_halt()
-       endif
-
-       BderTrialTempl(I1)=.true.
-
-       ! Then those of the test functions
-       I1=rform%Idescriptors(2,I)
-
-       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-          call output_line ('Invalid descriptor!',&
-               OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
-          call sys_halt()
-       endif
-
-       BderTestTempl(I1)=.true.
-    end do
-
-    ! Determine if trial and test space is the same.
-    rmatrixAssembly%bIdenticalTrialAndTest = (celementTest .eq. celementTrial)
-
-    if (rmatrixAssembly%bIdenticalTrialAndTest) then
-       ! Build the actual combination of what the element should calculate.
-       rmatrixAssembly%BderTrial(:) = BderTrialTempl(:) .or. BderTestTempl(:)
-       rmatrixAssembly%BderTest(:) = rmatrixAssembly%BderTrial(:)
-    else
-       ! Build the actual combination of what the element should calculate.
-       ! Copy BDERxxxx to BDERxxxxAct
-       rmatrixAssembly%BderTrial(:) = BderTrialTempl(:)
-       rmatrixAssembly%BderTest(:) = BderTestTempl(:)
-    end if
-
-    ! Get the number of vertices of the element, specifying the transformation
-    ! form the reference to the real element.
-    rmatrixAssembly%NVE = elem_igetNVE(celementTest)
-    if (rmatrixAssembly%NVE .ne. elem_igetNVE(celementTrial)) then
-       call output_line ('Element spaces incompatible!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
-       call sys_halt()
-    end if
-
-    ! Get from the element space the type of coordinate system
-    ! that is used there:
-    rmatrixAssembly%ctrafoType = elem_igetTrafoType(celementTest)
-
-    ! Get the number of cubature points for the cubature formula
-    rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
-
-    ! Allocate two arrays for the points and the weights
-    allocate(rmatrixAssembly%p_Domega(rmatrixAssembly%ncubp))
-    allocate(rmatrixAssembly%p_DcubPtsRef(&
-         trafo_igetReferenceDimension(rmatrixAssembly%ctrafoType),&
-         rmatrixAssembly%ncubp))
-
-    ! Get the cubature formula
-    call cub_getCubature(ccubType,rmatrixAssembly%p_DcubPtsRef,rmatrixAssembly%p_Domega)
-
-
-    ! Revert the numbering of cubature points
-    do i = 1, size(rmatrixAssembly%p_Domega)/2
-       dtemp2(:) = rmatrixAssembly%p_DcubPtsRef(:,i)
-       rmatrixAssembly%p_DcubPtsRef(:,i) = rmatrixAssembly%p_DcubPtsRef(:,size(rmatrixAssembly%p_Domega)+1-i)
-       rmatrixAssembly%p_DcubPtsRef(:,size(rmatrixAssembly%p_Domega)+1-i) = dtemp2(:)
-
-       dtemp = rmatrixAssembly%p_Domega(i)
-       rmatrixAssembly%p_Domega(i) = rmatrixAssembly%p_Domega(size(rmatrixAssembly%p_Domega)+1-i)
-       rmatrixAssembly%p_Domega(size(rmatrixAssembly%p_Domega)+1-i) = dtemp
-
-    end do
-
-
-
-    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-    ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag.
-    rmatrixAssembly%cevaluationTag = elem_getEvaluationTag(rmatrixAssembly%celementTest)
-    rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
-         elem_getEvaluationTag(rmatrixAssembly%celementTrial))
-
-  end subroutine dg_bilf_initAssembly_reverseCubPoints
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      celementTrial,ccubType,nelementsPerBlock,rperfconfig)
+
+!<description>
+  ! Initialise a matrix assembly structure for assembling a bilinear form.
+!</description>
+
+!<input>
+  ! The bilinear form specifying the underlying PDE of the discretisation.
+  type(t_bilinearForm), intent(in) :: rform
+  
+  ! Type of element in the test space.
+  integer(I32), intent(in) :: celementTest
+  
+  ! Type of element in the trial space.
+  integer(I32), intent(in) :: celementTrial
+
+  ! Type of cubature formula to use.
+  integer(I32), intent(in) :: ccubType
+  
+  ! OPTIONAL: Maximum number of elements to process simultaneously.
+  ! If not specified, NELEMSIM is assumed.
+  integer, intent(in), optional :: nelementsPerBlock
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+  ! A matrix assembly structure.
+  type(t_bilfMatrixAssembly), intent(out) :: rmatrixAssembly
+!</output>
+
+!</subroutine>
+
+  call bilf_dg_initAssembly_reverseCubPoints(rmatrixAssembly,rform,celementTest,&
+       celementTrial,ccubType,nelementsPerBlock,rperfconfig)
+  
+!    ! local variables
+!    logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl
+!    integer :: i,i1
+!    
+!    real(dp) :: dtemp
+!    real(dp), dimension(2) :: dtemp2
+!
+!    ! Pointer to the performance configuration
+!    type(t_perfconfig), pointer :: p_rperfconfig
+!
+!    if (present(rperfconfig)) then
+!      p_rperfconfig => rperfconfig
+!    else
+!      p_rperfconfig => bilf_perfconfig
+!    end if
+!  
+!    ! Initialise the structure.
+!    rmatrixAssembly%rform = rform
+!    rmatrixAssembly%ccubType = ccubType
+!    rmatrixAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
+!    if (present(nelementsPerBlock)) &
+!        rmatrixAssembly%nelementsPerBlock = nelementsPerBlock
+!    rmatrixAssembly%celementTrial = celementTrial
+!    rmatrixAssembly%celementTest = celementTest
+!    
+!    ! Get the number of local DOF`s for trial and test functions
+!    rmatrixAssembly%indofTrial = elem_igetNDofLoc(celementTrial)
+!    rmatrixAssembly%indofTest = elem_igetNDofLoc(celementTest)
+!    
+!    ! Which derivatives of basis functions are needed?
+!    ! Check the descriptors of the bilinear form and set BDERxxxx
+!    ! according to these.
+!    BderTrialTempl = .false.
+!    BderTestTempl = .false.
+!    
+!    ! Loop through the additive terms
+!    do i=1,rform%itermCount
+!      ! The desriptor Idescriptors gives directly the derivative
+!      ! which is to be computed! Build templates for BDER.
+!      ! We do not compute the actual BDER here, as there might be some special
+!      ! processing if trial/test functions are identical!
+!      !
+!      ! At first build the descriptors for the trial functions
+!      I1=rform%Idescriptors(1,I)
+!      
+!      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
+!        call output_line ('Invalid descriptor!',&
+!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+!        call sys_halt()
+!      endif
+!      
+!      BderTrialTempl(I1)=.true.
+!
+!      ! Then those of the test functions
+!      I1=rform%Idescriptors(2,I)
+!      
+!      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
+!        call output_line ('Invalid descriptor!',&
+!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+!        call sys_halt()
+!      endif
+!      
+!      BderTestTempl(I1)=.true.
+!    end do
+!
+!    ! Determine if trial and test space is the same.
+!    rmatrixAssembly%bIdenticalTrialAndTest = (celementTest .eq. celementTrial)
+!    
+!    if (rmatrixAssembly%bIdenticalTrialAndTest) then
+!      ! Build the actual combination of what the element should calculate.
+!      rmatrixAssembly%BderTrial(:) = BderTrialTempl(:) .or. BderTestTempl(:)
+!      rmatrixAssembly%BderTest(:) = rmatrixAssembly%BderTrial(:)
+!    else
+!      ! Build the actual combination of what the element should calculate.
+!      ! Copy BDERxxxx to BDERxxxxAct
+!      rmatrixAssembly%BderTrial(:) = BderTrialTempl(:)
+!      rmatrixAssembly%BderTest(:) = BderTestTempl(:)
+!    end if
+!
+!    ! Get the number of vertices of the element, specifying the transformation
+!    ! form the reference to the real element.
+!    if (elem_igetShape(celementTest) .ne. elem_igetShape(celementTrial)) then
+!      call output_line ("Element spaces incompatible!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
+!      call sys_halt()
+!    end if
+!    
+!    ! Get from the element space the type of coordinate system
+!    ! that is used there:
+!    rmatrixAssembly%ctrafoType = elem_igetTrafoType(celementTest)
+!    
+!    ! Get the number of cubature points for the cubature formula
+!    rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
+!
+!    ! Allocate two arrays for the points and the weights
+!    allocate(rmatrixAssembly%p_Domega(rmatrixAssembly%ncubp))
+!    allocate(rmatrixAssembly%p_DcubPtsRef(&
+!        trafo_igetReferenceDimension(rmatrixAssembly%ctrafoType),&
+!        rmatrixAssembly%ncubp))
+!    
+!    ! Get the cubature formula
+!    call cub_getCubature(ccubType,rmatrixAssembly%p_DcubPtsRef,rmatrixAssembly%p_Domega)
+!    
+!    
+!    ! Revert the numbering of cubature points
+!    do i = 1, size(rmatrixAssembly%p_Domega)/2
+!       dtemp2(:) = rmatrixAssembly%p_DcubPtsRef(:,i)
+!       rmatrixAssembly%p_DcubPtsRef(:,i) = rmatrixAssembly%p_DcubPtsRef(:,size(rmatrixAssembly%p_Domega)+1-i)
+!       rmatrixAssembly%p_DcubPtsRef(:,size(rmatrixAssembly%p_Domega)+1-i) = dtemp2(:)
+!
+!       dtemp = rmatrixAssembly%p_Domega(i)
+!       rmatrixAssembly%p_Domega(i) = rmatrixAssembly%p_Domega(size(rmatrixAssembly%p_Domega)+1-i)
+!       rmatrixAssembly%p_Domega(size(rmatrixAssembly%p_Domega)+1-i) = dtemp
+!
+!    end do
+! 
+! 
+!    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+!    ! the elements later. All of them can be combined with OR, what will give
+!    ! a combined evaluation tag.
+!    rmatrixAssembly%cevaluationTag = elem_getEvaluationTag(rmatrixAssembly%celementTest)
+!    rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
+!        elem_getEvaluationTag(rmatrixAssembly%celementTrial))
+        
+  end subroutine
 
 
 
