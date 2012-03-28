@@ -57,35 +57,35 @@ module textstream
   use fsystem
   use io
   use genoutput
-  
+
   implicit none
-  
+
   private
-  
+
 !<types>
 
 !<typeblock>
 
   ! A text stream object. Used to store text files in memory.
   type t_textstream
-  
+
     private
-  
+
     ! Current read position
     integer :: ipositionRead = 1
 
     ! Current write position
     integer :: ipositionWrite = 1
-    
+
     ! Number of lines in the buffer
     integer :: ilineCount = 0
-    
+
     ! Current line number
     integer :: icurrentLine = 0
-    
+
     ! Buffer of characters. The lines are divided by CHAR(11) characters.
     character, dimension(:), pointer :: p_Sbuf => null()
-    
+
   end type
 
 !</typeblock>
@@ -99,7 +99,7 @@ module textstream
 !<constantblock>
   ! Size of chunks in the buffer (in characters)
   integer, parameter :: TSTREAM_BUFSIZE = 8192
-  
+
   ! Maximum length of a line
   integer, parameter :: TSTREAM_LENLINEBUF = 1024
 !</constantblock>
@@ -146,7 +146,7 @@ contains
 
     ! Allocate, copy, release, replace... as usual.
     if (size(rtextstream%p_Sbuf) .eq. isize) return
-    
+
     ilen = min(size(rtextstream%p_Sbuf),isize)
 
     allocate(p_Sbuf(isize))
@@ -176,7 +176,7 @@ contains
     ! Allocate memory for the buffer The other variables are set
     ! by default initialisation.
     allocate(rtextstream%p_Sbuf(TSTREAM_BUFSIZE))
-    
+
   end subroutine
 
 ! ****************************************************************************************
@@ -295,7 +295,7 @@ contains
 !<input>
   ! String to write to the buffer.
   character(len=*), intent(in) :: sstring
-  
+
   ! OPTIONAL: Trim the text before writing it to the buffer.
   ! If not specified, TRUE is assumed.
   logical, intent(in), optional :: btrim
@@ -310,7 +310,7 @@ contains
 
     ! local variables
     integer :: ilen,inewsize,i
-    
+
     ! Do not use .OR. with PRESENT() !
     if (.not. present(btrim)) then
       ilen = len(trim(sstring))
@@ -321,14 +321,14 @@ contains
         ilen = len(sstring)
       end if
     end if
-    
+
     ! If the buffer is not large enough, resize.
     if ((rtextstream%ipositionWrite+ilen+1) .gt. size(rtextstream%p_Sbuf)) then
       inewsize = ((rtextstream%ipositionWrite+ilen+1+TSTREAM_BUFSIZE-1) / &
           TSTREAM_BUFSIZE)*TSTREAM_BUFSIZE
       call tstream_reallocBuffer(rtextstream,inewsize)
     end if
-    
+
     ! Append the data -- and a CHAR(11) as EOL character.
     do i=1,ilen
       rtextstream%p_Sbuf(rtextstream%ipositionWrite) = sstring(i:i)
@@ -337,7 +337,7 @@ contains
 
     rtextstream%p_Sbuf(rtextstream%ipositionWrite) = char(11)
     rtextstream%ipositionWrite = rtextstream%ipositionWrite + 1
-    
+
     rtextstream%ilineCount = rtextstream%ilineCount + 1
 
   end subroutine
@@ -360,7 +360,7 @@ contains
 !<output>
   ! String from the buffer.
   character(len=*), intent(out) :: sstring
-  
+
   ! OPTIONAL: Length of the string.
   integer, intent(out), optional :: ilength
 !</output>
@@ -370,12 +370,12 @@ contains
     ! local variables
     integer :: ilen,inewsize,i
     character :: c
-    
+
     ! Maximum length of the string
     ilen = len(sstring)
-  
+
     sstring = ""
-    
+
     ! Read text until we find a CHAR(11) EOL character or the end of the stream.
     ilength = 0
     do
@@ -392,12 +392,12 @@ contains
 
         exit
       end if
-      
+
       i = i + 1
       if (present(ilength)) ilength = i
-      
+
       sstring(i:i) = c
-      
+
     end do
 
   end subroutine
@@ -427,7 +427,7 @@ contains
 
     ! local variables
     integer :: i,j
-    
+
     i = rtextstream%ipositionRead
     j = rtextstream%icurrentLine
     call tstream_readLine (rtextstream, sstring)
@@ -549,89 +549,89 @@ contains
 
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit)
-    
+
     ! Oops...
     if (iunit .eq. -1) then
       if (present(ilinecount)) ilinecount = -1
       return
     end if
-  
+
     ! Read all lines from the file
     ios = 0
     ilinenum = 0
     do while (ios .eq. 0)
-      
+
       ! Read a line from the file into sbuf
       call preadlinefromfile (iunit, sdata, isbuflen, ios)
       ilinenum = ilinenum + 1
-      
+
       if (isbuflen .ne. 0) then
         call tstream_appendLine (rtextstream, sdata(1:isbuflen))
       end if
 
     end do
-    
+
     ! Close the file, finish.
     close (iunit)
-    
+
     if (present(ilinecount)) ilinecount = ilinenum
-    
+
   contains
-  
+
     ! Internal subroutine: Read a line from a text file.
-    
+
     subroutine readlinefromfile (iunit, sdata, ilinelen, ios)
-      
+
       ! The unit where to read from; must be connected to a file.
       integer, intent(in) :: iunit
-    
+
       ! The string where to write data to
       character(len=*), intent(out) :: sdata
-      
+
       ! Length of the output
       integer, intent(out) :: ilinelen
-      
+
       ! Status of the reading process. Set to a value <> 0 if the end
       ! of the file is reached.
       integer, intent(out) :: ios
-      
+
       ! local variables
       character :: c
-      
+
       sdata = ''
       ilinelen = 0
-      
+
       ! Read the data - as long as the line/file does not end.
       do
-        
+
         ! Read a character.
         ! Unfortunately, Fortran forces me to use this dirty GOTO
         ! to decide processor-independently whether the line or
         ! the record ends.
         read (unit=iunit, fmt='(A1)', iostat=ios, advance='NO',&
             end=10, eor=20) c
-        
+
         ! Do not do anything in case of an error
         if (ios .eq. 0) then
-          
+
           ilinelen = ilinelen + 1
           sdata (ilinelen:ilinelen) = c
-          
+
         end if
-        
+
         ! Proceed to next character
         cycle
-        
+
         ! End of file.
 10      ios = -1
         exit
-        
+
         ! End of record = END OF LINE.
 20      ios = 0
         exit
-        
+
       end do
-      
+
     end subroutine
 
   end subroutine
@@ -664,14 +664,14 @@ contains
 
     ! Try to open the file
     call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
-    
+
     ! Oops...
     if (iunit .eq. -1) then
       call output_line ('Cannot open file for writing: '//trim(sfilename), &
                         OU_CLASS_ERROR,OU_MODE_STD,'tstream_writeToFile')
       call sys_halt()
     end if
-  
+
     ! Write all lines to the file
     ioldpos = rtextstream%ipositionRead
     ioldpos2 = rtextstream%icurrentLine
@@ -684,10 +684,10 @@ contains
     end do
     rtextstream%ipositionRead = ioldpos
     rtextstream%icurrentLine = ioldpos2
-    
+
     ! Close the file, finish.
     close (iunit)
-    
+
   end subroutine
 
 ! ****************************************************************************************

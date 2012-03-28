@@ -32,7 +32,7 @@ module arraylistbase
 !</constantblock>
 
 !<constantblock description="Internal tags for arraylist status">
-  
+
   ! Tag for empty arraylist
   integer, parameter, public :: ALST_NULL = 0
 

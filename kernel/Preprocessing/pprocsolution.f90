@@ -28,9 +28,9 @@ module pprocsolution
   use linearalgebra
   use linearsystemscalar
   use linearsystemblock
-  
+
   implicit none
-  
+
   private
 
 !<types>
@@ -60,14 +60,14 @@ module pprocsolution
 
 !</typeblock>
 !</types>
-  
+
   public :: ppsol_readPGM
   public :: ppsol_releasePGM
   public :: ppsol_initArrayPGMDble
   public :: ppsol_initArrayPGMSngl
-  
+
 contains
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -84,7 +84,7 @@ contains
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer(I32), intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
 !</input>
@@ -94,13 +94,13 @@ contains
     type(t_pgm), intent(out) :: rpgm
 !</output>
 !</subroutine>
-    
+
     ! local variables
     character(LEN=80) :: cbuffer
     integer, dimension(:,:), pointer :: p_Idata
     integer, dimension(2) :: Isize
     integer :: cf,ix,iy
-    
+
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, .true.)
       if (cf .eq. -1) then
@@ -122,13 +122,13 @@ contains
       call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%width
       call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%height
       call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%maxgray
-    
+
       ! Allocate memory for image data
       Isize=(/rpgm%width, rpgm%height/)
       call storage_new('ppsol_readPGM', 'h_Idata',&
           Isize, ST_INT, rpgm%h_Idata, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
-      
+
       do iy = 1, rpgm%height
         do ix = 1, rpgm%width
           call getNextEntryASCII(cbuffer); read(cbuffer,*) p_Idata(ix,iy)
@@ -145,14 +145,14 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
       call sys_halt()
     end select
-      
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
 
   contains
 
     ! Here, the real working routines follow
-    
+
     !**************************************************************
     ! Reads an item from file into the buffer.
     ! Items are separated by spaces, comma, (tabs ...??)
@@ -160,14 +160,14 @@ contains
     ! assuming Fortran`s eor=eol ... seems to work
 
     subroutine getNextEntryASCII(cbuffer)
-      
+
       character(LEN=*), intent(inout) :: cbuffer
 
       character(LEN=1) :: c
       integer :: ipos
 
       ipos = 1
-      
+
       ! Read until somthing not a space, comma or comment
       do
 10      read(cf, FMT='(a)', ADVANCE='NO', end=99, EOR=10) c
@@ -182,7 +182,7 @@ contains
           end do
         end if
       end do
-      
+
       ! We have some significant character,
       ! read until next space, comma or comment
       do
@@ -277,7 +277,7 @@ contains
       ! Determine minimum/maximum values of array
       xmin = huge(DP); xmax = -huge(DP)
       ymin = huge(DP); ymax = -huge(DP)
-      
+
       do ipoint = 1, npoints
         xmin = min(xmin, Dpoints(1,ipoint))
         xmax = max(xmax, Dpoints(1,ipoint))
@@ -293,7 +293,7 @@ contains
     do ipoint = 1, npoints
       x = Dpoints(1,ipoint)
       y = Dpoints(2,ipoint)
-      
+
       ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
       if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
 
@@ -353,7 +353,7 @@ contains
       ! Determine minimum/maximum values of array
       xmin = huge(DP); xmax = -huge(DP)
       ymin = huge(DP); ymax = -huge(DP)
-      
+
       do ipoint = 1, npoints
         xmin = min(xmin, Dpoints(1,ipoint))
         xmax = max(xmax, Dpoints(1,ipoint))
@@ -369,7 +369,7 @@ contains
     do ipoint = 1, npoints
       x = Dpoints(1,ipoint)
       y = Dpoints(2,ipoint)
-      
+
       ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
       if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
 

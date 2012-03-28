@@ -29,14 +29,14 @@ module stdoperators
   use spatialdiscretisation
   use bilinearformevaluation
   use perfconfig
-  
+
   implicit none
-  
+
   private
-  
+
   public :: stdop_assembleLaplaceMatrix
   public :: stdop_assembleSimpleMatrix
-  
+
 contains
 
   ! ***************************************************************************
@@ -45,7 +45,7 @@ contains
 
   subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha, &
       rcubatureInfo, rperfconfig)
-  
+
 !<description>
   ! This routine assembles a Laplace matrix into rmatrix.
 !</description>
@@ -54,7 +54,7 @@ contains
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
   logical, intent(in), optional :: bclear
-  
+
   ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, 1.0 is assumed.
   real(DP), intent(in), optional :: dalpha
@@ -78,7 +78,7 @@ contains
   ! (if bclear=false).
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
@@ -87,19 +87,19 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rdiscr => null()
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
-    
+
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    
+
     bclear1 = .true.
     dalpha1 = 1.0_DP
     if (present(bclear)) bclear1=bclear
     if (present(dalpha)) dalpha1=dalpha
-    
+
     ! Now try to get a pointer to the spatial discretisation - either from the trial
     ! or the test space. We just need to know whether we are in 1D, 2D or 3D.
     p_rdiscr => rmatrix%p_rspatialDiscrTrial
-    
+
     if(.not. associated(p_rdiscr)) then
       call output_line('Matrix does not have a discretisation!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'stdop_assembleLaplaceMatrix')
@@ -112,14 +112,14 @@ contains
       rform%itermCount = 1
       rform%Idescriptors(1,1) = DER_DERIV1D_X
       rform%Idescriptors(2,1) = DER_DERIV1D_X
-      
+
     case (2)
       rform%itermCount = 2
       rform%Idescriptors(1,1) = DER_DERIV2D_X
       rform%Idescriptors(2,1) = DER_DERIV2D_X
       rform%Idescriptors(1,2) = DER_DERIV2D_Y
       rform%Idescriptors(2,2) = DER_DERIV2D_Y
-      
+
     case (3)
       rform%itermCount = 3
       rform%Idescriptors(1,1) = DER_DERIV3D_X
@@ -163,7 +163,7 @@ contains
 
   subroutine stdop_assembleSimpleMatrix (rmatrix,cderivTrial,cderivTest,dalpha,&
       bclear,rcubatureInfo,rperfconfig)
-  
+
 !<description>
   ! This routine assembles a simple Finite element matrix into rmatrix.
   ! "Simple" means here, that a matrix entry consists of exactly one
@@ -179,15 +179,15 @@ contains
   ! A derivative quantifier for the trial function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
   integer, intent(in) :: cderivTrial
-  
+
   ! A derivative quantifier for the test function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
   integer, intent(in) :: cderivTest
-  
+
   ! Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, a value of 1.0 is assumed.
   real(DP), intent(in), optional :: dalpha
-  
+
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
   logical, intent(in), optional :: bclear
@@ -211,7 +211,7 @@ contains
   ! (if bclear=false).
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
@@ -219,10 +219,10 @@ contains
     logical :: bclear1
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
-    
+
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    
+
     bclear1 = .true.
     dalpha1 = 1.0_DP
     if (present(bclear)) bclear1=bclear

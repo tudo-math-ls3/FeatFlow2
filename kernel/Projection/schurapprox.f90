@@ -103,11 +103,11 @@ module schurapprox
   use genoutput
   use linearsystemscalar
   use perfconfig
-  
+
   implicit none
-  
+
   private
-  
+
   public :: t_schurApprox
   public :: schur_initPerfConfig
   public :: schur_assembleApprox2D
@@ -184,7 +184,7 @@ module schurapprox
 !</types>
 
   !*****************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: schur_perfconfig
 
@@ -215,9 +215,9 @@ contains
     else
       call pcfg_initPerfConfig(schur_perfconfig)
     end if
-  
+
   end subroutine schur_initPerfConfig
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -262,9 +262,9 @@ contains
   ! The degree of D
   integer :: ndegree, neq
 
-  
 
-  
+
+
 
     ! First of all, let us make sure that all necessary matrices are present.
     if(.not. associated(rschur%p_rmatrixA11)) then
@@ -597,7 +597,7 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
-  
+
   if (present(rperfconfig)) then
     p_rperfconfig => rperfconfig
   else
@@ -743,7 +743,7 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
-  
+
   if (present(rperfconfig)) then
     p_rperfconfig => rperfconfig
   else

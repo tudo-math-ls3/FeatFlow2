@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _STACK_H_
 #define _STACK_H_
 
@@ -127,7 +125,7 @@
   interface stack_push
     module procedure FEAT2_PP_TEMPLATE_T(stack_push,T)
   end interface
-  
+
   interface stack_pop
     module procedure FEAT2_PP_TEMPLATE_T(stack_pop,T)
   end interface
@@ -143,7 +141,7 @@
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_T(stack_eq,T)
   end interface
-  
+
   interface operator(/=)
     module procedure FEAT2_PP_TEMPLATE_T(stack_ne,T)
   end interface
@@ -243,7 +241,7 @@ contains
     type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
-    
+
 #ifdef T_STORAGE
     if (rstack%h_StackData .ne. ST_NOHANDLE)&
         call storage_free(rstack%h_StackData)
@@ -273,7 +271,7 @@ contains
     type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
-    
+
     rstack%istackPosition = 0
 
   end subroutine
@@ -331,13 +329,13 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_T(stack_push,T)(rstack, data)
 
 !<description>
     ! Add a new value to the top of the stack
 !</description>
-    
+
 !<input>
     ! Data to be pushed onto the stack
     FEAT2_PP_TTYPE(T_TYPE), intent(in) :: data
@@ -348,14 +346,14 @@ contains
     type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
-    
+
 #ifdef T_STORAGE
     if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_push')
       call sys_halt()
     end if
-    
+
     ! Double storage for stack if required
     if (rstack%istackSize .eq. rstack%istackPosition) then
       rstack%istackSize = 2*rstack%istackSize
@@ -366,7 +364,7 @@ contains
 #else
     ! local variable
     type(T_TYPE), dimension(:), pointer :: p_StackData
-    
+
     ! Double storage for stack if required
     if (rstack%istackSize .eq. rstack%istackPosition) then
       allocate(p_StackData(rstack%istackSize))
@@ -378,7 +376,7 @@ contains
       deallocate(p_StackData)
     end if
 #endif
-    
+
     ! Push data to stack
     rstack%istackPosition = rstack%istackPosition+1
     rstack%p_StackData(rstack%istackPosition) = data
@@ -413,7 +411,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'stack_top')
       call sys_halt()
     end if
-    
+
   end subroutine
 
   !************************************************************************
@@ -436,7 +434,7 @@ contains
     FEAT2_PP_TTYPE(T_TYPE), intent(out) :: data
 !</output>
 !</subroutine>
-    
+
     call stack_top(rstack, data)
     rstack%istackPosition = rstack%istackPosition-1
 
@@ -621,7 +619,7 @@ contains
 
     ! Early return?
     if (.not.blt) return
-    
+
     do i = 1, min(rstack1%istackSize,rstack2%istackSize)
       blt = (rstack1%p_StackData(i) < rstack2%p_StackData(i))
       if (.not.blt) return
@@ -659,7 +657,7 @@ contains
 
     ! Early return?
     if (.not.ble) return
-    
+
     do i = 1, min(rstack1%istackSize,rstack2%istackSize)
       ble = (rstack1%p_StackData(i) <= rstack2%p_StackData(i))
       if (.not.ble) return
@@ -697,7 +695,7 @@ contains
 
     ! Early return?
     if (.not.bgt) return
-    
+
     do i = 1, min(rstack1%istackSize,rstack2%istackSize)
       bgt = (rstack1%p_StackData(i) > rstack2%p_StackData(i))
       if (.not.bgt) return
@@ -735,7 +733,7 @@ contains
 
     ! Early return?
     if (.not.bge) return
-    
+
     do i = 1, min(rstack1%istackSize,rstack2%istackSize)
       bge = (rstack1%p_StackData(i) >= rstack2%p_StackData(i))
       if (.not.bge) return

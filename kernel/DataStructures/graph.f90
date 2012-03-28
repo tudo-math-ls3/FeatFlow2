@@ -162,7 +162,7 @@ module graph
     type(t_arraylistInt) :: rEdges
 
   end type t_graph
-    
+
 !</typeblock>
 !</types>
 
@@ -216,7 +216,7 @@ contains
     ! Set dimensions
     rgraph%NVT    = 0
     rgraph%NEDGE  = 0
-    
+
     if (present(bisDense)) rgraph%bisDense=bisDense
 
     ! What graph format are we?
@@ -231,7 +231,7 @@ contains
       else
         call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
-      
+
       ! Create array of lists for edges
       call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
 
@@ -244,7 +244,7 @@ contains
       else
         call map_create(rgraph%rVertices,rgraph%NVT+1,1)
       end if
-      
+
       ! Create array of lists for edges
       call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
 
@@ -273,7 +273,7 @@ contains
 
       ! Create array of lists for edges
       call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
-      
+
     case DEFAULT
       call output_line('Invalid matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_createGraph')
@@ -347,7 +347,7 @@ contains
 
       ! Create map for the list of vertices
       call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      
+
       ! Create array of lists for edges
       call alst_create(rgraph%rEdges,nvt,nedge)
 
@@ -364,15 +364,15 @@ contains
       call storage_getbase_int(h_Key,p_Key)
       call map_copy(p_Key,rgraph%rVertices)
       call storage_free(h_Key)
-      
+
 
     case(LSYSSC_MATRIX9,&
          LSYSSC_MATRIX9INTL)
       rgraph%cgraphFormat = GRPH_GRAPH9
-      
+
       ! Create map for the list of vertices
       call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      
+
       ! Create array of lists for edges
       call alst_create(rgraph%rEdges,nvt,nedge)
 
@@ -397,7 +397,7 @@ contains
       call sys_halt()
     end select
   end subroutine grph_createGraphFromMatrix
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -454,10 +454,10 @@ contains
     type(it_mapInt_Int) :: rmapIter
     integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
     integer :: ia,ieq,isize,itable,ncols
-    
+
     ! Check that matrix and graph have the same format
     select case(rscalarMatrix%cmatrixFormat)
-      
+
     case(LSYSSC_MATRIX7,&
          LSYSSC_MATRIX7INTL)
       if (rgraph%cgraphFormat .ne. GRPH_GRAPH7) then
@@ -479,10 +479,10 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
       call sys_halt()
     end select
- 
+
     ! Set number of edges = number of nonzero matrix entries
     rscalarMatrix%NA = rgraph%NEDGE
-    
+
     ! Set number of columns/rows. This is a little bit ugly because
     ! the number of vertices (NVT) may be different from the number of
     ! tables.  If vertices are inserted as follows 1,2,3,...,NVT, then
@@ -496,10 +496,10 @@ contains
     rscalarMatrix%NCOLS = rscalarMatrix%NEQ
 
     if (rgraph%bisDense) then
-      
+
       ! Convert array list to matrix
       call alst_copy(rgraph%rEdges,rscalarMatrix%h_Kld,rscalarMatrix%h_Kcol)
-      
+
     else
 
       ! Check if matrix is empty
@@ -543,7 +543,7 @@ contains
         ! Check if vertex with number IEQ exists
         rmapIter = map_find(rgraph%rVertices,ieq)
         if (.not.map_isNull(rmapIter)) then
-          
+
           ! Get auxiliary data
           call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
@@ -645,7 +645,7 @@ contains
       end do
 
     end if
-    
+
   end subroutine grph_printGraph
 
   ! ***************************************************************************
@@ -710,7 +710,7 @@ contains
     ! local variabes
     type(it_mapInt_Int) :: rmapIter
     integer :: itable
-    
+
     ! Try to add entry with key iVertex
     if (rgraph%bisDense) then
       itable   = iVertex
@@ -725,7 +725,7 @@ contains
 
     ! Increase number of vertices by one
     rgraph%NVT = rgraph%NVT+1
-    
+
     ! Add trivial edge (iVertex,iVertex) to the list of edges
     select case(rgraph%cgraphFormat)
 
@@ -734,16 +734,16 @@ contains
          GRPH_GRAPHORDERED_DIRECTED,&
          GRPH_GRAPHUNORDERED_DIRECTED)
       call alst_push_front(rgraph%rEdges,itable,iVertex)
-      
+
     case DEFAULT
       call output_line('Unsupported graph format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_insertVertex')
       call sys_halt()
     end select
-    
+
     ! Increase number of edges by one
     rgraph%NEDGE = rgraph%NEDGE+1
-    
+
   end subroutine grph_insertVertex
 
   ! ***************************************************************************
@@ -801,16 +801,16 @@ contains
 
     ! Are we dense graph?
     if (rgraph%bisDense) then
-      
+
       ! What graph format are ?
       select case(rgraph%cgraphFormat)
-        
+
       case(GRPH_GRAPHUNORDERED_DIRECTED,&
            GRPH_GRAPHORDERED_DIRECTED)
         call output_line('We cannot remove directed graphs at the moment!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
-      
+
       case(GRPH_GRAPH7,&
            GRPH_GRAPH9)
         ! We are in the lucky position, that the graph is undirected,
@@ -819,7 +819,7 @@ contains
         ! through the list of all vertices but it suffices to visit
         ! those which are present in the adjacency list of vertex
         ! iVertex.
-        
+
         ! Step 1: Delete corresponding vertex from map. Note that for
         !         dense graphs the vertex map does not store further
         !         information and can be eliminated in the first
@@ -835,7 +835,7 @@ contains
         else
           call map_erase(rgraph%rVertices, rmapIter)
         end if
-               
+
         ! Step 2: Loop through adjacency list of vertex iVertex and
         !         delete all edges (jVertex,iVertex) from the
         !         adjacency list of jVertex.
@@ -843,13 +843,13 @@ contains
         ! Find position of first entry in adjacency list
         ralstIter = alst_begin(rgraph%rEdges,iVertex)
         do while(.not.alst_isNull(ralstIter))
-          
+
           ! Get number of adjacent vertex
           jVertex = alst_get(rgraph%rEdges,ralstIter)
-          
+
           ! Get position of next entry in adjacency list
           call alst_next(ralstIter)
-          
+
           ! Do nothing if both vertices are the same. The adjacency
           ! list of iVertex is removed/replaced anyway so we can leave
           ! it 'as is'
@@ -864,17 +864,17 @@ contains
           else
             rposition = alst_erase(rgraph%rEdges,rposition)
           end if
-           
+
           ! Decrease number of edges by two; for the edge
           ! (iVertex,jVertex) and for the edge (jVertex,iVertex) that
           ! exists in an undirected graph
           rgraph%NEDGE = rgraph%NEDGE-1
         end do
-        
+
         ! Now, vertex iVertex does no longer exist in any adjacency list.
         ! Check if replacement vertex is different from iVertex.
         if (bdoReplace .and. (iVertex .ne. ireplaceVertex)) then
-          
+
           ! Remove the trivial edge (ireplaceVertex,ireplaceVertex)
           rposition = alst_find(rgraph%rEdges,ireplaceVertex,ireplaceVertex)
           if (alst_isNull(rposition)) then
@@ -884,16 +884,16 @@ contains
           else
             rposition = alst_erase(rgraph%rEdges,rposition)
           end if
-                    
+
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
           ! From now onward, the adjacencey list of the replacement
           ! vertex is stored at position iVertex and vice versa. Keep
           ! this in mind!
           call alst_swapTbl(rgraph%rEdges,iVertex,ireplaceVertex)
-          
+
           ! Release adjacency list of vertex ireplaceVertex
           call alst_releaseTbl(rgraph%rEdges,ireplaceVertex)
-          
+
           ! Insert trivial edge (iVertex,iVertex) into adjacency list
           rposition = alst_find(rgraph%rEdges,iVertex,iVertex,.false.)
           if (alst_isNull(rposition)) then
@@ -915,16 +915,16 @@ contains
           ! Find position of first entry in adjacency list
           ralstIter = alst_begin(rgraph%rEdges,iVertex)
           do while(.not.alst_isNull(ralstIter))
-            
+
             ! Get number of adjacent vertex
             jVertex = alst_get(rgraph%rEdges,ralstIter)
 
             ! Get position of next entry in adjacency list
             call alst_next(ralstIter)
-            
+
             ! Do nothing if jVertex is identical iVertex
             if (jVertex .eq. iVertex) cycle
-            
+
             ! Remove vertex ireplaceVertex from adjacency list of
             ! vertex jVertex
             rposition = alst_find(rgraph%rEdges,jVertex,ireplaceVertex)
@@ -945,24 +945,24 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
             end if
-            
+
           end do
-                  
+
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
-          
+
           ! Decrease number of edges by one; for the trivial edge
           ! (lastVertex,lastVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
 
         else
-          
+
           ! Step 3(b): Release adjacency list of vertex iVertex
           call alst_releaseTbl(rgraph%rEdges,iVertex)
-          
+
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
-          
+
           ! Decrease number of edges by one; for the trivial edge
           ! (iVertex,iVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
@@ -978,7 +978,7 @@ contains
 
       ! What graph format are ?
       select case(rgraph%cgraphFormat)
-        
+
       case(GRPH_GRAPHUNORDERED_DIRECTED,&
            GRPH_GRAPHORDERED_DIRECTED)
         call output_line('We cannot remove directed graphs at the moment!',&
@@ -993,7 +993,7 @@ contains
         ! through the list of all vertices but it suffices to visit
         ! those which are present in the adjacency list of vertex
         ! iVertex.
-        
+
         ! Get table for iVertex
         rmapIter = map_find(rgraph%rVertices,iVertex)
         if (map_isNull(rmapIter)) then
@@ -1004,7 +1004,7 @@ contains
           call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
-        
+
         ! Get table for ireplaceVertex (if required)
         if (bdoReplace) then
           rmapIter = map_find(rgraph%rVertices,ireplaceVertex)
@@ -1019,7 +1019,7 @@ contains
         else
           ireplaceTable = 0
         end if
-        
+
         ! Step 1: Delete corresponding vertex from map. Note that for
         !         dense graphs the vertex map does not store further
         !         information and can be eliminated in the first
@@ -1035,21 +1035,21 @@ contains
         else
           call map_erase(rgraph%rVertices,rmapIter)
         end if
-        
+
         ! Step 2: Loop through adjacency list of vertex iVertex and
         !         delete all edges (jVertex,iVertex) from the
         !         adjacency lists of jVertex.
-        
+
         ! Find position of first entry in adjacency list
         ralstIter = alst_begin(rgraph%rEdges,itable)
         do while(.not.alst_isNull(ralstIter))
-          
+
           ! Get number of adjacent vertex
           jVertex = alst_get(rgraph%rEdges,ralstIter)
-          
+
           ! Get position of next entry in adjacency list
           call alst_next(ralstIter)
-          
+
           ! Do nothing if both vertices are the same
           if (iVertex .eq. jVertex) cycle
 
@@ -1079,7 +1079,7 @@ contains
           else
             rposition = alst_erase(rgraph%rEdges, rposition)
           end if
-          
+
           ! Decrease number of edges by two; for the edge
           ! (iVertex,jVertex) and for the edge (jVertex,iVertex) that
           ! exists in an undirected graph
@@ -1090,7 +1090,7 @@ contains
         ! list.  Check if replacement vertex needs to be moved to
         ! position iVertex.
         if (bdoReplace .and. (iVertex .ne. ireplaceVertex)) then
-          
+
           ! Step 3(a): Loop through adjacency list of vertex
           !            ireplaceVertex and delete all edges
           !            (jVertex,ireplaceVertex) from the adjacency
@@ -1098,21 +1098,21 @@ contains
           !            (jVertex,iVertex) to the adjacency list of
           !            jVertex. Finally, swap adjacency list of
           !            vertices iVertex and ireplaceVertex.
-          
+
           ! Find position of first entry in adjacency list
           ralstIter = alst_begin(rgraph%rEdges,ireplaceTable)
           do while(.not.alst_isNull(ralstIter))
 
             ! Get number of adjacent vertex
             jVertex = alst_get(rgraph%rEdges,ralstIter)
-            
+
             ! Get position of next entry in adjacency list
             call alst_next(ralstIter)
-            
+
             ! Do nothing if both vertices are the same. This situation
             ! required special treatment (see below)
             if ((ireplaceVertex .eq. jVertex) .or. iVertex .eq. jVertex) cycle
-            
+
             ! Get table for jVertex
             rmapIter = map_find(rgraph%rVertices,jVertex)
             if (map_isNull(rmapIter)) then
@@ -1123,7 +1123,7 @@ contains
               call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
               jtable = p_Idata(1)
             end if
-            
+
             ! Remove vertex lastVertex from adjacency list of vertex jVertex
             rposition = alst_find(rgraph%rEdges,jtable,ireplaceVertex)
             if (alst_isNull(rposition)) then
@@ -1133,7 +1133,7 @@ contains
             else
               rposition = alst_erase(rgraph%rEdges,rposition)
             end if
-            
+
             ! Insert edge (jVertex,iVertex) into adjacency list
             rposition = alst_find(rgraph%rEdges,jtable,iVertex,.false.)
             if (alst_isNull(rposition)) then
@@ -1163,27 +1163,27 @@ contains
 
           ! Release adjacency list of vertex ireplaceVertex
           call alst_releaseTbl(rgraph%rEdges,ireplaceTable)
-          
+
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
-          
+
           ! Decrease number of edges by one; for the trivial edge
           ! (lastVertex,lastVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
 
         else
-          
+
           ! Step 3(b): Release adjacency list of vertex iVertex
           call alst_releaseTbl(rgraph%rEdges,itable)
-          
+
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
-          
+
           ! Decrease number of edges by one; for the trivial edge
           ! (iVertex,iVertex)
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
-        
+
       case DEFAULT
         call output_line('Invalid graph format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
@@ -1246,7 +1246,7 @@ contains
 
     ! Look for edge (iFromVertex,iToVertex)
     bexists = .not.alst_isNull(alst_find(rgraph%rEdges,itable,iToVertex))
-    
+
   end function grph_hasEdge
 
   ! ***************************************************************************
@@ -1281,14 +1281,14 @@ contains
     type(it_arraylistInt) :: ralstIter
     integer, dimension(:), pointer :: p_Idata
     integer :: itable
-    
+
     ! What graph format are we?
     select case(rgraph%cgraphFormat)
 
     case(GRPH_GRAPHUNORDERED_DIRECTED)
 
       if (rgraph%bisDense) then
-        
+
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex)
         if (alst_isNull(ralstIter)) then
@@ -1297,7 +1297,7 @@ contains
         end if
 
       else
-        
+
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
@@ -1322,14 +1322,14 @@ contains
     case(GRPH_GRAPHORDERED_DIRECTED)
 
       if (rgraph%bisDense) then
-        
+
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex,.false.)
         if (alst_isNull(ralstIter)) then
           ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
         end if
-        
+
       else
 
         ! Get table associated with vertex iToVertex
@@ -1342,7 +1342,7 @@ contains
           call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
-        
+
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         ralstIter = alst_find(rgraph%rEdges,itable,iFromVertex,.false.)
         if (alst_isNull(ralstIter)) then
@@ -1350,11 +1350,11 @@ contains
           rgraph%NEDGE = rgraph%NEDGE+1
         end if
       end if
-      
-      
+
+
     case(GRPH_GRAPH7,&
          GRPH_GRAPH9)
-      
+
       if (rgraph%bisDense) then
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
@@ -1363,16 +1363,16 @@ contains
           ralstIter = alst_insert(rgraph%rEdges,ralstIter,iFromVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
         end if
-        
+
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         ralstIter = alst_find(rgraph%rEdges,iFromVertex,iToVertex,.false.)
         if (alst_isNull(ralstIter)) then
           ralstIter = alst_insert(rgraph%rEdges,ralstIter,iToVertex)
           rgraph%NEDGE = rgraph%NEDGE+1
         end if
-        
+
       else
-        
+
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
@@ -1411,7 +1411,7 @@ contains
 
       end if
 
-      
+
     case DEFAULT
       call output_line('Unsupported graph format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
@@ -1451,7 +1451,7 @@ contains
     type(it_arraylistInt) :: ralstIter
     integer, dimension(:), pointer :: p_Idata
     integer :: itable
-    
+
     ! What graph format are we=
     select case(rgraph%cgraphFormat)
 
@@ -1479,7 +1479,7 @@ contains
           call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
-        
+
         ! Remove vertex iToVertex from table iFromVertex
         ralstIter = alst_find(rgraph%rEdges,itable,iToVertex)
         if (.not.alst_isNull(ralstIter)) then
@@ -1493,14 +1493,14 @@ contains
          GRPH_GRAPH9)
 
       if (rgraph%bisDense) then
-        
+
         ! Remove vertex iToVertex from table iFromVertex
         ralstIter = alst_find(rgraph%rEdges,iFromVertex,iToVertex)
         if (.not.alst_isNull(ralstIter)) then
           ralstIter = alst_erase(rgraph%rEdges,ralstIter)
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
-        
+
         ! Remove vertex iFromVertex from table iToVertex
         ralstIter = alst_find(rgraph%rEdges,iToVertex,iFromVertex)
         if (.not.alst_isNull(ralstIter)) then
@@ -1520,14 +1520,14 @@ contains
           call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
           itable = p_Idata(1)
         end if
-        
+
         ! Remove vertex iToVertex from table iFromVertex
         ralstIter = alst_find(rgraph%rEdges,itable,iToVertex)
         if (.not.alst_isNull(ralstIter)) then
           ralstIter = alst_erase(rgraph%rEdges,ralstIter)
           rgraph%NEDGE = rgraph%NEDGE-1
         end if
-        
+
         ! Get table associated with vertex iToVertex
         rmapIter = map_find(rgraph%rVertices,iToVertex)
         if (map_isNull(rmapIter)) then
@@ -1554,7 +1554,7 @@ contains
       call sys_halt()
     end select
   end subroutine grph_removeEdge
-  
+
   ! ***************************************************************************
 
 !<subroutine>

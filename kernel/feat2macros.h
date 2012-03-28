@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _FEAT2MACROS_H_
 #define _FEAT2MACROS_H_
 

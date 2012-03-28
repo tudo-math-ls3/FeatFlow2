@@ -31,7 +31,7 @@ module lsyssc_scalarMatVecAux
   public :: lsyssc_ltx79sngldble
   public :: lsyssc_ltx79dblesngl
   public :: lsyssc_ltx79snglsngl
-  
+
 contains
 
   ! =-=-=-=-=- Double-valued matrix, double-valued vector -=-=-=-=-=

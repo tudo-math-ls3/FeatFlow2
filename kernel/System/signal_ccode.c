@@ -30,7 +30,7 @@ register_handler(int sig, sighandler_t func, sighandler_t catch) {
     new_sig.sa_flags = SA_RESTART;
     if (sigaction (sig, &new_sig, &old_sig) < 0)
 	return SIG_ERR;
-    
+
     if (sig > NSIGS)
 	return SIG_ERR;
     actions[sig].sa_handler = func;
@@ -43,7 +43,7 @@ register_handler(int sig, sighandler_t func, sighandler_t catch) {
 static sighandler_t
 deregister_handler (int sig) {
     struct sigaction del_sig;
-    
+
     if (sigaction (sig, NULL, &del_sig) < 0)
 	return SIG_ERR;
     del_sig.sa_handler = SIG_DFL;
@@ -51,7 +51,7 @@ deregister_handler (int sig) {
     del_sig.sa_flags = SA_RESTART;
     if (sigaction (sig, &del_sig, NULL) < 0)
 	return SIG_ERR;
-    
+
     actions[sig].sa_handler = SIG_DFL;
     return del_sig.sa_handler;
 }

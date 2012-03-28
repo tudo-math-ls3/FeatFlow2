@@ -16,11 +16,11 @@ module scalarpde
 !$use omp_lib
   use fsystem
   use derivatives
-  
+
   implicit none
-  
+
   private
-  
+
 !<constants>
 
 !<constantblock>
@@ -33,9 +33,9 @@ module scalarpde
 !</constants>
 
 !<types>
-  
+
   !<typeblock>
-  
+
   ! A structure for a scalar bilinear form.
   !
   ! Example: Let us take a look at the 2D equation
@@ -56,44 +56,44 @@ module scalarpde
   ! 6.) Dcoefficients(2)  = 1.0            -> 2nd coefficient
   ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term
   ! 8.) Idescriptors(2,2) = DER_DERIV_Y    -> v_y in the 2nd term
-  
+
   type t_bilinearForm
-  
+
     ! Number of additive terms in the bilinear form
     integer :: itermCount = 0
-    
+
     ! Descriptors of additive terms.
     ! Idescriptors(1,.) = trial function descriptor,
     ! Idescriptors(2,.) = test function descriptor.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
     integer, dimension(2,SCPDE_NNAB) :: Idescriptors = DER_FUNC
-    
+
     ! TRUE if all coefficients in the biliear form are constant,
     ! FALSE if there is at least one nonconstant coefficient.
     logical                          :: ballCoeffConstant = .true.
-    
+
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
     logical, dimension(SCPDE_NNAB)   :: BconstantCoeff = .true.
-    
+
     ! If ballCoeffConstant=TRUE: the constant coefficients in front of
     ! each additive terms in the bilinear form.
     ! Otherwise: Not used.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
-    
+
     ! Only for use with UFCI: Function IDs for non-constant coefficients.
     integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
-    
+
   end type
-  
+
   public :: t_bilinearForm
-  
+
   !</typeblock>
 
   !<typeblock>
-  
+
   ! A structure for a scalar trilinear form.
   !
   ! Example: For w:R2->R let us take a look at the 2D equation
@@ -127,12 +127,12 @@ module scalarpde
   !   Idescriptors(1,i) = 0
   ! instead of DER_xxxx means that the function f is the constant
   ! mapping f_i(u):=1. So this disables the contribution of u for that term.
-  
+
   type t_trilinearForm
-  
+
     ! Number of additive terms in the bilinear form
     integer :: itermCount = 0
-    
+
     ! Descriptors of additive terms.
     ! Idescriptors(1,.) = coefficient function descriptor,
     ! Idescriptors(2,.) = trial function descriptor,
@@ -140,32 +140,32 @@ module scalarpde
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
     integer, dimension(3,SCPDE_NNAB) :: Idescriptors = DER_FUNC
-    
+
     ! TRUE if all coefficients in the biliear form are constant,
     ! FALSE if there is at least one nonconstant coefficient.
     logical                          :: ballCoeffConstant = .true.
-    
+
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
     logical, dimension(SCPDE_NNAB)   :: BconstantCoeff = .true.
-    
+
     ! If ballCoeffConstant=TRUE: the constant coefficients in front of
     ! each additive terms in the bilinear form.
     ! Otherwise: Not used.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
-    
+
     ! Only for use with UFCI: Function IDs for non-constant coefficients.
     integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
 
   end type
-  
+
   public :: t_trilinearForm
-  
+
   !</typeblock>
 
   !<typeblock>
-  
+
   ! A structure for a scalar linear form.
   !
   ! Example: Let us take a look at the 2D equation
@@ -183,34 +183,34 @@ module scalarpde
   ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)
   ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term
   ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term
-  
+
   type t_linearForm
-  
+
     ! Number of additive terms in the bilinear form
     integer :: itermCount = 0
-    
+
     ! Descriptors of additive terms, i.e. test function descriptors.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
     integer, dimension(SCPDE_NNAB) :: Idescriptors = DER_FUNC
-    
+
     ! Constant coefficients in front of each additive terms in the linear form.
     ! Note: This array is not used by the framework! Nevertheless, it can be
     ! used by the main program to pass parameters from the main program to
     ! callback routines.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
-    
+
     ! Only for use with UFCI: Function IDs for non-constant coefficients.
     integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
-    
+
   end type
-  
+
   public :: t_linearForm
-  
+
   !</typeblock>
 
 !</types>
-  
+
   ! ***************************************************************************
-  
+
 end module

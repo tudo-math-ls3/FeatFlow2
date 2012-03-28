@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _ARRAYLIST_H_
 #define _ARRAYLIST_H_
 
@@ -240,7 +238,7 @@
   interface alst_clearTbl
     module procedure FEAT2_PP_TEMPLATE_TD(alst_clearTbl,T,D)
   end interface
-  
+
   interface alst_copy
     module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_cpy2,T,D)
@@ -271,7 +269,7 @@
   interface alst_rbegin
     module procedure FEAT2_PP_TEMPLATE_TD(alst_rbegin,T,D)
   end interface
-  
+
   interface alst_end
     module procedure FEAT2_PP_TEMPLATE_TD(alst_end,T,D)
   end interface
@@ -279,7 +277,7 @@
   interface alst_rend
     module procedure FEAT2_PP_TEMPLATE_TD(alst_rend,T,D)
   end interface
-  
+
   interface alst_next
     module procedure FEAT2_PP_TEMPLATE_TD(alst_next,T,D)
   end interface
@@ -301,7 +299,7 @@
     module procedure FEAT2_PP_TEMPLATE_TD(alst_getbase_data,T,D)
   end interface
 #endif
-  
+
   interface alst_assign
     module procedure FEAT2_PP_TEMPLATE_TD(alst_assign1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_assign2,T,D)
@@ -318,7 +316,7 @@
   interface alst_pop_front
     module procedure FEAT2_PP_TEMPLATE_TD(alst_pop_front,T,D)
   end interface
-  
+
   interface alst_pop_back
     module procedure FEAT2_PP_TEMPLATE_TD(alst_pop_back,T,D)
   end interface
@@ -349,19 +347,19 @@
     module procedure FEAT2_PP_TEMPLATE_TD(alst_erase1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_erase2,T,D)
   end interface
-  
+
   interface alst_size
     module procedure FEAT2_PP_TEMPLATE_TD(alst_size,T,D)
   end interface
-  
+
   interface alst_max_size
     module procedure FEAT2_PP_TEMPLATE_TD(alst_max_size,T,D)
   end interface
-  
+
   interface alst_ntable
     module procedure FEAT2_PP_TEMPLATE_TD(alst_ntable,T,D)
   end interface
-  
+
   interface alst_empty
     module procedure FEAT2_PP_TEMPLATE_TD(alst_empty,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_emptyTbl,T,D)
@@ -370,7 +368,7 @@
   interface alst_emptyTbl
     module procedure FEAT2_PP_TEMPLATE_TD(alst_emptyTbl,T,D)
   end interface
-  
+
   interface alst_find
     module procedure FEAT2_PP_TEMPLATE_TD(alst_find1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_find2,T,D)
@@ -405,7 +403,7 @@
   interface alst_reverseTbl
     module procedure FEAT2_PP_TEMPLATE_TD(alst_reverseTbl,T,D)
   end interface
-  
+
   interface alst_sort
     module procedure FEAT2_PP_TEMPLATE_TD(alst_sort,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_sortTbl,T,D)
@@ -422,17 +420,17 @@
   interface alst_hasSpec
     module procedure FEAT2_PP_TEMPLATE_TD(alst_hasSpec,T,D)
   end interface
-  
-  
+
+
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_fassign,T,D)
   end interface
 
-  
+
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_TD(it_alst_eq,T,D)
   end interface
-  
+
   interface operator(/=)
     module procedure FEAT2_PP_TEMPLATE_TD(it_alst_ne,T,D)
   end interface
@@ -463,10 +461,10 @@
 
   type FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)
     private
-    
+
     ! Number of tables that are currently stored in the arraylist
     integer :: ntable = 0
-    
+
     ! Total number of tables that can be stored in the arraylist
     integer :: nntable = 0
 
@@ -501,12 +499,12 @@
     integer :: h_Kprev = ST_NOHANDLE
     integer, dimension(:), pointer ::   p_Knext => null()
     integer, dimension(:), pointer ::   p_Kprev => null()
-    
+
 #ifdef T_STORAGE
     ! Handle to the arraylist key
     integer :: h_Key = ST_NOHANDLE
 #endif
-    
+
     ! Pointer to the key values of the arraylist 
     FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key => null()
 
@@ -523,7 +521,7 @@
 #endif
 
   end type
-  
+
 !</typeblock>
 
 !<typeblock>
@@ -543,7 +541,7 @@
     ! combination of different ALST_LSPEC_xxxx constants and specifies
     ! various details of the list iterator.
     integer(I32) :: iSpec = 0_I32
-    
+
     ! Pointer to the underlying arraylist
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), pointer :: p_rarraylist => null()
 
@@ -595,7 +593,7 @@ contains
 
     ! local variables
     integer, dimension(2) :: Isize
-    
+
     ! Set factor
     if (present(dfactor)) then
       if (dfactor > 1.0_DP) rarraylist%dfactor=dfactor
@@ -612,7 +610,7 @@ contains
     call storage_new('alst_create', 'Ktable', Isize,&
         ST_INT, rarraylist%h_Ktable, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int2D(rarraylist%h_Ktable, rarraylist%p_Ktable)
-    
+
     call storage_new('alst_create', 'Knext', ALST_FREE,&
         rarraylist%NNA, ST_INT, rarraylist%h_Knext, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rarraylist%h_Knext, rarraylist%p_Knext)
@@ -629,7 +627,7 @@ contains
 #else
     allocate(rarraylist%p_Key(rarraylist%NNA))
 #endif
-    
+
 #ifdef D
     ! Set size of auxiliary data
     rarraylist%isizeData = max(0,isizeData)
@@ -647,7 +645,7 @@ contains
 #endif
     end if
 #endif
-    
+
     ! Clear arraylist
     call alst_clear(rarraylist)
 
@@ -676,18 +674,18 @@ contains
 
     ! local variable
     integer :: i
-    
+
     ! Check if table number is valid
     if (itable < 1) then
       call output_line('Invalid table number',&
           OU_CLASS_ERROR,OU_MODE_STD,'alst_createTable')
       call sys_halt()
     end if
-    
+
     ! Resize tables if required
     if (itable > rarraylist%nntable) call alst_resizeTbl(&
         rarraylist, ceiling(itable*rarraylist%dfactor))
-    
+
     ! Initialise structures
     do i = rarraylist%ntable+1, itable
       rarraylist%p_Ktable(ALST_HEAD,i) = ALST_NULL
@@ -697,13 +695,13 @@ contains
 
     ! Set new table size
     rarraylist%ntable = max(rarraylist%ntable, itable)
-    
+
   end subroutine
 
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(alst_release,T,D)(rarraylist)
 
 !<description>
@@ -792,7 +790,7 @@ contains
     rarraylist%p_Ktable(ALST_HEAD,itable) = ALST_NULL
     rarraylist%p_Ktable(ALST_HEAD,itable) = ALST_NULL
     rarraylist%p_Ktable(ALST_NA,itable)   = 0
-    
+
     ! Decrease number of tables if the last table has been deleted
     if (itable .eq. rarraylist%ntable)&
         rarraylist%ntable = rarraylist%ntable-1
@@ -802,7 +800,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(alst_resize,T,D)(rarraylist, NNA)
 
 !<description>
@@ -819,10 +817,10 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: NNAOld
-    
+
 #ifndef T_STORAGE
     FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
@@ -861,7 +859,7 @@ contains
     rarraylist%p_Key(1:NNAOld) = p_Key
     deallocate(p_Key)
 #endif
-    
+
 #ifdef D
     ! Reallocate auxiliary data
     if (rarraylist%isizeData > 0) then
@@ -916,7 +914,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(alst_clear,T,D)(rarraylist)
 
 !<description>
@@ -948,7 +946,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(alst_clearTbl,T,D)(rarraylist, itable)
 
 !<description>
@@ -997,7 +995,7 @@ contains
 
     ! Handle to the key value
     integer, intent(in) :: h_KeySrc
-     
+
 #ifdef D
     ! OPTIONAL: Handle to the data values
     integer, intent(in), optional :: h_DataSrc
@@ -1176,7 +1174,7 @@ contains
       end if
     end if
     call storage_getbase(h_KeyDest, p_KeyDest)
-    
+
     ! Do we have to copy auxiliary data?
     if (present(h_DataDest)) then
 
@@ -1187,11 +1185,11 @@ contains
 
         ! Copy key values from list
         call alst_copy(rarraylist, p_TableDest, p_KeyDest)
-        
+
         ! That`s it
         return
       end if
-        
+
       ! Check data handle
       if (h_DataDest .eq. ST_NOHANDLE) then
         call storage_new('alst_cpy3', 'Data',&
@@ -1204,22 +1202,22 @@ contains
           call output_line('Size of data array is not compatible!',&
               OU_CLASS_ERROR,OU_MODE_STD,'alst_cpy3')
         end if
-        
+
         if (Isize2(2) < rarraylist%NA) then
           call storage_realloc('alst_cpy3',&
               rarraylist%NA, h_DataDest, ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
       call storage_getbase(h_DataDest, p_DataDest)
-            
+
       ! Copy table, key and data values from arraylist
       call alst_copy(rarraylist, p_TableDest, p_KeyDest, p_DataDest)
-      
+
     else
-      
+
       ! Copy table, and key values from arraylist
       call alst_copy(rarraylist, p_TableDest, p_KeyDest)
-      
+
     end if
 #else
     call output_line('Arraylist does not support storage handles!',&
@@ -1319,7 +1317,7 @@ contains
       icount = 1
       do itable = 1, ntable
         TableDest(itable) = icount
-      
+
         ipos = rarraylist%p_Ktable(ALST_HEAD,itable)
         kd_copy: do while (ipos .ne. ALST_NULL)
           KeyDest(icount)    = rarraylist%p_Key(ipos)
@@ -1336,7 +1334,7 @@ contains
       icount = 1
       do itable = 1, ntable
         TableDest(itable) = icount
-      
+
         ipos = rarraylist%p_Ktable(ALST_HEAD,itable)
         k_copy: do while (ipos .ne. ALST_NULL)
           KeyDest(icount)    = rarraylist%p_Key(ipos)
@@ -1354,7 +1352,7 @@ contains
     icount = 1
       do itable = 1, ntable
         TableDest(itable) = icount
-      
+
         ipos = rarraylist%p_Ktable(ALST_HEAD,itable)
         copy: do while (ipos .ne. ALST_NULL)
           KeyDest(icount) = rarraylist%p_Key(ipos)
@@ -1387,7 +1385,7 @@ contains
 !<input>
     ! Handle to the key value
     integer, intent(in) :: h_KeySrc
-     
+
     ! Number of the table
     integer, intent(in) :: itable
 
@@ -1402,7 +1400,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
-    
+
 #ifdef T_STORAGE
     ! local variables
     T_TYPE, dimension(:), pointer :: p_KeySrc
@@ -1546,7 +1544,7 @@ contains
     D_TYPE, dimension(:,:), pointer :: p_DataDest
 
     if (present(h_DataDest)) then
-    
+
       ! Check key handle
       if (h_KeyDest .eq. ST_NOHANDLE) then
         call storage_new('alst_cpy3', 'Key',&
@@ -1566,11 +1564,11 @@ contains
 
         ! Copy key values from arraylist
         call alst_copyTbl(rarraylist, itable, p_KeyDest, ncount=ncount)
-        
+
         ! That`s it
         return
       end if
-        
+
       ! Check data handle
       if (h_DataDest .eq. ST_NOHANDLE) then
         call storage_new('alst_cpy3', 'Data',&
@@ -1583,17 +1581,17 @@ contains
           call output_line('Size of data array is not compatible!',&
               OU_CLASS_ERROR,OU_MODE_STD,'alst_cpy3')
         end if
-        
+
         if (Isize2(2) < rarraylist%NA) then
           call storage_realloc('alst_cpy3',&
               rarraylist%NA, h_DataDest, ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
       call storage_getbase(h_DataDest, p_DataDest)
-      
+
       ! Copy key and data values from arraylist
       call alst_copyTbl(rarraylist, itable, p_KeyDest, p_DataDest, ncount)
-      
+
     else
 
       ! Check key handle
@@ -1608,10 +1606,10 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-      
+
       ! Copy key values from arraylist
       call alst_copyTbl(rarraylist, itable, p_KeyDest, ncount=ncount)
-      
+
     end if
 #else
     call output_line('Arraylist does not support storage handles!',&
@@ -1633,7 +1631,7 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-    
+
     ! Copy key values from arraylist
     call alst_copyTbl(rarraylist, itable, p_KeyDest, ncount)
 
@@ -1746,7 +1744,7 @@ contains
 !<description>
     ! This subroutine swaps content of two arraylists
 !</description>
-    
+
 !<inputoutput>
     ! First arraylist
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist1
@@ -1758,7 +1756,7 @@ contains
 
     ! local variables
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)) :: rarraylist
-    
+
     ! Swap lists
     rarraylist  = rarraylist1
     rarraylist1 = rarraylist2
@@ -1785,20 +1783,20 @@ contains
     if (rarraylist2%h_Data .ne. ST_NOHANDLE) &
         call storage_getbase(rarraylist2%h_Data, rarraylist2%p_Data)
 #endif
-    
+
   end subroutine
 
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(alst_swapTbl,T,D)(rarraylist, itable, jtable)
 
 !<description>
     ! This subroutine swaps two tables and the associated list in the
     ! given arraylist
 !</description>
-    
+
 !<input>
     ! Numbers of the tables to be swapped
     integer, intent(in) :: itable,jtable
@@ -1812,7 +1810,7 @@ contains
 
     ! local variables
     integer :: ihead,itail,ina
-    
+
     ! Check if table exists
     if (itable < 1 .or. itable > rarraylist%ntable) then
       call output_line('Invalid table number!',&
@@ -1824,7 +1822,7 @@ contains
     ihead = rarraylist%p_Ktable(ALST_HEAD,itable)
     itail = rarraylist%p_Ktable(ALST_TAIL,itable)
     ina   = rarraylist%p_Ktable(ALST_NA,  itable)
-    
+
     rarraylist%p_Ktable(ALST_HEAD,itable) = rarraylist%p_Ktable(ALST_HEAD,jtable)
     rarraylist%p_Ktable(ALST_TAIL,itable) = rarraylist%p_Ktable(ALST_TAIL,jtable)
     rarraylist%p_Ktable(ALST_NA,  itable) = rarraylist%p_Ktable(ALST_NA,  jtable)
@@ -1838,7 +1836,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(alst_begin,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
@@ -1883,7 +1881,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(alst_rbegin,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
@@ -1928,7 +1926,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(alst_end,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
@@ -1959,7 +1957,7 @@ contains
       nullify(riterator%p_rarraylist)
       return
     end if
-    
+
     ! Attach arraylist to iterator
     riterator%p_rarraylist => rarraylist
 
@@ -1967,13 +1965,13 @@ contains
     riterator%itable = itable
     riterator%ipos   = ALST_NULL
     riterator%iSpec  = 0_I32
-    
+
   end function
 
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(alst_rend,T,D)(rarraylist, itable) result(riterator)
 
 !<description>
@@ -2004,7 +2002,7 @@ contains
       nullify(riterator%p_rarraylist)
       return
     end if
-    
+
     ! Attach arraylist to iterator
     riterator%p_rarraylist => rarraylist
 
@@ -2012,7 +2010,7 @@ contains
     riterator%itable = itable
     riterator%ipos   = ALST_NULL
     riterator%iSpec  = ALST_LSPEC_REVERSE
-    
+
   end function
 
   !************************************************************************
@@ -2030,7 +2028,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     if (riterator%ipos .ne. ALST_NULL) then
       if (iand(riterator%iSpec, ALST_LSPEC_REVERSE).eq.0) then
         riterator%ipos = riterator%p_rarraylist%p_Knext(riterator%ipos)
@@ -2062,7 +2060,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     if (riterator%ipos .ne. ALST_NULL) then
       if (iand(riterator%iSpec, ALST_LSPEC_REVERSE).eq.0) then
         riterator%ipos = riterator%p_rarraylist%p_Kprev(riterator%ipos)
@@ -2103,7 +2101,7 @@ contains
     FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 !</output>
 !</subroutine>
-    
+
     ! Get key
     p_key => rarraylist%p_key(rposition%ipos)
 
@@ -2134,7 +2132,7 @@ contains
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 !</output>
 !</subroutine>
-    
+
     if(rarraylist%isizeData > 0) then
       p_data => rarraylist%p_Data(:,rposition%ipos)
     else
@@ -2168,7 +2166,7 @@ contains
     FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
-    
+
     ! Get key
     key = rarraylist%p_key(rposition%ipos)
 
@@ -2283,7 +2281,7 @@ contains
       call alst_next(riterator)
 
     end do
-    
+
   end subroutine
 
   !************************************************************************
@@ -2321,7 +2319,7 @@ contains
 
     ! local variable
     integer :: ipos,ihead
-    
+
     ! Check if tables need to be created
     if (itable < 1) then
       call output_line('Invalid table number!',&
@@ -2329,7 +2327,7 @@ contains
       call sys_halt()
     end if
     if (rarraylist%ntable < itable) call alst_createTbl(rarraylist, itable)
-    
+
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
     rarraylist%p_Ktable(ALST_NA,itable) = rarraylist%p_Ktable(ALST_NA,itable)+1
@@ -2337,7 +2335,7 @@ contains
     if (abs(ipos) > rarraylist%NNA) then
       call alst_resize(rarraylist, ceiling(rarraylist%dfactor*rarraylist%NNA))
     end if
-    
+
     ! Set next free position
     if (ipos > 0) then
       rarraylist%p_Knext(ALST_FREE) = ipos+1
@@ -2345,7 +2343,7 @@ contains
       ipos = abs(ipos)
       rarraylist%p_Knext(ALST_FREE) = rarraylist%p_Knext(ipos)
     end if
-    
+
     ! Set head and tail
     if (rarraylist%p_Ktable(ALST_HEAD,itable) .eq. ALST_NULL) then
       ! Push to empty list
@@ -2371,7 +2369,7 @@ contains
       rarraylist%p_Data(:,ipos) = data
     end if
 #endif
-    
+
   end subroutine
 
   !************************************************************************
@@ -2406,7 +2404,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     integer :: ipos,itail
 
@@ -2417,7 +2415,7 @@ contains
       call sys_halt()
     end if
     if (rarraylist%ntable < itable) call alst_createTbl(rarraylist, itable)
-    
+
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
     rarraylist%p_Ktable(ALST_NA,itable) = rarraylist%p_Ktable(ALST_NA,itable)+1
@@ -2425,7 +2423,7 @@ contains
     if (abs(ipos) > rarraylist%NNA) then
       call alst_resize(rarraylist, ceiling(rarraylist%dfactor*rarraylist%NNA))
     end if
-    
+
     ! Set next free position
     if (ipos > 0) then
       rarraylist%p_Knext(ALST_FREE) = ipos+1
@@ -2433,7 +2431,7 @@ contains
       ipos = abs(ipos)
       rarraylist%p_Knext(ALST_FREE) = rarraylist%p_Knext(ipos)
     end if
-    
+
     ! Set head and tail
     if (rarraylist%p_Ktable(ALST_HEAD,itable) .eq. ALST_NULL) then
       ! Push to empty list
@@ -2461,7 +2459,7 @@ contains
 #endif
 
   end subroutine
-  
+
   !************************************************************************
 
 !<subroutine>
@@ -2483,7 +2481,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
 
@@ -2519,10 +2517,10 @@ contains
 
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
-    
+
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
-    
+
     riterator = alst_rbegin(rarraylist, itable)
     riterator = alst_erase(rarraylist, riterator)
 
@@ -2567,14 +2565,14 @@ contains
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) then
-      
+
       nullify(p_key)
 #ifdef D
       nullify(p_data)
 #endif
 
     else
-      
+
       riterator = alst_begin(rarraylist, itable)
 
 #ifdef D
@@ -2618,7 +2616,7 @@ contains
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) return
-    
+
     riterator = alst_begin(rarraylist, itable)
     key = alst_get(rarraylist, riterator)
 
@@ -2663,14 +2661,14 @@ contains
 
     ! Check if list is empty
     if (alst_emptyTbl(rarraylist, itable)) then
-      
+
       nullify(p_key)
 #ifdef D
       nullify(p_data)
 #endif
 
     else
-      
+
       riterator = alst_rbegin(rarraylist, itable)
 
 #ifdef D
@@ -2685,7 +2683,7 @@ contains
   end subroutine
 
   !************************************************************************
-  
+
 !<function>
 
   function FEAT2_PP_TEMPLATE_TD(alst_back,T,D)(rarraylist, itable) result(key)
@@ -2764,10 +2762,10 @@ contains
 
     ! local variable
     integer :: ipred,ipos,itable
-    
+
     ! Get table number
     itable = rposition%itable
-    
+
     ! Insert new element at the end of the list?
     if (rposition%ipos .eq. ALST_NULL) then
 #ifdef D
@@ -2806,7 +2804,7 @@ contains
     ! Check if tables need to be created
     if (rarraylist%ntable < itable)&
         call alst_createTbl(rarraylist, itable)
-    
+
     ! Check if array list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
     ipos          = rarraylist%p_Knext(ALST_FREE)
@@ -2814,7 +2812,7 @@ contains
     if (abs(ipos) > rarraylist%NNA) then
       call alst_resize(rarraylist, ceiling(rarraylist%dfactor*rarraylist%NNA))
     end if
-    
+
     ! Set next free position
     if (ipos > 0) then
       rarraylist%p_Knext(ALST_FREE) = ipos+1
@@ -2822,7 +2820,7 @@ contains
       ipos = abs(ipos)
       rarraylist%p_Knext(ALST_FREE) = rarraylist%p_Knext(ipos)
     end if
-    
+
     ! Insert element between its predecessor IPRED and 
     ! the element at position rposition in table itable
     rarraylist%p_Kprev(rposition%ipos) = ipos
@@ -3003,7 +3001,7 @@ contains
     ! Delete entry from arraylist
     rarraylist%NA = rarraylist%NA-1
     rarraylist%p_Ktable(ALST_NA,itable) = rarraylist%p_Ktable(ALST_NA,itable)-1
-    
+
     ! Are we at the head of the list?
     if (ipred .eq. ALST_NULL) then
       ! Erase first list item
@@ -3014,14 +3012,14 @@ contains
       inext = rarraylist%p_Knext(ipos)
       rarraylist%p_Knext(ipred) = inext
     end if
-    
+
     ! Are we at the tail of the list
     if (inext .eq. ALST_NULL) then
       rarraylist%p_Ktable(ALST_TAIL,itable) = ipred
     else
       rarraylist%p_Kprev(inext) = ipred
     end if
-    
+
     ! Update free position
     rarraylist%p_Knext(ipos) = rarraylist%p_Knext(ALST_FREE)
     rarraylist%p_Knext(ALST_FREE) = -ipos
@@ -3089,13 +3087,13 @@ contains
 !<input>
     ! key value
     FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
-    
+
     ! Number of the table
     integer, intent(in) :: itable
-    
+
     ! The arraylist
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
-    
+
     ! OPTIONAL: initial guess of the position
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in), optional :: rpositionGuess
 !</input>
@@ -3115,20 +3113,20 @@ contains
     else
       riterator = alst_begin(rarraylist, itable)
     end if
-    
+
     ! Initialisation
     bsuccess = .false.
-    
+
     do while(riterator%ipos .ne. ALST_NULL)
       if (rarraylist%p_Key(riterator%ipos) .eq. key) then
         bsuccess = .true.; exit
       end if
       riterator%ipos = rarraylist%p_Knext(riterator%ipos)
     end do
-    
+
     if (.not.bsuccess) then
       riterator%ipos = ALST_NULL
-      
+
       ! If we started searching with an initial guess but we were
       ! unable to find the element then re-search from scratch
       if (present(rpositionGuess))&
@@ -3161,13 +3159,13 @@ contains
 !<input>
     ! key value
     FEAT2_PP_TTYPE(T_TYPE), intent(in) :: key
-    
+
     ! Number of the table
     integer, intent(in) :: itable
-    
+
     ! The arraylist
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
-    
+
     ! Flag: if TRUE then list is assumed in reverse order
     logical, intent(in) :: bisReverse
 
@@ -3183,18 +3181,18 @@ contains
 
     ! local variables
     logical :: bsuccess
-    
+
     ! Do we have an initial guess
     if (present(rpositionGuess)) then
       riterator = rpositionGuess
     else
       riterator = alst_begin(rarraylist, itable)
     end if
-    
+
     ! Initialisation
     bsuccess = .false.
 
-    
+
     if (bisReverse) then
       ! Search for key value in reverse order
       do while(riterator%ipos .ne. ALST_NULL)
@@ -3216,11 +3214,11 @@ contains
         riterator%ipos = rarraylist%p_Knext(riterator%ipos)
       end do
     end if
-    
+
     if (.not.bsuccess) then
       ! Special treatment of position
       riterator%iSpec = riterator%iSpec + ALST_LSPEC_VIRTUAL
-      
+
       ! If we started searching with an initial guess but we were
       ! unable to find the element then re-search from scratch
       if (present(rpositionGuess))&
@@ -3250,24 +3248,24 @@ contains
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
     integer :: itable
-    
+
     ! Loop over all tables
     do itable = 1, rarraylist%ntable
       call output_line('Table number: ' // trim(sys_siL(itable,15)))
       call output_line('----------------------------------------')
-      
+
       riterator = alst_begin(rarraylist, itable)
       do while (riterator /= alst_end(rarraylist, itable))
         write(*,*) rarraylist%p_Key(riterator%ipos)
         call alst_next(riterator)
       end do
     end do
-    
+
 #else
-    
+
     call output_line('Unable to print arraylist with derived data type!',&
         OU_CLASS_WARNING,OU_MODE_STD,'alst_print')
-    
+
 #endif
 
   end subroutine
@@ -3285,7 +3283,7 @@ contains
 !<input>
     ! The arraylist
     type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(in) :: rarraylist
-    
+
     ! Number of the table
     integer, intent(in) :: itable
 !</input>
@@ -3295,7 +3293,7 @@ contains
 
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator
-    
+
     riterator = alst_begin(rarraylist, itable)
     do while (riterator /= alst_end(rarraylist, itable))
       write(*,*) rarraylist%p_Key(riterator%ipos)
@@ -3303,10 +3301,10 @@ contains
     end do
 
 #else
-    
+
     call output_line('Unable to print arraylist with derived data type!',&
         OU_CLASS_WARNING,OU_MODE_STD,'alst_printTbl')
-    
+
 #endif
 
   end subroutine
@@ -3481,7 +3479,7 @@ contains
 
     ! Release arraylist
     call alst_release(rarraylist)
-    
+
     ! Duplicate the backup
     call alst_duplicate(rarraylistBackup, rarraylist)
 
@@ -3610,14 +3608,14 @@ contains
     logical :: bempty
 !</result>
 !</function>
-    
+
     ! Check if table exists
     if (itable < 1 .or. itable > rarraylist%ntable) then
       bempty = .true.
     else
       bempty = (rarraylist%p_Ktable(ALST_NA,itable) .eq. 0)
     end if
-    
+
   end function
 
   !************************************************************************
@@ -3654,17 +3652,17 @@ contains
     ! Set size
     rarraylistDest%NA     = rarraylistsrc%NA
     rarraylistDest%ntable = rarraylistsrc%ntable
-    
+
     ! Set structure
     rarraylistDest%p_Ktable = rarraylistSrc%p_Ktable
     rarraylistDest%p_Knext  = rarraylistSrc%p_Knext
     rarraylistDest%p_Kprev  = rarraylistSrc%p_Kprev
     rarraylistDest%p_Key    = rarraylistSrc%p_Key
-    
+
 #ifdef D
     rarraylistDest%p_Data   = rarraylistSrc%p_Data
 #endif
-    
+
   end subroutine
 
   !************************************************************************
@@ -3690,7 +3688,7 @@ contains
     do itable = 1, rarraylist%ntable
       call alst_reverseTbl(rarraylist, itable)
     end do
-    
+
   end subroutine
 
   !************************************************************************
@@ -3740,7 +3738,7 @@ contains
   end subroutine
 
   !************************************************************************
-  
+
 !<subroutine>
 
   subroutine FEAT2_PP_TEMPLATE_TD(alst_sort,T,D)(rarraylist)
@@ -3762,11 +3760,11 @@ contains
     do itable = 1, rarraylist%ntable
       call alst_sortTbl(rarraylist, itable)
     end do
-    
+
   end subroutine
 
   !************************************************************************
-  
+
 !<subroutine>
 
   subroutine FEAT2_PP_TEMPLATE_TD(alst_sortTbl,T,D)(rarraylist, itable)
@@ -3807,7 +3805,7 @@ contains
       bswapped  = .false.
       riterator = alst_begin(rarraylist, itable)
       inner: do while (riterator /= rposition)
-        
+
 #ifdef D
         if (rarraylist%isizeData > 0) then
 

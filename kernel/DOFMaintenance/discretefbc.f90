@@ -35,9 +35,9 @@ module discretefbc
   use storage
   use boundarycondition
   use dofmapping
-  
+
   implicit none
-  
+
   private
 
 !<constants>
@@ -56,20 +56,20 @@ module discretefbc
 
   ! Discrete Dirichlet boundary conditions
   integer, parameter, public :: DISCFBC_TPDIRICHLET    = 1
-  
+
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of FBC`s">
-  
+
   ! Calculate the function value in some point of the domain.
   integer, parameter, public :: DISCFBC_NEEDFUNCGENERAL    = 0
-  
+
   ! Calculate the function value in corner vertices of elements in the object.
   integer, parameter, public :: DISCFBC_NEEDFUNC           = 1
 
   ! Calculate the function value in a edge midpoints of elements in the object
   integer, parameter, public :: DISCFBC_NEEDFUNCMID        = 2
-  
+
   ! Calculate the integral mean value on edges in the object
   integer, parameter, public :: DISCFBC_NEEDINTMEAN        = 3
 
@@ -78,19 +78,19 @@ module discretefbc
 
   ! Calculate the function value in the face midpoints of elements in the object
   integer, parameter, public :: DISCFBC_NEEDFUNCFACEMID    = 5
-  
+
   ! Calculate the integral mean value on the faces in the object
   integer, parameter, public :: DISCFBC_NEEDFACEINTMEAN    = 6
-  
+
 
 !</constantblock>
-  
+
 !</constants>
 
 !<types>
-  
+
 !<typeblock>
-  
+
   ! This structure describes the typical way, Dirichlet boundary conditions
   ! for fictitious boundary components can be discretised.
   ! This is done by two arrays: one array is a list of all
@@ -98,58 +98,58 @@ module discretefbc
   ! that must be imposed in this DOF.
   ! The variable Icomponents receives a list of all components in the solution
   ! vector that are affected by this bonudary condition.
-  
+
   type t_discreteFBCDirichlet
-    
+
     ! Number of boundary components affected by this boundary condition.
     ! E.g. =2 for X- and Y-velocity.
     integer :: ncomponents = 0
-    
+
     ! A list of 1..ncomponents components of the equation, this discrete BC
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
     integer, dimension(:), pointer :: Icomponents => null()
-    
+
     ! Number of Dirichlet nodes; may be different from the length of the array!
     integer :: nDOF = 0
-    
+
     ! Handle to array with all DOF`s that refer to Dirichlet nodes
     !   array [1..*] of integer
     ! p_IdirichletDOFs(i) is the number of the i-th DOF that is to be overwritten
     ! by the 'Dirichlet replacement' filter.
     integer :: h_IdirichletDOFs   = ST_NOHANDLE
-    
+
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
     !   array [1..ncomponents,1..nDOF] of double
     integer :: h_DdirichletValues = ST_NOHANDLE
-    
+
   end type
-  
+
   public :: t_discreteFBCDirichlet
-  
+
 !</typeblock>
-  
+
 !<typeblock>
-  
+
   ! This describes the basic structure for discrete boundary conditions
   ! on fictitious boundary components.
   ! A type identifier decides on which boundary conditions this structure
   ! describes. Depending on the type, one of the information blocks
   ! is filled with data about the discrete BC`s.
-  
+
   type t_discreteFBCEntry
-    
+
     ! The type identifier. Identifies the type of discrete BC`s, this
     ! structure describes.
     integer                             :: itype = DISCFBC_TPUNDEFINED
-    
+
     ! Structure for discrete Dirichlet BC`s.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
     type(t_discreteFBCDirichlet)        :: rdirichletFBCs
-    
+
   end type
-  
+
   public :: t_discreteFBCEntry
-  
+
 !</typeblock>
 
 !<typeblock>
@@ -160,10 +160,10 @@ module discretefbc
   ! a single discrete boundary condition (so to speak, a collection of objects
   ! sharing the same boundary conditions, discretised in the same way).
   type t_discreteFBC
-  
+
     ! Total number of allocated t_discreteFBCEntry structures in p_RdiscFBCList.
     integer :: inumEntriesAlloc = 0
-    
+
     ! Total number of used t_discreteFBCEntry structures in p_RdiscFBCList.
     integer :: inumEntriesUsed = 0
 
@@ -172,9 +172,9 @@ module discretefbc
     ! objects with the same 'boundary' condition discretised
     ! in a special, discretisation-dependent way.
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscFBCList => null()
-  
+
   end type
-  
+
   public :: t_discreteFBC
 
 !</typeblock>
@@ -233,7 +233,7 @@ module discretefbc
     ! the actual size of p_Iwhere might be larger than nvalues, so the callback
     ! routine should orientate on nvalues.
     integer, dimension(:), pointer :: p_Iwhere => null()
-    
+
     ! Coordinate array that specifies the coordinate where to evaluate
     ! (if available). The content is depending on the situation, specifíed by the
     ! cinfoNeeded parameter: \\
@@ -250,7 +250,7 @@ module discretefbc
     !   p_Dwhere(1:ndim,.) = x/y/z-coordinate of the midpoint of the edge/face
     !                        where to evaluate
     real(DP), dimension(:,:), pointer :: p_Dwhere => null()
-  
+
     ! A pointer to an array that accepts calculated values. The callback routine
     ! for evaluating on the fictitious boundary component must fill this
     ! array with values. The content and shape is depending on cinfoNeeded:
@@ -278,7 +278,7 @@ module discretefbc
     ! must be calculated. If some values are left out, the callback routine can
     ! use the p_Binside array to indicate what is calculated and what not.
     real(DP), dimension(:,:), pointer :: p_Dvalues => null()
-    
+
     ! A pointer to an array of integer values for each value to calculate.
     ! Must be set to 1 by the callback routine for those values that are
     ! calculated. The meaning is again depending on cinfoNeeded:
@@ -307,13 +307,13 @@ module discretefbc
     !   Set "p_Iinside(i) = 0" if the midpoint of element i is outside of the FBC
     !   object; p_Dvalues(i,1) need not to be calculated.
     integer, dimension(:), pointer :: p_Iinside
-  
+
   end type
-  
+
   public :: t_discreteFBCevaluation
 
 !</typeblock>
 
 !</types>
-  
+
 end module

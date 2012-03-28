@@ -52,9 +52,9 @@ module timediscretisation
   use genoutput
 
   implicit none
-  
+
   private
-  
+
   public :: t_timeDiscretisation
   public :: tdiscr_initOneStepTheta
   public :: tdiscr_initFSTheta
@@ -73,7 +73,7 @@ module timediscretisation
 
   ! Theta-scheme (implicit/explicit Euler, Crank Nicolson)
   integer, parameter, public :: TDISCR_ONESTEPTHETA    = 0
-  
+
   ! Fractional step Theta, 3-step scheme
   integer, parameter, public :: TDISCR_FSTHETA         = 1
 
@@ -91,19 +91,19 @@ module timediscretisation
   ! This block realises a time discretisation structure which contains all
   ! parameters that are necessary for the time discretisation of an ODE.
   type t_timeDiscretisation
-  
+
     ! A TDISCR_xxxx-Flag that identifies the time discretisation scheme.
     integer :: ctype = TDISCR_ONESTEPTHETA
-    
+
     ! Number of time intervals
     integer :: nintervals          = 0
 
     ! Absolute start time of the simulation
     real(DP) :: dtimeInit          = 0.0_DP
-    
+
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
-    
+
     ! Time step length of the time discretisation
     real(DP) :: dtstep             = 0.0_DP
 
@@ -112,13 +112,13 @@ module timediscretisation
     !  =1.0: Backward Euler (Standard),
     !  =0.5: Crank Nicolson.
     real(DP) :: dtheta = 1.0_DP
-    
+
     ! User defined integer tag
     integer :: itag = 0
-    
+
     ! User defined double precision tag
     real(DP) :: dtag = 0.0_DP
-  
+
   end type
 
 !</typeblock>
@@ -132,7 +132,7 @@ contains
 !<subroutine>
 
   subroutine tdiscr_getOrder (rtimediscr,iorder)
-  
+
 !<description>
   ! Calculate the (theoretical) order of the time stepping scheme.
 !</description>
@@ -156,13 +156,13 @@ contains
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_initOneStepTheta (rtimediscr, dstart, dend, nintervals, dtheta)
-  
+
 !<description>
   ! Initialises a time discretisation structure for the discretisation with
   ! a one-step Theta scheme.
@@ -171,13 +171,13 @@ contains
 !<input>
   ! Start point of the time interval.
   real(DP), intent(in) :: dstart
-  
+
   ! End point of the time interval
   real(DP), intent(in) :: dend
-  
+
   ! Number of subintervals
   integer, intent(in) :: nintervals
-  
+
   ! Theta scheme parameter
   !  =0.0: Forward Euler,
   !  =1.0: Backward Euler (Standard),
@@ -199,13 +199,13 @@ contains
     rtimediscr%dtheta = dtheta
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_initFSTheta (rtimediscr, dstart, dend, nintervals)
-  
+
 !<description>
   ! Initialises a time discretisation structure for the discretisation with
   ! a 3-step FS-Theta scheme.
@@ -214,10 +214,10 @@ contains
 !<input>
   ! Start point of the time interval.
   real(DP), intent(in) :: dstart
-  
+
   ! End point of the time interval
   real(DP), intent(in) :: dend
-  
+
   ! Number of subintervals; is rounded up to a multiple of 3.
   integer, intent(in) :: nintervals
 !</input>
@@ -236,13 +236,13 @@ contains
     rtimediscr%dtheta = 0.0_DP
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_initdG0(rtimediscr, dstart, dend, nintervals)
-  
+
 !<description>
   ! Initialises a time discretisation structure for the discretisation with
   ! dG(0) scheme.
@@ -251,10 +251,10 @@ contains
 !<input>
   ! Start point of the time interval.
   real(DP), intent(in) :: dstart
-  
+
   ! End point of the time interval
   real(DP), intent(in) :: dend
-  
+
   ! Number of subintervals
   integer, intent(in) :: nintervals
 !</input>
@@ -272,13 +272,13 @@ contains
     rtimediscr%dtstep = (dend-dstart)/real(nintervals,DP)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_done(rtimediscr)
-  
+
 !<description>
   ! Releases a time discretisation structure
 !</description>
@@ -297,13 +297,13 @@ contains
     rtimediscr%dtheta = 1.0_DP
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_copy(rtimediscr,rtimeDiscrDest)
-  
+
 !<description>
   ! Copies a time discretisation.
 !</description>
@@ -324,7 +324,7 @@ contains
     rtimeDiscrDest = rtimediscr
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<function>
@@ -348,7 +348,7 @@ contains
 !</function>
 
     tdiscr_igetNDofGlob = 0
-    
+
     ! Cancel if the structure is not initialised.
     if (rtimediscr%nintervals .eq. 0) return
 
@@ -364,11 +364,11 @@ contains
 !      return
 
     end select
-    
+
     call output_line ('Unsupported time discretisation.', &
                       OU_CLASS_ERROR,OU_MODE_STD,'tdiscr_igetNDofGlob')
     call sys_halt()
-    
+
   end function
 
   ! ***************************************************************************
@@ -376,7 +376,7 @@ contains
 !<subroutine>
 
   subroutine tdiscr_getTimestep(rtimediscr,iinterval,dtimeend,dtstep,dtimestart)
-  
+
 !<description>
   ! Calculates the timestep size for timestep interval iinterval.
 !</description>
@@ -384,7 +384,7 @@ contains
 !<input>
   ! The time discrtisation structure to be initialised.
   type(t_timeDiscretisation), intent(in) :: rtimediscr
-  
+
   ! Number of the subinterval to compute the length of.
   ! =1..nintervals, where iinterval=1 computes the lst
   ! interval from dtimeInit..dtimeInit+dtstep.
@@ -424,7 +424,7 @@ contains
         dlocalstep = rtimediscr%dtstep
         dlocalstart = rtimediscr%dtimeinit + real(iinterval-1,dp) * dlocalstep
         dlocalend = dlocalstart + dlocalstep
-        
+
       case (TDISCR_FSTHETA)
         ! That is slightly more involving. Step length depends on
         ! which of the three substep we have.
@@ -432,7 +432,7 @@ contains
 
         dtheta1 = 1.0_DP-sqrt(0.5_DP)
         dthetp1 = 1.0_DP-2.0_DP*dtheta1
-        
+
         select case (isubstep)
         case (0)
           dlocalstep = 3.0_DP * rtimediscr%dtstep * dtheta1
@@ -447,7 +447,7 @@ contains
           dlocalstart = rtimediscr%dtimeinit + &
               real(1+(iinterval/3),dp) * 3.0_DP * rtimediscr%dtstep - dlocalstep
         end select
-        
+
         dlocalend = dlocalstart + dlocalstep
       end select
     end if
@@ -460,13 +460,13 @@ contains
         dtstep = dlocalstep
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine tdiscr_getTimestepWeights(rtimediscr,iinterval,dweightold,dweightnew)
-  
+
 !<description>
   ! Calculates the weights in the timestep scheme for the current interval.
   ! iinterval is allowed in the range 0..rtimediscr%nintervals. The weight
@@ -478,10 +478,10 @@ contains
 !<input>
   ! The time discrtisation structure to be initialised.
   type(t_timeDiscretisation), intent(in) :: rtimediscr
-  
+
   ! Whether the timestepping is forward or backward in time.
   logical :: bforward
-  
+
   ! Number of the subintervall to compute the weights for.
   integer, intent(in) :: iinterval
 !</input>
@@ -515,7 +515,7 @@ contains
       ! Constant timestep size
       dweightnew = rtimeDiscr%dtheta
       dweightold = (1-rtimeDiscr%dtheta)
-      
+
       if (iinterval .lt. 1) then
         dweightold = 0.0_DP
         dweightnew = 1.0_DP
@@ -524,7 +524,7 @@ contains
         dweightold = 1.0_DP
         dweightnew = 0.0_DP
       end if
-      
+
     case (TDISCR_FSTHETA)
       ! Fractional step.
       ! That is slightly more involving. Step length depends on
@@ -535,7 +535,7 @@ contains
       dthetp1 = 1.0_DP-2.0_DP*dtheta1
       dalpha  = dthetp1 / (1.0_DP-dtheta1)
       dbeta   = dtheta1 / (1.0_DP-dtheta1)
-      
+
       select case (isubstep)
       case (0,2)
         dweightnew = 3.0_DP * dalpha * dtheta1
@@ -544,11 +544,11 @@ contains
         dweightnew = 3.0_DP * dbeta * dthetp1
         dweightold  = 3.0_DP * dalpha * dthetp1
       end select
-    
+
     end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -559,7 +559,7 @@ contains
   ! Refines a time mesh nreflevel times by subdividing every timestep.
   ! Note that for fractional step, every 3rd timestep is refined!
 !</description>
- 
+
 !<input>
   ! Number of refinement levels
   integer, intent(in) :: nreflevels
@@ -570,7 +570,7 @@ contains
   ! time discretisation.
   type(t_timeDiscretisation), intent(inout) :: rtimediscr
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Cancel if there is no refinement.
@@ -588,9 +588,9 @@ contains
       ! Fractional step. Get the number of macro-timesteps, refine and insert
       ! the substeps again.
       rtimediscr%nintervals = ((rtimediscr%nintervals/3) * 2**nreflevels) * 3
-      
+
     end select
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -598,7 +598,7 @@ contains
 !<subroutine>
 
   subroutine tdiscr_infoStatistics (rtimediscr,bheadline,ilevel)
-  
+
 !<description>
   ! Prints out statistical information of the given triangulation to the
   ! terminal. The output is formatted as a table with an optional headline
@@ -608,12 +608,12 @@ contains
 !<input>
   ! Time discretisation structure.
   type(t_timeDiscretisation), intent(in) :: rtimediscr
-  
+
   ! OPTIONAL: Print out a headline above the statistical data.
   ! =FALSE: do not print = standard.
   ! =TRUE: print a headline.
   logical, intent(in), optional :: bheadline
-  
+
   ! OPTIONAL: Level identifier.
   ! If specified, an additional column 'Level' is added to the front of
   ! the statistics table. ilevel is printed to this column.
@@ -642,7 +642,7 @@ contains
       ! Print out the statistics
       if (present(ilevel)) &
         call output_line (trim(sys_si(ilevel,3))//' ',bnolinebreak=.true.)
-      
+
       call output_line (&
           trim(sys_si(rtimediscr%ctype,5)) &
         //trim(sys_si(rtimediscr%nintervals,11)) &

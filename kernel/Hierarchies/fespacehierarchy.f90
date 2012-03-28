@@ -77,13 +77,13 @@ module fespacehierarchy
   use spatialdiscretisation
   use collection
   use dofmapping
-  
+
   use fespacehierarchybase
-  
+
   implicit none
-  
+
   private
-  
+
   public :: fesph_createFEspace
   public :: fesph_releaseFEspace
   public :: fesph_concatFeSpaces
@@ -94,7 +94,7 @@ module fespacehierarchy
   public :: fesph_deriveFeHierarchy
   public :: fesph_infoStatistics
   public :: fesph_printHierStatistics
-  
+
   interface fesph_createFEspace
     module procedure fesph_createFEspaceTria
     module procedure fesph_createFEspaceDiscr
@@ -103,7 +103,7 @@ module fespacehierarchy
     module procedure fesph_createFEspaceRef
     module procedure fesph_createFEspaceFromFile
   end interface
-    
+
   interface fesph_createHierarchy
     module procedure fesph_createHierarchyTria
     module procedure fesph_createHierarchyDiscr
@@ -129,16 +129,16 @@ contains
   ! the underlying mesh is automatically refined and a suitable
   ! discretisation structure is automatically created.
 !</description>
- 
+
 !<input>
   ! An existing FE hierarchy.
   type(t_feHierarchy), intent(inout) :: rfeHierarchy
-  
+
   ! Refinement level. Level 1 corresponds to the coarse mesh in Rdiscr(1).
   ! A value <= 0 specifies a level relative to the maximum, resulting in
   ! level SIZE(Rdiscr)+ilevel.
   integer, intent(in) :: ilevel
-  
+
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
@@ -153,33 +153,33 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A boundary object that defines the domain.
   type(t_boundary), intent(in), target, optional :: rboundary
-  
+
 !</input>
 
 !<output>
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: iactlevel
-    
+
     iactlevel = ilevel
     if (ilevel .le. 0) iactlevel = rfeHierarchy%nlevels-ilevel
-    
+
     if (iactlevel .lt. 1) then
       call output_line ('Refinement level < 1.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceHier')
       call sys_halt()
     end if
-  
+
     ! Is the level in the hierarchy?
     if (iactlevel .le. rfeHierarchy%nlevels) then
       ! Take the existing hierarchy and remember that we are a copy.
@@ -201,7 +201,7 @@ contains
 
   subroutine fesph_createFEspaceMeshH (rfeSpace,ilevel,rmeshHierarchy,&
       fgetDiscr,rcollection,rboundary)
-  
+
 !<description>
   ! Creates a FE space based on a mesh hierarchy.
   ! ilevel describes the refinement level of the underlying mesh.
@@ -214,7 +214,7 @@ contains
 !<input>
   ! A mesh hierarchy
   type(t_meshHierarchy), intent(in) :: rmeshHierarchy
-  
+
   ! Refinement level. Level 1 corresponds to the coarse mesh in rmeshHierarchy.
   ! A value <= 0 specifies a level relative to the maximum, resulting in
   ! level t_meshHierarchy%nlevels+ilevel.
@@ -246,20 +246,20 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: iactlevel
-    
+
     iactlevel = ilevel
     if (ilevel .le. 0) iactlevel = rmeshHierarchy%nlevels-ilevel
-  
+
     if (iactlevel .lt. 1) then
       call output_line ('Refinement level < 1.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceMeshH')
       call sys_halt()
     end if
-  
+
     if (iactlevel .le. rmeshHierarchy%nlevels) then
       ! If we are in the range of Rdiscr, simply take the existing discretisation
       ! Remember discretisation and trriangulation.
@@ -270,10 +270,10 @@ contains
       ! This information is released later on together with the structure.
       rfeSpace%cflags = 0
       allocate(rfeSpace%p_rtriangulation)
-      
+
       call tria_duplicate (rmeshHierarchy%p_rfineMesh, &
           rfeSpace%p_rtriangulation,TR_SHARE_ALL,.false.)
-      
+
       call tria_quickRefine2LevelOrdering(iactlevel-rmeshHierarchy%nlevels,&
           rfeSpace%p_rtriangulation,rboundary)
       call tria_initStandardMeshFromRaw(rfeSpace%p_rtriangulation, rboundary)
@@ -295,7 +295,7 @@ contains
 
   subroutine fesph_createFEspaceTria (rfeSpace,ilevelTri,&
       rtriangulation,ilevel,fgetDiscr,rcollection,rboundary)
-  
+
 !<description>
   ! Creates a FE space based on a triangulation.
   ! rtriangulation is a given triangulation corresponding to level ilevelTri.
@@ -309,14 +309,14 @@ contains
 !<input>
   ! A basic triangulation corresponding to level ilevelTri.
   type(t_triangulation), intent(in), target :: rtriangulation
-  
+
   ! Refinement level. Must be >= ilevelTri.
   ! If ilevel > ilevelTri, the mesh is automatically refined up to this level.
   integer, intent(in) :: ilevel
 
   ! A level identifier that specifies the refinement level of rtriangulation.
   integer, intent(in) :: ilevelTri
-  
+
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
@@ -343,15 +343,15 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     if (ilevel .lt. ilevelTri) then
       call output_line ('Refinement level < level of the triangulation.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceTria')
       call sys_halt()
     end if
-  
+
     if (ilevel .eq. ilevelTri) then
       ! If the level corresponds to the existing triangulation, use it.
       rfeSpace%cflags = FESPH_SHAREDTRIA
@@ -361,10 +361,10 @@ contains
       ! This information is released later on together with the structure.
       rfeSpace%cflags = 0
       allocate(rfeSpace%p_rtriangulation)
-      
+
       call tria_duplicate (rtriangulation, &
           rfeSpace%p_rtriangulation,TR_SHARE_ALL,.false.)
-      
+
       call tria_quickRefine2LevelOrdering(ilevel-ilevelTri,&
           rfeSpace%p_rtriangulation,rboundary)
       call tria_initStandardMeshFromRaw(rfeSpace%p_rtriangulation, rboundary)
@@ -387,7 +387,7 @@ contains
 
   subroutine fesph_createFEspaceDiscr (rfeSpace,ilevel,&
       rdiscretisation,ilevelDiscr,fgetDiscr,rcollection)
-  
+
 !<description>
   ! Creates a FE space based on a discretisation.
   ! rtriangulation is a given triangulation corresponding to level ilevelTri.
@@ -401,10 +401,10 @@ contains
 !<input>
   ! A basic discretisation corresponding to level ilevelDiscr.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisation
-  
+
   ! A level identifier that specifies the refinement level of rdiscretisation.
   integer, intent(in) :: ilevelDiscr
-  
+
   ! Refinement level. Must be >= ilevelDiscr.
   ! If ilevel > ilevelDiscr, the mesh is automatically refined up to this level.
   integer, intent(in) :: ilevel
@@ -432,17 +432,17 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     if (ilevel .lt. ilevelDiscr) then
       call output_line ('Refinement level < level of the triangulation.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceTria')
       call sys_halt()
     end if
-  
+
     rfeSpace%p_rboundary => rdiscretisation%p_rboundary
-    
+
     if (ilevel .eq. ilevelDiscr) then
       ! If the level corresponds to the existing triangulation, use it.
       rfeSpace%cflags = FESPH_SHAREDTRIA+FESPH_SHAREDDISCR
@@ -453,10 +453,10 @@ contains
       ! This information is released later on together with the structure.
       rfeSpace%cflags = 0
       allocate(rfeSpace%p_rtriangulation)
-      
+
       call tria_duplicate (rdiscretisation%p_rtriangulation, &
           rfeSpace%p_rtriangulation,TR_SHARE_ALL,.false.)
-      
+
       call tria_quickRefine2LevelOrdering(ilevel-ilevelDiscr,&
           rfeSpace%p_rtriangulation,rdiscretisation%p_rboundary)
       call tria_initStandardMeshFromRaw(rfeSpace%p_rtriangulation, &
@@ -481,7 +481,7 @@ contains
 
   subroutine fesph_createFEspaceRef (rfeSpace,ilevel,rfeSpaceTemplate,&
       ilevelTemplate,fgetDiscr,rcollection)
-  
+
 !<description>
   ! Creates a FE space by refinment of an existing FE space.
   ! rfeSpaceTemplate is a template FE space which is refined up to level ilevel,
@@ -525,9 +525,9 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     if (ilevel .lt. ilevelTemplate) then
       call output_line ('Refinement level < 1.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceRef')
@@ -535,7 +535,7 @@ contains
     end if
 
     rfeSpace%p_rboundary => rfeSpaceTemplate%p_rboundary
-    
+
     if (ilevel .eq. ilevelTemplate) then
       ! If the level corresponds to the existing one, use it.
       rfeSpace%cflags = FESPH_SHAREDDISCR+FESPH_SHAREDTRIA
@@ -547,10 +547,10 @@ contains
       rfeSpace%cflags = 0
       allocate(rfeSpace%p_rtriangulation)
       allocate(rfeSpace%p_rdiscretisation)
-      
+
       call tria_duplicate (rfeSpaceTemplate%p_rtriangulation, &
           rfeSpace%p_rtriangulation,TR_SHARE_ALL,.false.)
-      
+
       if (associated(rfeSpace%p_rboundary)) then
         call tria_quickRefine2LevelOrdering(ilevel-ilevelTemplate,&
             rfeSpace%p_rtriangulation,rfeSpace%p_rboundary)
@@ -583,14 +583,14 @@ contains
   ! ilevel describes the refinement level of the underlying mesh.
   ! sTRIFile is the name of the mesh the discretisation type.
 !</description>
-  
+
 !<input>
   ! Name/path of a triangulation file that specifies the coarse mesh.
   character(len=*), intent(in) :: sTRIFile
-  
+
   ! Dimension of the triangulation. NDIM2D for 2D, NDIM3D for 3D.
   integer, intent(in) :: ndim
-  
+
   ! Refinement level. Level 1 corresponds to the coarse mesh specified by sTRIFile.
   ! Mus be >= 1.
   integer, intent(in) :: ilevel
@@ -609,7 +609,7 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -621,9 +621,9 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     if (ilevel .lt. 1) then
       call output_line ('Refinement level < 1.', &
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceFromFile')
@@ -634,11 +634,11 @@ contains
     rfeSpace%cflags = 0
     allocate(rfeSpace%p_rtriangulation)
     allocate(rfeSpace%p_rdiscretisation)
-    
+
     if (present(rboundary)) then
       rfeSpace%p_rboundary => rboundary
     end if
-    
+
     select case (ndim)
     case (NDIM2D)
       call tria_readTriFile2D (rfeSpace%p_rtriangulation, sTRIFile, rboundary)
@@ -647,10 +647,10 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'fesph_createFEspaceFromFile')
       call sys_halt()
     end select
-    
+
     call tria_quickRefine2LevelOrdering(ilevel-1,rfeSpace%p_rtriangulation,rboundary)
     call tria_initStandardMeshFromRaw(rfeSpace%p_rtriangulation, rboundary)
-    
+
     call fgetDiscr(rfeSpace%p_rtriangulation,&
         rfeSpace%p_rdiscretisation,rboundary,rcollection)
   end subroutine
@@ -660,7 +660,7 @@ contains
 !<subroutine>
 
   subroutine fesph_concatFeSpaces (rfeSpace1,rfeSpace2,rfeSpace,rtriangulation)
-  
+
 !<description>
   ! Concatenates two FE space to a common FE space (cross product).
 !</description>
@@ -681,21 +681,21 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpace
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Copy the main data from the first space
     rfeSpace = rfeSpace1
-    
+
     ! Probably use rtriangulation
     if (present(rtriangulation)) then
       rfeSpace%p_rtriangulation => rtriangulation
     end if
-    
+
     ! Discretisation is new. Triangulation is old -- in any case.
     rfeSpace%cflags = iand(rfeSpace%cflags,not(FESPH_SHAREDDISCR))
     rfeSpace%cflags = ior(rfeSpace%cflags,FESPH_SHAREDTRIA)
-    
+
     ! Create a new discretisation
     allocate(rfeSpace%p_rdiscretisation)
     call spdiscr_concatBlockDiscr(&
@@ -710,7 +710,7 @@ contains
 
   subroutine fesph_deriveFeSpaces (rfeSpaceSource,rfeSpaceDest,ifirstBlock,ilastBlock,&
       rtriangulation)
-  
+
 !<description>
   ! Creates an FE space as a subset of another FE space.
 !</description>
@@ -726,7 +726,7 @@ contains
   ! Number of the last block in rfeSpaceSource that should be
   ! used as last block in rfeSpaceDest.
   integer, intent(in) :: ilastBlock
-  
+
   ! OPTIONAL: Reference to the triangulation to use.
   ! If not specified, the triangulation in rfeSpaceSource is used.
   type(t_triangulation), intent(in), target, optional :: rtriangulation
@@ -736,21 +736,21 @@ contains
   ! A new FE space structure.
   type(t_feSpaceLevel), intent(out) :: rfeSpaceDest
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Copy the main data from the first space
     rfeSpaceDest = rfeSpaceSource
-    
+
     ! Probably use rtriangulation
     if (present(rtriangulation)) then
       rfeSpaceDest%p_rtriangulation => rtriangulation
     end if
-    
+
     ! Discretisation is new. Triangulation is old -- in any case.
     rfeSpaceDest%cflags = iand(rfeSpaceDest%cflags,not(FESPH_SHAREDDISCR))
     rfeSpaceDest%cflags = ior(rfeSpaceDest%cflags,FESPH_SHAREDTRIA)
-    
+
     ! Create a new discretisation
     allocate(rfeSpaceDest%p_rdiscretisation)
     call spdiscr_deriveBlockDiscr(rfeSpaceSource%p_rdiscretisation,&
@@ -772,9 +772,9 @@ contains
   ! The FE space structure to be released.
   type(t_feSpaceLevel), intent(inout) :: rfeSpace
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! Release all information
     if (iand(rfeSpace%cflags,FESPH_SHAREDDISCR) .eq. 0) then
       call spdiscr_releaseBlockDiscr (rfeSpace%p_rdiscretisation)
@@ -789,9 +789,9 @@ contains
     else
       nullify(rfeSpace%p_rtriangulation)
     end if
-    
+
     nullify(rfeSpace%p_rboundary)
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -808,7 +808,7 @@ contains
 !<input>
   ! A triangulation structure that defines the coarse mesh.
   type(t_triangulation), intent(in), target :: rtriangulation
-  
+
   ! Number of refinement levels.
   integer, intent(in) :: nlevels
 
@@ -826,13 +826,13 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A boundary object that defines the domain.
   type(t_boundary), intent(in), target, optional :: rboundary
-  
+
   ! OPTIONAL: Maximum number of levels, the structure should support.
   integer, intent(in), optional :: nmaxLevels
 !</input>
@@ -841,13 +841,13 @@ contains
   ! The FE space hierarch structure to create
   type(t_feHierarchy), intent(out) :: rfeHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     if (nlevels .le. 0) return
-    
+
     ! Initialise the structure
     rfeHierarchy%cflags = 0
     rfeHierarchy%nlevels = nlevels
@@ -860,22 +860,22 @@ contains
       rfeHierarchy%p_rboundary => rboundary
     end if
     allocate(rfeHierarchy%p_rfeSpaces(rfeHierarchy%nmaxLevels))
-    
+
     ! Initialise a mesh hierarchy corresponding to the FE hierarchy
     ! we are creating here.
     call mshh_initHierarchy(rfeHierarchy%rmeshHierarchy,&
         rtriangulation,0,rfeHierarchy%nmaxLevels,rboundary,TR_SHARE_ALL)
-        
+
     ! Refine to get all spatial meshes.
     call mshh_refineHierarchy2lv (rfeHierarchy%rmeshHierarchy,nlevels)
-    
+
     ! Initialise all the FE space levels.
     do i=1,nlevels
       call fesph_createFEspace (rfeHierarchy%p_rfeSpaces(i),i,&
           rfeHierarchy%rmeshHierarchy%p_Rtriangulations(i),i,&
           fgetDiscr,rcollection,rboundary)
     end do
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -892,7 +892,7 @@ contains
 !<input>
   ! A discretisation structure that defines the coarse discretisation.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisation
-  
+
   ! Number of refinement levels.
   integer, intent(in) :: nlevels
 
@@ -910,7 +910,7 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -925,13 +925,13 @@ contains
   ! The FE space hierarch structure to create
   type(t_feHierarchy), intent(out) :: rfeHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     if (nlevels .le. 0) return
-    
+
     ! Initialise the structure
     rfeHierarchy%cflags = 0
     rfeHierarchy%nlevels = nlevels
@@ -944,16 +944,16 @@ contains
       rfeHierarchy%p_rboundary => rboundary
     end if
     allocate(rfeHierarchy%p_rfeSpaces(rfeHierarchy%nmaxLevels))
-    
+
     ! Initialise a mesh hierarchy corresponding to the FE hierarchy
     ! we are creating here.
     call mshh_initHierarchy(rfeHierarchy%rmeshHierarchy,&
         rdiscretisation%p_rtriangulation,0,rfeHierarchy%nmaxLevels,&
         rboundary,TR_SHARE_ALL)
-        
+
     ! Refine to get all spatial meshes.
     call mshh_refineHierarchy2lv (rfeHierarchy%rmeshHierarchy,nlevels)
-    
+
     ! Initialise all the FE space levels.
     ! The first level can be a pointer to the existing discretisation.
     call fesph_createFEspaceDiscr (rfeHierarchy%p_rfeSpaces(i),1,&
@@ -963,7 +963,7 @@ contains
           rfeHierarchy%rmeshHierarchy%p_Rtriangulations(i),i,&
           fgetDiscr,rcollection,rboundary)
     end do
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -981,7 +981,7 @@ contains
 !<input>
   ! An underlying mesh hierarchy.
   type(t_meshHierarchy), intent(in) :: rmeshHierarchy
-  
+
   ! Number of refinement levels in the hierarchy. Must be >= 1.
   integer, intent(in) :: nlevels
 
@@ -999,7 +999,7 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -1014,13 +1014,13 @@ contains
   ! The FE space hierarch structure to create
   type(t_feHierarchy), intent(out) :: rfeHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     if (nlevels .le. 0) return
-    
+
     ! Initialise the structure
     rfeHierarchy%cflags = 0
     rfeHierarchy%nlevels = nlevels
@@ -1037,11 +1037,11 @@ contains
     ! Duplicate the mesh hierarchy.
     call mshh_initHierarchy(rmeshHierarchy,rfeHierarchy%rmeshHierarchy,&
         nmaxLevels=rfeHierarchy%nmaxLevels)
-        
+
     ! Refine up to level nlevels.
     call mshh_refineHierarchy2lv (rfeHierarchy%rmeshHierarchy,nlevels,&
         rboundary=rboundary)
-    
+
     ! Initialise all the FE space levels.
     do i=1,nlevels
       call fesph_createFEspace (rfeHierarchy%p_rfeSpaces(i),i,&
@@ -1066,7 +1066,7 @@ contains
 !<input>
   ! A source FE hierarchy.
   type(t_feHierarchy), intent(in) :: rfeHierarchySource
-  
+
   ! OPTIONAL: The minimum level from rmeshHierarchySource that should be
   ! used as coarse mesh in rmeshHierarchyDest.
   ! If not specified, this defaults to 1.
@@ -1081,7 +1081,7 @@ contains
   ! If not specified, this defaults to the number of meshes to copy from
   ! rmeshHierarchySource.
   integer, intent(in), optional :: nmaxLevels
-  
+
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
@@ -1096,7 +1096,7 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 !</input>
@@ -1105,20 +1105,20 @@ contains
   ! The FE space hierarch structure to create
   type(t_feHierarchy), intent(out) :: rfeHierarchyDest
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: i
     integer :: ntotalLevels,nmin,nmax
-    
+
     nmin = 1
     if (present(nminLevel)) nmin = max(nmin,nminLevel)
     nmin = min(nmin,rfeHierarchySource%nlevels)
-    
+
     nmax = rfeHierarchySource%nlevels
     if (present(nmaxLevel)) nmax = min(nmax,nmaxLevel)
     nmax = max(nmax,1)
-    
+
     ! How much levels should we allocate?
     ntotalLevels = max(1,nmax-nmin+1)
     if (present(nmaxLevels)) ntotalLevels = max(nmaxLevels,ntotalLevels)
@@ -1129,16 +1129,16 @@ contains
     rfeHierarchyDest%nlevels = nmax-nmin+1
     rfeHierarchyDest%p_rboundary => rfeHierarchySource%p_rboundary
     allocate(rfeHierarchyDest%p_rfeSpaces(rfeHierarchyDest%nmaxLevels))
-    
+
     ! Copy data of the levels
     do i=1,rfeHierarchyDest%nlevels
-    
+
       call fesph_createFEspaceRef (rfeHierarchyDest%p_rfeSpaces(i),i,&
           rfeHierarchySource%p_rfeSpaces(nmax-(rfeHierarchyDest%nlevels-i)),i,&
           fgetDiscr,rcollection)
 
     end do
-        
+
   end subroutine
 
   ! ***************************************************************************
@@ -1155,7 +1155,7 @@ contains
 !<input>
   ! Number of refinement levels.
   integer, intent(in) :: nlevels
-  
+
   ! Name/path of a triangulation file that specifies the coarse mesh.
   character(len=*), intent(in) :: sTRIFile
 
@@ -1176,7 +1176,7 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  
+
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -1194,13 +1194,13 @@ contains
   ! The FE space hierarch structure to create
   type(t_feHierarchy), intent(out) :: rfeHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     if (nlevels .le. 0) return
-    
+
     ! Initialise the structure
     rfeHierarchy%nlevels = nlevels
     allocate(rfeHierarchy%p_rfeSpaces(nlevels))
@@ -1208,11 +1208,11 @@ contains
     ! Initialise the mesh hierarchy.
     call mshh_initHierarchy(rfeHierarchy%rmeshHierarchy,nmaxLevels,sTRIfile,ndim,&
       npreref,rboundary)
-        
+
     ! Refine up to level nlevels.
     call mshh_refineHierarchy2lv (rfeHierarchy%rmeshHierarchy,nlevels,&
         rboundary=rboundary)
-    
+
     ! Initialise all the FE space levels.
     do i=1,nlevels
       call fesph_createFEspace (rfeHierarchy%p_rfeSpaces(i),i,&
@@ -1236,26 +1236,26 @@ contains
   ! The FE space hierarch structure to release.
   type(t_feHierarchy), intent(inout) :: rfeHierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     ! Release all levels
     do i=rfeHierarchy%nlevels,1,-1
       call fesph_releaseFEspace (rfeHierarchy%p_rfeSpaces(i))
     end do
-    
+
     ! Clean up the rest
     deallocate (rfeHierarchy%p_rfeSpaces)
-    
+
     ! Release the mesh hierarchy if initialised.
     call mshh_releaseHierarchy(rfeHierarchy%rmeshHierarchy)
-    
+
     rfeHierarchy%nlevels = 0
     rfeHierarchy%nmaxLevels = 0
     rfeHierarchy%cflags = 0
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -1263,7 +1263,7 @@ contains
 !<subroutine>
 
   subroutine fesph_concatFeHierarchies (rfeHier1,rfeHier2,rfeHier)
-  
+
 !<description>
   ! Concatenates two FE hierarchies to a common FE hierarchy (cross product
   ! on every level).
@@ -1281,25 +1281,25 @@ contains
   ! A new FE hierarchy structure.
   type(t_feHierarchy), intent(out) :: rfeHier
 !</output>
-  
+
 !</subroutine>
 
     integer :: i
 
     ! As a basis, copy the first hierarchy
     rfeHier = rfeHier1
-    
+
     ! The mesh hierarchy must be copied.
     call mshh_initHierarchy (rfeHier1%rmeshHierarchy,rfeHier%rmeshHierarchy)
 
     ! Allocate new memory for the levels and create them
     allocate(rfeHier%p_rfeSpaces(rfeHier%nlevels))
-    
+
     do i=1,rfeHier%nlevels
       call fesph_concatFeSpaces (rfeHier1%p_rfeSpaces(i),rfeHier2%p_rfeSpaces(i),&
           rfeHier%p_rfeSpaces(i),rfeHier2%rmeshHierarchy%p_Rtriangulations(i))
     end do
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -1307,7 +1307,7 @@ contains
 !<subroutine>
 
   subroutine fesph_deriveFeHierarchy (rfeHierSource,rfeHierDest,ifirstBlock,ilastBlock)
-  
+
 !<description>
   ! Creates an FE hierarchy as a subset of another FE hierarchy.
 !</description>
@@ -1329,7 +1329,7 @@ contains
   ! A new FE space structure.
   type(t_feHierarchy), intent(out) :: rfeHierDest
 !</output>
-  
+
 !</subroutine>
 
     integer :: i
@@ -1342,12 +1342,12 @@ contains
 
     ! Allocate new memory for the levels and create them
     allocate(rfeHierDest%p_rfeSpaces(rfeHierDest%nlevels))
-    
+
     do i=1,rfeHierDest%nlevels
       call fesph_deriveFeSpaces (rfeHierSource%p_rfeSpaces(i),rfeHierDest%p_rfeSpaces(i),&
           ifirstBlock,ilastBlock,rfeHierDest%rmeshHierarchy%p_Rtriangulations(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1355,7 +1355,7 @@ contains
 !<subroutine>
 
   subroutine fesph_infoStatistics (rfeSpaceLevel,bheadline,ilevel)
-  
+
 !<description>
   ! Prints out statistical information of the given FE space to the
   ! terminal. The output is formatted as a table with an optional headline
@@ -1365,12 +1365,12 @@ contains
 !<input>
   ! Triangulation structure.
   type(t_feSpaceLevel), intent(in) :: rfeSpaceLevel
-  
+
   ! OPTIONAL: Print out a headline above the statistical data.
   ! =FALSE: do not print = standard.
   ! =TRUE: print a headline.
   logical, intent(in), optional :: bheadline
-  
+
   ! OPTIONAL: Level identifier.
   ! If specified, an additional column 'Level' is added to the front of
   ! the statistics table. ilevel is printed to this column.
@@ -1399,7 +1399,7 @@ contains
       end do
       call output_line("------------",cdateTimeLogPolicy=OU_DTP_NONE)
     end if
-    
+
     ! Print statistics about that level
     if (present(ilevel)) then
       call output_line (trim(sys_si(ilevel,3)),bnoLineBreak=.true.)
@@ -1432,15 +1432,15 @@ contains
   ! FE hierarchy
   type(t_feHierarchy), intent(in) :: rhierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
-  
+
     do i=1,rhierarchy%nlevels
       call fesph_infoStatistics (rhierarchy%p_rfeSpaces(i),(i .eq. 1),i)
     end do
-    
+
   end subroutine
 
 end module

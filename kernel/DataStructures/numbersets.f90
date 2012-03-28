@@ -57,9 +57,9 @@ module numbersets
   use fsystem
   use genoutput
   use storage
-  
+
   implicit none
-  
+
   private
 
 !<types>
@@ -68,33 +68,33 @@ module numbersets
 
   ! A direct access set that allows to directly access a set of integer numbers.
   type t_directAccessIntSet
-  
+
     ! A handle identifying the memory of the set.
     integer :: ihandle
-    
+
     ! Specifies whether the memory should automatically be deallocated.
     logical :: bautodealloc
-    
+
     ! Maximum number of elements in the set.
     integer :: nmaxEntries
-    
+
     ! Number of integers in the data array.
     integer :: nintegers
-    
+
     ! Number of bits in an integer
     integer :: ibitsPerInteger
-    
+
     ! Shift divisor to calculate the integer number from a position.
     integer :: ishiftDivisor
-    
+
     ! Bitmask to calculate the bit position from a position
     integer :: ibitmask
-    
+
     ! A pointer to the set data
     integer, dimension(:), pointer :: p_Idata
-    
+
   end type
-  
+
 !</typeblock>
 
   public :: t_directAccessIntSet
@@ -126,7 +126,7 @@ contains
 !<input>
   ! Maximum number of elements in the set.
   integer, intent(in) :: nelements
-  
+
   ! OPTIONAL: A handle to an integer array, large enough to hold the set.
   ! If not present, a new memory block is automatically allocated.
   ! If present, the memory block is assumed to belong to the caller and
@@ -143,7 +143,7 @@ contains
 
     integer, parameter :: i = 0
     integer :: j
-    
+
     ! Calculate the divisors for a quick access to the array.
     rset%ishiftDivisor = 1
     rset%ibitsPerInteger = bit_size(i)
@@ -155,7 +155,7 @@ contains
     rset%ibitmask = ishft(1,rset%ishiftDivisor)-1
     rset%ishiftDivisor = -rset%ishiftDivisor
     rset%nintegers = (nelements+rset%ibitsPerInteger-1)/rset%ibitsPerInteger
-    
+
     if (.not. present(ihandle)) then
       ! Allocate as much memory as necessary. Fill it with 0.
       call storage_new ('sets_initDASet', 'set', rset%nintegers,&
@@ -169,18 +169,18 @@ contains
                           OU_CLASS_ERROR,OU_MODE_STD,'nsets_initDASet')
         call sys_halt()
       end if
-      
+
       ! We use that memory block
       rset%bautodealloc = .true.
       rset%ihandle = ihandle
       call storage_clear (ihandle)
     end if
-    
+
     call storage_getbase_int(rset%ihandle,rset%p_Idata)
     rset%nmaxEntries = nelements
-  
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -197,16 +197,16 @@ contains
 !</subroutine>
 
     nullify(rset%p_Idata)
-    
+
     ! Only deallocate if this array belongs to the structure.
     if (rset%bautodealloc) then
       call storage_free (rset%ihandle)
     end if
 
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
   subroutine nsets_addToDASet (rset,ielement)
 !<description>
@@ -229,9 +229,9 @@ contains
     rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
         ibset(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
             iand(ielement-1,rset%ibitmask))
-  
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -250,13 +250,13 @@ contains
   integer, intent(in) :: ielement
 !</input>
 !</subroutine>
-  
+
     rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
         ibclr(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
             iand(ielement-1,rset%ibitmask))
-  
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<function>
@@ -284,7 +284,7 @@ contains
     nsets_DASetContains = ibits(&
         rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
         iand(ielement-1,rset%ibitmask),1)
-  
+
   end function
 
   !****************************************************************************
@@ -303,7 +303,7 @@ contains
 !</subroutine>
 
     call storage_clear(rset%ihandle)
-  
+
   end subroutine
 
   !****************************************************************************
@@ -323,13 +323,13 @@ contains
 !</subroutine>
 
     integer :: i
-    
+
     do i=1,size(rset%p_Idata)
       rset%p_Idata(i) = not(rset%p_Idata(i))
     end do
-  
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -346,11 +346,11 @@ contains
 !</subroutine>
 
     integer :: i
-    
+
     do i=1,size(rset%p_Idata)
       rset%p_Idata(i) = not(0)
     end do
-  
+
   end subroutine
 
   !****************************************************************************
@@ -374,47 +374,47 @@ contains
     integer :: i,j,k,ncount
 
     if (rset%nmaxEntries .eq. rset%ibitsPerInteger*rset%nintegers) then
-    
+
       ! Loop through all integers
       ncount = 0
       do i = 1,rset%nintegers
         ! Get the integer
         j = rset%p_Idata(i)
-        
+
         ! Shift it and count every one.
         do k=1,rset%ibitsPerInteger
           ncount = ncount + iand(j,1)
           j = ishft(j,-1)
         end do
       end do
-      
+
     else
-    
+
       ! Loop through all integers except the last one.
       ncount = 0
       do i = 1,rset%nintegers-1
         ! Get the integer
         j = rset%p_Idata(i)
-        
+
         ! Shift it and count every one.
         do k=1,rset%ibitsPerInteger
           ncount = ncount + iand(j,1)
           j = ishft(j,-1)
         end do
       end do
-      
+
       ! Get the last integer
       j = rset%p_Idata(i)
-      
+
       ! Shift it and count every one.
       do k=1,iand(rset%nmaxEntries,rset%ibitmask)
         ncount = ncount + iand(j,1)
         j = ishft(j,-1)
       end do
     end if
-    
+
     nsets_nelementsInSet = ncount
-  
+
   end function
 
   !****************************************************************************
@@ -434,7 +434,7 @@ contains
   ! An array receiving the elements in the set.
   ! The array must be large enough to hold all elements.
   integer, dimension(:), intent(out) :: Ilist
-  
+
   ! OPTIONAL: Returns the number of elements in the list.
   integer, intent(out), optional :: nelementsInList
 !</output>
@@ -448,14 +448,14 @@ contains
     integer :: i,j,k,ncount,iidx
 
     if (rset%nmaxEntries .eq. rset%ibitsPerInteger*rset%nintegers) then
-    
+
       ! Loop through all integers
       iidx = 0
       ncount = 0
       do i = 1,rset%nintegers
         ! Get the integer
         j = rset%p_Idata(i)
-        
+
         ! Get every element from the bitfield.
         do k=0,rset%ibitsPerInteger-1
           iidx = iidx + 1
@@ -465,16 +465,16 @@ contains
           end if
         end do
       end do
-      
+
     else
-    
+
       ! Loop through all integers except the last one.
       ncount = 0
       iidx = 0
       do i = 1,rset%nintegers-1
         ! Get the integer
         j = rset%p_Idata(i)
-        
+
         ! Get every element from the bitfield.
         do k=0,rset%ibitsPerInteger-1
           iidx = iidx + 1
@@ -484,10 +484,10 @@ contains
           end if
         end do
       end do
-      
+
       ! Get the last integer
       j = rset%p_Idata(i)
-      
+
       ! Shift it and get the elements.
       do k=0,iand(rset%nmaxEntries,rset%ibitmask)-1
         iidx = iidx + 1
@@ -497,10 +497,10 @@ contains
         end if
       end do
     end if
-    
+
     if (present(nelementsInList)) &
       nelementsInList = ncount
-    
+
   end subroutine
 
   !****************************************************************************
@@ -514,7 +514,7 @@ contains
 !<input>
   ! An array with elements for the set.
   integer, dimension(:), intent(in) :: Ilist
-  
+
   ! OPTIONAL: Length of the list Ilist.
   integer, intent(in), optional :: nelementsInList
 !</input>
@@ -531,10 +531,10 @@ contains
 !</subroutine>
 
     integer :: i,j,ielement
-    
+
     j = size(Ilist)
     if (present(nelementsInList)) j = nelementsInList
-    
+
     ! Loop through the elements and put them into the set.
     do i = 1,j
       ielement = Ilist(i)

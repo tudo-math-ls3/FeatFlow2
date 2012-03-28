@@ -25,7 +25,7 @@ module perfconfig
 !$use omp_lib
   use fsystem
   use paramlist
-  
+
   implicit none
 
   private
@@ -104,7 +104,7 @@ contains
     type(t_perfconfig), intent(out) :: rperfconfig
 !</output>
 !</subroutine>
-    
+
     rperfconfig%NEQSIM    = 32
     rperfconfig%NASIM     = 32
     rperfconfig%NEDGESIM  = 32
@@ -119,7 +119,7 @@ contains
     !$ rperfconfig%NELEMMIN_OMP  = 1000
     !$ rperfconfig%NPATCHMIN_OMP = 1000
     !$ rperfconfig%NITEMMIN_OMP  = 1000
-    
+
   end subroutine pcfg_initPerfConfig
 
   !****************************************************************************
@@ -174,7 +174,7 @@ contains
     !$    "NPATCHMIN_OMP", rperfconfig%NPATCHMIN_OMP, rperfconfig%NPATCHMIN_OMP)
     !$ call parlst_getvalue_int(rparlist, ssectionName,&
     !$    "NITEMMIN_OMP", rperfconfig%NITEMMIN_OMP, rperfconfig%NITEMMIN_OMP)
-    
+
   end subroutine pcfg_initFromParameterlist
 
   !****************************************************************************
@@ -207,7 +207,7 @@ contains
     ! Read parameterlist from file
     call parlst_init(rparlist)
     call parlst_readfromfile(rparlist, sfilename)
-    
+
     ! Initialise performance configuration
     call pcfg_initFromParameterList(rparlist, ssectionName, rperfconfig)
 

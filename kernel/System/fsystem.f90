@@ -194,7 +194,7 @@ module fsystem
   public :: t_intPointer
   public :: t_int2DPointer
   public :: t_sysconfig
-  
+
 !<constants>
 
 !<constantblock description="constants for logical values">
@@ -206,7 +206,7 @@ module fsystem
   integer, parameter, public :: NO = 1
 
 !</constantblock>
- 
+
 !<constantblock description="Kind values for floats">
 
   ! kind value for 32 bit float (single precision)
@@ -222,7 +222,7 @@ module fsystem
   ! set QP equal to DP to avoid compiler problems
   integer, parameter, public :: QP = DP
 #endif
-  
+
   ! Note: Depending on the platform and the compiler, QP is either an 80
   ! or an 128 bit float. The g95 and gfortran compilers use 80 floats
   ! for QP, while the ifc compiler uses 128 bit floats.
@@ -283,7 +283,7 @@ module fsystem
 
   ! mathematical constant Pi
   real(DP), public :: SYS_PI
-  
+
   ! internal constant for infinity
   real(SP), parameter, public :: SYS_INFINITY_SP = huge(1.0_SP)
   real(DP), parameter, public :: SYS_INFINITY_DP = huge(1.0_DP)
@@ -299,7 +299,7 @@ module fsystem
   integer, parameter, public :: SYS_REPLACE = 1
 
 !</constantblock>
-  
+
 !<constantblock description="system signals">
 
   integer, parameter, public :: SIGILL  =  4
@@ -309,7 +309,7 @@ module fsystem
   integer, parameter, public :: SIGFPE  =  8
   integer, parameter, public :: SIGBUS  = 10
   integer, parameter, public :: SIGSEGV = 11
-  
+
 !</constantblock>
 
 !<constantblock description="Constants for the sys_haltmode variable">
@@ -321,7 +321,7 @@ module fsystem
   ! debugging as the compiler will print a stack trace to the terminal
   ! that allows tracing back where an error came from.
   integer, parameter, public :: SYS_HALT_THROWFPE = 1
-  
+
 !</constantblock>
 
 !</constants>
@@ -356,7 +356,7 @@ module fsystem
   end type
 
 !</typeblock>
-  
+
 !<typeblock>
 
   ! Emulation of an array of pointers to 2D single precision vectors
@@ -372,18 +372,18 @@ module fsystem
   type t_intPointer
     integer(I32), dimension(:), pointer :: ptr
   end type
-  
+
 !</typeblock>
-  
+
 !<typeblock>
 
   ! Emulation of an array of pointers to 2D integer vectors
   type t_int2DPointer
     integer(I32), dimension(:,:), pointer :: ptr
   end type
-  
+
 !</typeblock>
-  
+
 !<typeblock>
 
   ! Global project settings and system information
@@ -402,7 +402,7 @@ module fsystem
     ! Format: year / month / day / time-difference to UTC /
     !         hours / minutes / seconds / milliseconds.
     integer, dimension(8)     :: iprojectStartLong = 0
-    
+
   end type
 
 !</typeblock>
@@ -414,7 +414,7 @@ module fsystem
 !<publicvars>
   ! global system configuration
   type (t_sysconfig), target, public, save :: sys_sysconfig
-  
+
   ! Halt mode. This variable defines the way, sys_halt halts the program.
   ! One of the SYS_HALT_xxxx constants.
   integer, public, save :: sys_haltmode = SYS_HALT_STOP
@@ -470,10 +470,10 @@ contains
     integer(I32), dimension(:), intent(inout) :: Idata
 !</inputoutput>
 !</subroutine>
-  
+
     ! local variables
     integer(I32) :: factorial,i,j,iswap
-    
+
     do j=2,size(Idata)
 
       if (j-1 .lt. k) then
@@ -486,7 +486,7 @@ contains
           factorial=factorial*i
         end do
       end if
-      
+
       i = j-mod(factorial,j)
       iswap    = Idata(j)
       Idata(j) = Idata(i)
@@ -499,14 +499,14 @@ contains
 !<subroutine>
 
   subroutine sys_halt()
-  
+
 !<description>
     ! This routine halts the application like the CALL sys_halt() command in
     ! Fortran 90. The routine can be configured how to halt the application.
     ! For this purpose, the main program can set the global variable
     ! sys_haltmode to one of the SYS_HALT_xxxx constants.
 !</description>
-    
+
 !</subroutine>
 
     select case (sys_haltmode)
@@ -523,21 +523,21 @@ contains
 !<subroutine>
 
   pure subroutine sys_throwFPE()
-  
+
 !<description>
     ! This routine throws a floating point exception for debugging
     ! purposes to prevent the debugger to exit the program.
 !</description>
-    
+
 !</subroutine>
-    
+
     ! local variables
     integer :: i1,i2
 
     i1=1
     i2=0
     i1=i1/i2
-    
+
   end subroutine sys_throwFPE
 
 !************************************************************************
@@ -554,7 +554,7 @@ contains
 !</subroutine>
 
     call system_init_ext("","")
-    
+
   end subroutine system_init_simple
 
 !************************************************************************
@@ -575,7 +575,7 @@ contains
 !<input>
     ! An ID string of the project.
     character(LEN=*), intent(in) :: sprojectID
-    
+
     ! The directory of the project. "" means 'current directory'.
     character(LEN=*), intent(in) :: sprojectDir
 !</input>
@@ -603,7 +603,7 @@ contains
 
     ! Set value of Pi = 3.14..
     SYS_PI=asin(1.0_DP)*2.0_DP
-    
+
   end subroutine system_init_ext
 
 !************************************************************************************
@@ -622,13 +622,13 @@ contains
 
     ! high version number
     integer :: ifeatVersionHigh
-    
+
     ! middle version number
     integer :: ifeatVersionMiddle
-    
+
     ! low version number
     integer :: ifeatVersionLow
-    
+
     ! release date
     character(LEN=*) :: sreldate
 
@@ -639,15 +639,15 @@ contains
     ifeatVersionHigh   = 0
     ifeatVersionMiddle = 0
     ifeatVersionLow    = 2
-    
+
     sreldate="01.01.2009 RC0"
-    
+
   end subroutine sys_version
 
 !************************************************************************
 
 !<subroutine>
-  
+
   subroutine sys_toupper_replace (str)
 
 !<description>
@@ -656,32 +656,32 @@ contains
 !</description>
 
 !<inputoutput>
-  
+
     ! The string that is to make uppercase
     character(LEN=*), intent(inout) :: str
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer, parameter :: up2low = iachar("a") - iachar("A")
     integer :: i
     character    :: c
-    
+
     do i=1,len(str)
       c = str(i:i)
       if ((c .ge. "a") .and. (c .le. "z")) then
         str(i:i) = achar (iachar(c) - up2low)
       end if
     end do
-    
+
   end subroutine sys_toupper_replace
 
 !************************************************************************
 
 !<subroutine>
-  
+
   subroutine sys_toupper_copy (str,strUpper)
 
 !<description>
@@ -689,7 +689,7 @@ contains
 !</description>
 
 !<input>
-  
+
     ! The string that is to make uppercase
     character(LEN=*), intent(in) :: str
 
@@ -699,24 +699,24 @@ contains
 
     ! Uppercase version of the given string
     character(LEN=*), intent(out) :: strUpper
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer, parameter :: up2low = iachar("a") - iachar("A")
     integer :: i
     character    :: c
-    
+
     if (len(str) > len(strUpper)) then
       print *, "sys_toupper_copy: target string is too short"
       call sys_halt()
     end if
-    
+
     ! Initialise string
     strUpper = ''
-    
+
     do i=1,len(str)
       c = str(i:i)
       if ((c .ge. "a") .and. (c .le. "z")) then
@@ -725,13 +725,13 @@ contains
         strUpper(i:i) = c
       end if
     end do
-    
+
   end subroutine sys_toupper_copy
 
 !************************************************************************
 
 !<subroutine>
-  
+
   subroutine sys_tolower_replace (str)
 
 !<description>
@@ -740,32 +740,32 @@ contains
 !</description>
 
 !<inputoutput>
-  
+
     ! The string that is to make lowercase
     character(LEN=*), intent(inout) :: str
 
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer, parameter :: up2low = iachar("a") - iachar("A")
     integer :: i
     character    :: c
-    
+
     do i=1,len(str)
       c = str(i:i)
       if ((c .ge. "A") .and. (c .le. "Z")) then
         str(i:i) = achar (iachar(c) + up2low)
       end if
     end do
-    
+
   end subroutine sys_tolower_replace
-  
+
 !************************************************************************
 
 !<subroutine>
-  
+
   subroutine sys_tolower_copy (str,strLower)
 
 !<description>
@@ -773,7 +773,7 @@ contains
 !</description>
 
 !<input>
-  
+
     ! The string that is to make lowercase
     character(LEN=*), intent(in) :: str
 
@@ -783,25 +783,25 @@ contains
 
     ! Lowercase version of the given string
     character(LEN=*), intent(out) :: strLower
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     ! local variables
-    
+
     integer, parameter :: up2low = iachar("a") - iachar("A")
     integer :: i
     character    :: c
-    
+
     if (len(str) > len(strLower)) then
       print *, "sys_tolower_copy: target string is too short"
       call sys_halt()
     end if
-    
+
     ! Initialise string
     strLower = ''
-    
+
     do i=1,len(str)
       c = str(i:i)
       if ((c .ge. "A") .and. (c .le. "Z")) then
@@ -810,15 +810,15 @@ contains
         strLower(i:i) = c
       end if
     end do
-    
+
   end subroutine sys_tolower_copy
-  
+
 !******************************************************************************
 
 !<function>
 
   pure function sys_upcase(sinput) result(soutput)
-  
+
 !<description>
     ! This routine converts a given string to its uppercase version.
 !</description>
@@ -840,7 +840,7 @@ contains
 
     ! index variable
     integer :: i
-    
+
     soutput = " "   ! initialise string
     do I = 1,len(sinput)
       if(sinput(i:i) .ge. "a" .and. sinput(i:i) .le. "z") then
@@ -849,7 +849,7 @@ contains
         soutput(i:i) = sinput(i:i)
       end if
     end do
-    
+
   end function sys_upcase
 
 !******************************************************************************
@@ -857,7 +857,7 @@ contains
 !<function>
 
   pure function sys_lowcase(sinput) result(soutput)
-  
+
 !<description>
     ! This routine converts a given string to its uppercase version.
 !</description>
@@ -879,7 +879,7 @@ contains
 
     ! index variable
     integer :: i
-    
+
     soutput = " "   ! initialise string
     do i = 1,len(sinput)
       if(sinput(i:i) .ge. "A" .and. sinput(i:i) .le. "Z") then
@@ -888,7 +888,7 @@ contains
         soutput(i:i) = sinput(i:i)
       end if
     end do
-    
+
   end function sys_lowcase
 
 !******************************************************************************
@@ -896,7 +896,7 @@ contains
 !<function>
 
   pure function sys_charreplace(sinput,scharsource,schardest) result(soutput)
-  
+
 !<description>
     ! Replaces all characers scharsource in sinput by schardest.
     ! Case sensitive.
@@ -905,10 +905,10 @@ contains
 !<input>
     ! input string
     character(LEN=*), intent(in) :: sinput
-    
+
     ! Character to be searched for.
     character, intent(in) :: scharsource
-    
+
     ! Detinatiion character, all scarsource characters in sinput should be
     ! replaced by.
     character, intent(in) :: schardest
@@ -922,7 +922,7 @@ contains
 
     !index variable
     integer :: i
-    
+
     soutput = " "   !initialise string
     do I = 1,len(sinput)
       if(sinput(i:i) .eq. scharsource) then
@@ -931,7 +931,7 @@ contains
         soutput(i:i) = sinput(i:i)
       end if
     end do
-    
+
   end function sys_charreplace
 
 !************************************************************************
@@ -953,7 +953,7 @@ contains
 
     logical :: bexists, bopened!flags indicating errors
     integer :: itry !free unit candidate
-    
+
     sys_getFreeUnit = -1
     do itry = 20,10000
       !does unit exist?
@@ -972,7 +972,7 @@ contains
     if (sys_getFreeUnit .eq. -1) then
       write (6,*) "*** WARNING! No free unit between 1 and 10000 found! ***"
     endif
-    
+
   end function sys_getFreeUnit
 
 
@@ -988,13 +988,13 @@ contains
 !</description>
 
 !<input>
-    
+
     !unit the file shall be attached to
     integer :: iunit
-    
+
     !name of the file to look at
     character (len=*):: sname
-    
+
 !</input>
 
 !<result>
@@ -1004,7 +1004,7 @@ contains
 !</function>
 
     integer :: iostat !status variable for opening procedure
-    
+
     open(iunit,FILE=sname,IOSTAT=iostat,STATUS='OLD',ACTION='READ')
     sys_fileExists=(iostat .eq. 0)
     close(iunit)
@@ -1016,7 +1016,7 @@ contains
 
 !<subroutine>
   subroutine sys_flush(iunit)
-    
+
 !<description>
     ! This routine flushes the buffers associated with an open output unit.
     ! This normally happens when the file is closed or the program ends,
@@ -1064,7 +1064,7 @@ contains
     real(DP) :: dvalue
 !</result>
 !</function>
-    
+
     ! local variables
     character(LEN=len(svalue)+3) :: svalueTemp
     integer :: ipos
@@ -1081,7 +1081,7 @@ contains
       if (ipos .eq. 0) then
         ! Append '.E0' to convert string into scientific notation
         svalueTemp = trim(svalue)//'.E0'
-       
+
       elseif (ipos .eq. 1) then
         ! Prepend '1.' to convert string into scientific notation
         svalueTemp = '1.'//adjustl(svalue)
@@ -1093,7 +1093,7 @@ contains
       ! Read modified string
       read(svalueTemp,sformat) dvalue
     end if
-    
+
   end function sys_str2Double
 
 !************************************************************************
@@ -1122,7 +1122,7 @@ contains
     real(SP) :: fvalue
 !</result>
 !</function>
-    
+
     ! local variables
     character(LEN=len(svalue)+3) :: svalueTemp
     integer :: ipos
@@ -1139,7 +1139,7 @@ contains
       if (ipos .eq. 0) then
         ! Append '.E0' to convert string into scientific notation
         svalueTemp = trim(svalue)//'.E0'
-       
+
       elseif (ipos .eq. 1) then
         ! Prepend '1.' to convert string into scientific notation
         svalueTemp = '1.'//adjustl(svalue)
@@ -1151,13 +1151,13 @@ contains
       ! Read modified string
       read(svalueTemp,sformat) fvalue
     end if
-    
+
   end function sys_str2Single
 
 !************************************************************************
 
 !<function>
-  
+
   character (len=32) function sys_smem(imem,ndigits) result(sout)
 
 !<description>
@@ -1168,7 +1168,7 @@ contains
 !<input>
   ! The memory usage in bytes.
   integer(I64), intent(in) :: imem
-  
+
   ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
   ! If not given, ndigits = 2 is used.
   integer, optional, intent(in) :: ndigits
@@ -1181,7 +1181,7 @@ contains
   character(len=32) :: sformat
   character(len=8) :: spost
   character(len=2) :: snld, sntd
-  
+
     ! Get the number of trailing digits
     ntd = 2
     if(present(ndigits)) then
@@ -1193,10 +1193,10 @@ contains
         ntd = ndigits
       end if
     end if
-    
+
     ! Calculate trailing digits scale
     itds = (10_I64)**ntd
-  
+
     ! Find out in which range the memory usage is:
     ii = abs(imem)
     jj = 0
@@ -1205,7 +1205,7 @@ contains
       jj = (itds * mod(ii, 1024_I64)) / 1024_I64
       ii = ii / 1024_I64
     end do
-  
+
     ! What do we have here?
     select case(k)
     case (0)
@@ -1223,7 +1223,7 @@ contains
     case (6)
       spost = ' EB'   ! "Exabytes"
     end select
-    
+
     ! "Count" the number of leading digits
     if(ii .lt. 10_I64) then
       nld = 1
@@ -1234,40 +1234,40 @@ contains
     else
       nld = 4
     end if
-    
+
     ! If the memory usage was negative (nice idea), then the number
     ! of leading digits has to be increased by 1 for the sign.
     if(imem .lt. 0_I64) then
       nld = nld + 1
       ii = -ii
     end if
-    
+
     ! Prepare snld and sntd
     write(snld,'(i1)') nld
     write(sntd,'(i1)') ntd
-    
+
     ! Now what format are we going to print?
     if((k .eq. 0) .or. (ntd .eq. 0)) then
 
       ! Print something like "xxx KB"
       sformat = '(i' // trim(snld) // ',"' // trim(spost) // '")'
       write(sout, sformat) ii
-      
+
     else
 
       ! Print something like "xxx.yy KB"
       sformat = '(i' // trim(snld) // ',".",i' // trim(sntd) // '.' &
                 // trim(sntd) // ',"' // trim(spost) // '")'
       write(sout, sformat) ii, jj
-      
+
     end if
-    
+
   end function sys_smem
 
 !************************************************************************
 
 !<function>
-  
+
   character (len=32) function sys_smemL(imem,ndigits) result(sout)
 
 !<description>
@@ -1278,14 +1278,14 @@ contains
 !<input>
   ! The memory usage in bytes.
   integer(I64), intent(in) :: imem
-  
+
   ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
   ! If not given, ndigits = 2 is used.
   integer, optional, intent(in) :: ndigits
 !</input>
 
 !</function>
-  
+
     if(present(ndigits)) then
       sout = adjustl(sys_smem(imem,ndigits))
     else
@@ -1317,7 +1317,7 @@ contains
 !************************************************************************
 
 !<function>
-  
+
   character (len=32) function sys_sl(lvalue) result(soutput)
 
 !<description>
@@ -1379,7 +1379,7 @@ contains
     else
       write(saux, '(i2)') idigits
     endif
-    
+
     sformat = "(f32." // trim(saux) // ")"
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sd
@@ -1512,7 +1512,7 @@ contains
 
     ! number of decimals
     integer, intent(in)  :: idigits
-    
+
 !</input>
 !</function>
 
@@ -2098,7 +2098,7 @@ contains
 !</function>
 
     write(soutput,"(A"//trim(sys_siL(nchars,10))//")") trim(adjustl(sstring))
-    
+
   end function
 
 !************************************************************************
@@ -2128,7 +2128,7 @@ contains
 !</function>
 
     soutput = trim(adjustl(sstring))
-    
+
   end function
 
 !************************************************************************
@@ -2199,7 +2199,7 @@ contains
     end select
 
   end function sys_getenv_string
-  
+
 !************************************************************************
 
 !<function>
@@ -2222,7 +2222,7 @@ contains
     sys_ncommandLineArgs=iargc()
 
   end function
-  
+
 !************************************************************************
 
 !<subroutine>
@@ -2250,7 +2250,7 @@ contains
     !        svalue  = "value" or "" if no value is specified.
     !        iformat = 2.
   !</description>
-  
+
   !<input>
     ! Index of the command line argument. Must be in the range 1..sys_ncommandLineArgs().
     integer, intent(in) :: iarg
@@ -2259,11 +2259,11 @@ contains
     ! line parameter does not exist.
     character(len=*), intent(in), optional :: sdefault
   !</input>
-  
+
   !<output>
     ! The command line argument.
     character(len=*), intent(out) :: soption
-    
+
     ! OPTIONAL: Value of the option
     character(len=*), intent(out), optional :: svalue
 
@@ -2277,7 +2277,7 @@ contains
     ! is of long form ("--key" or "--key=value").
     integer, intent(out), optional :: iformat
   !</output>
-  
+
 !</subroutine>
 
     ! local variables
@@ -2307,7 +2307,7 @@ contains
       do while ((stmp(idx:idx).ne.'=').and.(idx.lt.istmplen))
         idx=idx+1
       enddo
-  
+
       soption = stmp(3:idx-1)
       if (present(svalue)) svalue = stmp(idx+1:)
       if (present(iformat)) iformat = 2
@@ -2358,7 +2358,7 @@ contains
 
     ! local variables
     integer :: i
-    
+
     do i = 1, min(32, bit_size(ivalue))
       if (btest(ivalue, i-1)) then
         soutput(i:i) = '1'
@@ -2398,7 +2398,7 @@ contains
 
     ! local variables
     integer :: i
-    
+
     do i = 1, min(32, bit_size(ivalue))
       if (btest(ivalue, i-1)) then
         soutput(32-i+1:32-i+1) = '1'
@@ -2418,23 +2418,23 @@ contains
 !<subroutine>
 
   subroutine sys_dequote (sstring)
-  
+
 !<description>
   ! Removes possible quotation marks around a string.
 !</description>
-  
+
 !<inputoutput>
   ! String to de-quote
   character(len=*), intent(inout) :: sstring
 !</inputoutput>
 
 !</subroutine>
-  
+
   character(len=len(sstring)+1) :: sstring2
-  
+
     ! Adjust the string
     sstring2=trim(adjustl(sstring))
-    
+
     ! Does the string start with a quotation mark?
     if ((sstring2(1:1) .eq. "'") .or. &
         (sstring2(1:1) .eq. """")) then
@@ -2444,7 +2444,7 @@ contains
       ! Just transfer the string, it is ok.
       sstring = sstring2
     end if
-  
+
   end subroutine
 
 !************************************************************************
@@ -2452,15 +2452,15 @@ contains
 !<subroutine>
 
   subroutine sys_stringToCharArray (sstring,schararray,slength)
-  
+
 !<description>
   ! Converts a string to a character array.
 !</description>
-  
+
 !<input>
   ! String to convert
   character(len=*), intent(in) :: sstring
-  
+
   ! OPTIONAL: Length of the string.
   ! If not present, the default string length is used.
   integer, intent(in), optional :: slength
@@ -2473,23 +2473,23 @@ contains
 !</output>
 
 !</subroutine>
-  
+
     integer :: i,j
-    
+
     if (present(slength)) then
       j = slength
     else
       j = len_trim(sstring)
     end if
-    
+
     ! Copy all characters.
     do i=1,j
       schararray(i) = sstring(i:i)
     end do
-    
+
     ! Fill up the rest with spaces. This emulates a string copy.
     schararray(j+1:) = ' '
-  
+
   end subroutine
 
 !************************************************************************
@@ -2497,11 +2497,11 @@ contains
 !<subroutine>
 
   subroutine sys_charArrayToString (schararray,sstring,slength)
-  
+
 !<description>
   ! Converts a character array to a string.
 !</description>
-  
+
 !<input>
   ! Character array to convert
   character, dimension(:), intent(in) :: schararray
@@ -2518,21 +2518,21 @@ contains
 !</output>
 
 !</subroutine>
-  
+
     integer :: i,j
-    
+
     if (present(slength)) then
       j = slength
     else
       j = size(schararray)
     end if
-    
+
     ! Copy all characters.
     sstring = ""
     do i=1,j
       sstring(i:i) = schararray(i)
     end do
-  
+
   end subroutine
 
 end module fsystem

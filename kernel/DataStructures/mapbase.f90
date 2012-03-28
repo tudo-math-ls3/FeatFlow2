@@ -14,7 +14,7 @@ module mapbase
   use fsystem
 
   implicit none
-  
+
   private
 
 !<constants>
@@ -36,7 +36,7 @@ module mapbase
 
   ! Tag for root of tree
   integer, parameter, public :: MROOT  = 0
-  
+
   ! Tag for next free item
   integer, parameter, public :: MFREE  = 0
 

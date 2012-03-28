@@ -129,9 +129,9 @@ module fpersistence
   use genoutput
   use io
   use uuid
-  
+
   implicit none
-  
+
   private
 
 !<constants>
@@ -166,14 +166,14 @@ module fpersistence
   ! This allows to create a nullified data item,
   ! e.g., to indicate that a pointer is nullified
   integer, parameter, public :: FPDB_NULL = 0
-  
+
   ! defines an atomic ObjectItem as data item:
   ! This allows to create an ObjectItem for, say, a block matrix
   ! which has an array of scalar matrices as data. Note that the
   ! ObjectItem means that the corresponding item is physically
   ! created when it is imported from the persistence database.
   integer, parameter, public :: FPDB_OBJECT = 1
-  
+
   ! defines an atomic Link as data item:
   ! This allows to create a link to an ObjectItem. As an example
   ! consider a scalar vectors which may feature a pointer to the
@@ -262,7 +262,7 @@ module fpersistence
 
   ! defines a 2D 32 bit integer data item
   integer, parameter, public :: FPDB_INT32_2D = 29
-  
+
   ! defines a 2D 64 bit integer data item
   integer, parameter, public :: FPDB_INT64_2D = 30
 
@@ -292,7 +292,7 @@ module fpersistence
 
   ! defines a 3D 32 bit integer data item
   integer, parameter, public :: FPDB_INT32_3D = 39
-  
+
   ! defines a 3D 64 bit integer data item
   integer, parameter, public :: FPDB_INT64_3D = 40
 
@@ -301,7 +301,7 @@ module fpersistence
 
   ! defines a 3D character data item
   integer, parameter, public :: FPDB_CHAR3D = 42
-  
+
 !</constantblock>
 
 !</constants>
@@ -313,9 +313,9 @@ module fpersistence
 !<typeblock>
 
   ! This type block specifies the persistence database.
-  
+
   type t_fpdb
-    
+
     private
 
     ! Name of the directory of the persistence database
@@ -323,18 +323,18 @@ module fpersistence
 
     ! Filename of the persistence database
     character(LEN=SYS_NAMELEN) :: sfilename = 'feat2pdb'
-    
+
     ! Database specification flag. This is a bitfield coming from an OR
     ! combination of different FPDB_MSPEC_xxxx constants and specifies
     ! various details of the database.
     integer :: idatabaseSpec = FPDB_MSPEC_STANDARD
-    
+
     ! Unit number of object table
     integer :: iunitObjectTable = 0
 
     ! Unit number of data table
     integer :: iunitDataTable = 0
-    
+
     ! Next free record number of object table
     integer :: irecnumObjectTable = 1
 
@@ -353,9 +353,9 @@ module fpersistence
 
   ! This type block specifies a single item of the object table
   ! which is used in the  persistence database structure.
-  
+
   type t_fpdbObjectItem
-      
+
     ! Universally unique identifier of the item
     type(t_uuid) :: ruuid
 
@@ -384,9 +384,9 @@ module fpersistence
 
     ! Right child in the persistence database
     type(t_fpdbObjectItem), pointer :: p_rfpdbObjectRight => null()
-    
+
   end type t_fpdbObjectItem
-  
+
   public :: t_fpdbObjectItem
 
 !</typeblock>
@@ -400,16 +400,16 @@ module fpersistence
   ! they can be allocated to provide memory for the stored data.
 
   type t_fpdbDataItem
-    
+
     ! Type descriptor of the data item
     integer :: ctype = FPDB_NULL
-    
+
     ! Name of the data item
     character(LEN=SYS_NAMELEN) :: sname = ''
 
     ! Filename of the data item (if any)
     character(LEN=SYS_STRLEN) :: sfilename = './feat2pdb'
-    
+
     ! Array of lower bounds of the associated data item
     integer, dimension(FPDB_MAXDIM) :: Ilbounds
 
@@ -424,7 +424,7 @@ module fpersistence
     ! -~-~-~ Auxiliary quantity for ObjectItems and links -~-~-~
 
     type(t_uuid) :: ruuid
-    
+
     ! -~-~-~ Atomic quantities -~-~-~
 
     real(QP)     :: qquad
@@ -437,9 +437,9 @@ module fpersistence
     integer(I64) :: iint64
     logical      :: blogical
     character(len=SYS_NAMELEN) :: schar
-    
+
     ! -~-~-~ 1D quantities -~-~-~
-    
+
     real(QP), dimension(:), pointer     :: p_Qquad1D
     real(DP), dimension(:), pointer     :: p_Ddouble1D
     real(SP), dimension(:), pointer     :: p_Fsingle1D
@@ -452,7 +452,7 @@ module fpersistence
     character, dimension(:), pointer    :: p_Schar1D
 
     ! -~-~-~ 2D quantities -~-~-~
-    
+
     real(QP), dimension(:,:), pointer     :: p_Qquad2D
     real(DP), dimension(:,:), pointer     :: p_Ddouble2D
     real(SP), dimension(:,:), pointer     :: p_Fsingle2D
@@ -465,7 +465,7 @@ module fpersistence
     character, dimension(:,:), pointer    :: p_Schar2D
 
     ! -~-~-~ 3D quantities -~-~-~
-    
+
     real(QP), dimension(:,:,:), pointer     :: p_Qquad3D
     real(DP), dimension(:,:,:), pointer     :: p_Ddouble3D
     real(SP), dimension(:,:,:), pointer     :: p_Fsingle3D
@@ -478,9 +478,9 @@ module fpersistence
     character, dimension(:,:,:), pointer    :: p_Schar3D
 
   end type t_fpdbDataItem
-  
+
   public :: t_fpdbDataItem
-  
+
 !</typeblock>
 
 !</types>
@@ -512,7 +512,7 @@ module fpersistence
   public :: fpdb_getdata_int16_1d
   public :: fpdb_getdata_int32_1d
   public :: fpdb_getdata_int64_1d
-  
+
   public :: fpdb_getdata_single2d
   public :: fpdb_getdata_double2d
   public :: fpdb_getdata_quad2d
@@ -534,7 +534,7 @@ module fpersistence
   public :: fpdb_getdata_int64_3d
   public :: fpdb_getdata_logical3d
   public :: fpdb_getdata_char3d
-  
+
 contains
 
 !************************************************************************
@@ -563,7 +563,7 @@ contains
     type(t_fpdb), intent(out) :: rfpdb
 !</output>
 !</subroutine>
-    
+
     ! local variables
     character(LEN=SYS_STRLEN) :: caction, cstatus
     integer :: irecordLength
@@ -609,14 +609,14 @@ contains
          file=trim(rfpdb%spath)//trim(rfpdb%sfilename)//'_obj.tbl',&
          status=trim(cstatus), access='direct', recl=irecordLength,&
          form='unformatted', action=trim(caction), err=1)
-    
+
     rfpdb%iunitDataTable = sys_getFreeUnit()
     irecordLength        = fpdb_getDataLength()
     open(unit=rfpdb%iunitDataTable,&
          file=trim(rfpdb%spath)//trim(rfpdb%sfilename)//'_data.tbl',&
          status=trim(cstatus), access='direct', recl=irecordLength,&
          form='unformatted', action=trim(caction), err=2)
-        
+
     ! That is it
     return
 
@@ -646,14 +646,14 @@ contains
     type(t_fpdb), intent(inout) :: rfpdb
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     logical :: bisOpened
 
     ! Close files for object, relation and storage tables
     inquire(rfpdb%iunitObjectTable, opened=bisOpened)
     if (bisOpened) close(rfpdb%iunitObjectTable)
-    
+
     inquire(rfpdb%iunitDataTable, opened=bisOpened)
     if (bisOpened) close(rfpdb%iunitDataTable)
 
@@ -690,7 +690,7 @@ contains
         end do
         deallocate(p_rfpdbObjectItem%p_RfpdbDataItem)
       end if
-      
+
       ! Release current ObjectItem
       deallocate(p_rfpdbObjectItem)
 
@@ -767,27 +767,27 @@ contains
 
     ! local variables
     integer :: irecordNumber
-    
+
     ! Check that persistence database is completely empty
     if (associated(rfpdb%p_rfpdbObjectTable)) then
       call output_line ('Database must be completely empty!', &
                         OU_CLASS_WARNING,OU_MODE_STD,'fpdb_import')
       call sys_halt()
     end if
-    
+
     ! Phase1: Import persistence database starting at record number 1
     irecordNumber = 1
     import: do
 
       ! Pseudo read to determine end-of-file
       read(rfpdb%iunitObjectTable, rec=irecordNumber, err=1)
-      
+
       ! Allocate ObjectItem
       allocate(p_rfpdbObjectItem)
 
       ! Import ObjectItem from file
       call importObjectItem(p_rfpdbObjectItem, irecordNumber)
-      
+
       ! Insert ObjectItem into object table
       call fpdb_insertObject(rfpdb, p_rfpdbObjectItem, .false.)
 
@@ -802,12 +802,12 @@ contains
 
 
   contains
-    
+
     ! Here, the real import routines follow.
 
     !**************************************************************
     ! Imports the nodes of the object database
-    
+
     subroutine importObjectItem(rfpdbObjectItem, irecordNumber)
 
       ! The ObjectItem to be imported
@@ -815,7 +815,7 @@ contains
 
       ! Record number of the ObjectItem
       integer, intent(in) :: irecordNumber
-      
+
       ! local variables
       character(LEN=36) :: suuid
       integer :: i
@@ -830,10 +830,10 @@ contains
 
       ! Recreate UUID from string representation
       call uuid_createUUID(suuid, rfpdbObjectItem%ruuid)
-    
+
       ! Allocate pointer for data
       allocate(rfpdbObjectItem%p_RfpdbDataItem(rfpdbObjectItem%ilengthdatarecnum))
-      
+
       ! Import DataItems from file
       do i = 1, rfpdbObjectItem%ilengthDataRecnum
         call importDataItem(rfpdbObjectItem%p_RfpdbDataItem(i),&
@@ -842,7 +842,7 @@ contains
 
       ! That is it
       return
-      
+
 
 1     call output_line ('Unable to import object into table!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'importObjectItem')
@@ -877,7 +877,7 @@ contains
       case (FPDB_NULL)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
              rfpdbDataItem%ctype, rfpdbDataItem%sname
-        
+
       case (FPDB_OBJECT,&
             FPDB_LINK)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
@@ -929,7 +929,7 @@ contains
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
              rfpdbDataItem%iint64
-      
+
       case (FPDB_LOGICAL)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -939,7 +939,7 @@ contains
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
              rfpdbDataItem%ctype, rfpdbDataItem%sname,&
              rfpdbDataItem%schar
-        
+
         ! ----------------------------------------------------------------------
         ! Below, we deal with 1D data:
         !    The UUID of the filename containing the data item is read from
@@ -958,7 +958,7 @@ contains
             FPDB_CHAR1D)
         read(rfpdb%iunitDataTable, rec=irecordNumber, err=1)&
              rfpdbDataItem%ctype, rfpdbDataItem%sname, suuid
-        
+
         ! Set filename of data file
         rfpdbDataItem%sfilename = trim(rfpdb%spath)//suuid//'.fpd'
 
@@ -1037,8 +1037,8 @@ contains
 
       ! That is it
       return
-      
-      
+
+
 1     call output_line ('Unable to import data into table!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'importDataItem')
       call sys_halt()
@@ -1053,9 +1053,9 @@ contains
     ! Preorder traversal of the object table.
     ! Each DataItem which contains an ObjectItem is
     ! relinked to the corresponding ObjectItem
-    
+
     recursive subroutine relinkObjectItem(rfpdbObjectItem)
-      
+
       type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
       ! local variables
@@ -1064,13 +1064,13 @@ contains
 
       ! Do we have associated DataItems?
       if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
-        
+
         ! Loop over all DataItems
         do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
 
           ! Set pointer
           p_rfpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(i)
-          
+
           if ((p_rfpdbDataItem%ctype .eq. FPDB_OBJECT) .or.&
               (p_rfpdbDataItem%ctype .eq. FPDB_LINK)) then
 
@@ -1097,7 +1097,7 @@ contains
       if (associated(rfpdbObjectItem%p_rfpdbObjectRight)) then
         call relinkObjectItem(rfpdbObjectItem%p_rfpdbObjectRight)
       end if
-      
+
     end subroutine relinkObjectItem
 
   end subroutine fpdb_import
@@ -1123,7 +1123,7 @@ contains
     if (associated(rfpdb%p_rfpdbObjectTable)) then
       call exportObjectItem(rfpdb%p_rfpdbObjectTable)
     end if
-    
+
   contains
 
     ! Here, the real export routines follow.
@@ -1131,9 +1131,9 @@ contains
     !**************************************************************
     ! Preorder traversal of the object table.
     ! Each ObjectItem is exported to the object database.
-    
+
     recursive subroutine exportObjectItem(rfpdbObjectItem)
-      
+
       type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
       ! local variables
@@ -1196,7 +1196,7 @@ contains
 
       ! What data item are we?
       select case(rfpdbDataItem%ctype)
-        
+
         ! ----------------------------------------------------------------------
         ! Below, we deal with data items which require special treatment
         ! ----------------------------------------------------------------------
@@ -1205,14 +1205,14 @@ contains
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
+
       case (FPDB_OBJECT,&
             FPDB_LINK)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%p_fpdbObjectItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
+
         ! ----------------------------------------------------------------------
         ! Below, we deal with atomic data:
         !    The data item itself is written to the data table
@@ -1263,7 +1263,7 @@ contains
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               rfpdbDataItem%iint64
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-      
+
       case (FPDB_LOGICAL)
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1307,7 +1307,7 @@ contains
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
+
 
       case (FPDB_DOUBLE1D)
         ! Check if this DataItem has been exported before
@@ -1334,7 +1334,7 @@ contains
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
+
 
       case (FPDB_QUAD1D)
         ! Check if this DataItem has been exported before
@@ -1495,7 +1495,7 @@ contains
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
-        
+
 
       case (FPDB_LOGICAL1D)
         ! Check if this DataItem has been exported before
@@ -1522,7 +1522,7 @@ contains
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_CHAR1D)
         ! Check if this DataItem has been exported before
@@ -1556,7 +1556,7 @@ contains
         !    The UUID of the filename containing the data item is written to
         !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
-        
+
       case (FPDB_SINGLE2D)
         ! Check if this DataItem has been exported before
         if (uuid_isNil(rfpdbDataItem%ruuid)) then
@@ -1576,13 +1576,13 @@ contains
                               rfpdbDataItem%p_Fsingle2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_DOUBLE2D)
         ! Check if this DataItem has been exported before
@@ -1603,13 +1603,13 @@ contains
                               rfpdbDataItem%p_Ddouble2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_QUAD2D)
         ! Check if this DataItem has been exported before
@@ -1630,7 +1630,7 @@ contains
                               rfpdbDataItem%p_Qquad2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1657,7 +1657,7 @@ contains
                               rfpdbDataItem%p_Iinteger2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1684,7 +1684,7 @@ contains
                               rfpdbDataItem%p_Iint8_2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1711,7 +1711,7 @@ contains
                               rfpdbDataItem%p_Iint16_2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1738,7 +1738,7 @@ contains
                               rfpdbDataItem%p_Iint32_2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1765,13 +1765,13 @@ contains
                               rfpdbDataItem%p_Iint64_2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_LOGICAL2D)
         ! Check if this DataItem has been exported before
@@ -1792,14 +1792,14 @@ contains
                               rfpdbDataItem%p_Blogical2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
-        
+
+
       case (FPDB_CHAR2D)
         ! Check if this DataItem has been exported before
         if (uuid_isNil(rfpdbDataItem%ruuid)) then
@@ -1819,7 +1819,7 @@ contains
                               rfpdbDataItem%p_Schar2D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1831,7 +1831,7 @@ contains
         !    The UUID of the filename containing the data item is written to
         !    the data table. The actual data is written to a separate file.
         ! ----------------------------------------------------------------------
-        
+
       case (FPDB_SINGLE3D)
         ! Check if this DataItem has been exported before
         if (uuid_isNil(rfpdbDataItem%ruuid)) then
@@ -1851,13 +1851,13 @@ contains
                               rfpdbDataItem%p_Fsingle3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_DOUBLE3D)
         ! Check if this DataItem has been exported before
@@ -1878,13 +1878,13 @@ contains
                               rfpdbDataItem%p_Ddouble3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_QUAD3D)
         ! Check if this DataItem has been exported before
@@ -1905,7 +1905,7 @@ contains
                               rfpdbDataItem%p_Qquad3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1932,7 +1932,7 @@ contains
                               rfpdbDataItem%p_Iinteger3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1959,7 +1959,7 @@ contains
                               rfpdbDataItem%p_Iint8_3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -1986,7 +1986,7 @@ contains
                               rfpdbDataItem%p_Iint16_3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -2013,7 +2013,7 @@ contains
                               rfpdbDataItem%p_Iint32_3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
@@ -2040,13 +2040,13 @@ contains
                               rfpdbDataItem%p_Iint64_3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-       
+
 
       case (FPDB_LOGICAL3D)
         ! Check if this DataItem has been exported before
@@ -2067,14 +2067,14 @@ contains
                               rfpdbDataItem%p_Blogical3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
-        
+
+
       case (FPDB_CHAR3D)
         ! Check if this DataItem has been exported before
         if (uuid_isNil(rfpdbDataItem%ruuid)) then
@@ -2094,14 +2094,14 @@ contains
                               rfpdbDataItem%p_Schar3D
           close(iunit)
         end if
-          
+
         ! Write the DataItem to data table file
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
         rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
-        
-        
+
+
       case DEFAULT
         call output_line ('Undefined data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
@@ -2119,9 +2119,9 @@ contains
 2     call output_line ('Unable to export data to file!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exportDataItem')
       call sys_halt()
-        
+
     end subroutine exportDataItem
-    
+
   end subroutine fpdb_export
 
 !************************************************************************
@@ -2146,12 +2146,12 @@ contains
     end if
 
   contains
-    
+
     ! Here, the statistics routines follow.
-    
+
     !**************************************************************
     ! Inorder traversal of the object table.
-    
+
     recursive subroutine infoObjectItem(rfpdbObjectItem)
 
       type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
@@ -2163,7 +2163,7 @@ contains
       if (associated(rfpdbObjectItem%p_rfpdbObjectLeft)) then
         call infoObjectItem(rfpdbObjectItem%p_rfpdbObjectLeft)
       end if
-  
+
       call output_line('ObjectItem: '//uuid_conv2String(rfpdbObjectItem%ruuid))
       call output_line(' stype: '//trim(rfpdbObjectItem%stype)//&
                        ' sname: '//trim(rfpdbObjectItem%sname))
@@ -2177,12 +2177,12 @@ contains
         call output_line('------------------------------------------------')
       end if
       call output_lbrk()
-    
+
       ! Proceed to right child
       if (associated(rfpdbObjectItem%p_rfpdbObjectRight)) then
         call infoObjectItem(rfpdbObjectItem%p_rfpdbObjectRight)
       end if
-      
+
     end subroutine infoObjectItem
 
     function ctype2String(ctype) result(str)
@@ -2291,7 +2291,7 @@ contains
 !************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine fpdb_insertObject(rfpdb, rfpdbObjectItem, brecursive)
 
 !<description>
@@ -2317,13 +2317,13 @@ contains
     ! local variables
     type(t_fpdbObjectItem), pointer :: p_rfpdbObjectItem
     integer :: i
-    
+
     ! Check if the tree is empty
     if (.not.associated(rfpdb%p_rfpdbObjectTable)) then
 
       ! Set ObjectItem as new root of the tree
       rfpdb%p_rfpdbObjectTable => rfpdbObjectItem
-      
+
       ! Nullify all pointers
       nullify(rfpdbObjectItem%p_rfpdbObjectFather)
       nullify(rfpdbObjectItem%p_rfpdbObjectLeft)
@@ -2331,7 +2331,7 @@ contains
 
       ! Do we have to insert objects recursively?
       if (.not.brecursive) return
-      
+
       ! Check if DataItems contain ObjectItems
       if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
         do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
@@ -2351,7 +2351,7 @@ contains
 
       ! Walk down the tree until a leaf is found
       do while(associated(p_rfpdbObjectItem))
-        
+
         if (p_rfpdbObjectItem%ruuid .eq. rfpdbObjectItem%ruuid) then
           call output_line ('Object is already present in database!', &
                             OU_CLASS_WARNING,OU_MODE_STD,'fpdb_insertObject')
@@ -2360,7 +2360,7 @@ contains
           return
 
         elseif (p_rfpdbObjectItem%ruuid .lt. rfpdbObjectItem%ruuid) then
-          
+
           if (associated(p_rfpdbObjectItem%p_rfpdbObjectRight)) then
             ! Proceed to right child
             p_rfpdbObjectItem => p_rfpdbObjectItem%p_rfpdbObjectRight
@@ -2373,7 +2373,7 @@ contains
 
             ! Do we have to insert objects recursively?
             if (.not.brecursive) return
-            
+
             ! Check if DataItems contain ObjectItems
             if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
               do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
@@ -2389,9 +2389,9 @@ contains
             ! That is it
             return
           end if
-          
+
         else
-          
+
           if (associated(p_rfpdbObjectItem%p_rfpdbObjectLeft)) then
             ! Proceed to left child
             p_rfpdbObjectItem => p_rfpdbObjectItem%p_rfpdbObjectLeft
@@ -2404,7 +2404,7 @@ contains
 
             ! Do we have to insert objects recursively?
             if (.not.brecursive) return
-            
+
             ! Check if DataItems contain ObjectItems
             if (associated(rfpdbObjectItem%p_RfpdbDataItem)) then
               do i = 1, size(rfpdbObjectItem%p_RfpdbDataItem)
@@ -2416,14 +2416,14 @@ contains
                 end if
               end do
             end if
-            
+
             ! That is it
             return
           end if
-          
+
         end if
       end do
-      
+
       ! If we end up here, some critical error occured
       call output_line ('Critical error occured!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_insertObject')
@@ -2488,7 +2488,7 @@ contains
 !!$
 !!$
 !!$    end if
-      
+
   end subroutine fpdb_removeObject
 
 !************************************************************************
@@ -2520,26 +2520,26 @@ contains
 
     ! Set pointer to the root of the tree
     p_rfpdbObjectItem => rfpdb%p_rfpdbObjectTable
-    
+
     ! Walk down the tree
     do while(associated(p_rfpdbObjectItem))
-      
+
       if (p_rfpdbObjectItem%ruuid .eq. ruuid) then
-        
+
         ! We found the ObjectItem
         return
-        
+
       elseif (p_rfpdbObjectItem%ruuid .lt. ruuid) then
-        
+
         ! Proceed to right child
         p_rfpdbObjectItem => p_rfpdbObjectItem%p_rfpdbObjectRight
-        
+
       else
-        
+
         ! Proceed to left child
         p_rfpdbObjectItem => p_rfpdbObjectItem%p_rfpdbObjectLeft
       end if
-      
+
     end do
 
   end subroutine fpdb_retrieveObjectByUUID
@@ -2589,19 +2589,19 @@ contains
     end if
 
   contains
-    
+
     ! Here, the real searching routine follows
 
     !**************************************************************
     ! Preorder traversal of the object table.
 
     recursive subroutine searchObjectItem(rfpdbObjectItem)
-      
+
       type(t_fpdbObjectItem), intent(in), target :: rfpdbObjectItem
-      
+
       if (trim(rfpdbObjectItem%sname) .eq. sname) then
         p_rfpdbObjectItem => rfpdbObjectItem
-        
+
         ! That is it
         bfound = .true.
         return
@@ -2618,7 +2618,7 @@ contains
         call searchObjectItem(rfpdbObjectItem%p_rfpdbObjectRight)
         if (bfound) return
       end if
-      
+
     end subroutine searchObjectItem
 
   end subroutine fpdb_retrieveObjectByName
@@ -2626,7 +2626,7 @@ contains
 !************************************************************************
 
 !<function>
-  
+
   function fpdb_getObjectLength() result(iolength)
 
 !<description>
@@ -2637,7 +2637,7 @@ contains
     integer :: iolength
 !</result>
 !</function>
-    
+
     ! local variables
     type(t_fpdbObjectItem) :: rfpdbObjectItem
 
@@ -2652,7 +2652,7 @@ contains
 !************************************************************************
 
 !<function>
-  
+
   function fpdb_getDataLength() result(iolength)
 
 !<description>
@@ -2663,14 +2663,14 @@ contains
     integer :: iolength
 !</result>
 !</function>
-    
+
     ! local variables
     type(t_fpdbDataItem) :: rfpdbDataItem
-    
+
     inquire(iolength=iolength) rfpdbDataItem%ctype,&
                                rfpdbDataItem%sname,&
                                uuid_conv2String(rfpdbDataItem%ruuid)
-    
+
   end function fpdb_getDataLength
 
 !************************************************************************
@@ -2706,7 +2706,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Fsingle1D)) then
       p_Fsingle1D => Fsingle1D
@@ -2717,7 +2717,7 @@ contains
       end if
       p_Fsingle1D => rfpdbDataItem%p_Fsingle1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Fsingle1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Fsingle1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -2773,7 +2773,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Ddouble1D)) then
       p_Ddouble1D => Ddouble1D
@@ -2784,7 +2784,7 @@ contains
       end if
       p_Ddouble1D => rfpdbDataItem%p_Ddouble1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Ddouble1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Ddouble1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -2840,7 +2840,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_quad1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Qquad1D)) then
       p_Qquad1D => Qquad1D
@@ -2851,7 +2851,7 @@ contains
       end if
       p_Qquad1D => rfpdbDataItem%p_Qquad1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Qquad1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Qquad1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -2872,7 +2872,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_quad1d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_quad1d
 
 !************************************************************************
@@ -2908,7 +2908,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iinteger1D)) then
       p_Iinteger1D => Iinteger1D
@@ -2919,7 +2919,7 @@ contains
       end if
       p_Iinteger1D => rfpdbDataItem%p_Iinteger1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iinteger1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iinteger1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -2975,7 +2975,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint8_1D)) then
       p_Iint8_1D => Iint8_1D
@@ -2986,7 +2986,7 @@ contains
       end if
       p_Iint8_1D => rfpdbDataItem%p_Iint8_1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint8_1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint8_1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3007,7 +3007,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_1d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int8_1d
 
 !************************************************************************
@@ -3043,7 +3043,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint16_1D)) then
       p_Iint16_1D => Iint16_1D
@@ -3054,7 +3054,7 @@ contains
       end if
       p_Iint16_1D => rfpdbDataItem%p_Iint16_1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint16_1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint16_1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3075,7 +3075,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_1d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int16_1d
 
 !************************************************************************
@@ -3111,7 +3111,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint32_1D)) then
       p_Iint32_1D => Iint32_1D
@@ -3122,7 +3122,7 @@ contains
       end if
       p_Iint32_1D => rfpdbDataItem%p_Iint32_1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint32_1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint32_1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3143,7 +3143,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_1d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int32_1d
 
 !************************************************************************
@@ -3179,7 +3179,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int64_1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint64_1D)) then
       p_Iint64_1D => Iint64_1D
@@ -3190,7 +3190,7 @@ contains
       end if
       p_Iint64_1D => rfpdbDataItem%p_Iint64_1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint64_1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint64_1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3246,7 +3246,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Blogical1D)) then
       p_Blogical1D => Blogical1D
@@ -3257,7 +3257,7 @@ contains
       end if
       p_Blogical1D => rfpdbDataItem%p_Blogical1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Blogical1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Blogical1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3313,7 +3313,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char1d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Schar1D)) then
       p_Schar1D => Schar1D
@@ -3324,7 +3324,7 @@ contains
       end if
       p_Schar1D => rfpdbDataItem%p_Schar1D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Schar1D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Schar1D,1) .ne. rfpdbDataItem%Iubounds(1))) then
@@ -3380,7 +3380,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Fsingle2D)) then
       p_Fsingle2D => Fsingle2D
@@ -3392,7 +3392,7 @@ contains
       end if
       p_Fsingle2D => rfpdbDataItem%p_Fsingle2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Fsingle2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Fsingle2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3450,7 +3450,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Ddouble2D)) then
       p_Ddouble2D => Ddouble2D
@@ -3462,7 +3462,7 @@ contains
       end if
       p_Ddouble2D => rfpdbDataItem%p_Ddouble2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Ddouble2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Ddouble2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3520,7 +3520,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_quad2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Qquad2D)) then
       p_Qquad2D => Qquad2D
@@ -3532,7 +3532,7 @@ contains
       end if
       p_Qquad2D => rfpdbDataItem%p_Qquad2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Qquad2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Qquad2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3590,7 +3590,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iinteger2D)) then
       p_Iinteger2D => Iinteger2D
@@ -3602,7 +3602,7 @@ contains
       end if
       p_Iinteger2D => rfpdbDataItem%p_Iinteger2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iinteger2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iinteger2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3660,7 +3660,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint8_2D)) then
       p_Iint8_2D => Iint8_2D
@@ -3672,7 +3672,7 @@ contains
       end if
       p_Iint8_2D => rfpdbDataItem%p_Iint8_2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint8_2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint8_2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3695,7 +3695,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_2d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int8_2d
 
 !************************************************************************
@@ -3731,7 +3731,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint16_2D)) then
       p_Iint16_2D => Iint16_2D
@@ -3743,7 +3743,7 @@ contains
       end if
       p_Iint16_2D => rfpdbDataItem%p_Iint16_2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint16_2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint16_2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3766,7 +3766,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_2d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int16_2d
 
 !************************************************************************
@@ -3802,7 +3802,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint32_2D)) then
       p_Iint32_2D => Iint32_2D
@@ -3814,7 +3814,7 @@ contains
       end if
       p_Iint32_2D => rfpdbDataItem%p_Iint32_2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint32_2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint32_2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3837,7 +3837,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_2d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int32_2d
 
 !************************************************************************
@@ -3873,7 +3873,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int64_2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint64_2D)) then
       p_Iint64_2D => Iint64_2D
@@ -3885,7 +3885,7 @@ contains
       end if
       p_Iint64_2D => rfpdbDataItem%p_Iint64_2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint64_2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint64_2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -3908,7 +3908,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int64_2d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int64_2d
 
 !************************************************************************
@@ -3944,7 +3944,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Blogical2D)) then
       p_Blogical2D => Blogical2D
@@ -3956,7 +3956,7 @@ contains
       end if
       p_Blogical2D => rfpdbDataItem%p_Blogical2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Blogical2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Blogical2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4014,7 +4014,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char2d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Schar2D)) then
       p_Schar2D => Schar2D
@@ -4026,7 +4026,7 @@ contains
       end if
       p_Schar2D => rfpdbDataItem%p_Schar2D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Schar2D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Schar2D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4084,7 +4084,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Fsingle3D)) then
       p_Fsingle3D => Fsingle3D
@@ -4097,7 +4097,7 @@ contains
       end if
       p_Fsingle3D => rfpdbDataItem%p_Fsingle3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Fsingle3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Fsingle3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4157,7 +4157,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_double3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Ddouble3D)) then
       p_Ddouble3D => Ddouble3D
@@ -4170,7 +4170,7 @@ contains
       end if
       p_Ddouble3D => rfpdbDataItem%p_Ddouble3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Ddouble3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Ddouble3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4230,7 +4230,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_quad3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Qquad3D)) then
       p_Qquad3D => Qquad3D
@@ -4243,7 +4243,7 @@ contains
       end if
       p_Qquad3D => rfpdbDataItem%p_Qquad3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Qquad3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Qquad3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4303,7 +4303,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iinteger3D)) then
       p_Iinteger3D => Iinteger3D
@@ -4316,7 +4316,7 @@ contains
       end if
       p_Iinteger3D => rfpdbDataItem%p_Iinteger3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iinteger3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iinteger3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4376,7 +4376,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint8_3D)) then
       p_Iint8_3D => Iint8_3D
@@ -4389,7 +4389,7 @@ contains
       end if
       p_Iint8_3D => rfpdbDataItem%p_Iint8_3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint8_3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint8_3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4414,7 +4414,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int8_3d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int8_3d
 
 !************************************************************************
@@ -4450,7 +4450,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint16_3D)) then
       p_Iint16_3D => Iint16_3D
@@ -4463,7 +4463,7 @@ contains
       end if
       p_Iint16_3D => rfpdbDataItem%p_Iint16_3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint16_3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint16_3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4488,7 +4488,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int16_3d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int16_3d
 
 !************************************************************************
@@ -4524,7 +4524,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint32_3D)) then
       p_Iint32_3D => Iint32_3D
@@ -4537,7 +4537,7 @@ contains
       end if
       p_Iint32_3D => rfpdbDataItem%p_Iint32_3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint32_3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint32_3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4562,7 +4562,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int32_3d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int32_3d
 
 !************************************************************************
@@ -4598,7 +4598,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int64_3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Iint64_3D)) then
       p_Iint64_3D => Iint64_3D
@@ -4611,7 +4611,7 @@ contains
       end if
       p_Iint64_3D => rfpdbDataItem%p_Iint64_3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Iint64_3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Iint64_3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4636,7 +4636,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_int64_3d')
     call sys_halt()
-    
+
   end subroutine fpdb_getdata_int64_3d
 
 !************************************************************************
@@ -4672,7 +4672,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_logical3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Blogical3D)) then
       p_Blogical3D => Blogical3D
@@ -4685,7 +4685,7 @@ contains
       end if
       p_Blogical3D => rfpdbDataItem%p_Blogical3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Blogical3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Blogical3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&
@@ -4745,7 +4745,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_char3d')
       call sys_halt()
     end if
-    
+
     ! Set the pointer to the data array
     if (present(Schar3D)) then
       p_Schar3D => Schar3D
@@ -4758,7 +4758,7 @@ contains
       end if
       p_Schar3D => rfpdbDataItem%p_Schar3D
     end if
-    
+
     ! Check if data array is compatible
     if ((lbound(p_Schar3D,1) .ne. rfpdbDataItem%Ilbounds(1)) .or.&
         (ubound(p_Schar3D,1) .ne. rfpdbDataItem%Iubounds(1)) .or.&

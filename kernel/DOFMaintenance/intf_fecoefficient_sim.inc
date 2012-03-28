@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interface for a coefficient function that is called
   ! during the evaluation of a finite element function.
 
@@ -30,7 +28,7 @@
 
       ! Number of elements, where the FE-function must be computed.
       integer, intent(in) :: nelements
-    
+
       ! Number of points per element, where the FE-function must be computed
       integer, intent(in) :: npointsPerElement
 
@@ -55,15 +53,15 @@
       ! information to the coefficient routine.
       type(t_collection), intent(inout), optional :: rcollection
     !</inputoutput>
-  
+
     !<output>
       ! Evaluated FE-function for all given points on all given elements.
       ! DIMENSION(npointsPerElement,nelements)
       real(DP), dimension(:,:), intent(out) :: Dvalues
     !</output>
-    
+
     !</subroutine>
-  
+
     end subroutine
-    
+
   end interface

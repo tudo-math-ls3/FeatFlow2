@@ -36,7 +36,7 @@ module dofpreprocessing
   private
 
 !<types>
-  
+
 !<typeblock>
 
   ! This structure is used to collect information about a set of
@@ -45,10 +45,10 @@ module dofpreprocessing
 
     ! Number of elements in the set
     integer :: nelements = 0
-    
+
     ! Number of degrees of freedom per element
     integer :: ndofsPerElement = 0
-    
+
     ! Element identifier
     integer(I32) :: celement = 0_I32
 
@@ -85,7 +85,7 @@ contains
 
   subroutine dofprep_initDofSet(rdofSubset, rdomainIntSubset,&
       IelementOrientation)
-    
+
 !<description>
     ! This routine initialises a t_dofSubset structure using the
     ! information provided by the domain integration subset
@@ -113,7 +113,7 @@ contains
     integer, dimension(:), pointer :: p_IelementOrientation
     integer :: iel,idofe
 
-    
+
     ! Get orientation of elements (if available)
     if (present(IelementOrientation)) then
       p_IelementOrientation => IelementOrientation
@@ -157,7 +157,7 @@ contains
 
     case (EL_Q2_2D)
       IdofsLoc = (/1,5,2,6,3,7,4,8,9/)
-     
+
       ! =-=-= 3D =-=-=
 
     case (EL_P1_3D)
@@ -168,7 +168,7 @@ contains
 
     case (EL_Q1T_3D)
       IdofsLoc = (/1,2,3,4,5,6/)
-      
+
     case default
       call output_line('Unsupported element type!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSet')
@@ -200,7 +200,7 @@ contains
 
     ! Initialise coordinates of the DOFs?
     if (associated(rdomainIntSubset%p_Dcoords)) then
-      
+
       ! Allocate memory for the coordinates of the DOFs
       if (rdofSubset%ndofsPerElement .gt. 0) then
         allocate(rdofSubset%p_DdofCoords(size(rdomainIntSubset%p_Dcoords,1),&
@@ -368,7 +368,7 @@ contains
               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
           rdofSubset%p_DdofCoords(:,5,iel) =&
               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
-          
+
           ! Compute the coordinates of the edge midpoints
           rdofSubset%p_DdofCoords(:,2,iel) =&
               0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
@@ -410,7 +410,7 @@ contains
           rdofSubset%p_DdofCoords(:,8,iel) =&
               0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel)+&
                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
-        
+
           ! Compute the coordinates of the element center
           rdofSubset%p_DdofCoords(:,9,iel) =&
               0.25_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
@@ -418,13 +418,13 @@ contains
                          rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
                          rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
         end do
-        
+
       case default
         call output_line('Unsupported element type!',&
             OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSet')
         call sys_halt()
       end select
-      
+
     else
       nullify(rdofSubset%p_DdofCoords)
     end if
@@ -464,8 +464,8 @@ contains
     integer, dimension(:,:), allocatable :: IdofsLoc
     integer, dimension(:), pointer :: p_IelementOrientation
     integer :: iel,idofe
-    
-    
+
+
     ! Get orientation of elements
     if (present(IelementOrientation)) then
       p_IelementOrientation => IelementOrientation
@@ -504,17 +504,17 @@ contains
       rdofSubset%ndofsPerElement = 1
       allocate(IdofsLoc(1,4))
       IdofsLoc = reshape((/1, 2, 3, 4/),shape(IdofsLoc))
-      
+
     case (EL_P1_2D)
       rdofSubset%ndofsPerElement = 2
       allocate(IdofsLoc(2,3))
       IdofsLoc = reshape((/1,2, 2,3, 3,1/),shape(IdofsLoc))
-      
+
     case (EL_Q1_2D)
       rdofSubset%ndofsPerElement = 2
       allocate(IdofsLoc(2,4))
       IdofsLoc = reshape((/1,2, 2,3, 3,4, 4,1/),shape(IdofsLoc))
-      
+
     case (EL_P2_2D)
       rdofSubset%ndofsPerElement = 3
       allocate(IdofsLoc(3,3))
@@ -555,7 +555,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSetAtBoundary')
       call sys_halt()
     end select
-    
+
     ! Allocate memory for the local DOF numbers per element
     allocate(rdofSubset%p_IdofsLoc(rdofSubset%ndofsPerElement,&
                                    rdofSubset%nelements))
@@ -568,14 +568,14 @@ contains
             IdofsLoc(idofe,p_IelementOrientation(iel))
       end do
     end do
-    
+
     ! Deallocate temporal memory
     deallocate(IdofsLoc)
-    
-    
+
+
     ! Initialise coordinates of the DOFs?
     if (associated(rdomainIntSubset%p_Dcoords)) then
-      
+
       ! Allocate memory for the coordinates of the DOFs
       if (rdofSubset%ndofsPerElement .gt. 0) then
         allocate(rdofSubset%p_DdofCoords(size(rdomainIntSubset%p_Dcoords,1),&
@@ -583,7 +583,7 @@ contains
       else
         nullify(rdofSubset%p_DdofCoords)
       end if
-    
+
       ! Calculate the coordinates of the DOFs.
       ! What type of finite element are we?
       select case(elem_getPrimaryElement(rdofSubset%celement))       
@@ -606,7 +606,7 @@ contains
               0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
                         rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
         end do
-      
+
       case (EL_P2_2D,EL_Q2_2D)
         ! For P2 and Q2 finite elements in 2D some degrees of freedom
         ! coincide with the vertices of the element which can be
@@ -617,7 +617,7 @@ contains
             rdofSubset%p_DdofCoords(:,idofe,iel) =&
                 rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(idofe,iel),iel)
           end do
-          
+
           ! Compute the coordinate of the edge midpoint
           rdofSubset%p_DdofCoords(:,2,iel) =&
               0.5_DP * (rdofSubset%p_DdofCoords(:,1,iel)+&
@@ -635,13 +635,13 @@ contains
                          rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
                          rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
         end do
-        
+
       case default
         call output_line('Unsupported element type!',&
             OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSetAtBoundary')
         call sys_halt()
       end select
-      
+
     else
       nullify(rdofSubset%p_DdofCoords)
     end if
@@ -698,11 +698,11 @@ contains
             OU_CLASS_ERROR, OU_MODE_STD, 'dofprep_initDofSetAtBoundary')
         call sys_halt()
       end select
-      
+
     else
       nullify(rdofSubset%p_DdofPosition)
     end if
-        
+
   end subroutine dofprep_initDofSetAtBoundary
 
   !*****************************************************************************
@@ -739,7 +739,7 @@ contains
       deallocate(rdofSubset%p_DdofPosition)
       nullify(rdofSubset%p_DdofPosition)
     end if
-    
+
   end subroutine dofprep_doneDofSet
 
 end module dofpreprocessing

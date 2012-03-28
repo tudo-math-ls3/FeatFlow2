@@ -80,13 +80,13 @@ module blockmatassembly
   use spatialdiscretisation
   use triangulation
   use perfconfig
-  
+
   use linearsystemscalar
   use linearsystemblock
-  
+
   use feevaluation2
   use blockmatassemblybase
-  
+
   implicit none
 
   private
@@ -100,7 +100,7 @@ module blockmatassembly
 
   public :: bma_fcalc_Mass
   public :: bma_fcalc_Laplace
-  
+
   public :: bma_initMatAssembly
   public :: bma_doneMatAssembly
   public :: bma_assembleSubmeshMatrix
@@ -146,10 +146,10 @@ contains
 
     ! Structure with all data about the assembly
     type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-    
+
     ! Number of points per element
     integer, intent(in) :: npointsPerElement
-    
+
     ! Number of elements
     integer, intent(in) :: nelements
 
@@ -160,7 +160,7 @@ contains
     ! User defined collection structure
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-    
+
 !<subroutine>
 
     ! Local variables
@@ -171,10 +171,10 @@ contains
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
-    
+
     integer :: istart, iend
     real(DP) :: dscale
-    
+
     ! First/last block, multiplier
     istart = 1
     iend = min(ubound(RmatrixData,1),ubound(RmatrixData,2))
@@ -188,24 +188,24 @@ contains
       end if
       dscale = rcollection%DquickAccess(1)
     end if
-  
+
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
-    
+
     ! Loop over the diagonal blocks
     do i = istart,iend
-    
+
       ! Get local data
       p_rmatrixData => RmatrixData(i,i)
       p_DbasTrial => RmatrixData(i,i)%p_DbasTrial
       p_DbasTest => RmatrixData(i,i)%p_DbasTest
-      
+
       ! Interleaved matrix?
       if (.not. p_rmatrixData%bisInterleaved) then
 
         ! Get the matrix data      
         p_DlocalMatrix => RmatrixData(i,i)%p_Dentry
-    
+
         ! Loop over the elements in the current set.
         do iel = 1,nelements
 
@@ -215,15 +215,15 @@ contains
             ! Outer loop over the DOF's i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rmatrixData%ndofTest
-            
+
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
-              
+
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
               ! the basis function Phi_j:
               do jdofe=1,p_rmatrixData%ndofTrial
-                
+
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! into dbasJ
                 dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
@@ -233,23 +233,23 @@ contains
                 ! into the local matrices.
                 p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
-                                              
+
               end do ! idofe
-              
+
             end do ! jdofe
 
           end do ! icubp
-        
+
         end do ! iel
-        
+
       else
 
         ! Get the matrix data      
         p_DlocalMatrixIntl => RmatrixData(i,i)%p_DentryIntl
-        
+
         ! Interleave-data
         nvar = RmatrixData(i,i)%nvar
-    
+
         ! Loop over the elements in the current set.
         do iel = 1,nelements
 
@@ -259,40 +259,40 @@ contains
             ! Outer loop over the DOF's i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rmatrixData%ndofTest
-            
+
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
-              
+
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
               ! the basis function Phi_j:
               do jdofe=1,p_rmatrixData%ndofTrial
-                
+
                 ! Fetch the contributions of the (trial) basis function Phi_j
                 ! into dbasJ
                 dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
 
                 do ivar = 1,nvar
-                  
+
                   ! Multiply the values of the basis functions
                   ! (1st derivatives) by the cubature weight and sum up
                   ! into the local matrices.
                   p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
                       p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
                           dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
-                      
+
                 end do ! ivar
-                                              
+
               end do ! idofe
-              
+
             end do ! jdofe
 
           end do ! icubp
-        
+
         end do ! iel
-        
+
       end if
-      
+
     end do
 
   end subroutine
@@ -330,10 +330,10 @@ contains
 
     ! Structure with all data about the assembly
     type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-    
+
     ! Number of points per element
     integer, intent(in) :: npointsPerElement
-    
+
     ! Number of elements
     integer, intent(in) :: nelements
 
@@ -344,7 +344,7 @@ contains
     ! User defined collection structure
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-    
+
 !<subroutine>
 
     real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy, dbasIz, dbasJz
@@ -357,7 +357,7 @@ contains
 
     integer :: istart, iend
     real(DP) :: dscale
-    
+
     ! First/last block, multiplier
     istart = 1
     iend = min(ubound(RmatrixData,1),ubound(RmatrixData,2))
@@ -371,10 +371,10 @@ contains
       end if
       dscale = rcollection%DquickAccess(1)
     end if
-  
+
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
- 
+
     ! Loop through all diagonal blocks   
     do i = istart, iend
 
@@ -385,17 +385,17 @@ contains
 
       ! Interleaved matrix?
       if (.not. p_rmatrixData%bisInterleaved) then
-      
+
         ! Get the matrix data
         p_DlocalMatrix => RmatrixData(i,i)%p_Dentry
 
         ! What's the dimension?
         select case (rmatrixAssembly%p_rtriangulation%ndim)
-        
+
         case (NDIM1D)
-          
+
           ! 1D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -405,15 +405,15 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
@@ -423,19 +423,19 @@ contains
                   ! into the local matrices.
                   p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
                       dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         case (NDIM2D)
-          
+
           ! 2D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -445,16 +445,16 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
@@ -465,19 +465,19 @@ contains
                   ! into the local matrices.
                   p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
                       dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         case (NDIM3D)
-          
+
           ! 3D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -487,17 +487,17 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
@@ -510,32 +510,32 @@ contains
                   p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
                       dscale * p_DcubWeight(icubp,iel) * &
                               ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         end select
-        
+
       else
-      
+
         ! Get the matrix data      
         p_DlocalMatrixIntl => RmatrixData(i,i)%p_DentryIntl
-        
+
         ! Interleave-data
         nvar = RmatrixData(i,i)%nvar
-    
+
         ! What's the dimension?
         select case (rmatrixAssembly%p_rtriangulation%ndim)
-        
+
         case (NDIM1D)
-          
+
           ! 1D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -545,42 +545,42 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
 
                   do ivar = 1,nvar
-                    
+
                     ! Multiply the values of the basis functions
                     ! (1st derivatives) by the cubature weight and sum up
                     ! into the local matrices.
                     p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
                         p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
                           dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
-                          
+
                   end do ! ivar
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         case (NDIM2D)
-          
+
           ! 2D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -590,44 +590,44 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
                   dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
                   do ivar = 1,nvar
-                    
+
                     ! Multiply the values of the basis functions
                     ! (1st derivatives) by the cubature weight and sum up
                     ! into the local matrices.
                     p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
                         p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
                             dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
-                  
+
                   end do ! ivar
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         case (NDIM3D)
-          
+
           ! 3D Laplace matrix
-        
+
           ! Loop over the elements in the current set.
           do iel = 1,nelements
 
@@ -637,17 +637,17 @@ contains
               ! Outer loop over the DOF's i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rmatrixData%ndofTest
-              
+
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
-                
+
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
                 ! the basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
-                  
+
                   ! Fetch the contributions of the (trial) basis function Phi_j
                   ! into dbasJ
                   dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
@@ -655,7 +655,7 @@ contains
                   dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
 
                   do ivar = 1,nvar
-                    
+
                     ! Multiply the values of the basis functions
                     ! (1st derivatives) by the cubature weight and sum up
                     ! into the local matrices.
@@ -663,23 +663,23 @@ contains
                         p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
                             dscale * p_DcubWeight(icubp,iel) * &
                                     ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
-                  
+
                   end do ! ivar
-                                                
+
                 end do ! idofe
-                
+
               end do ! jdofe
 
             end do ! icubp
-          
+
           end do ! iel
 
         end select
-      
+
       end if
-      
+
     end do
-    
+
   end subroutine
 
   !****************************************************************************
@@ -688,9 +688,9 @@ contains
 
   subroutine bma_getLocalMatrixIndices (rmatrix,Irows,Icolumns,Kentry,&
       irowsPerElement,icolsPerElement,nelements)
-  
+
   !<description>
-  
+
   ! Calculates index positions of local matrices in a global matrix.
   ! For a set of elements, Icolumns and Irows define the row and column indices
   ! of local matrices which have to be accessed in a global matrix rmatrix.
@@ -703,14 +703,14 @@ contains
   ! That means that
   !    Kentry(j,i,:) = position of element (Irows(i,:),Icolumns(j,:))
   ! holds!
-  
+
   !</description>
-  
+
   !<input>
-  
+
   ! The global matrix which has to be accessed.
   type(t_matrixScalar), intent(in) :: rmatrix
-  
+
   ! Array identifying all rows in the global matrix which have to be
   ! accessed.
   ! DIMENSION(#rows per element, #elements).
@@ -720,30 +720,30 @@ contains
   ! accessed.
   ! DIMENSION(#columns per element, #elements).
   integer, dimension(:,:), intent(in) :: Icolumns
-  
+
   ! Number of rows per element / in the local matrix
   integer, intent(in) :: irowsPerElement
-  
+
   ! Number of columns per element / in the local matrix
   integer, intent(in) :: icolsPerElement
-  
+
   ! Number of elements.
   integer, intent(in) :: nelements
-  
+
   !</input>
-  
+
   !<output>
-  
+
   ! Array receiving the positions of the local matrices in the global matrix.
   ! DIMENSION(#columns per element,#rows per element,#elements).
   ! Saved in a transposed way:
   !    Kentry(j,i,:) = position of element (Irows(i,:),Icolumns(j,:))
   integer, dimension(:,:,:), intent(out) :: Kentry
-  
+
   !</output>
-  
+
   !</subroutine>
-  
+
     ! local variables
     integer, dimension(:), pointer :: p_Kcol, p_Kld, p_KrowIdx
     integer :: na,iel,idofe,jdofe,ndofTest,ndofTrial,jcol0,jdfg,jcol,nnzrows
@@ -753,7 +753,7 @@ contains
 
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
-    
+
       ! That is easy, we can directly calculate the positions
       do iel = 1,nelements
         do idofe = 1,ndofTest
@@ -763,9 +763,9 @@ contains
           end do
         end do
       end do
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
-    
+
       ! Get pointers to the row/column structure of the matrix
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -778,12 +778,12 @@ contains
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
       do iel = 1,nelements
-      
+
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do idofe = 1,ndofTest
-        
+
           ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
@@ -791,25 +791,25 @@ contains
           ! to JCOL0:
 
           jcol0=p_Kld(Irows(idofe,iel))
-          
+
           ! Now we loop through the other DOF`s on the current element
           ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
-          
+
           do jdofe = 1,ndofTrial
-            
+
             ! Get the global DOF of the "X" which interacts with
             ! our "O".
-            
+
             jdfg=Icolumns(jdofe,iel)
-            
+
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
-            
+
             do jcol = jcol0,na
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
@@ -817,26 +817,26 @@ contains
             ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
-            
+
             ! JCOL0=JCOL+1
-            
+
             ! Save the position of the matrix entry into the local
             ! matrix.
             ! Note that a column in Kentry corresponds to a row in
             ! the real matrix. We aligned Kentry this way to get
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
-            
+
             Kentry(jdofe,idofe,iel)=jcol
-            
+
           end do ! IDOFE
-          
+
         end do ! JDOFE
-        
+
       end do ! IEL
-      
+
     case (LSYSSC_MATRIX9ROWC)
-    
+
       ! Get pointers to the row/column structure of the matrix
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -851,12 +851,12 @@ contains
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
       do iel = 1,nelements
-      
+
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do idofe = 1,ndofTest
-        
+
           ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
@@ -864,25 +864,25 @@ contains
           ! to JCOL0:
 
           jcol0=p_Kld(p_KrowIdx(nnzrows+Irows(idofe,iel)))
-          
+
           ! Now we loop through the other DOF`s on the current element
           ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
-          
+
           do jdofe = 1,ndofTrial
-            
+
             ! Get the global DOF of the "X" which interacts with
             ! our "O".
-            
+
             jdfg=Icolumns(jdofe,iel)
-            
+
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
-            
+
             do jcol = jcol0,na
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
@@ -890,9 +890,9 @@ contains
             ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
-            
+
             ! JCOL0=JCOL+1
-            
+
             ! Save the position of the matrix entry into the local
             ! matrix.
             ! Note that a column in Kentry corresponds to a row in
@@ -900,17 +900,17 @@ contains
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
             ! Subtract the offset to get the offset in the compressed matrix.
-            
+
             Kentry(jdofe,idofe,iel)=jcol
-            
+
           end do ! IDOFE
-          
+
         end do ! JDOFE
-        
+
       end do ! IEL
-      
+
     end select
-      
+
   end subroutine
 
   !****************************************************************************
@@ -923,43 +923,43 @@ contains
     nentries = nentries + 1
     Ilist(nentries) = ientry
   end subroutine
-  
+
   integer function containsInt (Ilist,nentries,ientry)
   ! returns <> 0 (the index) if the list Ilist contains Ientry
   integer, dimension(:), intent(in) :: Ilist
   integer, intent(in), target :: ientry
   integer, intent(in) :: nentries
-  
+
     integer :: i
-    
+
     do i=1,nentries
       if (Ilist(i) .eq. ientry) then
         containsInt = i
         return
       end if
     end do
-    
+
     containsInt = 0
-    
+
   end function
-  
+
   integer function containsDiscr (Rlist,nentries,rentry)
   ! returns <> 0 (the index) if the list Rlist contains rentry
   type(t_fev2FemData), dimension(:), intent(in) :: Rlist
   type(t_spatialDiscretisation), intent(in), target :: rentry
   integer, intent(in) :: nentries
-  
+
     integer :: i
-    
+
     do i=1,nentries
       if (associated(Rlist(i)%p_rdiscr,rentry)) then
         containsDiscr = i
         return
       end if
     end do
-    
+
     containsDiscr = 0
-    
+
   end function
 
   !****************************************************************************
@@ -978,7 +978,7 @@ contains
 !<input>
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the matrix which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -994,11 +994,11 @@ contains
 !</output>
 
 !</subroutine>
-  
+
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTrial,p_rdiscrTest
     integer :: i,j
-    
+
     ! List of used matrix handles for data and structure
     integer, dimension(:), pointer :: p_ImatrixDataHandles
     integer :: nmatrixDataHandles
@@ -1017,41 +1017,41 @@ contains
     ! Loop over all blocks. Figure out which blocks have data.
     ! Get the data arrays for these blocks.
     do j=1,ubound(RmatrixData,2)
-    
+
       do i=1,ubound(RmatrixData,1)
-        
+
         RmatrixData(i,j)%bhasData = lsysbl_isSubmatrixPresent (rmatrix,i,j)
-        
+
         if (RmatrixData(i,j)%bhasData) then
-        
+
           ! Remember the matrix
           RmatrixData(i,j)%p_rmatrix => rmatrix%RmatrixBlock(i,j)
-          
+
           ! Get the pointers to the matrix arrays
           select case (rmatrix%RmatrixBlock(i,j)%cmatrixFormat)
           case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
-            
+
             if (rmatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
               call output_line ("Matrix data type not supported",&
                   OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareMatrixData")
               call sys_halt()
             end if
-            
+
             if (.not. lsyssc_hasMatrixContent(rmatrix%RmatrixBlock(i,j))) then
               call output_line ("Empty submatrix, no data allocated!",&
                   OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareMatrixData")
               call sys_halt()
             end if
-            
+
             ! Get a pointer to the matrix data for faster access
             call lsyssc_getbase_double (rmatrix%RmatrixBlock(i,j),RmatrixData(i,j)%p_Da)
-            
+
             ! Check if the matrix data is shared with another matrix.
             ! If not, remember it.
             RmatrixData(i,j)%bsharedMatrixData = 0 .ne. &
               containsInt (p_ImatrixDataHandles,nmatrixDataHandles,&
                            rmatrix%RmatrixBlock(i,j)%h_Da)
-            
+
             if (.not. RmatrixData(i,j)%bsharedMatrixData) then
               ! Remember the matrix data for later checks
               call addInt (p_ImatrixDataHandles,nmatrixDataHandles,&
@@ -1062,13 +1062,13 @@ contains
             RmatrixData(i,j)%bsharedMatrixStructure = 0 .ne. &
               containsInt (p_ImatrixStrucHandles,nmatrixStrucHandles,&
                            rmatrix%RmatrixBlock(i,j)%h_Kcol)
-            
+
             if (.not. RmatrixData(i,j)%bsharedMatrixStructure) then
               ! Remember the matrix data for later checks
               call addInt (p_ImatrixStrucHandles,nmatrixStrucHandles,&
                       rmatrix%RmatrixBlock(i,j)%h_Kcol)
             end if
-            
+
             ! Matrix subtype: Interleaved matrices.
             select case (rmatrix%RmatrixBlock(i,j)%cmatrixFormat)
             case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
@@ -1076,19 +1076,19 @@ contains
               RmatrixData(i,j)%nvar = rmatrix%RmatrixBlock(i,j)%nvar
               RmatrixData(i,j)%bisInterleaved = .true.
             end select
-            
+
           case default
             call output_line ("Matrix format not supported",&
                 OU_CLASS_ERROR,OU_MODE_STD,"bma_prepareFemData")
             call sys_halt()
-    
+
           end select
-          
+
           ! Get the information about the trial and test spaces
           ! of this block.
           p_rdiscrTrial => rmatrix%RmatrixBlock(i,j)%p_rspatialDiscrTrial
           p_rdiscrTest  => rmatrix%RmatrixBlock(i,j)%p_rspatialDiscrTest
-          
+
           ! Some basic checks...
           if ((p_rdiscrTrial%inumFESpaces .lt. ielementDistr) .or. &
               (p_rdiscrTrial%inumFESpaces .lt. ielementDistr)) then
@@ -1108,17 +1108,17 @@ contains
 
           RmatrixData(i,j)%celementTest = &
               p_rdiscrTest%RelementDistr(ielementDistr)%celement
-          
+
           ! Get the number of local DOF`s for trial and test functions
           RmatrixData(i,j)%ndofTrial = elem_igetNDofLoc(RmatrixData(i,j)%celementTrial)
           RmatrixData(i,j)%ndofTest = elem_igetNDofLoc(RmatrixData(i,j)%celementTest)
 
         end if
-      
+
       end do
-    
+
     end do
-    
+
   end subroutine
 
   !****************************************************************************
@@ -1139,7 +1139,7 @@ contains
 !<input>
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the matrix which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -1165,7 +1165,7 @@ contains
 
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
-    
+
     ! Prepare FEM data
     call fev2_prepareFemDataBMat(rmatrix,rassemblyData%p_RfemData,&
         ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
@@ -1174,10 +1174,10 @@ contains
     ! and the FEM spaces used.
     allocate(rassemblyData%p_RmatrixData( &
         ubound(rmatrix%RmatrixBlock,1),ubound(rmatrix%RmatrixBlock,2)))
-        
+
     call bma_prepareMatrixData(&
         rmatrix,rassemblyData%p_RmatrixData,rassemblyData%p_RfemData,ielementDistr)
-        
+
   end subroutine
 
   !****************************************************************************
@@ -1200,10 +1200,10 @@ contains
     ! Release the matrix and FEM data array
     deallocate(rassemblyData%p_RfemData)
     deallocate(rassemblyData%p_RmatrixData)
-        
+
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
-    
+
   end subroutine
 
 
@@ -1249,7 +1249,7 @@ contains
 
     ! At first, just copy the content from the matrix template structure
     rassemblyData = rassemblyDataTemplate
-    
+
     ! Not initialise the dynamic content.
     !
     ! Copy the FEM data and the matrix data
@@ -1257,27 +1257,27 @@ contains
     allocate (rassemblyData%p_RmatrixData(&
         ubound(rassemblyDataTemplate%p_RmatrixData,1),&
         ubound(rassemblyDataTemplate%p_RmatrixData,2)))
-    
+
     rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
     rassemblyData%p_RmatrixData(:,:) = rassemblyDataTemplate%p_RmatrixData(:,:)
-    
+
     ! Initialise the FEM evaluation structures.
     call fev2_createFemData(rassemblyData%p_RfemData,&
         rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock)
-    
+
     ! Loop through the matrices. Whereever there is unshared data,
     ! there is something to compute, so allocate memory for the matrix
     ! entries in this block.
     do j=1,ubound(rassemblyData%p_RmatrixData,2)
       do i=1,ubound(rassemblyData%p_RmatrixData,1)
-      
+
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
-        
+
         ! Unshared data in that block
         if (p_rmatrixData%bhasData) then 
-          
+
           if (.not. p_rmatrixData%bsharedMatrixData) then
-        
+
             ! Allocate memory for the martix data and positions in the matrix
             if (.not. p_rmatrixData%bisInterleaved) then
               ! non-interleaved matrix
@@ -1294,16 +1294,16 @@ contains
             allocate(p_rmatrixData%p_Kentry(&
                     p_rmatrixData%ndofTrial,p_rmatrixData%ndofTest,&
                     rmatrixAssembly%nelementsPerBlock))
-                    
+
           else
-          
+
             ! Nullify to mark this matrix data as "computed somewhere else".
             nullify(p_rmatrixData%p_Dentry)
             nullify(p_rmatrixData%p_DentryIntl)
             nullify(p_rmatrixData%p_Kentry)
-                    
+
           end if
-          
+
           ! Map the pointers to the DOFs and the values of the
           ! basis functions into that block
           p_rmatrixData%p_DbasTrial => &
@@ -1315,17 +1315,17 @@ contains
               rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTrial)%p_Idofs
           p_rmatrixData%p_IdofsTest => &
               rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTest)%p_Idofs
-              
+
         end if
-      
+
       end do
     end do
-    
+
     ! Initialise the vector evaluation structure.
     !
     ! Copy the content from the template.
     revalVectors = revalVectorsTemplate
-    
+
     ! Re-create the vector array
     if (revalVectors%ncount .eq. 0) then
       nullify(revalVectors%p_RvectorData)
@@ -1337,7 +1337,7 @@ contains
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData,&
           rassemblyData%revalElementSet)
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -1372,30 +1372,30 @@ contains
 
     ! Release FEM evaluation data
     call fev2_releaseFemData(rassemblyData%p_RfemData)
-      
+
     ! Release the element set and the cubature weights
     call elprep_releaseElementSet(rassemblyData%revalElementSet)
 
     if (associated(rassemblyData%p_DcubWeight)) then
       deallocate(rassemblyData%p_DcubWeight)
     end if
-  
+
     ! Element sets are not initialised anymore
     rassemblyData%ninitialisedElements = 0
-    
+
     ! Loop through the matrices. Whereever there is unshared data,
     ! there is something to compute, so allocate memory for the matrix
     ! entries in this block.
     do j=1,ubound(rassemblyData%p_RmatrixData,2)
       do i=1,ubound(rassemblyData%p_RmatrixData,1)
-      
+
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
-        
+
         ! Unshared data in that block
         if (p_rmatrixData%bhasData) then 
-          
+
           if (.not. p_rmatrixData%bsharedMatrixData) then
-        
+
             ! Allocate memory for the martix data and positions in the matrix
             if (associated(p_rmatrixData%p_Dentry)) then
               deallocate(p_rmatrixData%p_Dentry)
@@ -1406,18 +1406,18 @@ contains
             end if
 
             deallocate(p_rmatrixData%p_Kentry)
-                    
+
           end if
-          
+
         end if
-      
+
       end do
     end do
 
     ! Release memory
     deallocate (rassemblyData%p_RfemData)
     deallocate (rassemblyData%p_RmatrixData)
-    
+
   end subroutine
 
   !****************************************************************************
@@ -1436,14 +1436,14 @@ contains
 !<input>
   ! Cubature formla to use
   integer(I32), intent(in) :: ccubType
-  
+
   ! Option field. Combination of BMA_CALC_xxxx flags.
   ! Use BMA_CALC_STANDARD for standard options.
   integer(I32), intent(in) :: cflags
 
   ! The matrix which is going to be assembled.
   type(t_matrixBlock), intent(in) :: rmatrix
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the matrix which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -1482,31 +1482,31 @@ contains
     else
       p_rperfconfig => bma_perfconfig
     end if
-    
+
     rmatrixAssembly%p_rperfconfig => p_rperfconfig
-    
+
     ! Get basic data
     rmatrixAssembly%p_rboundary => rmatrix%p_rblockDiscrTest%p_rboundary
     rmatrixAssembly%p_rtriangulation => rmatrix%p_rblockDiscrTest%p_rtriangulation
-    
+
     ! Save the vector evaluation structure as template.
     ! Make a copy of the stucture, that is simpler here.
     if (present(revalVectors)) then
       rmatrixAssembly%revalVectorsTemplate = revalVectors
     end if
-    
+
     ! Remember current element distribution
     rmatrixAssembly%ielementDistr = ielementDistr
-    
+
     ! Initialise the template structure which is used during the
     ! actual matrix assembly.
     call bma_initMatAssemblyData(rmatrixAssembly%rassemblyDataTemplate,&
         rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
-      
+
     ! Get the transformation from the first FEM data structure.
     rmatrixAssembly%ctrafoType = &
         rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
-    
+
     ! Get the cubature formula on the reference element
     rmatrixAssembly%ccubType = ccubType
     rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
@@ -1516,17 +1516,17 @@ contains
     allocate(rmatrixAssembly%p_DcubPtsRef(&
         trafo_igetReferenceDimension(rmatrixAssembly%ctrafoType),&
         rmatrixAssembly%ncubp))
-    
+
     ! Get the cubature formula
     call cub_getCubature(ccubType,rmatrixAssembly%p_DcubPtsRef,rmatrixAssembly%p_Domega)
-    
+
     ! Number of simultaneously processed elements
     rmatrixAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
-    
+
     ! Get the evaluation tag by "OR"-ing all those from the FEM spaces
     ! and the option fields.
     rmatrixAssembly%cevaluationTag = 0
-    
+
     if (iand(cflags,BMA_CALC_REALCOORDS) .ne. 0) then
       ! Calculate real world coordinates of the cubature points
       rmatrixAssembly%cevaluationTag = &
@@ -1538,7 +1538,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"bma_initMatAssembly")
       call sys_halt()
     end if
-        
+
     ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
     do i=1,size(rmatrixAssembly%rassemblyDataTemplate%p_RfemData)
       rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
@@ -1558,13 +1558,13 @@ contains
         call sys_halt()
       end if
     end do
-    
+
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine bma_doneMatAssembly(rmatrixAssembly)
 
 !<description>
@@ -1577,13 +1577,13 @@ contains
 !</inputoutput>
 
 !</subroutine>
-  
+
     ! Release all allocated memory.
     call bma_doneMatAssemblyData(rmatrixAssembly%rassemblyDataTemplate)
-  
+
     deallocate(rmatrixAssembly%p_DcubPtsRef)
     deallocate(rmatrixAssembly%p_Domega)
-  
+
   end subroutine
 
   !****************************************************************************
@@ -1622,7 +1622,7 @@ contains
 
     ! Now, loop through all FEM spaces to calculate the FEM basis functions
     do i=1,size(rassemblyData%p_RfemData)
-    
+
       p_rfemData => rassemblyData%p_RfemData(i)
 
       ! Calculates the degrees of freedom on the elements
@@ -1637,12 +1637,12 @@ contains
       do i=1,ubound(rassemblyData%p_RmatrixData,1)
 
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
-        
+
         ! Unshared data in that block
         if (p_rmatrixData%bhasData) then 
-          
+
           if (.not. p_rmatrixData%bsharedMatrixData) then
-          
+
             ! For the assembly of the global matrix, we use a "local"
             ! approach. At first we build a "local" system matrix according
             ! to the current element. This contains all additive
@@ -1670,7 +1670,7 @@ contains
                 p_rmatrixData%p_IdofsTest,p_rmatrixData%p_IdofsTrial,p_rmatrixData%p_Kentry,&
                 ubound(p_rmatrixData%p_IdofsTest,1),ubound(p_rmatrixData%p_IdofsTrial,1),&
                 size(IelementList))
-                
+
             ! Fill Dentry with zero; default values.
             if (.not. p_rmatrixData%bisInterleaved) then
               call lalg_clearVector(p_rmatrixData%p_Dentry)
@@ -1679,9 +1679,9 @@ contains
                 call lalg_clearVector(p_rmatrixData%p_DentryIntl(:,:,:,k))
               end do
             end if
-          
+
           end if
-          
+
         end if
 
       end do
@@ -1719,12 +1719,12 @@ contains
     integer(I32) :: cevaluationTag
     real(DP), dimension(:,:), pointer :: p_Ddetj,p_DcubWeight
     real(DP), dimension(:), pointer :: p_Domega
-    
+
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
     cevaluationTag = rmatrixAssembly%cevaluationTag
-    
+
     ! In the first loop, calculate the coordinates on the reference element.
     ! In all later loops, use the precalculated information.
     !
@@ -1744,7 +1744,7 @@ contains
       if (associated(rassemblyData%p_DcubWeight)) then
         deallocate(rassemblyData%p_DcubWeight)
       end if
-      
+
       allocate(rassemblyData%p_DcubWeight(&
           rmatrixAssembly%ncubp,rassemblyData%nelements))
 
@@ -1752,7 +1752,7 @@ contains
       ! No need.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
     end if
-    
+
     ! Calculate all information that is necessary to evaluate the finite element
     ! on all cells of our subset. This includes the coordinates of the points
     ! on the cells.
@@ -1777,17 +1777,17 @@ contains
         ! Take the absolut value of the determinant of the mapping.
         ! In 2D, the determinant is always positive, whereas in 3D,
         ! the determinant might be negative -- that is normal!
-      
+
         p_DcubWeight(i,j) = abs(p_Ddetj(i,j))*p_Domega(i)
-        
+
       end do
     end do
 
     ! Now, calculate the FEM basis functions in the cubature points
     call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
-    
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -1826,20 +1826,20 @@ contains
       do i=1,ubound(rassemblyData%p_RmatrixData,1)
 
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
-        
+
         if ((p_rmatrixData%bhasData) .and. (.not. p_rmatrixData%bsharedMatrixData)) then 
-          
+
           ! Unshared data in that block.
           ! Incorporate the local matrices into the global one.
-          
+
           p_Da => p_rmatrixData%p_Da
           p_Kentry => p_rmatrixData%p_Kentry
-          
+
           if (.not. p_rmatrixData%bisInterleaved) then
 
             ! Non-interleaved matrix
             p_Dentry => p_rmatrixData%p_Dentry
-            
+
             do m=1,ubound(p_Dentry,3)
               do l=1,ubound(p_Dentry,2)
                 do k=1,ubound(p_Dentry,1)
@@ -1849,12 +1849,12 @@ contains
             end do
 
           else
-          
+
             ! Interleaved matrix
 
             p_DentryIntl => p_rmatrixData%p_DentryIntl
             nvar = p_rmatrixData%nvar
-            
+
             do m=1,ubound(p_DentryIntl,4)
               do l=1,ubound(p_DentryIntl,3)
                 do k=1,ubound(p_DentryIntl,2)
@@ -1867,41 +1867,41 @@ contains
             end do
 
           end if
-          
+
         end if
-        
+
       end do
     end do
-    
+
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine bma_assembleSubmeshMatrix (rmatrixAssembly, IelementList,&
       fcalcLocalMatrices, rcollection)
- 
+
 !<description>
   ! Assembles the matrix entries for a list of elements by integrating
   ! over the domain.
 !</description>
- 
+
 !<input>
-  
+
   ! List of elements where to assemble the bilinear form.
   integer, dimension(:), intent(in), target :: IelementList
-  
+
   interface
-  
+
     subroutine fcalcLocalMatrices (RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
-    
+
       use collection
       use blockmatassemblybase
-    
+
       ! Calculates the local matrices Dentry in all RmatrixData structures.
-  
+
       ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
       ! have to be filled with data.
       type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
@@ -1912,13 +1912,13 @@ contains
 
       ! Structure with all data about the assembly
       type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-      
+
       ! Number of points per element
       integer, intent(in) :: npointsPerElement
-      
+
       ! Number of elements
       integer, intent(in) :: nelements
-      
+
       ! Values of FEM functions automatically evaluated in the
       ! cubature points.
       type(t_fev2Vectors), intent(in) :: revalVectors
@@ -1927,25 +1927,25 @@ contains
       type(t_collection), intent(inout), optional :: rcollection
 
     end subroutine
-    
+
   end interface  
 
 !</input>
 
 !<inputoutput>
-  
+
   ! A matrix assembly structure prepared with bma_initMatAssembly.
   type(t_bmaMatrixAssembly), intent(inout), target :: rmatrixAssembly
-  
+
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer :: ielStart,ielMax
     type(t_bmaMatrixAssemblyData) :: rassemblyData
@@ -1964,27 +1964,27 @@ contains
 
       ! End of the current block
       ielMax = min(ielStart-1+rmatrixAssembly%nelementsPerBlock,size(IelementList))
-    
+
       ! Calculate the indices of the matrix entries to be modified,
       ! i.e., set up the local matrices.
       call bma_prepareLocalMatrices(rassemblyData,IelementList(ielStart:ielMax))
-      
+
       ! Calculate the FEM basis functions in the cubature points.
       call bma_evaluateFEMforMat(rassemblyData,rmatrixAssembly)
-      
+
       ! Evaluate the attached vectors in the cubature points.
       call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
-    
+
       ! Use the callback routine to calculate the local matrix entries.
       call fcalcLocalMatrices(rassemblyData%p_RmatrixData,rassemblyData,rmatrixAssembly,&
           rmatrixAssembly%ncubp,ielMax-ielStart+1,revalVectors,rcollection)
-      
+
       ! Incorporate the local matrices into the global one.
       ! NOTE: This cannot be done in parallel!
       call bma_incorporateMatToGlobal(rassemblyData,rmatrixAssembly)
-      
+
     end do
-    
+
     ! Release memory
     call bma_releaseMatAssemblyData(rassemblyData,revalVectors)
 
@@ -1998,7 +1998,7 @@ contains
       fcalcLocalMatrices, rcollection, &
       RmaxDerivativeTest,RmaxDerivativeTrial,&
       revalVectors,rcubatureInfo,rperfconfig)
-  
+
 !<description>
   ! This subroutine calculates the entries of a block matrix and
   ! adds them to rmatrix. The callback function fcalcLocalMatrices
@@ -2015,12 +2015,12 @@ contains
 
     subroutine fcalcLocalMatrices(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
-    
+
       use collection
       use blockmatassemblybase
 
       ! Calculates the local matrices Dentry in all RmatrixData structures.
-  
+
       ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
       ! have to be filled with data.
       type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
@@ -2031,10 +2031,10 @@ contains
 
       ! Structure with all data about the assembly
       type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-      
+
       ! Number of points per element
       integer, intent(in) :: npointsPerElement
-      
+
       ! Number of elements
       integer, intent(in) :: nelements
 
@@ -2046,14 +2046,14 @@ contains
       type(t_collection), intent(inout), optional :: rcollection
 
     end subroutine
-    
+
   end interface  
-    
+
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
-  
+
   ! OPTIONAL: For every block in the matrix, maximum
   ! derivative of the basis functions to be computed. If not
   ! specified or an entry is =0, the maximum available derivative for 
@@ -2063,7 +2063,7 @@ contains
 
   ! OPTIONAL: Set of vectors to be automatically evaluated
   type(t_fev2Vectors), intent(in), optional :: revalVectors
-  
+
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
@@ -2088,7 +2088,7 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     integer(I32) :: ccubType,celement
     type(t_spatialDiscretisation), pointer :: p_rdiscr
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -2097,7 +2097,7 @@ contains
     else
       p_rperfconfig => bma_perfconfig
     end if
-    
+
     ! Fetch the first available spatial discretisation.
     ! It defines the way the elements are separated into blocks of elements.
     p_rdiscr => rmatrix%p_rblockDiscrTest%RspatialDiscr(1)
@@ -2111,14 +2111,14 @@ contains
     else
       p_rcubatureInfo => rcubatureInfo
     end if
-    
+
     ! Loop over the cubature blocks to discretise
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
-    
+
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
           p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList)
-      
+
       ! Check if element distribution is empty
       if (NEL .le. 0 ) cycle
 
@@ -2126,15 +2126,15 @@ contains
       call bma_initMatAssembly(rmatrixAssembly,ccubType,cflags,&
           rmatrix,ielementDistr,&
           RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors,rperfconfig)
-          
+
       ! Assemble the data for all elements in this element distribution
       call bma_assembleSubmeshMatrix (rmatrixAssembly, p_IelementList(1:NEL),&
           fcalcLocalMatrices, rcollection)
-      
+
       ! Release the assembly structure.
       call bma_doneMatAssembly(rmatrixAssembly)
     end do
-                  
+
     ! Release the assembly structure if necessary.
     if (.not. present(rcubatureInfo)) then
       call spdiscr_releaseCubStructure(rtempCubatureInfo)
@@ -2160,7 +2160,7 @@ contains
 !<input>
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the vector which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -2176,7 +2176,7 @@ contains
 !</output>
 
 !</subroutine>
-  
+
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTest
     integer :: i
@@ -2188,33 +2188,33 @@ contains
     ! Loop over all blocks. Figure out which blocks have data.
     ! Get the data arrays for these blocks.
     do i=1,ubound(RvectorData,1)
-      
+
       ! Remember the vector
       RvectorData(i)%p_rvector => rvector%RvectorBlock(i)
-      
+
       ! Get a pointer to the vector data for faster access
       call lsyssc_getbase_double (rvector%RvectorBlock(i),RvectorData(i)%p_Ddata)
-      
+
       ! Check if we assemble an interleaved vector
       RvectorData(i)%nvar = rvector%RvectorBlock(i)%nvar
       RvectorData(i)%bisInterleaved = RvectorData(i)%nvar .gt. 1
-      
+
       ! Get the information about the trial and test spaces
       ! of this block.
       p_rdiscrTest => rvector%RvectorBlock(i)%p_rspatialDiscr
-      
+
       ! Get the indices of the trial and the test space.
       RvectorData(i)%iidxFemDataTest = containsDiscr (RfemData,size(RfemData),p_rdiscrTest)
 
       ! Element type          
       RvectorData(i)%celementTest = &
           p_rdiscrTest%RelementDistr(ielementDistr)%celement
-      
+
       ! Get the number of local DOF`s for trial and test functions
       RvectorData(i)%ndofTest = elem_igetNDofLoc(RvectorData(i)%celementTest)
 
     end do
-    
+
   end subroutine
 
   !****************************************************************************
@@ -2235,7 +2235,7 @@ contains
 !<input>
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the vector which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -2260,7 +2260,7 @@ contains
 
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
-    
+
     ! Prepare FEM data
     call fev2_prepareFemDataBVec(rvector,rassemblyData%p_RfemData,&
         ielementDistr,RmaxDerivativeTest)
@@ -2268,10 +2268,10 @@ contains
     ! Initialise the blocks according to the structure of the vector
     ! and the FEM spaces used.
     allocate(rassemblyData%p_RvectorData(ubound(rvector%RvectorBlock,1)))
-        
+
     call bma_prepareVectorData(&
         rvector,rassemblyData%p_RvectorData,rassemblyData%p_RfemData,ielementDistr)
-        
+
   end subroutine
 
   !****************************************************************************
@@ -2294,10 +2294,10 @@ contains
     ! Release the vector and FEM data array
     deallocate(rassemblyData%p_RfemData)
     deallocate(rassemblyData%p_RvectorData)
-        
+
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
-    
+
   end subroutine
 
 
@@ -2343,27 +2343,27 @@ contains
 
     ! At first, just copy the content from the vector template structure
     rassemblyData = rassemblyDataTemplate
-    
+
     ! Not initialise the dynamic content.
     !
     ! Copy the FEM data and the vector data
     allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
     allocate (rassemblyData%p_RvectorData(&
         ubound(rassemblyDataTemplate%p_RvectorData,1)))
-    
+
     rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
     rassemblyData%p_RvectorData(:) = rassemblyDataTemplate%p_RvectorData(:)
-    
+
     ! Initialise the FEM evaluation structures.
     call fev2_createFemData(rassemblyData%p_RfemData,&
         rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock)
-    
+
     ! Loop through the subvectors. Aallocate memory for the vector
     ! entries in this block.
     do i=1,ubound(rassemblyData%p_RvectorData,1)
-    
+
       p_rvectorData => rassemblyData%p_RvectorData(i)
-      
+
       ! Allocate memory for the vector data and positions in the vector
       if (.not. p_rvectorData%bisInterleaved) then
         ! Non-interleaved vector
@@ -2382,14 +2382,14 @@ contains
 
       p_rvectorData%p_IdofsTest => &
           rassemblyData%p_RfemData(p_rvectorData%iidxFemDataTest)%p_Idofs
-          
+
     end do
-    
+
     ! Initialise the vector evaluation structure.
     !
     ! Copy the content from the template.
     revalVectors = revalVectorsTemplate
-    
+
     ! Re-create the vector array
     if (revalVectors%ncount .eq. 0) then
       nullify(revalVectors%p_RvectorData)
@@ -2401,7 +2401,7 @@ contains
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData,&
           rassemblyData%revalElementSet)
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -2436,22 +2436,22 @@ contains
 
     ! Release FEM evaluation data
     call fev2_releaseFemData(rassemblyData%p_RfemData)
-      
+
     ! Release the element set and the cubature weights
     call elprep_releaseElementSet(rassemblyData%revalElementSet)
 
     if (associated(rassemblyData%p_DcubWeight)) then
       deallocate(rassemblyData%p_DcubWeight)
     end if
-  
+
     ! Element sets are not initialised anymore
     rassemblyData%ninitialisedElements = 0
-    
+
     ! Loop through the subvectors and release memory
     do i=1,ubound(rassemblyData%p_rvectorData,1)
-    
+
       p_rvectorData => rassemblyData%p_RvectorData(i)
-      
+
       ! Release memory of the local vector  entries
       if (associated(p_rvectorData%p_Dentry)) then
         deallocate(p_rvectorData%p_Dentry)
@@ -2460,13 +2460,13 @@ contains
       if (associated(p_rvectorData%p_DentryIntl)) then
         deallocate(p_rvectorData%p_DentryIntl)
       end if
-        
+
     end do
 
     ! Release memory
     deallocate (rassemblyData%p_RfemData)
     deallocate (rassemblyData%p_rvectorData)
-    
+
   end subroutine
 
   !****************************************************************************
@@ -2485,14 +2485,14 @@ contains
 !<input>
   ! Cubature formla to use
   integer(I32), intent(in) :: ccubType
-  
+
   ! Option field. Combination of BMA_CALC_xxxx flags.
   ! Use BMA_CALC_STANDARD for standard options.
   integer(I32), intent(in) :: cflags
 
   ! The vector which is going to be assembled.
   type(t_vectorBlock), intent(in) :: rvector
-  
+
   ! ID of the active element distribution. Identifies the FEM space
   ! in the vector which is to be assembled.
   integer, intent(in) :: ielementDistr
@@ -2530,31 +2530,31 @@ contains
     else
       p_rperfconfig => bma_perfconfig
     end if
-    
+
     rvectorAssembly%p_rperfconfig => p_rperfconfig
-    
+
     ! Get basic data
     rvectorAssembly%p_rboundary => rvector%p_rblockDiscr%p_rboundary
     rvectorAssembly%p_rtriangulation => rvector%p_rblockDiscr%p_rtriangulation
-    
+
     ! Save the vector evaluation structure as template.
     ! Make a copy of the stucture, that is simpler here.
     if (present(revalVectors)) then
       rvectorAssembly%revalVectorsTemplate = revalVectors
     end if
-    
+
     ! Remember current element distribution
     rvectorAssembly%ielementDistr = ielementDistr
-    
+
     ! Initialise the template structure which is used during the
     ! actual vector assembly.
     call bma_initVecAssemblyData(rvectorAssembly%rassemblyDataTemplate,&
         rvector,ielementDistr,RmaxDerivativeTest)
-      
+
     ! Get the transformation from the first FEM data structure.
     rvectorAssembly%ctrafoType = &
         rvectorAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
-    
+
     ! Get the cubature formula on the reference element
     rvectorAssembly%ccubType = ccubType
     rvectorAssembly%ncubp = cub_igetNumPts(ccubType)
@@ -2564,17 +2564,17 @@ contains
     allocate(rvectorAssembly%p_DcubPtsRef(&
         trafo_igetReferenceDimension(rvectorAssembly%ctrafoType),&
         rvectorAssembly%ncubp))
-    
+
     ! Get the cubature formula
     call cub_getCubature(ccubType,rvectorAssembly%p_DcubPtsRef,rvectorAssembly%p_Domega)
-    
+
     ! Number of simultaneously processed elements
     rvectorAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
-    
+
     ! Get the evaluation tag by "OR"-ing all those from the FEM spaces
     ! and the option fields.
     rvectorAssembly%cevaluationTag = 0
-    
+
     if (iand(cflags,BMA_CALC_REALCOORDS) .ne. 0) then
       ! Calculate real world coordinates of the cubature points
       rvectorAssembly%cevaluationTag = &
@@ -2586,7 +2586,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"bma_initVecAssembly")
       call sys_halt()
     end if
-        
+
     ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
     do i=1,size(rvectorAssembly%rassemblyDataTemplate%p_RfemData)
       rvectorAssembly%cevaluationTag = ior(rvectorAssembly%cevaluationTag,&
@@ -2606,13 +2606,13 @@ contains
         call sys_halt()
       end if
     end do
-    
+
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine bma_doneVecAssembly(rvectorAssembly)
 
 !<description>
@@ -2625,13 +2625,13 @@ contains
 !</inputoutput>
 
 !</subroutine>
-  
+
     ! Release all allocated memory.
     call bma_doneVecAssemblyData(rvectorAssembly%rassemblyDataTemplate)
-  
+
     deallocate(rvectorAssembly%p_DcubPtsRef)
     deallocate(rvectorAssembly%p_Domega)
-  
+
   end subroutine
 
   !****************************************************************************
@@ -2669,7 +2669,7 @@ contains
 
     ! Now, loop through all FEM spaces to calculate the FEM basis functions
     do i=1,size(rassemblyData%p_RfemData)
-    
+
       p_rfemData => rassemblyData%p_RfemData(i)
 
       ! Calculates the degrees of freedom on the elements
@@ -2683,7 +2683,7 @@ contains
     do i=1,ubound(rassemblyData%p_RvectorData,1)
 
       p_rvectorData => rassemblyData%p_RvectorData(i)
-      
+
       ! Fill Dentry with zero; default values.
       if (.not. p_rvectorData%bisInterleaved) then
         ! Non-Interleaved
@@ -2692,7 +2692,7 @@ contains
         ! Interleaved
         call lalg_clearVector(p_rvectorData%p_DentryIntl)
       end if
-        
+
     end do
 
   end subroutine
@@ -2727,12 +2727,12 @@ contains
     integer(I32) :: cevaluationTag
     real(DP), dimension(:,:), pointer :: p_Ddetj,p_DcubWeight
     real(DP), dimension(:), pointer :: p_Domega
-    
+
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag.
     cevaluationTag = rvectorAssembly%cevaluationTag
-    
+
     ! In the first loop, calculate the coordinates on the reference element.
     ! In all later loops, use the precalculated information.
     !
@@ -2752,7 +2752,7 @@ contains
       if (associated(rassemblyData%p_DcubWeight)) then
         deallocate(rassemblyData%p_DcubWeight)
       end if
-      
+
       allocate(rassemblyData%p_DcubWeight(&
           rvectorAssembly%ncubp,rassemblyData%nelements))
 
@@ -2760,7 +2760,7 @@ contains
       ! No need.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
     end if
-    
+
     ! Calculate all information that is necessary to evaluate the finite element
     ! on all cells of our subset. This includes the coordinates of the points
     ! on the cells.
@@ -2785,17 +2785,17 @@ contains
         ! Take the absolut value of the determinant of the mapping.
         ! In 2D, the determinant is always positive, whereas in 3D,
         ! the determinant might be negative -- that is normal!
-      
+
         p_DcubWeight(i,j) = abs(p_Ddetj(i,j))*p_Domega(i)
-        
+
       end do
     end do
 
     ! Now, calculate the FEM basis functions in the cubature points
     call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
-    
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -2834,28 +2834,28 @@ contains
 
       p_rvectorData => rassemblyData%p_rvectorData(i)
       p_IdofsTest => p_rvectorData%p_IdofsTest
-      
+
       ! Incorporate the local vectors into the global one.
-      
+
       p_Ddata => p_rvectorData%p_Ddata
 
       if (.not. p_rvectorData%bisInterleaved) then
-      
+
         ! Non-Interleaved
         p_Dentry => p_rvectorData%p_Dentry
-        
+
         do l=1,ubound(p_Dentry,2)
           do k=1,ubound(p_Dentry,1)
             p_Ddata(p_IdofsTest(k,l)) = p_Ddata(p_IdofsTest(k,l)) + p_Dentry(k,l)
           end do
         end do
-        
+
       else
-        
+
         ! Interleaved
         p_DentryIntl => p_rvectorData%p_DentryIntl
         nvar = p_rvectorData%nvar
-        
+
         do l=1,ubound(p_DentryIntl,3)
           do k=1,ubound(p_DentryIntl,2)
             do ivar = 1,ubound(p_DentryIntl,1)
@@ -2864,40 +2864,40 @@ contains
             end do
           end do
         end do
-      
+
       end if
-        
+
     end do
-    
+
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine bma_assembleSubmeshVector (rvectorAssembly, IelementList,&
       fcalcLocalVectors, rcollection)
- 
+
 !<description>
   ! Assembles the vector entries for a list of elements by integrating
   ! over the domain.
 !</description>
- 
+
 !<input>
-  
+
   ! List of elements where to assemble the bilinear form.
   integer, dimension(:), intent(in), target :: IelementList
-  
+
   interface
-  
+
     subroutine fcalcLocalVectors (rvectorData,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
-    
+
       use collection
       use blockmatassemblybase
-    
+
       ! Calculates the local vectors Dentry in all rvectorData structures.
-  
+
       ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
       ! have to be filled with data.
       type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
@@ -2908,13 +2908,13 @@ contains
 
       ! Structure with all data about the assembly
       type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
-      
+
       ! Number of points per element
       integer, intent(in) :: npointsPerElement
-      
+
       ! Number of elements
       integer, intent(in) :: nelements
-      
+
       ! Values of FEM functions automatically evaluated in the
       ! cubature points.
       type(t_fev2Vectors), intent(in) :: revalVectors
@@ -2923,25 +2923,25 @@ contains
       type(t_collection), intent(inout), optional :: rcollection
 
     end subroutine
-    
+
   end interface  
 
 !</input>
 
 !<inputoutput>
-  
+
   ! A vector assembly structure prepared with bma_initMatAssembly.
   type(t_bmaVectorAssembly), intent(inout), target :: rvectorAssembly
-  
+
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer :: ielStart,ielMax
     type(t_bmaVectorAssemblyData) :: rassemblyData
@@ -2960,27 +2960,27 @@ contains
 
       ! End of the current block
       ielMax = min(ielStart-1+rvectorAssembly%nelementsPerBlock,size(IelementList))
-    
+
       ! Calculate the indices of the vector entries to be modified,
       ! i.e., set up the local vectors.
       call bma_prepareLocalVectors(rassemblyData,IelementList(ielStart:ielMax))
-      
+
       ! Calculate the FEM basis functions in the cubature points.
       call bma_evaluateFEMforVec(rassemblyData,rvectorAssembly)
-      
+
       ! Evaluate the attached vectors in the cubature points.
       call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
-    
+
       ! Use the callback routine to calculate the local vector entries.
       call fcalcLocalVectors(rassemblyData%p_rvectorData,rassemblyData,rvectorAssembly,&
           rvectorAssembly%ncubp,ielMax-ielStart+1,revalVectors,rcollection)
-      
+
       ! Incorporate the local vectors into the global one.
       ! NOTE: This cannot be done in parallel!
       call bma_incorporateVecToGlobal(rassemblyData,rvectorAssembly)
-      
+
     end do
-    
+
     ! Release memory
     call bma_releaseVecAssemblyData(rassemblyData,revalVectors)
 
@@ -2993,7 +2993,7 @@ contains
   subroutine bma_buildVector (rvector,cflags,&
       fcalcLocalVectors, rcollection, &
       RmaxDerivativeTest,revalVectors,rcubatureInfo,rperfconfig)
-  
+
 !<description>
   ! This subroutine calculates the entries of a block vector and
   ! adds them to rvector. The callback function fcalcLocalVectors
@@ -3010,12 +3010,12 @@ contains
 
     subroutine fcalcLocalVectors (rvectorData,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
-    
+
       use collection
       use blockmatassemblybase
-    
+
       ! Calculates the local vectors Dentry in all rvectorData structures.
-  
+
       ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
       ! have to be filled with data.
       type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
@@ -3026,13 +3026,13 @@ contains
 
       ! Structure with all data about the assembly
       type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
-      
+
       ! Number of points per element
       integer, intent(in) :: npointsPerElement
-      
+
       ! Number of elements
       integer, intent(in) :: nelements
-      
+
       ! Values of FEM functions automatically evaluated in the
       ! cubature points.
       type(t_fev2Vectors), intent(in) :: revalVectors
@@ -3041,14 +3041,14 @@ contains
       type(t_collection), intent(inout), optional :: rcollection
 
     end subroutine
-    
+
   end interface  
-    
+
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
-  
+
   ! OPTIONAL: For every block in the vector, maximum
   ! derivative of the basis functions to be computed. If not
   ! specified or an entry is =0, the maximum available derivative for 
@@ -3057,7 +3057,7 @@ contains
 
   ! OPTIONAL: Set of vectors to be automatically evaluated
   type(t_fev2Vectors), intent(in), optional :: revalVectors
-  
+
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
@@ -3082,7 +3082,7 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     integer(I32) :: ccubType,celement
     type(t_spatialDiscretisation), pointer :: p_rdiscr
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -3091,7 +3091,7 @@ contains
     else
       p_rperfconfig => bma_perfconfig
     end if
-    
+
     ! Fetch the first available spatial discretisation.
     ! It defines the way the elements are separated into blocks of elements.
     p_rdiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
@@ -3105,34 +3105,34 @@ contains
     else
       p_rcubatureInfo => rcubatureInfo
     end if
-    
+
     ! Loop over the cubature blocks to discretise
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
-    
+
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
           p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList)
-      
+
       ! Check if element distribution is empty
       if (NEL .le. 0 ) cycle
 
       ! Initialise a vector assembly structure for that element distribution
       call bma_initVecAssembly(rvectorAssembly,ccubType,cflags,&
           rvector,ielementDistr,RmaxDerivativeTest,revalVectors,rperfconfig)
-          
+
       ! Assemble the data for all elements in this element distribution
       call bma_assembleSubmeshVector (rvectorAssembly, p_IelementList(1:NEL),&
           fcalcLocalVectors, rcollection)
-      
+
       ! Release the assembly structure.
       call bma_doneVecAssembly(rvectorAssembly)
     end do
-                  
+
     ! Release the assembly structure if necessary.
     if (.not. present(rcubatureInfo)) then
       call spdiscr_releaseCubStructure(rtempCubatureInfo)
     end if
 
   end subroutine
-  
+
 end module

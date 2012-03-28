@@ -367,9 +367,9 @@ module fparser
   use perfconfig
   use storage
   use stackInt
-  
+
   implicit none
-  
+
   private
   public :: t_fparser
   public :: fparser_initPerfConfig
@@ -387,11 +387,11 @@ module fparser
   public :: fparser_ErrorMsg
   public :: fparser_PrintByteCode
   public :: fparser_getFunctionNumber
-  
+
   !****************************************************************************
   !****************************************************************************
   !****************************************************************************
-  
+
   interface fparser_evalFunction
     module procedure fparser_evalFuncScalarByName
     module procedure fparser_evalFuncScalarByNumber
@@ -443,7 +443,7 @@ module fparser
 
 
 !<constantblock description="types for parser expressions">
-  
+
   ! Constant
   integer, parameter, public :: FPAR_CONSTANT   = 1
 
@@ -643,18 +643,18 @@ module fparser
 !<types>
 
 !<typeblock>
-  
+
   ! Type block for storing all information of the function parser
   type t_fparser
     private
-    
+
     ! Array of function parser components.
     ! Each component is used to handle one function string at a time
     type(t_fparserComponent), dimension(:), pointer :: Rcomp => null()
 
     ! Array of function names corresponding to the individual components.
     character(LEN=FPAR_FUNCLEN), dimension(:), pointer :: ScompName => null()
-    
+
     ! Number of parser components
     integer :: ncomp = 0
 
@@ -688,10 +688,10 @@ module fparser
 
     ! Is vectorizable
     logical :: bisVectorizable = .true.
-    
+
     ! Bytecode
     integer(is), dimension(:), pointer :: IbyteCode => null()
-    
+
     ! Immediates
     real(DP), dimension(:), pointer :: Dimmed => null()
   end type t_fparserComponent
@@ -700,10 +700,10 @@ module fparser
 !</types>
 
   !************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: fparser_perfconfig
-  
+
   !************************************************************************
 
 contains
@@ -732,11 +732,11 @@ contains
       call pcfg_initPerfConfig(fparser_perfconfig)
       fparser_perfconfig%NELEMSIM = FPAR_NITEMSIM
     end if
-  
+
   end subroutine fparser_initPerfConfig
 
   ! *****************************************************************************
-  
+
 !<subroutine>
 
   subroutine fparser_init()
@@ -781,12 +781,12 @@ contains
     nconstants     = 0
     Cconstantname  = '     '
     DconstantValue = 0._DP
-    
+
     ! Reset expressions
     nexpressions      = 0
     CexpressionName   = ''
     CexpressionString = ''
-        
+
   end subroutine fparser_done
 
   ! *****************************************************************************
@@ -844,11 +844,11 @@ contains
 
       ! Read next line in file
       call io_readlinefromfile(iunit, sdata, idatalen, ios)
-      
+
       ! Check for keyword defconst or defexp
       ipos = scan(sdata(1:idatalen), ":")
       if (ipos .eq. 0) cycle
-      
+
       call sys_tolower(sdata(1:max(1, ipos-1)), skeyword)
       if (trim(adjustl(skeyword)) .eq. ckeyword) then
 
@@ -860,7 +860,7 @@ contains
           jpos = scan(sdata(1:idatalen), "=")
           sconstName = trim(adjustl(sdata(ipos+1:jpos-1)))
           svalue = trim(adjustl(sdata(jpos+1:)))
-          
+
           read(svalue,*) dvalue
           call fparser_defineConstant(sconstName, dvalue)
 
@@ -874,14 +874,14 @@ contains
           do while(ios .eq. 0)
             ! Get length of expression
             ipos = len_trim(svalue)
-            
+
             ! Check if expression is continued in the following line
             if (svalue(max(1, ipos-2):ipos) .eq. '...') then
               ipos = ipos-2
             else
               exit
             end if
-            
+
             ! Read next line in file
             call io_readlinefromfile(iunit, sdata, idatalen, ios)
             if (ios .ne. 0) then
@@ -889,7 +889,7 @@ contains
                   OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
               call sys_halt()
             end if
-            
+
             ! Append line
             svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
           end do
@@ -897,7 +897,7 @@ contains
           call fparser_defineExpression(sexpressionName, svalue)
 
         case (FPAR_FUNCTION)
-          
+
           ! Split the line into name, expression and symbolic variables
           jpos = scan(sdata(1:idatalen), "=")
           sfunctionName = trim(adjustl(sdata(ipos+1:jpos-1)))
@@ -913,14 +913,14 @@ contains
           do while(ios .eq. 0)
             ! Get length of expression
             ipos = len_trim(svalue)
-            
+
             ! Check if expression is continued in the following line
             if (svalue(max(1, ipos-2):ipos) .eq. '...') then
               ipos = ipos-2
             else
               exit
             end if
-            
+
             ! Read next line in file
             call io_readlinefromfile(iunit, sdata, idatalen, ios)
             if (ios .ne. 0) then
@@ -928,7 +928,7 @@ contains
                   OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
               call sys_halt()
             end if
-            
+
             ! Append line
             svalue(ipos:) = trim(adjustl(sdata(1:idatalen)))
           end do
@@ -943,7 +943,7 @@ contains
             svariable = trim(adjustl(svariable(kpos+1:len_trim(svariable))))
             kpos = scan(svariable, ",")
           end do
-          
+
           ! Allocate temporal memory
           allocate(Svariables(ivar+1))
 
@@ -958,14 +958,14 @@ contains
             kpos = scan(svariable, ",")
           end do
           Svariables(ivar+1) = trim(adjustl(svariable(1:len_trim(svariable))))
-          
+
           ! Parse the function
           call fparser_parseFunction(rfparser, sfunctionName, svalue(1:jpos-1), Svariables)
 
           ! Deallocate(temporal memory
           deallocate(Svariables)
 
-          
+
         case default
           call output_line('Invalid type of expression!',&
               OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFileForKeyword')
@@ -977,9 +977,9 @@ contains
 
     ! Close file
     close (iunit)
-    
+
   end subroutine fparser_parseFileForKeyword
-  
+
   ! *****************************************************************************
 
 !<subroutine>
@@ -1081,7 +1081,7 @@ contains
     call Replace (']',')',   sstring)
     call Replace ('{','(',   sstring)
     call Replace ('}',')',   sstring)
-    
+
     ! Condense function string
     call RemoveSpaces (sstring)
 
@@ -1109,7 +1109,7 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine fparser_create (rfparser, nncomp)
 
 !<description>
@@ -1130,11 +1130,11 @@ contains
     ! Set number of components
     rfparser%nncomp = nncomp
     rfparser%ncomp  = 0
-    
+
     ! Allocate arrays
     allocate (rfparser%Rcomp(nncomp))
     allocate (rfparser%ScompName(nncomp))
-    
+
   end subroutine fparser_create
 
   ! *****************************************************************************
@@ -1152,10 +1152,10 @@ contains
     type(t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: icomp
-    
+
     ! Check that pointer is associated and return otherwise
     if (.not.associated(rfparser%Rcomp)) return
 
@@ -1164,11 +1164,11 @@ contains
       if (associated(rfparser%Rcomp(icomp)%IbyteCode)) deallocate(rfparser%Rcomp(icomp)%IbyteCode)
       if (associated(rfparser%Rcomp(icomp)%Dimmed))    deallocate(rfparser%Rcomp(icomp)%Dimmed)
     end do
-    
+
     ! Deallocate memory
     deallocate(rfparser%Rcomp)
     deallocate(rfparser%ScompName)
-    
+
     ! Reset scalar data
     rfparser%nncomp = 0
     rfparser%ncomp  = 0
@@ -1205,7 +1205,7 @@ contains
     type (t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
-    
+
     ! Check if there is space for a new component
     if (rfparser%ncomp .eq. rfparser%nncomp) then
       call output_line('No free components left!',&
@@ -1228,14 +1228,14 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine fparser_parseFunctionByNumber (rfparser, icomp, sfunctionString,&
                                             Svariables, buseDegrees)
 
 !<description>
     ! Parse ith function string sfuncStr and compile it into bytecode
 !</description>
-    
+
 !<input>
     ! Function identifier
     integer, intent(in) :: icomp
@@ -1258,14 +1258,14 @@ contains
 
     ! local variables
     character (LEN=len(sfunctionString)) :: sstring
-    
+
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
           OU_CLASS_ERROR, OU_MODE_STD,'fparser_parseFunctionByNumber')
       call sys_halt()
     end if
-    
+
     ! Local copy of function string
     sstring = sfunctionString
 
@@ -1282,7 +1282,7 @@ contains
     ! Check for valid syntax; this prevents the bytecode compiler
     ! from running into endless loops or other problems
     call CheckSyntax (sstring, Svariables)
-    
+
     ! Check if conversion to degrees is required
     if (present(buseDegrees))&
         rfparser%Rcomp(icomp)%buseDegreeConversion = buseDegrees
@@ -1483,13 +1483,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlockByName2')
       call sys_halt()
     end if
- 
+
   end subroutine fparser_evalFuncBlockByName2
 
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine fparser_evalFuncScalarByNumber (rfparser, icomp, Dvalue, dresult)
 
 !<description>
@@ -1519,7 +1519,7 @@ contains
     ! local variables
     real(DP), dimension(:), allocatable :: Dstack
     integer :: EvalErrType
-    
+
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
       call output_line('Component number is out of range',&
@@ -1606,7 +1606,7 @@ contains
     real(DP), dimension(:), intent(out) :: Dresult
 !</output>
 !</subroutine>
-    
+
     ! local variables
     real(DP), dimension(:,:), allocatable :: Dstack
     real(DP), dimension(:), allocatable :: DvalueTemp
@@ -1615,7 +1615,7 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -1638,23 +1638,23 @@ contains
     ! Check if the compiled function is vectorizable
     if (rfparser%Rcomp(icomp)%bisVectorizable) then
       ! ...ok, vectorization of the bytecode is admissible.
-      
+
       ! What is the organization of ValBlock(:,:)
       if (idim .eq. 1) then
         !$omp parallel default(shared)&
         !$omp private(Dstack,iValMax,iblockSize)&
         !$omp reduction(max:EvalErrType)
-        
+
         ! Allocate temporal memory
         allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
         do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
-          
+
           ! Initialization
           iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
           iblockSize = iValMax-iValSet+1
-          
+
           ! Invoke working routine
           call evalFunctionBlock(rfparser%Rcomp(icomp), iblockSize, Dstack,&
                                  DvalueBlock(iValSet:iValMax,:), idim, EvalErrType,&
@@ -1669,13 +1669,13 @@ contains
         !$omp parallel default(shared)&
         !$omp private(Dstack,iValMax,iblockSize)&
         !$omp reduction(max:EvalErrType)
-        
+
         ! Allocate temporal memory
         allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
         do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
-          
+
           ! Initialization
           iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
           iblockSize = iValMax-iValSet+1
@@ -1691,7 +1691,7 @@ contains
         deallocate(Dstack)
         !$omp end parallel
       end if
-      
+
     else   ! The compiled function cannot be vectorised
 
       ! Allocate temporal memory
@@ -1711,7 +1711,7 @@ contains
 
         if (idim .eq. 1) then
           do iValSet = 1, nvalue
-            
+
             DvalueTemp(1:isizeValueBlock)  = DvalueBlock(iValSet,1:isizeValueBlock)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
@@ -1721,7 +1721,7 @@ contains
           end do
         else
           do iValSet = 1, nvalue
-            
+
             DvalueTemp(1:isizeValueBlock)  = DvalueBlock(:,iValSet)
             DvalueTemp(isizeValueBlock+1:) = DvalueScalar
 
@@ -1735,10 +1735,10 @@ contains
         deallocate(DvalueTemp)
 
       else
-        
+
         if (idim .eq. 1) then
           do iValSet = 1, nvalue
-            
+
             ! Invoke working routine
             call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueBlock(iValSet,:), EvalErrType,&
@@ -1746,7 +1746,7 @@ contains
           end do
         else
           do iValSet = 1, nvalue
-            
+
             ! Invoke working routine
             call evalFunctionScalar(rfparser%Rcomp(icomp), Dstack(:,1),&
                                     DvalueBlock(:, iValSet), EvalErrType,&
@@ -1769,7 +1769,7 @@ contains
     end if
 
   end subroutine fparser_evalFuncBlockByNumber
-  
+
   ! *****************************************************************************
 
 !<subroutine>
@@ -1866,7 +1866,7 @@ contains
     ! Error identifier
     integer, intent(in) :: EvalErrType
 !</input>
-    
+
 !<result>
     ! Error messages
     character (LEN=len(m)) :: smessage
@@ -1905,7 +1905,7 @@ contains
     character(LEN=5) :: n
     integer :: iinstPtr, idataPtr, istackPtr, nparams
     integer(is) :: iopCode
-    
+
     nparams   = 1
     idataPtr  = 1
     istackPtr = 0
@@ -1914,12 +1914,12 @@ contains
 
     do while(iinstPtr .lt. p_Comp%ibytecodeSize)
       iinstPtr = iinstPtr+1
-      
+
       write(*,FMT='(I8.8,1X,":",1X)', ADVANCE="NO") iinstPtr
-      
+
       iopCode = p_Comp%IbyteCode(iinstPtr)
       select case(iopCode)
-        
+
       case(cIf)
         write(*,FMT='(A,1X,T10,I8.8)') "jz", p_Comp%IbyteCode(iinstPtr+1)+1
         iinstPtr = iinstPtr+2
@@ -1959,11 +1959,11 @@ contains
             nparams = MathFunctionParameters(iopCode)
           end select
           write(*,FMT='(A,T10,A,"  (",I1,") ")') trim(n), "Par", nparams
-          
+
         else
           write(*,FMT='(A,T10,A,1X,I4.4)') "push", "Var", iopCode-VarBegin+1
         end if
-        
+
       end select
     end do
 
@@ -1983,7 +1983,7 @@ contains
 !<input>
     ! Function parser
     type(t_fparser), intent(in) :: rfparser
-    
+
     ! Function name
     character(len=*), intent(in) :: scompName
 !</input>
@@ -2018,13 +2018,13 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine CheckSyntax (sfunctionString, Svariables)
 
 !<description>
     ! Check syntax of function string, returns 0 if syntax is ok
 !</description>
-    
+
 !<input>
     ! Function string without spaces
     character (LEN=*), intent(in) :: sfunctionString
@@ -2033,7 +2033,7 @@ contains
     character (LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 !</subroutine>
-    
+
     ! local avriables
     type(t_stackInt) :: rstack
     integer(is) :: n,iopSize
@@ -2042,7 +2042,7 @@ contains
     logical :: berror
     integer :: ifunctionIndex,ifunctionIndex2
     integer :: iparenthCount,ib,in,ifunctionLength,idummy
-    
+
     ! Initialization
     ifunctionIndex  = 1
     iparenthCount   = 0
@@ -2069,7 +2069,7 @@ contains
         end if
         c = sfunctionString(ifunctionIndex:ifunctionIndex)
       end if
-            
+
       ! Check for math function
       n = MathFunctionIndex (sfunctionString(ifunctionIndex:))
       if (n .gt. 0) then
@@ -2100,15 +2100,15 @@ contains
             call sys_halt()
           end if
           c = sfunctionString(ifunctionIndex:ifunctionIndex)
-          
+
           ! Ugly, but other methods would just be uglier ...
           goto 999
         end if
-        
+
         ! Push counter for parenthesss to stack
         call stack_push(rstack, iparenthCount+1)
       end if
-      
+
       ! Check for opening parenthesis
       if (c .eq. '(') then
         iparenthCount = iparenthCount+1
@@ -2197,7 +2197,7 @@ contains
 
       ! Now, we have a legal operand: A legal operator or end of string must follow
 999   if (ifunctionIndex .gt. ifunctionLength) exit
-      
+
       ! Check operators
       iopSize = 0
       if (.not.stack_empty(rstack)) then
@@ -2215,7 +2215,7 @@ contains
             OU_CLASS_ERROR, OU_MODE_STD,'CheckSyntax')
         call sys_halt()
       end if
-      
+
       ! Now, we have an operand and an operator: the next loop will check for another
       ! operand (must appear)
       ifunctionIndex = ifunctionIndex+iopSize
@@ -2240,7 +2240,7 @@ contains
     ! Return 0 if given string is not an operator, else the size of the
     ! operator
 !</description>
-    
+
 !<input>
     ! Operator string
     character(LEN=*), intent(in) :: sfunctionString
@@ -2263,7 +2263,7 @@ contains
         exit
       end if
     end do
-    
+
   end function isOperator
 
   ! *****************************************************************************
@@ -2291,7 +2291,7 @@ contains
     integer(is) :: j
     integer k
     character (LEN=len(Funcs)) :: sfunctionName
-    
+
     ! Check all math functions
     n = 0
     do j = cIf, cSec
@@ -2309,7 +2309,7 @@ contains
   end function MathFunctionIndex
 
   ! *****************************************************************************
-  
+
 !<function>
 
   function MathFunctionParameters (ifunctionIndex) result (nparameters)
@@ -2372,7 +2372,7 @@ contains
     integer(is) :: j
     integer k
     character (LEN=len(CconstantName)) :: sconstantName
-    
+
     ! Check all predefined constants
     n = 0
     do j = 1, nconstants
@@ -2435,7 +2435,7 @@ contains
   ! *****************************************************************************
 
 !<function>
-  
+
   function VariableIndex (sstring, Svariables, ibegin, inext) result (n)
 
 !<description>
@@ -2466,7 +2466,7 @@ contains
 
     ! local variables
     integer :: j,ib,in,istringlen
-    
+
     n = 0
     istringlen = len_trim(sstring)
     if (istringlen .gt. 0) then
@@ -2475,7 +2475,7 @@ contains
         ! When lstr>0 at least 1 char in str
         if (sstring(ib:ib) .ne. ' ') exit
       end do
-      
+
       ! Search for name terminators
       do in = ib, istringlen
         if (scan(sstring(in:in),'*+-/%^),&|<>=! ') > 0) exit
@@ -2504,7 +2504,7 @@ contains
     ! Remove Spaces from string, remember positions of characters in
     ! old string
 !</description>
-   
+
 !<inputoutput>
     ! String from which spaces should be removed
     character (LEN=*), intent(inout) :: sfunctionString
@@ -2513,7 +2513,7 @@ contains
 
     ! local variables
     integer :: k,istringlen
-    
+
     istringlen = len_trim(sfunctionString)
     k = 1
     do while (sfunctionString(k:istringlen) .ne. ' ')
@@ -2539,7 +2539,7 @@ contains
 !<input>
     ! Source characters
     character (LEN=*), intent(in) :: ca
-    
+
     ! Destination characters
     character (LEN=len(ca)), intent(in) :: cb
 !</input>
@@ -2549,10 +2549,10 @@ contains
     character (LEN=*), intent(inout) :: sfunctionString
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: j,lca
-    
+
     lca = len(ca)
     do j = 1, len_trim(sfunctionString)-lca+1
       if (sfunctionString(j:j+lca-1) .eq. ca) sfunctionString(j:j+lca-1) = cb
@@ -2588,7 +2588,7 @@ contains
     integer(is), dimension(:), pointer :: IbyteCode
     real(DP), dimension(:), pointer :: Dimmed
     integer :: ind,isize
-    
+
     ! (Re-)initialise the bytecode structure (if required)
     if (associated(rcomp%IbyteCode)) deallocate (rcomp%IbyteCode)
     if (associated(rcomp%Dimmed))    deallocate (rcomp%Dimmed)
@@ -2606,7 +2606,7 @@ contains
 
     ! Compile function string into bytecode
     ind = CompileExpression(rcomp, sfunctionString, 1, Svariables)
-    
+
     ! Adjust memory size of bytecode stack
     if (rcomp%ibytecodeSize .eq. 0) then
       deallocate(rcomp%IbyteCode)
@@ -2618,7 +2618,7 @@ contains
       rcomp%IbyteCode = IbyteCode
       deallocate(IbyteCode)
     end if
-    
+
     ! Adjust memory size of immediate stack
     if (rcomp%iimmedSize .eq. 0) then
       deallocate(rcomp%Dimmed)
@@ -2636,7 +2636,7 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine incStackPtr (rcomp)
 
 !<description>
@@ -2704,7 +2704,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = acos(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cAsin)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. -1.0_DP .or. &
@@ -2716,7 +2716,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = asin(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cAtan)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = atan(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2744,7 +2744,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = log(daux)
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cAnint)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = anint(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2815,7 +2815,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cCsc)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         daux=sin(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2827,7 +2827,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = 1/daux
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cExp)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = exp(rcomp%Dimmed(rcomp%iimmedSize))
@@ -2933,7 +2933,7 @@ contains
         rcomp%Dimmed(rcomp%iimmedSize) = sinh(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cSqrt)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         if (rcomp%Dimmed(rcomp%iimmedSize) .lt. 0.0_DP) then
@@ -3016,7 +3016,7 @@ contains
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cMod)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
@@ -3031,7 +3031,7 @@ contains
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cPow)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
@@ -3060,7 +3060,7 @@ contains
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cLess)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
@@ -3100,7 +3100,7 @@ contains
         call RemoveCompiledByte(rcomp)
         call RemoveCompiledByte(rcomp)
       end if
-      
+
     case (cAnd)
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed .and.&
           rcomp%IbyteCode(rcomp%ibytecodeSize-2) .eq. cImmed) then
@@ -3159,7 +3159,7 @@ contains
     type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
-   
+
     rcomp%IbyteCode(rcomp%ibytecodeSize) = 0
     rcomp%ibytecodeSize = rcomp%ibytecodeSize - 1
 
@@ -3184,7 +3184,7 @@ contains
     type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
-       
+
     rcomp%iimmedSize = rcomp%iimmedSize + 1
     rcomp%Dimmed(rcomp%iimmedSize) = immediate
 
@@ -3229,16 +3229,16 @@ contains
     type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
-    
+
     if (rcomp%buseDegreeConversion) then
       select case(iopcode)
       case(cCos, Ccosh, cCot, cCsc, cSec, cSin, cSinh, cTan, cTanh)
         call AddCompiledByte(rcomp, cRad)
       end select
     end if
-    
+
     call AddCompiledByte(rcomp, iopcode)
-    
+
     if (rcomp%buseDegreeConversion) then
       select case(iopcode)
       case(cAcos, cAcosh, cAsinh, cAtanh, cAsin, cAtan, cAtan2)
@@ -3267,7 +3267,7 @@ contains
 !<output>
     ! OPTIONAL: Start position of real number
     integer, optional, intent(out) :: ibegin
-    
+
     ! OPTIONAL: 1st character after real number
     integer, optional, intent(out) :: inext
 
@@ -3280,7 +3280,7 @@ contains
     real(DP) :: dresult
 !</result>
 !</function>
- 
+
     ! local variables
     integer :: ib,in,istat
     logical :: Bflag,               & ! .T. at begin of number in string
@@ -3292,7 +3292,7 @@ contains
                DInExp,              & ! .T. if at least 1 digit in exp.
                err                    ! Local error flag
 
-    
+
     Bflag=.true.; InMan=.false.; Pflag=.false.; Eflag=.false.; InExp=.false.
     DInMan=.false.; DInExp=.false.
     ib   = 1
@@ -3361,7 +3361,7 @@ contains
 !<description>
     ! Return the size of the total function including external expressions
 !</description>
-    
+
 !<input>
     ! Function string
     character (LEN=*),  intent(in) :: sfunctionString
@@ -3372,7 +3372,7 @@ contains
     integer :: isize
 !</result>
 !</function>
-    
+
     ! local variables
     integer :: ind,n
     character(LEN=1) :: c
@@ -3433,16 +3433,16 @@ contains
 
     ! local variables
     integer :: ifunctionLength
-    
+
     ifunctionLength = len_trim(sfunctionString)
-    
+
     ind2 = CompileOr(rcomp, sfunctionString, ind, Svariables)
     if(ind2 > ifunctionLength) return
 
     if (present(bstopAtComma)) then
       if (bstopAtComma) return
     end if
-    
+
     do while (sfunctionString(ind2:ind2) .eq. ',')
       ind2 = CompileOr(rcomp, sfunctionString, ind2+1, Svariables)
       if (ind2 .gt. ifunctionLength) return
@@ -3534,10 +3534,10 @@ contains
     integer :: ifunctionLength
 
     ifunctionLength = len_trim(sfunctionString)
-    
+
     ind2 = CompileComparison(rcomp, sfunctionString, ind, Svariables)
     if (ind2 .gt. ifunctionLength) return
-    
+
     do while(sfunctionString(ind2:ind2) .eq. '&')
       ind2 = CompileComparison(rcomp, sfunctionString, ind2+1, Svariables)
 
@@ -3585,10 +3585,10 @@ contains
     integer :: ifunctionLength
 
     ifunctionLength = len_trim(sfunctionString)
-    
+
     ind2 = CompileAddition(rcomp, sfunctionString, ind, Svariables)
     if (ind2 .gt. ifunctionLength) return
-    
+
     c=sfunctionString(ind2:ind2)
     do while(c .eq. '=' .or. c .eq. '<' .or. c .eq. '>' .or. c .eq. '!')
       iopSize = merge(2, 1, sfunctionString(ind2+1:ind2+1) .eq. '=')
@@ -3600,15 +3600,15 @@ contains
 
       case('<')
         call AddCompiledByte(rcomp, merge(cLess, cLessOrEq, iopSize .eq. 1))
-        
+
       case('>')
         call AddCompiledByte(rcomp, merge(cGreater, cGreaterOrEq, iopSize .eq. 1))
-        
+
       case('!')
         call AddCompiledByte(rcomp, cNEqual)
       end select
       rcomp%istackPtr = rcomp%istackPtr-1
-      
+
       if (ind2 .gt. ifunctionLength) return
       c=sfunctionString(ind2:ind2)
     end do
@@ -3651,17 +3651,17 @@ contains
     integer :: ifunctionLength
 
     ifunctionLength = len_trim(sfunctionString)
-    
+
     ind2 = CompileMult(rcomp, sfunctionString, ind, Svariables)
     if (ind2 .gt. ifunctionLength) return
-    
+
     c=sfunctionString(ind2:ind2)
     do while(c .eq. '+' .or. c .eq. '-')
       ind2 = CompileMult(rcomp, sfunctionString, ind2+1, Svariables)
 
       call AddCompiledByte(rcomp, merge(cAdd, cSub, c .eq. '+'))
       rcomp%istackPtr = rcomp%istackPtr-1
-      
+
       if (ind2 .gt. ifunctionLength) return
       c=sfunctionString(ind2:ind2)
     end do
@@ -3704,10 +3704,10 @@ contains
     integer :: ifunctionLength
 
     ifunctionLength = len_trim(sfunctionString)
-    
+
     ind2 = CompileUnaryMinus(rcomp, sfunctionString, ind, Svariables)
     if (ind2 .gt. ifunctionLength) return
-    
+
     c=sfunctionString(ind2:ind2)
     do while(c .eq. '*' .or. c .eq. '/' .or. c .eq. '%')
       ind2 = CompileUnaryMinus(rcomp, sfunctionString, ind2+1, Svariables)
@@ -3715,13 +3715,13 @@ contains
       select case(c)
       case('*')
         call AddCompiledByte(rcomp, cMul)
-        
+
       case('/')
         call AddCompiledByte(rcomp, cDiv)
-        
+
       case('%')
         call AddCompiledByte(rcomp, cMod)
-        
+
       end select
       rcomp%istackPtr = rcomp%istackPtr-1
 
@@ -3777,18 +3777,18 @@ contains
       ! If we are negating a constant, negate the constant itself
       if (c .eq. '-' .and. rcomp%IbyteCode(rcomp%ibytecodeSize) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = -rcomp%Dimmed(rcomp%iimmedSize)
-        
+
         ! If we are negating a negation, we can remove both
       elseif (c .eq. '-' .and. rcomp%IbyteCode(rcomp%ibytecodeSize) .eq. cNeg) then
         call RemoveCompiledByte(rcomp)
-        
+
       else
         call AddCompiledByte(rcomp, merge(cNeg, cNot, c .eq. '-'))
 
       end if
       return
     end if
-    
+
     ind2 = CompilePow(rcomp, sfunctionString, ind, Svariables)
 
   end function CompileUnaryMinus
@@ -3900,10 +3900,10 @@ contains
       call incstackPtr(rcomp)
       ind2 = ind1+in-1
       return
-      
+
     else
       ! Then string must be function, variable or constant
-      
+
       ! Check for mathematical functions
       n = MathFunctionIndex(sfunctionString(ind1:))
       if (n .gt. 0) then
@@ -3922,7 +3922,7 @@ contains
         call AddFunctionOpcode(rcomp, n)
         return
       end if
-      
+
       ! Check for predefined constant
       n = ConstantIndex(sfunctionString(ind1:))
       if (n .gt. 0) then
@@ -3940,7 +3940,7 @@ contains
 
         ! Recursively compile the given expression
         ind0 = CompileExpression(rcomp, CexpressionString(n), 1, Svariables)
-        
+
         ! Proceed with compilation of mathematical function Func afterwards
         return
       end if
@@ -4000,7 +4000,7 @@ contains
 
     ind2 = ind
     if (nparams .gt. 0) then
-      
+
       iStackPtr = rcomp%istackPtr
       ind2 = CompileExpression(rcomp, sfunctionString, ind, Svariables, .false.)
 
@@ -4013,9 +4013,9 @@ contains
       rcomp%istackPtr = rcomp%istackPtr-(nparams-1)
 
     else
-      
+
       call incStackPtr(rcomp)
-      
+
     end if
     ind2=ind2+1
 
@@ -4094,7 +4094,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD,'CompileIf')
       call sys_halt()
     end if
-    
+
     ! Set jump indices
     if (associated(rcomp%IbyteCode)) then
       rcomp%IbyteCode(curibytecodeSize+1)  = curibytecodeSize2+2
@@ -4102,7 +4102,7 @@ contains
       rcomp%IbyteCode(curibytecodeSize2+1) = rcomp%ibytecodeSize
       rcomp%IbyteCode(curibytecodeSize2+2) = rcomp%iimmedSize+1
     end if
-    
+
     ind2=ind2+1
 
   end function CompileIf
@@ -4127,7 +4127,7 @@ contains
     logical :: l
 !</result>
 !</function>
-    
+
     l = merge(.true., .false., abs(1-d) .le. 1e-12)
 
   end function DbleTOLogc
@@ -4135,7 +4135,7 @@ contains
   ! *****************************************************************************
 
 !<function>
-  
+
   elemental function LogcToDble(l) result(d)
 
 !<description>
@@ -4152,7 +4152,7 @@ contains
     real(DP) :: d
 !</result>
 !</function>
-      
+
     d = merge(1._DP, 0._DP, l)
 
   end function LogcToDble
@@ -4160,7 +4160,7 @@ contains
   ! *****************************************************************************
 
 !<function>
-  
+
   elemental function DegToRad(d) result(r)
 
 !<description>
@@ -4177,7 +4177,7 @@ contains
     real(DP) :: r
 !</result>
 !</function>
-      
+
     r = d * (3.141592653589793115997963468544185161590576171875_DP / 180._DP)
   end function DegToRad
 
@@ -4186,7 +4186,7 @@ contains
 !<function>
 
   elemental function RadToDeg(r) result(d)
-    
+
 !<description>
     ! This function converts RAD to DEG
 !</description>
@@ -4201,7 +4201,7 @@ contains
     real(DP) :: d
 !</result>
 !</function>
-    
+
     d = r * (180._DP / 3.141592653589793115997963468544185161590576171875_DP)
 
   end function RadToDeg
@@ -4237,19 +4237,19 @@ contains
     real(DP), intent(out) :: dresult
 !</output>
 !</subroutine>
-    
+
     ! local variables
     integer  :: iinstPtr,istackPtr,idataPtr
     integer  :: ijumpAddr,iimmedAddr
     real(DP) :: daux
     integer :: iaux
     integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
-    
+
     ! Initialization
     idataPtr  = 1
     istackPtr = 0
     iinstPtr  = 0
-    
+
     ! Repeat until complete bytecode has been processed
     do while(iinstPtr .lt. rcomp%ibytecodeSize)
       iinstPtr = iinstPtr+1
@@ -4261,7 +4261,7 @@ contains
         !------------------------------------------------------------
       case (cAbs)
         Dstack(istackPtr) = abs(Dstack(istackPtr))
-        
+
       case (cAcos)
         if ((Dstack(istackPtr) < -1._DP) .or. &
             (Dstack(istackPtr) >  1._DP)) then
@@ -4270,7 +4270,7 @@ contains
           return
         endif
         Dstack(istackPtr) = acos(Dstack(istackPtr))
-        
+
       case (cAsin)
         if ((Dstack(istackPtr) < -1._DP) .or. &
             (Dstack(istackPtr) >  1._DP)) then
@@ -4279,14 +4279,14 @@ contains
           return
         endif
         Dstack(istackPtr) = asin(Dstack(istackPtr))
-        
+
       case (cAtan)
         Dstack(istackPtr) = atan(Dstack(istackPtr))
 
       case (cAtan2)
         Dstack(istackPtr-1) = atan2(Dstack(istackPtr -1), Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cAcosh)
         daux = Dstack(istackPtr)+sqrt(Dstack(istackPtr)**2-1)
         if (daux .le. 0._DP) then
@@ -4295,7 +4295,7 @@ contains
           return
         end if
         Dstack(istackPtr) = log(daux)
-        
+
       case (cAnint)
         Dstack(istackPtr) = anint(Dstack(istackPtr))
 
@@ -4310,7 +4310,7 @@ contains
           return
         end if
         Dstack(istackPtr) = log(daux)
-        
+
       case (cAtanh)
         if (Dstack(istackPtr) .eq. -1._DP) then
           EvalErrType = 6
@@ -4324,13 +4324,13 @@ contains
           return
         end if
         Dstack(istackPtr) = log(daux)/2._DP
-        
+
       case (cCeil)
         Dstack(istackPtr) = ceiling(Dstack(istackPtr))
-        
+
       case (cCos)
         Dstack(istackPtr) = cos(Dstack(istackPtr))
-        
+
       case (cCosh)
         Dstack(istackPtr) = cosh(Dstack(istackPtr))
 
@@ -4351,7 +4351,7 @@ contains
           return
         endif
         Dstack(istackPtr) = 1._DP/daux
-        
+
       case (cExp)
         Dstack(istackPtr) = exp(Dstack(istackPtr))
 
@@ -4366,7 +4366,7 @@ contains
           idataPtr = iimmedAddr
         end if
         istackPtr = istackPtr-1
-        
+
       case (cLog)
         if (Dstack(istackPtr) .le. 0._DP) then
           EvalErrType = 3
@@ -4374,7 +4374,7 @@ contains
           return
         endif
         Dstack(istackPtr) = log(Dstack(istackPtr))
-        
+
       case (cLog10)
         if (Dstack(istackPtr) .le. 0._DP) then
           EvalErrType = 3
@@ -4382,15 +4382,15 @@ contains
           return
         endif
         Dstack(istackPtr) = log10(Dstack(istackPtr))
-        
+
       case (cMax)
         Dstack(istackPtr-1) = max(Dstack(istackPtr-1), Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cMin)
         Dstack(istackPtr-1) = min(Dstack(istackPtr-1), Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cRrand)
         call random_seed (size=iaux)
         allocate (p_Irandom1(iaux))
@@ -4409,9 +4409,9 @@ contains
 
         call random_seed (put=p_Irandom1)
         deallocate(p_Irandom1,p_Irandom2)
-      
+
         istackPtr = istackPtr-1
-        
+
       case (cSec)
         daux = cos(Dstack(istackPtr))
         if (daux .eq. 0._DP) then
@@ -4420,13 +4420,13 @@ contains
           return
         endif
         Dstack(istackPtr) = 1._DP/daux
-        
+
       case (cSin)
         Dstack(istackPtr) = sin(Dstack(istackPtr))
-        
+
       case(cSinh)
         Dstack(istackPtr) = sinh(Dstack(istackPtr))
-      
+
       case(cSqrt)
         if (Dstack(istackPtr) .lt. 0._DP) then
           EvalErrType = 3
@@ -4437,10 +4437,10 @@ contains
 
       case (cTan)
         Dstack(istackPtr) = tan(Dstack(istackPtr))
-        
+
       case (cTanh)
         Dstack(istackPtr) = tanh(Dstack(istackPtr))
-        
+
         !------------------------------------------------------------
         ! Misc
         !------------------------------------------------------------
@@ -4448,7 +4448,7 @@ contains
         istackPtr         = istackPtr+1
         Dstack(istackPtr) = rcomp%Dimmed(idataPtr)
         idataPtr          = idataPtr+1
-        
+
       case (cJump)
         idataPtr = rcomp%IbyteCode(iinstPtr+2)
         iinstPtr = rcomp%IbyteCode(iinstPtr+1)
@@ -4458,11 +4458,11 @@ contains
         !------------------------------------------------------------
       case (cNeg)
         Dstack(istackPtr) = -Dstack(istackPtr)
-        
+
       case (cAdd)
         Dstack(istackPtr-1) = Dstack(istackPtr-1)+Dstack(istackPtr)
         istackPtr = istackPtr-1
-        
+
       case (cSub)
         Dstack(istackPtr-1) = Dstack(istackPtr-1)-Dstack(istackPtr)
         istackPtr = istackPtr-1
@@ -4470,7 +4470,7 @@ contains
       case (cMul)
         Dstack(istackPtr-1) = Dstack(istackPtr-1)*Dstack(istackPtr)
         istackPtr = istackPtr-1
-        
+
       case (cDiv)
         if (Dstack(istackPtr) .eq. 0._DP) then
           EvalErrType = 1
@@ -4479,7 +4479,7 @@ contains
         endif
         Dstack(istackPtr-1) = Dstack(istackPtr-1)/Dstack(istackPtr)
         istackPtr = istackPtr-1
-        
+
       case (cMod)
         if (Dstack(istackPtr) .eq. 0._DP) then
           EvalErrType = 1
@@ -4492,7 +4492,7 @@ contains
       case (cPow)
         Dstack(istackPtr-1) = Dstack(istackPtr-1)**Dstack(istackPtr)
         istackPtr = istackPtr-1
-        
+
       case (cEqual)
         Dstack(istackPtr-1) = LogcToDble(Dstack(istackPtr-1) .eq. Dstack(istackPtr))
         istackPtr = istackPtr-1
@@ -4508,15 +4508,15 @@ contains
       case (cLessOrEq)
         Dstack(istackPtr-1) = LogcToDble(Dstack(istackPtr-1) .le. Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cGreater)
         Dstack(istackPtr-1) = LogcToDble(Dstack(istackPtr-1) .gt. Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cGreaterOrEq)
         Dstack(istackPtr-1) = LogcToDble(Dstack(istackPtr-1) .ge. Dstack(istackPtr))
         istackPtr = istackPtr-1
-        
+
       case (cAnd)
         Dstack(istackPtr-1) = LogcToDble(DbleToLogc(Dstack(istackPtr-1)) .and. &
                                          DbleToLogc(Dstack(istackPtr)) )
@@ -4529,22 +4529,22 @@ contains
 
       case (cNot)
         Dstack(istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(istackPtr)) )
-        
+
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
       case (cDeg)
         Dstack(istackPtr) = RadToDeg(Dstack(istackPtr))
-        
+
       case (cRad)
         Dstack(istackPtr) = DegToRad(Dstack(istackPtr))
-        
+
       case default
         istackPtr = istackPtr+1
         Dstack(istackPtr) = DValue(rcomp%IbyteCode(iinstPtr)-VarBegin+1)
       end select
     end do
-    
+
     EvalErrType = 0
     dresult = Dstack(istackPtr)
 
@@ -4593,13 +4593,13 @@ contains
     real(DP), dimension(:), intent(out) :: Dresult
 !</output>
 !</subroutine>
-    
+
     ! local variables
     integer  :: iinstPtr,idataPtr,istackPtr,iblock,istartValueScalar,iVariable
     real(DP) :: daux
     integer :: iaux
     integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
-    
+
     ! Initialization
     idataPtr  = 1
     istackPtr = 0
@@ -4610,11 +4610,11 @@ contains
     ! DvalueScalar is missing, then istartValueScalar pointers to SIZE(DvalueBlock)+1.
     ! Obviously, no variable beyond this value is addressed.
     istartValueScalar = size(DvalueBlock,3-idim)+1
-    
+
     ! Repeat until complete bytecode has been processed
     do while(iinstPtr .lt. rcomp%ibytecodeSize)
       iinstPtr = iinstPtr+1
-      
+
       select case (rcomp%IbyteCode(iinstPtr))
         !------------------------------------------------------------
         ! Functions
@@ -4623,7 +4623,7 @@ contains
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = abs(Dstack(iblock, istackPtr))
         end do
-        
+
 
       case (cAcos)
         do iblock = 1, iblockSize
@@ -4648,7 +4648,7 @@ contains
           end if
         end do
 
-        
+
       case (cAtan)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = atan(Dstack(iblock, istackPtr))
@@ -4662,7 +4662,7 @@ contains
         end do
         istackPtr = istackPtr-1
 
-        
+
       case (cAcosh)
         do iblock = 1, iblockSize
           daux = Dstack(iblock, istackPtr)+sqrt(Dstack(iblock, istackPtr)**2-1)
@@ -4673,7 +4673,7 @@ contains
             Dstack(iblock, istackPtr) = log(daux)
           end if
         end do
-        
+
 
       case (cAnint)
         do iblock = 1, iblockSize
@@ -4714,7 +4714,7 @@ contains
           end if
         end do
 
-        
+
       case (cCeil)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = ceiling(Dstack(iblock, istackPtr))
@@ -4725,7 +4725,7 @@ contains
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = cos(Dstack(iblock, istackPtr))
         end do
-        
+
 
       case (cCosh)
         do iblock = 1, iblockSize
@@ -4776,7 +4776,7 @@ contains
         call output_line('IF-THEN-ELSE cannot be vectorised!',&
             OU_CLASS_ERROR, OU_MODE_STD,'evalFunctionBlock')
         call sys_halt()
-        
+
 
       case (cLog)
         do iblock = 1, iblockSize
@@ -4806,7 +4806,7 @@ contains
                                              Dstack(iblock, istackPtr))
         end do
         istackPtr = istackPtr-1
-        
+
 
       case (cMin)
         do iblock = 1, iblockSize
@@ -4814,7 +4814,7 @@ contains
                                              Dstack(iblock, istackPtr))
         end do
         istackPtr = istackPtr-1
-        
+
       case (cRrand)
         call random_seed (size=iaux)
         allocate (p_Irandom1(iaux))
@@ -4836,7 +4836,7 @@ contains
         deallocate(p_Irandom1,p_Irandom2)
 
         istackPtr = istackPtr-1
-        
+
 
       case (cSec)
         do iblock = 1, iblockSize
@@ -4849,18 +4849,18 @@ contains
           end if
         end do
 
-        
+
       case (cSin)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = sin(Dstack(iblock, istackPtr))
         end do
 
-        
+
       case(cSinh)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = sinh(Dstack(iblock, istackPtr))
         end do
-      
+
 
       case(cSqrt)
         do iblock = 1, iblockSize
@@ -4878,12 +4878,12 @@ contains
            Dstack(iblock, istackPtr) = tan(Dstack(iblock, istackPtr))
         end do
 
-        
+
       case (cTanh)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = tanh(Dstack(iblock, istackPtr))
         end do
-        
+
 
         !------------------------------------------------------------
         ! Misc
@@ -4916,7 +4916,7 @@ contains
                                          Dstack(iblock, istackPtr)
         end do
         istackPtr = istackPtr-1
-        
+
 
       case (cSub)
         do iblock = 1, iblockSize
@@ -4932,7 +4932,7 @@ contains
                                          Dstack(iblock, istackPtr)
         end do
         istackPtr = istackPtr-1
-        
+
 
       case (cDiv)
         do iblock = 1, iblockSize
@@ -4945,7 +4945,7 @@ contains
           end if
         end do
         istackPtr = istackPtr-1
-        
+
 
       case (cMod)
         do iblock = 1, iblockSize
@@ -4966,7 +4966,7 @@ contains
         end do
         istackPtr = istackPtr-1
 
-        
+
       case (cEqual)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .eq.&
@@ -4998,7 +4998,7 @@ contains
         end do
         istackPtr = istackPtr-1
 
-        
+
       case (cGreater)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .gt.&
@@ -5006,7 +5006,7 @@ contains
         end do
         istackPtr = istackPtr-1
 
-        
+
       case (cGreaterOrEq)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(Dstack(iblock, istackPtr-1) .ge.&
@@ -5014,7 +5014,7 @@ contains
         end do
         istackPtr = istackPtr-1
 
-        
+
       case (cAnd)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr-1) = LogcToDble(DbleToLogc(Dstack(iblock, istackPtr-1)) .and. &
@@ -5036,7 +5036,7 @@ contains
            Dstack(iblock, istackPtr) = LogcToDble( .not. DbleToLogc(Dstack(iblock, istackPtr)) )
         end do
 
-        
+
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
@@ -5045,12 +5045,12 @@ contains
            Dstack(iblock, istackPtr) = RadToDeg(Dstack(iblock, istackPtr))
         end do
 
-        
+
       case (cRad)
         do iblock = 1, iblockSize
            Dstack(iblock, istackPtr) = DegToRad(Dstack(iblock, istackPtr))
         end do
-        
+
 
       case default
         istackPtr  = istackPtr+1
@@ -5074,7 +5074,7 @@ contains
         end if
       end select
     end do
-    
+
     EvalErrType = 0
     do iblock = 1, iblockSize
        Dresult(iblock) = Dstack(iblock, istackPtr)

@@ -345,7 +345,7 @@ module linearsystemscalar
   use uuid
 
   implicit none
-  
+
   private
 
 !<constants>
@@ -354,20 +354,20 @@ module linearsystemscalar
 
   ! Maximum number of tags that can be assigned to a scalar vector or matrix.
   integer, parameter, public :: LSYSSC_MAXTAGS = 16
-  
+
 !</constantblock>
 
 !<constantblock description="Global format flags for matrices">
 
   ! Unidentified matrix format
   integer, parameter, public :: LSYSSC_MATRIXUNDEFINED = 0
-  
+
   ! Identifier for matrix format 1 - full matrix.
   ! Important matrix properties defining the matrix:
   ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
   ! h_Da = handle to matrix entries
   integer, parameter, public :: LSYSSC_MATRIX1 = 1
-  
+
   ! Identifier for matrix format 9 - CSR
   ! Important matrix properties defining the matrix:
   ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
@@ -431,7 +431,7 @@ module linearsystemscalar
 
   ! Standard matrix
   integer(I32), parameter, public :: LSYSSC_MSPEC_STANDARD =        0
-  
+
   ! Matrix structure is a copy of another matrix, shared via the same
   ! handles.
   integer(I32), parameter, public :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
@@ -439,7 +439,7 @@ module linearsystemscalar
   ! Matrix content is a copy of another matrix, shared via the same
   ! handles.
   integer(I32), parameter, public :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
-  
+
   ! Complete matrix is duplicate of another matrix and shares structure
   ! and entries via the same pointers
   integer(I32), parameter, public :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
@@ -454,11 +454,11 @@ module linearsystemscalar
 
   ! Matrix not present in memory
   integer(I32), parameter, public :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
-  
+
 !</constantblock>
 
 !<constantblock description="KIND values for matrix/vector data">
-  
+
   ! kind value for indices in matrices
   integer, parameter, public :: PREC_MATIDX = I32
 
@@ -471,23 +471,23 @@ module linearsystemscalar
 !</constantblock>
 
 !<constantblock description="Constants for duplicating a matrix">
-  
+
   ! Do not set up the content/structure of the destination matrix, ignore
   ! any previous structure/content
   integer, parameter, public :: LSYSSC_DUP_IGNORE = 0
-  
+
   ! Removes any existing matrix content/structure from the destination matrix.
   ! Releases memory if necessary.
   integer, parameter, public :: LSYSSC_DUP_REMOVE = 1
-  
+
   ! Removes any existing matrix content from the destination matrix.
   ! No memory is released, handles are simply dismissed.
   integer, parameter, public :: LSYSSC_DUP_DISMISS = 2
-  
+
   ! The destination matrix recveives the same handles for matrix content/structure
   ! as the source matrix  and therefore shares the same content/structure.
   integer, parameter, public :: LSYSSC_DUP_SHARE = 3
-  
+
   ! The destination matrix gets a copy of the content of rsourceMatrix.
   ! If necessary, new memory is allocated.
   ! If the destination matrix  already contains allocated memory that belongs
@@ -496,7 +496,7 @@ module linearsystemscalar
   ! the owner of the content/structure data arrays, new memory is allocated to
   ! prevent the actual owner from getting destroyed!
   integer, parameter, public :: LSYSSC_DUP_COPY = 4
-  
+
   ! The destination matrix gets a copy of the content of rsourceMatrix.
   ! If necessary, new memory is allocated.
   ! If the destination matrix  already contains allocated memory, content/structure
@@ -505,25 +505,25 @@ module linearsystemscalar
   ! destination matrix is not the owner, the actual owner of the data arrays is
   ! modified, too!
   integer, parameter, public :: LSYSSC_DUP_COPYOVERWRITE = 5
-  
+
   ! Duplicate by ownership. What belongs to the source matrix is copied
   ! (the same as LSYSSC_DUP_COPY). What belongs even to another matrix than
   ! the source matrix is shared (the same as LSYSSC_DUP_SHARE, .
   integer, parameter, public :: LSYSSC_DUP_ASIS = 6
-  
+
   ! New memory is allocated for the structure/content in the same size as
   ! in the source matrix but no data is copied; the arrays are left uninitialised.
   integer, parameter, public :: LSYSSC_DUP_EMPTY = 7
-                                               
+
   ! Copy the basic matrix information but do not copy handles.
   ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
   ! 'looks like' the old but has no dynamic data associated.
   integer, parameter, public :: LSYSSC_DUP_TEMPLATE   = 8
-                 
+
 !</constantblock>
 
 !<constantblock description="Constants for transposing a matrix">
-  
+
   ! Do not transpose the matrix, simply mark the matrix as transposed
   ! by changing the flag in imatrixSpec
   integer, parameter, public :: LSYSSC_TR_VIRTUAL    = 0
@@ -544,7 +544,7 @@ module linearsystemscalar
 !</constantblock>
 
 !<constantblock description="Constants for initialising matrix entries when allocating">
-  
+
   ! Let the entries of a matrix undefined
   integer, parameter, public :: LSYSSC_SETM_UNDEFINED = -1
 
@@ -557,7 +557,7 @@ module linearsystemscalar
 !</constantblock>
 
 !<constantblock description="Constants for lumping of matrices">
-  
+
   ! Standard lumping; extract diagonal from a given matrix.
   integer, parameter, public :: LSYSSC_LUMP_STD       = 0
 
@@ -583,11 +583,11 @@ module linearsystemscalar
 
 !<types>
 !<typeblock>
-  
+
   ! A scalar vector that can be used by scalar linear algebra routines.
-  
+
   type t_vectorScalar
-  
+
     ! Universally unique identifier
     type(t_uuid) :: ruuid
 
@@ -595,7 +595,7 @@ module linearsystemscalar
     ! scalar vector might be a subvector of a larger vector allocated
     ! on the heap!
     integer :: NEQ = 0
-    
+
     ! Number of local variables; in general, scalar vectors of size
     ! NEQ posses NEQ entries. However, scalar vectors can be
     ! interleaved, that is, each of the NEQ entries stores NVAR local
@@ -606,11 +606,11 @@ module linearsystemscalar
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
     integer :: cdataType = ST_DOUBLE
-    
+
     ! Handle identifying the vector entries.
     ! = ST_NOHANDLE if not allocated on the global heap.
     integer :: h_Ddata = ST_NOHANDLE
-    
+
     ! Flag whether or not the vector is resorted.
     !  <0: Vector is unsorted, sorting strategy is prepared in
     !      h_IsortPermutation for a possible resorting of the entries.
@@ -627,7 +627,7 @@ module linearsystemscalar
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
     integer :: isortStrategy = 0
-    
+
     ! Handle to renumbering strategy for resorting the vector.
     ! The renumbering strategy is a vector
     !   array [1..2*NEQ] of integer
@@ -641,12 +641,12 @@ module linearsystemscalar
     ! Whether or not the vector is actually sorted depends on the
     ! flag isortStrategy!
     integer :: h_IsortPermutation = ST_NOHANDLE
-    
+
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
     ! in a larger memory block allocated on the heap.
     integer :: iidxFirstEntry = 1
-    
+
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
     integer, dimension(LSYSSC_MAXTAGS) :: ITags = 0
@@ -661,23 +661,23 @@ module linearsystemscalar
     ! scalar subvectors; in this case, the block vector is the actual
     ! 'owner' of the handle!
     logical :: bisCopy = .false.
-    
+
     ! A pointer to the spatial discretisation or NULL(), if the vector is
     ! just an array, not belonging to any discretisation.
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr => null()
-    
+
   end type
-  
+
   public :: t_vectorScalar
-  
+
 !</typeblock>
 
 !<typeblock>
-  
+
   ! A scalar matrix that can be used by scalar linear algebra routines.
-  
+
   type t_matrixScalar
-    
+
     ! Universally unique identifier
     type(t_uuid) :: ruuid
 
@@ -688,16 +688,16 @@ module linearsystemscalar
     ! Format-tag. Identifies the format of the interleaved matrix.
     ! Can take one of the LSYSSC_MATRIX1/D format flags.
     integer :: cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
-    
+
     ! Matrix specification tag. This is a bitfield coming from an OR
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
     ! various details of the matrix. If it is =LSYSSC_MSPEC_STANDARD,
     ! the matrix is a usual matrix that needs no special handling.
     integer(I32) :: imatrixSpec = LSYSSC_MSPEC_STANDARD
-    
+
     ! Number of elements in the matrix
     integer :: NA  = 0
-    
+
     ! Number of equations = rows in the matrix.
     ! Remark: When the application sets the LSYSSC_MSPEC_TRANSPOSED flag
     !  in imatrixSpec to indicate a transposed matrix, this has to be
@@ -721,17 +721,17 @@ module linearsystemscalar
     ! interleaved matrices, the matrix-vector multiplication, etc. is
     ! adapted to the local dense blocks.
     integer :: NVAR = 1
-    
+
     ! Number of nonzero rows. Only Format 9ROWC.
     integer :: NNZROWS = 0
-    
+
     ! Multiplier for matrix entries. All entries in the matrix are
     ! scaled by this multiplier when doing Matrix-vector multiplication.
     ! Note: This parameter is not supported by all algorithms, many
     ! algorithms will simply stop when this factor is <> 1, or they
     ! might ignore it. Therefore, use this factor with care!
     real(DP) :: dscaleFactor = 1.0_DP
-    
+
     ! Flag whether or not the matrix is resorted.
     !  <0: Matrix is unsorted, sorting strategy is prepared in
     !      h_IsortPermutation for a possible resorting of the entries.
@@ -745,7 +745,7 @@ module linearsystemscalar
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
     integer :: isortStrategy = 0
-    
+
     ! Handle to renumbering strategy for resorting the matrix.
     ! The renumbering strategy is a vector
     !   array [1..2*NEQ] of integer
@@ -759,24 +759,24 @@ module linearsystemscalar
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
     integer :: h_IsortPermutation = ST_NOHANDLE
-    
+
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
     integer :: cdataType = ST_DOUBLE
-    
+
     ! Format-7 and Format-9: Handle identifying the elements in the matrix
     !REAL(PREC_MATRIX), DIMENSION(:), POINTER :: Da         => NULL()
     integer :: h_Da = ST_NOHANDLE
-    
+
     ! Format-7 and Format-9: Handle identifying the column structure
     !integer, DIMENSION(:), POINTER :: KCOL       => NULL()
     integer :: h_Kcol = ST_NOHANDLE
-    
+
     ! Format-7 and Format-9: Handle identifying the row structure
     ! Formal-9ROWC: Handle identifyinf the row structure of the parent matrix.
     !INTEGER, DIMENSION(:), POINTER :: KLD        => NULL()
     integer :: h_Kld = ST_NOHANDLE
-    
+
     ! Format-9ROWC: Handle to an array saving the nonzero row indices.
     ! KrowIdx(1:NNZROWS) saves for every row in the compressed
     ! matrix the corresponding row in the 'parent' matrix.
@@ -784,7 +784,7 @@ module linearsystemscalar
     ! matrix the corresponding row number in the compressed matrix -- 
     ! or 0 if the row does not exist in the compressed matrix.
     integer :: h_KrowIdx = ST_NOHANDLE
-    
+
     ! Format-9: Similar to row structure. Handle top array of length NEQ.
     ! For each row, pointer to the first element on the upper
     ! triangular part of the matrix. For matrices with elements on the
@@ -804,10 +804,10 @@ module linearsystemscalar
     ! auxiliary
     ! tags which depend on the application.
     real(DP), dimension(LSYSSC_MAXTAGS) :: DTags = 0._DP
-    
+
     ! A pointer to the spatial discretisation for the trial functions.
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTrial => null()
-    
+
     ! A pointer to the spatial discretisation for the test functions.
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTest => null()
 
@@ -815,22 +815,22 @@ module linearsystemscalar
     ! are the same. If FALSE, there is at least one element distribution
     ! with different trial and test functions.
     logical :: bidenticalTrialAndTest = .true.
-    
+
   end type
-  
+
   public :: t_matrixScalar
-  
+
 !</typeblock>
 
 !</types>
 
   !*****************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: lsyssc_perfconfig
-  
+
   !*****************************************************************************
-  
+
   interface lsyssc_createVector
     module procedure lsyssc_createVecDirect
     module procedure lsyssc_createVecDirectIntl
@@ -845,7 +845,7 @@ module linearsystemscalar
   public :: lsyssc_createVecIndMat
   public :: lsyssc_createVecByDiscr
   public :: lsyssc_createVecByDiscrIntl
-  
+
   interface lsyssc_resizeVector
     module procedure lsyssc_resizeVectorDirect
     module procedure lsyssc_resizeVectorIndMat
@@ -874,26 +874,26 @@ module linearsystemscalar
   end interface
 
   public :: lsyssc_getbase_double
-  
+
   interface lsyssc_getbase_single
     module procedure lsyssc_getbaseVector_single
     module procedure lsyssc_getbaseMatrixDa_single
   end interface
-  
+
   public :: lsyssc_getbase_single
-  
+
   interface lsyssc_getbase_int
     module procedure lsyssc_getbaseVector_int
     module procedure lsyssc_getbaseMatrixDa_int
   end interface
-  
+
   public :: lsyssc_getbase_int
-  
+
   interface lsyssc_isMatrixCompatible
     module procedure lsyssc_isMatrixVectorCompatible
     module procedure lsyssc_isMatrixMatrixCompatible
   end interface
-  
+
   public :: lsyssc_isMatrixCompatible
   public :: lsyssc_isMatrixVectorCompatible
   public :: lsyssc_isMatrixMatrixCompatible
@@ -1018,15 +1018,15 @@ contains
     else
       call pcfg_initPerfConfig(lsyssc_perfconfig)
     end if
-    
+
   end subroutine lsyssc_initPerfConfig
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_isVectorCompatible (rvector1,rvector2,bcompatible)
-  
+
 !<description>
   ! Checks whether two vectors are compatible to each other, i.e. share
   ! the same structure, size and sorting strategy.
@@ -1035,7 +1035,7 @@ contains
 !<input>
   ! The first vector
   type(t_vectorScalar), intent(in) :: rvector1
-  
+
   ! The second vector
   type(t_vectorScalar), intent(in) :: rvector2
 !</input>
@@ -1052,7 +1052,7 @@ contains
 
   ! We assume that we are not compatible
   if (present(bcompatible)) bcompatible = .false.
-  
+
   ! Vectors must have the same size
   if (rvector1%NEQ  .ne. rvector2%NEQ .or. &
       rvector1%NVAR .ne. rvector2%NVAR) then
@@ -1065,9 +1065,9 @@ contains
       call sys_halt()
     end if
   end if
-    
+
   ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-  
+
   if ((rvector1%isortStrategy .gt. 0) .or. &
       (rvector2%isortStrategy .gt. 0)) then
 
@@ -1102,11 +1102,11 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_isMatrixVectorCompatible (rvector,rmatrix,btransposed,bcompatible)
-  
+
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other, i.e.
   ! share the same structure, size and sorting strategy.
@@ -1115,10 +1115,10 @@ contains
 !<input>
   ! The vector
   type(t_vectorScalar), intent(in) :: rvector
-  
+
   ! The matrix
   type(t_matrixScalar), intent(in) :: rmatrix
-  
+
   ! Check for rvector being compatible from the left or from the right
   ! to the matrix rmatrix.
   ! =FALSE: Check whether matrix-vector product $A*x$ is possible
@@ -1140,13 +1140,13 @@ contains
 
   ! We assume that we are not compatible
   if (present(bcompatible)) bcompatible = .false.
-  
+
   if (.not. btransposed) then
     NCOLS = rmatrix%NCOLS
   else
     NCOLS = rmatrix%NEQ
   end if
-  
+
   ! Vector/Matrix must have the same size
   if (rvector%NEQ .ne. NCOLS) then
     if (present(bcompatible)) then
@@ -1195,11 +1195,11 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_isMatrixMatrixCompatible (rmatrix1,rmatrix2,bcompatible)
-  
+
 !<description>
   ! Checks whether two matrices are compatible to each other, i.e.
   ! share the same structure, size and sorting strategy.
@@ -1208,7 +1208,7 @@ contains
 !<input>
   ! The vector
   type(t_matrixScalar), intent(in) :: rmatrix1
-  
+
   ! The matrix
   type(t_matrixScalar), intent(in) :: rmatrix2
 !</input>
@@ -1225,7 +1225,7 @@ contains
 
   ! We assume that we are not compatible
   if (present(bcompatible)) bcompatible = .false.
-  
+
   ! Matrices must have the same size
   if ((rmatrix1%NEQ .ne. rmatrix2%NEQ) .or. &
       (rmatrix1%NCOLS .ne. rmatrix2%NCOLS) .or. &
@@ -1242,7 +1242,7 @@ contains
 
   ! Matrices must have the same sparsity pattern
   if (rmatrix1%NVAR .eq. rmatrix2%NVAR) then
-    
+
     ! We can perform restrictive checks, since both matrices have the
     ! same number of internal variables
     if ((rmatrix1%cmatrixFormat .ne. rmatrix2%cmatrixFormat) .or. &
@@ -1311,11 +1311,11 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_checkDiscretisation (rvector,rdiscretisation,bcompatible)
-  
+
 !<description>
   ! Checks whether a given discretisation structure rdiscretisation is
   ! basically compatible to a given vector (concerning NEQ, cubature formulas
@@ -1357,7 +1357,7 @@ contains
         call sys_halt()
       end if
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -1383,10 +1383,10 @@ contains
 
     ! Check if matrix needs conversion
   if (rmatrix%cdataType .eq. cdataType) return
-  
+
     ! Set data type
     rmatrix%cdataType = cdataType
-    
+
     ! Check if matrix has data
     if (rmatrix%h_Da .ne. ST_NOHANDLE)&
         call storage_setdatatype (rmatrix%h_Da, cdataType)
@@ -1416,10 +1416,10 @@ contains
 
     ! Check if vector needs conversion
     if (rvector%cdataType .eq. cdataType) return
-  
+
     ! Set data type
     rvector%cdataType = cdataType
-    
+
     ! Check if matrix has data
     if (rvector%h_Ddata .ne. ST_NOHANDLE)&
         call storage_setdatatype (rvector%h_Ddata, cdataType)
@@ -1427,11 +1427,11 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_getbaseVector_double (rvector,p_Ddata)
-  
+
 !<description>
   ! Returns a pointer to the double precision data array of the vector.
   ! An error is thrown if the vector is not double precision.
@@ -1466,19 +1466,19 @@ contains
 
   ! Get the data array
   call storage_getbase_double (rvector%h_Ddata,p_Ddata)
-  
+
   ! Modify the starting address/length to get the real array.
   p_Ddata => p_Ddata(rvector%iidxFirstEntry:&
       rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_getbaseVector_single (rvector,p_Fdata)
-  
+
 !<description>
   ! Returns a pointer to the single precision data array of the vector.
   ! An error is thrown if the vector is not single precision.
@@ -1512,19 +1512,19 @@ contains
 
   ! Get the data array
   call storage_getbase_single (rvector%h_Ddata,p_Fdata)
-  
+
   ! Modify the starting address/length to get the real array.
   p_Fdata => p_Fdata(rvector%iidxFirstEntry:&
       rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_getbaseVector_int (rvector,p_Idata)
-  
+
 !<description>
   ! Returns a pointer to the integer data array of the vector.
   ! An error is thrown if the vector is not integer.
@@ -1558,11 +1558,11 @@ contains
 
   ! Get the data array
   call storage_getbase_int (rvector%h_Ddata,p_Idata)
-  
+
   ! Modify the starting address/length to get the real array.
   p_Idata => p_Idata(rvector%iidxFirstEntry:&
       rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1599,10 +1599,10 @@ contains
           LSYSSC_MATRIXD, LSYSSC_MATRIX7INTL, LSYSSC_MATRIX9INTL,&
           LSYSSC_MATRIX9ROWC)
       lsyssc_isExplicitMatrix1D = .true.
-      
+
     case default
       lsyssc_isExplicitMatrix1D = .false.
-      
+
     end select
 
   end function
@@ -1650,7 +1650,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseMatrixDa_double')
       call sys_halt()
     end if
-    
+
     ! Get the data array
     select case (rmatrix%cinterleavematrixFormat)
     case (LSYSSC_MATRIX1)
@@ -1971,9 +1971,9 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine lsyssc_createVecDirect (rvector,NEQ,bclear,cdataType,NEQMAX)
-  
+
 !<description>
   ! This creates a simple scalar vector of length NEQ. Memory is
   ! allocated on the heap and can be released by lsyssc_releaseVector.
@@ -1986,9 +1986,9 @@ contains
   ! the user, NEQMAX is not stored directly. It can only be obtained,
   ! by getting the size of the associated storage block.
 !</description>
-  
+
 !<input>
-  
+
   ! Desired length of the vector
   integer, intent(in) :: NEQ
 
@@ -2001,7 +2001,7 @@ contains
 
   ! OPTIONAL: Maximum length of the vector
   integer, intent(in), optional :: NEQMAX
-  
+
 !</input>
 
 !<output>
@@ -2021,13 +2021,13 @@ contains
 
     ! The INTENT(out) already initialises rvector with the most important
     ! information. The rest comes now:
-    
+
     ! Datatype
     rvector%cdataType = cdata
 
     ! Size:
     rvector%NEQ = max(0,NEQ)
-    
+
     ! Handle - if NEQ > 0
     if (rvector%NEQ .gt. 0) then
       if (bclear) then
@@ -2038,15 +2038,15 @@ contains
                             cdata, rvector%h_Ddata, ST_NEWBLOCK_NOINIT)
       end if
     end if
-  
+
   end subroutine
 
 !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine lsyssc_createVecDirectIntl (rvector,NEQ,NVAR,bclear,cdataType,NEQMAX)
-  
+
 !<description>
   ! This creates an interleaved scalar vector of length NEQ with NVAR
   ! local variables. Memory is allocated on the heap and can be
@@ -2060,9 +2060,9 @@ contains
   ! the user, NEQMAX is not stored directly. It can only be obtained,
   ! by getting the size of the associated storage block.
 !</description>
-  
+
 !<input>
-  
+
   ! Desired length of the vector
   integer, intent(in) :: NEQ
 
@@ -2078,7 +2078,7 @@ contains
 
   ! OPTIONAL: Maximum length of the vector
   integer, intent(in), optional :: NEQMAX
-  
+
 !</input>
 
 !<output>
@@ -2099,14 +2099,14 @@ contains
 
     ! The INTENT(out) already initialises rvector with the most important
     ! information. The rest comes now:
-    
+
     ! Datatype
     rvector%cdataType = cdata
 
     ! Size:
     rvector%NEQ = max(0,NEQ)
     rvector%NVAR= max(0,NVAR)
-    
+
     ! Handle - if NEQ > 0
     if (rvector%NEQ*rvector%NVAR .gt. 0) then
       if (bclear) then
@@ -2117,7 +2117,7 @@ contains
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       end if
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2125,7 +2125,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_createVecByDiscr (rdiscretisation,rx,bclear,cdataType,NEQMAX)
-  
+
 !<description>
   ! Initialises the vector structure rx based on a discretisation
   ! structure rDiscretisation.
@@ -2142,7 +2142,7 @@ contains
   ! the user, NEQMAX is not stored directly. It can only be obtained,
   ! by getting the size of the associated storage block.
 !</description>
-  
+
 !<input>
   ! A discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
@@ -2151,7 +2151,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
-  
+
   ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   integer, intent(in), optional :: cdataType
@@ -2165,24 +2165,24 @@ contains
   ! A pointer to rdiscretisation is saved to r.
   type(t_vectorScalar),intent(out) :: rx
 !</output>
-  
+
 !</subroutine>
 
   integer :: NEQ
   logical :: bcl
-  
+
   bcl = .false.
   if (present(bclear)) bcl = bclear
-  
+
   ! Get NEQ:
   NEQ = dof_igetNDofGlob(rdiscretisation)
-  
+
   ! Create a new vector with that block structure
   call lsyssc_createVector (rx, NEQ, bcl, cdataType, NEQMAX)
-  
+
   ! Initialise further data of the block vector
   rx%p_rspatialDiscr => rdiscretisation
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2191,7 +2191,7 @@ contains
 
   subroutine lsyssc_createVecByDiscrIntl (rdiscretisation,rx,NVAR,bclear,&
                                           cdataType,NEQMAX)
-  
+
 !<description>
   ! Initialises the vector structure rx based on a discretisation
   ! structure rDiscretisation.
@@ -2208,19 +2208,19 @@ contains
   ! the user, NEQMAX is not stored directly. It can only be obtained,
   ! by getting the size of the associated storage block.
 !</description>
-  
+
 !<input>
   ! A discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
   type(t_spatialDiscretisation),intent(in), target :: rdiscretisation
-  
+
   ! Desired number of local variables
   integer, intent(in) :: NVAR
 
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
-  
+
   ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   integer, intent(in), optional :: cdataType
@@ -2234,28 +2234,28 @@ contains
   ! A pointer to rdiscretisation is saved to r.
   type(t_vectorScalar),intent(out) :: rx
 !</output>
-  
+
 !</subroutine>
 
   integer :: NEQ
   logical :: bcl
-  
+
   bcl = .false.
   if (present(bclear)) bcl = bclear
-  
+
   ! Get NEQ:
   NEQ = dof_igetNDofGlob(rdiscretisation)
-  
+
   ! Create a new vector with that block structure
   call lsyssc_createVector (rx, NEQ, NVAR, bcl, cdataType, NEQMAX)
-  
+
   ! Initialise further data of the block vector
   rx%p_rspatialDiscr => rdiscretisation
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_createVecIndMat (rtemplateMat,rx,bclear,btransposed,&
@@ -2287,14 +2287,14 @@ contains
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
     logical, intent(in), optional :: bclear
-    
+
     ! OPTIONAL: If not specified or set to FALSE, the vector will be
     ! created as 'right' vector of the matrix (so matrix vector multiplication
     ! (A x) is possible).
     ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
     ! vector multiplication (A^T x) is possible.
     logical, intent(in), optional :: btransposed
-    
+
     ! OPTIONAL: Data type identifier for the entries in the vector.
     ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
     integer, intent(in), optional :: cdataType
@@ -2302,7 +2302,7 @@ contains
     ! OPTIONAL: Maximum length of the vector
     integer, intent(in), optional :: NEQMAX
 !</input>
-    
+
 !<output>
     ! Destination structure. Memory is allocated for each of the blocks.
     type(t_vectorScalar),intent(out) :: rx
@@ -2316,7 +2316,7 @@ contains
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata = cdataType
-    
+
     ! Transfer discretization pointers from the matrix to the vector
     rx%p_rspatialDiscr => rtemplateMat%p_rspatialDiscrTrial
 
@@ -2332,7 +2332,7 @@ contains
         rx%p_rspatialDiscr => rtemplateMat%p_rspatialDiscrTest
       end if
     end if
-    
+
     isize = max(0,NCOLS)
     if (present(NEQMAX)) isize=max(isize,NEQMAX)
     isize = isize*max(0,rtemplateMat%NVAR)
@@ -2420,14 +2420,14 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeVectorDirect')
       call sys_halt()
     end if
-    
+
     ! Check, if vector has been initialised before.
     if (rvector%NEQ .eq. 0 .or. rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('A vector can only be resized if it has been created correctly!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeVectorDirect')
       call sys_halt()
     end if
-    
+
     ! Set working dimensions
     iNEQ = max(0,NEQ)
     if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
@@ -2435,7 +2435,7 @@ contains
     ! Set copy/clear attributes
     bdocopy = (.not.bclear)
     if (present(bcopy)) bdocopy = (bdocopy .and. bcopy)
-    
+
     ! If the vector should be cleared, then the sorting strategy (if any)
     ! can be ignored and reset. Otherwise, the vector needs to be unsorted
     ! prior to copying some part of it. Afterwards, no sorting strategy is
@@ -2443,7 +2443,7 @@ contains
     if (bdocopy .and. rvector%isortStrategy > 0) then
       call lsyssc_vectorActivateSorting(rvector,.false.)
     end if
-    
+
     ! Reset sorting strategy, there is none
     rvector%isortStrategy      = 0
     rvector%h_iSortPermutation = ST_NOHANDLE
@@ -2456,23 +2456,23 @@ contains
 
     ! Do we really have to reallocate the vector physically?
     if (rvector%NEQ*rvector%NVAR > isize) then
-      
+
       ! Yes, so adopt the new size. Note that some extra memory is
       ! allocated if the optional argument NEQMAX is specified
       isize = iNEQ*rvector%NVAR
-      
+
       ! Reallocate the memory for handle h_Ddata
       call storage_realloc('lsyssc_resizeVectorDirect',&
           isize, rvector%h_Ddata, ST_NEWBLOCK_NOINIT, bdocopy)
 
     elseif (present(NEQMAX)) then
-      
+
       ! The available memory suffices for the vector, i.e. isize <= NVAR*NEQ.
       ! Let us check if the user supplied a new upper limit which makes it
       ! mandatory to "shrink" the allocated memory. Note that memory for
       ! at least NEQ vector intries is allocated.
       if (isize > iNEQ*rvector%NVAR) then
-        
+
         ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
         isize = iNEQ*rvector%NVAR
 
@@ -2486,7 +2486,7 @@ contains
         end if
       end if
     end if
-    
+
     ! Should the vector be cleared?
     if (bclear) call lsyssc_clearVector(rvector)
 
@@ -2522,7 +2522,7 @@ contains
 
   ! Whether to fill the vector with zero initially
   logical, intent(in) :: bclear
-  
+
   ! OPTIONAL: Whether to copy the content of the vector to the resized one
   logical, intent(in), optional :: bcopy
 
@@ -2532,7 +2532,7 @@ contains
 !</input>
 
 !<inputoutput>
-  
+
   ! Scalar vector structure
   type(t_vectorScalar), intent(inout) :: rx
 
@@ -2551,7 +2551,7 @@ contains
 
     ! Attach spatial discretisation structure
     rx%p_rspatialDiscr => rdiscretisation
-    
+
 
   end subroutine
 
@@ -2622,7 +2622,7 @@ contains
     ! Moreover, no data is copied and the vector is cleared if bclear=.TRUE.
     if ((rvector%NEQ     .eq. 0) .or.&
         (rvector%h_Ddata .eq. ST_NOHANDLE)) then
-      
+
       ! At first, copy all 'local' data.
       rvector = rvectorTemplate
 
@@ -2630,7 +2630,7 @@ contains
       ! format as the template vector.
       call storage_getsize(rvectorTemplate%h_Ddata, isize)
       if (present(NEQMAX)) isize = max(isize,NEQMAX)
-            
+
       if (bclear) then
         call storage_new ('lsyssc_resizeVectorIndirect','ScalarVector',isize,&
             rvectorTemplate%cdataType, rvector%h_Ddata, ST_NEWBLOCK_ZERO)
@@ -2640,7 +2640,7 @@ contains
       end if
 
     else
-      
+
       ! Check if vectors are compatible
       if ((rvector%cdataType .ne. rvectorTemplate%cdataType) .or.&
           (rvector%NVAR      .ne. rvectorTemplate%NVAR)) then
@@ -2657,7 +2657,7 @@ contains
       call lsyssc_resizeVectorDirect(rvector, rvectorTemplate%NEQ, bclear, bcopy, iNEQMAX)
 
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -2706,7 +2706,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeVectorIndMat')
       call sys_halt()
     end if
-    
+
     ! Does the vector exist?
     if (rvector%NEQ     .eq. 0 .or.&
         rvector%h_Ddata .eq. ST_NOHANDLE) then
@@ -2715,7 +2715,7 @@ contains
       call lsyssc_createVecIndMat(rmatrix, rvector, bclear)
 
     else
-      
+
       ! Check if vector/matrix are compatible
       if (rvector%NVAR .ne. rmatrix%NVAR) then
         call output_line('Vector/Matrix incompatible!',&
@@ -2725,9 +2725,9 @@ contains
 
       ! Resize vector directly
       call lsyssc_resizeVectorDirect(rvector, rmatrix%NCOLS, bclear, bcopy, NEQMAX)
-      
+
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -2880,15 +2880,15 @@ contains
     ! If it is a copy of another matrix, then we check if corresponding handles
     ! are associated to large enough memory blocks. If not, then we stop with
     ! an error. In any case, copied parts of the matrix are not cleared.
-    
+
     ! What kind of matrix are we?
     select case (rmatrix%cmatrixFormat)
-      
+
     case (LSYSSC_MATRIX1,LSYSSC_MATRIXD)
-      
+
       ! For these matrices, only the data array needs to be resized since
       ! there is no actual matrix structure.
-      
+
       ! Are we copy or not?
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
@@ -2901,30 +2901,30 @@ contains
         end if
 
       else
-      
+
         ! Do we really have to reallocate the matrix data physically?
         if (rmatrix%h_Da .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Da,isize)
           if (rmatrix%NA*rmatrix%NVAR > isize) then
-            
+
             ! Yes, so adopt the new size or reserve some extra memory if required.
             isize = iNA*rmatrix%NVAR
-            
+
             ! Reallocate the memory
             call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Da,&
                 ST_NEWBLOCK_NOINIT, bdocopy)
-            
+
           elseif (present(NAMAX)) then
-            
+
             ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory. Note that memory for at least NA matrix entries
             ! is allocated.
             if (isize > iNA*rmatrix%NVAR) then
-              
+
               ! Set new size
               isize = iNA*rmatrix%NVAR
-              
+
               if (isize .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
@@ -2935,22 +2935,22 @@ contains
               end if
             end if
           end if
-          
+
           ! Should the matrix be cleared?
           if (bclear) call storage_clear(rmatrix%h_Da)
         end if
       end if
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-      
+
       ! First, resize the structure of the matrix, i.e., KLD, KCOL and
       ! possibly KDIAGONAL for matrices stored in matrix format 9. Here,
       ! it is necessary to distinguish between virtually transposed matrices
       ! and non-transposed ones.
-      
+
       ! Are we copy or not?
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
-        
+
         ! Check if handle coincides with matrix dimensions
         call storage_getsize(rmatrix%h_Kld,isize)
         if ((rmatrix%NEQ+1 > isize) .or. btransposed .and. (rmatrix%NCOLS+1 > isize)) then
@@ -2958,14 +2958,14 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeMatrixDirect')
           call sys_halt()
         end if
-        
+
         call storage_getsize(rmatrix%h_Kcol,isize)
         if (rmatrix%NA > isize) then
           call output_line('Dimensions of copied matrix mismatch!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeMatrixDirect')
           call sys_halt()
         end if
-        
+
         if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
             (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
           call storage_getsize(rmatrix%h_Kdiagonal,isize)
@@ -2975,30 +2975,30 @@ contains
             call sys_halt()
           end if
         end if
-        
+
       else   ! The structure of the matrix is not a copy of another matrix
-      
+
         ! Do we really have to reallocate the array KLD?
         if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kld,isize)
           if ((rmatrix%NEQ+1 > isize) .or. btransposed .and. (rmatrix%NCOLS+1 > isize)) then
-            
+
             ! Yes, so adopt the new size or reserve some extra memory if required.
             isize = merge(iNCOLS+1,iNEQ+1,btransposed)
-            
+
             ! Reallocate the memory
             call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
                 ST_NEWBLOCK_NOINIT, bdocopy)
-            
+
           elseif (present(NEQMAX) .or. btransposed .and. present(NCOLSMAX)) then
-            
+
             isizeNew = merge(iNCOLS+1,iNEQ+1,btransposed)
 
             ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory.
             if (isize > isizeNew) then
-              
+
               if (isizeNew .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
@@ -3009,33 +3009,33 @@ contains
               end if
             end if
           end if
-          
+
           ! Should the matrix be cleared?
           if (bclear) call storage_clear(rmatrix%h_Kld)
         end if
-        
+
         ! Do we really have to reallocate the array KCOL?
         if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kcol,isize)
           if (rmatrix%NA > isize) then
-            
+
             ! Yes, so adopt the new size or reserve some extra memory if required.
             isize = iNA
-            
+
             ! Reallocate the memory
             call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
                 ST_NEWBLOCK_NOINIT, bdocopy)
-            
+
           elseif (present(NAMAX)) then
-            
+
             ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory.
             if (isize > iNA) then
-              
+
               ! Set new size
               isize = iNA
-              
+
               if (isize .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
@@ -3046,36 +3046,36 @@ contains
               end if
             end if
           end if
-          
+
           ! Should the matrix be cleared?
           if (bclear) call storage_clear(rmatrix%h_Kcol)
         end if
-        
+
         ! If the matrix is stored in format 9, then the diagonal array must be resized.
         if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
             (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
-          
+
           ! Do we really have to reallocate the array KCOL?
           if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_Kdiagonal,isize)
             if ((rmatrix%NEQ > isize) .or. btransposed .and. (rmatrix%NCOLS > isize)) then
-              
+
               ! Yes, so adopt the new size or reserve some extra memory if required.
               isize = merge(iNCOLS,iNEQ,btransposed)
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
                   ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NEQMAX) .or. btransposed .and. present(NCOLSMAX)) then
-              
+
               isizeNew = merge(iNCOLS,iNEQ,btransposed)
 
               ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory.
               if (isize > isizeNew) then
-                
+
                 if (isizeNew .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3086,17 +3086,17 @@ contains
                 end if
               end if
             end if
-            
+
             ! Should the matrix be cleared?
             if (bclear) call storage_clear(rmatrix%h_Kdiagonal)
           end if
         end if
-        
+
       end if
-      
+
       ! Ok, the matrix structure has been resized according to the prescribed dimensions.
       ! Now, let us resize the data array of the matrix.
-      
+
       ! Are we copy or not?
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
@@ -3111,7 +3111,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeMatrixDirect')
             call sys_halt()
           end if
-          
+
         case (LSYSSC_MATRIX1)
           if (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) then
             call output_line('Dimensions of copied matrix mismatch!',&
@@ -3137,30 +3137,30 @@ contains
         ! What kind of interleave matrix are we (if any)?
         select case (rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXUNDEFINED)
-          
+
           ! Do we really have to reallocate the matrix physically?
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_Da,isize)
             if (rmatrix%NA > isize) then
-              
+
               ! Yes, so adopt the new size or reserve some extra memory if required.
               isize = iNA
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Da,&
                   ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NAMAX)) then
-              
+
               ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
               if (isize > iNA) then
-                
+
                 ! Set new size
                 isize = iNA
-                
+
                 if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3171,36 +3171,36 @@ contains
                 end if
               end if
             end if
-            
+
             ! Should the matrix be cleared?
             if (bclear) call storage_clear(rmatrix%h_Da)
           end if
-          
+
         case (LSYSSC_MATRIX1)
-          
+
           ! Do we really have to reallocate the matrix physically?
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_Da,isize)
             if (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) then
-              
+
               ! Yes, so adopt the new size or reserve some extra memory if required.
               isize = iNA*rmatrix%NVAR*rmatrix%NVAR
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Da,&
                   ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NAMAX)) then
-              
+
               ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
               if (isize > iNA*rmatrix%NVAR*rmatrix%NVAR) then
-                
+
                 ! Set new size
                 isize = iNA*rmatrix%NVAR*rmatrix%NVAR
-                
+
                 if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3211,36 +3211,36 @@ contains
                 end if
               end if
             end if
-            
+
             ! Should the matrix be cleared?
             if (bclear) call storage_clear(rmatrix%h_Da)
           end if
-          
+
         case (LSYSSC_MATRIXD)
-          
+
           ! Do we really have to reallocate the matrix physically?
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_Da,isize)
             if (rmatrix%NA*rmatrix%NVAR > isize) then
-              
+
               ! Yes, so adopt the new size or reserve some extra memory if required.
               isize = iNA*rmatrix%NVAR
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Da,&
                   ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NAMAX)) then
-              
+
               ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
               if (isize > iNA*rmatrix%NVAR) then
-                
+
                 ! Set new size
                 isize = iNA*rmatrix%NVAR
-                
+
                 if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3251,19 +3251,19 @@ contains
                 end if
               end if
             end if
-            
+
             ! Should the matrix be cleared?
             if (bclear) call storage_clear(rmatrix%h_Da)
           end if
-          
+
         case default
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeMatrixDirect')
           call sys_halt()
         end select
-        
+
       end if
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_resizeMatrixDirect')
@@ -3444,7 +3444,7 @@ contains
               rmatrixTemplate%cdataType, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
         end if
       end if
-      
+
     else
 
       ! The matrix has been initialised before.
@@ -3475,7 +3475,7 @@ contains
         if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
         if (present(NCOLSMAX)) iNCOLS = max(iNCOLS,NCOLSMAX)
       end if
-      
+
       ! Set copy/clear attributes
       bdocopy = (.not.bclear)
       if (present(bcopy)) bdocopy = (bdocopy .and. bcopy)
@@ -3487,14 +3487,14 @@ contains
       if (bdocopy .and. rmatrix%isortStrategy > 0) then
         call lsyssc_unsortMatrix(rmatrix,.true.)
       end if
-      
+
       ! Reset sorting strategy, there is none
       rmatrix%isortStrategy      = 0
       rmatrix%h_isortPermutation = ST_NOHANDLE
-      
+
       ! Update NA
       rmatrix%NA = rmatrixTemplate%NA
-      
+
       ! Are we copy or not?
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
 
@@ -3507,12 +3507,12 @@ contains
         end if
 
       else
-        
+
         ! Do we have to reallocate the handle?
         if (rmatrix%h_Da .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Da, isize)
           if (rmatrix%NA*rmatrix%NVAR > isize) then
-            
+
             ! Yes, we have to reallocate the handle.
             isize = iNA*rmatrix%NVAR
 
@@ -3521,7 +3521,7 @@ contains
               call storage_getsize(rmatrixTemplate%h_Da, isizeTmp)
               isize = max(0,isize,isizeTmp)
             end if
-            
+
             ! Reallocate the memory
             call storage_realloc('lsyssc_resizeMatrixIndirect',&
                 isize, rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bdocopy)
@@ -3549,14 +3549,14 @@ contains
           end if
         end if
       end if
-      
+
       ! Update NEQ and NCOLS.
       rmatrix%NEQ   = rmatrixTemplate%NEQ
       rmatrix%NCOLS = rmatrixTemplate%NCOLS
 
       ! Are we copy or not?
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
-        
+
         ! Check if handle coincides with matrix dimensions
         if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kld,isize)
@@ -3586,17 +3586,17 @@ contains
             call sys_halt()
           end if
         end if
-        
+
       else  ! Matrix is no copy
-        
+
         ! Do we have to reallocate the handle?
         if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
-          
+
           ! Do we process a virtually transposed matrix?
           if (btransposed) then
             call storage_getsize(rmatrix%h_Kld, isize)
             if (rmatrix%NCOLS+1 > isize) then
-              
+
               ! Yes, we have to reallocate the handle.
               isize = iNCOLS+1
 
@@ -3605,7 +3605,7 @@ contains
                 call storage_getsize(rmatrixTemplate%h_Kld, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixIndirect',&
                   isize, rmatrix%h_Kld, ST_NEWBLOCK_NOINIT, bdocopy)
@@ -3634,7 +3634,7 @@ contains
           else
             call storage_getsize(rmatrix%h_Kld, isize)
             if (rmatrix%NEQ+1 > isize) then
-              
+
               ! Yes, we have to reallocate the handle.
               isize = iNEQ+1
 
@@ -3671,21 +3671,21 @@ contains
             end if
           end if
         end if
-        
+
         ! Do we have to reallocate the handle?
         if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kcol, isize)
           if (rmatrix%NA > isize) then
-            
+
             ! Yes, we have to reallocate the handle.
             isize = iNA
-            
+
             ! Also consider the size of the template matrix.
             if (rmatrixTemplate%h_Kcol .ne. ST_NOHANDLE) then
               call storage_getsize(rmatrixTemplate%h_Kcol, isizeTmp)
               isize = max(0,isize,isizeTmp)
             end if
-            
+
             ! Reallocate the memory
             call storage_realloc('lsyssc_resizeMatrixIndirect',&
                 isize, rmatrix%h_Kcol, ST_NEWBLOCK_NOINIT, bdocopy)
@@ -3700,7 +3700,7 @@ contains
 
               ! Compute new size, i.e. MAX(0,NA,NAMAX)
               isize = iNA
-              
+
               if (isize .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
@@ -3720,7 +3720,7 @@ contains
           if (btransposed) then
             call storage_getsize(rmatrix%h_Kdiagonal, isize)
             if (rmatrix%NCOLS > isize) then
-              
+
               ! Yes, we have to reallocate the handle.
               isize = iNCOLS
 
@@ -3729,13 +3729,13 @@ contains
                 call storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixIndirect',&
                   isize, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NCOLSMAX)) then
-              
+
               ! The available memory suffices for the matrix, i.e. isize <= NCOLS.
               ! Let us check if the user supplied a new upper limit which makes it
               ! mandatory to "shrink" the allocated memory. Note that memory for
@@ -3744,7 +3744,7 @@ contains
 
                 ! Compute new size, i.e. MAX(0,NCOLS,NCOLSMAX)
                 isize = iNCOLS
-                
+
                 if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3758,7 +3758,7 @@ contains
           else
             call storage_getsize(rmatrix%h_Kdiagonal, isize)
             if (rmatrix%NEQ > isize) then
-              
+
               ! Yes, we have to reallocate the handle.
               isize = iNEQ
 
@@ -3767,13 +3767,13 @@ contains
                 call storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
-              
+
               ! Reallocate the memory
               call storage_realloc('lsyssc_resizeMatrixIndirect',&
                   isize, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT, bdocopy)
-              
+
             elseif (present(NEQMAX)) then
-              
+
               ! The available memory suffices for the matrix, i.e. isize <= NEQ.
               ! Let us check if the user supplied a new upper limit which makes it
               ! mandatory to "shrink" the allocated memory. Note that memory for
@@ -3782,7 +3782,7 @@ contains
 
                 ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
                 isize = iNEQ
-                
+
                 if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
@@ -3794,7 +3794,7 @@ contains
               end if
             end if
           end if
-          
+
         end if
       end if
     end if
@@ -3804,13 +3804,13 @@ contains
   !****************************************************************************
 
 !<function>
-  
+
   real(DP) function lsyssc_scalarProduct (rx, ry)
-  
+
 !<description>
   ! Calculates a scalar product of two vectors.
 !</description>
-  
+
 !<input>
   ! First vector
   type(t_vectorScalar), intent(in) :: rx
@@ -3832,13 +3832,13 @@ contains
   real(SP), dimension(:), pointer :: p_Fdata1dp
   real(SP), dimension(:), pointer :: p_Fdata2dp
   real(DP) :: res
-  
+
   ! Vectors must be compatible!
   call lsyssc_isVectorCompatible (rx,ry)
-  
+
   ! Is there data at all?
   res = 0.0_DP
-  
+
   if ((rx%NEQ*rx%NVAR .eq. 0) .or. &
       (ry%NEQ*ry%NVAR .eq. 0) .or. &
       (rx%NEQ .ne. rx%NEQ) .or. &
@@ -3847,39 +3847,39 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProduct')
     call sys_halt()
   end if
-  
+
   if (rx%cdataType .ne. ry%cdataType) then
     call output_line('Data types different!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProduct')
     call sys_halt()
   end if
-  
+
   ! Take care of the data type before doing a scalar product!
   select case (rx%cdataType)
   case (ST_DOUBLE)
-     
+
     ! Get the data arrays
     call lsyssc_getbase_double (rx,p_Ddata1dp)
     call lsyssc_getbase_double (ry,p_Ddata2dp)
-    
+
     ! Perform the scalar product
     res = lalg_scalarProduct(p_Ddata1dp,p_Ddata2dp)
-    
+
   case (ST_SINGLE)
 
     ! Get the data arrays
     call lsyssc_getbase_single (rx,p_Fdata1dp)
     call lsyssc_getbase_single (ry,p_Fdata2dp)
-    
+
     ! Perform the scalar product
     res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
-    
+
   case default
     call output_line('Not supported precision combination!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProduct')
     call sys_halt()
   end select
-  
+
   ! Return the scalar product, finish
   lsyssc_scalarProduct = res
 
@@ -3887,14 +3887,14 @@ contains
 
   !****************************************************************************
 !<function>
-  
+
   real(DP) function lsyssc_scalarProductMatVec (rx, ry)
-  
+
 !<description>
   ! Calculates a scalar product of two vectors, whereby the first
   ! vector is a diagonal matrix.
 !</description>
-  
+
 !<input>
   ! First vector given as diagonal matrix
   type(t_MatrixScalar), intent(in) :: rx
@@ -3916,7 +3916,7 @@ contains
   real(SP), dimension(:), pointer :: p_Fdata1dp
   real(SP), dimension(:), pointer :: p_Fdata2dp
   real(DP) :: res
-  
+
   ! Matrix must be diagonal matrix
   if (rx%cmatrixFormat .ne. LSYSSC_MATRIXD) then
     call output_line('Matrix must be diagonal matrix!',&
@@ -3926,10 +3926,10 @@ contains
 
   ! Vectors must be compatible!
   call lsyssc_isMatrixVectorCompatible (ry,rx,.false.)
-  
+
   ! Is there data at all?
   res = 0.0_DP
-  
+
   if ((rx%NEQ*rx%NVAR .eq. 0) .or. &
       (ry%NEQ*ry%NVAR .eq. 0) .or. &
       (rx%NEQ .ne. rx%NEQ) .or. &
@@ -3938,7 +3938,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProductMatVec')
     call sys_halt()
   end if
-  
+
   if (rx%cdataType .ne. ry%cdataType) then
     call output_line('Data types different!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProductMatVec')
@@ -3948,29 +3948,29 @@ contains
   ! Take care of the data type before doing a scalar product!
   select case (rx%cdataType)
   case (ST_DOUBLE)
-     
+
     ! Get the data arrays
     call lsyssc_getbase_double (rx,p_Ddata1dp)
     call lsyssc_getbase_double (ry,p_Ddata2dp)
-    
+
     ! Perform the scalar product
     res=lalg_scalarProduct(p_Ddata1dp,p_Ddata2dp)
-    
+
   case (ST_SINGLE)
 
     ! Get the data arrays
     call lsyssc_getbase_single (rx,p_Fdata1dp)
     call lsyssc_getbase_single (ry,p_Fdata2dp)
-    
+
     ! Perform the scalar product
     res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
-    
+
   case default
     call output_line('Not supported precision combination!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarProductMatVec')
     call sys_halt()
   end select
-  
+
   ! Return the scalar product, finish
   lsyssc_scalarProductMatVec = res
 
@@ -3979,9 +3979,9 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose, rperfconfig)
-  
+
 !<description>
   ! Performs a matrix vector multiplication with a given scalar matrix:
   !   <tex> $$  Dy   =   cx * rMatrix * rx   +   cy * ry  $$ </tex>
@@ -3990,24 +3990,24 @@ contains
     use lsyssc_scalarMatVecAux
 
 !<input>
-  
+
   ! Scalar matrix
   type(t_matrixScalar), intent(in) :: rmatrix
 
   ! Vector to multiply with the matrix.
   type(t_vectorScalar), intent(in) :: rx
-  
+
   ! Multiplicative factor for rx
   real(DP), intent(in) :: cx
 
   ! Multiplicative factor for ry
   real(DP), intent(in) :: cy
-  
+
   ! OPTIONAL: Specifies whether a multiplication with the matrix itself
   ! (.false.) or with its transpose (.true.) should be performed. If not
   ! given, .false. is assumed.
   logical, optional, intent(in) :: btranspose
-  
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -4029,10 +4029,10 @@ contains
     integer :: NEQ
     logical :: bvirt_trans
     logical :: btrans
-  
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -4041,40 +4041,40 @@ contains
 
     bvirt_trans = .false.
     btrans = .false.
-  
+
     ! Should we multiply by the matrix transpose?
     if(present(btranspose)) btrans = btranspose
-    
+
     ! If the scale factor is = 0 or cx = 0, we do not want to perform a MV
     ! multiplication. We just need to take care of the cy then...
     if (cx*rmatrix%dscaleFactor .eq. 0.0_DP) then
-      
+
       if(cy .eq. 0.0_DP) then
         ! Simply clear ry
         call lsyssc_clearVector(ry)
-        
+
       else if(cy .ne. 1.0_DP) then
         ! Scale ry by cy
         call lsyssc_scaleVector(ry,cy)
-        
+
       end if
-      
+
       ! And exit this routine
       return
-      
+
     end if
-    
+
     ! Vectors must be compatible to the matrix.
     call lsyssc_isMatrixCompatible (rx,rmatrix, btrans)
     call lsyssc_isMatrixCompatible (ry,rmatrix, .not. btrans)
-    
+
     ! rx and ry must have at least the same data type!
     if (rx%cdataType .ne. ry%cdataType) then
       call output_line('Different data types for rx and ry not supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
       call sys_halt()
     end if
-    
+
     ! Up to now, all matrix types use h_Da. So if that is not associated,
     ! there is for sure an error!
     if (rmatrix%h_Da .eq. ST_NOHANDLE) then
@@ -4082,13 +4082,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
       call sys_halt()
     end if
-    
+
     ! Is the matrix 'virtually transposed' ?
     bvirt_trans = (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)
-    
+
     ! By what do we multiply now? The matrix itself or its transposed?
     if (bvirt_trans .eqv. btrans) then
-      
+
       ! We are multiplying by the matrix itself.
       ! Now is the matrix virtually transposed?
       if(bvirt_trans) then
@@ -4098,15 +4098,15 @@ contains
         ! No, so simply copy NEQ
         NEQ = rmatrix%NEQ
       end if
-    
+
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
-      
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
         ! Set pointers
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        
+
         ! Take care of the precision of the matrix
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -4119,16 +4119,16 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LAX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
-          
+
           case (ST_SINGLE)
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, single precision vectors
             call lsyssc_LAX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
@@ -4145,21 +4145,21 @@ contains
 
           ! Take care of the precision of the vectors
           select case (rx%cdataType)
-          
+
           case (ST_DOUBLE)
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! single precision matrix, double precision vectors
             call lsyssc_LAX79SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
-          
+
           case (ST_SINGLE)
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! single precision matrix, single precision vectors
             call lsyssc_LAX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
@@ -4169,19 +4169,19 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIX9ROWC)
         ! Set pointers
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
         call lsyssc_getbase_KrowIdx (rmatrix,p_KrowIdx)
-        
+
         ! Take care of the precision of the matrix
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -4194,16 +4194,16 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LAX9rowcDbleDble (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
-          
+
           case (ST_SINGLE)
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LAX9rowcDbleSngl (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
@@ -4217,23 +4217,23 @@ contains
         case (ST_SINGLE)
           ! Format 9 multiplication
           call lsyssc_getbase_single (rmatrix,p_Fa)
-          
+
           ! Take care of the precision of the vectors
           select case (rx%cdataType)
           case (ST_DOUBLE)
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LAX9rowcSnglDble (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
-          
+
           case (ST_SINGLE)
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LAX9rowcSnglSngl (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),rmatrix%nnzrows,rx%NVAR,&
@@ -4263,17 +4263,17 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
               call lsyssc_LAX79INTL1DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDDbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
@@ -4284,29 +4284,29 @@ contains
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, single precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
               call lsyssc_LAX79INTL1DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                   cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDDbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                   cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case (ST_SINGLE)
           ! Format 7 and Format 9 multiplication
           call lsyssc_getbase_single (rmatrix,p_Fa)
@@ -4317,17 +4317,17 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! single precision matrix, double precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
               call lsyssc_LAX79INTL1SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                   real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDSnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                   real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
-              
+
             case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
@@ -4338,25 +4338,25 @@ contains
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! single precision matrix, single precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
               call lsyssc_LAX79INTL1SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                   p_rperfconfig)
-              
+
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDSnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                   p_rperfconfig)
-              
+
             case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
@@ -4368,9 +4368,9 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIXD)
-      
+
         ! Take care of the precision of the matrix
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -4383,7 +4383,7 @@ contains
             ! Set pointer
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LATXDDbleDble (p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4392,11 +4392,11 @@ contains
             ! Set pointer
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, single precision vectors
             call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
-          
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
@@ -4413,7 +4413,7 @@ contains
             ! Set pointer
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! single precision matrix, double precision vectors
             call lsyssc_LATXDSnglDble (p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4422,12 +4422,12 @@ contains
             ! Set pointer
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! single precision matrix, single precision vectors
             call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
-          
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
@@ -4439,13 +4439,13 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
-        
+
       case default
         call output_line('Invalid matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
         call sys_halt()
       end select
-      
+
     else
       ! We are multiplying by the transposed matrix.
       ! Now is the matrix virtually transposed?
@@ -4459,7 +4459,7 @@ contains
 
       ! Select the right MV multiplication routine from the matrix format
       select case (rmatrix%cmatrixFormat)
-      
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
         ! Set pointers
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -4477,7 +4477,7 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! double precision matrix, double precision vectors
             call lsyssc_LTX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4486,7 +4486,7 @@ contains
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, single precision vectors
             call lsyssc_LTX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
@@ -4496,7 +4496,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case (ST_SINGLE)
           ! Format 7 and Format 9 multiplication
           call lsyssc_getbase_single (rmatrix,p_Fa)
@@ -4507,7 +4507,7 @@ contains
             ! Set pointers
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! single precision matrix, double precision vectors
             call lsyssc_LTX79SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4516,7 +4516,7 @@ contains
             ! Set pointers
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! single precision matrix, single precision vectors
             call lsyssc_LTX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
@@ -4527,15 +4527,15 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIXD)
-      
+
         ! Take care of the precision of the matrix
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -4552,75 +4552,75 @@ contains
             ! double precision matrix, double precision vectors
             call lsyssc_LATXDDbleDble (p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
-          
+
           case (ST_SINGLE)
             ! Set pointer
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! double precision matrix, single precision vectors
             call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
-          
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case (ST_SINGLE)
           ! Format D multiplication
           call lsyssc_getbase_single (rmatrix,p_Fa)
-          
+
           ! Take care of the precision of the vectors
           select case (rx%cdataType)
           case (ST_DOUBLE)
             ! Set pointer
             call lsyssc_getbase_double (rx,p_Dx)
             call lsyssc_getbase_double (ry,p_Dy)
-            
+
             ! single precision matrix, double precision vectors
             call lsyssc_LATXDSnglDble (p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
-            
+
           case (ST_SINGLE)
             ! Set pointer
             call lsyssc_getbase_single (rx,p_Fx)
             call lsyssc_getbase_single (ry,p_Fy)
-            
+
             ! single precision matrix, single precision vectors
             call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
-            
+
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
-          
+
         case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
-        
+
       case default
         call output_line('Invalid matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
         call sys_halt()
       end select
-      
+
     end if
 
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_duplicateVector (rx,ry,cdupStructure,cdupContent)
-  
+
 !<description>
   ! Duplicates an existing vector: ry := rx.
   ! Creates a new vector ry based on a template vector rx.
@@ -4645,7 +4645,7 @@ contains
   !  the state of the new vector is undefined as no reference to the
   !  sorting strategy is transferred! The data is simply copied.
 !</description>
-  
+
 !<input>
   ! Vector to copy
   type(t_vectorScalar), intent(in) :: rx
@@ -4659,7 +4659,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
   !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
   integer, intent(in) :: cdupStructure
-  
+
   ! Duplication flag that decides on how to set up the content
   ! of ry. Not all flags are possible!
   ! One of the LSYSSC_DUP_xxxx flags:
@@ -4712,9 +4712,9 @@ contains
     integer :: ioffset,cdataType
     logical :: bisCopy
     integer :: h_Ddata
-    
+
     ! First the structure
-    
+
     if (cdupStructure .ne. LSYSSC_DUP_IGNORE) then
       ! Standard case: Copy the whole vector information
       !
@@ -4724,11 +4724,11 @@ contains
       cdataType = ry%cdataType
       bisCopy = ry%bisCopy
       ioffset = ry%iidxFirstEntry
-      
+
       ! Then transfer all structural information of rx to ry.
       ! This automatically makes both vectors compatible to each other.
       ry = rx
-      
+
       ! Restore crucial data
       ry%h_Ddata = h_Ddata
       ry%bisCopy = bisCopy
@@ -4741,29 +4741,29 @@ contains
     select case (cdupContent)
     case (LSYSSC_DUP_IGNORE)
       ! Nothing to do
-    
+
     case (LSYSSC_DUP_REMOVE)
       ! Release vector data
       if ((.not. ry%bisCopy) .and. (ry%h_Ddata .ne. ST_NOHANDLE)) &
         call storage_free (ry%h_Ddata)
-        
+
       ry%h_Ddata = ST_NOHANDLE
       ry%bisCopy = .false.
-      
+
     case (LSYSSC_DUP_DISMISS)
       ! Dismiss data
       ry%h_Ddata = ST_NOHANDLE
       ry%bisCopy = .false.
-    
+
     case (LSYSSC_DUP_SHARE)
       ! Share information. Release memory if necessary.
       if ((.not. ry%bisCopy) .and. (ry%h_Ddata .ne. ST_NOHANDLE)) &
         call storage_free (ry%h_Ddata)
-        
+
       ry%h_Ddata = rx%h_Ddata
       ry%iidxFirstEntry = rx%iidxFirstEntry
       ry%bisCopy = .true.
-      
+
     case (LSYSSC_DUP_COPY)
       ! Copy information. If necessary, allocate new data -- by setting
       ! h_Ddata to ST_NOHANDLE before calling storage_copy.
@@ -4774,20 +4774,20 @@ contains
 
       if (ry%h_Ddata .eq. ST_NOHANDLE) &
         call allocDestinationVector (rx,ry)
-      
+
       call copy_data (rx,ry)
-    
+
     case (LSYSSC_DUP_COPYOVERWRITE)
       ! Copy information, regardless of whether ry is the owner or not.
       ! If no memory is allocated, allocate new memory.
-      
+
       if (ry%h_Ddata .eq. ST_NOHANDLE) &
         call allocDestinationVector (rx,ry)
-      
+
       call copy_data (rx,ry)
-    
+
     case (LSYSSC_DUP_ASIS)
-    
+
       ! Copy by ownership. This is either LSYSSC_COPY or LSYSSC_SHARE,
       ! depending on whether rx is the owner of the data or not.
       if (rx%bisCopy) then
@@ -4803,53 +4803,53 @@ contains
         call allocDestinationVector (rx,ry)
         call copy_data (rx,ry)
       end if
-      
+
     case (LSYSSC_DUP_EMPTY)
-    
+
       ! Allocate new memory if ry is empty. Do not initialise.
       ! If ry contains data, we do not have to do anything.
       if (ry%h_Ddata .eq. ST_NOHANDLE) then
         call allocDestinationVector (rx,ry)
       end if
-    
+
     case default
-    
+
       call output_line('cdupContent unknown!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_duplicateVector')
       call sys_halt()
-    
+
     end select
-    
+
   contains
-  
+
     subroutine allocDestinationVector (rx,ry)
-    
+
     ! Allocates new memory ry in the size of rx. The memory is not initialised.
-    
+
     type(t_vectorScalar), intent(in) :: rx
     type(t_vectorScalar), intent(inout) :: ry
 
       ! local variables
       integer :: NEQ,NVAR
-    
+
       NEQ = rx%NEQ
       NVAR= rx%NVAR
       ry%cdataType = rx%cdataType
       call storage_new ('lsyssc_duplicateVector','ry',NEQ*NVAR,&
                         rx%cdataType, ry%h_Ddata, &
                         ST_NEWBLOCK_NOINIT)
-    
+
     end subroutine
-    
+
     ! ---------------------------------------------------------------
-    
+
     subroutine copy_data (rx,ry)
-    
+
     ! Copies the content of rx to ry. Takes care of the data type
-    
+
     type(t_vectorScalar), intent(in) :: rx
     type(t_vectorScalar), intent(inout) :: ry
-    
+
       ! local variables
       real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
       real(SP), dimension(:), pointer :: p_Fsource,p_Fdest
@@ -4859,7 +4859,7 @@ contains
         ! Eehm... forget it.
         return
       end if
-    
+
       ! Take care of the data type!
       select case (rx%cdataType)
       case (ST_DOUBLE)
@@ -4881,16 +4881,16 @@ contains
       end select
 
     end subroutine
-    
+
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,&
                                      cdupStructure, cdupContent)
-  
+
 !<description>
   ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
   ! on a template matrix rsourceMatrix.
@@ -4912,11 +4912,11 @@ contains
   !  copying the corresponding handle. The application must keep track
   !  of the permutations.
 !</description>
-  
+
 !<input>
   ! Source matrix.
   type(t_matrixScalar), intent(in) :: rsourceMatrix
-  
+
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
@@ -4959,7 +4959,7 @@ contains
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
   integer, intent(in) :: cdupStructure
-  
+
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
@@ -5012,7 +5012,7 @@ contains
 
     ! local variables
     integer :: isize
-  
+
     ! What do we have to do for the structure?
     select case (cdupStructure)
     case (LSYSSC_DUP_IGNORE)
@@ -5020,15 +5020,15 @@ contains
     case (LSYSSC_DUP_REMOVE)
       ! Remove the structure - if there is any.
       call removeStructure(rdestMatrix, .true.)
-      
+
     case (LSYSSC_DUP_DISMISS)
       ! Dismiss the structure - if there is any.
       call removeStructure(rdestMatrix, .false.)
-      
+
     case (LSYSSC_DUP_TEMPLATE)
       ! Remove the structure - if there is any.
       call removeStructure(rdestMatrix, .true.)
-      
+
       ! Copy static structural information
       call copyStaticStructure(rsourceMatrix,rdestMatrix)
 
@@ -5038,15 +5038,15 @@ contains
 
       ! Share the structure between rsourceMatrix and rdestMatrix
       call shareStructure(rsourceMatrix, rdestMatrix)
-      
+
     case (LSYSSC_DUP_COPY)
       ! Copy the structure of rsourceMatrix to rdestMatrix
       call copyStructure(rsourceMatrix, rdestMatrix, .false.)
-      
+
     case (LSYSSC_DUP_COPYOVERWRITE)
       ! Copy the structure of rsourceMatrix to rdestMatrix, do not respect ownership
       call copyStructure(rsourceMatrix, rdestMatrix, .true.)
-      
+
     case (LSYSSC_DUP_ASIS)
       ! What is with the source matrix. Does the structure belong to it?
       if (iand(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
@@ -5059,7 +5059,7 @@ contains
         ! Share the structure
         call shareStructure(rsourceMatrix, rdestMatrix)
       end if
-      
+
     case (LSYSSC_DUP_EMPTY)
       ! Start with sharing the structure
       call shareStructure(rsourceMatrix, rdestMatrix)
@@ -5082,7 +5082,7 @@ contains
         call storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
             rdestMatrix%NEQ, ST_INT, &
             rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         call storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
             rdestMatrix%NA, ST_INT, &
@@ -5096,11 +5096,11 @@ contains
         ! Nothing to do
       end select
     end select
-    
+
     ! -----
     ! Ok, handling of the structure is finished. The data is handled similar.
     ! -----
-    
+
     ! What do we have to do for the content?
     select case (cdupContent)
     case (LSYSSC_DUP_IGNORE)
@@ -5108,30 +5108,30 @@ contains
     case (LSYSSC_DUP_REMOVE)
       ! Remove the content - if there is any.
       call removeContent(rdestMatrix, .true.)
-      
+
     case (LSYSSC_DUP_DISMISS)
       ! Dismiss the structure - if there is any.
       call removeContent(rdestMatrix, .false.)
-      
+
     case (LSYSSC_DUP_SHARE)
       ! Remove the content - if there is any.
       call removeContent(rdestMatrix, .true.)
 
       ! Share the structure between rsourceMatrix and rdestMatrix
       call shareContent(rsourceMatrix, rdestMatrix)
-      
+
     case (LSYSSC_DUP_COPY)
       ! Copy the structure of rsourceMatrix to rdestMatrix
       call copyContent(rsourceMatrix, rdestMatrix, .false.)
-      
+
     case (LSYSSC_DUP_COPYOVERWRITE)
       ! Copy the structure of rsourceMatrix to rdestMatrix, do not respect ownership
       call copyContent(rsourceMatrix, rdestMatrix, .true.)
-      
+
     case (LSYSSC_DUP_TEMPLATE)
       ! Remove the structure - if there is any.
       call removeContent(rdestMatrix, .true.)
-      
+
       ! Copy static content information
       call copyStaticContent(rsourceMatrix,rdestMatrix)
 
@@ -5147,7 +5147,7 @@ contains
         ! Share the structure
         call shareContent(rsourceMatrix, rdestMatrix)
       end if
-      
+
     case (LSYSSC_DUP_EMPTY)
       ! Start with sharing the structure
       call shareContent(rsourceMatrix, rdestMatrix)
@@ -5180,16 +5180,16 @@ contains
         end select
       end select
     end select
-    
+
     ! -----
     ! Final check. Check if we destroyed the matrix. May only happen if the
     ! user on-purpose calls this routine two times with different source
     ! but the same destination matrix.
     ! -----
-    
+
     select case (rdestMatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-    
+
       ! Check length of Da
       if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Da,isize)
@@ -5214,7 +5214,7 @@ contains
           end if
         end select
       end if
-      
+
       ! Check length of KCOL
       if (rdestMatrix%h_Kcol .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kcol,isize)
@@ -5228,7 +5228,7 @@ contains
       ! Check length of KLD
       if (rdestMatrix%h_Kld .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kld,isize)
-        
+
         ! Be careful, matrix may be transposed.
         if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
           if (isize .lt. rdestMatrix%NEQ+1) then
@@ -5244,11 +5244,11 @@ contains
           end if
         end if
       end if
-      
+
       ! Check length of Kdiagonal
       if (rdestMatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kdiagonal,isize)
-        
+
         ! Be careful, matrix may be transposed.
         if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
           if (isize .lt. rdestMatrix%NEQ) then
@@ -5264,9 +5264,9 @@ contains
           end if
         end if
       end if
-      
+
     case (LSYSSC_MATRIX9ROWC)
-    
+
       ! Check length of Da
       if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Da,isize)
@@ -5291,7 +5291,7 @@ contains
           end if
         end select
       end if
-      
+
       ! Check length of KCOL
       if (rdestMatrix%h_Kcol .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kcol,isize)
@@ -5305,7 +5305,7 @@ contains
       ! Check length of KLD
       if (rdestMatrix%h_Kld .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kld,isize)
-        
+
         ! Be careful, matrix may be transposed.
         if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
           if (isize .lt. rdestMatrix%nnzrows+1) then
@@ -5321,9 +5321,9 @@ contains
           end if
         end if
       end if
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-    
+
       ! Check length of Da
       if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Da,isize)
@@ -5348,7 +5348,7 @@ contains
           end if
         end select
       end if
-      
+
       ! Check length of KCOL
       if (rdestMatrix%h_Kcol .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kcol,isize)
@@ -5362,7 +5362,7 @@ contains
       ! Check length of KLD
       if (rdestMatrix%h_Kld .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Kld,isize)
-        
+
         ! Be careful, matrix may be transposed.
         if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
           if (isize .lt. rdestMatrix%NEQ+1) then
@@ -5378,9 +5378,9 @@ contains
           end if
         end if
       end if
-      
+
     case (LSYSSC_MATRIXD)
-    
+
       ! Check length of Da
       if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
         call storage_getsize (rdestMatrix%h_Da,isize)
@@ -5394,19 +5394,19 @@ contains
     end select
 
   contains
-    
+
     !--------------------------------------------------------
     ! Auxiliary routine: Remove the structure from a matrix.
-    
+
     subroutine removeStructure(rmatrix, brelease)
-    
+
     ! The matrix to to be processed.
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! Whether to release data from the heap (if it belongs to the matrix)
     ! or simply to overwrite the handles with ST_NOHANDLE
     logical, intent(in) :: brelease
-    
+
       ! This is a matrix-dependent task
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
@@ -5418,12 +5418,12 @@ contains
           if (rmatrix%h_Kld .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Kld)
           if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Kdiagonal)
         end if
-        
+
         ! Reset the handles
         rmatrix%h_Kld = ST_NOHANDLE
         rmatrix%h_Kcol = ST_NOHANDLE
         rmatrix%h_Kdiagonal = ST_NOHANDLE
-        
+
         ! Reset the ownership-status
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,&
                                    not(LSYSSC_MSPEC_STRUCTUREISCOPY))
@@ -5437,13 +5437,13 @@ contains
           if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Kdiagonal)
           if (rmatrix%h_KrowIdx .ne. ST_NOHANDLE) call storage_free (rmatrix%h_KrowIdx)
         end if
-        
+
         ! Reset the handles
         rmatrix%h_Kld = ST_NOHANDLE
         rmatrix%h_Kcol = ST_NOHANDLE
         rmatrix%h_Kdiagonal = ST_NOHANDLE
         rmatrix%h_KrowIdx = ST_NOHANDLE
-        
+
         ! Reset the ownership-status
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,&
                                    not(LSYSSC_MSPEC_STRUCTUREISCOPY))
@@ -5455,11 +5455,11 @@ contains
           if (rmatrix%h_Kcol .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Kcol)
           if (rmatrix%h_Kld .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Kld)
         end if
-        
+
         ! Reset the handles
         rmatrix%h_Kld = ST_NOHANDLE
         rmatrix%h_Kcol = ST_NOHANDLE
-        
+
       case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         ! Nothing to do
 
@@ -5468,24 +5468,24 @@ contains
       ! Reset the ownership-status
       rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,&
                                   not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-    
+
     end subroutine
 
     !--------------------------------------------------------
     ! Auxiliary routine: Shares the structure between rsourceMatrix
     ! and rdestMatrix
-    
+
     subroutine shareStructure(rsourceMatrix, rdestMatrix)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
       ! local variables
       integer(I32) :: iflag,iflag2
-    
+
       ! Overwrite structural data
       rdestMatrix%NA     = rsourceMatrix%NA
       rdestMatrix%NEQ    = rsourceMatrix%NEQ
@@ -5495,7 +5495,7 @@ contains
       rdestMatrix%cinterleavematrixFormat = rsourceMatrix%cinterleavematrixFormat
       rdestMatrix%isortStrategy           = rsourceMatrix%isortStrategy
       rdestMatrix%h_IsortPermutation      = rsourceMatrix%h_IsortPermutation
-      
+
       ! Transfer all flags except the 'dup' flags
       iflag = iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
       iflag2 = iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
@@ -5512,7 +5512,7 @@ contains
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
         rdestMatrix%h_Kdiagonal = rsourceMatrix%h_Kdiagonal
-        
+
         ! Indicate via the matrixSpec-flag that we are not
         ! the owner of the structure. Exception: If there is no
         ! structure, there is no ownership!
@@ -5525,13 +5525,13 @@ contains
           rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
                                         not(LSYSSC_MSPEC_STRUCTUREISCOPY))
         end if
-      
+
       case (LSYSSC_MATRIX9ROWC)
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
         rdestMatrix%h_KrowIdx = rsourceMatrix%h_KrowIdx
         rdestMatrix%NNZROWS = rsourceMatrix%NNZROWS
-        
+
         ! Indicate via the matrixSpec-flag that we are not
         ! the owner of the structure. Exception: If there is no
         ! structure, there is no ownership!
@@ -5549,7 +5549,7 @@ contains
         ! Overwrite structural data
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
-      
+
         ! Indicate via the matrixSpec-flag that we are not
         ! the owner of the structure. Exception: If there is no
         ! structure, there is no ownership!
@@ -5568,24 +5568,24 @@ contains
                                       not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
       end select
-      
+
     end subroutine
 
     !--------------------------------------------------------
     ! Auxiliary routine: Copy static structural information
     ! (NEQ, NCOLS, NA,...) from rsourceMatrix to rdestMatrix
-    
+
     subroutine copyStaticStructure(rsourceMatrix, rdestMatrix)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
       ! local variables
       integer(I32) :: iflag,iflag2
-    
+
       ! Overwrite structural data
       rdestMatrix%NA     = rsourceMatrix%NA
       rdestMatrix%NEQ    = rsourceMatrix%NEQ
@@ -5601,7 +5601,7 @@ contains
       iflag = iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
       iflag2 = iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
       rdestMatrix%imatrixSpec = ior(iflag,iflag2)
-      
+
       ! Transfer discretisation-related information,
       rdestMatrix%p_rspatialDiscrTrial => rsourceMatrix%p_rspatialDiscrTrial
       rdestMatrix%p_rspatialDiscrTest => rsourceMatrix%p_rspatialDiscrTest
@@ -5612,15 +5612,15 @@ contains
     !--------------------------------------------------------
     ! Auxiliary routine: Copy the structure of rsourceMatrix
     ! to rdestMatrix
-    
+
     subroutine copyStructure(rsourceMatrix, rdestMatrix, bignoreOwner)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
     ! Whether to respect the ownership of the arrays and allocate
     ! memory automatically if a matrix is not the owner of the arrays.
     logical, intent(in) :: bignoreOwner
@@ -5629,14 +5629,14 @@ contains
       integer :: isize
       integer :: NEQ,NNZROWS
       logical :: bremove
-    
+
       ! Overwrite structural data
       call copyStaticStructure(rsourceMatrix, rdestMatrix)
 
       ! Check the structure if it exists and if it has the right
       ! size - then we can overwrite!
       bRemove = .false.
-      
+
       ! But at first, check if rdestMatrix is the owner of the matrix
       ! structure:
       if ((.not. bignoreOwner) .and. &
@@ -5644,78 +5644,78 @@ contains
         ! No, the structure belongs to someone else, but we want to have
         ! our own. Detach the foreign matrix structure.
         bremove = .true.
-        
+
       else
-        
+
         ! Ok, rdestMatrix owns its own matrix structure or does not have any.
         ! Check the structure if it is large enough so we can overwrite
         ! it. If the size of the arrays is not equal to those
         ! in the source matrix, release the structure and allocate a new one.
-        
+
         if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
           NEQ = rdestMatrix%NCOLS
         else
           NEQ = rdestMatrix%NEQ
         end if
-        
+
         ! Which source matrix do we have?
         select case (rsourceMatrix%cmatrixFormat)
         case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
           if ((rdestMatrix%h_Kcol .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_Kld .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_Kdiagonal .ne. ST_NOHANDLE)) then
-        
+
             call storage_getsize (rdestMatrix%h_Kcol,isize)
             bremove = bremove .or. (isize .lt. rdestMatrix%NA)
-            
+
             call storage_getsize (rsourceMatrix%h_Kld,isize)
             bremove = bremove .or. (isize .lt. NEQ+1)
-            
+
             call storage_getsize (rsourceMatrix%h_Kdiagonal,isize)
             bremove = bremove .or. (isize .lt. NEQ)
-          
+
           else
 
             ! Remove any partial information if there is any.
             bremove = .true.
-            
+
           end if
-          
+
         case (LSYSSC_MATRIX9ROWC)
           NNZROWS = rdestMatrix%NNZROWS
-        
+
           if ((rdestMatrix%h_Kcol .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_Kld .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_KrowIdx .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_Kdiagonal .ne. ST_NOHANDLE)) then
-        
+
             call storage_getsize (rdestMatrix%h_Kcol,isize)
             bremove = bremove .or. (isize .lt. rdestMatrix%NA)
-            
+
             call storage_getsize (rsourceMatrix%h_Kld,isize)
             bremove = bremove .or. (isize .lt. NEQ+1)
-            
+
             call storage_getsize (rsourceMatrix%h_Kdiagonal,isize)
             bremove = bremove .or. (isize .lt. NEQ)
-          
+
             call storage_getsize (rsourceMatrix%h_KrowIdx,isize)
             bremove = bremove .or. (isize .lt. NNZROWS)
-            
+
           else
 
             ! Remove any partial information if there is any.
             bremove = .true.
-            
+
           end if
-          
+
         case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-        
+
           if ((rdestMatrix%h_Kcol .ne. ST_NOHANDLE) .and. &
               (rdestMatrix%h_Kld .ne. ST_NOHANDLE)) then
- 
+
             call storage_getsize (rdestMatrix%h_Kcol,isize)
             bremove = bremove .or. (isize .lt. rdestMatrix%NA)
-            
+
             call storage_getsize (rsourceMatrix%h_Kld,isize)
             bremove = bremove .or. (isize .lt. NEQ+1)
 
@@ -5723,16 +5723,16 @@ contains
 
             ! Remove any partial information if there is any.
             bremove = .true.
-            
+
           end if
-        
+
         case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
           ! Nothing to do
 
         end select
-      
+
       end if
-    
+
       ! Remove the old matrix structure if we should do so.
       if (bremove) call removeStructure(rdestMatrix, .true.)
 
@@ -5754,36 +5754,36 @@ contains
         call lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
         call lsyssc_auxcopy_Kdiagonal (rsourceMatrix,rdestMatrix)
         call lsyssc_auxcopy_KrowIdx (rsourceMatrix,rdestMatrix)
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         call lsyssc_auxcopy_Kcol (rsourceMatrix,rdestMatrix)
         call lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
-      
+
       case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         ! Nothing to do
 
       end select
-      
+
       if (.not. bignoreOwner) then
         ! Indicate via the matrixSpec-flag that we are the owner of the structure.
         rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
                                       not(LSYSSC_MSPEC_STRUCTUREISCOPY))
       end if
-    
+
     end subroutine
-  
+
     !--------------------------------------------------------
     ! Auxiliary routine: Remove the content from a matrix.
-    
+
     subroutine removeContent(rmatrix, brelease)
-    
+
     ! The matrix to to be processed.
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! Whether to release data from the heap (if it belongs to the matrix)
     ! or simply to overwrite the handles with ST_NOHANDLE
     logical, intent(in) :: brelease
-    
+
       ! This is a matrix-dependent task
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
@@ -5794,30 +5794,30 @@ contains
             (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
           if (rmatrix%h_Da .ne. ST_NOHANDLE) call storage_free (rmatrix%h_Da)
         end if
-        
+
         ! Reset the handles
         rmatrix%h_Da = ST_NOHANDLE
-        
+
       end select
 
       ! Reset the ownership-status
       rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,&
                                   not(LSYSSC_MSPEC_CONTENTISCOPY))
-    
+
     end subroutine
 
     !--------------------------------------------------------
     ! Auxiliary routine: Shares the content between rsourceMatrix
     ! and rdestMatrix
-    
+
     subroutine shareContent(rsourceMatrix, rdestMatrix)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
       ! Remove the old content - if there is any.
       call removeContent(rdestMatrix, .true.)
 
@@ -5829,9 +5829,9 @@ contains
       select case (rsourceMatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
           LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
-        
+
         rdestMatrix%h_Da = rsourceMatrix%h_Da
-        
+
         ! Indicate via the matrixSpec-flag that we are not
         ! the owner of the structure. Only exception: If the handle
         ! is zero, there is nothing that can be owned!
@@ -5842,24 +5842,24 @@ contains
           rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
                                         not(LSYSSC_MSPEC_CONTENTISCOPY))
         end if
-      
+
       end select
-      
+
     end subroutine
 
     !--------------------------------------------------------
     ! Auxiliary routine: Copy static content-related
     ! information (scale factor,...) rsourceMatrix
     ! to rdestMatrix
-    
+
     subroutine copyStaticContent(rsourceMatrix, rdestMatrix)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
       ! Overwrite structural data
       rdestMatrix%dscaleFactor = rsourceMatrix%dscaleFactor
 
@@ -5868,68 +5868,68 @@ contains
     !--------------------------------------------------------
     ! Auxiliary routine: Copy the content of rsourceMatrix
     ! to rdestMatrix
-    
+
     subroutine copyContent(rsourceMatrix, rdestMatrix, bignoreOwner)
-    
+
     ! The source matrix
     type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix
     type(t_matrixScalar), intent(inout) :: rdestMatrix
-    
+
     ! Whether to respect the ownership of the arrays and allocate
     ! memory automatically if a matrix is not the owner of the arrays.
     logical, intent(in) :: bignoreOwner
-    
+
       ! local variables
       logical :: bremove
-      
+
       ! Overwrite structural data
       call copyStaticContent(rsourceMatrix, rdestMatrix)
-      
+
       ! Check the content if it exists and if it has the right
       ! size - then we can overwrite!
       bRemove = .false.
-      
+
       ! But at first, check if rdestMatrix is the owner of the matrix
       ! structure:
       if ((.not. bignoreOwner) .and. &
           (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
-          
+
         ! No, the content belongs to someone else, but we want to have
         ! our own. Detach the foreign matrix content.
         bremove = .true.
-        
+
       else
-        
+
         ! Ok, rdestMatrix owns some matrix content.
         ! Check the structure if it is large enough so we can overwrite
         ! it. If the size of the arrays is not equal to those
         ! in the source matrix, release the content and allocate a new one.
-        
+
         ! Which source matrix do we have?
         select case (rsourceMatrix%cmatrixFormat)
         case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
-        
+
           if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
-        
+
             call storage_getsize (rdestMatrix%h_Da,isize)
             bremove = bremove .or. (isize .lt. rdestMatrix%NA)
-          
+
             ! Check the data type
             bremove = bremove .or. (rdestMatrix%cdataType .ne. rsourceMatrix%cdataType)
-          
+
           else
-          
+
             ! Remove any partial information if there is any
             bremove = .true.
-            
+
           end if
 
           case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
-        
+
           if (rdestMatrix%h_Da .ne. ST_NOHANDLE) then
-        
+
             call storage_getsize (rdestMatrix%h_Da,isize)
             select case (rdestMatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
@@ -5942,21 +5942,21 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_duplicateMatrix')
               call sys_halt()
             end select
-          
+
             ! Check the data type
             bremove = bremove .or. (rdestMatrix%cdataType .ne. rsourceMatrix%cdataType)
-          
+
           else
-          
+
             ! Remove any partial information if there is any
             bremove = .true.
-            
+
           end if
-          
+
         end select
-      
+
       end if
-    
+
       ! Remove the old content - if we should do so
       if (bremove) call removeContent(rdestMatrix, .true.)
 
@@ -5970,38 +5970,38 @@ contains
       select case (rsourceMatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
           LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
-        
+
         call lsyssc_auxcopy_da (rsourceMatrix,rdestMatrix)
-      
+
       end select
-      
+
       if (.not. bignoreOwner) then
         ! Indicate via the matrixSpec-flag that we are the owner of the structure.
         rdestMatrix%imatrixSpec = iand(rdestMatrix%imatrixSpec,&
                                       not(LSYSSC_MSPEC_CONTENTISCOPY))
       end if
-    
+
     end subroutine
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_releaseVector (rvector)
-  
+
 !<description>
   ! Releases a vector from memory. The vector structure is cleaned up.
   ! Remark: The memory associated to the vector is only released if this
   !  vector structure is the owner of the data.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! Vector to release.
   type(t_vectorScalar), intent(inout) :: rvector
-  
+
 !</inputoutput>
 
 !</subroutine>
@@ -6010,7 +6010,7 @@ contains
     call output_line('Releasing unused vector!',&
         OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_releaseVector')
   end if
-  
+
   ! Clean up the data structure.
   ! Do not release the vector data if the handle belongs to another
   ! vector!
@@ -6029,22 +6029,22 @@ contains
   rvector%p_rspatialDiscr => null()
 
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_releaseMatrixContent (rmatrix)
-  
+
 !<description>
   ! Releases the content of a matrix from memory. The structure stays unchanged.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! Matrix to release.
   type(t_matrixScalar), intent(inout) :: rmatrix
-  
+
 !</inputoutput>
 
 !</subroutine>
@@ -6062,31 +6062,31 @@ contains
         end if
       end select
     end if
-    
+
     rmatrix%h_Da        = ST_NOHANDLE
-    
+
     ! Set the copy-flag appropriately
     rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
 
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_releaseMatrix (rmatrix)
-  
+
 !<description>
   ! Releases a matrix from memory. The structure is cleaned up.
   ! All data vectors belonging to the structure are released;
   ! data structures belonging to other matrices are not.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! Matrix to release.
   type(t_matrixScalar), intent(inout) :: rmatrix
-  
+
 !</inputoutput>
 
 !</subroutine>
@@ -6097,7 +6097,7 @@ contains
 
   ! Release the matrix content.
   call lsyssc_releaseMatrixContent(rmatrix)
-  
+
   ! Release the structure if it does not belong to another vector
   if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. 0) then
     ! Release matrix structure
@@ -6112,16 +6112,16 @@ contains
       if (rmatrix%h_Kld .ne. ST_NOHANDLE)       call storage_free(rmatrix%h_Kld)
       if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) call storage_free(rmatrix%h_Kdiagonal)
       if (rmatrix%h_KrowIdx .ne. ST_NOHANDLE)   call storage_free(rmatrix%h_KrowIdx)
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
       if (rmatrix%h_Kcol .ne. ST_NOHANDLE) call storage_free(rmatrix%h_Kcol)
       if (rmatrix%h_Kld .ne. ST_NOHANDLE)  call storage_free(rmatrix%h_Kld)
-      
+
     case (LSYSSC_MATRIXD)
       ! Nothing to do
     end select
   end if
-  
+
   ! Clean up the rest. For this purpose, overwrite the matrix structure
   ! by a matrix structure which is initialised by the default Fortran
   ! initialisation routines.
@@ -6145,26 +6145,26 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_clearMatrix (rmatrix,dvalue)
-  
+
 !<description>
   ! Clears the entries in a matrix. All entries are overwritten with 0.0 or
   ! with dvalue (if specified).
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! Matrix to clear.
   type(t_matrixScalar), intent(inout) :: rmatrix
-  
+
   ! OPTIONAL: Value to write into the matrix.
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
   real(DP), intent(in), optional :: dvalue
-  
+
 !</inputoutput>
 
 !</subroutine>
@@ -6175,7 +6175,7 @@ contains
   if (rmatrix%NEQ .le. 0) return ! Empty matrix
 
   if (lsyssc_isExplicitMatrix1D(rmatrix)) then
-    
+
     ! Get the data array and clear it -- depending on the data type.
     select case (rmatrix%cdataType)
     case (ST_DOUBLE)
@@ -6197,29 +6197,29 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearMatrix')
       call sys_halt()
     end select
-  
+
   end if
 
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_initialiseIdentityMatrix (rmatrix)
-  
+
 !<description>
   ! Initialises the matrix rmatrix to an identity matrix.
   ! The matrix structure must already have been set up. If necessary, new data
   ! for the matrix is allocated on the heap.
   ! The scaling factor of the matrix remains unchanged!
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! Matrix to release.
   type(t_matrixScalar), intent(inout) :: rmatrix
-  
+
 !</inputoutput>
 
 !</subroutine>
@@ -6248,11 +6248,11 @@ contains
     case (LSYSSC_MATRIX9)
       ! Clear the old content
       call lsyssc_clearMatrix (rmatrix)
-      
+
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrix,p_Ddata)
@@ -6273,11 +6273,11 @@ contains
     case (LSYSSC_MATRIX7)
       ! Clear the old content
       call lsyssc_clearMatrix (rmatrix)
-      
+
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
       call lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrix,p_Ddata)
@@ -6298,11 +6298,11 @@ contains
     case (LSYSSC_MATRIX1)
       ! Clear the old content
       call lsyssc_clearMatrix (rmatrix)
-      
+
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
       call lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrix,p_Ddata)
@@ -6334,22 +6334,22 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
         call sys_halt()
       end select
-    
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
       call sys_halt()
-    
+
     end select
-    
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_convertMatrix (rmatrix,cmatrixFormat,bconvertEntries)
-  
+
 !<description>
   ! Tries to convert a matrix rmatrix in-situ into a different matrix format.
   ! If necessary, memory is allocated for the new structure. (May be the case
@@ -6357,17 +6357,17 @@ contains
   ! If the matrix cannot be converted (due to format incompatibility),
   ! an error is thrown.
 !</description>
-  
+
 !<input>
   ! Destination format of the matrix. One of the LSYSSC_MATRIXx constants.
   integer, intent(in) :: cmatrixFormat
-  
+
   ! OPTIONAL: Whether to convert the entries of the matrix. Standard = TRUE.
   ! If set to FALSE, the entries are not converted, only the structure
   ! is converted (thus leaving the entries to an undefined state).
   logical, intent(in), optional :: bconvertEntries
 !</input>
-  
+
 !<inputoutput>
   ! Matrix to convert.
   type(t_matrixScalar), intent(inout) :: rmatrix
@@ -6389,29 +6389,29 @@ contains
 
   ! Matrix is already in that format.
   if (rmatrix%cmatrixFormat .eq. cmatrixFormat) return
-  
+
   ! Empty matrix
   if (rmatrix%NEQ .le. 0) return
-  
+
   bentries = .true.
   if (present(bconvertEntries)) bentries = bconvertEntries
-  
+
   ! Be careful with the structure during conversion: If the structure belongs
   ! to another matrix, we must not deallocate it!
   bstrucOwner = iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. 0
-  
+
   ! The same for the entries!
   bentryOwner = iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0
 
   ! Which matrix type do we have?
   select case (rmatrix%cmatrixFormat)
   case (LSYSSC_MATRIX9)
-  
+
     select case (cmatrixFormat)
     case (LSYSSC_MATRIX7)
-    
+
       if (.not. bstrucOwner) then
-      
+
         ! Copy the structure so we are allowed to modify it.
         ihandle = ST_NOHANDLE
         call storage_copy(rmatrix%h_Kcol,ihandle)
@@ -6422,22 +6422,22 @@ contains
         rmatrix%h_Kld = ihandle
 
         ! Kdiagonal is thrown away later, we do not need to copy it.
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-        
+
       end if
-    
+
       if ((.not. bentryOwner) .and. bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Copy the entries so we are allowed to modify them.
         ihandle = ST_NOHANDLE
         call storage_copy(rmatrix%h_Da,ihandle)
         rmatrix%h_Da = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
-        
+
       end if
-    
+
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
@@ -6451,12 +6451,12 @@ contains
           call sys_halt()
         end if
       end do
-      
+
       if ((.not. bentries) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
-      
+
         ! No matrix entries, only resort the structure
         call lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
-        
+
         ! Release diagonal pointer if it belongs to us
         if (bstrucOwner) then
           call storage_free (rmatrix%h_Kdiagonal)
@@ -6465,9 +6465,9 @@ contains
         end if
 
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7
-      
+
       else
-    
+
         ! Convert from structure 9 to structure 7. Use the sortCSRxxxx
         ! routine below.
         select case (rmatrix%cdataType)
@@ -6478,32 +6478,32 @@ contains
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrix,p_Fdata)
           call lsyssc_unsortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Fdata)
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-        
+
         ! Release diagonal pointer if it belongs to us
         if (bstrucOwner) then
           call storage_free (rmatrix%h_Kdiagonal)
         else
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
-        
+
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7
       end if
 
     case (LSYSSC_MATRIXD)
 
       if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Convert from structure 9 to structure D by copying the
         ! diagonal to the front and reallocation of the memory
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
-        
+
           call lsyssc_getbase_double (rmatrix,p_Ddata)
 
           if (.not. bentryOwner) then
@@ -6520,7 +6520,7 @@ contains
             ! information that is not used anymore.
             p_Ddata2 => p_Ddata
           end if
-          
+
           call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
           do i=1,rmatrix%NEQ
             p_Ddata2(i) = p_Ddata(p_Kdiagonal(i))
@@ -6529,7 +6529,7 @@ contains
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
 
         case (ST_SINGLE)
-        
+
           call lsyssc_getbase_single (rmatrix,p_Fdata)
 
           if (.not. bentryOwner) then
@@ -6546,14 +6546,14 @@ contains
             ! information that is not used anymore.
             p_Fdata2 => p_Fdata
           end if
-          
+
           call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
           do i=1,rmatrix%NEQ
             p_Fdata2(i) = p_Fdata(p_Kdiagonal(i))
           end do
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
@@ -6567,11 +6567,11 @@ contains
           call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
         end if
-      
+
         rmatrix%NA = rmatrix%NEQ
 
       end if
-    
+
       ! Release unused information
       if (bstrucOwner) then
         call storage_free (rmatrix%h_Kdiagonal)
@@ -6582,7 +6582,7 @@ contains
         rmatrix%h_Kcol = ST_NOHANDLE
         rmatrix%h_Kld = ST_NOHANDLE
       end if
-      
+
     case (LSYSSC_MATRIX1)
 
       if (bentries) then
@@ -6591,41 +6591,41 @@ contains
         ! matrix is the owner of the structure or not at the moment
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        
+
         ! Allocate new memory for full matrix
         ihandle = ST_NOHANDLE
         call storage_new ('lsyssc_convertMatrix', 'Da', rmatrix%NEQ*rmatrix%NCOLS,&
             rmatrix%cdataType, ihandle, ST_NEWBLOCK_ZERO)
-        
+
         ! Convert from format 9 to format 1 by looping over all rows and
         ! columns and copying matrix entries one by one.
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Ddata)
           call storage_getbase_double(ihandle, p_Ddata2)
-          
+
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)-1
               p_Ddata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Ddata(iA)
             end do
           end do
-          
+
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
-          
+
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)
               p_Fdata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Fdata(iA)
             end do
           end do
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-        
+
         if (bentryOwner .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
           call storage_free(rmatrix%h_Da)
         end if
@@ -6657,36 +6657,36 @@ contains
     end select
 
   case (LSYSSC_MATRIX7)
-  
+
     select case (cmatrixFormat)
     case (LSYSSC_MATRIX9)
-    
+
       if (.not. bstrucOwner) then
-      
+
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kcol,ihandle)
         rmatrix%h_Kcol = ihandle
-        
+
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kld,ihandle)
         rmatrix%h_Kld = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-        
+
       end if
 
       if ((.not. bentryOwner) .and. bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Copy the entries so we are allowed to modify them.
         ihandle = ST_NOHANDLE
         call storage_copy(rmatrix%h_Da,ihandle)
         rmatrix%h_Da = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
-        
+
       end if
-    
+
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx
       ! routine below.
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -6702,44 +6702,44 @@ contains
       call storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal,rmatrix%NEQ)
 
       if ((.not. bentries) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
-      
+
         ! No matrix entries, only resort the structure
         call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
-        
+
         rmatrix%cmatrixFormat = LSYSSC_MATRIX9
-      
+
       else
 
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
           call lsyssc_getbase_double (rmatrix,p_Ddata)
           call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
-          
+
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9
 
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrix,p_Fdata)
           call lsyssc_sortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Fdata)
-          
+
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-      
+
       end if
-      
+
     case (LSYSSC_MATRIXD)
 
       if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Convert from structure 7 to structure D by copying the
         ! diagonal to the front and reallocation of the memory
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
-        
+
           call lsyssc_getbase_double (rmatrix,p_Ddata)
 
           if (.not. bentryOwner) then
@@ -6756,16 +6756,16 @@ contains
             ! information that is not used anymore.
             p_Ddata2 => p_Ddata
           end if
-          
+
           call lsyssc_getbase_Kld (rmatrix,p_Kld)
           do i=1,rmatrix%NEQ
             p_Ddata2(i) = p_Ddata(p_Kld(i))
           end do
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
-          
+
         case (ST_SINGLE)
-        
+
           call lsyssc_getbase_single (rmatrix,p_Fdata)
 
           if (.not. bentryOwner) then
@@ -6782,14 +6782,14 @@ contains
             ! information that is not used anymore.
             p_Fdata2 => p_Fdata
           end if
-          
+
           call lsyssc_getbase_Kld (rmatrix,p_Kld)
           do i=1,rmatrix%NEQ
             p_Fdata2(i) = p_Fdata(p_Kld(i))
           end do
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
@@ -6803,11 +6803,11 @@ contains
           call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
         end if
-      
+
         rmatrix%NA = rmatrix%NEQ
 
       end if
-    
+
       ! Release unused information
       if (bstrucOwner) then
         call storage_free (rmatrix%h_Kcol)
@@ -6816,7 +6816,7 @@ contains
         rmatrix%h_Kcol = ST_NOHANDLE
         rmatrix%h_Kld = ST_NOHANDLE
       end if
-      
+
     case (LSYSSC_MATRIX1)
 
       if (bentries) then
@@ -6825,41 +6825,41 @@ contains
         ! matrix is the owner of the structure or not at the moment
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        
+
         ! Allocate new memory for full matrix
         ihandle = ST_NOHANDLE
         call storage_new ('lsyssc_convertMatrix', 'Da', rmatrix%NEQ*rmatrix%NCOLS,&
             rmatrix%cdataType, ihandle, ST_NEWBLOCK_ZERO)
-        
+
         ! Convert from format 9 to format 1 by looping over all rows and
         ! columns and copying matrix entries one by one.
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Ddata)
           call storage_getbase_double(ihandle, p_Ddata2)
-          
+
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)-1
               p_Ddata2(rmatrix%NCOLS*(iEQ-1)+p_Kcol(iA)) = p_Ddata(iA)
             end do
           end do
-          
+
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
-          
+
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)
               p_Fdata2(rmatrix%NCOLS*(iEQ-1)+p_Kcol(iA)) = p_Fdata(iA)
             end do
           end do
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-        
+
         if (bentryOwner .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
           call storage_free(rmatrix%h_Da)
         end if
@@ -6889,10 +6889,10 @@ contains
     end select
 
   case (LSYSSC_MATRIX1)
-  
+
     select case (cmatrixFormat)
     case (LSYSSC_MATRIX9)
-    
+
       ! Get the matrix data
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
@@ -6904,7 +6904,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
         call sys_halt()
       end select
-      
+
       ! If the matrix is virtually transposed, NCOLS and NEQ are exchanged.
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
         nrows = rmatrix%NCOLS
@@ -6913,7 +6913,7 @@ contains
         nrows = rmatrix%NEQ
         ncols = rmatrix%NCOLS
       end if
-    
+
       ! Count the number of nonzeroes
       NA = 0
       select case (rmatrix%cdataType)
@@ -6923,7 +6923,7 @@ contains
             if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) NA = NA+1
           end do
         end do
-        
+
       case (ST_SINGLE)
         do j = 1,ncols
           do i = 1,nrows
@@ -6931,7 +6931,7 @@ contains
           end do
         end do
       end select
-      
+
       ! Allocate Kcol, Kld, Da,Kdiagonal
       call storage_new ('lsyssc_convertMatrix', 'Kcol', &
             NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
@@ -6939,11 +6939,11 @@ contains
             nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
       call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
             nrows, ST_INT, h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-            
+
       call storage_getbase_int (h_Kcol,p_Kcol)
       call storage_getbase_int (h_Kld,p_Kld)
       call storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
-    
+
       ! Transfer the entries -- rowwise.
       ! If we do not have to transfer the entries, simply set up the structure.
       if (bentries) then
@@ -6964,14 +6964,14 @@ contains
                 p_Ddata(iA) = p_Ddata2((j-1)*nrows+i)
                 p_Kcol(iA) = j
               end if
-              
+
               ! p_Kdiagonal is set to the first entry on or above the diagonal.
               if (i .eq. j) p_Kdiagonal(i) = iA
             end do
             if (i .gt. ncols) p_Kdiagonal(i) = iA  ! Kdiagonal was not set
           end do
           p_Kld(nrows+1) = NA+1
-          
+
         case (ST_SINGLE)
           iA = 0
           do i = 1,nrows
@@ -6982,7 +6982,7 @@ contains
                 p_Fdata(iA) = p_Fdata2((j-1)*nrows+i)
                 p_Kcol(iA) = j
               end if
-              
+
               ! p_Kdiagonal is set to the first entry on or above the diagonal.
               if (i .eq. j) p_Kdiagonal(i) = iA
             end do
@@ -6990,17 +6990,17 @@ contains
           end do
           p_Kld(nrows+1) = NA+1
         end select
-        
+
         ! Release the content if it belongs to this matrix.
         ! Replace by the new content.
         if (bentryOwner) then
           call storage_free (rmatrix%h_Da)
         end if
-        
+
         rmatrix%h_Da = h_Da
-        
+
       else
-      
+
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
           iA = 0
@@ -7011,7 +7011,7 @@ contains
                 iA = iA + 1
                 p_Kcol(iA) = j
               end if
-              
+
               ! p_Kdiagonal is set to the first entry on or above the diagonal.
               if (i .eq. j) p_Kdiagonal(i) = iA
             end do
@@ -7028,7 +7028,7 @@ contains
                 iA = iA + 1
                 p_Kcol(iA) = j
               end if
-              
+
               ! p_Kdiagonal is set to the first entry on or above the diagonal.
               if (i .eq. j) p_Kdiagonal(i) = iA
             end do
@@ -7036,57 +7036,57 @@ contains
           end do
           p_Kld(nrows+1) = NA+1
         end select
-        
+
         ! Do not touch the content. The result is left in an undefined state!
-        
+
       end if
-            
+
       ! Switch the matrix format
       rmatrix%cmatrixFormat = LSYSSC_MATRIX9
-      
+
       rmatrix%h_Kcol = h_Kcol
       rmatrix%h_Kld = h_Kld
       rmatrix%h_Kdiagonal = h_Kdiagonal
       rmatrix%NA = NA
-      
+
       ! Switch off any duplication flag; the content now belongs to this matrix.
       rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
-    
+
     end select
 
   case (LSYSSC_MATRIX9INTL)
-    
+
     select case (cmatrixFormat)
     case (LSYSSC_MATRIX7INTL)
 
       if (.not. bstrucOwner) then
-      
+
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kcol,ihandle)
         rmatrix%h_Kcol = ihandle
-        
+
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kld,ihandle)
         rmatrix%h_Kld = ihandle
-        
+
         ! Kdiagonal is thrown away later, we do not need to copy it.
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-        
+
       end if
 
       if ((.not. bentryOwner) .and. bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Copy the entries so we are allowed to modify them.
         ihandle = ST_NOHANDLE
         call storage_copy(rmatrix%h_Da,ihandle)
         rmatrix%h_Da = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
-        
+
       end if
-    
+
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
@@ -7102,36 +7102,36 @@ contains
       end do
 
       if ((.not. bentries) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
-        
+
         ! No matrix entries, only resort the structure
         call lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
-        
+
         ! Release diagonal pointer if it belongs to us
         if (bstrucOwner) then
           call storage_free (rmatrix%h_Kdiagonal)
         else
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
-        
+
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
-        
+
       else
 
         ! Convert from structure 9 to structure 7. Use the sortCSRxxxx
         ! routine below.
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
-        
+
           call lsyssc_getbase_double (rmatrix,p_Ddata)
           select case (rmatrix%cinterleavematrixFormat)
           case (LSYSSC_MATRIX1)
             call lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
-                
+
           case (LSYSSC_MATRIXD)
             call lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
-                
+
           case default
             call output_line('Unsupported interleave matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
@@ -7145,11 +7145,11 @@ contains
           case (LSYSSC_MATRIX1)
             call lsyssc_unsortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Fdata, rmatrix%NVAR*rmatrix%NVAR)
-                
+
           case (LSYSSC_MATRIXD)
             call lsyssc_unsortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Fdata, rmatrix%NVAR)
-                
+
           case default
             call output_line('Unsupported interleave matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
@@ -7161,71 +7161,71 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-        
+
         ! Release diagonal pointer if it belongs to us
         if (bstrucOwner) then
           call storage_free (rmatrix%h_Kdiagonal)
         else
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
-        
+
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
       end if
-      
+
     case default
       call output_line('Cannot convert matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
       call sys_halt()
     end select
-    
+
   case (LSYSSC_MATRIX7INTL)
 
     select case (cmatrixFormat)
     case (LSYSSC_MATRIX9INTL)
-      
+
       if (.not. bstrucOwner) then
-      
+
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kcol,ihandle)
         rmatrix%h_Kcol = ihandle
-        
+
         ihandle = ST_NOHANDLE
         call storage_copy (rmatrix%h_Kld,ihandle)
         rmatrix%h_Kld = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-        
+
       end if
 
       if ((.not. bentryOwner) .and. bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
-      
+
         ! Copy the entries so we are allowed to modify them.
         ihandle = ST_NOHANDLE
         call storage_copy(rmatrix%h_Da,ihandle)
         rmatrix%h_Da = ihandle
-        
+
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
-        
+
       end if
-    
+
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx
       ! routine below.
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
-      
+
       ! Create a pointer to the diagonal
       call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
           rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
       if ((.not. bentries) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
-        
+
         ! No matrix entries, only resort the structure
         call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
-        
+
         rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
-      
+
       else
 
         select case (rmatrix%cdataType)
@@ -7235,17 +7235,17 @@ contains
           case (LSYSSC_MATRIX1)
             call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
-                
+
           case (LSYSSC_MATRIXD)
             call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
-                
+
           case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
             call sys_halt()
           end select
-          
+
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
 
         case (ST_SINGLE)
@@ -7254,25 +7254,25 @@ contains
           case (LSYSSC_MATRIX1)
             call lsyssc_sortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Fdata, rmatrix%NVAR*rmatrix%NVAR)
-                
+
           case (LSYSSC_MATRIXD)
             call lsyssc_sortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Fdata, rmatrix%NVAR)
-                
+
           case default
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
             call sys_halt()
           end select
-          
+
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
-          
+
         case default
           call output_line('Unsupported data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
           call sys_halt()
         end select
-        
+
       end if
 
     case default
@@ -7286,7 +7286,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
     call sys_halt()
   end select
-  
+
   end subroutine
 
   !****************************************************************************
@@ -7329,7 +7329,7 @@ contains
       call storage_syncMemoryHostDevice(rvector%h_Ddata,&
           ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     end if
-    
+
   end subroutine lsyssc_copyH2D_Vector
 
   !****************************************************************************
@@ -7417,7 +7417,7 @@ contains
       call storage_syncMemoryHostDevice(rmatrix%h_Da,&
           ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     end if
-    
+
   end subroutine lsyssc_copyH2D_Matrix
 
   !****************************************************************************
@@ -7504,7 +7504,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
       call sys_halt()
     end if
-    
+
     ! Check if destination matrix is present
     if (present(rmatrixDest)) then
       ! Check if source and destination matrix are compatible
@@ -7545,7 +7545,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
@@ -7567,7 +7567,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-      
+
       ! What interleave matrix format are we?
       select case (rmatrix%cinterleavematrixFormat)
 
@@ -7598,16 +7598,16 @@ contains
           call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
-        
+
       case default
         call output_line('Invalid interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
         call sys_halt()
       end select
-      
+
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
+
     case (LSYSSC_MATRIX9)
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
@@ -7616,7 +7616,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
@@ -7632,7 +7632,7 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
+
     case (LSYSSC_MATRIX9INTL)
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
@@ -7641,7 +7641,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-      
+
       ! What interleave matrix format are we?
       select case (rmatrix%cinterleavematrixFormat)
 
@@ -7672,13 +7672,13 @@ contains
           call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
-        
+
       case default
         call output_line('Invalid interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
         call sys_halt()
       end select
-      
+
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
@@ -7687,11 +7687,11 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
       call sys_halt()
     end select
-    
+
   contains
 
     ! Here, the working routines follow
-    
+
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
@@ -7706,7 +7706,7 @@ contains
 
       ! local variables
       integer :: i,j
-      
+
       ! Loop over all rows
       do i = 1, NEQ
         Db(i,i) = dscale * 2._DP * Da(i,i)
@@ -7732,7 +7732,7 @@ contains
 
       ! local variables
       integer :: i,j
-      
+
       ! Loop over all rows
       do i = 1, NEQ
         Fb(i,i) = fscale * 2._SP * Fa(i,i)
@@ -7772,16 +7772,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Ksep(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
+
           Db(:,ij) = dscale * (Da(:,ij) + Da(:,ji))
           Db(:,ji) = Db(:,ij)
         end do
       end do
-      
+
     end subroutine calcSymmPartMat7Dble
 
     !**************************************************************
@@ -7812,16 +7812,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Ksep(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
+
           Fb(:,ij) = fscale * (Fa(:,ij) + Fa(:,ji))
           Fb(:,ji) = Fb(:,ij)
         end do
       end do
-      
+
     end subroutine calcSymmPartMat7Sngl
 
     !**************************************************************
@@ -7852,16 +7852,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+
           Db(:,ij) = dscale * (Da(:,ij) + Da(:,ji))
           Db(:,ji) = Db(:,ij)
         end do
       end do
-      
+
     end subroutine calcSymmPartMat9Dble
 
     !**************************************************************
@@ -7892,16 +7892,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+
           Fb(:,ij) = fscale * (Fa(:,ij) + Fa(:,ji))
           Fb(:,ji) = Fb(:,ij)
         end do
       end do
-      
+
     end subroutine calcSymmPartMat9Sngl
 
   end subroutine lsyssc_createMatrixSymmPart
@@ -7945,7 +7945,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
       call sys_halt()
     end if
-    
+
     ! Check if destination matrix is present
     if (present(rmatrixDest)) then
       ! Check if source and destination matrix are compatible
@@ -7986,7 +7986,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
@@ -8008,7 +8008,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-      
+
       ! What interleave matrix format are we?
       select case (rmatrix%cinterleavematrixFormat)
 
@@ -8039,16 +8039,16 @@ contains
           call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
-        
+
       case default
         call output_line('Invalid interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
         call sys_halt()
       end select
-      
+
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
+
     case (LSYSSC_MATRIX9)
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
@@ -8057,7 +8057,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
@@ -8073,7 +8073,7 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
+
     case (LSYSSC_MATRIX9INTL)
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
@@ -8082,7 +8082,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-      
+
       ! What interleave matrix format are we?
       select case (rmatrix%cinterleavematrixFormat)
 
@@ -8113,13 +8113,13 @@ contains
           call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
-        
+
       case default
         call output_line('Invalid interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
         call sys_halt()
       end select
-      
+
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
@@ -8128,11 +8128,11 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
       call sys_halt()
     end select
-    
+
   contains
 
     ! Here, the working routines follow
-    
+
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
@@ -8147,7 +8147,7 @@ contains
 
       ! local variables
       integer :: i,j
-      
+
       ! Loop over all rows
       do i = 1, NEQ
         Db(i,i) = 0._DP
@@ -8173,7 +8173,7 @@ contains
 
       ! local variables
       integer :: i,j
-      
+
       ! Loop over all rows
       do i = 1, NEQ
         Fb(i,i) = 0._SP
@@ -8213,16 +8213,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Ksep(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
+
           Db(:,ij) = dscale * (Da(:,ij) - Da(:,ji))
           Db(:,ji) = Db(:,ij)
         end do
       end do
-      
+
     end subroutine calcAsymmPartMat7Dble
 
     !**************************************************************
@@ -8253,16 +8253,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Ksep(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-          
+
           Fb(:,ij) = fscale * (Fa(:,ij) - Fa(:,ji))
           Fb(:,ji) = Fb(:,ij)
         end do
       end do
-      
+
     end subroutine calcAsymmPartMat7Sngl
 
     !**************************************************************
@@ -8293,16 +8293,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+
           Db(:,ij) = dscale * (Da(:,ij) - Da(:,ji))
           Db(:,ji) = Db(:,ij)
         end do
       end do
-      
+
     end subroutine calcAsymmPartMat9Dble
 
     !**************************************************************
@@ -8333,16 +8333,16 @@ contains
         ! adjacent to node J such that I < J, that is, the upper
         ! right triangular part of the matrix is traversed
         do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
+
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-          
+
           Fb(:,ij) = fscale * (Fa(:,ij) - Fa(:,ji))
           Fb(:,ji) = Fb(:,ij)
         end do
       end do
-      
+
     end subroutine calcAsymmPartMat9Sngl
 
   end subroutine lsyssc_createMatrixAsymmPart
@@ -8350,7 +8350,7 @@ contains
   !****************************************************************************
 
 !<function>
-  
+
   function lsyssc_calcDeterminant(rmatrix, Icol, Irow) result(ddeterminant)
 
 !<description>
@@ -8376,7 +8376,7 @@ contains
     ! Value of the determinant
     real(DP) :: ddeterminant
 !</result>
-    
+
     ! local variables
     real(DP), dimension(:), pointer :: p_Da,p_DaSub
     real(SP), dimension(:), pointer :: p_Fa,p_FaSub
@@ -8393,19 +8393,19 @@ contains
 
     ! Initialisation
     h_IcolIdx = ST_NOHANDLE; h_IrowIdx = ST_NOHANDLE
-    
+
     ! What type of matrix are we?
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
       !-------------------------------------------------------------------------
       ! Compute determinant of full matrix
       !-------------------------------------------------------------------------
-      
+
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         nullify(p_DaSub)
-        
+
         ! Collect submatrix?
         if (present(Icol)) then
           if (present(Irow)) then
@@ -8481,7 +8481,7 @@ contains
             ddeterminant = calcDetMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_Fa)
           end if
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDeterminant')
@@ -8523,7 +8523,7 @@ contains
             ddeterminant = calcDetQuickMatDDble(p_Da)
           end if
         end if
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
 
@@ -8553,13 +8553,13 @@ contains
             ddeterminant = calcDetQuickMatDSngl(p_Fa)
           end if
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDeterminant')
         call sys_halt()
       end select
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
       !-------------------------------------------------------------------------
       ! Compute determinant of sparse matrix
@@ -8572,7 +8572,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         nullify(p_DaSub)
-        
+
         ! Collect submatrix?
         if (present(Icol)) then
           if (present(Irow)) then
@@ -8615,11 +8615,11 @@ contains
             call storage_free(h_IcolIdx)
           end if
         end if
-      
+
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         nullify(p_FaSub)
-        
+
         ! Collect submatrix?
         if (present(Icol)) then
           if (present(Irow)) then
@@ -8662,19 +8662,19 @@ contains
             call storage_free(h_IcolIdx)
           end if
         end if
-      
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDeterminant')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_calcDeterminant')
       call sys_halt()
     end select
-    
+
   contains
 
     ! Here, the working routines follow
@@ -8708,7 +8708,7 @@ contains
       do idx2 = 1, size(IcolIdx)
         if (IcolIdx(idx2) .ne. 0) NCOLSSub = NCOLSSub+1
       end do
-      
+
       ! Allocate storage for submatrix (if required)
       if (associated(p_DaSub) .and. size(p_DaSub) .lt. NEQSub*NCOLSSub) then
         deallocate(p_DaSub)
@@ -8731,13 +8731,13 @@ contains
 
         ! Initialise column counter
         icol = 0
-        
+
         ! Loop over all columns
         col: do idx2 = 1, size(IcolIdx)
-          
+
           ! Skip column?
           if (IcolIdx(idx2) .eq. 0) cycle col
-          
+
           ! Increase column counter
           icol = icol+1
 
@@ -8777,7 +8777,7 @@ contains
       do idx2 = 1, size(IcolIdx)
         if (IcolIdx(idx2) .ne. 0) NCOLSSub = NCOLSSub+1
       end do
-      
+
       ! Allocate storage for submatrix (if required)
       if (associated(p_FaSub) .and. size(p_FaSub) .lt. NEQSub*NCOLSSub) then
         deallocate(p_FaSub)
@@ -8800,13 +8800,13 @@ contains
 
         ! Initialise column counter
         icol = 0
-        
+
         ! Loop over all columns
         col: do idx2 = 1, size(IcolIdx)
-          
+
           ! Skip column?
           if (IcolIdx(idx2) .eq. 0) cycle col
-          
+
           ! Increase column counter
           icol = icol+1
 
@@ -8836,7 +8836,7 @@ contains
       ! Initialisation
       NEQSub = 0
       NCOLSSub = 0
-      
+
       ! Count number of rows
       do idx1 = 1, size(IrowIdx)
         if (IrowIdx(idx1) .ne. 0) NEQSub = NEQSub+1
@@ -8846,7 +8846,7 @@ contains
       do idx2 = 1, size(IcolIdx)
         if (IcolIdx(idx2) .ne. 0) NCOLSSub = NCOLSSub+1
       end do
-      
+
       ! Allocate storage for submatrix (if required)
       if (associated(p_DaSub) .and. size(p_DaSub) .lt. NEQSub*NCOLSSub) then
         deallocate(p_DaSub)
@@ -8869,13 +8869,13 @@ contains
 
         ! Initialise column counter
         icol = 0
-        
+
         ! Loop over all columns
         col: do idx2 = 1, size(IcolIdx)
-          
+
           ! Skip column?
           if (IcolIdx(idx2) .eq. 0) cycle col
-          
+
           ! Increase column counter
           icol = icol+1
 
@@ -8886,7 +8886,7 @@ contains
               cycle col
             end if
           end do
-          
+
           ! Fill with zeris
           p_DaSub(NEQSub*(icol-1)+irow) = 0.0_DP
         end do col
@@ -8913,7 +8913,7 @@ contains
       ! Initialisation
       NEQSub = 0
       NCOLSSub = 0
-      
+
       ! Count number of rows
       do idx1 = 1, size(IrowIdx)
         if (IrowIdx(idx1) .ne. 0) NEQSub = NEQSub+1
@@ -8923,7 +8923,7 @@ contains
       do idx2 = 1, size(IcolIdx)
         if (IcolIdx(idx2) .ne. 0) NCOLSSub = NCOLSSub+1
       end do
-      
+
       ! Allocate storage for submatrix (if required)
       if (associated(p_FaSub) .and. size(p_FaSub) .lt. NEQSub*NCOLSSub) then
         deallocate(p_FaSub)
@@ -8946,13 +8946,13 @@ contains
 
         ! Initialise column counter
         icol = 0
-        
+
         ! Loop over all columns
         col: do idx2 = 1, size(IcolIdx)
-          
+
           ! Skip column?
           if (IcolIdx(idx2) .eq. 0) cycle col
-          
+
           ! Increase column counter
           icol = icol+1
 
@@ -8963,7 +8963,7 @@ contains
               cycle col
             end if
           end do
-          
+
           ! Fill with zeris
           p_FaSub(NEQSub*(icol-1)+irow) = 0.0_SP
         end do col
@@ -8979,9 +8979,9 @@ contains
       integer, intent(in) :: NEQ,NCOLS
 
       real(DP), dimension(NEQ,NCOLS), intent(inout) :: Da
-      
+
       real(DP) :: ddeterminant
-      
+
       ! local variable
       integer, dimension(:), allocatable :: Iperm
       integer :: iaux,icol,ieq,ipermCount,ipiv,jeq
@@ -8996,22 +8996,22 @@ contains
       ! Perform Gaussian elimination with partial pivoting, that is,
       ! swap rows so that the diagonal entry with the larges modules
       ! is used as pivoting element in each step
-      
+
       ! Initialise determinant
       ddeterminant = 1.0_DP
-      
+
       ! Perform Gaussian elimination
       row: do ieq = 1, NEQ
-        
+
         ! Row-wise pivoting
         ipiv = ieq
-        
+
         do jeq = ieq,NEQ
           if (abs(Da(Iperm(jeq),ieq)) .gt. abs(Da(Iperm(ipiv),ieq))) then
             ipiv = jeq
           end if
         end do
-        
+
         ! Swap rows IPIV <-> IEQ
         if (Iperm(ipiv) .ne. Iperm(ieq)) then
           iaux        = Iperm(ieq)
@@ -9029,7 +9029,7 @@ contains
           ddeterminant = 0.0_DP
           return
         end if
-        
+
         ! Elimination step
         col: do jeq = ieq+1,NEQ
           Da(Iperm(jeq),ieq) = Da(Iperm(jeq),ieq) / daux
@@ -9038,18 +9038,18 @@ contains
                                 - Da(Iperm(ieq),icol)*Da(Iperm(jeq),ieq)
           end do
         end do col
-        
+
         ! Update determinant
         ddeterminant = ddeterminant*daux
       end do row
-      
+
       ! Adjust sign of determinant
       if (mod(ipermCount,2) .ne. 0)&
           ddeterminant = -ddeterminant
-      
+
       ! Deallocate temporal memory
       deallocate(Iperm)
-    
+
     end function calcDetMat1Dble
 
     !**************************************************************
@@ -9062,12 +9062,12 @@ contains
       real(SP), dimension(NEQ,NCOLS), intent(inout) :: Fa
 
       real(DP) :: ddeterminant
-      
+
       ! local variable
       integer, dimension(:), allocatable :: Iperm
       integer :: iaux,icol,ieq,ipermCount,ipiv,jeq
       real(SP) :: faux
-      
+
       ! Allocate and initialize permutation vector
       allocate(Iperm(NEQ)); ipermCount = 0
       do ieq = 1,NEQ
@@ -9077,16 +9077,16 @@ contains
       ! Perform Gaussian elimination with partial pivoting, that is,
       ! swap rows so that the diagonal entry with the larges modules
       ! is used as pivoting element in each step
-      
+
       ! Initialise determinant
       ddeterminant = 1.0_DP
-      
+
       ! Perform Gaussian elimination
       row: do ieq = 1, NEQ
-        
+
         ! Row-wise pivoting
         ipiv = ieq
-        
+
         do jeq = ieq,NEQ
           if (abs(Fa(Iperm(jeq),ieq)) .gt. abs(Fa(Iperm(ipiv),ieq))) then
             ipiv = jeq
@@ -9119,18 +9119,18 @@ contains
                                 - Fa(Iperm(ieq),icol)*Fa(Iperm(jeq),ieq)
           end do
         end do col
-        
+
         ! Update determinant
         ddeterminant = ddeterminant*real(faux,DP)
       end do row
-      
+
       ! Adjust sign of determinant
       if (mod(ipermCount,2) .ne. 0)&
           ddeterminant = -ddeterminant
-      
+
       ! Deallocate temporal memory
       deallocate(Iperm)
-      
+
     end function calcDetMat1Sngl
 
     !**************************************************************
@@ -9140,20 +9140,20 @@ contains
     function calcDetQuickMatDDble(Da) result(ddeterminant)
 
       real(DP), dimension(:), intent(in) :: Da
-      
+
       real(DP) :: ddeterminant
-      
+
       ! local variable
       integer :: idx
-      
+
       ! Initialisation
       ddeterminant = 1.0_DP
-      
+
       ! Compute product of diagonal entries
       do idx = 1,size(Da)
         ddeterminant = ddeterminant*Da(idx)
       end do
-      
+
     end function calcDetQuickMatDDble
 
     !**************************************************************
@@ -9168,10 +9168,10 @@ contains
 
       ! local variable
       integer :: idx
-      
+
       ! Initialisation
       ddeterminant = 1.0_DP
-      
+
       ! Compute product of diagonal entries
       do idx = 1,size(Fa)
         ddeterminant = ddeterminant*real(Fa(idx),DP)
@@ -9186,7 +9186,7 @@ contains
 
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
-      
+
       real(DP) :: ddeterminant
 
       ! local variable
@@ -9251,7 +9251,7 @@ contains
 
       ! local variable
       integer :: idx1,idx2,ncol,nrow
-      
+
       ! Initialisation
       idx1 = 1; idx2 = 1
       nrow = 0; ncol = 0
@@ -9297,7 +9297,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDeterminant')
         call sys_halt()
       end if
-      
+
     end function calcDetMatDSngl
 
   end function lsyssc_calcDeterminant
@@ -9350,11 +9350,11 @@ contains
     Kdiagonal(i) = j
 
   end do
-          
+
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da, nintl)
@@ -9385,7 +9385,7 @@ contains
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
   real(DP), dimension(:), intent(inout), optional :: Da
-  
+
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
   integer, dimension(:), intent(inout) :: Kcol
@@ -9414,72 +9414,72 @@ contains
       call storage_new ('lsyssc_sortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
-      
+
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         Daux = Da(nintl*(Kld(i)-1)+1:nintl*Kld(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry until the diagonal is reached.
         do j = Kld(i)+1, Kld(i+1)-1
-          
+
           ! Check if we reached the position of the diagonal entry...
           if (Kcol(j)>i) exit
-          
+
           Kcol(j-1) = Kcol(j)
           Da(nintl*(j-2)+1:nintl*(j-1)) = Da(nintl*(j-1)+1:nintl*j)
-          
+
         end do
-        
+
         ! If we have reached the diagonal, we can stop and save our
         ! diagonal entry from the first position there. The rest of the
         ! line is in ascending order according to the specifications of
         ! storage technique 7.
-        
+
         Kcol(j-1) = i
         Da(nintl*(j-2)+1:nintl*(j-1)) = Daux
-        
+
         ! Save the position of the diagonal entry
         Kdiagonal(i) = j-1
-        
+
       end do
 
       ! Free auxiliary memory
       call storage_free(h_Daux)
-      
+
     else
 
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         aux = Da(Kld(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry until the diagonal is reached.
         do j = Kld(i)+1, Kld(i+1)-1
-          
+
           ! Check if we reached the position of the diagonal entry...
           if (Kcol(j)>i) exit
-          
+
           Kcol(j-1) = Kcol(j)
           Da(j-1) = Da(j)
-          
+
         end do
-        
+
         ! If we have reached the diagonal, we can stop and save our
         ! diagonal entry from the first position there. The rest of the
         ! line is in ascending order according to the specifications of
         ! storage technique 7.
-        
+
         Kcol(j-1) = i
         Da(j-1) = aux
-        
+
         ! Save the position of the diagonal entry
         Kdiagonal(i) = j-1
-        
+
       end do
 
     end if
@@ -9506,18 +9506,18 @@ contains
       ! storage technique 7.
 
       Kcol(j-1) = i
-      
+
       ! Save the position of the diagonal entry
       Kdiagonal(i) = j-1
 
     end do
-          
+
   end if
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_sortCSRsingle (Kcol, Kld, Kdiagonal, neq, Fa, nintl)
@@ -9548,7 +9548,7 @@ contains
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
   real(SP), dimension(:), intent(inout), optional :: Fa
-  
+
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
   integer, dimension(:), intent(inout) :: Kcol
@@ -9577,72 +9577,72 @@ contains
       call storage_new ('lsyssc_sortCSRsingle', 'Faux', nintl, &
           ST_DOUBLE, h_Faux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Faux,Faux)
-      
+
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         Faux = Fa(nintl*(Kld(i)-1)+1:nintl*Kld(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry until the diagonal is reached.
         do j = Kld(i)+1, Kld(i+1)-1
-          
+
           ! Check if we reached the position of the diagonal entry...
           if (Kcol(j)>i) exit
-          
+
           Kcol(j-1) = Kcol(j)
           Fa(nintl*(j-2)+1:nintl*(j-1)) = Fa(nintl*(j-1)+1:nintl*j)
-          
+
         end do
-        
+
         ! If we have reached the diagonal, we can stop and save our
         ! diagonal entry from the first position there. The rest of the
         ! line is in ascending order according to the specifications of
         ! storage technique 7.
-        
+
         Kcol(j-1) = i
         Fa(nintl*(j-2)+1:nintl*(j-1)) = Faux
-        
+
         ! Save the position of the diagonal entry
         Kdiagonal(i) = j-1
-        
+
       end do
 
       ! Free auxiliary memory
       call storage_free(h_Faux)
-      
+
     else
 
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         aux = Fa(Kld(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry until the diagonal is reached.
         do j = Kld(i)+1, Kld(i+1)-1
-          
+
           ! Check if we reached the position of the diagonal entry...
           if (Kcol(j)>i) exit
-          
+
           Kcol(j-1) = Kcol(j)
           Fa(j-1) = Fa(j)
-          
+
         end do
-        
+
         ! If we have reached the diagonal, we can stop and save our
         ! diagonal entry from the first position there. The rest of the
         ! line is in ascending order according to the specifications of
         ! storage technique 7.
-        
+
         Kcol(j-1) = i
         Fa(j-1) = aux
-        
+
         ! Save the position of the diagonal entry
         Kdiagonal(i) = j-1
-        
+
       end do
 
     end if
@@ -9669,20 +9669,20 @@ contains
       ! storage technique 7.
 
       Kcol(j-1) = i
-      
+
       ! Save the position of the diagonal entry
       Kdiagonal(i) = j-1
 
     end do
-          
+
   end if
-  
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine lsyssc_unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da, nintl)
 
 !<description>
@@ -9713,7 +9713,7 @@ contains
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
   real(DP), dimension(:), intent(inout), optional :: Da
-  
+
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
   integer, dimension(:), intent(inout) :: Kcol
@@ -9740,19 +9740,19 @@ contains
 
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         Daux = Da(nintl*(Kdiagonal(i)-1)+1:nintl*Kdiagonal(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry one element to the right.
         do j = Kdiagonal(i),Kld(i)+1,-1
-          
+
           Kcol(j) = Kcol(j-1)
           Da(nintl*(j-1)+1:nintl*j) = Da(nintl*(j-2)+1:nintl*(j-1))
-          
+
         end do
-        
+
         ! Put the diagonal to the front.
         Kcol(Kld(i)) = i
         Da(nintl*(Kld(i)-1)+1:nintl*Kld(i)) = Daux
@@ -9760,30 +9760,30 @@ contains
       end do
 
     else
-      
+
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         aux = Da(Kdiagonal(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry one element to the right.
         do j = Kdiagonal(i),Kld(i)+1,-1
-          
+
           Kcol(j) = Kcol(j-1)
           Da(j) = Da(j-1)
-          
+
         end do
-        
+
         ! Put the diagonal to the front.
         Kcol(Kld(i)) = i
         Da(Kld(i)) = aux
-        
+
       end do
-      
+
     end if
-      
+
   else
 
     ! loop through each row
@@ -9794,20 +9794,20 @@ contains
       do j = Kdiagonal(i),Kld(i)+1,-1
         Kcol(j) = Kcol(j-1)
       end do
-      
+
       ! Put the diagonal to the front.
       Kcol(Kld(i)) = i
-      
+
     end do
 
   end if
-          
+
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
-  
+
   subroutine lsyssc_unsortCSRsingle (Kcol, Kld, Kdiagonal, neq, Fa, nintl)
 
 !<description>
@@ -9838,7 +9838,7 @@ contains
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
   real(SP), dimension(:), intent(inout), optional :: Fa
-  
+
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
   integer, dimension(:), intent(inout) :: Kcol
@@ -9865,19 +9865,19 @@ contains
 
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         Faux = Fa(nintl*(Kdiagonal(i)-1)+1:nintl*Kdiagonal(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry one element to the right.
         do j = Kdiagonal(i),Kld(i)+1,-1
-          
+
           Kcol(j) = Kcol(j-1)
           Fa(nintl*(j-1)+1:nintl*j) = Fa(nintl*(j-2)+1:nintl*(j-1))
-          
+
         end do
-        
+
         ! Put the diagonal to the front.
         Kcol(Kld(i)) = i
         Fa(nintl*(Kld(i)-1)+1:nintl*Kld(i)) = Faux
@@ -9885,30 +9885,30 @@ contains
       end do
 
     else
-      
+
       ! loop through each row
       do i = 1, neq
-        
+
         ! Take the diagonal element
         aux = Fa(Kdiagonal(i))
-        
+
         ! Loop through each column in this row.
         ! Shift every entry one element to the right.
         do j = Kdiagonal(i),Kld(i)+1,-1
-          
+
           Kcol(j) = Kcol(j-1)
           Fa(j) = Fa(j-1)
-          
+
         end do
-        
+
         ! Put the diagonal to the front.
         Kcol(Kld(i)) = i
         Fa(Kld(i)) = aux
-        
+
       end do
-      
+
     end if
-      
+
   else
 
     ! loop through each row
@@ -9919,22 +9919,22 @@ contains
       do j = Kdiagonal(i),Kld(i)+1,-1
         Kcol(j) = Kcol(j-1)
       end do
-      
+
       ! Put the diagonal to the front.
       Kcol(Kld(i)) = i
-      
+
     end do
 
   end if
-          
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp)
-  
+
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
   ! If rvectorSrc is unsorted, rvectorDest will be unsorted (without changing
@@ -9993,11 +9993,11 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp)
-  
+
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
   ! If rmatrixSrc is unsorted, rvectorDest will be unsorted (without changing
@@ -10057,11 +10057,11 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_sortVectorInSitu (rvector,rtemp,isortStrategy,h_IsortPermutation)
-  
+
 !<description>
   ! Resorts the entries of the given vector rvector or unsorts it.
   ! rvector is the vector to be resorted, rtemp is a temporary vector and
@@ -10072,7 +10072,7 @@ contains
   ! should be '- SSTRAT_xxxx' and h_IsortPermutation a handle to a
   ! sorting strategy permutation.
 !</description>
-  
+
 !<inputoutput>
   ! Vector to resort
   type(t_vectorScalar), intent(inout) :: rvector
@@ -10091,7 +10091,7 @@ contains
   !      this is either the permutation specified in the vector
   !      or that one identified by h_IsortPermutation
  integer, intent(in) :: isortStrategy
-  
+
   ! OPTIONAL: Handle to permutation to use for resorting the vector.
   !
   ! The array must be of the form
@@ -10120,15 +10120,15 @@ contains
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
   real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
   integer :: NEQ
-  
+
     ! Desired sorting strategy and currently active sorting strategy identical?
     if (.not. present(h_IsortPermutation)) then
-    
+
       if (isortStrategy .eq. rvector%isortStrategy) return
       if ((isortStrategy .le. 0) .and. (rvector%isortStrategy .le. 0)) return
-    
+
     else
-    
+
       if ((isortStrategy .le. 0) .and. (rvector%isortStrategy .le. 0)) then
         if (h_IsortPermutation .ne. rvector%h_IsortPermutation) then
           ! Vector is unsorted and should stay unsorted, but
@@ -10140,11 +10140,11 @@ contains
       end if
       if ((isortStrategy .gt. 0) .and. (rvector%isortStrategy .gt. 0) .and.&
           (h_IsortPermutation .eq. rvector%h_IsortPermutation)) return
-    
+
     end if
-    
+
     NEQ = rvector%NEQ
-    
+
     ! Get pointers to the vector data
     select case (rvector%cdataType)
     case (ST_DOUBLE)
@@ -10159,117 +10159,117 @@ contains
       call sys_halt()
     end select
 
-    
+
     ! Sort the vector back?
     if (isortStrategy .le. 0) then
       ! Do it - with the associated permutation.
       call storage_getbase_int(rvector%h_IsortPermutation,p_Iperm)
-      
+
       select case (rvector%cdataType)
       case (ST_DOUBLE)
         ! Copy the entries to the temp vector
         call lalg_copyVectorDble (p_Ddata,p_Ddata2)
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
-        
+
       case (ST_SINGLE)
         ! Copy the entries to the temp vector
         call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
-        
+
       case default
         call output_line('Unsuppported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
         call sys_halt()
-        
+
       end select
-        
+
       ! Inform the vector about which sorting strategy we now use.
       rvector%isortStrategy = isortStrategy
       return
     end if
-    
+
     ! Get the actual sorting strategy.
     h_Iperm = rvector%h_IsortPermutation
     if (present(h_IsortPermutation)) h_Iperm = h_IsortPermutation
-    
+
     ! Do we have to sort back before resorting?
     if ((h_Iperm .ne. rvector%h_IsortPermutation) .and. &
         (rvector%h_IsortPermutation .ne. ST_NOHANDLE) .and. &
         (rvector%isortStrategy .gt. 0)) then
-        
+
       ! Sort back at first - with the associated permutation
       call storage_getbase_int(rvector%h_IsortPermutation,p_Iperm)
-      
+
       select case (rvector%cdataType)
       case (ST_DOUBLE)
         ! Copy the entries to the temp vector
         call lalg_copyVectorDble (p_Ddata,p_Ddata2)
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
-        
+
       case (ST_SINGLE)
         ! Copy the entries to the temp vector
         call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
-        
+
       case default
         call output_line('Unsuppported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
         call sys_halt()
-        
+
       end select
-      
+
       ! Change the sorting strategy in the vector to the one
       ! we are now going to use. Throw away the old handle.
       rvector%h_IsortPermutation = h_Iperm
-      
+
     end if
-    
+
     ! Now sort the vector according to h_Iperm
     call storage_getbase_int(h_Iperm,p_Iperm)
-    
+
     select case (rvector%cdataType)
     case (ST_DOUBLE)
       ! Copy the entries to the temp vector
       call lalg_copyVectorDble (p_Ddata,p_Ddata2)
       ! Then do the sorting with the given permutation.
       call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(1:NEQ))
-      
+
     case (ST_SINGLE)
       ! Copy the entries to the temp vector
       call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
       ! Then do the sorting with the given permutation.
       call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(1:NEQ))
-      
+
     case default
       call output_line('Unsuppported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
       call sys_halt()
-      
+
     end select
-    
+
     ! Inform the vector about which sorting strategy we now use.
     rvector%isortStrategy = isortStrategy
 
     ! If h_IsortPermutation was given, change the permutation
     if (present(h_IsortPermutation)) rvector%h_IsortPermutation = h_IsortPermutation
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_vectorActivateSorting (rvector,bsort,rtemp)
-  
+
 !<description>
   ! Resorts the entries of the given vector rvector or unsorts it
   ! according to the resorting strategy associated to rvector.
 !</description>
-  
+
 !<inputoutput>
   ! Vector to resort. The sorting strategy must have been attached to
   ! rvector before with lsyssc_sortVectorInSitu, otherwise nothing happens.
@@ -10294,12 +10294,12 @@ contains
   ! local variables
   type(t_vectorScalar), pointer :: p_rtemp
   type(t_vectorScalar), target :: rtempLocal
-  
+
   ! Cancel if there is nothing to do.
   if (rvector%isortStrategy .eq. 0) return
   if ((.not. bsort) .and. (rvector%isortStrategy .le. 0)) return
   if (bsort .and. (rvector%isortStrategy .gt. 0)) return
-  
+
   ! Temporary vector available? If not, create a new one based on rvector.
   if (present(rtemp)) then
     p_rtemp => rtemp
@@ -10314,21 +10314,21 @@ contains
   else
     call lsyssc_sortVectorInSitu (rvector,p_rtemp,-abs(rvector%isortStrategy))
   end if
-  
+
   ! Remove the temp vector if it is ours.
   if (.not. present(rtemp)) then
     call lsyssc_releaseVector (rtempLocal)
   end if
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_sortMatrix (rmatrix,bsortEntries,&
                                 isortStrategy,h_IsortPermutation)
-  
+
 !<description>
   ! Matrix sorting. Sorts the entries and/or structure of a given
   ! matrix or unsorts them according to a permutation.
@@ -10345,7 +10345,7 @@ contains
   !  So for sorting multiple matrices which all share the same structure, first
   !  all 'child' matrices have to be sorted before the 'parent' matrix is sorted!
 !</description>
-  
+
 !<inputoutput>
   ! Vector to resort
   type(t_matrixScalar), intent(inout), target :: rmatrix
@@ -10368,7 +10368,7 @@ contains
   ! the isortStrategy specifier in the matrix -- i.e. this 'activates'
   ! a previously attached sorting.
  integer, intent(in), optional :: isortStrategy
-  
+
   ! OPTIONAL: Handle to permutation to use for resorting the matrix.
   !
   ! The array must be of the form
@@ -10397,18 +10397,18 @@ contains
   integer :: NEQ
   type(t_matrixScalar), pointer :: p_rmatrix
   logical :: bsortEntriesTmp
-  
+
   isortStrat = abs(rmatrix%isortStrategy)
   if (present(isortStrategy)) isortStrat = isortStrategy
-  
+
     ! Desired sorting strategy and currently active sorting strategy identical?
     if (.not. present(h_IsortPermutation)) then
-    
+
       if (isortStrat .eq. rmatrix%isortStrategy) return
       if ((isortStrat .le. 0) .and. (rmatrix%isortStrategy .le. 0)) return
-    
+
     else
-    
+
       if ((isortStrat .le. 0) .and. (rmatrix%isortStrategy .le. 0)) then
         if (h_IsortPermutation .ne. rmatrix%h_IsortPermutation) then
           ! Matrix is unsorted and should stay unsorted, but
@@ -10420,33 +10420,33 @@ contains
       end if
       if ((isortStrat .gt. 0) .and. (rmatrix%isortStrategy .gt. 0) .and.&
           (h_IsortPermutation .eq. rmatrix%h_IsortPermutation)) return
-    
+
     end if
-    
+
     NEQ = rmatrix%NEQ
-    
+
     ! Sort the matrix back?
     if (isortStrat .le. 0) then
       ! Get the permutation that describes how to resort the matrix:
       call storage_getbase_int(rmatrix%h_IsortPermutation,p_Iperm)
-      
+
       ! Exchange the roles of the first and second part of p_Iperm.
       ! This makes the permutation to the inverse permutation and vice versa.
       ! Call the resort-subroutine with that to do the actual sorting.
       call do_matsort (rmatrix,p_Iperm(NEQ+1:NEQ*2),p_Iperm(1:NEQ),bsortEntries)
-      
+
       ! Inform the vector about which sorting strategy we now use.
       rmatrix%isortStrategy = isortStrat
       return
     end if
-    
+
     p_rmatrix => rmatrix
     bsortEntriesTmp = bsortEntries
-    
+
     ! Get the actual sorting strategy.
     h_Iperm = rmatrix%h_IsortPermutation
     if (present(h_IsortPermutation)) h_Iperm = h_IsortPermutation
-    
+
     ! Do we have to sort back before resorting?
     if ((h_Iperm .ne. rmatrix%h_IsortPermutation) .and. &
         (rmatrix%h_IsortPermutation .ne. ST_NOHANDLE) .and. &
@@ -10492,12 +10492,12 @@ contains
 
       ! Sort back at first - with the associated permutation
       call storage_getbase_int(p_rmatrix%h_IsortPermutation,p_Iperm)
-      
+
       ! Exchange the roles of the first and second part of p_Iperm.
       ! This makes the permutation to the inverse permutation and vice versa.
       ! Call the resort-subroutine with that to do the actual sorting.
       call do_matsort (p_rmatrix,p_Iperm(NEQ+1:NEQ*2),p_Iperm(1:NEQ),bsortEntries)
-      
+
       ! If p_rmatrix is our local copy, manually change the ownership of the
       ! structure. This will prevent the sorting routine below from sorting
       ! the structure, which saves some time. But we have to remember to
@@ -10505,9 +10505,9 @@ contains
       if (.not. associated(p_rmatrix,rmatrix)) then
         p_rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY)
       end if
-      
+
     end if
-    
+
     ! Now sort the vector according to h_Iperm
     call storage_getbase_int(h_Iperm,p_Iperm)
 
@@ -10523,86 +10523,86 @@ contains
       p_rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
       call lsyssc_releaseMatrix (p_rmatrix)
     end if
-    
+
     ! Inform the vector about which sorting strategy we now use.
     rmatrix%isortStrategy = isortStrat
-    
+
     ! If h_IsortPermutation was given, change the permutation
     if (present(h_IsortPermutation)) rmatrix%h_IsortPermutation = h_IsortPermutation
-  
+
   contains
-    
+
     !----------------------------------------------------------------
     ! Sort matrix or matrix entries.
     ! This calls the actual resorting routine, depending
     ! on the information tags in the matrix.
-    
+
     subroutine do_matsort (rmatrix,Itr1,Itr2,bsortEntries)
-    
+
     ! The matrix to be resorted
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! The transformation to use
     integer, dimension(:), intent(in) :: Itr1
-    
+
     ! The inverse transformation
     integer, dimension(:), intent(in) :: Itr2
-    
+
     ! TRUE  = sort matrix structure + entries
     ! FALSE = sort only matrix structure
     logical, intent(in) :: bsortEntries
-    
+
     ! local variables
-    
+
     integer, dimension(:), pointer :: p_Kld,p_KldTmp,p_Kdiag
     integer, dimension(:), pointer :: p_Kcol,p_KcolTmp
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataTmp
     real(SP), dimension(:), pointer :: p_Fdata,p_FdataTmp
     type(t_matrixScalar) :: rtempMatrix
     integer :: NEQ
-    
+
       NEQ = rmatrix%NEQ
-    
+
       ! Which matrix configuration do we have?
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9)
-      
+
         if (.not. bsortEntries) then
-        
+
           ! Sort only the structure of the matrix, keep the entries
           ! unchanged. Do not do anything if the structure does not belong
           ! to the matrix!
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. 0) then
-          
+
             ! Duplicate the matrix before resorting.
             call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                         LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
-                                        
+
             ! Get the structure of the original and the temporary matrix
             call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
             call lsyssc_getbase_Kld (rmatrix,p_Kld)
             call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiag)
             call lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
             call lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
-            
+
             ! Sort
             call lsyssc_sortMat9Struc (p_Kcol, p_KcolTmp, p_Kld, p_KldTmp, &
                                        p_Kdiag, Itr1, Itr2, NEQ)
-                                       
+
             ! Remove temp matrix
             call lsyssc_releaseMatrix(rtempMatrix)
-                                       
+
           end if
-        
+
         else
-        
+
           ! Do not do anything if structure & entries do not belong to our matrix.
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) &
             return
-        
+
           ! If the structure does not belong to the matrix, only sort the!
           ! entries. Otherwise, sort structure + entries
-          
+
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
 
             ! Get the structure of the matrix
@@ -10632,24 +10632,24 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
               call sys_halt()
             end select
-          
+
             ! Remove temp matrix
             call lsyssc_releaseMatrix(rtempMatrix)
-          
+
           else
-          
+
             ! Duplicate the matrix before resorting.
             ! We need either a copy only of the structure or of the full matrix.
             call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-            
+
             ! Get the structure of the original and the temporary matrix
             call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
             call lsyssc_getbase_Kld (rmatrix,p_Kld)
             call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiag)
             call lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
             call lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
-          
+
             select case (rmatrix%cdataType)
             case (ST_DOUBLE)
               ! Double precision version
@@ -10670,55 +10670,55 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
               call sys_halt()
             end select
-            
+
             ! Remove temp matrix
             call lsyssc_releaseMatrix(rtempMatrix)
-         
+
           end if
-         
+
         end if
 
       case (LSYSSC_MATRIX7)
 
         if (.not. bsortEntries) then
-        
+
           ! Duplicate the matrix before resorting.
           call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                        LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
-        
+
           ! Get the structure of the original and the temporary matrix
           call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
           call lsyssc_getbase_Kld (rmatrix,p_Kld)
           call lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
           call lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
-        
+
           ! Sort only the structure of the matrix, keep the entries
           ! unchanged.
           call lsyssc_sortMat7Struc (p_Kcol, p_KcolTmp, p_KldTmp, p_KldTmp, &
                                      Itr1, Itr2, NEQ)
-        
+
           ! Remove temp matrix
           call lsyssc_releaseMatrix(rtempMatrix)
-        
+
         else
-        
+
           ! Do not do anything if structure & entries do not belong to our matrix.
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) &
             return
-        
+
           ! If the structure does not belong to the matrix, only sort the!
           ! entries. Otherwise, sort structure + entries
-          
+
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
 
             ! Get the structure of the matrix
             call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
             call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        
+
             ! Create a copy of the matrix entries
             call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                         LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-        
+
             ! Sort only the entries
             select case (rmatrix%cdataType)
             case (ST_DOUBLE)
@@ -10743,17 +10743,17 @@ contains
             call lsyssc_releaseMatrix(rtempMatrix)
 
           else
-        
+
             ! Duplicate the matrix before resorting.
             call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-        
+
             ! Get the structure of the original and the temporary matrix
             call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
             call lsyssc_getbase_Kld (rmatrix,p_Kld)
             call lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
             call lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
-        
+
             ! Sort structure + entries
             select case (rmatrix%cdataType)
             case (ST_DOUBLE)
@@ -10775,26 +10775,26 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
               call sys_halt()
             end select
-            
+
             ! Remove temp matrix
             call lsyssc_releaseMatrix(rtempMatrix)
-            
+
           end if
-            
+
         end if
 
       case (LSYSSC_MATRIXD)
-        
+
         ! D-matrices can only be sorted if we are allowed to sort the content --
         ! as they have no explicit structure!
-        
+
         if (bsortEntries .and. &
             (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
 
           ! Duplicate the matrix before resorting.
           call lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
                                        LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-        
+
           ! Sort entries; there is no structure.
           select case (rmatrix%cdataType)
           case (ST_DOUBLE)
@@ -10812,7 +10812,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
             call sys_halt()
           end select
-          
+
           ! Remove temp matrix
           call lsyssc_releaseMatrix(rtempMatrix)
 
@@ -10822,11 +10822,11 @@ contains
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
         call sys_halt()
-        
+
       end select
 
     end subroutine
-    
+
   end subroutine
 
   !****************************************************************************
@@ -10835,36 +10835,36 @@ contains
 
   subroutine lsyssc_sortMat7_double (Da, DaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(DP), dimension(:), intent(in) :: DaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -10872,23 +10872,23 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -10907,7 +10907,7 @@ contains
       Ild(i) = ildIdx
       Icol(ildIdx) = i
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -10963,36 +10963,36 @@ contains
 
   subroutine lsyssc_sortMat7_single (Fa, FaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Single precision version.
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(SP), dimension(:), intent(in) :: FaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -11000,23 +11000,23 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    
+
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11034,7 +11034,7 @@ contains
       Ild(i) = ildIdx
       Icol(ildIdx) = i
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -11078,7 +11078,7 @@ contains
 
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
-    
+
     ! Release temp variables
     deallocate(Ih1,Ih2)
 
@@ -11090,36 +11090,36 @@ contains
 
   subroutine lsyssc_sortMat7_int (Ia, IaH, Icol, IcolH, &
                                      Ild, IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Integer version.
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     integer, dimension(:), intent(in) :: IaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -11127,23 +11127,23 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    
+
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11161,7 +11161,7 @@ contains
       Ild(i) = ildIdx
       Icol(ildIdx) = i
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -11205,7 +11205,7 @@ contains
 
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
-    
+
     ! Release temp variables
     deallocate(Ih1,Ih2)
 
@@ -11217,7 +11217,7 @@ contains
 
   subroutine lsyssc_sortMat7Ent_double (Da, DaH, IcolH, &
                                         IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -11225,47 +11225,47 @@ contains
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(DP), dimension(:), intent(in) :: DaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
     real(DP), dimension(:), intent(out) :: Da
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11282,7 +11282,7 @@ contains
       ! The new row starts at position ildIdx.
       Da(ildIdx) = DaH(IldH(iidx))
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -11332,7 +11332,7 @@ contains
 
   subroutine lsyssc_sortMat7Ent_single (Fa, FaH, IcolH, &
                                         IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -11340,47 +11340,47 @@ contains
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(SP), dimension(:), intent(in) :: FaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
     real(SP), dimension(:), intent(out) :: Fa
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    
+
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11396,7 +11396,7 @@ contains
       ! The new row starts at position ildIdx.
       Fa(ildIdx) = FaH(IldH(iidx))
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -11446,7 +11446,7 @@ contains
 
   subroutine lsyssc_sortMat7Ent_int (Ia, IaH, IcolH, &
                                      IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -11454,47 +11454,47 @@ contains
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     integer, dimension(:), intent(in) :: IaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
-    
+
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the sorting back
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
     integer, dimension(:), intent(out) :: Ia
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
-    
+
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11510,7 +11510,7 @@ contains
       ! The new row starts at position ildIdx.
       Ia(ildIdx) = IaH(IldH(iidx))
       ildIdx = ildIdx + 1
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)+1
@@ -11559,7 +11559,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_sortMat7Struc (Icol, IcolH, Ild, IldH, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine
@@ -11567,7 +11567,7 @@ contains
     !
     ! Storage technique 7 version.
 !</description>
-    
+
 !<input>
 
     ! Number of equations
@@ -11575,12 +11575,12 @@ contains
 
     ! Permutation of 1..neq describing how to resort
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing how to sort
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<inputoutput>
 
     ! Column description of matrix
@@ -11588,24 +11588,24 @@ contains
 
     ! Row description of matrix
     integer, dimension(neq+1), intent(inout) :: Ild
-    
+
     ! Column structure of source matrix -> resorted matrix
     integer, dimension(:), intent(inout) :: IcolH
-    
+
     ! Row positions of source matrix -> resorted matrix
     integer, dimension(neq+1), intent(inout) :: IldH
-    
+
 !</inputoutput>
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-    
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
@@ -11661,9 +11661,9 @@ contains
       end do
     end do
     Ild(neq+1) = IldH(neq+1)
-    
+
     deallocate(Ih1,Ih2)
-  
+
   end subroutine
 
   !****************************************************************************
@@ -11672,36 +11672,36 @@ contains
 
   subroutine lsyssc_sortMat9_double (Da, DaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(DP), dimension(:), intent(in) :: DaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -11709,49 +11709,49 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
     ! Positions of diagonal elements in the destination matrix
     integer, dimension(neq+1), intent(out) :: Idiag
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -11764,7 +11764,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -11776,25 +11776,25 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Write the position of the diagonal element to Idiag
       Idiag(i) = ildIdx + idiagidx-1
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Da(ildIdx) = DaH(Ih2(j))
-        
+
         ! Get the column number and write it to Icol
         Icol(ildIdx) = Ih1(j)
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
 
@@ -11809,36 +11809,36 @@ contains
 
   subroutine lsyssc_sortMat9_single (Fa, FaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Single precision version.
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(SP), dimension(:), intent(in) :: FaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -11846,49 +11846,49 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
     ! Positions of diagonal elements in the destination matrix
     integer, dimension(neq+1), intent(out) :: Idiag
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -11901,7 +11901,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -11913,25 +11913,25 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Write the position of the diagonal element to Idiag
       Idiag(i) = ildIdx + idiagidx-1
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Fa(ildIdx) = FaH(Ih2(j))
-        
+
         ! Get the column number and write it to Icol
         Icol(ildIdx) = Ih1(j)
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
 
@@ -11946,36 +11946,36 @@ contains
 
   subroutine lsyssc_sortMat9_int (Ia, IaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts structure and entries of the given matrix, corresponding to Itr1/Itr2.
     ! Double precision version.
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     integer, dimension(:), intent(in) :: IaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
@@ -11983,49 +11983,49 @@ contains
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
     ! Positions of diagonal elements in the destination matrix
     integer, dimension(neq+1), intent(out) :: Idiag
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -12038,7 +12038,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -12050,25 +12050,25 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Write the position of the diagonal element to Idiag
       Idiag(i) = ildIdx + idiagidx-1
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Ia(ildIdx) = IaH(Ih2(j))
-        
+
         ! Get the column number and write it to Icol
         Icol(ildIdx) = Ih1(j)
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
 
@@ -12083,7 +12083,7 @@ contains
 
   subroutine lsyssc_sortMat9Ent_double (Da, DaH, IcolH, IldH, &
                                         Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -12091,67 +12091,67 @@ contains
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(DP), dimension(:), intent(in) :: DaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
     real(DP), dimension(:), intent(out) :: Da
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -12164,7 +12164,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -12176,19 +12176,19 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Da(ildIdx) = DaH(Ih2(j))
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Release temp variables
     deallocate(Ih1,Ih2)
 
@@ -12200,7 +12200,7 @@ contains
 
   subroutine lsyssc_sortMat9Ent_single (Fa, FaH, IcolH, IldH, &
                                         Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -12208,67 +12208,67 @@ contains
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     real(SP), dimension(:), intent(in) :: FaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Destination matrix
     real(SP), dimension(:), intent(out) :: Fa
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -12281,7 +12281,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -12293,19 +12293,19 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Fa(ildIdx) = FaH(Ih2(j))
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Release temp variables
     deallocate(Ih1,Ih2)
 
@@ -12317,7 +12317,7 @@ contains
 
   subroutine lsyssc_sortMat9Ent_int (Ia, IaH, IcolH, IldH, &
                                      Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
     ! The structure is not changed.
@@ -12325,24 +12325,24 @@ contains
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Source matrix
     integer, dimension(:), intent(in) :: IaH
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
@@ -12354,38 +12354,38 @@ contains
     integer, dimension(:), intent(out) :: Ia
 
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -12398,7 +12398,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -12410,19 +12410,19 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
-        
+
         ! Get the matrix entry of the current column and write it to Da
         Ia(ildIdx) = IaH(Ih2(j))
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Release temp variables
     deallocate(Ih1,Ih2)
 
@@ -12434,7 +12434,7 @@ contains
 
   subroutine lsyssc_sortMat9Struc (Icol, IcolH, &
                                    Ild, IldH, Idiag, Itr1, Itr2, neq)
-  
+
 !<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine
@@ -12442,73 +12442,73 @@ contains
     !
     ! Storage technique 9 version.
 !</description>
-    
+
 !<input>
-    
+
     ! Number of equations
     integer, intent(in) :: neq
-    
+
     ! Column structure of source matrix
     integer, dimension(:), intent(in) :: IcolH
-    
+
     ! Row positions of source matrix
     integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
     integer, dimension(neq), intent(in) :: Itr1
-    
+
     ! Permutation of 1..neq describing the inverse permutation
     integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
-    
+
 !<output>
 
     ! Column structure of destination matrix
     integer, dimension(:), intent(out) :: Icol
-    
+
     ! Row positions of destination matrix
     integer, dimension(neq+1), intent(out) :: Ild
-    
+
     ! Positions of diagonal elements in the destination matrix
     integer, dimension(neq+1), intent(out) :: Idiag
-    
+
 !</output>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
 
     ! Temporary variables for saving data of each line
     integer, dimension(:), allocatable :: Ih1, Ih2
-  
+
     ! Get memory for Ih1 and Ih2:
     allocate(Ih1(neq),Ih2(neq))
-  
+
     ! We build the sorted matrix from the scratch. ildIdx points
     ! to the current 'output' position in the data array of
     ! the matrix.
     ildIdx = 1
-    
+
     ! Loop through all lines. i is the 'destination' row, i.e.
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
-    
+
       ! Which row should be moved to here?
       iidx = Itr1(i)
-      
+
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
-      
+
       ! Get the start- and end-index of the row that should be moved
       ! to here.
       ih1Idx = IldH(iidx)
       ih2Idx = IldH(iidx+1)-1
-      
+
       ! The row has length...
       isize = ih2Idx - ih1Idx + 1
-      
+
       ! Loop through the source row.
       ! IcolH defines the column numbers in the source row.
       ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
@@ -12521,7 +12521,7 @@ contains
         Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
         Ih2(j-ih1Idx+1) = j
       end do
-      
+
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
       !  Ih1 = column numbers in the destination matrix, sorted
@@ -12533,21 +12533,21 @@ contains
       do idiagidx=1,isize
         if (Ih1(idiagidx) .ge. i) exit
       end do
-      
+
       ! Write the position of the diagonal element to Idiag
       Idiag(i) = ildIdx + idiagidx-1
-      
+
       ! Now copy the source row to the current row.
       ! Loop through the columns of the current row:
       do j = 1,isize
         ! Get the column number and write it to Icol
         Icol(ildIdx) = Ih1(j)
-        
+
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1
       end do
     end do
-    
+
     ! Close the matrix structure by writing out the last element of Kld.
     Ild(neq+1) = IldH(neq+1)
 
@@ -12561,27 +12561,27 @@ contains
 !<subroutine>
 
   subroutine lsyssc_sortCR (Ih1, Ih2)
-  
+
 !<description>
     ! Performs bubble sort for the vector Ih1 and does the
     ! same swaps also on vector Ih2.
 !</description>
-    
+
 !<inputoutput>
-      
+
     ! column vector
     integer, dimension(:), intent(inout) :: Ih1
-      
+
     ! row vector; same size as Ih1
     integer, dimension(size(Ih1)), intent(inout) :: Ih2
-      
+
 !</inputoutput>
 !</subroutine>
-    
+
     !local variables
     integer :: iaux, icomp
     logical :: bmore
-    
+
     bmore = .true.
     ! While there are swaps necessary...
     do while (bmore)
@@ -12600,15 +12600,15 @@ contains
         endif
       end do
     end do
-  
+
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_unsortMatrix (rmatrix,bsortEntries)
-  
+
 !<description>
   ! This routine deactivates the sorting of matrix rmatrix, the matrix
   ! is unsorted. If bsortEntries=TRUE, the entries of the matrix are unsorted
@@ -12617,7 +12617,7 @@ contains
   ! rmatrix%isortStrategy is set to negative to indicate that the sorting
   ! is deactivated.
 !</description>
-  
+
 !<inputoutput>
   ! Vector to resort
   type(t_matrixScalar), intent(inout), target :: rmatrix
@@ -12643,7 +12643,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_addIndex (h_Ix,ivalue,istartpos,ilength)
-  
+
 !<description>
 
   ! This is an auxiliary routine. It accepts a handle to an integer array
@@ -12652,7 +12652,7 @@ contains
   ! from 1-based to 0-based for an external library (UMFPACK).
 
 !</description>
-  
+
 !<input>
   ! Handle to an integer data array.
   integer, intent(in) :: h_Ix
@@ -12669,13 +12669,13 @@ contains
 !</input>
 
 !</subroutine>
-    
+
     ! Actual length
     integer :: iactlength,istart,i
-    
+
     ! Vector
     integer, dimension(:), pointer :: p_Ix
-    
+
     ! Get the array
     call storage_getbase_int (h_Ix,p_Ix)
     if (present(istartpos)) then
@@ -12689,24 +12689,24 @@ contains
       iactlength = size(p_Ix)-istart+1
     end if
     p_Ix => p_Ix(istart:istart + iactlength - 1)
-    
+
     ! Increase by ivalue
     do i=1,iactlength
       p_Ix(i) = p_Ix(i) + ivalue
     end do
-    
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lsyssc_addConstant (rvector,dvalue)
-  
+
 !<description>
   ! Adds a constant to a vector.
 !</description>
-  
+
 !<inputoutput>
   ! Vector to be modified.
   type(t_vectorScalar), intent(in) :: rvector
@@ -12718,16 +12718,16 @@ contains
 !</input>
 
 !</subroutine>
-    
+
     ! Vector
     real(DP), dimension(:), pointer :: p_Dx
-    
+
     select case (rvector%cdataType)
-  
+
     case (ST_DOUBLE)
       ! Get the data array
       call lsyssc_getbase_double (rvector,p_Dx)
-    
+
       ! Increase by dvalue
       call lalg_vectorAddScalarDble (p_Dx,dvalue,rvector%NEQ)
 
@@ -12735,21 +12735,21 @@ contains
       call output_line('Data type not implemented!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_addConstant')
       call sys_halt()
-    
+
     end select
-    
+
   end subroutine
-  
+
   !****************************************************************************
 !<function>
-  
+
   real(DP) function lsyssc_vectorNorm (rx,cnorm,iposMax)
-  
+
 !<description>
   ! Calculates the norm of a vector. cnorm specifies the type of norm to
   ! calculate.
 !</description>
-  
+
 !<input>
   ! Vector to calculate the norm of.
   type(t_vectorScalar), intent(in) :: rx
@@ -12786,25 +12786,25 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorNorm')
     call sys_halt()
   end if
-  
+
   ! Take care of the data type before doing a scalar product!
   select case (rx%cdataType)
   case (ST_DOUBLE)
     ! Get the array and calculate the norm
     call lsyssc_getbase_double (rx,p_Ddata)
     lsyssc_vectorNorm = lalg_norm(p_Ddata,cnorm,iposMax)
-    
+
   case (ST_SINGLE)
     ! Get the array and calculate the norm
     call lsyssc_getbase_single (rx,p_Fdata)
     lsyssc_vectorNorm = lalg_norm(p_Fdata,cnorm,iposMax)
-    
+
   case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorNorm')
     call sys_halt()
   end select
-  
+
   end function
 
   !****************************************************************************
@@ -12813,7 +12813,7 @@ contains
 
   subroutine lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst,&
                                         rperfconfig)
-  
+
 !<description>
   ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
   ! of the matrix rmatrix with the vector rvectorSrc and stores the result
@@ -12821,7 +12821,7 @@ contains
   !   <tex>$$rvectorDst = dscale * D^{-1} * rvectorSrc$$ </tex>
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
-  
+
 !<input>
   ! The matrix.
   type(t_matrixScalar), intent(in) :: rmatrix
@@ -12855,7 +12855,7 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
-  
+
   if (present(rperfconfig)) then
     p_rperfconfig => rperfconfig
   else
@@ -12873,7 +12873,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
     call sys_halt()
   end if
-  
+
   ! Which matrix structure do we have?
   select case (rmatrix%cmatrixFormat)
   case (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
@@ -12884,7 +12884,7 @@ contains
       h_Idiag = rmatrix%h_Kld
     end if
     call storage_getbase_int(h_Idiag,p_Kdiag)
-    
+
     ! Data type?
     select case (rmatrix%cdataType)
     case (ST_DOUBLE)
@@ -12915,7 +12915,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -12938,13 +12938,13 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = real(dscale * rmatrix%dscaleFactor,SP)
@@ -12973,7 +12973,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -12996,7 +12996,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
@@ -13016,7 +13016,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end if
-    
+
     ! Number of interleaved variables
     NVAR = rmatrix%NVAR
 
@@ -13068,7 +13068,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -13101,13 +13101,13 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
-        
+
       case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = real(dscale * rmatrix%dscaleFactor,SP)
@@ -13140,13 +13140,13 @@ contains
             end do
           end do
           !$omp end parallel do
-        
+
         case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -13173,7 +13173,7 @@ contains
             end do
           end do
           !$omp end parallel do
-        
+
         case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
@@ -13191,9 +13191,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end select
-    
+
   case (LSYSSC_MATRIXD)
-    
+
     ! Data type?
     select case (rmatrix%cdataType)
     case (ST_DOUBLE)
@@ -13224,7 +13224,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -13247,13 +13247,13 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = real(dscale * rmatrix%dscaleFactor,SP)
@@ -13282,7 +13282,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
@@ -13305,7 +13305,7 @@ contains
           end do
           !$omp end parallel do
         end if
-        
+
       case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
@@ -13323,7 +13323,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
     call sys_halt()
   end select
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -13331,7 +13331,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_copyVector (rx,ry)
-  
+
 !<description>
   ! Copies vector data: ry = rx.
   ! Both vectors must have the same size. All structural data of rx is
@@ -13349,24 +13349,24 @@ contains
   ! Destination vector
   type(t_vectorScalar),intent(inout) :: ry
 !</inputoutput>
-  
+
 !</subroutine>
 
     call lsyssc_duplicateVector (rx,ry,&
         LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lsyssc_scaleVector (rx,c)
-  
+
 !<description>
   ! Scales a vector vector rx: rx = c * rx
 !</description>
-  
+
 !<inputoutput>
   ! Source and destination vector
   type(t_vectorScalar), intent(inout) :: rx
@@ -13376,13 +13376,13 @@ contains
   ! Multiplication factor
   real(DP), intent(in) :: c
 !</input>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
-  
+
   ! Taje care of the data type!
   select case (rx%cdataType)
   case (ST_DOUBLE)
@@ -13400,19 +13400,19 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scaleVector')
     call sys_halt()
   end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_clearVector (rx,dvalue)
-  
+
 !<description>
   ! Clears the block vector dx: Dx = 0 (or Dx = dvalue if dvalue is specified)
 !</description>
-  
+
 !<inputoutput>
   ! Destination vector to be cleared
   type(t_vectorScalar), intent(inout) :: rx
@@ -13422,13 +13422,13 @@ contains
   ! If specified, all matrix entries are set to dvalue.
   real(DP), intent(in), optional :: dvalue
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Dsource
   real(SP), dimension(:), pointer :: p_Ssource
-  
+
   ! Take care of the data type
   select case (rx%cdataType)
   case (ST_DOUBLE)
@@ -13439,7 +13439,7 @@ contains
     else
       call lalg_setVectorDble (p_Dsource,dvalue)
     end if
-  
+
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_single(rx,p_Ssource)
@@ -13454,25 +13454,25 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearVector')
     call sys_halt()
   end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lsyssc_vectorLinearComb (rx,ry,cx,cy,rdest)
-  
+
 !<description>
   ! Performs a linear combination: rdest or ry = cx * rx  +  cy * ry
   ! Both vectors must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
-  
+
 !<input>
   ! First source vector
   type(t_vectorScalar), intent(in) :: rx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in) :: cx
 
@@ -13487,14 +13487,14 @@ contains
   ! OPTIONAL: Destination vector. If not specified, ry will be overwritten.
   type(t_vectorScalar), intent(inout), optional, target :: rdest
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Dsource, p_Ddest
   real(SP), dimension(:), pointer :: p_Ssource, p_Sdest
   type(t_vectorScalar), pointer :: p_rdest
-  
+
   ! The vectors must be compatible to each other.
   call lsyssc_isVectorCompatible (rx,ry)
 
@@ -13503,12 +13503,12 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb')
     call sys_halt()
   end if
-  
+
   p_rdest => ry
   if (present(rdest)) then
-    
+
     p_rdest => rdest
-    
+
     ! The vectors must be compatible to each other or rdest must be a clean
     ! vector.
     if (rdest%NEQ .ne. 0) then
@@ -13520,27 +13520,27 @@ contains
         call sys_halt()
       end if
     end if
-    
+
     ! Copy ry to rdest. Change rdest afterwards.
     call lsyssc_copyVector (ry,rdest)
-    
+
   end if
-  
+
   select case (rx%cdataType)
   case (ST_DOUBLE)
     ! Get the pointers and copy the whole data array.
     call lsyssc_getbase_double(rx,p_Dsource)
     call lsyssc_getbase_double(p_rdest,p_Ddest)
-    
+
     call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsyssc_getbase_single(rx,p_Ssource)
     call lsyssc_getbase_single(p_rdest,p_Sdest)
-    
+
     call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
-  
+
   case default
     call output_line('Unsupported data type!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb')
@@ -13548,13 +13548,13 @@ contains
   end select
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lsyssc_copyMatrix (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Copies a matrix data: rsourceMatrix = rdestMatrix.
   ! All structural (discretisation related) data of rsourceMatrix is
@@ -13567,7 +13567,7 @@ contains
   ! Therefore, lsyssc_copyMatrix coincides with a call to
   ! lsyssc_duplicateMatrix (.,.,LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE).
 !</description>
-  
+
 !<input>
   ! Source vector
   type(t_matrixScalar),intent(in) :: rsourceMatrix
@@ -13577,7 +13577,7 @@ contains
   ! Destination vector
   type(t_matrixScalar),intent(inout) :: rdestMatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     call lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,&
@@ -13725,16 +13725,16 @@ contains
 !        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_copyMatrix')
 !    CALL sys_halt()
 !  END SELECT
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
   subroutine lsyssc_transpMatStruct79double (nrow, ncol, Icol, Irow, &
                                              Itmp, IcolDest, IrowDest, &
                                              Ipermutation)
-  
+
 !<description>
     ! This routine accepts the structure of a structure-7 or structure-9
     ! matrix and creates the structure of the transposed matrix from it.
@@ -13743,21 +13743,21 @@ contains
     ! with the diagonal entry in front if a structure-7 matrix is to be
     ! transposed!
 !</description>
-    
+
 !<input>
     ! Number of rows in the source matrix
     integer, intent(in) :: nrow
-    
+
     ! Number of columns in the source matrix
     integer, intent(in) :: ncol
-    
+
     ! Column structure of the source matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the source matrix
     integer, dimension(nrow+1), intent(in) :: Irow
 !</input>
-    
+
 !<output>
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
@@ -13770,40 +13770,40 @@ contains
     ! matrix from the untransposed matrix. This is an array of length NA.
     integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
-    
+
 !<inputoutput>
     ! Auxiliary array of size ncol
     integer, dimension(ncol), intent(inout) :: Itmp
 !</inputoutput>
 !</subroutine>
-    
+
     !local variables
     integer(I32) :: i, j, isize, icolumn, ncolumn
-    
+
     ! determin the number of matrix entries
     isize = Irow(nrow+1)-1
-    
+
     ! clear row struxture of the destination matrix
     do i=1, ncol+1
       IrowDest(i) = 0
     end do
-    
+
     ! Count how many entries <> 0 are in each column. Note this into
     ! the IrowDest array shifted by 1.
     do i=1, isize
       IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
     end do
-    
+
     ! Now build the final IrowDest by adding up the IrowDest entries.
     IrowDest(1) = 1
     do i=2, ncol+1
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
     end do
-    
+
     ! Now IcolDest must be created. This requires another loop trough
     ! the matrix structure. Itmp receives the index of how many entries
     ! have been written to each row.
-    
+
     ! clear auxiliary vector
     do i=1, ncol
       Itmp(i) = 0
@@ -13815,11 +13815,11 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Rows get columns by transposing, therefore note i as column
           ! number in IcolDest
           IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-          
+
           ! Increment running index of that row
           Itmp(icolumn) = Itmp(icolumn)+1
         end do
@@ -13830,11 +13830,11 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Rows get columns by transposing, therefore note i as column
           ! number in IcolDest
           IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-          
+
           ! Save where this entry is moved to.
           Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
 
@@ -13843,7 +13843,7 @@ contains
         end do
       end do
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -13851,7 +13851,7 @@ contains
 !<subroutine>
   subroutine lsyssc_transpMatEntries79double (nrow, ncol, Da, Icol, Irow, &
       Itmp, DaDest, IrowDest, Ipermutation)
-  
+
 !<description>
     ! Auxiliary routine.
     ! This routine accepts a structure-7 or structure-9
@@ -13863,30 +13863,30 @@ contains
     ! The resulting matrix is of format 9, i.e. not pivoted anymore with
     ! the diagonal entry in front if a structure-7 matrix is to be transposed!
 !</description>
-    
+
 !<input>
     ! Number of rows in the source matrix
     integer, intent(in) :: nrow
-    
+
     ! Number of columns in the source matrix
     integer, intent(in) :: ncol
-    
+
     ! The entries of the source matrix
     real(DP), dimension(:), intent(in) :: Da
-    
+
     ! Column structure of the source matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the source matrix.
     ! DIMENSION(nrow+1)
     integer, dimension(:), intent(in) :: Irow
 !</input>
-    
+
 !<output>
     ! The entries of the destination matrix
     ! The array must be of the same size as Da or Icol
     real(DP), dimension(:), intent(out) :: DaDest
-    
+
     ! Temporary array. Row structure of the destination matrix.
     ! DIMENSION(ncol+1)
     integer, dimension(:), intent(out) :: IrowDest
@@ -13895,33 +13895,33 @@ contains
     ! matrix from the untransposed matrix. This is an array of length NA.
     integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
-    
+
 !<inputoutput>
     ! Auxiliary array.
     ! DIMENSION(ncol)
     integer, dimension(:), intent(inout) :: Itmp
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
     !local variables
     integer(I32) :: i, j, isize, icolumn, ncolumn
-    
+
     if ((size(Itmp) .ne. ncol) .or. (size(IrowDest) .ne. ncol+1) .or. &
         (size(Irow) .ne. nrow+1)) then
       call output_line('Array parameters have wrong size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transpMatEntries79double')
       call sys_halt()
     end if
-    
+
     ! determine the number of matrix entries
     isize = Irow(nrow+1)-1
-    
+
     ! clear row structure of the destination matrix
     do i=1, ncol+1
       IrowDest(i) = 0
     end do
-    
+
     ! Count how many entries <> 0 are in each column. Note this
     ! into the IrowDest array.
     ! This requires one loop through the matrix structure. The
@@ -13931,24 +13931,24 @@ contains
     do i=1, isize
       IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
     end do
-    
+
     ! Now build the real IrowDest. This consists of indices, where
     ! each row starts. Row 1 starts at position 1:
     IrowDest(1) = 1
-    
+
     ! Adding the number of entries IrowDest(i) in the row to
     ! IrowDest(i-1) gives the new row pointer of row i of the transposed
     ! matrix.
     do i=2, ncol+1
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
     end do
-    
+
     ! That is it for IrowDest.
     ! Now, the matrix must be copied to DaDest in transposed form.
     ! This requires another loop trough the matrix structure.
     ! Itmp receives the index of how many entries have been written
     ! to each row.
-    
+
     ! clear auxiliary vector
     do i=1, ncol
       Itmp(i) = 0
@@ -13961,10 +13961,10 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Copy the matrix entry:
           DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
-          
+
           ! Increment running index of that row
           Itmp(icolumn) = Itmp(icolumn)+1
         end do
@@ -13976,19 +13976,19 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Copy the matrix entry:
           DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
-          
+
           ! Save where this entry is moved to.
           Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
-          
+
           ! Increment running index of that row
           Itmp(icolumn) = Itmp(icolumn)+1
         end do
       end do
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -13996,7 +13996,7 @@ contains
 !<subroutine>
   subroutine lsyssc_transpMat79double (nrow, ncol, Da, Icol, Irow, &
       Itmp, DaDest, IcolDest, IrowDest, Ipermutation)
-  
+
 !<description>
     ! Auxiliary routine.
     ! This routine accepts a structure-7 or structure-9
@@ -14005,30 +14005,30 @@ contains
     ! The resulting matrix is of format 9, i.e. not pivoted anymore with
     ! the diagonal entry in front if a structure-7 matrix is to be transposed!
 !</description>
-    
+
 !<input>
     ! Number of rows in the source matrix
     integer, intent(in) :: nrow
-    
+
     ! Number of columns in the source matrix
     integer, intent(in) :: ncol
-    
+
     ! The entries of the source matrix
     real(DP), dimension(:), intent(in) :: Da
-    
+
     ! Column structure of the source matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the source matrix.
     ! DIMENSION(nrow+1)
     integer, dimension(:), intent(in) :: Irow
 !</input>
-    
+
 !<output>
     ! The entries of the destination matrix
     ! The array must be of the same size as Da or Icol
     real(DP), dimension(:), intent(out) :: DaDest
-    
+
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
     integer, dimension(:), intent(out) :: IcolDest
@@ -14041,33 +14041,33 @@ contains
     ! matrix from the untransposed matrix. This is an array of length NA.
     integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
-    
+
 !<inputoutput>
     ! Auxiliary array.
     ! DIMENSION(ncol)
     integer, dimension(:), intent(inout) :: Itmp
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
     !local variables
     integer(I32) :: i, j, isize, icolumn, ncolumn
-    
+
     if ((size(Itmp) .ne. ncol) .or. (size(IrowDest) .ne. ncol+1) .or. &
         (size(Irow) .ne. nrow+1)) then
       call output_line('Array parameters have wrong size!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transpMat79double')
       call sys_halt()
     end if
-    
+
     ! determine the number of matrix entries
     isize = Irow(nrow+1)-1
-    
+
     ! clear row structure of the destination matrix
     do i=1, ncol+1
       IrowDest(i) = 0
     end do
-    
+
     ! Count how many entries <> 0 are in each column. Note this
     ! into the IrowDest array.
     ! This requires one loop through the matrix structure. The
@@ -14077,23 +14077,23 @@ contains
     do i=1, isize
       IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
     end do
-    
+
     ! Now build the real IrowDest. This consists of indices, where
     ! each row starts. Row 1 starts at position 1:
     IrowDest(1) = 1
-    
+
     ! Adding the number of entries IrowDest(i) in the row to
     ! IrowDest(i-1) gives the new row pointer of row i of the transposed
     ! matrix.
     do i=2, ncol+1
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
     end do
-    
+
     ! That is it for IrowDest.
     ! Now IcolDest must be created. This requires another loop trough
     ! the matrix structure. Itmp receives the index of how many entries
     ! have been written to each row.
-    
+
     ! clear auxiliary vector
     do i=1, ncol
       Itmp(i) = 0
@@ -14106,14 +14106,14 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Rows get columns by transposing, therefore note i as column
           ! number in IcolDest
           IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-          
+
           ! Copy the matrix entry:
           DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
-          
+
           ! Increment running index of that row
           Itmp(icolumn) = Itmp(icolumn)+1
         end do
@@ -14125,23 +14125,23 @@ contains
         do j=1, ncolumn
           ! Get the column of the item in question -> new row number.
           icolumn = Icol(Irow(i)+j-1)
-          
+
           ! Rows get columns by transposing, therefore note i as column
           ! number in IcolDest
           IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-          
+
           ! Copy the matrix entry:
           DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
-          
+
           ! Save where this entry is moved to.
           Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
-          
+
           ! Increment running index of that row
           Itmp(icolumn) = Itmp(icolumn)+1
         end do
       end do
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -14149,42 +14149,42 @@ contains
 !<subroutine>
 
   subroutine lsyssc_pivotiseMatrix7double (neq, Icol, Irow, Da, berror)
-  
+
 !<description>
     ! Auxiliary routine.
     ! This routine repivots a matrix in structure 7: The diagonal element
     ! of each row is moved to the front.
 !</description>
-    
+
 !<input>
     ! Number of rows/columns/equations
     integer, intent(in) :: neq
 !</input>
-  
+
 !<output>
     ! If .TRUE. a diagonal element was not found
     logical, optional, intent(out) :: berror
 !</output>
-        
+
 !<inputoutput>
     ! OPTIONAL: Matrix entries.
     ! If not specified, only the matrix structure is pivotised.
     real(DP), dimension(:), intent(inout), optional :: Da
-    
+
     ! Matrix column structure
     integer, dimension(:), intent(inout) :: Icol
-    
+
     ! Matrix row structure
     integer, dimension(neq+1), intent(inout) :: Irow
 !</inputoutput>
 !</subroutine>
-    
+
     !local variables
     integer(I32) :: i, j
     logical :: bnodiag
-    
+
     bnodiag = .false.
-    
+
     if (present(Da)) then
       ! Structure + entries
       !
@@ -14203,7 +14203,7 @@ contains
           end do
           ! Oops, diagonal element not found - cancel
           if (bnodiag) exit
-          
+
           ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
           ! This puts the diagonal element to the front
           ! The same operation is also done for Da(Irow(i):j)
@@ -14230,7 +14230,7 @@ contains
           end do
           ! Oops, diagonal element not found - cancel
           if (bnodiag) exit
-          
+
           ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
           ! This puts the diagonal element to the front
           ! The same operation is also done for Da(Irow(i):j)
@@ -14238,12 +14238,12 @@ contains
           Da  (Irow(i):j) = cshift(Da  (Irow(i):j),-1)
         end if
       end do
-      
+
     end if
 
     ! Report error status
     if (present(berror)) berror = bnodiag
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -14251,7 +14251,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_transposeMatrixInSitu (rmatrix,itransFlag)
-  
+
 !<description>
   ! This routine in-situ transposes a matrix rmatrix and creates the transposed
   ! matrix in rtransposedMatrix.
@@ -14300,13 +14300,13 @@ contains
 
     itrans = LSYSSC_TR_ALL
     if (present(itransFlag)) itrans = itransFlag
-    
+
     select case (itrans)
     case (LSYSSC_TR_ALL,LSYSSC_TR_VIRTUALCOPY)
       ! These are the simple cases: The new matrix is independent.
       ! Release the old one.
       call lsyssc_releaseMatrix(rmatrix)
-      
+
     case (LSYSSC_TR_VIRTUAL)
       ! This case slightly harder. The new matrix shares both,
       ! structure and content with the old one. The old one may share
@@ -14314,17 +14314,17 @@ contains
       ! the copy flags from the old matrix here.
       rmatrix2%imatrixSpec = ior(iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),&
                                  iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY))
-                                 
+
       ! rmatrix2 has the handles of rmatrix but we want to release
       ! rmatrix now. In this case we have to prevent the data arrays
       ! from being released in case rmatrix is the old owner of the
       ! arrays.
       rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
-      
+
       ! Now we can savely release the source matrix without destroying
       ! anything.
       call lsyssc_releaseMatrix(rmatrix)
-      
+
     case (LSYSSC_TR_STRUCTURE)
       ! Ok, this case is a bit strange, somehow, and I am not sure if it
       ! really works this way, but it should :-)
@@ -14347,10 +14347,10 @@ contains
                                       not(LSYSSC_MSPEC_CONTENTISCOPY)),&
                                  iand(rmatrix%imatrixSpec,&
                                       LSYSSC_MSPEC_CONTENTISCOPY))
-    
+
       ! Prevent lsyssc_releaseMatrix from releasing the content if it is still there
       rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
-      
+
       ! Now we can release the old matrix.
       call lsyssc_releaseMatrix(rmatrix)
 
@@ -14361,14 +14361,14 @@ contains
       call output_line('TRansposing matrix entries without structure is not possible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixInSitu')
       call sys_halt()
-    
+
     end select
-      
+
     ! Create a hard-copy of rmatrix.
     ! This is one of the very rare cases where we on purpose assign a matrix
     ! structure to another...
     rmatrix = rmatrix2
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -14376,7 +14376,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_transposeMatrixDirect (rsourceMatrix,rdestMatrix,Ipermutation)
-  
+
 !<description>
   ! Transposes the matrix entries of a matrix according to a matrix permutation
   ! array. Ipermutation must be a permutation array computed by
@@ -14427,26 +14427,26 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
         call sys_halt()
       end if
-      
+
       select case (rsourceMatrix%cdataType)
       case (ST_DOUBLE)
-      
+
         ! Get the data arrays
         call lsyssc_getbase_double(rsourceMatrix,p_DaSource)
         if (rdestMatrix%h_Da .eq. ST_NOHANDLE) then
           call lsyssc_allocEmptyMatrix (rdestMatrix,LSYSSC_SETM_UNDEFINED)
         end if
         call lsyssc_getbase_double(rdestMatrix,p_DaDest)
-        
+
         ! Permute
         call lalg_vectorSortDble (p_DaSource, p_DaDest, Ipermutation)
-        
+
       case default
         call output_line('Invalid data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
@@ -14461,7 +14461,7 @@ contains
 
   subroutine lsyssc_transposeMatrix (rmatrix,rtransposedMatrix,itransFlag,&
       Ipermutation)
-  
+
 !<description>
   ! This routine transposes a matrix rmatrix and creates the transposed
   ! matrix in rtransposedMatrix.
@@ -14509,7 +14509,7 @@ contains
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
   integer, intent(in), optional :: itransFlag
-  
+
   ! The matrix to be transposed.
   type(t_matrixScalar),intent(in) :: rmatrix
 !</input>
@@ -14529,7 +14529,7 @@ contains
     ! from the untransposed matrix. This is an array of length NA.
     integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
-  
+
 !</subroutine>
 
     ! local variables
@@ -14540,60 +14540,60 @@ contains
     integer, dimension(:), pointer :: p_Kdiagonal
     integer, dimension(:), pointer :: p_Itemp
     real(DP), dimension(:), pointer :: p_DaSource,p_DaDest
-    
+
     itrans = LSYSSC_TR_ALL
     if (present(itransFlag)) itrans = itransFlag
-    
+
     ! How to perform the creation of the transposed matrix?
     if (itrans .eq. LSYSSC_TR_VIRTUAL) then
-    
+
       ! Duplicate the matrix structure, copy all handles.
       ! Do not allocate any memory.
       call lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    
+
       ! Only change the 'transposed' flag in imatrixSpec
       rtransposedMatrix%imatrixSpec = &
         ieor(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
-      
+
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
       ntemp = rtransposedMatrix%NEQ
       rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
       rtransposedMatrix%NCOLS = ntemp
-      
+
       ! Switch the discretisation structures
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
-   
+
       ! That is it.
       return
     end if
 
     if (itrans .eq. LSYSSC_TR_VIRTUALCOPY) then
-    
+
       ! Duplicate the complete matrix structure in memory
       call lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
                                     LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-    
+
       ! Only change the 'transposed' flag in imatrixSpec
       rtransposedMatrix%imatrixSpec = &
         ieor(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
-      
+
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
       rtransposedMatrix%NEQ = rmatrix%NCOLS
       rtransposedMatrix%NCOLS = rmatrix%NEQ
-   
+
       ! Switch the discretisation structures
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
-   
+
       ! That is it.
       return
     end if
 
     ! Does the destination matrix exist?
     if (rtransposedMatrix%NEQ .ne. 0) then
-    
+
       ! Make sure the destination matrix can accept all data of the source
       ! matrix. Matrix format and size must match.
       if (rMatrix%cmatrixFormat .ne. rtransposedMatrix%cmatrixFormat) then
@@ -14637,23 +14637,23 @@ contains
         call sys_halt()
       end if
     end if
-    
+
     ! Now what should we do...
     select case (itrans)
-    
+
     case (LSYSSC_TR_STRUCTURE)
-    
+
       ! Only the structure is to be transposed. Which structure do we have?
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9)
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
-        
+
           call lsyssc_auxcopy_Kcol (rmatrix,rtransposedMatrix)
           call lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           call lsyssc_auxcopy_Kdiagonal (rmatrix,rtransposedMatrix)
-          
+
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
 
@@ -14662,7 +14662,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
             call sys_halt()
           end if
-          
+
         else
           ! We really have to do some work now :)
           ! Allocate a new KCol and a new Kld.
@@ -14672,12 +14672,12 @@ contains
             call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                 ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
@@ -14685,17 +14685,17 @@ contains
 
           call storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
           call storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
-          
+
           ! We need a temporary array
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
                      p_KcolSource, p_KldSource, &
                      p_Itemp, p_KcolDest, p_KldDest,Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
 
@@ -14718,13 +14718,13 @@ contains
           call lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
-          
+
           if (present(Ipermutation)) then
             call output_line('Calculation of the permutation not possible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
             call sys_halt()
           end if
-          
+
         else
           ! We really have to do some work now :)
           ! Allocate a new KCol and a new Kld.
@@ -14734,7 +14734,7 @@ contains
             call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                 ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
@@ -14747,24 +14747,24 @@ contains
 
           call storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
           call storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
-          
+
           ! We need a temporary array
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
                      p_KcolSource, p_KldSource, &
                      p_Itemp, p_KcolDest, p_KldDest, Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
 
           ! Pivotise the matrix to move the diagonal element to the front.
           call lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest)
         end if
-        
+
       case (LSYSSC_MATRIXD)
         ! Nothing to do
 
@@ -14779,15 +14779,15 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end select
-      
+
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
       rtransposedMatrix%NEQ = rmatrix%NCOLS
       rtransposedMatrix%NCOLS = rmatrix%NEQ
-      
+
       ! Switch the discretisation structures
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
-   
+
     case (LSYSSC_TR_CONTENT)
       ! Transpose the full matrix - structure+content
       select case (rmatrix%cmatrixFormat)
@@ -14795,11 +14795,11 @@ contains
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
-        
+
           call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
-          
+
           if (present(Ipermutation)) then
             call output_line('Calculation of the permutation not possible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
@@ -14813,7 +14813,7 @@ contains
           ! matrix!
           call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
               ST_INT, h_Kld,ST_NEWBLOCK_NOINIT)
-          
+
           if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                 rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -14826,25 +14826,25 @@ contains
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
 
           call storage_getbase_int(h_Kld,p_KldDest)
-          
+
           ! Get the data array(s)
           call lsyssc_getbase_double(rMatrix,p_DaSource)
           call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
-          
+
           ! We need a temporary array
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMatEntries79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
                 p_Itemp, p_DaDest, p_KldDest, Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
           call storage_free (h_Kld)
-          
+
         end if
 
       case (LSYSSC_MATRIX7)
@@ -14854,18 +14854,18 @@ contains
         ! Thus, we have (with that routine) no other chance than to
         ! produce the full transposed matrix (including structure), figure
         ! our where the diagonal is and move it to the front.
-      
+
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
-        
+
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           end if
 
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
-          
+
           if (present(Ipermutation)) then
             call output_line('Calculation of the permutation not possible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
@@ -14881,7 +14881,7 @@ contains
                             ST_INT, h_Kcol,ST_NEWBLOCK_NOINIT)
           call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                             ST_INT, h_Kld,ST_NEWBLOCK_NOINIT)
-                            
+
           if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                 rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -14895,7 +14895,7 @@ contains
 
           call storage_getbase_int(h_Kcol,p_KcolDest)
           call storage_getbase_int(h_Kld,p_KldDest)
-          
+
           ! Get the data array(s)
           call lsyssc_getbase_double(rMatrix,p_DaSource)
           call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
@@ -14904,29 +14904,29 @@ contains
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
                 p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
-          
+
           ! Pivotise the matrix to move the diagonal element to the front.
           call lsyssc_pivotiseMatrix7double (rmatrix%NEQ, &
               p_KcolDest, p_KldDest, p_DaDest)
-              
+
           ! Release the rest.
           call storage_free (h_Kcol)
           call storage_free (h_Kld)
         end if
-      
+
       case (LSYSSC_MATRIXD)
         call output_line('Not implemented!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
-        
+
       end select
 
     case (LSYSSC_TR_ALL)
@@ -14936,7 +14936,7 @@ contains
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
-        
+
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           end if
@@ -14945,7 +14945,7 @@ contains
           call lsyssc_auxcopy_Kdiagonal (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
-          
+
           if (present(Ipermutation)) then
             call output_line('Calculation of the permutation not possible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
@@ -14961,12 +14961,12 @@ contains
             call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                 ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                 rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -14980,38 +14980,38 @@ contains
 
           call storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
           call storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
-          
+
           ! Get the data array(s)
           call lsyssc_getbase_double(rMatrix,p_DaSource)
           call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
-          
+
           ! We need a temporary array
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
                 p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
-          
+
           ! (Re-)calculate Kdiagonal
           call storage_new ('lsyssc_transposeMatrix', 'Kdiagonal', rmatrix%NCOLS, &
                             ST_INT, rtransposedMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
           call lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, &
                                         rmatrix%NCOLS)
-          
+
         end if
 
       case (LSYSSC_MATRIX7)
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
-        
+
           if (rmatrix%h_Da .ne. ST_NOHANDLE) then
             call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           end if
@@ -15020,7 +15020,7 @@ contains
           call lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
-          
+
           if (present(Ipermutation)) then
             call output_line('Calculation of the permutation not possible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
@@ -15036,12 +15036,12 @@ contains
             call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                 ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           end if
-          
+
           if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
             call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                 rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -15055,7 +15055,7 @@ contains
 
           call storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
           call storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
-          
+
           ! Get the data array(s)
           call lsyssc_getbase_double(rMatrix,p_DaSource)
           call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
@@ -15064,20 +15064,20 @@ contains
           call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Itemp,p_Itemp)
-          
+
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
                 p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
-                     
+
           ! Release the temp array
           call storage_free (h_Itemp)
-          
+
           ! Pivotise the matrix to move the diagonal element to the front.
           call lsyssc_pivotiseMatrix7double (rmatrix%NEQ, &
               p_KcolDest, p_KldDest, p_DaDest)
         end if
-      
+
       case (LSYSSC_MATRIXD)
         call output_line('Not implemented!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
@@ -15088,29 +15088,29 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end select
-      
+
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
       rtransposedMatrix%NEQ = rmatrix%NCOLS
       rtransposedMatrix%NCOLS = rmatrix%NEQ
-      
+
       ! Switch the discretisation structures
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
-      
+
     case default ! = LSYSSC_TR_ALL
-    
+
     end select
-  
+
     ! That is it.
-  
+
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-      
+
   subroutine lsyssc_auxcopy_Da (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Auxiliary routine:
   ! Copies the content of rsourceMatrix%Da to rdestMatrix%Da
@@ -15122,23 +15122,23 @@ contains
   ! Source matrix
   type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
- 
+
 !<inputoutput>
   ! Destination matrix
   type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
 
 !</subroutine>
-  
+
     ! local variables
     real(DP), dimension(:), pointer :: p_Da1,p_Da2
     real(SP), dimension(:), pointer :: p_Fa1,p_Fa2
-  
+
     if (rsourceMatrix%h_Da .eq. rdestMatrix%h_Da) then
       ! Eehm... forget it.
       return
     end if
-  
+
     if (rsourceMatrix%h_Da .eq. ST_NOHANDLE) then
       call output_line('Source matrix undefined!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_auxcopy_Da')
@@ -15155,7 +15155,7 @@ contains
       call lsyssc_getbase_double(rsourceMatrix,p_Da1)
       call lsyssc_getbase_double(rdestMatrix,p_Da2)
       call lalg_copyVectorDble (p_Da1,p_Da2)
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single(rsourceMatrix,p_Fa1)
       call lsyssc_getbase_single(rdestMatrix,p_Fa2)
@@ -15165,39 +15165,39 @@ contains
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_auxcopy_Da')
       call sys_halt()
-      
+
     end select
 
   end subroutine
-  
+
   !****************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_auxcopy_Kcol (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Auxiliary routine:
   ! Copies the content of rsourceMatrix%Kcol to rdestMatrix%Kcol
   ! without additional checks.
   ! If the destination array does not exist, it is created.
 !</description>
-  
+
 !<input>
   ! Source matrix
   type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
- 
+
 !<inputoutput>
   ! Destination matrix
   type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
     integer, dimension(:), pointer :: p_Kcol1,p_Kcol2
-  
+
     if (rsourceMatrix%h_Kcol .eq. rdestMatrix%h_Kcol) then
       ! Eehm... forget it.
       return
@@ -15209,29 +15209,29 @@ contains
           ST_INT, rdestMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kcol (rdestMatrix,p_Kcol2)
-    
+
     call lalg_copyVectorInt (p_Kcol1,p_Kcol2)
-    
+
   end subroutine
-    
+
   !****************************************************************************
-    
+
 !<subroutine>
 
   subroutine lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Auxiliary routine:
   ! Copies the content of rsourceMatrix%Kld to rdestMatrix%Kld
   ! without additional checks.
   ! If the destination array does not exist, it is created.
 !</description>
-  
+
 !<input>
   ! Source matrix
   type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
- 
+
 !<inputoutput>
   ! Destination matrix
   type(t_matrixScalar), intent(inout) :: rdestMatrix
@@ -15242,7 +15242,7 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Kld1,p_Kld2
     integer :: NEQ
-  
+
     if (rsourceMatrix%h_Kld .eq. rdestMatrix%h_Kld) then
       ! Eehm... forget it.
       return
@@ -15250,7 +15250,7 @@ contains
 
     call lsyssc_getbase_Kld (rsourceMatrix,p_Kld1)
     if (rdestMatrix%h_Kld .eq. ST_NOHANDLE) then
-    
+
       ! Get the correct array length
       if (iand(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
         NEQ = rsourceMatrix%NCOLS
@@ -15263,29 +15263,29 @@ contains
           ST_INT, rdestMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kld (rdestMatrix,p_Kld2)
-    
+
     call lalg_copyVectorInt (p_Kld1,p_Kld2)
-    
+
   end subroutine
-    
+
   !****************************************************************************
-    
+
 !<subroutine>
 
   subroutine lsyssc_auxcopy_KrowIdx (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Auxiliary routine:
   ! Copies the content of rsourceMatrix%KnzRows to rdestMatrix%KnzRows
   ! without additional checks.
   ! If the destination array does not exist, it is created.
 !</description>
-  
+
 !<input>
   ! Source matrix
   type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
- 
+
 !<inputoutput>
   ! Destination matrix
   type(t_matrixScalar), intent(inout) :: rdestMatrix
@@ -15296,7 +15296,7 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Knz1,p_Knz2
     integer :: NEQ
-  
+
     if (rsourceMatrix%h_KrowIdx .eq. rdestMatrix%h_KrowIdx) then
       ! Eehm... forget it.
       return
@@ -15304,7 +15304,7 @@ contains
 
     call lsyssc_getbase_KrowIdx (rsourceMatrix,p_Knz1)
     if (rdestMatrix%h_Kld .eq. ST_NOHANDLE) then
-    
+
       NEQ = rsourceMatrix%NNZROWS + rsourceMatrix%NEQ
 
       call storage_new ('lsyssc_auxcopy_KrowIdx', 'KrowIdx', &
@@ -15312,40 +15312,40 @@ contains
           ST_INT, rdestMatrix%h_KrowIdx,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_KrowIdx (rdestMatrix,p_Knz2)
-    
+
     call lalg_copyVectorInt (p_Knz1,p_Knz2)
-    
+
   end subroutine
-    
+
   !****************************************************************************
-    
+
 !<subroutine>
 
   subroutine lsyssc_auxcopy_Kdiagonal (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Auxiliary routine:
   ! Copies the content of rsourceMatrix%Kdiagonal to rdestMatrix%Kdiagonal
   ! without additional checks.
   ! If the destination array does not exist, it is created.
 !</description>
-  
+
 !<input>
   ! Source matrix
   type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
- 
+
 !<inputoutput>
   ! Destination matrix
   type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
     integer, dimension(:), pointer :: p_Kdiag1,p_Kdiag2
     integer :: NEQ
-  
+
     if (rsourceMatrix%h_Kdiagonal .eq. rdestMatrix%h_Kdiagonal) then
       ! Eehm... forget it.
       return
@@ -15364,17 +15364,17 @@ contains
           NEQ, ST_INT, rdestMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
     end if
     call lsyssc_getbase_Kdiagonal (rdestMatrix,p_Kdiag2)
-    
+
     call lalg_copyVectorInt (p_Kdiag1,p_Kdiag2)
-    
+
   end subroutine
-      
+
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lsyssc_allocEmptyMatrix (rmatrixScalar,iclear,bignoreExisting,cdataType)
-  
+
 !<description>
   ! This routine allocates memory for the matrix entries without computing
   ! the entries. This can be used to attach an 'empty' matrix to a matrix
@@ -15396,11 +15396,11 @@ contains
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
   integer, intent(in) :: iclear
-  
+
   ! OPTIONAL: If set to TRUE, existing matrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
   logical, intent(in), optional :: bignoreExisting
-  
+
   ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
   ! If not present, the standard data type cdataType-variable in the matrix
   ! is used (usually ST_DOUBLE).
@@ -15419,7 +15419,7 @@ contains
   integer :: cdType,NVAR
   real(SP), dimension(:), pointer :: p_Fa
   real(DP), dimension(:), pointer :: p_Da
-  
+
   if ((rmatrixScalar%h_Da .ne. ST_NOHANDLE) .and. &
       (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
     if (present(bignoreExisting)) then
@@ -15429,7 +15429,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
     call sys_halt()
   end if
-  
+
   NA = rmatrixScalar%NA
   NVAR = rmatrixScalar%NVAR
 
@@ -15444,12 +15444,12 @@ contains
   ! Which matrix structure do we have?
   select case (rmatrixScalar%cmatrixFormat)
   case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1,LSYSSC_MATRIX9ROWC)
-    
+
     ! Check if the matrix entries exist and belongs to us.
     ! If not, allocate the matrix.
     if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
         (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
-    
+
       if (iclear .ge. LSYSSC_SETM_ZERO) then
         call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
                             NA, cdType, rmatrixScalar%h_Da, &
@@ -15459,7 +15459,7 @@ contains
                             NA, cdType, rmatrixScalar%h_Da, &
                             ST_NEWBLOCK_NOINIT)
       end if
-      
+
       if (iclear .ge. LSYSSC_SETM_ONE) then
         select case (cdType)
         case (ST_DOUBLE)
@@ -15474,15 +15474,15 @@ contains
           call sys_halt()
         end select
       end if
-      
+
     end if
-    
+
   case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
-    
+
     ! Check if the matrix entries exist. If not, allocate the matrix.
     if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
         (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
-    
+
       if (iclear .ge. LSYSSC_SETM_ZERO) then
         select case (rmatrixScalar%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
@@ -15510,9 +15510,9 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
           call sys_halt()
         end select
-          
+
       end if
-      
+
       if (iclear .ge. LSYSSC_SETM_ONE) then
         select case (cdType)
         case (ST_DOUBLE)
@@ -15527,19 +15527,19 @@ contains
           call sys_halt()
         end select
       end if
-      
+
     end if
-    
+
   case default
     call output_line('Not supported matrix structure!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
     call sys_halt()
   end select
-  
+
   ! The matrix is now the owner of the memory.
   rmatrixScalar%imatrixSpec = &
       iand(rmatrixScalar%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
-    
+
   end subroutine
 
   !****************************************************************************
@@ -15547,7 +15547,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_createDiagMatrixStruc (rmatrix,NEQ,cmatrixFormat)
-  
+
 !<description>
   ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
   ! the structure but does not allocate any memory for the entries (if the
@@ -15560,7 +15560,7 @@ contains
 !<input>
   ! Matrix type, e.g. LSYSSC_MATRIXD or LSYSSC_MATRIX9,...
   integer, intent(in) :: cmatrixFormat
-  
+
   ! Number of equations, the matrix should hold.
   integer, intent(in) :: NEQ
 !</input>
@@ -15576,12 +15576,12 @@ contains
     rmatrix%NCOLS = NEQ
     rmatrix%NA = NEQ
     rmatrix%cmatrixFormat = cmatrixFormat
-    
+
     ! Depending on the format, choose the initialisation routine.
     select case (cmatrixFormat)
     case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
       ! Nothing to do, there is no structure.
-      
+
     case (LSYSSC_MATRIX9)
       ! Create KCOL, KLD, KDiagonal
       call storage_new ('lsyssc_createDiagMatrixStuc', 'KCOL', NEQ, &
@@ -15590,22 +15590,22 @@ contains
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
       call storage_new ('lsyssc_createDiagMatrixStruc', 'KDiagonal', NEQ, &
           ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
-          
+
     case (LSYSSC_MATRIX7)
       ! Create KCOL, KLD.
       call storage_new ('lsyssc_createDiagMatrixStruc', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
       call storage_new ('lsyssc_createDiagMatrixStruc', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
-          
+
     case default
-    
+
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createDiagMatrixStruc')
       call sys_halt()
-      
+
     end select
-  
+
   end subroutine
 
   !****************************************************************************
@@ -15613,7 +15613,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_createFullMatrix (rmatrix,bclear,NEQ,ncols,cdataType)
-  
+
 !<description>
   ! Creates a simple NEQ*ncols matrix in matrix structure 1.
   ! No discretisation structure or similar will be attached to that matrix.
@@ -15622,14 +15622,14 @@ contains
 !<input>
   ! Number of rows in the matrix
   integer, intent(in) :: NEQ
-  
+
   ! Whether to initialise the matrix with zero or not.
   logical, intent(in) :: bclear
-  
+
   ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
   ! is assumed.
   integer, intent(in), optional :: ncols
-  
+
   ! OPTIONAL: Data type of the entries. A ST_xxxx constant.
   ! Default is ST_DOUBLE.
   integer, intent(in), optional :: cdataType
@@ -15648,7 +15648,7 @@ contains
     rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
     rmatrix%cmatrixFormat = LSYSSC_MATRIX1
     if (present(cdataType)) rmatrix%cdataType = cdataType
-    
+
     if (bclear) then
       call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
           rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_ZERO)
@@ -15656,7 +15656,7 @@ contains
       call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
           rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -15664,7 +15664,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType,bconvertToDiag)
-  
+
 !<description>
   ! This routine performs (mass) lumping with a scalar matrix. Lumping
   ! is in this sense a (more or less) algebraic operation to convert a given
@@ -15686,7 +15686,7 @@ contains
   ! LSYSSC_LUMP_STD:  Perform standard lumping.
   ! LSYSSC_LUMP_DIAG: Perform diagonal lumping.
   integer, intent(in) :: clumpType
-  
+
   ! OPTIONAL: Whether to convert the matrix structure to a diagonal matrix.
   ! TRUE:  Convert the matrix to a diagonal matrix. This is the default case
   !        if the parameter is not present.
@@ -15700,7 +15700,7 @@ contains
 !</inputoutput>
 
 !</subroutine>
- 
+
   ! local variables
   integer :: irow,icol,j
   integer, dimension(:), pointer :: p_Kcol
@@ -15710,34 +15710,34 @@ contains
   logical :: bconvert
 
   if (rmatrixScalar%NEQ .eq. 0) return
-  
+
   bconvert = .true.
   if (present(bconvertToDiag)) bconvert = bconvertToDiag
 
   ! Which type of lumping do we have to do?
-  
+
   select case (clumpType)
   case (LSYSSC_LUMP_STD)
     ! Standard lumping. Nothing to do here.
-  
+
   case (LSYSSC_LUMP_DIAG)
     ! Diagonal lumping. We have to add all off-diagonal entries to the main
     ! diagonal.
     !
     ! What is the matrix format?
     select case (rmatrixScalar%cmatrixFormat)
-    
+
     case (LSYSSC_MATRIX7)
       ! Get the structure
       call lsyssc_getbase_Kld (rmatrixScalar,p_Kld)
       call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
-      
+
       ! Get the data and perform the lumping
       select case (rmatrixScalar%cdataType)
-      
+
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrixScalar,p_Da)
-        
+
         ! Add all off-diagonals to the diagonal
         do irow = 1,rmatrixScalar%NEQ
           j = p_Kld(irow)
@@ -15745,7 +15745,7 @@ contains
             p_Da(j) = p_Da(j) + p_Da(icol)
           end do
         end do
-      
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixScalar,p_Fa)
 
@@ -15756,25 +15756,25 @@ contains
             p_Fa(j) = p_Fa(j) + p_Fa(icol)
           end do
         end do
-      
+
       case default
         call output_line('Unsupported matrix precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
         call sys_halt()
       end select
-      
+
     case (LSYSSC_MATRIX9)
       ! Get the structure
       call lsyssc_getbase_Kld (rmatrixScalar,p_Kld)
       call lsyssc_getbase_Kdiagonal (rmatrixScalar,p_Kdiagonal)
       call lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
-      
+
       ! Get the data and perform the lumping
       select case (rmatrixScalar%cdataType)
-      
+
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrixScalar,p_Da)
-        
+
         ! Add all off-diagonals to the diagonal
         do irow = 1,rmatrixScalar%NEQ
           j = p_Kdiagonal(irow)
@@ -15785,7 +15785,7 @@ contains
             p_Da(j) = p_Da(j) + p_Da(icol)
           end do
         end do
-      
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixScalar,p_Fa)
 
@@ -15799,19 +15799,19 @@ contains
             p_Fa(j) = p_Fa(j) + p_Fa(icol)
           end do
         end do
-      
+
       case default
         call output_line('Unsupported matrix precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
       call sys_halt()
     end select
-  
+
   end select
 
   if (bconvert) then
@@ -15827,11 +15827,11 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_clearOffdiags (rmatrix)
-  
+
 !<description>
   ! Sets all off-diagonal entries in the matrix rmatrix to zero.
 !</description>
@@ -15858,81 +15858,81 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearOffdiags')
     call sys_halt()
   end select
-  
+
   contains
-   
+
     ! ****************************************
     ! The replacement routine for format 9
-    
+
     subroutine removeOffdiags_format9 (rmatrix)
-    
+
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! local variables
     integer :: irow
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_FA
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP) :: ddiag,fdiag
-    
+
     ! Get Kld and Kdiagonal
     call lsyssc_getbase_Kld(rmatrix,p_Kld)
     call lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
-    
+
     ! Take care of the format of the entries
     select case (rmatrix%cdataType)
     case (ST_DOUBLE)
       ! Get the data array
       call lsyssc_getbase_double(rmatrix,p_Da)
-      
+
       ! loop through the rows
       do irow = 1,rmatrix%NEQ
-      
+
         ! Get the diagonal
         ddiag = p_Da(p_Kdiagonal(irow))
-      
+
         ! Clear the row
         p_Da(p_Kld(irow):p_Kld(irow+1)-1) = 0.0_DP
-        
+
         ! restore the diagonal
         p_Da(p_Kdiagonal(irow)) = ddiag
-      
+
       end do
-      
+
     case (ST_SINGLE)
       ! Get the data array
       call lsyssc_getbase_single(rmatrix,p_FA)
-      
+
       ! loop through the rows
       do irow = 1,rmatrix%NEQ
-      
+
         ! Get the diagonal
         fdiag = p_FA(p_Kdiagonal(irow))
-      
+
         ! Clear the row
         p_FA(p_Kld(irow):p_Kld(irow+1)-1) = 0.0_SP
-        
+
         ! restore the diagonal
         p_FA(p_Kdiagonal(irow)) = Fdiag
-      
+
       end do
-      
+
     case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearOffdiags')
       call sys_halt()
-      
+
     end select
-    
+
     end subroutine
 
     ! ****************************************
     ! The replacement routine for format 7
-    
+
     subroutine removeOffdiags_format7 (rmatrix)
-    
+
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! local variables
     integer :: irow
     integer, dimension(:), pointer :: p_Kld
@@ -15947,27 +15947,27 @@ contains
     case (ST_DOUBLE)
       ! Get the data array
       call lsyssc_getbase_double(rmatrix,p_Da)
-      
+
       ! loop through the rows
       do irow = 1,rmatrix%NEQ
-      
+
         ! Clear the row except for the diagonal
         p_Da(p_Kld(irow)+1:p_Kld(irow+1)-1) = 0.0_DP
-      
+
       end do
-      
+
     case (ST_SINGLE)
       ! Get the data array
       call lsyssc_getbase_single(rmatrix,p_FA)
-      
+
       ! loop through the rows
       do irow = 1,rmatrix%NEQ
-      
+
         ! Clear the row except for the diagonal
         p_FA(p_Kld(irow)+1:p_Kld(irow+1)-1) = 0.0_SP
-      
+
       end do
-      
+
     case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearOffdiags')
@@ -15975,14 +15975,14 @@ contains
     end select
 
     end subroutine
-  
+
     ! ****************************************
     ! The replacement routine for format 1
-    
+
     subroutine removeOffdiags_format1 (rmatrix)
-    
+
     type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
     ! local variables
     integer :: icol
     real(DP), dimension(:), pointer :: p_Da
@@ -15995,16 +15995,16 @@ contains
     case (ST_DOUBLE)
       ! Get the data array
       call lsyssc_getbase_double(rmatrix,p_Da)
-      
+
       ! loop through the rows ald colums, set off-diagonal entries to zero.
       do icol = 1,rmatrix%NCOLS
         if (icol .le. rmatrix%NEQ) then
           ! Remember the diagonal
           ddata = p_Da((icol-1)*rmatrix%NEQ+icol)
-          
+
           ! Fill the column with zero
           p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
-          
+
           ! Restore the diagonal
           p_Da((icol-1)*rmatrix%NEQ+icol) = ddata
         else
@@ -16012,20 +16012,20 @@ contains
           p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
         end if
       end do
-      
+
     case (ST_SINGLE)
       ! Get the data array
       call lsyssc_getbase_single(rmatrix,p_FA)
-      
+
       ! loop through the rows ald colums, set off-diagonal entries to zero.
       do icol = 1,rmatrix%NCOLS
         if (icol .le. rmatrix%NEQ) then
           ! Remember the diagonal
           fdata = p_Fa((icol-1)*rmatrix%NEQ+icol)
-          
+
           ! Fill the column with zero
           p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
-          
+
           ! Restore the diagonal
           p_Fa((icol-1)*rmatrix%NEQ+icol) = fdata
         else
@@ -16033,13 +16033,13 @@ contains
           p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
         end if
       end do
-      
+
     case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_clearOffdiags')
       call sys_halt()
     end select
-    
+
     end subroutine
 
   end subroutine
@@ -16049,11 +16049,11 @@ contains
 !<subroutine>
 
   subroutine lsyssc_scaleMatrix (rmatrix,c)
-  
+
 !<description>
   ! Scales a matrix rmatrix: rmatrix = c * rmatrix
 !</description>
-  
+
 !<inputoutput>
   ! Source and destination matrix
   type(t_matrixScalar), intent(inout) :: rmatrix
@@ -16063,13 +16063,13 @@ contains
   ! Multiplication factor
   real(DP), intent(in) :: c
 !</input>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
-  
+
   ! Take care of the data type!
   select case (rmatrix%cdataType)
   case (ST_DOUBLE)
@@ -16087,7 +16087,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scaleMatrix')
     call sys_halt()
   end select
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -16193,18 +16193,18 @@ contains
         rmatrixC%cdataType = ST_SINGLE
       end if
     end if
-    
+
     ! Set sorting strategy for matrix C
     rmatrixC%isortStrategy = rmatrixA%isortStrategy
     rmatrixC%h_IsortPermutation = rmatrixA%h_IsortPermutation
-    
+
     ! Perform matrix-matrix multiplication
     select case (rmatrixA%cmatrixFormat)
 
     case (LSYSSC_MATRIX1)   ! A is full matrix ----------------------
-      
+
       select case (rmatrixB%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - -
 
         ! memory allocation?
@@ -16214,7 +16214,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16227,10 +16227,10 @@ contains
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixB%NCOLS
         end if
-        
+
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16240,7 +16240,7 @@ contains
           case (ST_DOUBLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16254,7 +16254,7 @@ contains
               call lsyssc_getbase_double(rmatrixC,DaC)
               call do_mat1mat1mulDbleSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,FaB,DaC)
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16271,14 +16271,14 @@ contains
               call lsyssc_getbase_double(rmatrixC,DaC)
               call do_mat1mat1mulSnglDble(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,DaB,DaC)
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
               call do_mat1mat1mulSnglSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,FaB,FaC)
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16301,7 +16301,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16317,7 +16317,7 @@ contains
 
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16327,7 +16327,7 @@ contains
           case (ST_DOUBLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16351,7 +16351,7 @@ contains
           case (ST_SINGLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16365,13 +16365,13 @@ contains
               call lsyssc_getbase_single(rmatrixC,FaC)
               call do_mat1matDmulSnglSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,FaB,FaC)
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-        
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16386,13 +16386,13 @@ contains
       end select
 
       !--------------------------------------------------------------
-    
+
     case (LSYSSC_MATRIXD)   ! A is diagonal matrix ------------------
-      
+
       select case (rmatrixB%cmatrixFormat)
 
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - -
-       
+
         ! memory allocation?
         if (bmemory) then
           rmatrixC%cmatrixFormat = LSYSSC_MATRIXD
@@ -16400,7 +16400,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIXD) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16413,10 +16413,10 @@ contains
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixA%NCOLS
         end if
-        
+
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16426,7 +16426,7 @@ contains
           case (ST_DOUBLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16444,11 +16444,11 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE)
 
             select case (rmatrixC%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16466,7 +16466,7 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16483,7 +16483,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16499,7 +16499,7 @@ contains
 
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16509,7 +16509,7 @@ contains
           case (ST_DOUBLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16533,7 +16533,7 @@ contains
           case (ST_SINGLE)
 
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
@@ -16547,13 +16547,13 @@ contains
               call lsyssc_getbase_single(rmatrixC,FaC)
               call do_matDmat1mulSnglSngl(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,FaB,FaC)
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-        
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16570,7 +16570,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16591,7 +16591,7 @@ contains
 
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16633,7 +16633,7 @@ contains
                 call do_matDmat79mulDbleSngl(DaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               end if
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16641,7 +16641,7 @@ contains
             end select
 
           case (ST_SINGLE)
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -16675,13 +16675,13 @@ contains
                 call do_matDmat79mulSnglSngl(FaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,FaC,KldC,KcolC)
               end if
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16694,15 +16694,15 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
         call sys_halt()
       end select
-      
+
       !--------------------------------------------------------------
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ----------
-      
+
       select case (rmatrixB%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmemory) then
           rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
@@ -16710,7 +16710,7 @@ contains
           call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
@@ -16731,7 +16731,7 @@ contains
 
         ! numerical multiplication?
         if (bnumb) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -16773,7 +16773,7 @@ contains
                 call do_mat79matDmulDbleSngl(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,DaC,KldC,KcolC)
               end if
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16781,7 +16781,7 @@ contains
             end select
 
           case (ST_SINGLE)
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -16815,7 +16815,7 @@ contains
                 call do_mat79matDmulSnglSngl(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,FaC,KldC,KcolC)
               end if
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16830,7 +16830,7 @@ contains
         end if
 
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - -
-        
+
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrixA,KldA)
         call lsyssc_getbase_Kcol(rmatrixA,KcolA)
@@ -16848,12 +16848,12 @@ contains
             call lsyssc_duplicateMatrix(rmatrixB,rmatrixC&
                 &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           end if
-          
+
           ! Set auxiliary pointers
           call storage_new('lsyssc_multMatMat','Kaux',rmatrixB%NCOLS,&
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,Kaux)
-          
+
           ! Compute number of nonzero matrix entries: NA
           rmatrixC%NA = do_mat79mat79mul_computeNA(KldA,KcolA&
               &,rmatrixA%NEQ,KldB,KcolB,Kaux)
@@ -16862,7 +16862,7 @@ contains
           call storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
               &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,&
             &rmatrixB%cmatrixFormat)) then
@@ -16922,7 +16922,7 @@ contains
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE)
 
             select case (rmatrixB%cdataType)
@@ -16942,7 +16942,7 @@ contains
               call do_mat79mat79mul_numb_dblesngl(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
-              
+
             case default
               call output_line('Unsupported data type!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -16950,7 +16950,7 @@ contains
             end select
 
           case (ST_SINGLE)
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -16967,7 +16967,7 @@ contains
                   &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_SINGLE&
                   &,h_Faux,ST_NEWBLOCK_NOINIT)
               call storage_getbase_single(h_Faux,Faux)
-              
+
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
@@ -16980,22 +16980,22 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
             call sys_halt()
           end select
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
         call sys_halt()
       end select
-            
+
       !--------------------------------------------------------------
-      
+
     case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
@@ -17018,11 +17018,11 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1mat1mulDbleDble(n,m,k,Da1,Da2,Da3)
-      
+
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'          (cpp fix: .')
-      
+
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in) :: Da1
       real(DP), dimension(k,m), intent(in) :: Da2
@@ -17042,11 +17042,11 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1mat1mulDbleSngl(n,m,k,Da1,Fa2,Da3)
-      
+
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
-      
+
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in) :: Da1
       real(SP), dimension(k,m), intent(in) :: Fa2
@@ -17063,16 +17063,16 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1mat1mulSnglDble(n,m,k,Fa1,Da2,Da3)
-      
+
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
-      
+
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in) :: Fa1
       real(DP), dimension(k,m), intent(in) :: Da2
       real(DP), dimension(k,n), intent(inout) :: Da3
- 
+
       call DGEMM('N','N',k,n,m,1.0_DP,Da2,k,real(Fa1,DP),m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Da2,Fa1)
     end subroutine
@@ -17084,16 +17084,16 @@ contains
     ! single precision matrix C (format 1)
 
     subroutine do_mat1mat1mulSnglSngl(n,m,k,Fa1,Fa2,Fa3)
-      
+
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
-      
+
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in) :: Fa1
       real(SP), dimension(k,m), intent(in) :: Fa2
       real(SP), dimension(k,n), intent(inout) :: Fa3
-      
+
       ! Remark: The tuned BLAS3 routine performs much better than the
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
       ! is used whenever possible, that is, when all matrices have
@@ -17108,14 +17108,14 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_matDmat1mulDbleDble(n,m,Da1,Da2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(DP), dimension(n), intent(in) :: Da1
       real(DP), dimension(m,n), intent(in) :: Da2
       real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
-      
+
       do i=1,n
         Da3(:,i)=Da1(i)*Da2(:,i)
       end do
@@ -17128,14 +17128,14 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_matDmat1mulSnglDble(n,m,Fa1,Da2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(SP), dimension(n), intent(in) :: Fa1
       real(DP), dimension(m,n), intent(in) :: Da2
       real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
-      
+
       do i=1,n
         Da3(:,i)=Fa1(i)*Da2(:,i)
       end do
@@ -17148,7 +17148,7 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_matDmat1mulDbleSngl(n,m,Da1,Fa2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(DP), dimension(n), intent(in) :: Da1
       real(SP), dimension(m,n), intent(in) :: Fa2
@@ -17168,7 +17168,7 @@ contains
     ! single precision matrix C (format 1)
 
     subroutine do_matDmat1mulSnglSngl(n,m,Fa1,Fa2,Fa3)
-      
+
       integer, intent(in) :: n,m
       real(SP), dimension(n), intent(in) :: Fa1
       real(SP), dimension(m,n), intent(in) :: Fa2
@@ -17188,7 +17188,7 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1matDmulDbleDble(n,m,Da1,Da2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(DP), dimension(m,n), intent(in) :: Da1
       real(DP), dimension(m),   intent(in) :: Da2
@@ -17208,7 +17208,7 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1matDmulSnglDble(n,m,Fa1,Da2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(SP), dimension(m,n), intent(in) :: Fa1
       real(DP), dimension(m),   intent(in) :: Da2
@@ -17228,7 +17228,7 @@ contains
     ! double precision matrix C (format 1)
 
     subroutine do_mat1matDmulDbleSngl(n,m,Da1,Fa2,Da3)
-      
+
       integer, intent(in) :: n,m
       real(DP), dimension(m,n), intent(in) :: Da1
       real(SP), dimension(m),   intent(in) :: Fa2
@@ -17248,7 +17248,7 @@ contains
     ! single precision matrix C (format 1)
 
     subroutine do_mat1matDmulSnglSngl(n,m,Fa1,Fa2,Fa3)
-      
+
       integer, intent(in) :: n,m
       real(SP), dimension(m,n), intent(in) :: Fa1
       real(SP), dimension(m),   intent(in) :: Fa2
@@ -17280,9 +17280,9 @@ contains
       integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
@@ -17325,9 +17325,9 @@ contains
       integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
@@ -17341,13 +17341,13 @@ contains
         end do
 
       else
-        
+
         do ieq=1,neq
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             Da3(ild2)=Fa1(ieq)*Da2(ild2)
           end do
         end do
-        
+
       end if
     end subroutine
 
@@ -17370,9 +17370,9 @@ contains
       integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
@@ -17386,13 +17386,13 @@ contains
         end do
 
       else
-        
+
         do ieq=1,neq
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             Da3(ild2)=Da1(ieq)*Fa2(ild2)
           end do
         end do
-        
+
       end if
     end subroutine
 
@@ -17415,9 +17415,9 @@ contains
       integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
@@ -17431,13 +17431,13 @@ contains
         end do
 
       else
-        
+
         do ieq=1,neq
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             Fa3(ild2)=Fa1(ieq)*Fa2(ild2)
           end do
         end do
-        
+
       end if
     end subroutine
 
@@ -17446,7 +17446,7 @@ contains
     ! double precision matrix A (format 7 or format 9)
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
-    
+
     subroutine do_mat79matDmulDbleDble(Da1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
@@ -17458,11 +17458,11 @@ contains
       integer, dimension(:), intent(in), optional :: Kld3
       integer, dimension(:), intent(in), optional :: Kcol3
       integer, intent(in) :: neq
-      
+
       integer :: ieq,ild1,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
@@ -17474,9 +17474,9 @@ contains
           end do
           Da3(ild3:ildend3)=0
         end do
-        
+
       else
-        
+
         do ieq=1,neq
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             Da3(ild1)=Da1(ild1)*Da2(Kcol1(ild1))
@@ -17485,13 +17485,13 @@ contains
 
       end if
     end subroutine
-      
+
     !**************************************************************
     ! Format 7/9-D multiplication
     ! single precision matrix A (format 7 or format 9)
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
-    
+
     subroutine do_mat79matDmulSnglDble(Fa1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
@@ -17503,11 +17503,11 @@ contains
       integer, dimension(:), intent(in), optional :: Kld3
       integer, dimension(:), intent(in), optional :: Kcol3
       integer, intent(in) :: neq
-      
+
       integer :: ieq,ild1,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
@@ -17521,7 +17521,7 @@ contains
         end do
 
       else
-        
+
         do ieq=1,neq
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             Da3(ild1)=Fa1(ild1)*Da2(Kcol1(ild1))
@@ -17536,7 +17536,7 @@ contains
     ! double precision matrix A (format 7 or format 9)
     ! single precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
-    
+
     subroutine do_mat79matDmulDbleSngl(Da1,Kld1,Kcol1,neq,Fa2&
         &,Da3,Kld3,Kcol3)
 
@@ -17550,9 +17550,9 @@ contains
       integer, intent(in) :: neq
 
       integer :: ieq,ild1,ild3,ildend3
-      
+
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
@@ -17564,9 +17564,9 @@ contains
           end do
           Da3(ild3:ildend3)=0
         end do
-        
+
       else
-        
+
         do ieq=1,neq
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             Da3(ild1)=Da1(ild1)*Fa2(Kcol1(ild1))
@@ -17581,7 +17581,7 @@ contains
     ! single precision matrix A (format 7 or format 9)
     ! single precision matrix B (format D)
     ! single precision matrix C (format 7 or format 9)
-    
+
     subroutine do_mat79matDmulSnglSngl(Fa1,Kld1,Kcol1,neq,Fa2&
         &,Fa3,Kld3,Kcol3)
 
@@ -17597,7 +17597,7 @@ contains
       integer :: ieq,ild1,ild3,ildend3
 
       if (present(Kld3) .and. present(Kcol3)) then
-        
+
         do ieq=1,neq
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
@@ -17611,7 +17611,7 @@ contains
         end do
 
       else
-        
+
         do ieq=1,neq
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             Fa3(ild1)=Fa1(ild1)*Fa2(Kcol1(ild1))
@@ -17647,10 +17647,10 @@ contains
       Kaux=0; NA=0
 
       do ieq=1,neq
-        
+
         ! For each row of matrix A
         ndg=0
-        
+
         ! End-of-linked list
         last=-1
 
@@ -17658,7 +17658,7 @@ contains
 
           ! Row number to be added
           irow=KcolA(ild)
-          
+
           do jeq=KldB(irow),KldB(irow+1)-1
             icol=KcolB(jeq)
 
@@ -17668,20 +17668,20 @@ contains
               Kaux(icol) = last
               last = icol
             end if
-            
+
           end do
         end do
 
         ! We are done with row IEQ
         NA = NA+ndg
-        
+
         ! Reset Kaux to zero
         do idg=1,ndg
           jeq = Kaux(last)
           Kaux(last) = 0
           last = jeq
         end do
-        
+
       end do
     end function do_mat79mat79mul_computeNA
 
@@ -17716,7 +17716,7 @@ contains
       ! long loop that merges row lists, and code to copy the links
       ! into the KCOLC vector.
       do i=1,n
-        
+
         ! Initialization
         istart = -1
         ilength = 0
@@ -17726,7 +17726,7 @@ contains
         ! row lists as follows
         do jj=KldA(i),KldA(i+1)-1
           j=KcolA(jj)
-          
+
           ! Determine the intersection of the current row I in matrix
           ! A with the nonzeros in column J of matrix B
           do k=KldB(j),KldB(j+1)-1
@@ -17743,7 +17743,7 @@ contains
         ! Since the column vectors are given in unordered way, they
         ! must be ordered before inserted inco KCOLC
         KldC(i+1)=KldC(i)+ilength
-        
+
         if (present(KdiagonalC)) then
           ! If KDIAGONALC is present, then the matrix C is stored in
           ! CSR9 format, that is, all entries in KCOLC are numbered
@@ -17753,7 +17753,7 @@ contains
             KcolC(j) = istart
             istart = Kindex(istart)
             Kindex(KcolC(j)) = 0
-            
+
             ! Perform local insertionsort to find the correct
             ! position of the provisional entry KCOLC(J)
             kaux = KcolC(j)
@@ -17772,22 +17772,22 @@ contains
           ! in CSR7 format, that is, all entries in KCOLC are
           ! numbered continuously except for the diagonal entry which
           ! is stored in the first position KLDC(I) of row I.
-          
+
           ! The variable IOFF is used to indicate, whether the
           ! diagonal entry has already been inserted or not.
           ioff=0
-          
+
           do j=KldC(i),KldC(i+1)-1
             KcolC(j) = istart
             istart = Kindex(istart)
             Kindex(KcolC(j)) = 0
-            
+
             if (KcolC(j) .eq. i) then
               ! The current entry is the diagonal entry, hence, shift
               ! all entries to the right by one and move the current
               ! entry to the first position
               KcolC(KldC(i):j)=cshift(KcolC(KldC(i):j),-1)
-              
+
               ! Set IOFF to one so that the first entry of the I-th
               ! row is neglected in subsequent iterations
               ioff=1
@@ -17821,7 +17821,7 @@ contains
     ! Sparse Matrix Multiplication Package (SMMP) written by
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
-    
+
     subroutine do_mat79mat79mul_numb_dbledble(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
@@ -17843,18 +17843,18 @@ contains
       ! The main loop forms the partial sums and then copies the
       ! completed sums into the correct locations in the sparse matrix
       do i=1,n
-        
+
         do jj=KldA(i),KldA(i+1)-1
           j = KcolA(jj)
           daux = DaA(jj)
-          
+
           ! Accumulate the product for row J
           do k=KldB(j),KldB(j+1)-1
             jk=KcolB(k)
             Dtemp(jk)=Dtemp(jk)+daux*DaB(k)
           end do
         end do
-        
+
         ! Store product for row J
         do j=KldC(i),KldC(i+1)-1
           jj=KcolC(j)
@@ -17876,7 +17876,7 @@ contains
     ! Sparse Matrix Multiplication Package (SMMP) written by
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
-    
+
     subroutine do_mat79mat79mul_numb_sngldble(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
@@ -17898,18 +17898,18 @@ contains
       ! The main loop forms the partial sums and then copies the
       ! completed sums into the correct locations in the sparse matrix
       do i=1,n
-        
+
         do jj=KldA(i),KldA(i+1)-1
           j = KcolA(jj)
           daux = FaA(jj)
-          
+
           ! Accumulate the product for row J
           do k=KldB(j),KldB(j+1)-1
             jk=KcolB(k)
             Dtemp(jk)=Dtemp(jk)+daux*DaB(k)
           end do
         end do
-        
+
         ! Store product for row J
         do j=KldC(i),KldC(i+1)-1
           jj=KcolC(j)
@@ -17931,7 +17931,7 @@ contains
     ! Sparse Matrix Multiplication Package (SMMP) written by
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
-    
+
     subroutine do_mat79mat79mul_numb_dblesngl(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
@@ -17953,18 +17953,18 @@ contains
       ! The main loop forms the partial sums and then copies the
       ! completed sums into the correct locations in the sparse matrix
       do i=1,n
-        
+
         do jj=KldA(i),KldA(i+1)-1
           j = KcolA(jj)
           daux = DaA(jj)
-          
+
           ! Accumulate the product for row J
           do k=KldB(j),KldB(j+1)-1
             jk=KcolB(k)
             Dtemp(jk)=Dtemp(jk)+daux*FaB(k)
           end do
         end do
-        
+
         ! Store product for row J
         do j=KldC(i),KldC(i+1)-1
           jj=KcolC(j)
@@ -17986,7 +17986,7 @@ contains
     ! Sparse Matrix Multiplication Package (SMMP) written by
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
-    
+
     subroutine do_mat79mat79mul_numb_snglsngl(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
@@ -18008,18 +18008,18 @@ contains
       ! The main loop forms the partial sums and then copies the
       ! completed sums into the correct locations in the sparse matrix
       do i=1,n
-        
+
         do jj=KldA(i),KldA(i+1)-1
           j = KcolA(jj)
           faux = FaA(jj)
-          
+
           ! Accumulate the product for row J
           do k=KldB(j),KldB(j+1)-1
             jk=KcolB(k)
             Ftemp(jk)=Ftemp(jk)+faux*FaB(k)
           end do
         end do
-        
+
         ! Store product for row J
         do j=KldC(i),KldC(i+1)-1
           jj=KcolC(j)
@@ -18080,7 +18080,7 @@ contains
     ! BNUMB = FALSE: Do not perform the numerical addition
     ! BNUMB = TRUE:  Perform numerical addition
     logical, intent(in) :: bnumb
-    
+
     ! OPTIONAL: Indicates whether the resulting matrix C has the
     ! required symbolic structure or is a superset of the symbolic
     ! matrix-matrix product. In some cases, this may allow for much
@@ -18096,7 +18096,7 @@ contains
 !<inputoutput>
     ! Second source matrix
     type(t_matrixScalar), intent(inout) :: rmatrixB
-    
+
     ! Output matrix. May coincide with rmatrixB.
     type(t_matrixScalar), intent(inout) :: rmatrixC
 !</inputoutput>
@@ -18114,7 +18114,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_matrixLinearComb (rmatrixA,rmatrixB,ca,cb,&
@@ -18163,7 +18163,7 @@ contains
     ! BNUMB = TRUE:  Perform numerical addition
     ! Default: TRUE
     logical, intent(in), optional :: bnumb
-    
+
     ! OPTIONAL: Indicates whether the resulting matrix has the
     ! required symbolic structure or is a superset of the symbolic
     ! matrix-matrix product. In some cases, this may allow for much
@@ -18199,7 +18199,7 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -18218,7 +18218,7 @@ contains
     bmem = .false.; if(present(bmemory)) bmem=bmemory
     bsym = .false.; if(present(bsymb))   bsym=bsymb
     bnum = .false.; if(present(bnumb))   bnum=bnumb
-    
+
     ! Check if fast implementation can be used
     bfast=.false.; if (present(bisExactStructure)) bfast = bisExactStructure
     bfast = bfast .or. (bmem .and. bsym)
@@ -18280,7 +18280,7 @@ contains
       select case (rmatrixB%cmatrixFormat)
 
       case (LSYSSC_MATRIX1) ! B is full matrix  - - - - - - - - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
@@ -18288,23 +18288,23 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixA%NEQ
           rdest%NCOLS = rmatrixA%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -18381,16 +18381,16 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
-        
+
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
@@ -18398,23 +18398,23 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolical addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixA%NEQ
           rdest%NCOLS = rmatrixA%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -18504,7 +18504,7 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -18513,7 +18513,7 @@ contains
         end if
 
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
@@ -18521,20 +18521,20 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',rdest%NA,&
               rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolical addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixA%NEQ
           rdest%NCOLS = rmatrixA%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
 
@@ -18543,9 +18543,9 @@ contains
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -18583,7 +18583,7 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -18648,7 +18648,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-      
+
       !-------------------------------------------------------------------------
 
     case (LSYSSC_MATRIXD)   ! A is diagonal matrix -----------------------------
@@ -18656,7 +18656,7 @@ contains
       select case (rmatrixB%cmatrixFormat)
 
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIXD
@@ -18664,33 +18664,33 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIXD) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolical addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixA%NEQ
           rdest%NCOLS = rmatrixA%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,p_DaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
@@ -18702,7 +18702,7 @@ contains
               else
                 call lalg_vectorLinearComb(p_DaA,p_DaB,ca,cb)
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -18717,7 +18717,7 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -18774,20 +18774,20 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolical addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixB%NEQ
           rdest%NCOLS = rmatrixB%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
 
@@ -18814,7 +18814,7 @@ contains
                 call do_matDmat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_DaA,p_DaB,ca,cb)
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -18874,14 +18874,14 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
 
         ! memory allocation?
@@ -18891,22 +18891,22 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
           call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -18932,14 +18932,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -18967,7 +18967,7 @@ contains
                 call do_matDmat79addDbleDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_DaA,p_DaB,ca,cb)
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -18990,7 +18990,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addSnglDble(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -19014,15 +19014,15 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -19040,14 +19040,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -19061,7 +19061,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 call do_matDmat79addSnglDble(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
@@ -19077,7 +19077,7 @@ contains
                 call do_matDmat79addSnglDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
               end if
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_single(rmatrixB,p_FaB)
@@ -19100,21 +19100,21 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addSnglSngl(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
                 end if
-                
+
                 ! Set diagonal pointer
                 if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 call do_matDmat79addSnglSngl(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
@@ -19125,18 +19125,18 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 call do_matDmat79addSnglSngl(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -19145,11 +19145,11 @@ contains
         end if
 
       case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! B is interleave CSR matrix
-        
+
         ! Set size of interleave block
         isizeIntl=rmatrixB%NVAR
         if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat           = rmatrixB%cmatrixFormat
@@ -19181,18 +19181,18 @@ contains
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_double(rmatrixA,p_DaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
                 call lsyssc_getbase_double(rdest,p_DaC)
-                
+
                 ! Can we make use of fast copy operation?
                 if (bfast) then
                   call lalg_copyVector(p_DaB,p_DaC)
@@ -19201,14 +19201,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -19222,7 +19222,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_matDmat79addDbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
@@ -19238,7 +19238,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_matDmat79addDbleDble(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
@@ -19248,7 +19248,7 @@ contains
                                                 p_KdiagonalB,p_DaA,p_DaB,ca,cb)
                 end if
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -19271,7 +19271,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addSnglDble(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -19308,9 +19308,9 @@ contains
             end select
 
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
@@ -19326,14 +19326,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
@@ -19373,7 +19373,7 @@ contains
                                                 p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
                 end if
               end if
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_single(rmatrixB,p_FaB)
@@ -19396,14 +19396,14 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := B + 0*C
                   call do_mat79mat79addSnglSngl(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
                 end if
-                
+
                 ! Set diagonal pointer
                 if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
@@ -19426,7 +19426,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix A
                 if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_matDmat79addSnglSngl(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
@@ -19455,15 +19455,15 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-        
+
       !-------------------------------------------------------------------------
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ---------------------
-      
+
       select case (rmatrixB%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - - - - - - - -
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
@@ -19471,31 +19471,31 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolical addition?
         if (bsym .and. present(rdest)) then
           rdest%NEQ   = rmatrixB%NEQ
           rdest%NCOLS = rmatrixB%NCOLS
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -19537,11 +19537,11 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
@@ -19557,7 +19557,7 @@ contains
                 call do_mat79mat1addSnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_FaA,p_DaB,real(ca,SP),cb)
               end if
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_single(rmatrixB,p_FaB)
@@ -19579,7 +19579,7 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -19588,7 +19588,7 @@ contains
         end if
 
       case (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
-      
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = rmatrixA%cmatrixFormat
@@ -19596,19 +19596,19 @@ contains
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
           call lsyssc_duplicateMatrix(rmatrixA,rdest,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         end if
-        
+
         ! numerical addition?
         if (bnum) then
 
@@ -19644,7 +19644,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19668,7 +19668,7 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -19691,7 +19691,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19721,11 +19721,11 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -19741,14 +19741,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addSnglDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19772,7 +19772,7 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-             
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -19788,14 +19788,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19819,13 +19819,13 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -19834,13 +19834,13 @@ contains
         end if
 
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
-                
+
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrixA,p_KldA)
         call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
         call lsyssc_getbase_Kld(rmatrixB,p_KldB)
         call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           ! Duplicate structure of matrix A or B depending on which
@@ -19850,13 +19850,13 @@ contains
           else
             call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           end if
-          
+
           ! Set auxiliary pointers
           h_Kaux = ST_NOHANDLE
           call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
               rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,p_Kaux)
-          
+
           ! Compute number of nonzero matrix entries: NA
           rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
           call storage_new('lsyssc_matrixLinearComb','h_Da',&
@@ -19867,7 +19867,7 @@ contains
           ! Free temporal memory
           call storage_free(h_Kaux)
         end if
-        
+
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne.&
             max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
@@ -19875,14 +19875,14 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
-          
+
           ! Set pointers
           call lsyssc_getbase_Kld(rdest,p_KldC)
           call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                    
+
           if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX9) then
             call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
             call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
@@ -19896,16 +19896,16 @@ contains
                                        p_KldC,p_KcolC)
           end if
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case (rmatrixB%cdataType)
@@ -19920,7 +19920,7 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_DaB, p_DaC)
                   call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
                 else
@@ -19939,7 +19939,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19958,7 +19958,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                 end if
-                
+
                   ! Compute B:= ca*A + cb*B
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -19966,7 +19966,7 @@ contains
                                                  p_DaA,p_DaB,ca,cb)
                 end if
               end if
-              
+
             case (ST_SINGLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -19977,7 +19977,7 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_FaB, p_DaC)
                   call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
                 else
@@ -19996,7 +19996,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20009,17 +20009,17 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
@@ -20030,7 +20030,7 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_DaB, p_DaC)
                   call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
                 else
@@ -20049,7 +20049,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addSnglDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20059,7 +20059,7 @@ contains
               else
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
                 else
                   ! Set diagonal pointer
@@ -20076,7 +20076,7 @@ contains
                                                  p_FaA,p_DaB,real(ca,SP),cb)
                 end if
               end if
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_single(rmatrixB,p_FaB)
@@ -20093,7 +20093,7 @@ contains
                 else
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
@@ -20106,7 +20106,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20116,7 +20116,7 @@ contains
               else
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
                 else
                   ! Set diagonal pointer
@@ -20125,7 +20125,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                   end if
-                  
+
                   ! Compute B:= ca*A + cb*B
                   call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20139,7 +20139,7 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -20156,36 +20156,36 @@ contains
       !-------------------------------------------------------------------------
 
     case (LSYSSC_MATRIX9ROWC) ! A is differential CSR matrix -------------------
-      
+
       select case (rmatrixB%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
-                
+
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrixA,p_KldA)
         call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
         call lsyssc_getbase_Kld(rmatrixB,p_KldB)
         call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           call output_line('Not supported!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
-          
+
           call output_line('Not supported!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
 
         end if
-        
+
         ! numerical addition?
         if (bnum) then
-          
+
           ! Get row indices
           call lsyssc_getbase_KrowIdx(rdest,p_KrowIdxA)
 
@@ -20194,7 +20194,7 @@ contains
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case (rmatrixB%cdataType)
@@ -20219,14 +20219,14 @@ contains
 
                 ! Compute C := B + 0*C
                 call lalg_copyVector(p_DaB, p_DaC)
-                
+
                 ! Compute C := ca*A + cb*C
                 call do_mat9rowcMat9addDbleDble(rmatrixA%NNZROWS,&
                     rmatrixA%NA,p_KldA,p_KcolA,p_KrowIdxA,&
                     rdest%NA,p_KldC,p_KcolC,&
                     p_DaA,p_DaC,ca,cb)
               else
-              
+
                 ! Compute B:= ca*A + cb*B
                 call do_mat9rowcMat9addDbleDble(rmatrixA%NNZROWS,&
                     rmatrixA%NA,p_KldA,p_KcolA,p_KrowIdxA,&
@@ -20234,13 +20234,13 @@ contains
                     p_DaA,p_DaB,ca,cb)
 
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -20255,9 +20255,9 @@ contains
       end select
 
       !-------------------------------------------------------------------------
-      
+
     case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! A is interleave CSR matrix -
-      
+
       ! Set size of interleave block
       isizeIntl=rmatrixB%NVAR
       if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
@@ -20291,15 +20291,15 @@ contains
 
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
 
             case (ST_DOUBLE)
@@ -20324,7 +20324,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20376,7 +20376,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20413,9 +20413,9 @@ contains
             end select
 
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               ! Do we have an explicit destination matrix?
               if (present(rdest)) then
@@ -20431,14 +20431,14 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addSnglDble(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20483,28 +20483,28 @@ contains
                   call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                   else
                     call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                   end if
-                  
+
                   ! Compute C := A + 0*C
                   call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_FaC,1.0_SP,0.0_SP)
                 end if
-                
+
                 ! Set diagonal pointer
                 if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
-                
+
                 ! We have to apply only the diagonal of matrix B
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_matDmat79addSnglSngl(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
@@ -20519,20 +20519,20 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
               call sys_halt()
             end select
-            
+
           case default
             call output_line('Unsupported data type of source matrix!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
             call sys_halt()
           end select
         end if
-                
+
       case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! B is interleave CSR matrix-
 
         ! Check if interleave matrices are compatible
@@ -20542,17 +20542,17 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
           call sys_halt()
         end if
-        
+
         ! Set size of interleave block
         isizeIntl=rmatrixA%NVAR
         if (rmatrixA%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
-        
+
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrixA,p_KldA)
         call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
         call lsyssc_getbase_Kld(rmatrixB,p_KldB)
         call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
-        
+
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           ! Duplicate structure of matrix A or B depending on which
@@ -20562,13 +20562,13 @@ contains
           else
             call lsyssc_duplicateMatrix(rmatrixB,rdest,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           end if
-          
+
           ! Set auxiliary pointers
           h_Kaux = ST_NOHANDLE
           call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
               rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,p_Kaux)
-          
+
           ! Compute number of nonzero matrix entries: NA
           rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
           call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
@@ -20593,11 +20593,11 @@ contains
 
         ! symbolic addition?
         if (bsym .and. present(rdest)) then
-          
+
           ! Set pointers
           call lsyssc_getbase_Kld(rdest,p_KldC)
           call lsyssc_getbase_Kcol(rdest,p_KcolC)
-          
+
           if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
             call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
             call do_mat79mat79add_symb(rmatrixA%NEQ,rmatrixA%NCOLS,&
@@ -20614,13 +20614,13 @@ contains
 
         ! numerical addition?
         if (bnum) then
-          
+
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double
           select case (rmatrixA%cdataType)
-            
+
           case (ST_DOUBLE) ! A is double precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
             select case (rmatrixB%cdataType)
@@ -20635,7 +20635,7 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_DaB, p_DaC)
                   call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
                 else
@@ -20654,7 +20654,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20692,13 +20692,13 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_FaB, p_DaC)
                   call lalg_vectorLinearComb(p_DaA,p_DaC,ca,cb)
                 else
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
@@ -20711,7 +20711,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20724,7 +20724,7 @@ contains
                     OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
                 call sys_halt()
               end if
-              
+
             case default
               call output_line('Unsupported combination of data types!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -20732,9 +20732,9 @@ contains
             end select
 
           case (ST_SINGLE) ! A is single precision matrix ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-            
+
             select case (rmatrixB%cdataType)
-              
+
             case (ST_DOUBLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_double(rmatrixB,p_DaB)
@@ -20745,7 +20745,7 @@ contains
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
                     (rmatrixA%cmatrixFormat .eq. rdest%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_copyVector(p_DaB, p_DaC)
                   call lalg_vectorLinearComb(p_FaA,p_DaC,real(ca,SP),cb)
                 else
@@ -20764,7 +20764,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addSnglDble(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20774,7 +20774,7 @@ contains
               else
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_vectorLinearComb(p_FaA,p_DaB,real(ca,SP),cb)
                 else
                   ! Set diagonal pointer
@@ -20791,7 +20791,7 @@ contains
                                                  p_FaA,p_DaB,real(ca,SP),cb)
                 end if
               end if
-              
+
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,p_FaA)
               call lsyssc_getbase_single(rmatrixB,p_FaB)
@@ -20808,7 +20808,7 @@ contains
                 else
                   call lsyssc_getbase_Kld(rdest,p_KldC)
                   call lsyssc_getbase_Kcol(rdest,p_KcolC)
-                  
+
                   ! Set diagonal pointer
                   if (rdest%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                     call lsyssc_getbase_Kld(rdest,p_KdiagonalC)
@@ -20821,7 +20821,7 @@ contains
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
-                  
+
                   ! Compute C := ca*A + cb*C
                   call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20831,7 +20831,7 @@ contains
               else
                 ! Can we make use of fast copy operation?
                 if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. (bfast)) then
-                  
+
                   call lalg_vectorLinearComb(p_FaA,p_FaB,real(ca,SP),real(cb,SP))
                 else
                   ! Set diagonal pointer
@@ -20840,7 +20840,7 @@ contains
                   else
                     call lsyssc_getbase_Kdiagonal(rmatrixB,p_KdiagonalB)
                   end if
-                  
+
                   ! Compute B:= ca*A + cb*B
                   call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
@@ -20867,7 +20867,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
         call sys_halt()
       end select
-       
+
       !-------------------------------------------------------------------------
 
     case default
@@ -20917,7 +20917,7 @@ contains
       real(SP), dimension(ncols,neq), intent(inout) :: FaB
 
       integer :: ieq
-      
+
       ! Compute B := cb*B
       call lalg_scaleVector(FaB,fb)
 
@@ -20940,12 +20940,12 @@ contains
       real(DP), intent(in) :: db
       real(SP), dimension(neq), intent(in) :: FaA
       real(DP), dimension(ncols,neq), intent(inout) :: DaB
-      
+
       integer :: ieq
-      
+
       ! Compute B := cb*B
       call lalg_scaleVector(DaB,db)
-      
+
       ! Compute B := B + diag(A)
       do ieq = 1,neq
         DaB(ieq,ieq) = DaB(ieq,ieq)+fa*FaA(ieq)
@@ -20972,10 +20972,10 @@ contains
       real(DP), dimension(ncols,neq), intent(inout) :: DaB
 
       integer :: ild,ieq,icol
-      
+
       ! Compute B := cb*B
       call lalg_scaleVector(DaB,db)
-      
+
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
       !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
@@ -21008,10 +21008,10 @@ contains
       real(SP), dimension(ncols,neq), intent(inout) :: FaB
 
       integer :: ild,ieq,icol
-      
+
       ! Compute B := cb*B
       call lalg_scaleVector(FaB,fb)
-      
+
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
       !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
@@ -21045,10 +21045,10 @@ contains
       real(DP), dimension(ncols,neq), intent(inout) :: DaB
 
       integer :: ild,ieq,icol
-      
+
       ! Compute B := cb*B
       call lalg_scaleVector(DaB,db)
-      
+
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
       !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
@@ -21066,16 +21066,16 @@ contains
     ! Format 7/9-D addition:  B := ca*A + cb*B
     ! double precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9, interleave possible)
-    
+
     subroutine do_matDmat79addDbleDble(nvar,mvar,neq,na,Kdiagonal,DaA,DaB,da,db)
-      
+
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
       integer, dimension(:), intent(in) :: Kdiagonal
       real(DP), intent(in) :: da,db
       real(DP), dimension(:), intent(in) :: DaA
       real(DP), dimension(nvar,mvar,na), intent(inout) :: DaB
-      
+
       integer :: ieq,ild,ivar
 
       ! Compute B := cb*B
@@ -21121,7 +21121,7 @@ contains
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
             OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79DbleDble')
         call sys_halt()
-        
+
       end if
 
     end subroutine
@@ -21130,16 +21130,16 @@ contains
     ! Format 7/9-D addition:  B := ca*A + cb*B
     ! single precision matrix A (format D)
     ! single precision matrix B (format 7 or format 9, interleave possible)
-    
+
     subroutine do_matDmat79addSnglSngl(nvar,mvar,neq,na,Kdiagonal,FaA,FaB,fa,fb)
-      
+
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
       integer, dimension(:), intent(in) :: Kdiagonal
       real(SP), intent(in) :: fa,fb
       real(SP), dimension(:), intent(in) :: FaA
       real(SP), dimension(nvar,mvar,na), intent(inout) :: FaB
-      
+
       integer :: ieq,ild,ivar
 
       ! Compute B := cb*B
@@ -21185,7 +21185,7 @@ contains
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
             OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SnglSngl')
         call sys_halt()
-        
+
       end if
 
     end subroutine
@@ -21194,9 +21194,9 @@ contains
     ! Format 7/9-D addition:  B := ca*A + cb*B
     ! single precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9, interleave possible)
-    
+
     subroutine do_matDmat79addSnglDble(nvar,mvar,neq,na,Kdiagonal,FaA,DaB,fa,db)
-      
+
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -21204,7 +21204,7 @@ contains
       real(DP), intent(in) :: db
       real(SP), dimension(:), intent(in) :: FaA
       real(DP), dimension(nvar,mvar,na), intent(inout) :: DaB
-      
+
       integer :: ieq,ild,ivar
 
       ! Compute B := cb*B
@@ -21250,11 +21250,11 @@ contains
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
             OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SnglDble')
         call sys_halt()
-        
+
       end if
 
     end subroutine
-    
+
     !**************************************************************
     ! Format 7/9-7/9 addition:  C :=A + B
     ! This routinecomputes the number of nonzero matrix entries.
@@ -21271,12 +21271,12 @@ contains
       integer, dimension(:), intent(inout) :: Kaux
 
       integer :: NA
-      
+
       integer :: ieq,jeq,ild,icol,idg,ndg,last
 
       ! Initialization
       Kaux = 0; NA = 0
-      
+
       do ieq = 1,neq
 
         ! For each row of matrix A
@@ -21287,7 +21287,7 @@ contains
 
         ! Row of matrix A
         do ild = KldA(ieq),KldA(ieq+1)-1
-          
+
           ! Column number to be added
           icol = KcolA(ild)
 
@@ -21296,10 +21296,10 @@ contains
           Kaux(icol) = last
           last = icol
         end do
-        
+
         ! Row of matrix B
         do ild = KldB(ieq),KldB(ieq+1)-1
-          
+
           ! Column number to be added
           icol = KcolB(ild)
 
@@ -21343,7 +21343,7 @@ contains
       integer, dimension(:), intent(inout) :: KldC
       integer, dimension(:), intent(inout) :: KcolC
       integer, dimension(:), intent(inout), optional :: Kdiagonal
-      
+
       integer :: ieq,ildA,ildB,ildC,ildendA,ildendB,icolA,icolB,icolC
 
       ! Initialization
@@ -21373,14 +21373,14 @@ contains
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
         do
-        
+
           ! Find next column number for matrices A and B
           if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
-          
+
           if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
@@ -21396,7 +21396,7 @@ contains
             icolC = icolA
             ildA = ildA+1
             ildB = ildB+1
-            
+
           elseif (icolA < icolB) then
             ! Processing column in matrix A only
             icolC = icolA
@@ -21413,7 +21413,7 @@ contains
           ! matrix entry. If it corresponds to the diagonal entry,
           ! then special care must be taken.
           if (icolC .eq. ieq) then
-            
+
             ! If KDIAGONAL is present, then all entries in row IEQ
             ! are stored continuously but the diagonal entry is
             ! additionally marked in KDIAGONAL. IF KDIAGONAL is not
@@ -21430,7 +21430,7 @@ contains
             KcolC(ildC) = icolC
             ildC = ildC+1
           end if
-          
+
           ! Check if column IEQ is completed for both matrices A and B
           if (ildA > ildendA .and. ildB > ildendB) exit
         end do
@@ -21502,7 +21502,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addDbleDble')
             call sys_halt()
           end if
-          
+
         end do col
       end do row
 
@@ -21512,7 +21512,7 @@ contains
     !**************************************************************
     ! Format 7/9-7/9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
-   
+
     subroutine do_mat79mat79addSnglSngl(isizeIntl,neq,&
         naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,FaB,fa,fb)
 
@@ -21571,7 +21571,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSnglSngl')
             call sys_halt()
           end if
-          
+
         end do col
       end do row
 
@@ -21580,7 +21580,7 @@ contains
     !**************************************************************
     ! Format 7/9-7/9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
-    
+
     subroutine do_mat79mat79addSnglDble(isizeIntl,neq,&
         naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,DaB,fa,db)
 
@@ -21640,7 +21640,7 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSnglDble')
             call sys_halt()
           end if
-          
+
         end do col
       end do row
 
@@ -21670,10 +21670,10 @@ contains
 
       ! Loop over all rows
       row: do ieq = 1, nnzrows
-      
+
         ! Initialise column pointer for matrix B
         ioffset = KldB(KrowIdxA(ieq)) - KldA(ieq)
-        
+
         ! Add the row
         do ild = KldA(ieq),KldA(ieq+1)-1
           DaB(ioffset+ild) = ca*DaA(ild)+cb*DaB(ioffset+ild)
@@ -22030,7 +22030,7 @@ contains
 !!$        end if
 !!$      end do
 !!$    end subroutine
-    
+
 !!$    !**************************************************************
 !!$    ! Format 7/9-7/9 addition
 !!$    ! Perform numerical matrix-matrix-addition C := ca * A + cb * B
@@ -22231,13 +22231,13 @@ contains
 
     ! Vector1 -> Vector
     rvector  = rvector1
-    
+
     ! Vector2 -> Vector1
     rvector1 = rvector2
-    
+
     ! Vector -> Vector2
     rvector2 = rvector
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -22264,13 +22264,13 @@ contains
 
     ! Matrix1 -> Matrix
     rmatrix = rmatrix1
-    
+
     ! Matrix2 -> Matrix1
     rmatrix1 = rmatrix2
-    
+
     ! Matrix -> Matrix2
     rmatrix2 = rmatrix
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -22278,12 +22278,12 @@ contains
 !<subroutine>
 
   subroutine lsyssc_assignDiscrDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
-  
+
 !<description>
   ! Assigns given discretisation structures for trial/test spaces to a
   ! matrix.
 !</description>
-  
+
 !<input>
   ! Discretisation structure for trial functions.
   type(t_spatialDiscretisation), intent(in), target :: rdiscrTrial
@@ -22297,7 +22297,7 @@ contains
   ! Destination matrix.
   type(t_matrixScalar),intent(inout) :: rmatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     if (rmatrix%NCOLS .ne. dof_igetNDofGlob(rdiscrTrial)) then
@@ -22305,13 +22305,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscrDirectMat')
       call sys_halt()
     end if
-          
+
     rmatrix%p_rspatialDiscrTrial => rdiscrTrial
-    
+
     ! Depending on whether rdiscrTest is given, set the pointers for
     ! the test functions.
     rmatrix%bidenticalTrialAndTest = present(rdiscrTest)
-    
+
     if (present(rdiscrTest)) then
 
       if (rmatrix%NEQ .ne. dof_igetNDofGlob(rdiscrTest)) then
@@ -22333,9 +22333,9 @@ contains
       ! Set the block discretisation of the block matrix
       rmatrix%p_rspatialDiscrTest => rdiscrTrial
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -22447,12 +22447,12 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<function>
 
   elemental logical function lsyssc_isMatrixStructureShared (rmatrix,&
       rmatrix2) result (bresult)
-  
+
 !<description>
   ! Checks whether the structure of rmatrix belongs to that matrix or if it is
   ! shared among rmatrix and another matrix.
@@ -22464,7 +22464,7 @@ contains
 !<input>
   ! A scalar matrix to be checked.
   type(t_matrixScalar), intent(in) :: rmatrix
-  
+
   ! OPTIONAL: A second matrix to be compared with rmatrix.
   ! If not specified, lsyssc_isMatrixStructureShared checks if rmatrix
   !   shares its structure with any other matrix.
@@ -22513,12 +22513,12 @@ contains
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   elemental logical function lsyssc_isMatrixContentShared (rmatrix, &
       rmatrix2) result (bresult)
-  
+
 !<description>
   ! Checks whether the content of rmatrix belongs to that matrix or if it is
   ! shared among rmatrix and another matrix.
@@ -22568,20 +22568,20 @@ contains
   end function
 
   !****************************************************************************
-  
+
 !<function>
-  
+
   elemental logical function lsyssc_isMatrixPresent (rmatrix, &
       bignoreScaleFactor) result (bispresent)
-  
+
 !<description>
   ! This routine checks if the matrix is defined or empty.
 !</description>
-  
+
 !<input>
   ! The matrix to be checked
   type(t_matrixScalar), intent(in) :: rmatrix
-  
+
   ! OPTIONAL: Whether to check the scaling factor.
   ! FALSE: A scaling factor of 0.0 disables a submatrix.
   !        This is the standard setting.
@@ -22608,17 +22608,17 @@ contains
              (rmatrix%dscaleFactor .ne. 0.0_DP))
 
   end function
-    
+
   !****************************************************************************
 
 !<function>
-  
+
   pure logical function lsyssc_isMatrixSorted (rmatrix)
-  
+
 !<description>
   ! Returns whether a matrix is sorted or not.
 !</description>
-  
+
 !<input>
   ! Matrix to check
   type(t_matrixScalar), intent(in) :: rmatrix
@@ -22637,13 +22637,13 @@ contains
   !****************************************************************************
 
 !<function>
-  
+
   pure logical function lsyssc_isVectorSorted (rvector)
-  
+
 !<description>
   ! Returns whether a vector is sorted or not.
 !</description>
-  
+
 !<input>
   ! Vector to check
   type(t_vectorScalar), intent(in) :: rvector
@@ -22662,9 +22662,9 @@ contains
   !****************************************************************************
 
 !<function>
-  
+
   pure logical function lsyssc_hasMatrixStructure (rmatrix)
-  
+
 !<description>
   ! Returns whether a matrix has a structure or not.
   !
@@ -22672,7 +22672,7 @@ contains
   ! do not have a structure at all, so the routine always returns
   ! FALSE in such a case.
 !</description>
-  
+
 !<input>
   ! Matrix to check
   type(t_matrixScalar), intent(in) :: rmatrix
@@ -22693,13 +22693,13 @@ contains
   !****************************************************************************
 
 !<function>
-  
+
   pure logical function lsyssc_hasMatrixContent (rmatrix)
-  
+
 !<description>
   ! Returns whether a matrix has a content or not.
 !</description>
-  
+
 !<input>
   ! Matrix to check
   type(t_matrixScalar), intent(in) :: rmatrix
@@ -22742,7 +22742,7 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
     real(SP), dimension(:), pointer :: p_Fdata1,p_Fdata2
     integer, dimension(:), pointer :: p_Idata1,p_Idata2
-    
+
     ! Source vector must not be stored in interleave format
     if (rvector1%NVAR .ne. 1) then
       call output_line('Source vector must not be stored in interleave format!',&
@@ -22765,10 +22765,10 @@ contains
     end if
 
     ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-    
+
     if ((rvector1%isortStrategy .gt. 0) .or. &
         (rvector2%isortStrategy .gt. 0)) then
-      
+
       if (rvector1%isortStrategy .ne. &
           rvector2%isortStrategy) then
         call output_line('Vectors not compatible, differently sorted!',&
@@ -22789,7 +22789,7 @@ contains
       call lsyssc_getbase_double(rvector1, p_Ddata1)
       call lsyssc_getbase_double(rvector2, p_Ddata2)
       call do_spreadDble(p_Ddata1, rvector2%NVAR, rvector2%NEQ, p_Ddata2)
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvector1, p_Fdata1)
       call lsyssc_getbase_single(rvector2, p_Fdata2)
@@ -22799,7 +22799,7 @@ contains
       call lsyssc_getbase_int(rvector1, p_Idata1)
       call lsyssc_getbase_int(rvector2, p_Idata2)
       call do_spreadInt(p_Idata1, rvector2%NVAR, rvector2%NEQ, p_Idata2)
-      
+
     case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
@@ -22896,15 +22896,15 @@ contains
 
     ! Check if matrices are compatible
     call lsyssc_isMatrixMatrixCompatible(rmatrix1,rmatrix2)
-    
+
     ! Ok, now we can copy the matrices
     select case (rmatrix2%cinterleavematrixFormat)
-      
+
     case (LSYSSC_MATRIXUNDEFINED)
       ! Destination matrix is identical to source matrix
       call lsyssc_duplicateMatrix (rmatrix1,rmatrix2,&
           LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
-      
+
     case (LSYSSC_MATRIX1)
       select case (rmatrix1%cdataType)
       case (ST_DOUBLE)
@@ -22912,7 +22912,7 @@ contains
         call lsyssc_getbase_double(rmatrix2, p_Ddata2)
         call do_spreadDble(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
                            rmatrix2%NA, p_Ddata2)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix1, p_Fdata1)
         call lsyssc_getbase_single(rmatrix2, p_Fdata2)
@@ -22930,7 +22930,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
         call sys_halt()
       end select
-      
+
     case (LSYSSC_MATRIXD)
       select case (rmatrix1%cdataType)
       case (ST_DOUBLE)
@@ -22956,13 +22956,13 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
       call sys_halt()
     end select
-    
+
   contains
 
     ! Here, the real working routines follow.
@@ -23076,10 +23076,10 @@ contains
     end if
 
     ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-    
+
     if ((rvector1%isortStrategy .gt. 0) .or. &
         (rvector2%isortStrategy .gt. 0)) then
-      
+
       if (rvector1%isortStrategy .ne. &
           rvector2%isortStrategy) then
         call output_line('Vectors not compatible, differently sorted!',&
@@ -23100,7 +23100,7 @@ contains
       call lsyssc_getbase_double(rvector1, p_Ddata1)
       call lsyssc_getbase_double(rvector2, p_Ddata2)
       call do_packDble(p_Ddata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Ddata2)
-      
+
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvector1, p_Fdata1)
       call lsyssc_getbase_single(rvector2, p_Fdata2)
@@ -23110,7 +23110,7 @@ contains
       call lsyssc_getbase_int(rvector1, p_Idata1)
       call lsyssc_getbase_int(rvector2, p_Idata2)
       call do_packInt(p_Idata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Idata2)
-      
+
     case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
@@ -23256,7 +23256,7 @@ contains
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'iidxFirstEntry'
     p_fpdbDataItem%iinteger = rvector%iidxFirstEntry
-    
+
     ! Fill the array of data items: ITags
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
     p_fpdbDataItem%ctype        =  FPDB_INT1D
@@ -23274,7 +23274,7 @@ contains
     p_fpdbDataItem%ctype    = FPDB_LOGICAL
     p_fpdbDataItem%sname    = 'bisCopy'
     p_fpdbDataItem%blogical = rvector%bisCopy
-    
+
     ! Fill the array of data items: p_rspatialDiscr
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
     p_fpdbDataItem%sname = 'p_rspatialDiscr'
@@ -23428,7 +23428,7 @@ contains
     p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
     p_fpdbDataItem%sname       =  'DTags'
     p_fpdbDataItem%p_Ddouble1D => rmatrix%DTags
-    
+
     ! Fill the array of data items: bidenticalTrialAndTest
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
     p_fpdbDataItem%ctype    = FPDB_LOGICAL
@@ -23768,7 +23768,7 @@ contains
     else
       rmatrix%dscaleFactor = p_fpdbDataItem%ddouble
     end if
-    
+
     ! Restore the data from the DataItem: isortStrategy
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
@@ -23916,11 +23916,11 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_unshareMatrix (rmatrix,bstructure,bdata)
-  
+
 !<description>
   ! Resets the sharing state of the structure/data arrays in a matrix.
   ! bstructure/bdata decides on if the structure and/or the data is
@@ -23931,13 +23931,13 @@ contains
   ! to the matrix. Therefore, if bstructure=bdata=.true, the matrix
   ! will be made completely independent.
 !</description>
-  
+
 !<input>
   ! Revoke the sharing state of the matrix structure. If the matrix
   ! is not the owner of the structure, a new structure array is allocated
   ! in memory and the data of the old structure is copied.
   logical, intent(in) :: bstructure
-  
+
   ! Revoke the sharing state of the matrix data. If the matrix
   ! is not the owner of the data, a new data array is allocated
   ! in memory and the data of the old structure is copied.
@@ -23953,10 +23953,10 @@ contains
 
     type(t_matrixScalar) :: rmatrix2
     integer :: idup1,idup2
-    
+
     idup1 = LSYSSC_DUP_SHARE
     idup2 = LSYSSC_DUP_SHARE
-    
+
     if (bstructure .and. &
         (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0)) then
       idup1 = LSYSSC_DUP_COPY
@@ -23966,13 +23966,13 @@ contains
         (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
       idup2 = LSYSSC_DUP_COPY
     end if
-    
+
     ! Probably nothing to do.
     if ((idup1 .eq. LSYSSC_DUP_COPY) .and. (idup2 .eq. LSYSSC_DUP_COPY)) return
-    
+
     ! Duplicate the matrix to eventually allocate memory
     call lsyssc_duplicateMatrix (rmatrix,rmatrix2,idup1,idup2)
-    
+
     ! Next thing is to release the old matrix; but that is not as easy
     ! as calling lsyssc_releaseMatrix! The point is that the source
     ! matrix may or may not share its structure/content with another
@@ -23982,7 +23982,7 @@ contains
     ! If the structure/content is to be made independent, we have to reset
     ! the copy flag. Otherwise, we have to take the old copy flag.
     rmatrix2%imatrixSpec = rmatrix%imatrixSpec
-    
+
     if (idup1 .eq. LSYSSC_DUP_COPY) then
       rmatrix2%imatrixSpec = iand(rmatrix2%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
     else
@@ -23996,10 +23996,10 @@ contains
       ! As rmatrix2 is now the owner, prevent the data in rmatrix from being released.
       rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
     end if
-    
+
     ! Release the old matrix
     call lsyssc_releaseMatrix(rmatrix)
-      
+
     ! Create a hard-copy to rmatrix.
     ! This is one of the very rare cases where we on purpose assign a matrix
     ! structure to another...
@@ -24008,11 +24008,11 @@ contains
   end subroutine
 
   !****************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine lsyssc_unshareVector (rvector)
-  
+
 !<description>
   ! Resets the sharing state of the data arrays in a vector.
   ! If the vector is already the owner of the
@@ -24021,7 +24021,7 @@ contains
   ! copied and the new independent data arrays are associated
   ! to the vector.
 !</description>
-  
+
 !<output>
   ! Vector to be changed matrix.
   type(t_vectorScalar), intent(inout) :: rvector
@@ -24035,16 +24035,16 @@ contains
     if (rvector%bisCopy) then
       ! Copy & unshare the data
       call lsyssc_duplicateVector(rvector,rvector2,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      
+
       ! Release the original vector
       call lsyssc_releaseVector (rvector)
-      
+
       ! Create a hard-copy of rvector.
       ! This is one of the very rare cases where we on purpose assign a matrix
       ! structure to another...
       rvector = rvector2
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -24052,13 +24052,13 @@ contains
 !<subroutine>
 
   subroutine lsyssc_moveMatrix (rsourceMatrix,rdestMatrix)
-  
+
 !<description>
   ! Moves a matrix from a source matrix to a destination matrix.
   ! The source matrix will remain as 'shared copy' of the destination matrix
   ! and can safely be released.
 !</description>
-  
+
 !<inputoutput>
   ! Source matrix
   type(t_matrixScalar),intent(inout) :: rsourceMatrix
@@ -24066,7 +24066,7 @@ contains
   ! Destination matrix
   type(t_matrixScalar),intent(inout) :: rdestMatrix
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
@@ -24075,7 +24075,7 @@ contains
     ! Duplicate the matrix, share the data.
     call lsyssc_duplicateMatrix (rsourceMatrix, rdestMatrix,&
         LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-          
+
     ! Change the ownership from the source to the destination matrix
     cflags1 = iand (rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
     cflags2 = iand (rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
@@ -24083,10 +24083,10 @@ contains
       ior(iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),cflags2)
     rdestMatrix%imatrixSpec = &
       ior(iand(rdestMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),cflags1)
-    
+
     ! Now, the destination matrix is the owner and the source matrix
     ! the copy...
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -24094,7 +24094,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_createEmptyMatrixStub (rmatrix,cmatrixFormat,neq,ncol)
-  
+
 !<description>
   ! Creates an empty matrix in format cmatrixFormat without allocating memory.
   ! The caller is responsible for filling in missing information.
@@ -24103,7 +24103,7 @@ contains
 !<input>
   ! Matrix format
   integer, intent(in) :: cmatrixFormat
-  
+
   ! Number of rows
   integer, intent(in) :: neq
 
@@ -24125,14 +24125,14 @@ contains
     else
       rmatrix%NCOLS = neq
     end if
-            
+
   end subroutine
 
   ! ***************************************************************************
 !<subroutine>
 
   subroutine lsyssc_createEmptyMatrix9 (rmatrix,neq,na,ncols)
-  
+
 !<description>
   ! Creates an empty matrix in matrix format 9 (CSR). The matrix is designed
   ! to have na entries, neq rows and ncols columns.
@@ -24141,10 +24141,10 @@ contains
 !<input>
   ! Number of rows.
   integer, intent(in) :: neq
-  
+
   ! Number of entries in the matrix.
   integer, intent(in) :: na
-  
+
   ! OPTIONAL: Number of columns. If not present, NEQ is assumed.
   integer, intent(in), optional :: ncols
 !</input>
@@ -24164,7 +24164,7 @@ contains
 
     ! Allocate memory
     rmatrix%na = na
-    
+
     call storage_new ('lsyssc_createMatrixFormat9', 'Da', &
         rmatrix%na, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_ZERO)
     call storage_new ('lsyssc_createMatrixFormat9', 'Kcol', &
@@ -24173,7 +24173,7 @@ contains
         neq+1, ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ZERO)
     call storage_new ('lsyssc_createMatrixFormat9', 'Kdiagonal', &
         neq, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ZERO)
-        
+
     ! Element na+1 in Kld must be = 1 since there are no elements
     ! in the matrix.
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -24186,7 +24186,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_setRowMatrix9 (rmatrix,irow,nentries,Kcol,Da)
-  
+
 !<description>
   ! Replaces row irow by the column and matrix data specified in
   ! Kcol and Da. If the row does not exist, it is created.
@@ -24195,15 +24195,15 @@ contains
 !<input>
   ! Row to modify
   integer, intent(in) :: irow
-  
+
   ! Number of entries, the row should have.
   ! If the row already exists, a value "-1" replaces the existing
   ! entries in the row, the length is automatically calculated.
   integer, intent(in) :: nentries
-  
+
   ! Column numbers that should be added.
   integer, dimension(:), intent(in) :: Kcol
-  
+
   ! OPTIONAL: Matrix data to be added.
   real(DP), dimension(:), intent(in), optional :: Da
 !</input>
@@ -24219,12 +24219,12 @@ contains
     integer :: i,n
     integer, dimension(:), pointer :: p_Kcol, p_Kld, P_Kdiagonal
     real(DP), dimension(:), pointer :: p_Da
-    
+
     ! Get pointers to the matrix data.
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
     call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
-    
+
     ! Does the row already exist?
     if ((p_Kld(irow) .gt. 0) .and. (p_Kld(irow+1) .ge. p_Kld(irow))) then
       ! Does the number of entries match?
@@ -24245,29 +24245,29 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
         call sys_halt()
       end if
-      
+
       if ((irow .gt. 1) .and. (p_Kld(irow) .eq. 0)) then
         call output_line('Insertion at arbitrary position currently not supported!'//&
                          ' Only appending allowed.',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
         call sys_halt()
       end if
-    
+
       ! Create the row.
       p_Kld(irow) = p_Kld(rmatrix%neq+1)
       p_Kld(irow+1) = p_Kld(rmatrix%neq+1) + n
       p_Kld(rmatrix%neq+1) = p_Kld(rmatrix%neq+1) + n
-      
+
       if (irow .eq. rmatrix%neq-1) then
         ! Last but one row. set up the last entry in KLD appropriately.
         p_Kld(rmatrix%neq+1) = rmatrix%na+1
       end if
-      
+
     end if
-    
+
     ! Copy column data into the row
     p_Kcol(p_Kld(irow):p_Kld(irow+1)-1) = Kcol(1:n)
-    
+
     ! Find the diagonal
     p_Kdiagonal(irow) = p_Kld(irow+1)
     do i=1,n
@@ -24276,19 +24276,19 @@ contains
         exit
       end if
     end do
-    
+
     ! Probably copy matrix data.
     if (present(Da)) then
-    
+
       if (rmatrix%cdataType .ne. ST_DOUBLE) then
         call output_line('Only double precision matrices supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
         call sys_halt()
       end if
-    
+
       call lsyssc_getbase_double (rmatrix,p_Da)
       p_Da(p_Kld(irow):p_Kld(irow+1)-1) = Da(1:n)
-      
+
     end if
 
   end subroutine
@@ -24299,7 +24299,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_sortMatrixCols(rmatrix)
-  
+
 !<description>
   ! Sorts the columns on a format 9 matrix to be in ascending order.
   ! This routine also recalculates the diagonal pointer array of the matrix.
@@ -24325,16 +24325,16 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'lsyssc_sortMatrixCols')
       call sys_halt()
     end if
-    
+
     ! Fetch the structure arrays of the matrix
     call storage_getbase_int(rmatrix%h_Kld,  p_IrowPtr)
     call storage_getbase_int(rmatrix%h_Kcol, p_IcolIdx)
     call storage_getbase_int(rmatrix%h_Kdiagonal, p_Idiag)
-    
+
     ! Note: The sorting algorithm used below is linear insertion sort.
     !       Since we assume the number of non-zeroes per row to be
     !       "small", there shouldn't be any runtime issues here.
-    
+
     ! Check whether the data array is allocated
     if(rmatrix%h_Da .eq. ST_NOHANDLE) then
 
@@ -24351,9 +24351,9 @@ contains
           p_IcolIdx(k+1) = it
         end do ! j
       end do ! i
-      
+
     else
-        
+
       select case (rmatrix%cdataType)
       case (ST_SINGLE)
 #if defined USE_COMPILER_SUNSTUDIO_12_1_OR_PRERELEASE || defined USE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE
@@ -24402,7 +24402,7 @@ contains
             p_Ddata(k+1) = dt
           end do ! j
         end do ! i
-        
+
       case default
         ! Datatype not supported
         call output_line('Only single and double precision matrices are supported!', &
@@ -24411,10 +24411,10 @@ contains
       end select
 
     end if
-    
+
     ! Finally, recalculate the diagonal pointer array.
     call lsyssc_rebuildKdiagonal(p_IcolIdx, p_IrowPtr, p_Idiag, rmatrix%NEQ)
-  
+
   end subroutine
 
   !****************************************************************************
@@ -24454,7 +24454,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'lsyssc_createDiffMatrix')
       call sys_halt()
     end if
-    
+
     if (rmatrix%cdataType .ne. ST_DOUBLE) then
       call output_line('Only double precision supported!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'lsyssc_createDiffMatrix')
@@ -24470,7 +24470,7 @@ contains
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_double (rmatrix,p_Da)
-    
+
     do irow = 1,rmatrix%neq
       ! Calculate the norm of the to to check if it nonzero.
       ! If yes, remember that row.
@@ -24478,7 +24478,7 @@ contains
       do icol = p_Kld(irow), p_Kld(irow+1)-1
         dtmp = dtmp + p_Da(icol)*p_Da(icol)
       end do
-      
+
       if (dtmp .ne. 0.0_DP) then
         ! Remember that row
         nnzrows = nnzrows+1
@@ -24488,7 +24488,7 @@ contains
 
     ! Cancel if the matrix is empty.
     if (nnzrows .eq. 0) return
-    
+
     ! Allocate Kld, Kcol, KrowIdx.
     call storage_new ('lsyssc_createDiffMatrix', 'Kld2', nnzrows+1, &
                       ST_INT, h_Kld2, ST_NEWBLOCK_NOINIT)
@@ -24498,13 +24498,13 @@ contains
                       ST_INT, h_Kcol2, ST_NEWBLOCK_NOINIT)
     call storage_new ('lsyssc_createDiffMatrix', 'Da2', na, &
                       ST_DOUBLE, h_Da2, ST_NEWBLOCK_NOINIT)
-                      
+
     ! Get the arrays
     call storage_getbase_int (h_Kld2,p_Kld2)
     call storage_getbase_int (h_Kcol2,p_Kcol2)
     call storage_getbase_int (h_KrowIdx,p_KrowIdx)
     call storage_getbase_double (h_Da2,p_Da2)
-                      
+
     ! Loop through the rows of the original matrix, collect the data.
     inewrow = 0
     p_Kld2(1) = 1
@@ -24515,7 +24515,7 @@ contains
       do icol = p_Kld(irow), p_Kld(irow+1)-1
         dtmp = dtmp + p_Da(icol)*p_Da(icol)
       end do
-      
+
       if (dtmp .ne. 0.0_DP) then
         ! Remember that row
         inewrow = inewrow+1
@@ -24536,11 +24536,11 @@ contains
 
       end if
     end do
-    
+
     ! Create the destination matrix.
     call lsyssc_createEmptyMatrixStub (rdestMatrix,LSYSSC_MATRIX9ROWC,&
         rmatrix%neq,rmatrix%ncols)
-        
+
     ! Copy basic properties
     rdestMatrix%isortStrategy           = rmatrix%isortStrategy
     rdestMatrix%h_IsortPermutation      = rmatrix%h_IsortPermutation
@@ -24616,7 +24616,7 @@ contains
     ! Determine the number of edges
     if (nedge .le. 0)&
         call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, Iselection)
-    
+
     ! Determine the type of information stored at each edge
     select case (ccontentType)
     case (LSYSSC_EDGELIST_NODESONLY)
@@ -24675,7 +24675,7 @@ contains
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-        
+
         ! Create diagonal separator
         h_Ksep = ST_NOHANDLE
         call storage_copy(rmatrix%h_Kld, h_Ksep)
@@ -24689,7 +24689,7 @@ contains
           call genEdgesMat7Symm(p_Kld, p_Kcol, p_Ksep, ccontentType,&
               bignoreDiagonal, p_IedgeList)
         end if
-        
+
         ! Release diagonal separator
         call storage_free(h_Ksep)
       else
@@ -24709,12 +24709,12 @@ contains
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-        
+
         ! Create diagonal separator
         h_Ksep = ST_NOHANDLE
         call storage_copy(rmatrix%h_Kld, h_Ksep)
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
-        
+
         ! Generate edge structure
         if (present(Iselection)) then
           call genEdgesMat9SymmSel(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
@@ -24723,7 +24723,7 @@ contains
           call genEdgesMat9Symm(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               ccontentType, bignoreDiagonal, p_IedgeList)
         end if
-        
+
         ! Release diagonal separator
         call storage_free(h_Ksep)
       else
@@ -24746,37 +24746,37 @@ contains
     !**************************************************************
     ! Generate edge data structure for symmetric dense matrices
     ! stored in matrix format 1
-    
+
     subroutine genEdgesMat1Symm(neq, ccontentType, bignoreDiagonal, IedgeList)
-      
+
       integer, intent(in) :: neq,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
       integer :: i,j,iedge,ioffset
-      
+
       ! Initialise edge counter
       iedge = 0
 
       ! Include diagonal entries?
       ioffset = merge(1,0, bignoreDiagonal)
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -24787,15 +24787,15 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
@@ -24808,19 +24808,19 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
@@ -24836,10 +24836,10 @@ contains
     !**************************************************************
     ! Generate edge data structure for symmetric dense matrices stored
     ! in matrix format 1 restricted to a list of selected entries
-    
+
     subroutine genEdgesMat1SymmSel(neq, ccontentType, bignoreDiagonal,&
         Iselection, IedgeList)
-      
+
       integer, dimension(:), intent(in) :: Iselection
       integer, intent(in) :: neq,ccontentType
       logical, intent(in) :: bignoreDiagonal
@@ -24848,7 +24848,7 @@ contains
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,iedge,ioffset
-      
+
       ! Generate set of active entries
       allocate(BisActive(neq)); BisActive=.false.
       do i = 1, size(Iselection)
@@ -24860,14 +24860,14 @@ contains
 
       ! Include diagonal entries?
       ioffset = merge(1,0, bignoreDiagonal)
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(i)) cycle
 
@@ -24875,13 +24875,13 @@ contains
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Check if this edge connects two DOFs which are marked active
             if (.not.BisActive(j)) cycle
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -24892,7 +24892,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(i)) cycle
 
@@ -24900,13 +24900,13 @@ contains
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Check if this edge connects two DOFs which are marked active
             if (.not.BisActive(j)) cycle
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
@@ -24919,7 +24919,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(i)) cycle
 
@@ -24927,17 +24927,17 @@ contains
           ! adjacent to node J such that I <= J or I < J, that  is,
           ! the upper right triangular part of the matrix is traversed
           do j = i+ioffset, neq
-            
+
             ! Check if this edge connects two DOFs which are marked active
             if (.not.BisActive(j)) cycle
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
@@ -24952,20 +24952,20 @@ contains
       deallocate(BisActive)
 
     end subroutine genEdgesMat1SymmSel
-    
+
     !**************************************************************
     ! Generate edge data structure for arbitrary dense matrices
     ! stored in matrix format 1
-    
+
     subroutine genEdgesMat1(neq, ncols, ccontentType, bignoreDiagonal, IedgeList)
-      
+
       integer, intent(in) :: neq,ncols,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
       integer :: i,j,iedge
-      
+
       ! Initialise edge counter
       iedge = 0
 
@@ -24975,7 +24975,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J
           do j = 1, ncols
@@ -24985,7 +24985,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -24996,7 +24996,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J
           do j = 1, ncols
@@ -25006,7 +25006,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
@@ -25019,21 +25019,21 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Loop over all (off-diagonal) matrix entries IJ which are
           ! adjacent to node J
           do j = 1, ncols
 
             ! Ignore the diagonal entries?
             if (bignoreDiagonal .and. i.eq.j) cycle
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
@@ -25049,10 +25049,10 @@ contains
     !**************************************************************
     ! Generate edge data structure for arbitrary dense matrices stored
     ! in matrix format 1 restricted to a list of selected entries
-    
+
     subroutine genEdgesMat1Sel(neq, ncols, ccontentType, bignoreDiagonal,&
         Iselection, IedgeList)
-      
+
       integer, dimension(:), intent(in) :: Iselection
       integer, intent(in) :: neq,ncols,ccontentType
       logical, intent(in) :: bignoreDiagonal
@@ -25061,7 +25061,7 @@ contains
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,iedge
-      
+
       ! Generate set of active entries
       allocate(BisActive(max(neq,ncols))); BisActive=.false.
       do i = 1, size(Iselection)
@@ -25077,7 +25077,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(i)) cycle
 
@@ -25093,7 +25093,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25120,7 +25120,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
@@ -25133,7 +25133,7 @@ contains
 
         ! Loop over all equations
         do i = 1, neq
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(i)) cycle
 
@@ -25146,14 +25146,14 @@ contains
 
             ! Ignore the diagonal entries?
             if (bignoreDiagonal .and. i.eq.j) cycle
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
@@ -25180,20 +25180,20 @@ contains
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       integer :: i,j,ij,ji,iedge
-      
+
       ! Initialise edge counter
       iedge = 0
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
@@ -25206,14 +25206,14 @@ contains
           ! adjacent to node J such that I < J, that is, the upper
           ! right triangular part of the matrix is traversed
           do ij = Ksep(i)+1, Kld(i+1)-1
-            
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25228,23 +25228,23 @@ contains
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix position ii
             IedgeList(1:4,iedge) = Kld(i)
           end if
-          
+
           ! Loop over all off-diagonal matrix entries IJ which are
           ! adjacent to node J such that I < J, that is, the upper
           ! right triangular part of the matrix is traversed
           do ij = Ksep(i)+1, Kld(i+1)-1
-            
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and ,jj
             IedgeList(1,iedge) = ij
             IedgeList(2,iedge) = ji
@@ -25252,12 +25252,12 @@ contains
             IedgeList(4,iedge) = Kld(j)
           end do
         end do
-        
+
       case (LSYSSC_EDGELIST_NODESANDPOS)
-        
+
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
@@ -25273,14 +25273,14 @@ contains
           ! adjacent to node J such that I < J, that is, the upper
           ! right triangular part of the matrix is traversed
           do ij = Ksep(i)+1, Kld(i+1)-1
-            
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25309,7 +25309,7 @@ contains
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,ji,iedge
@@ -25322,40 +25322,40 @@ contains
 
       ! Initialise edge counter
       iedge = 0
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
         do i = 1, size(Kld)-1
-      
+
           ! Check if this row belongs to an active DOF
           if (BisActive(i)) then
-  
+
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and i
               IedgeList(1:2,iedge) = i
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J, that is, the upper
             ! right triangular part of the matrix is traversed
             do ij = Ksep(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-              
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and j
               IedgeList(1,iedge) = i
               IedgeList(2,iedge) = j
@@ -25367,7 +25367,7 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
         end do
 
@@ -25382,26 +25382,26 @@ contains
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set matrix position ii
               IedgeList(1:4,iedge) = Kld(i)
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J, that is, the upper
             ! right triangular part of the matrix is traversed
             do ij = Ksep(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-            
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set matrix positions ij, ji, ii, and jj
               IedgeList(1,iedge) = ij
               IedgeList(2,iedge) = ji
@@ -25415,48 +25415,48 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
         end do
-        
+
       case (LSYSSC_EDGELIST_NODESANDPOS)
-        
+
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           ! Check if this row belongs to an active DOF
           if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and i
               IedgeList(1:2,iedge) = i
-              
+
               ! Set matrix position ii
               IedgeList(3:6,iedge) = Kld(i)
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J, that is, the upper
             ! right triangular part of the matrix is traversed
             do ij = Ksep(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-              
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and j
               IedgeList(1,iedge) = i
               IedgeList(2,iedge) = j
-              
+
               ! Set matrix positions ij, ji, ii, and jj
               IedgeList(3,iedge) = ij
               IedgeList(4,iedge) = ji
@@ -25470,10 +25470,10 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
         end do
-        
+
       end select
 
       ! Deallocate temporal memory
@@ -25494,15 +25494,15 @@ contains
 
       ! local variables
       integer :: i,j,ij,iedge,ioffset
-      
+
       ! Initialise edge counter
       iedge = 0
 
       ! Include diagonal entries?
       ioffset = merge(1,0, bignoreDiagonal)
-      
+
       select case (ccontentType)
-        
+
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
@@ -25516,7 +25516,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25546,21 +25546,21 @@ contains
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,iedge,ioffset
-      
+
       ! Generate set of active entries
       allocate(BisActive(ndof)); BisActive=.false.
       do i = 1, size(Iselection)
         BisActive(Iselection(i))=.true.
       end do
-      
+
       ! Initialise edge counter
       iedge = 0
 
       ! Include diagonal entries?
       ioffset = merge(1,0, bignoreDiagonal)
-      
+
       select case (ccontentType)
-        
+
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
@@ -25580,7 +25580,7 @@ contains
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25609,20 +25609,20 @@ contains
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       integer :: i,j,ij,ji,iedge
 
       ! Initialise edge counter
       iedge = 0
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
@@ -25635,14 +25635,14 @@ contains
           ! adjacent to node J such that I < J, that is, the upper
           ! right triangular part of the matrix is traversed
           do ij = Kdiagonal(i)+1, Kld(i+1)-1
-       
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25657,23 +25657,23 @@ contains
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix position ii
             IedgeList(1:4,iedge) = Kdiagonal(i)
           end if
-          
+
           ! Loop over all off-diagonal matrix entries IJ which are
           ! adjacent to node J such that I < J. That is, explore the
           ! upper triangular matrix
           do ij = Kdiagonal(i)+1, Kld(i+1)-1
-            
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = ij
             IedgeList(2,iedge) = ji
@@ -25681,12 +25681,12 @@ contains
             IedgeList(4,iedge) = Kdiagonal(j)
           end do
         end do
-        
+
       case (LSYSSC_EDGELIST_NODESANDPOS)
-        
+
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           if (.not.bignoreDiagonal) then
             ! Increase edge counter
             iedge = iedge+1
@@ -25702,14 +25702,14 @@ contains
           ! adjacent to node J such that I < J. That is, explore the
           ! upper triangular matrix
           do ij = Kdiagonal(i)+1, Kld(i+1)-1
-            
+
             ! Get node number J, the corresponding matrix positions JI,
             ! and let the separator point to the next entry
             j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-            
+
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25738,7 +25738,7 @@ contains
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,ji,iedge
@@ -25751,40 +25751,40 @@ contains
 
       ! Initialise edge counter
       iedge = 0
-      
+
       select case (ccontentType)
 
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           ! Check if this row belongs to an active DOF
           if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and i
               IedgeList(1:2,iedge) = i
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J, that is, the upper
             ! right triangular part of the matrix is traversed
             do ij = Kdiagonal(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-              
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and j
               IedgeList(1,iedge) = i
               IedgeList(2,iedge) = j
@@ -25796,7 +25796,7 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
         end do
 
@@ -25811,26 +25811,26 @@ contains
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and i
               IedgeList(1:4,iedge) = Kdiagonal(i)
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J. That is, explore the
             ! upper triangular matrix
             do ij = Kdiagonal(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-              
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set matrix positions ij and ji
               IedgeList(1,iedge) = ij
               IedgeList(2,iedge) = ji
@@ -25844,49 +25844,49 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
 
         end do
-        
+
       case (LSYSSC_EDGELIST_NODESANDPOS)
-        
+
         ! Loop over all rows
         do i = 1, size(Kld)-1
-        
+
           ! Check if this row belongs to an active DOF
           if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and i
               IedgeList(1:2,iedge) = i
-              
+
               ! Set node numbers i and i
               IedgeList(3:6,iedge) = Kdiagonal(i)
             end if
-            
+
             ! Loop over all off-diagonal matrix entries IJ which are
             ! adjacent to node J such that I < J. That is, explore the
             ! upper triangular matrix
             do ij = Kdiagonal(i)+1, Kld(i+1)-1
-              
+
               ! Get node number J, the corresponding matrix positions JI,
               ! and let the separator point to the next entry
               j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-              
+
               ! Check if this edge connects two DOFs which are marked active
               if (.not.BisActive(j)) cycle
-              
+
               ! Increase edge counter
               iedge = iedge+1
-              
+
               ! Set node numbers i and j
               IedgeList(1,iedge) = i
               IedgeList(2,iedge) = j
-              
+
               ! Set matrix positions ij and ji
               IedgeList(3,iedge) = ij
               IedgeList(4,iedge) = ji
@@ -25900,7 +25900,7 @@ contains
             do ij = Ksep(i)+1, Kld(i+1)-1
               j = Kcol(ij); Ksep(j) = Ksep(j)+1
             end do
-            
+
           end if
         end do
 
@@ -25924,12 +25924,12 @@ contains
 
       ! local variables
       integer :: i,j,ij,iedge
-      
+
       ! Initialise edge counter
       iedge = 0
 
       select case (ccontentType)
-        
+
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
@@ -25940,13 +25940,13 @@ contains
 
             ! Get node number j
             j = Kcol(ij)
-            
+
             ! Ignore the diagonal entries?
             if (bignoreDiagonal .and. i.eq.j) cycle
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -25976,7 +25976,7 @@ contains
       ! local variables
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,iedge
-      
+
       ! Generate set of active entries
       allocate(BisActive(ndof)); BisActive=.false.
       do i = 1, size(Iselection)
@@ -25987,7 +25987,7 @@ contains
       iedge = 0
 
       select case (ccontentType)
-        
+
       case (LSYSSC_EDGELIST_NODESONLY)
 
         ! Loop over all rows
@@ -26004,13 +26004,13 @@ contains
 
             ! Check if this edge connects two DOFs which are marked active
             if (.not.BisActive(j)) cycle
-            
+
             ! Ignore the diagonal entries?
             if (bignoreDiagonal .and. i.eq.j) cycle
 
             ! Increase edge counter
             iedge = iedge+1
-            
+
             ! Set node numbers i and j
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
@@ -26028,7 +26028,7 @@ contains
   end subroutine lsyssc_genEdgeList
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lsyssc_regroupEdgeList(ndof, IedgeList, h_IedgeListIdx, ncolor)
@@ -26061,7 +26061,7 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nmaxColor,isize
-    
+
     if (present(ncolor)) then
       nmaxColor = ncolor
     else
@@ -26069,7 +26069,7 @@ contains
       ! the given edge list into independent groups
       nmaxColor = compMaxEdgeColors(ndof, IedgeList)
     end if
-    
+
     ! (Re-)allocate memory
     if (h_IedgeListIdx .eq. ST_NOHANDLE) then
       call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
@@ -26085,7 +26085,7 @@ contains
 
     ! Set pointer
     call storage_getbase_int(h_IedgeListIdx, p_IedgeListIdx)
-    
+
     ! Regroup list of edges
     call genEdgeListIdx(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
 
@@ -26099,7 +26099,7 @@ contains
     ! share a common node (This is the classical edge-coloring)
 
     function compMaxEdgeColors(ndof, IedgeList) result(ncolor)
-      
+
       integer, intent(in) :: ndof
       integer, dimension(:,:), intent(in) :: IedgeList
 
@@ -26146,10 +26146,10 @@ contains
     subroutine genEdgeListIdx(neq, nmaxColor, IedgeListIdx, IedgeList)
 
       integer, intent(in) :: neq,nmaxColor
-      
+
       integer, dimension(:), intent(inout) :: IedgeListIdx
       integer, dimension(:,:), intent(inout) :: IedgeList
-      
+
       integer, dimension(:,:), pointer :: p_IedgeListTemp
       integer, dimension(:), pointer :: p_IdofColor
       integer, dimension(2) :: Isize
@@ -26182,7 +26182,7 @@ contains
 
         ! Find next unused color for nodes I and J
         color1: do icolor = 0, nmaxColor
-          
+
           if (.not.btest(p_IdofColor(i), icolor) .and.&
               .not.btest(p_IdofColor(j), icolor)) then
 
@@ -26216,7 +26216,7 @@ contains
 
         ! Find next unused color for nodes I and J
         color2: do icolor = 0, nmaxColor
-          
+
           if (.not.btest(p_IdofColor(i), icolor) .and.&
               .not.btest(p_IdofColor(j), icolor)) then
 
@@ -26226,10 +26226,10 @@ contains
 
             ! Get next free position
             jedge = IedgeListIdx(icolor+1)
-            
+
             ! Increase number of edges in this color group by one
             IedgeListIdx(icolor+1) = IedgeListIdx(icolor+1)+1
-           
+
             ! Copy edge data
             IedgeList(:,jedge) = p_IedgeListTemp(:,iedge)
 
@@ -26238,7 +26238,7 @@ contains
           end if
         end do color2
       end do edge2
-      
+
       ! Fourth shuffle pass:
       ! Adjust the starting index which was tainted in the third pass
       do icolor = size(IedgeListIdx), 2, -1
@@ -26251,7 +26251,7 @@ contains
       call storage_free(h_IedgeListTemp)
 
     end subroutine genEdgeListIdx
-    
+
   end subroutine lsyssc_regroupEdgeList
 
   ! ***************************************************************************
@@ -26329,12 +26329,12 @@ contains
       else
         nedge = 0
       end if
-      
+
     else
-      
+
       ! Do we have a common list of DOFs for rows and columns?
       if (present(IdofList)) then
-        
+
         ! Use the same set of restrictions for rows and columns
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
         BisActiveRow=.false.; BisActiveColumn => BisActiveRow
@@ -26348,14 +26348,14 @@ contains
         end do
 
       else ! use individual lists of DOFs for rows and columns
-        
+
         allocate(BisActiveRow(rmatrix%NEQ))
         allocate(BisActiveColumn(rmatrix%NCOLS))
-        
+
         if (present(IdofsTest)) then
           ! Set number of rows
           neq = size(IdofsTest)
-          
+
           ! Generate set of active rows
           BisActiveRow=.false.
           do i = 1, size(IdofsTest)
@@ -26364,15 +26364,15 @@ contains
         else
           ! Set number of rows
           neq = rmatrix%NEQ
-          
+
           ! No restriction for rows
           BisActiveRow=.true.
         end if
-        
+
         if (present(IdofsTrial)) then
           ! Set number of columns
           ncols = size(IdofsTrial)
-          
+
           ! Generate set of active columns
           BisActiveColumn=.false.
           do i = 1, size(IdofsTrial)
@@ -26381,21 +26381,21 @@ contains
         else
           ! Set number of columns
           ncols = rmatrix%NCOLS
-          
+
           ! No restriction for columns
           BisActiveColumn=.true.
         end if
       end if
-      
+
       !-------------------------------------------------------------------------
-      
+
       ! Initialisation
       na = 0
-      
+
       ! What type of matrix are we?
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
-        
+
         ! Determine number of non-zero matrix entries, equations and edges
         do i = 1, rmatrix%NEQ
           if (.not.BisActiveRow(i)) cycle
@@ -26411,14 +26411,14 @@ contains
         else
           nedge = 0
         end if
-        
+
       case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
             LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
-        
+
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-        
+
         ! Determine number of non-zero matrix entries, equations and edges
         do i=1, rmatrix%NEQ
           if (.not.BisActiveRow(i)) cycle
@@ -26428,20 +26428,20 @@ contains
             na = na+1
           end do
         end do
-        
+
         ! Compute number of edges
         if (neq .eq. ncols) then
           nedge = (na-neq)/2
         else
           nedge = 0
         end if
-        
+
       case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_calcDimsFromMatrix1')
         call sys_halt()
       end select
-      
+
       ! Deallocate temporal memory
       if (present(IdofList)) then
         deallocate(BisActiveRow)

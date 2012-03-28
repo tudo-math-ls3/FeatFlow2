@@ -30,9 +30,9 @@ module error
 !$ise omp_lib
   use genoutput
   use fsystem
-  
+
   implicit none
-  
+
   private
 
   !constants to use for subroutine error_print(...) indicating if the
@@ -43,7 +43,7 @@ module error
 !********************************* 00 global ************************************
   ! No error
   integer, parameter, public :: ERR_NO_ERROR = 0000
-  
+
   !Yet not implemented
   integer, parameter, public :: ERR_YNI = 0001
 
@@ -259,12 +259,12 @@ contains
     ! initialise all message strings
     Smessage(:) = ""
     Smessage2(:) = ""
-    
+
 
     ! Set module-private error code
     ierror = icode
 
-    
+
     ! Error or warning only?
     if (bcritical) then
       sstring1 = "ERROR"
@@ -442,7 +442,7 @@ contains
   end subroutine error_print_aux
 
 !************************************************************************
-  
+
 !<function>
   integer function error_askError()
 

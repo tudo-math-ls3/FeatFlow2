@@ -1,10 +1,8 @@
-!-*- mode: f90; -*-
-
   ! We have to perform matrix*vector + vector.
   ! What we actually calculate here is:
   !    y  =  cx * A^t * x  +  ( cy * y )
   !       =  ( (cx * x)^t * A  +  (cy * y)^t )^t.
-  
+
   ! Unfortunately, if cy != 1, then we need to scale y now.
   if(cy .eq. __VecZero__) then
     ! Clear y
@@ -18,7 +16,7 @@
 
   ! Perform the multiplication.
   if (cx .ne. __MatOne__) then
-    
+
     !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
     !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
@@ -34,9 +32,9 @@
       end do
     end do
     !$omp end parallel do
-    
+
   else   ! cx = 1.0
-    
+
     !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
     !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
@@ -49,14 +47,14 @@
       end do
     end do
     !$omp end parallel do
-    
+
   end if
 
 #else
 
   ! Perform the multiplication.
   if (cx .ne. __MatOne__) then
-    
+
     !$omp parallel do private(ia,icol,dtmp) default(shared) &
     !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
@@ -67,9 +65,9 @@
       end do
     end do
     !$omp end parallel do
-    
+
   else   ! cx = 1.0
-    
+
     !$omp parallel do private(ia,icol,dtmp) default(shared) &
     !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
@@ -79,7 +77,7 @@
       end do
     end do
     !$omp end parallel do
-    
+
   end if
 
 #endif

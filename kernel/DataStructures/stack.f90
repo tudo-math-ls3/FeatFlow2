@@ -47,7 +47,7 @@ module stack
 
 !<constants>
 !<constantblock description="Global flags for stack implementations">
-  
+
   ! Stack for integer data
   integer, parameter, public :: STACK_INT    = ST_INT
 
@@ -80,7 +80,7 @@ module stack
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -103,17 +103,17 @@ contains
     type(t_stack), intent(out) :: rstack
 !</output>
 !</subroutine>
-    
+
     select case (cstackType)
     case (STACK_INT)
       allocate(rstack%p_StackInt)
-      
+
     case (STACK_DOUBLE)
       allocate(rstack%p_StackDble)
-    
+
     case (STACK_SINGLE)
       allocate(rstack%p_StackSngl)
-  
+
     case DEFAULT
       call output_line('Invalid stack type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'stack_init')
@@ -241,5 +241,5 @@ contains
     end if
 
   end subroutine stack_getbase_single
-  
+
 end module stack

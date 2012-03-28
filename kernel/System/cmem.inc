@@ -61,7 +61,7 @@
       double precision, dimension(NNWORK) :: DWORK
       real, dimension(NNWORK*kind(DWORK(1))/kind(0.0))  :: VWORK
       integer, dimension(NNWORK*kind(DWORK(1))/kind(0)) :: KWORK
-      
+
       common  NWORK,IWORK,IWMAX,L(NNARR),DWORK
 
 ! equivalence statement; essential for pseudodyn. memory management

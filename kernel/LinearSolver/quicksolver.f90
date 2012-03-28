@@ -92,10 +92,10 @@ module quicksolver
 !<constantblock>
   ! Operation completed successfully
   integer, parameter, public :: QSOL_INFO_SUCCESS           = 0
-  
+
   ! Maximum iterations reached
   integer, parameter, public :: QSOL_INFO_MAX_ITER          = 1
-  
+
   ! Internal solver error
   integer, parameter, public :: QSOL_INFO_INTERNAL_ERROR    = 2
 !</constantblock>
@@ -113,7 +113,7 @@ module quicksolver
     module procedure qsol_solveCG_lsyssc
     module procedure qsol_solveCG_double
   end interface
-  
+
   interface qsol_solveCG_SSOR
     module procedure qsol_solveCG_SSOR_lsyssc
     module procedure qsol_solveCG_SSOR_double
@@ -160,14 +160,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   type(t_vectorScalar), intent(inout) :: rvec
-  
+
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -182,14 +182,14 @@ contains
   ! local variables
   integer, dimension(:), pointer :: p_Kld, p_Kcol
   real(DP), dimension(:), pointer :: p_Da, p_Dx
-  
+
     ! Get the arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
     call lsyssc_getbase_Kcol(rmat, p_Kcol)
 
     call lsyssc_getbase_double(rmat, p_Da)
     call lsyssc_getbase_double(rvec, p_Dx)
-    
+
     ! Call double version
     call qsol_solveCG_double(rmat%NEQ, p_Kld, p_Kcol, p_Da, p_Dx, Dwork, &
                              cinfo, niter, dtol)
@@ -209,13 +209,13 @@ contains
 !<input>
   ! The size of the linear system.
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix.
   integer, dimension(:), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix.
   integer, dimension(:), intent(in) :: Kcol
-  
+
   ! The data array of the matrix.
   real(DP), dimension(:), intent(in) :: Da
 !</input>
@@ -229,14 +229,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   real(DP), dimension(:), intent(inout) :: Dx
-  
+
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -251,31 +251,31 @@ contains
   ! local CG variables
   real(DP) :: dalpha, dbeta, dgamma, dtol2
   integer :: ite
-  
+
   ! temporary sub-vectors
   real(DP), dimension(:), pointer :: p_Ddef, p_Ddir, p_Dtmp
-  
+
     ! Calculate squared tolerance
     if(dtol .gt. 0.0_DP) then
       dtol2 = dtol**2
     else
       dtol2 = 0.0_DP
     end if
-    
+
     ! Get the sub-vectors
     p_Ddef => Dwork(    1 :   n)  ! defect (/gradient) vector
     p_Ddir => Dwork(  n+1 : 2*n)  ! descend direction vector
     p_Dtmp => Dwork(2*n+1 : 3*n)  ! temporary vector
-    
+
     ! First of all, copy Dx to Ddef
     call lalg_copyVectorDble(Dx,p_Ddef,n)
-    
+
     ! And clear the solution vector
     call lalg_clearVectorDble(Dx,n)
-    
+
     ! copy Ddef to Ddir
     call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
-    
+
     ! Calculate initial gamma
     dgamma = lalg_scalarProduct(p_Ddef,p_Ddef,n)
 
@@ -284,88 +284,88 @@ contains
 
       ! No iterations where performed
       niter = 0
-      
+
       ! Store final defect
       dtol = sqrt(dgamma)
-      
+
       ! Success
       cinfo = QSOL_INFO_SUCCESS
-      
+
       ! And return here
       return
-      
+
     end if
-    
+
     ! Okay, start the CG iteration
     do ite = 1, niter
-    
+
       ! Calculate:
       ! 1. Dtmp := A * Ddir
       ! 2. dalpha := < Ddir, Dtmp >
       call qsol_mvmult_CG(n,Kld,Kcol,Da,p_Ddir,p_Dtmp,dalpha)
-      
+
       ! Calculate alpha
       if(dalpha .eq. 0.0_DP) then
-        
+
         ! Internal solver error
         cinfo = QSOL_INFO_INTERNAL_ERROR
-        
+
         ! Store number of iterations
         niter = ite
-        
+
         ! Store last defect
         if(dtol .gt. 0.0_DP) then
           dtol = sqrt(dgamma)
         end if
-        
+
         return
-        
+
       end if
       dalpha = dgamma / dalpha
-      
+
       ! Calculate Dx = Dx + alpha*Ddir
       call lalg_vectorLinearComb(p_Ddir,Dx,dalpha,1.0_DP,n)
-      
+
       ! Calculate Ddef = Ddef - alpha*Dtmp
       call lalg_vectorLinearComb(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
-      
+
       ! Calculate new gamma and beta
       dbeta = dgamma
       dgamma = lalg_scalarProduct(p_Ddef,p_Ddef,n)
       dbeta = dgamma / dbeta
-      
+
       ! Check against tolerance if desired
       if(dgamma .le. dtol2) then
 
         ! No iterations where performed
         niter = ite
-        
+
         ! Store final defect
         dtol = sqrt(dgamma)
-        
+
         ! Success
         cinfo = QSOL_INFO_SUCCESS
-        
+
         ! And return here
         return
-        
+
       end if
 
       ! Calculate Ddir = Ddef + beta*Ddir
       call lalg_vectorLinearCombDble(p_Ddef,p_Ddir,1.0_DP,dbeta,n)
-    
+
     end do
-    
+
     ! If we come out here, then the maximum amount of iterations was performed.
     cinfo = QSOL_INFO_MAX_ITER
-    
+
     ! Store final defect
     if(dtol .gt. 0.0_DP) then
       dtol = sqrt(dgamma)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -395,14 +395,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   type(t_vectorScalar), intent(inout) :: rvec
-  
+
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -418,13 +418,13 @@ contains
   integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
   real(DP), dimension(:), pointer :: p_Da, p_Dx
   real(DP) :: drlx
-  
+
     if(present(drelax)) then
       drlx = drelax
     else
       drlx = 1.0_DP
     end if
-  
+
     ! Get the arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
     call lsyssc_getbase_Kcol(rmat, p_Kcol)
@@ -432,7 +432,7 @@ contains
 
     call lsyssc_getbase_double(rmat, p_Da)
     call lsyssc_getbase_double(rvec, p_Dx)
-    
+
     ! Call double version
     call qsol_solveCG_SSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
                                   p_Dx, Dwork, cinfo, niter, dtol, drlx)
@@ -453,16 +453,16 @@ contains
 !<input>
   ! The size of the linear system.
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix.
   integer, dimension(:), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix.
   integer, dimension(:), intent(in) :: Kcol
-  
+
   ! The Kdiagonal array of the matrix.
   integer, dimension(:), intent(in) :: Kdiag
-  
+
   ! The data array of the matrix.
   real(DP), dimension(:), intent(in) :: Da
 
@@ -480,14 +480,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   real(DP), dimension(:), intent(inout) :: Dx
-  
+
   ! Work array. Its length must be at least 3*n.
   real(DP), dimension(:), target, intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -502,34 +502,34 @@ contains
   ! local CG variables
   real(DP) :: dalpha, dbeta, dgamma, ddef, drlx
   integer :: ite
-  
+
   ! temporary sub-vectors
   real(DP), dimension(:), pointer :: p_Ddef, p_Ddir, p_Dtmp
-  
+
     ! Choose relaxation parameter.
     if(present(drelax)) then
       drlx = drelax
     else
       drlx = 1.0_DP
     end if
-  
+
     ! Get the sub-vectors
     p_Ddef => Dwork(    1 :   n)  ! defect (/gradient) vector
     p_Ddir => Dwork(  n+1 : 2*n)  ! descend direction vector
     p_Dtmp => Dwork(2*n+1 : 3*n)  ! temporary vector
-    
+
     ! First of all, copy Dx to Ddef
     call lalg_copyVectorDble(Dx,p_Ddef,n)
-    
+
     ! And clear the solution vector
     call lalg_clearVectorDble(Dx,n)
-    
+
     ! copy Ddef to Ddir
     call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
-    
+
     ! Check defect?
     if(dtol .gt. 0.0_DP) then
-    
+
       ! Calculate defect then
       ddef = lalg_norm(p_Ddef, LINALG_NORMEUCLID, n=n)
 
@@ -538,80 +538,80 @@ contains
 
         ! No iterations where performed
         niter = 0
-        
+
         ! Store final defect
         dtol = ddef
-        
+
         ! Success
         cinfo = QSOL_INFO_SUCCESS
-        
+
         ! And return here
         return
-        
+
       end if
-    
+
     end if
 
     ! Call the preconditioner
     call qsol_precSSOR(n,Kld,Kcol,Kdiag,Da,p_Ddir,drlx)
-  
+
     ! Calculate initial gamma
     dgamma = lalg_scalarProduct(p_Ddef,p_Ddir,n)
-    
+
     ! Okay, start the CG iteration
     do ite = 1, niter
-    
+
       ! Make sure gamma is not zero
       if(dgamma .eq. 0.0_DP) then
 
         ! Internal solver error
         cinfo = QSOL_INFO_INTERNAL_ERROR
-        
+
         ! Store number of iterations
         niter = ite
-        
+
         ! Store last defect
         if(dtol .gt. 0.0_DP) then
           dtol = ddef
         end if
-        
+
         return
 
       end if
-    
+
       ! Calculate:
       ! 1. Dtmp := A * Ddir
       ! 2. dalpha := < Ddir, Dtmp >
       call qsol_mvmult_CG(n,Kld,Kcol,Da,p_Ddir,p_Dtmp,dalpha)
-      
+
       ! Calculate alpha
       if(dalpha .eq. 0.0_DP) then
-        
+
         ! Internal solver error
         cinfo = QSOL_INFO_INTERNAL_ERROR
-        
+
         ! Store number of iterations
         niter = ite
-        
+
         ! Store last defect
         if(dtol .gt. 0.0_DP) then
           dtol = ddef
         end if
-        
+
         return
-        
+
       end if
       dalpha = dgamma / dalpha
-      
+
       ! Calculate Dx = Dx + alpha*Ddir
       call lalg_vectorLinearCombDble(p_Ddir,Dx,dalpha,1.0_DP,n)
-      
+
       ! Calculate Ddef = Ddef - alpha*Dtmp
       call lalg_vectorLinearCombDble(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
-      
+
       ! Check defect?
       if(dtol .gt. 0.0_DP) then
-      
+
         ! Calculate defect then
         ddef = lalg_norm(p_Ddef, LINALG_NORMEUCLID, n=n)
 
@@ -620,44 +620,44 @@ contains
 
           ! Store number of iterations
           niter = ite
-          
+
           ! Store final defec
           dtol = ddef
-          
+
           ! Success
           cinfo = QSOL_INFO_SUCCESS
-          
+
           ! And return here
           return
-          
+
         end if
-        
+
       end if
 
       ! Copy Ddef to Dtmp
       call lalg_copyVectorDble(p_Ddef,p_Dtmp,n)
-      
+
       ! Apply preconditioner onto Dtmp
       call qsol_precSSOR(n,Kld,Kcol,Kdiag,Da,p_Dtmp,drlx)
-      
+
       ! Calculate new gamma and beta
       dbeta = dgamma
       dgamma = lalg_scalarProduct(p_Ddef,p_Dtmp,n)
       dbeta = dgamma / dbeta
-      
+
       ! Calculate Ddir = Dtmp + beta*Ddir
       call lalg_vectorLinearComb(p_Dtmp,p_Ddir,1.0_DP,dbeta,n)
-    
+
     end do
-    
+
     ! If we come out here, then the maximum amount of iterations was performed.
     cinfo = QSOL_INFO_MAX_ITER
-    
+
     ! Store final defect
     if(dtol .gt. 0.0_DP) then
       dtol = ddef
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -667,9 +667,9 @@ contains
 #ifndef USE_OPENMP
   pure &
 #endif
-  
+
   subroutine qsol_mvmult_CG(n,Kld,Kcol,Da,Dx,Dy,dalpha)
-  
+
 !<description>
   ! PRIVATE AUXILIARY ROUTINE:
   ! This routine performs two tasks at once:
@@ -682,16 +682,16 @@ contains
 !<input>
   ! The size of Dx
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix.
   integer, dimension(*), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix.
   integer, dimension(*), intent(in) :: Kcol
 
   ! The DA array of the matrix.
   real(DP), dimension(*), intent(in) :: Da
-  
+
   ! The input vector that is to be multiplied by the matrix.
   real(DP), dimension(*), intent(in) :: Dx
 !</input>
@@ -699,7 +699,7 @@ contains
 !<output>
   ! The output vector that recieves A*x
   real(DP), dimension(*), intent(out) :: Dy
-  
+
   ! The result of the scalar product < x, A*x >
   real(DP), intent(out) :: dalpha
 !</output>
@@ -709,9 +709,9 @@ contains
   ! local variables
   integer :: i,j
   real(DP) :: dt
-  
+
     dalpha = 0.0_DP
-    
+
     !$omp parallel do default(shared) private(j,dt) &
     !$omp reduction(+:dalpha) if (n > qsol_perfconfig%NEQMIN_OMP)
     do i = 1, n
@@ -754,14 +754,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   type(t_vectorScalar), intent(inout) :: rvec
-  
+
   ! Work array. Its length must be at least n.
   real(DP), dimension(:), intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -777,7 +777,7 @@ contains
   integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
   real(DP), dimension(:), pointer :: p_Da, p_Dx
   real(DP) :: drlx
-  
+
     if(present(drelax)) then
       drlx = drelax
     else
@@ -790,7 +790,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'qsol_solveSOR_lsyssc')
       call sys_halt()
     end if
-  
+
     ! Get the arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
     call lsyssc_getbase_Kcol(rmat, p_Kcol)
@@ -798,7 +798,7 @@ contains
 
     call lsyssc_getbase_double(rmat, p_Da)
     call lsyssc_getbase_double(rvec, p_Dx)
-    
+
     ! Call double version
     call qsol_solveSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
                               p_Dx, Dwork, cinfo, niter, dtol, drlx)
@@ -819,16 +819,16 @@ contains
 !<input>
   ! The size of the linear system.
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix.
   integer, dimension(*), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix.
   integer, dimension(*), intent(in) :: Kcol
-  
+
   ! The Kdiagonal array of the matrix.
   integer, dimension(*), intent(in) :: Kdiag
-  
+
   ! The data array of the matrix.
   real(DP), dimension(*), intent(in) :: Da
 
@@ -846,14 +846,14 @@ contains
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
   real(DP), dimension(*), intent(inout) :: Dx
-  
+
   ! Work array. Its length must be at least n.
   real(DP), dimension(*), intent(inout) :: Dwork
-  
+
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
   integer, intent(inout) :: niter
-  
+
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
   !   always performs niter iterations, unless an error occurs.
@@ -868,21 +868,21 @@ contains
   ! local variables
   integer :: ite,i,j
   real(DP) :: drlx,daux,ddef,dtol2
-  
+
     ! Choose relaxation parameter
     if(present(drelax)) then
       drlx = drelax
     else
       drlx = 1.0_DP
     end if
-    
+
     ! Calculate squared tolerance
     if(dtol .gt. 0.0_DP) then
       dtol2 = dtol**2
     else
       dtol2 = 0.0_DP
     end if
-    
+
     ! Remark:
     ! This SOR implementation does not check the real defect against the
     ! specified tolerance.
@@ -905,13 +905,13 @@ contains
       Dwork(i) = Dx(i)
       Dx(i) = 0.0_DP
     end do
-    
+
     ! Launch the SOR solver.
     do ite = 1, niter
-    
+
       ! Reset the defect
       ddef = 0.0_DP
-    
+
       ! Loop over all matrix rows
       do i = 1, n
 
@@ -922,37 +922,37 @@ contains
         do j = Kld(i), Kld(i+1)-1
           daux = daux - Da(j)*Dx(Kcol(j))
         end do
-        
+
         ! Calculate new x(i)
         Dx(i) = Dx(i) + drlx*daux / Da(Kdiag(i))
 
         ! Update defect
         ddef = ddef + daux*daux
-        
+
       end do
-      
+
       ! Check defect
       if(ddef .le. dtol2) then
-        
+
         ! Okay, we are done
         cinfo = QSOL_INFO_SUCCESS
-        
+
         ! Store 'final defect'
         dtol = sqrt(ddef)
-        
+
         ! Store number of iterations
         niter = ite
-        
+
         ! Get out
         return
-        
+
       end if
-    
+
     end do
-    
+
     ! Maximum number of iterations reached
     cinfo = QSOL_INFO_MAX_ITER
-    
+
     ! Store final defect if desired
     if(dtol .gt. 0.0_DP) dtol = sqrt(ddef)
 
@@ -971,7 +971,7 @@ contains
 !<input>
   ! The system matrix.
   type(t_matrixScalar), intent(in) :: rmat
-  
+
   ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(in) :: drelax
@@ -988,13 +988,13 @@ contains
   integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
   real(DP), dimension(:), pointer :: p_Da, p_Dx
   real(DP) :: drlx
-  
+
     if(present(drelax)) then
       drlx = drelax
     else
       drlx = 1.0_DP
     end if
-  
+
     ! Get the arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
     call lsyssc_getbase_Kcol(rmat, p_Kcol)
@@ -1002,13 +1002,13 @@ contains
 
     call lsyssc_getbase_double(rmat, p_Da)
     call lsyssc_getbase_double(rvec, p_Dx)
-    
+
     ! Call double version
     call qsol_precSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
                               p_Dx, drlx)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1022,19 +1022,19 @@ contains
 !<input>
   ! The dimension of the matrix.
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix
   integer, dimension(*), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix
   integer, dimension(*), intent(in) :: Kcol
-  
+
   ! The Kdiagonal array of the matrix
   integer, dimension(*), intent(in) :: Kdiag
-  
+
   ! The data array of the matrix
   real(DP), dimension(*), intent(in) :: Da
-  
+
   ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(in) :: drelax
@@ -1050,7 +1050,7 @@ contains
   ! local variables
   integer :: i,j,k
   real(DP) :: dt, drlx
-  
+
     ! Choose relaxation parameter
     if(present(drelax)) then
       drlx = drelax
@@ -1059,7 +1059,7 @@ contains
     end if
 
     if(drlx .ne. 1.0_DP) then
-    
+
       ! Forward insertion
       do i = 1, n
         dt = 0.0_DP
@@ -1069,9 +1069,9 @@ contains
         end do
         Dx(i) = (Dx(i) - drlx*dt) / Da(k)
       end do
-      
+
     else ! Unrelaxed GS preconditioner
-    
+
       ! Forward insertion
       do i = 1, n
         dt = 0.0_DP
@@ -1081,7 +1081,7 @@ contains
         end do
         Dx(i) = (Dx(i) - dt) / Da(k)
       end do
-    
+
     end if
 
   end subroutine
@@ -1099,7 +1099,7 @@ contains
 !<input>
   ! The system matrix.
   type(t_matrixScalar), intent(in) :: rmat
-  
+
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(in) :: drelax
@@ -1116,13 +1116,13 @@ contains
   integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
   real(DP), dimension(:), pointer :: p_Da, p_Dx
   real(DP) :: drlx
-  
+
     if(present(drelax)) then
       drlx = drelax
     else
       drlx = 1.0_DP
     end if
-  
+
     ! Get the arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
     call lsyssc_getbase_Kcol(rmat, p_Kcol)
@@ -1130,13 +1130,13 @@ contains
 
     call lsyssc_getbase_double(rmat, p_Da)
     call lsyssc_getbase_double(rvec, p_Dx)
-    
+
     ! Call double version
     call qsol_precSSOR_double(rmat%NEQ, p_Kld, p_Kcol, p_Kdiag, p_Da, &
                               p_Dx, drlx)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1150,19 +1150,19 @@ contains
 !<input>
   ! The dimension of the matrix.
   integer, intent(in) :: n
-  
+
   ! The Kld array of the matrix
   integer, dimension(*), intent(in) :: Kld
-  
+
   ! The Kcol array of the matrix
   integer, dimension(*), intent(in) :: Kcol
-  
+
   ! The Kdiagonal array of the matrix
   integer, dimension(*), intent(in) :: Kdiag
-  
+
   ! The data array of the matrix
   real(DP), dimension(*), intent(in) :: Da
-  
+
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
   real(DP), optional, intent(in) :: drelax
@@ -1178,7 +1178,7 @@ contains
   ! local variables
   integer :: i,j,k
   real(DP) :: dt, drlx
-  
+
     ! Choose relaxation parameter
     if(present(drelax)) then
       drlx = drelax
@@ -1187,7 +1187,7 @@ contains
     end if
 
     if(drlx .ne. 1.0_DP) then
-    
+
       ! Forward insertion
       do i = 1, n
         dt = 0.0_DP
@@ -1197,7 +1197,7 @@ contains
         end do
         Dx(i) = (Dx(i) - drlx*dt) / Da(k)
       end do
-      
+
       ! Backward insertion
       do i = n, 1, -1
         dt = 0.0_DP
@@ -1207,9 +1207,9 @@ contains
         end do
         Dx(i) = Dx(i) - ((drlx*dt) / Da(k))
       end do
-      
+
     else ! Unrelaxed SGS preconditioner
-    
+
       ! Forward insertion
       do i = 1, n
         dt = 0.0_DP
@@ -1219,7 +1219,7 @@ contains
         end do
         Dx(i) = (Dx(i) - dt) / Da(k)
       end do
-      
+
       ! Backward insertion
       do i = n, 1, -1
         dt = 0.0_DP
@@ -1229,17 +1229,17 @@ contains
         end do
         Dx(i) = Dx(i) - (dt / Da(k))
       end do
-    
+
     end if
 
   end subroutine
-  
+
   ! ************************************************************************
 
 !<subroutine>
 
   pure subroutine qsol_solveDiagSchurComp (ndimA,ndimC,Du,Df,Da,Db,Dd,Dc,bsuccess)
-  
+
 !<description>
   ! This routine applies a Schur Complement decomposition to a 2x2 saddle point
   ! matrix where only entries on the diagonals of the diagonal blocks exist.
@@ -1266,13 +1266,13 @@ contains
 !<input>
   ! Dimension of the A-matrix
   integer, intent(in) :: ndimA
-  
+
   ! Dimension of the C-matrix
   integer, intent(in) :: ndimC
 
   ! Submatrix A, only diagonal entries.
   real(DP), dimension(*), intent(in) :: Da
-  
+
   ! Entries in the submatrix B.
   real(DP), dimension(ndimA,*), intent(in) :: Db
 
@@ -1300,16 +1300,16 @@ contains
     ! local variables
     integer :: i,j,k,info
     integer, dimension(ndimC) :: Ipiv
-    
+
     ! A^-1
     real(DP), dimension(ndimA) :: Dainv
-    
+
     ! DA^-1, saved transposed for efficiency reasons
     real(DP), dimension(ndimA,ndimC) :: Ddainv
-    
+
     ! S and S^-1
     real(DP), dimension(ndimC,ndimC) :: Ds, Dsinv
-    
+
     ! Temporary RHS vector
     real(DP), dimension(ndimA) :: Dftemp1
     real(DP), dimension(ndimC) :: Dftemp2
@@ -1330,7 +1330,7 @@ contains
     ! The system can be written as:
     !   ( A  B ) = (u) = (f)
     !   ( D  C )   (p)   (g)
-    
+
     ! To solve with the Schur Complement, we have to solve in two steps.
     !
     ! 1.) Solve:  (C - D A^-1 B) p = g - D A^-1 f
@@ -1349,11 +1349,11 @@ contains
     do i=1,ndimA
       Dainv(i) = 1.0_DP/Da(i)
     end do
-    
+
     do i=1,ndimA
       Dftemp1(i) = Df(i)
     end do
-    
+
     do i=1,ndimC
       Dftemp2(i) = Df(ndimA+i)
     end do
@@ -1368,10 +1368,10 @@ contains
         Dftemp2(i) = Dftemp2(i) - Ddainv(j,i) * Df(j)
       end do
     end do
-    
+
     ! Compute S = (C - D A^-1 B)
     ! (Order of loops changed for efficiency reasons...)
-    
+
     do j=1,ndimC
       ! Compute (- (D A^-1) B)
       do i=1,ndimC
@@ -1380,11 +1380,11 @@ contains
           Ds(i,j) = Ds(i,j) - Ddainv(k,i) * Db(k,j)
         end do
       end do
-    
+
       ! Add C; consists only of the diagonal.
       Ds(j,j) = Ds(j,j) + Dc(j)
     end do
-    
+
     ! Invert S and compute p.
     !
     ! call mprim_invertMatrixDble(Ds, &
@@ -1394,7 +1394,7 @@ contains
     case (1)
       if (Ds(1,1) .le. SYS_EPSREAL_DP) return
       Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
-      
+
     case (2)
       call mprim_invert2x2MatrixDirectDble(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
@@ -1419,7 +1419,7 @@ contains
                   + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4)
       Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
                   + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
-    
+
     case (5)
       call mprim_invert5x5MatrixDirectDble(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
@@ -1467,9 +1467,9 @@ contains
       call DGESV(ndimC,1,Ds,ndimC,Ipiv,Dftemp2,ndimC,info)
       if (info .ne. 0) return
       Du(ndimA+1:ndimA+ndimC) = Dftemp2(1:ndimC)
-      
+
     end select
-    
+
     ! Calculate u = A^-1 (f - B p)
     do i=1,ndimA
       do j=1,ndimC
@@ -1477,9 +1477,9 @@ contains
       end do
       Du(i) = Dainv(i) * Dftemp1(i)
     end do
-    
+
     ! That's it.
-    
+
     bsuccess = .true.
 
   end subroutine
@@ -1489,7 +1489,7 @@ contains
 !<subroutine>
 
   pure subroutine qsol_solveTridiag (neq,iidxoffdiag,Dvec,Da,Db,Dd,Dbtemp)
-  
+
 !<description>
   ! This routine applies a modified Thomas algorithm to solve
   ! a tridiagonal system specified as a set of diagonals.
@@ -1515,7 +1515,7 @@ contains
 !<input>
   ! Dimension of the matrix
   integer, intent(in) :: neq
-  
+
   ! Index of the offdiagonal B/D matrix, i.e. the difference in the row/column
   ! number between the start of A and B/D. E.g.: An index of 1 indicates a
   ! trisiagonal matrix with B/D being the 1st offdiagonal. An index of 0 is
@@ -1525,7 +1525,7 @@ contains
   ! Entries in the diagonal A.
   ! real(DP), dimension(neq), intent(inout) :: Da
   real(DP), dimension(:), intent(inout) :: Da
-  
+
   ! Entries in the diagonal B.
   ! real(DP), dimension(neq-iidxoffdiag), intent(inout) :: Db
   real(DP), dimension(:), intent(inout) :: Db
@@ -1551,7 +1551,7 @@ contains
     ! local variables
     integer :: i
     real(DP) :: dx
-    
+
     ! Forward sweep. Modify the coefficients to factorise the matrix.
     !
     ! We have e.g.
@@ -1569,7 +1569,7 @@ contains
       Dbtemp(i) = Db(i) / Da(i)
       Dbtemp(neq+i) = Dvec(i) / Da(i)
     end do
-    
+
     ! Now we have in the first rows:
     !
     !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
@@ -1584,7 +1584,7 @@ contains
     do i=min(iidxoffdiag,neq-iidxoffdiag)+1,iidxoffdiag
       Dbtemp(neq+i) = Dvec(i) / Da(i)
     end do
-    
+
     ! leading to:
     !
     !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
@@ -1599,16 +1599,16 @@ contains
     do i = iidxoffdiag+1,neq-iidxoffdiag
       ! Calc redundant factor
       dx = Da(i) - Dd(i-iidxoffdiag) * Dbtemp(i-iidxoffdiag)
-      
+
       ! Factorise B, result is written to Dbtemp(1..neq-iidxoffdiag)
       Dbtemp(i) = Db(i) / dx
-      
+
       ! Modify the RHS appropriately. Result is written to
       ! Dbtemp(neq+1..2*neq)
       Dbtemp(neq+i) = &
           (Dvec(i) - Dd(i-iidxoffdiag) * Dbtemp(neq+i-iidxoffdiag)) / dx
     end do
-    
+
     ! So we have:
     !
     !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
@@ -1624,13 +1624,13 @@ contains
     do i = max(iidxoffdiag,neq-iidxoffdiag)+1,neq
       ! Calc redundant factor
       dx = Da(i) - Dd(i-iidxoffdiag) * Dbtemp(i-iidxoffdiag)
-      
+
       ! Modify the RHS appropriately. Result is written to
       ! Dbtemp(neq+1..2*neq)
       Dbtemp(neq+i) = &
           (Dvec(i) - Dd(i-iidxoffdiag) * Dbtemp(neq+i-iidxoffdiag)) / dx
     end do
-    
+
     ! So the matrix we have now is:
     !
     !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
@@ -1657,7 +1657,7 @@ contains
     !  (     0           1          | g5 = x5 )    (                 1          | g5 = x5 )
     !  (         0           1      | g6 = x6 )    ( 0                   1      | g6 = x6 )
     !  (             0           1  | g7 = x7 )    (     0                   1  | g7 = x7 )
-    
+
     ! Now do the back-substitution for the remaining entries.
     do i = neq-iidxoffdiag,1,-1
       Dvec(i) = Dbtemp(neq+i) - Dbtemp(i)*Dvec(i+iidxoffdiag)

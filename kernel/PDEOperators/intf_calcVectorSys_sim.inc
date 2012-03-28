@@ -1,9 +1,7 @@
-   ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
-    
+
   subroutine fcb_calcVectorSys_sim(DdataAtNode, DcoeffsAtNode,&
       InodeList, dscale, nnodes, DvectorAtNode, rcollection)
 

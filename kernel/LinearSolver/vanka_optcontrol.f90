@@ -33,7 +33,7 @@ module vanka_optcontrol
   implicit none
 
   private
-  
+
   public :: t_vanka_NavStOptC2D
   public :: vanka_init_NavStOptC2D
   public :: vanka_solve_NavStOptC2D
@@ -78,31 +78,31 @@ module vanka_optcontrol
     real(DP), dimension(:), pointer :: p_Ddefect
     real(DP), dimension(:,:), pointer :: p_DdefectU
     real(DP), dimension(:,:), pointer :: p_DdefectP
-    
+
   end type
 
 !</typeblock>
 
 !<typeblock>
-  
+
   ! A structure that saves matrix pointers for the 2D Navier-Stokes
   ! optimal control Vanka driver.
   type t_vanka_NavStOptC2D
-  
+
     private
-    
+
     ! The Vanka subtype that is to be used
     integer :: csubtype = VANKATP_NAVSTOPTC2D_DIAG
-    
+
     ! Pointer to the column structure of the velocity matrix A11/A22/A44/A55
     integer, dimension(:), pointer :: p_KcolA11 => null()
-    
+
     ! Pointer to the row structure of the velocity matrix A11/A22/A44/A55
     integer, dimension(:), pointer :: p_KldA11 => null()
 
     ! Pointer to the diagonal structure of the velocity matrix A11/A22/A44/A55
     integer, dimension(:), pointer :: p_KdiagA11 => null()
-    
+
     ! Pointer to the matrix entries of the velocity matrix A11
     real(DP), dimension(:), pointer :: p_DA11 => null()
 
@@ -129,7 +129,7 @@ module vanka_optcontrol
 
     ! Pointer to the column structure of the matrix A12/A21/A45/A54/A24/A15/A42/A51
     integer, dimension(:), pointer :: p_KcolA12 => null()
-    
+
     ! Pointer to the row structure of the matrix A12/A21/A45/A54/A24/A15/A42/A51
     integer, dimension(:), pointer :: p_KldA12 => null()
 
@@ -159,10 +159,10 @@ module vanka_optcontrol
 
     ! Pointer to the column structure of the B-matrices.
     integer, dimension(:), pointer :: p_KcolB => null()
-    
+
     ! Pointer to the row structure of the B-matrices
     integer, dimension(:), pointer :: p_KldB => null()
-    
+
     ! Pointer to the entries of the B1-matrix
     real(DP), dimension(:), pointer :: p_DB1 => null()
 
@@ -183,7 +183,7 @@ module vanka_optcontrol
 
     ! Pointer to the column structure of the D-matrices.
     integer, dimension(:), pointer :: p_KcolD => null()
-    
+
     ! Pointer to the row structure of the D-matrices
     integer, dimension(:), pointer :: p_KldD => null()
 
@@ -201,19 +201,19 @@ module vanka_optcontrol
 
     ! Pointer to the column structure of the C-matrix.
     integer, dimension(:), pointer :: p_KcolC => null()
-    
+
     ! Pointer to the row structure of the C-matrix.
     integer, dimension(:), pointer :: p_KldC => null()
-    
+
     ! Pointer to the entries of the C1-matrix
     real(DP), dimension(:), pointer :: p_DC1 => null()
 
     ! Pointer to the entries of the C2-matrix
     real(DP), dimension(:), pointer :: p_DC2 => null()
-    
+
     ! Multiplication factors for the submatrices; taken from the system matrix.
     real(DP), dimension(6,6) :: Dmultipliers = 0.0_DP
-    
+
     ! Whether extra matrices exist
     logical :: bhaveA12 = .false.
     logical :: bhaveA45 = .false.
@@ -223,18 +223,18 @@ module vanka_optcontrol
     logical :: bhaveA51 = .false.
     logical :: bhaveB16 = .false.
     logical :: bhaveC = .false.
-    
+
     ! Spatial discretisation structure for velocity
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrV => null()
-    
+
     ! Spatial discretisation structure for pressure
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => null()
-    
+
     ! Information about the FE spaces. Pointers to preallocated data arrays.
     type(t_vanka_NavStOptC2D_eldist), dimension(:), pointer :: p_rfemdata
-    
+
   end type
-  
+
 !</typeblock>
 
 !</types>
@@ -244,9 +244,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine vanka_init_NavStOptC2D (rvanka, rmatrix, csubtype)
-  
+
 !<description>
   ! Initialises the Vanka variant for 2D Navier-Stokes problems.
   ! Applies for all FEM spaces with discontinuous pressure.
@@ -278,9 +278,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()
     end if
-    
+
     ! Todo: Do more checks
-    
+
     ! The structure of A(1,3) must be identical to A(3,1) and
     ! that of A(2,3) must be identical to A(3,2).
     if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .or. &
@@ -296,21 +296,21 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()
     end if
-    
+
     ! Get the block discretisation structure from the matrix.
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
-    
+
     if (.not. associated(p_rblockDiscr)) then
       call output_line ('No block discretisation assigned to matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavStOptC2D')
       call sys_halt()
     end if
-    
+
     ! Get the discretisation structure of V and P from the block
     ! discretisation structure.
     rvanka%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscr(1)
     rvanka%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscr(3)
-    
+
     if ((p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
          p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) .or. &
         (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
@@ -339,7 +339,7 @@ contains
     ! -----
     ! Store the subtype
     rvanka%csubtype = csubtype
-  
+
     ! Get the pointers for the vanka structure
     call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),rvanka%p_KldA11)
     call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),rvanka%p_KcolA11)
@@ -365,7 +365,7 @@ contains
 
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),rvanka%p_Db1)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,3),rvanka%p_Db2)
-    
+
     ! B-matrices in row 1/2 column 6 available?
     rvanka%bhaveB16 = lsysbl_isSubmatrixPresent(rmatrix,1,6)
     if (rvanka%bhaveB16) then
@@ -375,7 +375,7 @@ contains
 
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,1),rvanka%p_Dd1)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,2),rvanka%p_Dd2)
-    
+
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,4),rvanka%p_Da44)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,5),rvanka%p_Da55)
 
@@ -384,7 +384,7 @@ contains
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,5),rvanka%p_Da45)
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,4),rvanka%p_Da54)
     end if
-    
+
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,6),rvanka%p_Db4)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,6),rvanka%p_Db5)
 
@@ -399,7 +399,7 @@ contains
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,3),rvanka%p_DC1)
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(6,6),rvanka%p_DC2)
     end if
-    
+
     rvanka%bhaveA14 = lsysbl_isSubmatrixPresent(rmatrix,1,4)
     if (rvanka%bhaveA14) then
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,4),rvanka%p_Da14)
@@ -437,7 +437,7 @@ contains
          (rvanka%Dmultipliers(5,4) .ne. 0.0_DP))
     rvanka%bHaveC = rvanka%bHaveC .and. &
         (rvanka%Dmultipliers(3,3) .ne. 0.0_DP)
-    
+
     if (.not. rvanka%bhaveA12) then
       ! Search the column/Row structure if necessary.
       if (rvanka%bhaveA45) then
@@ -454,12 +454,12 @@ contains
 
     ! Preallocate memory for the FEM data.
     allocate(rvanka%p_rfemdata(p_rblockDiscr%RspatialDiscr(1)%inumFESpaces))
-    
+
     do ielementdist = 1,size(rvanka%p_rfemdata)
       ! Get the corresponding element distributions of u and p.
       p_relementDistrV => &
           rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
-      
+
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
       if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
@@ -469,7 +469,7 @@ contains
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(1)
       end if
-      
+
       ! Which element combination do we have now?
       celemV = elem_getPrimaryElement(p_relementDistrV%celement)
       celemP = elem_getPrimaryElement(p_relementDistrP%celement)
@@ -477,7 +477,7 @@ contains
       ! #dofs in the FEM-spaces?
       ndofu = elem_igetNDofLoc(celemV)
       ndofp = elem_igetNDofLoc(celemP)
-      
+
       rvanka%p_rfemdata(ielementdist)%ndofu = ndofu
       rvanka%p_rfemdata(ielementdist)%ndofp = ndofp
 
@@ -501,17 +501,17 @@ contains
       allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalA11(ndofu,ndofu))
       allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalA12(ndofu,ndofu))
       allocate (rvanka%p_rfemdata(ielementdist)%p_KentryLocalC(ndofp,ndofp))
-      
+
     end do
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine vanka_done_NavStOptC2D (rvanka)
-  
+
 !<description>
   ! Releases memory.
 !</description>
@@ -524,7 +524,7 @@ contains
 !</subroutine>
 
   integer :: i
-    
+
     do i = 1,size(rvanka%p_rfemdata)
       ! Deallocate the memory
       deallocate (rvanka%p_rfemdata(i)%p_IdofsP)
@@ -543,17 +543,17 @@ contains
       deallocate (rvanka%p_rfemdata(i)%p_KentryLocalB)
       deallocate (rvanka%p_rfemdata(i)%p_KentryLocalC)
     end do
-    
+
     deallocate (rvanka%p_rfemdata)
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine vanka_solve_NavStOptC2D (rvanka, rsol, rrhs, niterations, domega)
-  
+
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
   ! 2D Navier-Stokes problems.
@@ -565,10 +565,10 @@ contains
 
   ! The right-hand-side vector of the system
   type(t_vectorBlock), intent(in) :: rrhs
-  
+
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
-  
+
   ! The relaxation parameter in range (0,2)
   real(DP), intent(in) :: domega
 !</input>
@@ -586,17 +586,17 @@ contains
   integer, dimension(:), pointer :: p_IelementList
   type(t_elementDistribution), pointer :: p_relementDistrV
   type(t_elementDistribution), pointer :: p_relementDistrP
-    
+
     ! Nothing to do?
     if(niterations .le. 0) return
-    
+
     ! Loop through the element distributions of the velocity.
     do ielementdist = 1,rvanka%p_rspatialDiscrV%inumFESpaces
-    
+
       ! Get the corresponding element distributions of u and p.
       p_relementDistrV => &
           rvanka%p_rspatialDiscrV%RelementDistr(ielementdist)
-      
+
       ! Either the same element for P everywhere, or there must be given one
       ! element distribution in the pressure for every velocity element distribution.
       if (rvanka%p_rspatialDiscrP%inumFESpaces .gt. 1) then
@@ -606,17 +606,17 @@ contains
         p_relementDistrP => &
             rvanka%p_rspatialDiscrP%RelementDistr(1)
       end if
-      
+
       ! Get the list of the elements to process.
       ! We take the element list of the X-velocity as 'primary' element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
       call storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
-      
+
       ! Which element combination do we have now?
       celemV = elem_getPrimaryElement(p_relementDistrV%celement)
       celemP = elem_getPrimaryElement(p_relementDistrP%celement)
-        
+
       ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
       select case (rvanka%csubtype)
       case (VANKATP_NAVSTOPTC2D_DIAG)
@@ -632,20 +632,20 @@ contains
         call output_line ('Unknown Vanka subtype!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_solve_NavStOptC2D')
         call sys_halt()
-      
+
       end select
-      
+
     end do
-      
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine vanka_NavStOptC2D (rvanka,rvector,rrhs,niterations,domega,&
       IelementList,rfemdata)
-  
+
 !<description>
   ! Applies the Navier-Stokes optimal control diagonal VANKA variant
   ! to a vector for a list of elements and one pair of velocity/pressure
@@ -658,13 +658,13 @@ contains
 
   ! The right-hand-side vector of the system
   type(t_vectorBlock), intent(in)         :: rrhs
-  
+
   ! Relaxation parameter. Standard=1.0_DP.
   real(DP), intent(in)                    :: domega
-  
+
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
-  
+
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:), intent(in) :: IelementList
 
@@ -681,10 +681,10 @@ contains
 
   ! Multiplication factors
   real(DP), dimension(6,6) :: Dmult
-  
+
   ! Array for the pressure DOF's on the element
   integer, dimension(1) :: IelIdx2
-  
+
   ! Quick access for the matrix arrays
   integer, dimension(:), pointer :: p_KldA11,p_KldA12,p_KldB,p_KldC,p_KldD,&
       p_KcolA11,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA11
@@ -710,13 +710,13 @@ contains
                                      p_DvecU1,p_DvecV1,p_DvecP1
   real(DP), dimension(:), pointer :: p_DrhsU2,p_DrhsV2,p_DrhsP2,&
                                      p_DvecU2,p_DvecV2,p_DvecP2
-  
+
   ! local variables
   logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bhaveB16,bHaveC
   integer :: idxu,idxp,idxp2,idofp,idofu,i,j,id1,id2,ndofu,ndofp,info,ielidx,iter
   real(DP) :: daux1,daux2,daux4,daux5,daux16,daux26
   real(DP) :: dp1,dp2
-  
+
     ! Get the pointers to the vector data
     call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvecU1)
     call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvecV1)
@@ -731,7 +731,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsU2)
     call lsyssc_getbase_double(rrhs%RvectorBlock(5), p_DrhsV2)
     call lsyssc_getbase_double(rrhs%RvectorBlock(6), p_DrhsP2)
-    
+
     ! Get wqhich optional matrices we have.
     bhaveA12 = rvanka%bhaveA12
     bhaveA45 = rvanka%bhaveA45
@@ -741,7 +741,7 @@ contains
     bhaveA41 = rvanka%bhaveA41
     bhaveA51 = rvanka%bhaveA51
     bhaveB16 = rvanka%bhaveB16
-    
+
     ! Get the pointers from the Vanka structure for faster access
     p_KldA11   => rvanka%p_KldA11
     p_KcolA11  => rvanka%p_KcolA11
@@ -782,7 +782,7 @@ contains
     p_Da52     => rvanka%p_Da52
     p_Da51     => rvanka%p_Da51
     p_Da42     => rvanka%p_Da42
-    
+
     ! Get the multiplication factors
     Dmult(:,:) = rvanka%Dmultipliers(:,:)
 
@@ -804,11 +804,11 @@ contains
 
       ! Loop through all elements
       do ielidx = 1,size(IelementList)
-      
+
         ! On the element, get the local DOF's in the pressure space
         IelIdx2(1) = ielidx
         call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP, IelIdx2, IdofsP)
-            
+
         ! Get A^-1, which is a diagonal matrix in our case.
         ! We can fetch it by going through the the first line of D corresponding to our
         ! element.
@@ -817,7 +817,7 @@ contains
         do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
           idofu = p_KcolD(id1)
           idxu = id1 - p_KldD(idofp) + 1
-          
+
           ! Save the DOF for future use.
           IdofsU(idxu) = idofu
 
@@ -840,7 +840,7 @@ contains
           end do
 
         end do
-        
+
         ! Clear the local defect, fetch the local RHS.
         idofP = IdofsP(1,1)
         do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
@@ -863,9 +863,9 @@ contains
 
           ! So let's loop all pressure DOFs on the current element
           do idxp = 1, ndofp
-          
+
             idofP = IdofsP(idxp,1)
-          
+
             ! Get the corresponding RHS entry in pressure space
             daux1 = 0.0_DP
             daux2 = 0.0_DP
@@ -875,21 +875,21 @@ contains
             end do
             DdefectP(idxp,1) = DdefectP(idxp,1) - Dmult(3,3)*daux1
             DdefectP(idxp,2) = DdefectP(idxp,2) - Dmult(6,6)*daux2
-            
+
           end do
-          
+
         end if
-          
+
         ! Create: f_u = f_u - A u - B p
-        
+
         if (.not. bhaveB16) then
-        
+
           do idxu = 1,ndofu
-          
+
             ! The column index gives us the index of a velocity DOF which is
             ! adjacent to the current pressure dof - so get its index.
             idofu = IdofsU(idxu)
-            
+
             ! Subtract A*u from the local RHS
             ! f_u := f_u - A11*u
             ! f_v := f_v - A22*v
@@ -930,18 +930,18 @@ contains
             DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,6)*daux5
 
           end do
-          
+
         else
-        
+
           ! Special matrices at position 1/6, 2/6.
           ! May come in dur to boundary control. Coupling to xi.
 
           do idxu = 1,ndofu
-          
+
             ! The column index gives us the index of a velocity DOF which is
             ! adjacent to the current pressure dof - so get its index.
             idofu = IdofsU(idxu)
-            
+
             ! Subtract A*u from the local RHS
             ! f_u := f_u - A11*u
             ! f_v := f_v - A22*v
@@ -972,7 +972,7 @@ contains
             ! Create: f_u = ... - B~ xi
             daux16 = 0.0_DP
             daux26 = 0.0_DP
-            
+
             do i = p_KldB(idofu), p_KldB(idofu+1)-1
               dp1 = p_DvecP1(p_KcolB(i))
               dp2 = p_DvecP2(p_KcolB(i))
@@ -992,7 +992,7 @@ contains
           end do
 
         end if
-        
+
         ! Create the defect in the divergence space.
         do idxp = 1, ndofp
           idofp = IdofsP(idxp,1)
@@ -1010,15 +1010,15 @@ contains
           DdefectP(idxp,1) = DdefectP(idxp,1) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
           DdefectP(idxp,2) = DdefectP(idxp,2) - Dmult(6,4)*daux4 - Dmult(6,5)*daux5
         end do
-            
+
         ! Do the A12/A21 matrices exist? If yes, then we will also need to
         ! update the local defect by these matrices.
         if(bHaveA12) then
-        
+
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
@@ -1029,17 +1029,17 @@ contains
             DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,2)*daux1
             DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,1)*daux2
           end do
-        
+
         end if
 
         ! Do the A45/A54 matrices exist? If yes, then we will also need to
         ! update the local defect by these matrices.
         if(bHaveA45) then
-        
+
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
@@ -1060,7 +1060,7 @@ contains
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
@@ -1081,7 +1081,7 @@ contains
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
@@ -1102,7 +1102,7 @@ contains
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
@@ -1115,7 +1115,7 @@ contains
           end do
 
         end if
-            
+
 
         ! Do the A42/A51 matrices exist? If yes, then we will also need to
         ! update the local defect by these matrices.
@@ -1124,7 +1124,7 @@ contains
           ! Create the defect
           do idxu = 1,ndofu
             idofu = IdofsU(idxu)
-            
+
             daux1 = 0.0_DP
             daux2 = 0.0_DP
             do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
@@ -1172,11 +1172,11 @@ contains
         ! of the original matrix.
 
         do idxp = 1, ndofp
-        
+
           idofp = IdofsP(idxp,1)
-          
+
           do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
-   
+
             idofu = p_KcolD(id1)
             idxu = id1-p_KldD(idofp)+1
 
@@ -1187,7 +1187,7 @@ contains
                                                 - p_Dd5(id1)*DaInv(4,idxu)*DdefectU(idxu,4)
           end do
         end do
-        
+
         ! Now, we have to apply S^-1. That means in a first step, we have to
         ! set up S = C - D A^-1 B. We ignore the C at first as we yet don't know
         ! if it exists.
@@ -1209,40 +1209,40 @@ contains
             end do
           end do
         end do
-        
+
         ! If we have C, sum it up to S.
         if(bHaveC) then
 
           ! So let's loop all pressure DOFs on the current element
           do idxp = 1, ndofp
-          
+
             idofp = IdofsP(idxp,1)
-          
+
             do id2 = p_KldC(idofp), p_KldC(idofp+1)-1
               idxp2 = id2-p_KldC(idofp)+1
               Ds1(idxp,idxp2) = Ds1(idxp,idxp2) + p_DC1(id2)
               Ds2(idxp,idxp2) = Ds2(idxp,idxp2) + p_DC2(id2)
             end do
-            
+
           end do
-          
+
         end if
-        
+
         ! Apply S^-1 to d2 to get the update dp=S^-1 ( d2 - DA^-1 d1 )  for p.
         call DGESV(ndofp,1,Ds1,ndofp,Ipiv,DdefectP(:,1),ndofp,info)
-        
+
         ! Did DGESV fail?
         if(info .ne. 0) cycle
 
         ! Apply S^-1 to d2 to get the update dp=S^-1 ( d2 - DA^-1 d1 )  for p.
         call DGESV(ndofp,1,Ds2,ndofp,Ipiv,DdefectP(:,2),ndofp,info)
-        
+
         ! Did DGESV fail?
         if(info .ne. 0) cycle
-        
+
         ! Get the update for u:
         ! du = A^-1 ( d1 - B dp )
-        
+
         do idxu = 1,ndofu
           idofu = IdofsU (idxu)
           do idxp = 1,ndofp
@@ -1257,7 +1257,7 @@ contains
           DdefectU(idxu,3) = DaInv(3,idxu)*DdefectU(idxu,3)
           DdefectU(idxu,4) = DaInv(4,idxu)*DdefectU(idxu,4)
         end do
-        
+
         ! Do the update: x_n+1 = x_n + omega*(du,dp)
         do i=1,ndofu
           idofu = IdofsU(i)
@@ -1266,7 +1266,7 @@ contains
           p_DvecU2(idofu) = p_DvecU2(idofu) + domega*DdefectU(i,3)
           p_DvecV2(idofu) = p_DvecV2(idofu) + domega*DdefectU(i,4)
         end do
-              
+
         do i=1,ndofp
           idofp = IdofsP(i,1)
           p_DvecP1(idofp) = p_DvecP1(idofp) + domega*DdefectP(i,1)
@@ -1284,10 +1284,10 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine vanka_NavStOptC2Dfull (rvanka,rvector,rrhs,niterations,domega,&
       IelementList,rfemdata)
-  
+
 !<description>
   ! Applies the Navier-Stokes optimal control full VANKA variant
   ! to a vector for a list of elements and one pair of velocity/pressure
@@ -1300,13 +1300,13 @@ contains
 
   ! The right-hand-side vector of the system
   type(t_vectorBlock), intent(in)         :: rrhs
-  
+
   ! Relaxation parameter. Standard=1.0_DP.
   real(DP), intent(in)                    :: domega
-  
+
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
-  
+
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:), intent(in) :: IelementList
 
@@ -1323,10 +1323,10 @@ contains
 
   ! Multiplication factors
   real(DP), dimension(6,6) :: Dmult
-  
+
   ! Array for the pressure DOF's on the element
   integer, dimension(1) :: IelIdx2
-  
+
   ! Quick access for the matrix arrays
   integer, dimension(:), pointer :: p_KldA11,p_KldA12,p_KldB,p_KldC,p_KldD,&
       p_KcolA11,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA11
@@ -1352,12 +1352,12 @@ contains
                                      p_DvecU1,p_DvecV1,p_DvecP1
   real(DP), dimension(:), pointer :: p_DrhsU2,p_DrhsV2,p_DrhsP2,&
                                      p_DvecU2,p_DvecV2,p_DvecP2
-  
+
   ! local variables
   logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bhaveB16,bHaveC
   integer :: idxu,idxp,idofp,idofu,i,j,id1,ndofu,ndofp,info,ielidx,iter
   integer :: idxprimal,idxdual,ndofslocal,idxu1,idxv1,idxp1,idxu2,idxv2,idxp2
-  
+
     ! Get the pointers to the vector data
     call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvecU1)
     call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvecV1)
@@ -1372,7 +1372,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsU2)
     call lsyssc_getbase_double(rrhs%RvectorBlock(5), p_DrhsV2)
     call lsyssc_getbase_double(rrhs%RvectorBlock(6), p_DrhsP2)
-    
+
     ! Get wqhich optional matrices we have.
     bhaveA12 = rvanka%bhaveA12
     bhaveA45 = rvanka%bhaveA45
@@ -1382,7 +1382,7 @@ contains
     bhaveA41 = rvanka%bhaveA41
     bhaveA51 = rvanka%bhaveA51
     bhaveB16 = rvanka%bhaveB16
-    
+
     ! Get the pointers from the Vanka structure for faster access
     p_KldA11   => rvanka%p_KldA11
     p_KcolA11  => rvanka%p_KcolA11
@@ -1423,7 +1423,7 @@ contains
     p_Da52     => rvanka%p_Da52
     p_Da51     => rvanka%p_Da51
     p_Da42     => rvanka%p_Da42
-    
+
     ! Get the multiplication factors
     Dmult(:,:) = rvanka%Dmultipliers(:,:)
 
@@ -1441,7 +1441,7 @@ contains
     KentryLocalA12 => rfemData%p_KentryLocalA12
     ndofu = rfemData%ndofu
     ndofp = rfemData%ndofp
-    
+
     ! Primal and dual start indices
     idxprimal = 1
     idxdual = 2*ndofu + ndofp + 1
@@ -1458,18 +1458,18 @@ contains
 
       ! Loop through all elements
       do ielidx = 1,size(IelementList)
-      
+
         ! On the element, get the local DOF's in the pressure space
         IelIdx2(1) = ielidx
         call dof_locGlobMapping_mult(rvanka%p_rspatialDiscrP, IelIdx2, IdofsP)
         IdofsP1 = IdofsP(:,1)
-        
+
         ! Get the U-dofs.
         ! We can fetch them by going through the the first line of D corresponding to our
         ! element.
         idofp = IdofsP(1,1)
         IdofsU(:) = p_KcolD(p_KldD(idofp):p_KldD(idofp+1)-1)
-        
+
         ! Get the positions in the B-matrices.
         call fetchmatrixindices (KentryLocalB,p_KcolB,p_KldB,&
             IdofsU,IdofsP1,ndofu,ndofp)
@@ -1486,19 +1486,19 @@ contains
 
         if (bhaveA12) then
           if (associated(p_KldA11,p_KldA12)) then
-        
+
             ! The same for the A12 structure.
 
             call fetchmatrixindices (KentryLocalA12,p_KcolA12,p_KldA12,&
                 IdofsU,IdofsU,ndofu,ndofu)
-          
+
           else
-          
+
             ! Copy Kentry
             KentryLocalA12(:,:) = KentryLocalA11(:,:)
-            
+
           end if
-        
+
         end if
 
         ! Get the matrix entries.
@@ -1532,7 +1532,7 @@ contains
           call fetchsubmatrices (DaFull,KentryLocalA11,p_Da41,p_Da52,p_KcolA11,p_KldA11,ndofu,ndofu,&
               idxu2,idxu1,idxv2,idxu2)
         end if
-        
+
         ! A21,A12
         if (bhaveA12) then
           call fetchsubmatrices (DaFull,KentryLocalA12,p_Da12,p_Da21,p_KcolA12,p_KldA12,ndofu,ndofu,&
@@ -1550,13 +1550,13 @@ contains
           call fetchsubmatrices (DaFull,KentryLocalA12,p_Da42,p_Da51,p_KcolA12,p_KldA12,ndofu,ndofu,&
               idxu2,idxv1,idxv2,idxu1)
         end if
-        
+
         ! A15/A24
         if (bhaveA12) then
           call fetchsubmatrices (DaFull,KentryLocalA12,p_Da15,p_Da24,p_KcolA12,p_KldA12,ndofu,ndofu,&
               idxu1,idxv2,idxv1,idxu2)
         end if
-        
+
         ! B16/B26
         if (bhaveB16) then
           call fetchsubmatrices (DaFull,KentryLocalB,p_DB1_6,p_DB2_6,p_KcolB,p_KldB,ndofu,ndofp,&
@@ -1596,7 +1596,7 @@ contains
         call localmatvec2 (p_DA44, p_DvecU2, Ddefect(idxu2:), -Dmult(3,3), &
                            p_DA55, p_DvecV2, Ddefect(idxv1:), -Dmult(4,4), &
                            p_KcolA11, p_KldA11, IdofsU, ndofu)
-                          
+
         ! Subtract the pressure stuff.
         ! f_u := f_u - B1*p
         ! f_v := f_v - B2*p
@@ -1606,7 +1606,7 @@ contains
         call localmatvec2 (p_DB4, p_DvecP2, Ddefect(idxu2:), -Dmult(4,6), &
                            p_DB5, p_DvecP2, Ddefect(idxv2:), -Dmult(5,6), &
                            p_KcolB, p_KldB, IdofsU, ndofu)
-                           
+
         if (bhaveB16) then
 
           ! Subtract the pressure stuff.
@@ -1625,7 +1625,7 @@ contains
                              p_DC2, p_DvecV1, Ddefect(idxp2:), -Dmult(6,6), &
                              p_KcolC, p_KldC, IdofsP1, ndofp)
         end if
-          
+
         ! Create the defect in the divergence part.
         call localmatvec2 (p_Dd1, p_DvecU1, Ddefect(idxp1:), -Dmult(3,1), &
                            p_Dd1, p_DvecU2, Ddefect(idxp2:), -Dmult(6,4), &
@@ -1673,7 +1673,7 @@ contains
                              p_DA52, p_DvecV1, Ddefect(idxv2:), -Dmult(5,2), &
                              p_KcolA11, p_KldA11, IdofsU, ndofu)
         end if
-            
+
 
         ! Do the A42/A51 matrices exist? If yes, then we will also need to
         ! update the local defect by these matrices.
@@ -1701,7 +1701,7 @@ contains
         !
         ! is calculated using direct inversion with LAPACK.
         call DGESV(ndofslocal,1,DaFull,ndofslocal,Ipiv,Ddefect(:),ndofslocal,info)
-        
+
         ! Did DGESV fail?
         if(info .ne. 0) cycle
 
@@ -1713,7 +1713,7 @@ contains
           p_DvecU2(idofu) = p_DvecU2(idofu) + domega*Ddefect(idxu2+i-1)
           p_DvecV2(idofu) = p_DvecV2(idofu) + domega*Ddefect(idxv2+i-1)
         end do
-              
+
         do i=1,ndofp
           idofp = IdofsP(i,1)
           p_DvecP1(idofp) = p_DvecP1(idofp) + domega*Ddefect(idxp1+i-1)
@@ -1725,39 +1725,39 @@ contains
     end do ! iter
 
     ! That's it
-    
+
   contains
-  
+
     subroutine fetchmatrixindices (Kentry,Kcol,Kld,Irows,Icols,nrows,ncols)
-    
+
     ! Searches for the positions in a matrix that belong to a set of DOF's.
-    
+
     ! Destination array
     integer, dimension(:,:), intent(out) :: Kentry
-    
+
     ! global matrix structure
     integer, dimension(:), intent(in) :: Kcol, Kld
-    
+
     ! DOF's that define the DOF's for the rows in Kentry.
     integer, dimension(:), intent(in) :: Irows
 
     ! DOF's that define the DOF's for the columns in Kentry.
     integer, dimension(:), intent(in) :: Icols
-    
+
     ! Number of rows/columns in the Kentry matrix.
     integer, intent(in) :: nrows, ncols
-    
+
       ! local variables
       integer :: id1,id2,i, idofrow, idofcol
-    
+
       ! Loop through the rows where we want to find indices.
       do id1 = 1, nrows
         idofrow = Irows(id1)
-        
+
         ! Loop through the columns
         do id2 = 1,ncols
           idofcol = Icols(id2)
-          
+
           ! Loop through the row of the global matrix
           do i=Kld(idofrow),Kld(idofrow+1)-1
             ! Find the current DOF.
@@ -1766,73 +1766,73 @@ contains
               exit
             end if
           end do
-        
+
         end do
       end do
-      
+
     end subroutine
 
     subroutine fetchmatrixindicesSimple (Kentry,Kld,Irows,nrows,ncols)
-    
+
     ! fetches matrix indices by direct copy. Can only be applied
     ! to D-matrices where the entries can directly be copied
     ! to Kentry!
-    
+
     ! Destination array
     integer, dimension(:,:), intent(out) :: Kentry
-    
+
     ! global matrix structure
     integer, dimension(:), intent(in) :: Kld
-    
+
     ! DOF's that define the DOF's for the rows in Kentry.
     integer, dimension(:), intent(in) :: Irows
 
     ! Number of rows/columns in the Kentry matrix.
     integer, intent(in) :: nrows, ncols
-    
+
       ! local variables
       integer :: id1,id2,i, idofrow, idofcol
-    
+
       ! Loop through the rows where we want to find indices.
       do id1 = 1, nrows
         idofrow = Irows(id1)
-        
+
         ! Loop through the columns
         do id2 = 1,ncols
           Kentry(id1,id2) = Kld(idofrow)+id2-1
         end do
       end do
-      
+
     end subroutine
 
     subroutine fetchsubmatrices (DdestMatrix,Kentry,Da1,Da2,Kcol,Kld,nrows,ncols,irow1,icol1,irow2,icol2)
-    
+
       ! Fetches submatrices from a global matrix and writes them
       ! to the destination matrix at position (irowX,icolX).
-    
+
       ! Destination matrix
       real(DP), dimension(:,:), intent(inout) :: DdestMatrix
-      
+
       ! Source indices
       integer, dimension(:,:), intent(in) :: Kentry
-      
+
       ! Source matrices
       real(DP), dimension(:), intent(in) :: Da1,Da2
       integer, dimension(:), intent(in) :: Kcol, Kld
-      
+
       ! Number of rows/columns
       integer, intent(in) :: nrows,ncols
-      
+
       ! Target position in DdestMatrix for the 1st submatrix
       integer, intent(in) :: irow1,icol1
 
       ! Target position in DdestMatrix for the 2nd submatrix
       integer, intent(in) :: irow2,icol2
-      
-      
+
+
       ! local variables
       integer :: i,j
-      
+
       ! Fetch the matrix and write...
       do j=1,nrows
         do i=1,ncols
@@ -1840,34 +1840,34 @@ contains
           DdestMatrix(irow2+i-1,icol2+j-1) = Da2(Kentry(i,j))
         end do
       end do
-    
+
     end subroutine
-    
+
     ! -----
-    
+
     subroutine localmatvec2 (Da1, Dx1, Dy1, dcx1, Da2, Dx2, Dy2, dcx2, Kcol, Kld, Idofs, ndofs)
-    
+
     ! Does a local matrix-vector multiplication for two subvectors:
     ! Dy. = Dy. + dcx. * Da. * Dx.
-    
+
     ! Matrices
     real(DP), dimension(:), intent(in) :: Da1,Da2
-    
+
     ! global Solution
     real(DP), dimension(:), intent(in) :: Dx1,Dx2
 
     ! local defect, is modified.
     real(DP), dimension(:), intent(inout) :: Dy1,Dy2
-    
+
     ! Multiplier
     real(DP), intent(in) :: dcx1, dcx2
-    
+
     ! Matrix structure
     integer, dimension(:), intent(in) :: Kcol, Kld
-    
+
     ! Degrees of freedoms to be multiplied
     integer, dimension(:), intent(in) :: Idofs
-    
+
     ! Size of the local vectors
     integer, intent(in) :: ndofs
 
@@ -1878,7 +1878,7 @@ contains
       ! Create the defect
       do idxu = 1,ndofs
         idof = Idofs(idx)
-        
+
         daux1 = 0.0_DP
         daux2 = 0.0_DP
         do i = Kld(idofu), Kld(idofu+1)-1
@@ -1889,7 +1889,7 @@ contains
         Dy1 = Dy1 + dcx1*daux1
         Dy2 = Dy2 + dcx2*daux2
       end do
-    
+
     end subroutine
 
   end subroutine

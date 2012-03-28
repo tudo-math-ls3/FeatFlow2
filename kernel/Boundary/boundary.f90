@@ -84,7 +84,7 @@ module boundary
   use genoutput
 
   implicit none
-  
+
   private
 
 !<constants>
@@ -197,30 +197,30 @@ module boundary
   ! Structure defining a boundary region with minimum/maximum parameter
   ! value in 2D.
   type t_boundaryRegion
-  
+
     ! Type of parametrisation, the parameters refer to.
     ! One of the BDR_PAR_xxxx constants.
     integer  :: cparType  = BDR_PAR_01
-  
+
     ! Minimum parameter value of the region
     real(DP) :: dminParam = 0.0_DP
-    
+
     ! Maximum parameter value of the region
     real(DP) :: dmaxParam = 0.0_DP
-    
+
     ! Type of the region. One of the BDR_TP_xxxx constants
     integer :: ctype = BDR_TP_CURVE
-    
+
     ! Type of the boundary segment corresponding to this boundary
     ! region. One of the BOUNDARY_TYPE_xxxx constants.
     integer :: isegmentType = BOUNDARY_TYPE_LINE
-    
+
     ! Number of the boundary component that contains the segment
     integer :: iboundCompIdx = 0
-    
+
     ! Maximum parameter value of the boundary component iboundCompIdx
     real(DP) :: dmaxParamBC = 0.0_DP
-    
+
     ! Number of the boundary segment that corresponds to this region
     ! =0 if the boundary region does not correspond to a specific
     ! boundary segment.
@@ -229,18 +229,18 @@ module boundary
     ! Bitfield specifying properties of the region. A combination
     ! of BDR_PROP_xxxx constants.
     integer :: iproperties = BDR_PROP_WITHSTART
-  
+
   end type t_boundaryRegion
-  
+
   public :: t_boundaryRegion
-  
+
 !</typeblock>
 
 !<typeblock>
 
   ! Boundary structure of the domain
   type t_boundary
-  
+
     private
 
     ! number of geometric boundary components
@@ -263,9 +263,9 @@ module boundary
     integer :: h_Iintdatavec_handles = ST_NOHANDLE
 
   end type t_boundary
-  
+
   public :: t_boundary
-  
+
 !</typeblock>
 ! </types>
 
@@ -332,9 +332,9 @@ contains
 
   ! boundary structure
   type(t_boundary), intent(in) :: rboundary
-  
+
 !</input>
-  
+
 !</function>
 
     iresult = rboundary%iboundarycount
@@ -347,7 +347,7 @@ contains
 
   recursive real(DP) function boundary_dgetLength (rboundary, &
                      iboundCompIdx, dt1, dt2) result (dresult)
-    
+
   !<description>
   ! This function returns the euclidian length between the point
   ! dt1 on the boundary curve and the point dt2.
@@ -370,9 +370,9 @@ contains
 
   ! end parameter value
   real(DP), intent(in) :: dt2
-  
+
   !</input>
-  
+
 !</function>
 
     real(DP) :: dx1,dx2,dy1,dy2,dbl,dtmax
@@ -397,7 +397,7 @@ contains
       dbl=sqrt((dx2-dx1)*(dx2-dx1)+(dy2-dy1)*(dy2-dy1))
 
     else
-    
+
       if (dt2.lt.dt1) then
 
         ! Special case: Endpoint wrapped from the end of the boundary
@@ -464,13 +464,13 @@ contains
 
   ! index of boundary component
   integer, intent(in) :: iboundCompIdx
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
-  
+
 !</input>
-  
+
 !</function>
 
     real(DP),dimension(:),pointer :: p_DmaxPar
@@ -483,7 +483,7 @@ contains
       boundary_dgetMaxParVal = -1
       return
     endif
-    
+
     if (present(cparType)) then
       select case (cparType)
       case (BDR_PAR_LENGTH)
@@ -491,19 +491,19 @@ contains
         ! Get vector with component length - depending on the parametrisation
         ! to use.
         call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-        
+
         ! Get the maximum parameter value
         boundary_dgetMaxParVal = p_DmaxPar(iboundCompIdx)
-        
+
         return
       end select
     end if
-    
+
     ! 0-1 parametrisation. Maximum parameter value is just the number of
     ! segments.
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     boundary_dgetMaxParVal = real(p_IsegCount(iboundCompIdx),DP)
-    
+
   end function boundary_dgetMaxParVal
 
   !************************************************************************
@@ -528,9 +528,9 @@ contains
 
   ! index of boundary component
   integer, intent(in) :: iboundCompIdx
-  
+
 !</input>
-  
+
 !</function>
 
     integer,dimension(:),pointer :: p_IsegCount
@@ -542,13 +542,13 @@ contains
       boundary_igetNsegments = -1
       return
     endif
-    
+
     ! get vector with component length
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
-    
+
     ! Get the maximum parameter value
     boundary_igetNsegments = p_IsegCount(iboundCompIdx)
-    
+
   end function boundary_igetNsegments
 
   !************************************************************************
@@ -569,16 +569,16 @@ contains
   ! The name of the .prm file to read.
   character(LEN=*), intent(in) :: sfilename
 ! </input>
-  
+
 !<output>
   ! Boundary structure, to be filled with data
   type(t_boundary), intent(out) :: rboundary
 !</output>
-  
+
 !</subroutine>
 
     ! local variables
-  
+
     ! Input channel for reading
     integer :: iunit
     integer :: ibcomponent, isegment, ibct,ihandle
@@ -592,25 +592,25 @@ contains
 
     ! Current parameter value in length-parametrisation
     real(DP) :: dmaxpar
-    
+
     ! Open the file
     call io_openFileForReading(sfilename, iunit)
-    
+
     ! Read "NBCT"
     read (iunit,*)
-    
+
     ! Read NBCT - Number of boundary components
     read (iunit,*) rboundary%iboundarycount_g
-    
+
     rboundary%iboundarycount = rboundary%iboundarycount_g
-    
+
     ! Allocate an array containing handles. Each handle refers
     ! to integer data for a boundary component.
     call storage_new("boundary_read_prm", "h_Idbldatavec_handles", &
                        rboundary%iboundarycount, ST_INT, &
                        rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)
-    
+
     ! Allocate an array containing of handles. Each handle refers
     ! to integer data for a boundary component.
     call storage_new("boundary_read_prm", "h_Iintdatavec_handles", &
@@ -635,59 +635,59 @@ contains
     ! No we have to gather information about boundary segments.
     ! This makes it necessary to read the boundary definition file
     ! multiple times, but who cares :)
-    
+
     ! Initialise the boundary components, loop through them
-    
+
     do ibcomponent = 1,rboundary%iboundarycount_g
       ! Read "IBCT"
       read (iunit,*)
-      
+
       ! Read IBCT
       read (iunit,*) ibct
-      
+
       ! Read "NCOMP"
       read (iunit,*)
-      
+
       ! Read NCOMP = number of boundary segments in this boundary component
       read (iunit,*) p_IsegCount(ibct)
-      
+
       ! Allocate an integer-array which saves the segtment type and
       ! the start positions (0-based!) of each segment information
       ! block in the segment-array. It is as long as the number
       ! of segments indicates * 2.
-      
+
       call storage_new("boundary_read_prm", "h_Isegcount", &
                        2*p_IsegCount(ibct), ST_INT, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IintSegInfo_handles(ibct) = ihandle
       call storage_getbase_int(ihandle, p_IsegInfo)
-      
+
       ! Evaluate the boundary segment definition to get the memory
       ! needed for it:
       read (iunit,*)         ! "ITYP NSPLINE NPAR"
-      
+
       ! idblemem counts how much memory we need.
       idblemem = 0
-      
+
       ! evaluate the "ITYP NSPLINE NPAR" block
       do isegment = 0,p_IsegCount(ibct)-1
-        
+
         ! read ITYP NSPLINE NPAR of that segment
         read (iunit,*) ityp, nspline, npar
-        
+
         ! What do we have here?
         select case (ityp)
         case (1)
           ! Type 1: Line.
           ! Save the segment type into the first element of each
           ! 2-tuple in the integer array:
-          
+
           p_IsegInfo (1+2*isegment) = BOUNDARY_TYPE_LINE
-          
+
           ! Save the start position of this segment to the segment-start array.
-          
+
           p_IsegInfo (1+2*isegment+1) = idblemem
-          
+
           ! A line consists of
           ! - Startpoint
           ! - Endpoint, relative to the startpoint
@@ -695,18 +695,18 @@ contains
           ! minimum parmeter value and in the second one the length.
           ! So we need 2*2+2 doubles.
           idblemem = idblemem + 6
-          
+
         case (2)
           ! Type 2: Circle / arc.
           ! Save the segment type into the first element of each
           ! 2-tuple in the integer array:
-          
+
           p_IsegInfo (1+2*isegment) = BOUNDARY_TYPE_CIRCLE
-          
+
           ! Save the start position of this segment to the segment-start array.
-          
+
           p_IsegInfo (1+2*isegment+1) = idblemem
-          
+
           ! A circle/arc consists of
           ! - Center
           ! - Radius
@@ -720,47 +720,47 @@ contains
           idblemem = idblemem + 8
         end select
       end do
-      
+
       ! Allocate memory for all the information that defines our
       ! boundary segments:
-      
+
       call storage_new("boundary_read_prm", "h_IdbleSegInfo_handles", &
                        idblemem, ST_DOUBLE, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IdbleSegInfo_handles(ibct) = ihandle
-      
+
     end do
-    
+
     ! Now we build the segment information.
-    
+
     ! Ignore "PARAMETER"
     read (iunit,*)  ! "PARAMETER"
-    
+
     ! Read the boundary information
     do ibcomponent = 1,rboundary%iboundarycount_g
-      
+
       ! dmaxPar counts for every boundary component the length - and
       ! thus the maximum parameter value.
       dmaxPar = 0.0_DP
-      
+
       ! Get a pointer to the boundary component info.
       ! Here, all double-precision information of the current boundary
       ! component is saved.
       call storage_getbase_double(&
           int(p_IdbleSegInfo_handles(ibcomponent)), p_DsegInfo)
-      
+
       ! Get a pointer to the start position of the segments in the
       ! current boundary component.
       call storage_getbase_int(&
           int(p_IintSegInfo_handles(ibcomponent)), p_ISegInfo)
-      
+
       ! Build up the segments in the block:
       do isegment = 0,p_IsegCount(ibcomponent)-1
-        
+
         ! Get the relative position of the segment information in the
         ! segment information array.
         isegrel = p_IsegInfo(1+2*isegment+1)
-        
+
         ! What do we have here? The type identifier is in the
         ! first entry of the 2-tupel in the integer-array:
         select case (p_IsegInfo(1+2*isegment))
@@ -776,30 +776,30 @@ contains
           !
           ! Startpoint
           read(iunit,*) p_DsegInfo(isegrel+3),p_DsegInfo(isegrel+4)
-          
+
           ! Relative endpoint
           read(iunit,*) p_DsegInfo(isegrel+5),p_DsegInfo(isegrel+6)
-          
+
           ! Save the initial parameter value (in of the arc length-parametrisation)
           ! to the first entry
           p_DsegInfo(isegrel+1) = dmaxpar
-          
+
           ! This is just necessary for the length-parametrisation. The
           ! 0-1 parametrisation defines the starting point just as the
           ! integer number isegment.
-          
+
           ! Calculate the length and save it in the 2nd position
           dl = sqrt(p_DsegInfo(isegrel+5)**2 + p_DsegInfo(isegrel+6)**2)
           p_DsegInfo(isegrel+2) = dl
-          
+
           ! Normalise the direction vector
           !p_DsegInfo(isegrel+4:isegrel+6) = p_DsegInfo(isegrel+4:isegrel+7)/dl
-          
+
           ! Increase the maximum parameter value
           dmaxPar = dmaxPar + dl
-          
+
         case (BOUNDARY_TYPE_CIRCLE)
-          
+
           ! Type 2: Circle / arc. Consists of
           ! - Center
           ! - Radius
@@ -812,37 +812,37 @@ contains
           ! the length of the circle - to be computed later.
           ! First save the midpoint of the circle
           read(iunit,*) p_DsegInfo(isegrel+3),p_DsegInfo(isegrel+4)
-          
+
           ! Then the radius - the second entry is a dummy;
           read(iunit,*) p_DsegInfo(isegrel+5),p_DsegInfo(isegrel+6)
-          
+
           ! Finally get the "arc positions" of the startpoint and the endpoint
           ! of the arc:
           read(iunit,*) p_DsegInfo(isegrel+7),p_DsegInfo(isegrel+8)
-          
+
           ! Save the initial parameter value (in length-parametrisation)
           ! to the first entry
           p_DsegInfo(isegrel+1) = dmaxpar
-          
+
           ! Now compute the real length of the arc.
           dl = p_DsegInfo(isegrel+5) * &
               abs(p_DsegInfo(isegrel+8)-p_DsegInfo(isegrel+7))
           p_DsegInfo(isegrel+2) = dl
-          
+
           ! Increase the maximum parameter value
           dmaxPar = dmaxPar + dl
-          
+
         end select
       end do
-      
+
       ! Save the maximum parameter value for that component
       p_DmaxPar(ibcomponent) = dmaxPar
-      
+
     end do
-    
+
     ! Close the file, finish
     close(iunit)
-    
+
   end subroutine boundary_read_prm
 
   !************************************************************************
@@ -859,7 +859,7 @@ contains
   ! Boundary structure, to be released.
   type(t_boundary), intent(inout) :: rboundary
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
@@ -869,19 +869,19 @@ contains
     ! Check if data arrays are allocated
     if ((rboundary%h_Iintdatavec_handles .ne. ST_NOHANDLE) .and.&
         (rboundary%h_Idbldatavec_handles .ne. ST_NOHANDLE)) then
-      
+
       ! Get the pointers to the segment information arrays for the current
       ! boundary component:
       call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
       call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-      
+
       ! Release the handles of the integer- and double-precision
       ! data blocks:
       do i=1,rboundary%iboundarycount
         ihandle = p_IintSegInfo_handles(i)
         call storage_free (ihandle)
         p_IintSegInfo_handles(i) = ihandle
-        
+
         ihandle = p_IdbleSegInfo_handles(i)
         call storage_free (ihandle)
         p_IdbleSegInfo_handles(i) = ihandle
@@ -891,18 +891,18 @@ contains
       call storage_free (rboundary%h_Iintdatavec_handles)
       call storage_free (rboundary%h_Idbldatavec_handles)
     end if
-    
+
     ! Release all arrays in the structure
     if (rboundary%h_IsegCount .ne. ST_NOHANDLE)&
         call storage_free (rboundary%h_IsegCount)
     if (rboundary%h_DmaxPar .ne. ST_NOHANDLE)&
         call storage_free (rboundary%h_DmaxPar)
-    
+
     rboundary%iboundarycount_g = 0
     rboundary%iboundarycount = 0
-    
+
     ! That is it...
-    
+
   end subroutine boundary_release
 
   !************************************************************************
@@ -922,10 +922,10 @@ contains
 
   ! Array wirth maximum parameter values for all BC`s
   real(DP), dimension(:), intent(in) :: DmaxPar
-  
+
   ! Number of the boundary component that is under consideration
   integer, intent(in) :: iboundCompIdx
-  
+
   ! Type of parametrisation, format of dpar (0-1, length par.,...)
   integer, intent(in) :: cpar
 !</input>
@@ -954,7 +954,7 @@ contains
       !  dpar = dt
       !ENDIF
     end select
-    
+
   end subroutine boundary_normaliseParValue2D
 
   !************************************************************************
@@ -982,19 +982,19 @@ contains
 
     ! Integer segment info array
     integer, dimension(:), intent(in) :: IsegInfo
-    
+
     ! Double precision segment info array
     real(DP), dimension(:), intent(in) :: DsegInfo
-    
+
     ! Number of the boundary component
     integer, intent(in) :: iboundCompIdx
-    
+
     ! Parameter value of the point of interest
     real(DP), intent(in) :: dpar
-    
+
     ! Type of parametrisation of dpar (BDR_PAR_01, BDR_PAR_LENGTH,...)
     integer, intent(in) :: cparType
-    
+
     ! How to orient if the boundary segment is not unique (e.g. on
     ! corner points of the discretisation).
     ! =0: return the segment following the point
@@ -1008,16 +1008,16 @@ contains
 
     ! Start index of the segment in IsegInfo that contains dpar
     integer, intent(out) :: istartidx
-    
+
     ! Start parameter value of the segment that contains dpar
     real(DP), intent(out) :: dcurrentpar
 
     ! End parameter value of the segment that contains dpar
     real(DP), intent(out) :: dendpar
-    
+
     ! Segment length of the segment that contains dpar
     real(DP), intent(out) :: dseglength
-    
+
     ! Local parameter value of dpar inside of the segment
     real(DP), intent(out) :: dparloc
 
@@ -1041,7 +1041,7 @@ contains
       ! from the parameter value to get the 'local' parameter value
       ! (0 .le. dparloc .le. length(segment))
       dparloc = dpar - dcurrentpar
-      
+
       if ((iorientation .ne. 0) .and. (dparloc .eq. 0.0_DP)) then
         ! We are in a point where the segment is not unique and
         ! the caller wants to have the 'previous' segment. Find it!
@@ -1056,7 +1056,7 @@ contains
           dcurrentpar = real(iseg,DP)
           dparloc = dpar - dcurrentpar
         end if
-        
+
       end if
 
       ! Determine Start index of the segment in the double-prec. block
@@ -1064,7 +1064,7 @@ contains
 
       dendpar     = iseg + 1.0_DP
       dseglength  = DsegInfo(2+istartidx)
-      
+
     case (BDR_PAR_LENGTH)
 
       ! In the length-parametrisation, we have to search.
@@ -1149,11 +1149,11 @@ contains
 
   ! parametric value of boundary point
   real(DP), intent(in) :: dt
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
@@ -1163,7 +1163,7 @@ contains
 
   ! y-coordinate of boundary point
   real(DP), intent(out) :: dy
-    
+
 !</output>
 
 !</subroutine>
@@ -1173,89 +1173,89 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
-    
+
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx
-    
+
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
-    
+
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       call output_line ('iboundCompIdx out of bounds!', &
           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
       call sys_halt()
     endif
-    
+
     if (dt .lt. 0.0_DP) then
       call output_line ('Negative parameter values invalid!', &
           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
       call sys_halt()
     end if
-    
+
     ! Get the pointers to the segment information arrays for the current
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-    
+
     ! Normalise the parameter value to the range [0,TMAX)
     dpar = dt
     call boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
-    
+
     ! Get information about the segment that contains the point
     call boundary_getSegmentInfo2D(&
         p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
         iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-    
+
     if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-    
+
     ! Use the segment type to determine how to calculate
     ! the coordinate. Remember that the segment type is noted
     ! in the first element of the integer block of each segment!
-    
+
     isegtype = p_IsegInfo(1+2*iseg)
-    
+
     select case (isegType)
-      
+
     ! case of line
     case (BOUNDARY_TYPE_LINE)
-      
+
       ! As we save the parametrisation in 0-1 parametrisation,
       ! when we have length-parametrisation, we have to normalise
       ! dparloc to 0 <= dparloc <= 1.
       if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-      
+
       ! Calculate the x/y coordinates from the startpoint and
       ! the unit direction vector.
       dx = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
       dy = p_DsegInfo(istartidx+4) + dparloc*p_DsegInfo(istartidx+6)
-      
+
     ! case of circle segment
     case (BOUNDARY_TYPE_CIRCLE)
-      
+
       ! Rescale dparloc with the length of the arc to get a value
       ! between 0 and 1; important for sin/cos functions later.
       ! In the 0-1 parametrisation, this is already the case.
       if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-      
+
       ! Get the rotation angle.
       ! Use the initial rotation angle, saved at position 7 of the double
       ! precision data block
       dphi = p_DsegInfo(istartidx+7) &
            + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
-      
+
       ! And calculate the x/y coordinate with sin/cos; the radius is
       ! to be found in element 5 of the double precision data block!
       ! The center of the circle is at position 3/4.
       dx = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
       dy = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
-      
+
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
@@ -1287,11 +1287,11 @@ contains
 
   ! parametric values of boundary points
   real(DP), dimension(:), intent(in) :: Dt
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
@@ -1301,7 +1301,7 @@ contains
 
   ! y-coordinates of boundary points
   real(DP), dimension(:), intent(out) :: Dy
-    
+
 !</output>
 
 !</subroutine>
@@ -1311,10 +1311,10 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
-    
+
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx,ipoint
-    
+
     if ((size(Dx) .ne. size(Dt)) .or. (size(Dy) .ne. size(Dt))) then
       call output_line ('size(Dt) /= size(Dnx) /= size(Dny)!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_mult')
@@ -1323,86 +1323,86 @@ contains
 
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
-    
+
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       call output_line ('iboundCompIdx out of bounds!', &
           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_mult')
       call sys_halt()
     endif
-    
+
     ! Get the pointers to the segment information arrays for the current
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-    
+
     ! Process each parameter value individually
     do ipoint = 1, size(Dt)
-      
+
       dpar = Dt(ipoint)
       if (dpar .lt. 0.0_DP) then
         call output_line ('Negative parameter values invalid!', &
             OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_mult')
         call sys_halt()
       end if
-      
+
       ! Normalise the parameter value to the range [0,TMAX)
       call boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
-      
+
       ! Get information about the segment that contains the point
       call boundary_getSegmentInfo2D(&
           p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
           iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-      
+
       if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-      
+
       ! Use the segment type to determine how to calculate
       ! the coordinate. Remember that the segment type is noted
       ! in the first element of the integer block of each segment!
-      
+
       isegtype = p_IsegInfo(1+2*iseg)
-      
+
       select case (isegType)
-        
+
         ! case of line
       case (BOUNDARY_TYPE_LINE)
-        
+
         ! As we save the parametrisation in 0-1 parametrisation,
         ! when we have length-parametrisation, we have to normalise
         ! dparloc to 0 <= dparloc <= 1.
         if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-        
+
         ! Calculate the x/y coordinates from the startpoint and
         ! the unit direction vector.
         Dx(ipoint) = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
         Dy(ipoint) = p_DsegInfo(istartidx+4) + dparloc*p_DsegInfo(istartidx+6)
-        
+
         ! case of circle segment
       case (BOUNDARY_TYPE_CIRCLE)
-        
+
         ! Rescale dparloc with the length of the arc to get a value
         ! between 0 and 1; important for sin/cos functions later.
         ! In the 0-1 parametrisation, this is already the case.
         if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-        
+
         ! Get the rotation angle.
         ! Use the initial rotation angle, saved at position 7 of the double
         ! precision data block
         dphi = p_DsegInfo(istartidx+7) &
              + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
-        
+
         ! And calculate the x/y coordinate with sin/cos; the radius is
         ! to be found in element 5 of the double precision data block!
         ! The center of the circle is at position 3/4.
         Dx(ipoint) = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
         Dy(ipoint) = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
-        
+
       case DEFAULT
         call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_mult')
@@ -1435,11 +1435,11 @@ contains
 
   ! parametric values of boundary points
   real(DP), dimension(:,:), intent(in) :: Dt
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
@@ -1449,7 +1449,7 @@ contains
 
   ! y-coordinates of boundary points
   real(DP), dimension(:,:), intent(out) :: Dy
-    
+
 !</output>
 
 !</subroutine>
@@ -1459,10 +1459,10 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
-    
+
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx,ipoint,iel
-    
+
     if (any(shape(Dx) .ne. shape(Dt)) .or. any(shape(Dy) .ne. shape(Dt))) then
       call output_line ('size(Dt) /= size(Dnx) /= size(Dny)!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
@@ -1471,87 +1471,87 @@ contains
 
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
-    
+
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       call output_line ('iboundCompIdx out of bounds!', &
           OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
       call sys_halt()
     endif
-    
+
     ! Get the pointers to the segment information arrays for the current
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-    
+
     ! Process each parameter value individually
     do iel = 1, size(Dt,2)
       do ipoint = 1, size(Dt,1)
-        
+
         dpar = Dt(ipoint,iel)
         if (dpar .lt. 0.0_DP) then
           call output_line ('Negative parameter values invalid!', &
               OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
           call sys_halt()
         end if
-        
+
         ! Normalise the parameter value to the range [0,TMAX)
         call boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
-        
+
         ! Get information about the segment that contains the point
         call boundary_getSegmentInfo2D(&
             p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
             iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-        
+
         if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-        
+
         ! Use the segment type to determine how to calculate
         ! the coordinate. Remember that the segment type is noted
         ! in the first element of the integer block of each segment!
-        
+
         isegtype = p_IsegInfo(1+2*iseg)
-        
+
         select case (isegType)
-          
+
           ! case of line
         case (BOUNDARY_TYPE_LINE)
-          
+
           ! As we save the parametrisation in 0-1 parametrisation,
           ! when we have length-parametrisation, we have to normalise
           ! dparloc to 0 <= dparloc <= 1.
           if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-          
+
           ! Calculate the x/y coordinates from the startpoint and
           ! the unit direction vector.
           Dx(ipoint,iel) = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
           Dy(ipoint,iel) = p_DsegInfo(istartidx+4) + dparloc*p_DsegInfo(istartidx+6)
-          
+
           ! case of circle segment
         case (BOUNDARY_TYPE_CIRCLE)
-          
+
           ! Rescale dparloc with the length of the arc to get a value
           ! between 0 and 1; important for sin/cos functions later.
           ! In the 0-1 parametrisation, this is already the case.
           if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-          
+
           ! Get the rotation angle.
           ! Use the initial rotation angle, saved at position 7 of the double
           ! precision data block
           dphi = p_DsegInfo(istartidx+7) &
                + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
-          
+
           ! And calculate the x/y coordinate with sin/cos; the radius is
           ! to be found in element 5 of the double precision data block!
           ! The center of the circle is at position 3/4.
           Dx(ipoint,iel) = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
           Dy(ipoint,iel) = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
-          
+
         case DEFAULT
           call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                             OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
@@ -1587,7 +1587,7 @@ contains
 
   ! parameter value of boundary point
   real(DP), intent(in) :: dt
-  
+
   ! Type of parametrisation of DT.
   ! One of the BDR_PAR_xxxx constants.
   integer, intent(in) :: cparTypeSource
@@ -1595,7 +1595,7 @@ contains
   ! Type of parametrisation, DT should be converted to.
   ! One of the BDR_PAR_xxxx constants.
   integer, intent(in) :: cparTypeDest
-  
+
 !</input>
 
 !<result>
@@ -1609,7 +1609,7 @@ contains
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
-    
+
     real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
     integer :: iseg,istartidx
 
@@ -1630,10 +1630,10 @@ contains
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
@@ -1651,13 +1651,13 @@ contains
     ! Find segment iseg the parameter value belongs to.
     ! Remember that in the first element in the double precision block of
     ! each segment, the length of the segment is noted!
-    
+
     dcurrentpar = 0.0_DP
-    
+
     ! Determine the segment
     select case (cparTypeSource)
     case (BDR_PAR_01)
-    
+
       ! Easy case: 0-1 parametrisation
       iseg = aint(dpar)
 
@@ -1666,32 +1666,32 @@ contains
 
       ! Get the segment length for later use
       dseglength  = p_DsegInfo(2+istartidx)
-      
+
       ! Start parameter value in length parametrisation
       dcurrentpar = p_DsegInfo(1+istartidx)
-      
+
       ! Subtract the start position of the current boundary component
       ! from the parameter value to get the 'local' parameter value
       ! (0 .le. dparloc .le. 1.0)
       dparloc = dpar - real(iseg,DP)
 
     case (BDR_PAR_LENGTH)
-    
+
       ! In the length-parametrisation, we have to search.
       do iseg = 0,p_IsegCount(iboundCompIdx)-1
-        
+
         ! Determine Start index of the segment in the double-prec. block
         istartidx = p_IsegInfo(1+2*iseg+1)
-        
+
         ! Get the start and end parameter value
         dcurrentpar = p_DsegInfo(1+istartidx)
         dseglength = p_DsegInfo(2+istartidx)
         dendpar = dcurrentpar + dseglength
-        
+
         ! At least one of the IF-commands in the loop will activate
         ! the exit - because of the 'dt' check above!
         if (dpar .lt. dendpar) exit
-        
+
       end do
 
       ! Subtract the start position of the current boundary component
@@ -1700,13 +1700,13 @@ contains
       dparloc = dpar - dcurrentpar
 
       if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-      
+
       ! Divide by the segment length to get the local parameter value
       ! in 0-1 parametrisation.
       dparloc = dparloc / dseglength
 
     end select
-    
+
     ! The local parameter value dparloc is now always in the range 0..1.
     !
     ! How shoule we convert?
@@ -1716,15 +1716,15 @@ contains
       ! Take the number of teh segment as basis and add
       ! the local parameter value to get the 0-1 parameter value.
       dresult = real(iseg,DP) + dparloc
-      
+
     case (BDR_PAR_LENGTH)
       ! Convert to length parametrisation. dparloc gives us the local
       ! parameter value in 0-1 parametrisation. Interpolate
       ! linearly.
       dresult = dcurrentpar + dparloc*dseglength
-    
+
     end select
-    
+
   end function boundary_convertParameter
 
   !************************************************************************
@@ -1762,7 +1762,7 @@ contains
   ! Type of parametrisation, DT should be converted to.
   ! One of the BDR_PAR_xxxx constants.
   integer, intent(in) :: cparTypeDest
-  
+
 !</input>
 
 !<inputoutput>
@@ -1777,7 +1777,7 @@ contains
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
-    
+
     real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
     integer :: iseg,istartidx,ipoint
 
@@ -1798,10 +1798,10 @@ contains
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
@@ -1816,22 +1816,22 @@ contains
     end select
 
     do ipoint = 1,size(DparSource)
-    
+
       ! Do not convert parameter values < 0.
       if (DparSource(ipoint) .ge. 0.0_DP) then
 
         dpar = mod(DparSource(ipoint),dtmax)
-      
+
         ! Find segment iseg the parameter values belong to.
         ! Remember that in the first element in the double precision block of
         ! each segment, the length of the segment is noted!
-        
+
         dcurrentpar = 0.0_DP
-        
+
         ! Determine the segment
         select case (cparTypeSource)
         case (BDR_PAR_01)
-        
+
           ! Easy case: 0-1 parametrisation
           iseg = aint(dpar)
 
@@ -1840,32 +1840,32 @@ contains
 
           ! Get the segment length for later use
           dseglength  = p_DsegInfo(2+istartidx)
-          
+
           ! Start parameter value in length parametrisation
           dcurrentpar = p_DsegInfo(1+istartidx)
-          
+
           ! Subtract the start position of the current boundary component
           ! from the parameter value to get the 'local' parameter value
           ! (0 .le. dparloc .le. 1.0)
           dparloc = dpar - real(iseg,DP)
 
         case (BDR_PAR_LENGTH)
-        
+
           ! In the length-parametrisation, we have to search.
           do iseg = 0,p_IsegCount(iboundCompIdx)-1
-            
+
             ! Determine Start index of the segment in the double-prec. block
             istartidx = p_IsegInfo(1+2*iseg+1)
-            
+
             ! Get the start and end parameter value
             dcurrentpar = p_DsegInfo(1+istartidx)
             dseglength = p_DsegInfo(2+istartidx)
             dendpar = dcurrentpar + dseglength
-            
+
             ! At least one of the IF-commands in the loop will activate
             ! the exit - because of the 'dt' check above!
             if (dpar .lt. dendpar) exit
-            
+
           end do
 
           ! Subtract the start position of the current boundary component
@@ -1874,13 +1874,13 @@ contains
           dparloc = dpar - dcurrentpar
 
           if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-          
+
           ! Divide by the segment length to get the local parameter value
           ! in 0-1 parametrisation.
           dparloc = dparloc / dseglength
 
         end select
-        
+
         ! The local parameter value dparloc is now always in the range 0..1.
         !
         ! How shoule we convert?
@@ -1890,19 +1890,19 @@ contains
           ! Take the number of teh segment as basis and add
           ! the local parameter value to get the 0-1 parameter value.
           DparDest(ipoint) = real(iseg,DP) + dparloc
-          
+
         case (BDR_PAR_LENGTH)
           ! Convert to length parametrisation. dparloc gives us the local
           ! parameter value in 0-1 parametrisation. Interpolate
           ! linearly.
           DparDest(ipoint) = dcurrentpar + dparloc*dseglength
-        
+
         end select
-        
+
       end if
-     
+
     end do !ipoint
-    
+
   end subroutine boundary_convertParameter_mult
 
   !************************************************************************
@@ -1940,7 +1940,7 @@ contains
   ! Type of parametrisation, DT should be converted to.
   ! One of the BDR_PAR_xxxx constants.
   integer, intent(in) :: cparTypeDest
-  
+
 !</input>
 
 !<inputoutput>
@@ -1955,7 +1955,7 @@ contains
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
-    
+
     real(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength, dtmax
     integer :: iseg,istartidx,ipoint,iel
 
@@ -1976,10 +1976,10 @@ contains
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
@@ -1995,71 +1995,71 @@ contains
 
     do iel = 1, size(DparSource,2)
       do ipoint = 1, size(DparSource,1)
-        
+
         ! Do not convert parameter values < 0.
         if (DparSource(ipoint,iel) .ge. 0.0_DP) then
-          
+
           dpar = mod(DparSource(ipoint,iel),dtmax)
-          
+
           ! Find segment iseg the parameter values belong to.
           ! Remember that in the first element in the double precision block of
           ! each segment, the length of the segment is noted!
-          
+
           dcurrentpar = 0.0_DP
-          
+
           ! Determine the segment
           select case (cparTypeSource)
           case (BDR_PAR_01)
-            
+
             ! Easy case: 0-1 parametrisation
             iseg = aint(dpar)
-            
+
             ! Determine Start index of the segment in the double-prec. block
             istartidx = p_IsegInfo(1+2*iseg+1)
-            
+
             ! Get the segment length for later use
             dseglength  = p_DsegInfo(2+istartidx)
-            
+
             ! Start parameter value in length parametrisation
             dcurrentpar = p_DsegInfo(1+istartidx)
-            
+
             ! Subtract the start position of the current boundary component
             ! from the parameter value to get the 'local' parameter value
             ! (0 .le. dparloc .le. 1.0)
             dparloc = dpar - real(iseg,DP)
-            
+
           case (BDR_PAR_LENGTH)
-            
+
             ! In the length-parametrisation, we have to search.
             do iseg = 0,p_IsegCount(iboundCompIdx)-1
-              
+
               ! Determine Start index of the segment in the double-prec. block
               istartidx = p_IsegInfo(1+2*iseg+1)
-              
+
               ! Get the start and end parameter value
               dcurrentpar = p_DsegInfo(1+istartidx)
               dseglength = p_DsegInfo(2+istartidx)
               dendpar = dcurrentpar + dseglength
-              
+
               ! At least one of the IF-commands in the loop will activate
               ! the exit - because of the 'dt' check above!
               if (dpar .lt. dendpar) exit
-              
+
             end do
-            
+
             ! Subtract the start position of the current boundary component
             ! from the parameter value to get the 'local' parameter value
             ! (0 .le. dparloc .le. length(segment))
             dparloc = dpar - dcurrentpar
-            
+
             if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-            
+
             ! Divide by the segment length to get the local parameter value
             ! in 0-1 parametrisation.
             dparloc = dparloc / dseglength
-            
+
           end select
-          
+
           ! The local parameter value dparloc is now always in the range 0..1.
           !
           ! How shoule we convert?
@@ -2069,17 +2069,17 @@ contains
             ! Take the number of teh segment as basis and add
             ! the local parameter value to get the 0-1 parameter value.
             DparDest(ipoint,iel) = real(iseg,DP) + dparloc
-            
+
           case (BDR_PAR_LENGTH)
             ! Convert to length parametrisation. dparloc gives us the local
             ! parameter value in 0-1 parametrisation. Interpolate
             ! linearly.
             DparDest(ipoint,iel) = dcurrentpar + dparloc*dseglength
-            
+
           end select
-          
+
         end if
-        
+
       end do ! ipoint
     end do ! iel
 
@@ -2091,7 +2091,7 @@ contains
 
   subroutine boundary_createRegion (rboundary, iboundCompIdx, iboundSegIdx, &
                                     rregion, cpartype)
-                                    
+
 !<description>
   ! This routine creates a boundary region from a boundary segment.
   ! Where the boundary segment is saved internally, the boundary region
@@ -2101,7 +2101,7 @@ contains
   ! In the standard setting, the startpoint belongs to the boundary
   ! segment, the endpoint not.
 !</description>
-  
+
 !<input>
 
   ! boundary structure
@@ -2113,7 +2113,7 @@ contains
   ! Index of the boundary segment.
   ! =0: Create a boundary region that covers the whole boundary component.
   integer, intent(in) :: iboundSegIdx
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
@@ -2124,60 +2124,60 @@ contains
 
   ! Boundary region that is characterised by the boundary segment
   type(t_boundaryRegion), intent(out) :: rregion
-  
+
 !</output>
-  
+
 !</subroutine>
 
     ! local variables
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
-    
+
     real(DP) :: dcurrentpar, dendpar, dmaxpar
     integer :: istartidx
-    
+
     integer :: cpar ! local copy of cparType
-    
+
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
-    
+
     if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
       call output_line ('iboundCompIdx out of bounds!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_createRegion')
       call sys_halt()
     endif
-    
+
     ! Get the pointers to the segment information arrays for the current
     ! boundary component:
     call storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
     call storage_getbase_int(int(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
-    
+
     call storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
     call storage_getbase_double(int(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-    
+
     if (iboundSegIdx .ne. 0) then
-      
+
       if ((iboundSegIdx .gt. p_IsegCount(iboundCompIdx)) .or. (iboundSegIdx.lt.0)) then
         call output_line ('iboundSegIdx out of bounds!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'boundary_createRegion')
         call sys_halt()
       endif
-      
+
       ! Find segment iseg the parameter value belongs to.
       ! Remember that in the first element in the double precision block of
       ! each segment, the length of the segment is noted!
-      
+
       istartidx = p_IsegInfo(1+2*0+1)
       dcurrentpar = 0.0_DP
-      
+
       ! Determine Start index of the segment in the double-prec. block
       istartidx = p_IsegInfo(1+2*(iboundSegIdx-1)+1)
-      
+
       ! Get the start and end parameter value - depending on the parametrisation
       select case (cpar)
       case (BDR_PAR_01)
@@ -2189,12 +2189,12 @@ contains
         dendpar     = dcurrentpar + p_DsegInfo(2+istartidx)
         dmaxpar     = p_DmaxPar(iboundCompIdx)
       end select
-      
+
       ! Set the segment type in the boundary region structure
       rregion%isegmentType = p_IsegInfo(1+2*(iboundSegIdx-1))
-      
+
     else
-      
+
       ! Create a boundary region that covers the whole boundary component.
       select case (cpar)
       case (BDR_PAR_01)
@@ -2204,15 +2204,15 @@ contains
         dcurrentpar = p_DsegInfo(1+istartidx)
         dmaxpar     = p_DmaxPar(iboundCompIdx)
       end select
-      
+
       dcurrentpar = 0.0_DP
       dendpar     = dmaxpar
-      
+
       ! We have an unspecified boundary segment
       rregion%isegmentType = BOUNDARY_TYPE_ANALYTIC
-      
+
     end if
-    
+
     ! Create the boundary region structure
     rregion%cparType = cpar
     rregion%dminParam = dcurrentpar
@@ -2224,7 +2224,7 @@ contains
     rregion%dmaxParamBC = dmaxpar
 
   end subroutine boundary_createRegion
-                                    
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -2259,20 +2259,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IsegCount
     real(DP), dimension(:), pointer :: p_DmaxPar
-    
+
     real(DP) :: dminParam,dmaxParam,dmaxParamBC
     integer :: iboundCompIdx
 
     ! Check of we have to convert the region at all
     if (rregion%cparType .eq. cparType) return
-    
+
     ! Get the segment-count array and the maximum-parameter array
     call storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     call storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
-    
+
     ! Get boundary component from boundary region
     iboundCompIdx = rregion%iboundCompIdx
-    
+
     ! If the parameter value exceeds the parameter interval on the
     ! boundary component, truncate the parameter value!
     select case (cparType)
@@ -2281,7 +2281,7 @@ contains
     case (BDR_PAR_LENGTH)
       dmaxParamBC = p_DmaxPar(iboundCompIdx)
     end select
-    
+
     ! Convert parametrisation of minimum parameter value
     dminParam = boundary_convertParameter(rboundary, iboundCompIdx,&
         rregion%dminParam, rregion%cparType, cparType)
@@ -2289,11 +2289,11 @@ contains
     ! Convert parametrisation of maximum parameter value
     dmaxParam = boundary_convertParameter(rboundary, iboundCompIdx,&
         rregion%dmaxParam, rregion%cparType, cparType)
-    
+
     ! Check if the maximum parameter valeu is smaller than the minimum
     ! parameter value and set maximum parameter value accordingly
     if (dmaxParam .lt. dminParam) dmaxParam=dmaxParamBC
-    
+
     ! Convert the boundary region structure
     rregion%cparType = cparType
     rregion%dminParam = dminParam
@@ -2303,11 +2303,11 @@ contains
   end subroutine boundary_convertRegion
 
   ! ***************************************************************************
-  
+
 !<function>
 
   logical function boundary_isInRegion (rregion,iboundCompIdx,dparam)
-  
+
 !<description>
   ! Checks whether a point given by a parameter value of a point is in a
   ! boundary region.
@@ -2319,7 +2319,7 @@ contains
 
   ! The number of the boundary component of the point.
   integer, intent(in) :: iboundCompIdx
-  
+
   ! The parameter value of the point to be checked.
   ! Must be in the range 0..max. par. value.
   ! Points with negative parameter values are not in the region by definition.
@@ -2337,13 +2337,13 @@ contains
 
     ! local variables
     real(DP) :: dminpar,dmaxpar, dpar1,dpar2
-    
+
     ! Default setting: not inside.
     boundary_isInRegion = .false.
-    
+
     ! Correct boundary component?
     if (iboundCompIdx .ne. rregion%iboundCompIdx) return
-    
+
     ! If the parameter value is negative, the point is surely not in the
     ! region. Parameter values must be positive!
     ! (Note: Do not change this behaviour to 'rounding' into 0..tmax,
@@ -2351,70 +2351,70 @@ contains
     ! depend on this to figure out which vertices are on the physical
     ! boundary and which not!)
     if (dparam .lt. 0.0_DP) return
-    
+
     ! Does the region cover the complete boundary?
     if (rregion%dmaxParam-rregion%dminParam .gt. rregion%dmaxParamBC) then
       boundary_isInRegion = .true.
       return
     end if
-    
+
     ! Region does not cover the complete boundary, but a part of it.
     ! Which part?
-    
+
     ! Get the real bounds...
     dminpar = mod(rregion%dminParam,rregion%dmaxParamBC)
     dmaxpar = mod(rregion%dmaxParam,rregion%dmaxParamBC)
-    
+
     ! And make sure, dmaxpar >= dminpar!
     if ((dmaxpar .le. dminpar) .and. &
         (rregion%dminParam .ne. rregion%dmaxParam)) then
       dmaxpar = dmaxpar + rregion%dmaxParamBC
     end if
-    
+
     ! Get the parameter value on the boundary - in the set [0..TMAX)
     ! and [TMAX..2*TMAX).
     dpar1 = mod(dparam,rregion%dmaxParamBC)
     dpar2 = dpar1 + rregion%dmaxParamBC
-    
+
     ! Check if dpar1 or dpar2 is in that region.
     ! For 'normal' boundary regions, dpar1 should be inside, dpar2 not.
     ! For boundary regions crossing the maximum parameter value,
     ! dpar2 will be inside and dpar1 not.
-    
+
     if ((dpar1 .ge. dminpar) .and. &
         (dpar1 .le. dmaxpar)) then
-      
+
       ! What is up with the endpoints?
       if ( (dpar1 .eq. dminpar) .and. &
           (iand(rregion%iproperties,BDR_PROP_WITHSTART) .eq. 0)) return
       if ( (dpar1 .eq. dmaxpar) .and. &
           (iand(rregion%iproperties,BDR_PROP_WITHEND) .eq. 0)) return
-      
+
       ! It is inside.
       boundary_isInRegion = .true.
-      
+
     else if ((dpar2 .ge. dminpar) .and. &
              (dpar2 .le. dmaxpar)) then
-      
+
       ! What is up with the endpoints?
       if ( (dpar2 .eq. dminpar) .and. &
            (iand(rregion%iproperties,BDR_PROP_WITHSTART) .eq. 0)) return
       if ( (dpar2 .eq. dmaxpar) .and. &
            (iand(rregion%iproperties,BDR_PROP_WITHEND) .eq. 0)) return
-      
+
       ! It is inside.
       boundary_isInRegion = .true.
-      
+
     end if
-    
+
   end function boundary_isInRegion
- 
+
   ! ***************************************************************************
-  
+
 !<function>
 
   real(DP) function boundary_getRegionLength (rboundary,rregion) result (dlength)
-  
+
 !<description>
   ! Calculates the length of a part of the boundary identified by rregion
   ! on boundary rboundary.
@@ -2423,7 +2423,7 @@ contains
 !<input>
   ! Boundary structure, the boundary region should refer to
   type(t_boundary), intent(in) :: rboundary
-  
+
   ! The boundary reg8ion structure which length is to be computed
   type(t_boundaryRegion), intent(in) :: rregion
 !</input>
@@ -2442,7 +2442,7 @@ contains
       dlength = rregion%dmaxParam - rregion%dminParam
       return
     end if
-    
+
     ! Otherwise, compute the parameter values in length-parametrisation
     ! and subtract them to get the length.
     dlen1 = boundary_convertParameter(rboundary, rregion%iboundCompIdx, &
@@ -2452,9 +2452,9 @@ contains
     dlen2 = boundary_convertParameter(rboundary, rregion%iboundCompIdx, &
                                       rregion%dmaxParam, &
                                       rregion%cparType, BDR_PAR_LENGTH)
-                                      
+
     dlength = dlen2-dlen1
-    
+
   end function boundary_getRegionLength
 
   !************************************************************************
@@ -2484,10 +2484,10 @@ contains
 
     ! index of boundary component
     integer, intent(in) :: iboundCompIdx
-    
+
     ! parametric value of boundary point
     real(DP), intent(in) :: dt
-    
+
     ! OPTIONAL: For points with non-unique normal vectors, this decides
     ! how to calculate the normal vector. One of the BDR_NORMAL_xxxx
     ! constants.
@@ -2498,21 +2498,21 @@ contains
     ! BDR_NORMAL_RIGHT calculates the 'right' normal vector (which arises
     !   in the limit when approximating dt by dtmax->dt).
     integer, intent(in), optional :: cnormalMean
-    
+
     ! OPTIONAL: Type of parametrisation to use.
     ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
     integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
 
     ! x-coordinate of normal vector
     real(DP), intent(out) :: dnx
-    
+
     ! y-coordinate of normal vector
     real(DP), intent(out) :: dny
-    
+
 !</output>
 
 !</subroutine>
@@ -2561,7 +2561,7 @@ contains
     call boundary_getSegmentInfo2D(&
       p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
       iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-    
+
     if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
 
     ! If the local parameter value of dt is <> 0, then the normal vector can
@@ -2569,7 +2569,7 @@ contains
     ! Otherwise, we have to average the (two) normal vector(s) of the adjacent
     ! boundary components. Check if we are in the simple case.
     if (dparloc .ne. 0.0_DP) then
-    
+
       call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
 
     else
@@ -2580,19 +2580,19 @@ contains
       dny = 0.0_DP
       if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
           (cnormalMeanCalc .eq. BDR_NORMAL_RIGHT)) then
-          
+
         ! Calculate the 'right' normal into dnx/dny.
         !
         ! We already have the segment 'right' to the point.
         ! Get the corresponding normal vector.
-        
+
         call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
-        
+
       end if
 
       if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
           (cnormalMeanCalc .eq. BDR_NORMAL_LEFT)) then
-          
+
         ! Calculate the 'left' normal into dnx/dny.
         !
         ! Find segment iseg previous to the parameter value belongs to.
@@ -2602,10 +2602,10 @@ contains
         call boundary_getSegmentInfo2D(&
           p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,1,&
           iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-        
+
         ! Calculate the normal into dnx0/dny0
         call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx0,dny0)
-        
+
         ! and add it to dnx/dny
         dnx = dnx+dnx0
         dny = dny+dny0
@@ -2646,10 +2646,10 @@ contains
 
     ! index of boundary component
     integer, intent(in) :: iboundCompIdx
-    
+
     ! parametric values of boundary points
     real(DP), dimension(:), intent(in) :: Dt
-    
+
     ! OPTIONAL: For points with non-unique normal vectors, this decides
     ! how to calculate the normal vector. One of the BDR_NORMAL_xxxx
     ! constants.
@@ -2660,21 +2660,21 @@ contains
     ! BDR_NORMAL_RIGHT calculates the 'right' normal vector (which arises
     !   in the limit when approximating dt by dtmax->dt).
     integer, intent(in), optional :: cnormalMean
-    
+
     ! OPTIONAL: Type of parametrisation to use.
     ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
     integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
 
     ! x-coordinates of normal vectors
     real(DP), dimension(:), intent(out) :: Dnx
-    
+
     ! y-coordinates of normal vectors
     real(DP), dimension(:), intent(out) :: Dny
-    
+
 !</output>
 
 !</subroutine>
@@ -2721,70 +2721,70 @@ contains
 
     ! Process each parameter value individually
     do ipoint = 1, size(Dt)
-      
+
       ! Normalise the parameter value to the range [0,TMAX)
       dpar = Dt(ipoint)
       call boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
-      
+
       ! Find segment iseg the parameter value belongs to.
       ! Remember that in the first element in the double precision block of
       ! each segment, the length of the segment is noted!
       call boundary_getSegmentInfo2D(&
           p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
           iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-      
+
       if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-      
+
       ! If the local parameter value of dt is <> 0, then the normal vector can
       ! be computed uniquely at boundary point dt.
       ! Otherwise, we have to average the (two) normal vector(s) of the adjacent
       ! boundary components. Check if we are in the simple case.
       if (dparloc .ne. 0.0_DP) then
-        
+
         call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
             p_DsegInfo,Dnx(ipoint),Dny(ipoint))
-        
+
       else
-        
+
         ! Ok, we are at the endpoint of the interval. Now, cnormalMean decides on
         ! what to do.
         Dnx(ipoint) = 0.0_DP
         Dny(ipoint) = 0.0_DP
         if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
             (cnormalMeanCalc .eq. BDR_NORMAL_RIGHT)) then
-          
+
           ! Calculate the 'right' normal into dnx/dny.
           !
           ! We already have the segment 'right' to the point.
           ! Get the corresponding normal vector.
-          
+
           call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
               p_DsegInfo,Dnx(ipoint),Dny(ipoint))
-          
+
         end if
-        
+
         if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
             (cnormalMeanCalc .eq. BDR_NORMAL_LEFT)) then
-          
+
           ! Calculate the 'left' normal into dnx/dny.
           !
           ! Find segment iseg previous to the parameter value belongs to.
           ! Remember that in the first element in the double precision block of
           ! each segment, the length of the segment is noted!
-          
+
           call boundary_getSegmentInfo2D(&
               p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,1,&
               iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-          
+
           ! Calculate the normal into dnx0/dny0
           call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
               p_DsegInfo,dnx0,dny0)
-          
+
           ! and add it to dnx/dny
           Dnx(ipoint) = Dnx(ipoint)+dnx0
           Dny(ipoint) = Dny(ipoint)+dny0
         end if
-        
+
         ! Normalise the vector -- in case two vectors are summed up.
         dnorm = sqrt(Dnx(ipoint)*Dnx(ipoint)+Dny(ipoint)*Dny(ipoint))
         Dnx(ipoint) = Dnx(ipoint)/dnorm
@@ -2822,10 +2822,10 @@ contains
 
     ! index of boundary component
     integer, intent(in) :: iboundCompIdx
-    
+
     ! parametric values of boundary points
     real(DP), dimension(:,:), intent(in) :: Dt
-    
+
     ! OPTIONAL: For points with non-unique normal vectors, this decides
     ! how to calculate the normal vector. One of the BDR_NORMAL_xxxx
     ! constants.
@@ -2836,21 +2836,21 @@ contains
     ! BDR_NORMAL_RIGHT calculates the 'right' normal vector (which arises
     !   in the limit when approximating dt by dtmax->dt).
     integer, intent(in), optional :: cnormalMean
-    
+
     ! OPTIONAL: Type of parametrisation to use.
     ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
     integer, intent(in), optional :: cparType
-  
+
 !</input>
 
 !<output>
 
     ! x-coordinates of normal vectors
     real(DP), dimension(:,:), intent(out) :: Dnx
-    
+
     ! y-coordinates of normal vectors
     real(DP), dimension(:,:), intent(out) :: Dny
-    
+
 !</output>
 
 !</subroutine>
@@ -2898,80 +2898,80 @@ contains
     ! Process each parameter value individually
     do iel = 1, size(Dt,2)
       do ipoint = 1, size(Dt,1)
-        
+
         ! Normalise the parameter value to the range [0,TMAX)
         dpar = Dt(ipoint,iel)
         call boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
-        
+
         ! Find segment iseg the parameter value belongs to.
         ! Remember that in the first element in the double precision block of
         ! each segment, the length of the segment is noted!
         call boundary_getSegmentInfo2D(&
             p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
             iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-        
+
         if (dseglength .eq. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-        
+
         ! If the local parameter value of dt is <> 0, then the normal vector can
         ! be computed uniquely at boundary point dt.
         ! Otherwise, we have to average the (two) normal vector(s) of the adjacent
         ! boundary components. Check if we are in the simple case.
         if (dparloc .ne. 0.0_DP) then
-          
+
           call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
               p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
-          
+
         else
-          
+
           ! Ok, we are at the endpoint of the interval. Now, cnormalMean decides on
           ! what to do.
           Dnx(ipoint,iel) = 0.0_DP
           Dny(ipoint,iel) = 0.0_DP
           if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
               (cnormalMeanCalc .eq. BDR_NORMAL_RIGHT)) then
-            
+
             ! Calculate the 'right' normal into dnx/dny.
             !
             ! We already have the segment 'right' to the point.
             ! Get the corresponding normal vector.
-            
+
             call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
                 p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
-            
+
           end if
-          
+
           if ((cnormalMeanCalc .eq. BDR_NORMAL_MEAN) .or. &
               (cnormalMeanCalc .eq. BDR_NORMAL_LEFT)) then
-            
+
             ! Calculate the 'left' normal into dnx/dny.
             !
             ! Find segment iseg previous to the parameter value belongs to.
             ! Remember that in the first element in the double precision block of
             ! each segment, the length of the segment is noted!
-            
+
             call boundary_getSegmentInfo2D(&
                 p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,1,&
                 iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
-            
+
             ! Calculate the normal into dnx0/dny0
             call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
                 p_DsegInfo,dnx0,dny0)
-            
+
             ! and add it to dnx/dny
             Dnx(ipoint,iel) = Dnx(ipoint,iel)+dnx0
             Dny(ipoint,iel) = Dny(ipoint,iel)+dny0
           end if
-          
+
           ! Normalise the vector -- in case two vectors are summed up.
           dnorm = sqrt(Dnx(ipoint,iel)*Dnx(ipoint,iel)+&
                        Dny(ipoint,iel)*Dny(ipoint,iel))
           Dnx(ipoint,iel) = Dnx(ipoint,iel)/dnorm
           Dny(ipoint,iel) = Dny(ipoint,iel)/dnorm
         end if
-        
+
       end do
     end do
-      
+
   end subroutine boundary_getNormalVec2D_sim
 
   !************************************************************************
@@ -2979,64 +2979,64 @@ contains
 !<subroutine>
 
   subroutine boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,DsegInfo,dnx,dny)
-      
+
 !<description>
     ! Calculates the normal of a point on a specific boundary segment.
 !</description>
-    
+
     !<input>
-    
+
     ! Segment type
     integer, intent(in) :: isegType
-    
+
     ! Type of the parameter value (0-1, length par.,...)
     integer, intent(in) :: cpar
-    
+
     ! Local parameter value of the point in the boundary segment
     real(DP), intent(in) :: dparLoc
-    
+
     ! Length of the segment
     real(DP), intent(in) :: dseglength
-    
+
     ! Start index of the segment in DsegInfo
     integer, intent(in) :: istartIdx
-    
+
     ! Double precision segment info array
     real(DP), dimension(:), intent(in) :: DsegInfo
-    
+
     !</input>
-    
+
     !<output>
-    
+
     ! Normal vector
     real(DP), intent(out) :: dnx,dny
-    
+
     !</output>
 !</subroutine>
-    
+
     ! local variables
     real(DP) :: dploc,dphi,dnorm,dnx0,dny0
-      
+
     dploc = dparloc
-    
+
     select case (isegType)
-      
+
       ! case of line
     case (BOUNDARY_TYPE_LINE)
-      
+
       ! Calculate the x/y components of the normal vector from the
       ! startpoint and the uni direction vector.
       dnx0 =  DsegInfo(istartidx+6)
       dny0 = -DsegInfo(istartidx+5)
-      
+
       ! case of circle segment
     case (BOUNDARY_TYPE_CIRCLE)
-      
+
       ! Rescale dparloc with the length of the arc to get a value
       ! between 0 and 1; important for sin/cos functions later.
       ! In the 0-1 parametrisation, this is already the case.
       if (cpar .eq. BDR_PAR_LENGTH) dploc = dploc / dseglength
-      
+
       ! Get the rotation angle.
       ! Use the initial rotation angle, saved at position 6 of the double
       ! precision data block
@@ -3047,12 +3047,12 @@ contains
       ! the radius is to be found in element 5 of the double precision data block
       dnx0 = DsegInfo(istartidx+5)*cos(dphi)
       dny0 = DsegInfo(istartidx+5)*sin(dphi)
-      
+
       if (DsegInfo(istartidx+7) .gt. DsegInfo(istartidx+8)) then
         dnx0 = -dnx0
         dny0 = -dny0
       end if
-      
+
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                         OU_CLASS_ERROR,OU_MODE_STD,'boundary_getNormal2D')
@@ -3063,7 +3063,7 @@ contains
     dnorm = sqrt(dnx0*dnx0+dny0*dny0)
     dnx = dnx0/dnorm
     dny = dny0/dnorm
-    
+
   end subroutine boundary_getNormal2D
 
   !************************************************************************
@@ -3082,7 +3082,7 @@ contains
 !</description>
 
 !<input>
-    
+
     ! Coordinates of the sampling points
     ! Dimension: DsamplePoints(nim,nsamplePoints)
     real(DP), dimension(:,:), intent(in) :: DsamplePoints
@@ -3100,14 +3100,14 @@ contains
 
     ! x-coordinate of normal vector
     real(DP), intent(out) :: dnx
-    
+
     ! y-coordinate of normal vector
     real(DP), intent(out) :: dny
-    
+
 !</output>
 
 !</subroutine>
-    
+
     ! local variables
     real(DP), dimension(:,:), allocatable :: Da
     real(DP), dimension(:), allocatable :: Db,Dc
@@ -3138,7 +3138,7 @@ contains
         !   $ n_y = x_1-x_2 $
         dnx = DsamplePoints(2,2) - DsamplePoints(2,1)
         dny = DsamplePoints(1,1) - DsamplePoints(1,2)
-        
+
         ! ... and normalise the vector to unity
         dscale = sqrt(dnx**2+dny**2)
         dnx = dnx/dscale
@@ -3146,7 +3146,7 @@ contains
 
       elseif (nsamplepoints .gt. 2) then
         ! Do a linear least squares fit of the sampling points
-        
+
         ! Allocate temporal memory
         allocate(Da(2,2), Db(2), Dc(2))
 
@@ -3155,14 +3155,14 @@ contains
         Da(1,2) = sum(DsamplePoints(1,:))
         Da(2,1) = Da(1,2)
         Da(2,2) = sum(DsamplePoints(1,:)**2)
-        
+
         ! Compute 2x1-vector
         Db(1) = sum(DsamplePoints(2,:))
         Db(2) = sum(DsamplePoints(1,:)*DsamplePoints(2,:))
-        
+
         ! Solve linear 2x2-system via Cramers rule
         det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-        
+
         ! Check if system has unique solution
         if (abs(det1) .gt. SYS_EPSREAL_DP) then
           ! Linear system has a unique solution. Thus, the
@@ -3200,22 +3200,22 @@ contains
             dny =  0.0_DP
           end if
         end if
-        
+
         ! Deallocate temporal memory
         deallocate(Da, Db, Dc)
-        
+
       else
         call output_line ('Insufficient number of sampling points!', &
             OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D')
         call sys_halt()
       end if
-      
+
     case default
       call output_line ('Unsupported polynomial order!', &
           OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D')
       call sys_halt()
     end select
-    
+
   end subroutine
 
   !************************************************************************
@@ -3234,7 +3234,7 @@ contains
 !</description>
 
 !<input>
-    
+
     ! Coordinates of the sampling points
     ! Dimension: DsamplePoints(nim,nsamplePoints)
     real(DP), dimension(:,:), intent(in) :: DsamplePoints
@@ -3253,11 +3253,11 @@ contains
     ! x-coordinates of normal vector
     ! Dimension: Dnx(npoints)
     real(DP), dimension(:), intent(out) :: Dnx
-    
+
     ! y-coordinates of normal vector
     ! Dimension: Dny(npoints)
     real(DP), dimension(:), intent(out) :: Dny
-    
+
 !</output>
 
 !</subroutine>
@@ -3267,7 +3267,7 @@ contains
     real(DP), dimension(:), allocatable :: Db,Dc
     real(DP) :: dscale,det1,det2
     integer :: ipolynomial,ipoint,nsamplepoints,npoints
-    
+
     ipolynomial = size(DsamplePoints,2)-1
     if (present(cpolynomial)) ipolynomial = cpolynomial
 
@@ -3280,7 +3280,7 @@ contains
     ! Get number of points
     npoints = size(Dpoints,2)
     nsamplepoints = size(DsamplePoints,2)
-    
+
     ! What polynomial degree should be used?
     select case(ipolynomial)
 
@@ -3300,7 +3300,7 @@ contains
           !   $ n_y = x_1-x_2 $
           Dnx(ipoint) = DsamplePoints(2,2) - DsamplePoints(2,1)
           Dny(ipoint) = DsamplePoints(1,1) - DsamplePoints(1,2)
-          
+
           ! ... and normalise the vector to unity
           dscale = sqrt(Dnx(ipoint)**2+Dny(ipoint)**2)
           Dnx(ipoint) = Dnx(ipoint)/dscale
@@ -3309,7 +3309,7 @@ contains
 
       elseif (nsamplepoints .gt. 2) then
         ! Do a linear least squares fit of the sampling points
-        
+
         ! Allocate temporal memory
         allocate(Da(2,2), Db(2), Dc(2))
 
@@ -3318,14 +3318,14 @@ contains
         Da(1,2) = sum(DsamplePoints(1,:))
         Da(2,1) = Da(1,2)
         Da(2,2) = sum(DsamplePoints(1,:)**2)
-        
+
         ! Compute 2x1-vector
         Db(1) = sum(DsamplePoints(2,:))
         Db(2) = sum(DsamplePoints(1,:)*DsamplePoints(2,:))
-        
+
         ! Solve linear 2x2-system via Cramers rule
         det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-        
+
         ! Check if system has unique solution
         if (abs(det1) .gt. SYS_EPSREAL_DP) then
           ! Linear system has a unique solution. Thus, the
@@ -3370,22 +3370,22 @@ contains
             end do
           end if
         end if
-        
+
         ! Deallocate temporal memory
         deallocate(Da, Db, Dc)
-        
+
       else
         call output_line ('Insufficient number of sampling points!', &
             OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_mult')
         call sys_halt()
       end if
-      
+
     case default
       call output_line ('Unsupported polynomial order!', &
           OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_mult')
       call sys_halt()
     end select
-    
+
   end subroutine
 
   !************************************************************************
@@ -3404,7 +3404,7 @@ contains
 !</description>
 
 !<input>
-    
+
     ! Coordinates of the sampling points
     ! Dimension: DsamplePoints(nim,nsamplePoints,nelements)
     real(DP), dimension(:,:,:), intent(in) :: DsamplePoints
@@ -3423,11 +3423,11 @@ contains
     ! x-coordinates of normal vector
     ! Dimension: Dnx(npoints,nelements)
     real(DP), dimension(:,:), intent(out) :: Dnx
-    
+
     ! y-coordinates of normal vector
     ! Dimension: Dny(npoints,nelements)
     real(DP), dimension(:,:), intent(out) :: Dny
-    
+
 !</output>
 
 !</subroutine>
@@ -3475,17 +3475,17 @@ contains
             !   $ n_y = x_1-x_2 $
             Dnx(ipoint,iel) = DsamplePoints(2,2,iel) - DsamplePoints(2,1,iel)
             Dny(ipoint,iel) = DsamplePoints(1,1,iel) - DsamplePoints(1,2,iel)
-            
+
             ! ... and normalise the vector to unity
             dscale = sqrt(Dnx(ipoint,iel)**2+Dny(ipoint,iel)**2)
             Dnx(ipoint,iel) = Dnx(ipoint,iel)/dscale
             Dny(ipoint,iel) = Dny(ipoint,iel)/dscale
           end do
         end do
-        
+
       elseif (nsamplepoints .gt. 2) then
         ! Do a linear least squares fit of the sampling points
-        
+
         ! Allocate temporal memory
         allocate(Da(2,2), Db(2), Dc(2))
 
@@ -3495,14 +3495,14 @@ contains
           Da(1,2) = sum(DsamplePoints(1,:,iel))
           Da(2,1) = Da(1,2)
           Da(2,2) = sum(DsamplePoints(1,:,iel)**2)
-          
+
           ! Compute 2x1-vector
           Db(1) = sum(DsamplePoints(2,:,iel))
           Db(2) = sum(DsamplePoints(1,:,iel)*DsamplePoints(2,:,iel))
-          
+
           ! Solve linear 2x2-system via Cramers rule
           det1 = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-          
+
           ! Check if system has unique solution
           if (abs(det1) .gt. SYS_EPSREAL_DP) then
             ! Linear system has a unique solution. Thus, the
@@ -3551,13 +3551,13 @@ contains
 
         ! Deallocate temporal memory
         deallocate(Da, Db, Dc)
-        
+
       else
         call output_line ('Insufficient number of sampling points!', &
             OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_sim')
         call sys_halt()
       end if
-      
+
     case default
       call output_line ('Unsupported polynomial order!', &
           OU_CLASS_WARNING,OU_MODE_STD,'boundary_calcNormalVec2D_sim')
@@ -3565,5 +3565,5 @@ contains
     end select
 
   end subroutine
-    
+
 end module boundary

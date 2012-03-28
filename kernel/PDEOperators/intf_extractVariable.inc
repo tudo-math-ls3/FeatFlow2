@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>

@@ -1,16 +1,14 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interface for a coefficient function that is called
   ! during the matrix assembly of scalar vectors.
-  
+
   interface
-  
+
   !<subroutine>
 
     subroutine fcoeff_buildVectorBlBdr1D_sim (rdiscretisation, rform, &
                   nelements, npointsPerElement, Dpoints, ibct, IdofsTest,&
                   rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use collection
     use domainintegration
@@ -18,7 +16,7 @@
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
@@ -29,22 +27,22 @@
     ! simultaneously for all these points and all the terms in the linear form
     ! the corresponding coefficients in front of the terms.
   !</description>
-    
+
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -70,7 +68,7 @@
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutpu>
-  
+
   !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -78,10 +76,10 @@
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
   !</output>
-    
+
   !</subroutine>
-  
+
     end subroutine
-    
+
   end interface
-  
+

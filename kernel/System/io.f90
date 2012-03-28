@@ -39,19 +39,19 @@ module io
   use error
 
   implicit none
-  
+
   private
 
 !<constants>
 
   !<constantblock description="Input/output block type identifiers">
-  
+
   ! defines the default value for files
   integer, parameter, public :: IO_UNKNOWN = 0
 
   ! defines that a file must already exist
   integer, parameter, public :: IO_OLD = 1
-  
+
   ! defines that a file must not exist
   integer, parameter, public :: IO_NEW = 2
 
@@ -60,7 +60,7 @@ module io
 
   ! defines that a temporary file should be deleted when closed
   integer, parameter, public :: IO_SCRATCH = 4
-    
+
   !</constantblock>
 
 !</constants>
@@ -126,7 +126,7 @@ contains
     inquire(file=trim(sfilename), exist=bexists)
 
     if (bexists) then
-    
+
       if (.not. present(bformatted)) then
         open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read")
       else if (bformatted) then
@@ -140,12 +140,12 @@ contains
         write(unit=*,fmt=*) "*** Error while opening file '",trim(sfilename),"'. ***"
         iunit = -1
       end if
-      
+
     else
-    
+
       call error_print(ERR_IO_NOSUCHFILE, "io_openFileForReading", ERR_CRITICAL, &
                       sarg1 = sfilename)
-                      
+
     endif
 
   end subroutine io_openFileForReading
@@ -185,7 +185,7 @@ contains
 
     !optional parameter (see description)
     logical, intent(out),optional :: bfileExists
-    
+
 !</output>
 !</subroutine>
 
@@ -258,10 +258,10 @@ contains
 !</subroutine>
 
     integer :: iunit
-    
+
     ! Open the file for writing, overwrite the old one.
     call io_openFileForWriting(sfilename, iunit, SYS_REPLACE)
-    
+
     ! Close the file and delete it.
     close (iunit, STATUS='DELETE')
 
@@ -270,7 +270,7 @@ contains
 ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine io_readlinefromfile (iunit, sdata, ilinelen, ios)
 
 !<description>
@@ -285,25 +285,25 @@ contains
 !<output>
     ! The string where to write data to
     character(LEN=*), intent(out) :: sdata
-    
+
     ! Length of the output
     integer, intent(out) :: ilinelen
-    
+
     ! Status of the reading process. Set to a value <> 0 if the end
     ! of the file is reached.
     integer, intent(out) :: ios
 !</output>
 !</subroutine>
-    
+
     ! local variables
     character :: c
-    
+
     sdata = ''
     ilinelen = 0
-    
+
     ! Read the data - as long as the line/file does not end.
     do
-      
+
       ! Read a character.
       ! Unfortunately, Fortran forces me to use this dirty GOTO
       ! to decide processor-independently whether the line or
@@ -313,7 +313,7 @@ contains
 
       ! Do not do anything in case of an error
       if (ios .eq. 0) then
-        
+
         ilinelen = ilinelen + 1
         sdata (ilinelen:ilinelen) = c
 
@@ -329,9 +329,9 @@ contains
       ! End of record = END OF LINE.
 20    ios = 0
       exit
-      
+
     end do
-    
+
   end subroutine io_readlinefromfile
 
   ! ***************************************************************************
@@ -339,16 +339,16 @@ contains
   !<subroutine>
 
   subroutine io_pathExtract (sfile, sfilepath, sfilename, babsolute)
-  
+
   !<description>
     ! Extracts the path of a file from a path+filename string.
   !</description>
-  
+
   !<input>
     ! Filename + path of a specific file (or directory).
     character(len=*), intent(in) :: sfile
   !</input>
-  
+
   !<output>
     ! OPTIONAL: Receives the directory that contains the specific file,
     ! or "" if no directory was specified in sfile.
@@ -357,17 +357,17 @@ contains
     ! OPTIONAL: Receives the name of the file without a probably preceding
     ! directory string.
     character(len=*), intent(out), optional :: sfilename
-    
+
     ! OPTINOAL: Returns TRUE if the path specification in sfile points to an
     ! absolute path. Returns FALSE if the path in sfile is relative.
     logical, intent(out), optional :: babsolute
   !</output>
-  
+
   !</subroutine>
-  
+
     integer :: i
     character(len=10) :: ssubpath
-  
+
     ! Find the last "/" or "\" in sfile.                                (!" cpp fix)
     ! Note that we specified "\\" and not "\" because the PGI compiler  (!" cpp fix)
     ! (stupid thing) would otherwise use the backslash to escape the quote
@@ -384,12 +384,12 @@ contains
       if (present(sfilepath)) sfilepath = ""
       if (present(sfilename)) sfilename = sfile
     end if
-    
+
     if (present(babsolute)) then
       ! Take a look if this is an absolute or relative path.
       i = scan(trim(adjustl(sfile)),"/\\",.false.)
       babsolute = i .eq. 1
-      
+
       ! In Windows environments, the path is also absolute if
       ! a volume descriptor like "C:" precedes the (back-)slash.
       if (.not. babsolute) then
@@ -402,7 +402,7 @@ contains
         end if
       end if
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -410,11 +410,11 @@ contains
   !<function>
 
   function io_pathConcat (spath,sfilename) result (sfile)
-  
+
   !<description>
     ! Concatenates a filename to a path specifier.
   !</description>
-  
+
   !<input>
     ! Path to the file.
     character(len=*), intent(in) :: spath
@@ -422,16 +422,16 @@ contains
     ! Name of the file (or directory)
     character(len=*), intent(in) :: sfilename
   !</input>
-  
+
   !<result>
     ! Path + filename to a specific file (or directory).
     character(len=len_trim(spath)+len_trim(sfilename)+1) :: sfile
   !</result>
-  
+
   !</function>
-  
+
     sfile = trim(spath)//"/"//trim(sfilename)
-  
+
   end function
 
   ! ***************************************************************************
@@ -439,28 +439,28 @@ contains
   !<function>
 
   function io_isDirectory (spath) result (bexists)
-  
+
   !<description>
     ! Checks whether a given string is a directory
   !</description>
-  
+
   !<input>
     ! Path to the file.
     character(len=*), intent(in) :: spath
   !</input>
-  
+
   !<result>
     ! Is .TRUE. if the given string is an existing directory
     logical :: bexists
   !</result>
-  
+
   !</function>
-  
+
     ! local variables
     integer :: iunit,ios
-    
+
     iunit = sys_getFreeUnit()
-    
+
     inquire(file=trim(spath), exist=bexists, iostat=ios)
 
     if (bexists) then

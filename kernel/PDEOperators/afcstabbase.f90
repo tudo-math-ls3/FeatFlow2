@@ -162,7 +162,7 @@ module afcstabbase
   use triangulation
 
   implicit none
-  
+
   private
   public :: t_afcstab
 
@@ -213,7 +213,7 @@ module afcstabbase
   public :: afcstab_copyH2D_IedgeList
   public :: afcstab_copyD2H_CoeffsAtEdge
   public :: afcstab_copyH2D_CoeffsAtEdge
-   
+
   ! *****************************************************************************
 
 !<constants>
@@ -223,7 +223,7 @@ module afcstabbase
 
   ! No stabilisation: use standard high-order Galerkin discretisation
   integer, parameter, public :: AFCSTAB_GALERKIN              = 0
-  
+
   ! Stabilisation of discrete upwind type for non-symmetric operators
   integer, parameter, public :: AFCSTAB_UPWIND                = 1
 
@@ -254,17 +254,17 @@ module afcstabbase
 
 
   ! ***** Stabilisation group 3x: upwind-biased FEM-TVD stabilisation *****
-  
+
   ! Stabilisation of FEM-TVD type
   integer, parameter, public :: AFCSTAB_TVD                   = 30
-  
+
   ! Stabilisation of general purpose type
   integer, parameter, public :: AFCSTAB_GP                    = 31
 
   ! Stabilisation of symmetric type for diffusion operators
   integer, parameter, public :: AFCSTAB_SYMMETRIC             = 32
 
-  
+
   ! ***** Stabilisation group 4x: nonlinear FEM-LP stabilisation *****
 
   ! Stabilisation of linearity-preserving flux correction type
@@ -278,8 +278,8 @@ module afcstabbase
   ! Stabilisation of linearity-preserving flux correction type
   ! for symmetric antidiffusion (e.g., diffusion)
   integer, parameter, public :: AFCSTAB_NLINLPT_SYMMETRIC     = 42
-  
-  
+
+
   ! ***** Stabilisation group 5x: linearised FEM-LP stabilisation *****
 
   ! Stabilisation of linearised linearity-preserving flux correction
@@ -293,7 +293,7 @@ module afcstabbase
   ! Stabilisation of linearised linearity-preserving flux correction
   ! type for symmetric antidiffusion (e.g., diffusion)
   integer, parameter, public :: AFCSTAB_LINLPT_SYMMETRIC      = 52
-  
+
 !</constantblock>
 
 
@@ -347,19 +347,19 @@ module afcstabbase
 
   ! Subdiagonal edge-based structure has been generated
   integer(I32), parameter, public :: AFCSTAB_HAS_OFFDIAGONALEDGES = 2_I32**5
-  
+
   ! Antidiffusive fluxes have been precomputed
   integer(I32), parameter, public :: AFCSTAB_HAS_ADFLUXES         = 2_I32**6
-  
+
   ! Nodal sums of antidiffusive increments have been computed: PP, PM
   integer(I32), parameter, public :: AFCSTAB_HAS_ADINCREMENTS     = 2_I32**7
 
   ! Nodal upper/lower bounds have been computed: QP, QM
   integer(I32), parameter, public :: AFCSTAB_HAS_NODEBOUNDS       = 2_I32**8
-  
+
   ! Nodal correction factors have been computed: RP, RM
   integer(I32), parameter, public :: AFCSTAB_HAS_NODELIMITER      = 2_I32**9
-  
+
   ! Edge-wise correction factors have been computed: ALPHA
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
 
@@ -376,7 +376,7 @@ module afcstabbase
 
 
 !<constantblock description="Duplication flags. Specifies which information is duplicated">
-  
+
   ! Duplicate atomic stabilisation structure
   integer(I32), parameter, public :: AFCSTAB_DUP_STRUCTURE        = 2_I32**1
 
@@ -388,25 +388,25 @@ module afcstabbase
 
   ! Duplicate subdiagonal edge-based
   integer(I32), parameter, public :: AFCSTAB_DUP_OFFDIAGONALEDGES = AFCSTAB_HAS_OFFDIAGONALEDGES
-  
+
   ! Duplicate antidiffusive fluxes
   integer(I32), parameter, public :: AFCSTAB_DUP_ADFLUXES         = AFCSTAB_HAS_ADFLUXES
-  
+
   ! Duplicate nodal sums of antidiffusive increments: PP, PM
   integer(I32), parameter, public :: AFCSTAB_DUP_ADINCREMENTS     = AFCSTAB_HAS_ADINCREMENTS
 
   ! Duplicate nodal upper/lower bounds: QP, QM
   integer(I32), parameter, public :: AFCSTAB_DUP_NODEBOUNDS       = AFCSTAB_HAS_NODEBOUNDS
-  
+
   ! Duplicate nodal correction factors: RP, RM
   integer(I32), parameter, public :: AFCSTAB_DUP_NODELIMITER      = AFCSTAB_HAS_NODELIMITER
-  
+
   ! Duplicate edge-wise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_DUP_EDGELIMITER      = AFCSTAB_HAS_EDGELIMITER
 
   ! Duplicate low-order predictor
   integer(I32), parameter, public :: AFCSTAB_DUP_PREDICTOR        = AFCSTAB_HAS_PREDICTOR
-    
+
   ! Duplicate transformed nodal solution values
   integer(I32), parameter, public :: AFCSTAB_DUP_NODEVALUES       = AFCSTAB_HAS_NODEVALUES
 
@@ -418,7 +418,7 @@ module afcstabbase
 
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between stabilisation structures">
-  
+
   ! Duplicate atomic stabilisation structure
   integer(I32), parameter, public :: AFCSTAB_SHARE_STRUCTURE        = AFCSTAB_DUP_STRUCTURE
 
@@ -430,19 +430,19 @@ module afcstabbase
 
   ! Share subdiagonal edge-based structure
   integer(I32), parameter, public :: AFCSTAB_SHARE_OFFDIAGONALEDGES = AFCSTAB_DUP_OFFDIAGONALEDGES
-  
+
   ! Share antidiffusive fluxes
   integer(I32), parameter, public :: AFCSTAB_SHARE_ADFLUXES         = AFCSTAB_DUP_ADFLUXES
-  
+
   ! Share nodal sums of antidiffusive increments: PP, PM
   integer(I32), parameter, public :: AFCSTAB_SHARE_ADINCREMENTS     = AFCSTAB_DUP_ADINCREMENTS
 
   ! Share nodal upper/lower bounds: QP, QM
   integer(I32), parameter, public :: AFCSTAB_SHARE_NODEBOUNDS       = AFCSTAB_DUP_NODEBOUNDS
-  
+
   ! Share nodal correction factors: RP, RM
   integer(I32), parameter, public :: AFCSTAB_SHARE_NODELIMITER      = AFCSTAB_DUP_NODELIMITER
-  
+
   ! Share edge-wise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_SHARE_EDGELIMITER      = AFCSTAB_DUP_EDGELIMITER
 
@@ -462,7 +462,7 @@ module afcstabbase
 
   ! Initialise the edgewise correction factors by unity
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_INITALPHA    = 2_I32**0
-  
+
   ! Compute the raw-antidiffusive fluxes
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADFLUXES     = 2_I32**1
 
@@ -471,7 +471,7 @@ module afcstabbase
 
   ! Compute the local solution bounds
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_BOUNDS       = 2_I32**3
-  
+
   ! Compute the nodal correction factors
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_LIMITNODAL   = 2_I32**4
 
@@ -517,7 +517,7 @@ module afcstabbase
 
   ! Prelimit the raw antidiffusive fluxes
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_PRELIMIT     = 2_I32**1
-  
+
   ! Compute the sums of antidiffusive increments
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_ADINCREMENTS = 2_I32**2
 
@@ -529,7 +529,7 @@ module afcstabbase
 
   ! Compute edgewise correction factors
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITEDGE    = 2_I32**5
-  
+
   ! Correct raw antidiffusive fluxes and apply them
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT      = 2_I32**6
 
@@ -540,7 +540,7 @@ module afcstabbase
   ! Constrain the raw antidiffusive fluxes by the size of limited
   ! limited rather than by the correction factors directly
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_CONSTRAIN    = 2_I32**8
-  
+
   ! FEM-FCT algorithm without application of the corrected fluxes
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_PREPARE  = AFCSTAB_FCTALGO_INITALPHA +&
                                                                 AFCSTAB_FCTALGO_PRELIMIT +&
@@ -553,7 +553,7 @@ module afcstabbase
   ! (also used in the very first iteration of all other variants)
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD = AFCSTAB_FCTALGO_PREPARE +&
                                                                 AFCSTAB_FCTALGO_CORRECT
-  
+
 !</constantblock>
 
 
@@ -630,7 +630,7 @@ module afcstabbase
 
 
 !<constantblock description="Default tolerances for stabilisation">
-  
+
   ! Absolute tolerance for prelimiting of antidiffusive fluxes
 #ifndef AFCSTAB_PRELIMABS
   real(DP), parameter, public :: AFCSTAB_PRELIMABS = 1e-16
@@ -664,9 +664,9 @@ module afcstabbase
   ! of algebraic flux correction type. It is applicable to scalar
   ! problems and systems of equations alike. Depending on the
   ! stabilisation strategy some internal structures will be generated.
-  
+
   type t_afcstab
-    
+
     ! Format Tag: Identifies the type of stabilisation
     integer :: cafcstabType = AFCSTAB_GALERKIN
 
@@ -679,7 +679,7 @@ module afcstabbase
 
     ! Format Tag: Identifies the data type
     integer :: cdataType = ST_DOUBLE
-    
+
     ! Duplication Flag: This is a bitfield coming from an OR
     ! combination of different AFCSTAB_SHARE_xxxx constants and
     ! specifies which parts of the stabilisation are shared with
@@ -788,7 +788,7 @@ module afcstabbase
 !</types>
 
   !*****************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: afcstab_perfconfig
 
@@ -805,7 +805,7 @@ module afcstabbase
     module procedure afcstab_isMatrixCompatibleSc
     module procedure afcstab_isMatrixCompatibleBl
   end interface
-  
+
   interface afcstab_isVectorCompatible
     module procedure afcstab_isVectorCompatibleSc
     module procedure afcstab_isVectorCompatibleBl
@@ -859,7 +859,7 @@ contains
     else
       call pcfg_initPerfConfig(afcstab_perfconfig)
     end if
-  
+
   end subroutine afcstab_initPerfConfig
 
   ! ***************************************************************************
@@ -902,7 +902,7 @@ contains
 
     ! In a second step, special settings particular to individual
     ! stabilisation techniques are made `by hand'.
-    
+
     ! Check if stabilisation should be applied
     select case(rafcstab%cafcstabType)
 
@@ -962,7 +962,7 @@ contains
   !*****************************************************************************
 
 !<subroutine>
-  
+
   subroutine afcstab_releaseStabilisation(rafcstab)
 
 !<description>
@@ -1010,7 +1010,7 @@ contains
     rafcstab%h_IsuperdiagEdgesIdx = ST_NOHANDLE
     rafcstab%h_IsubdiagEdgesIdx = ST_NOHANDLE
     rafcstab%h_IsubdiagEdges = ST_NOHANDLE
-    
+
     ! Release antidiffusive fluxes
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
       if (associated(rafcstab%p_rvectorFlux0)) then
@@ -1071,7 +1071,7 @@ contains
     rafcstab%p_rvectorQ  => null()
     rafcstab%p_rvectorQp => null()
     rafcstab%p_rvectorQm => null()
-    
+
     ! Release nodal limiting factors
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
       if (associated(rafcstab%p_rvectorRp)) then
@@ -1124,9 +1124,9 @@ contains
     pure function check(idupFlag, ibitfield)
 
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(idupFlag,ibitfield) .ne. ibitfield)
 
     end function check
@@ -1163,12 +1163,12 @@ contains
     ! local variables
     integer, dimension(2) :: Isize2D
     integer :: isize
-    
+
     ! REMARK: The handle IedgeListIdx is not modified here due
     ! to the following reasons: If the edges are not reordered into
     ! independent groups then IedgeListIdx(1:2)=(/1,NEDGE+1/).
     ! Otherwise, the edge-data structure needs to be regenerated anyway.
-    
+
     !---------------------------------------------------------------------------
     ! Resize nodal quantities
     !---------------------------------------------------------------------------
@@ -1176,7 +1176,7 @@ contains
 
       ! Set new number of nodes
       rafcstab%NEQ = NEQ
-      
+
       ! Resize edge index vector and clear specification
       !-------------------------------------------------------------------------
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE) then
@@ -1192,13 +1192,13 @@ contains
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_OFFDIAGONALEDGES))
         end if
       end if
-      
+
       ! Resize subdiagonal edge index vector and clear specification
       !-------------------------------------------------------------------------
       if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE) then
@@ -1260,7 +1260,7 @@ contains
                                              not(AFCSTAB_HAS_ADINCREMENTS))
         end if
       end if
-      
+
       ! Resize nodal vectors P- and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorPm)) then
@@ -1274,13 +1274,13 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorPm,&
               rafcstab%NEQ, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_ADINCREMENTS))
         end if
       end if
-      
+
       ! Resize nodal vectors Q and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorQ)) then
@@ -1320,7 +1320,7 @@ contains
                                              not(AFCSTAB_HAS_NODEBOUNDS))
         end if
       end if
-      
+
       ! Resize nodal vectors Q- and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorQm)) then
@@ -1340,7 +1340,7 @@ contains
                                              not(AFCSTAB_HAS_NODEBOUNDS))
         end if
       end if
-      
+
       ! Resize nodal vectors R+ and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorRp)) then
@@ -1354,13 +1354,13 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorRp,&
               rafcstab%NEQ, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_NODELIMITER))
         end if
       end if
-      
+
       ! Resize nodal vectors R- and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorRm)) then
@@ -1374,13 +1374,13 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
               rafcstab%NEQ, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_NODELIMITER))
         end if
       end if
-      
+
       ! Resize nodal vector for the low-order predictor and clear specification
       !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorPredictor)) then
@@ -1394,7 +1394,7 @@ contains
         else
           call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
               rafcstab%NEQ, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_PREDICTOR))
@@ -1402,12 +1402,12 @@ contains
       end if
 
     end if
-    
+
     !---------------------------------------------------------------------------
     ! Resize edge quantities
     !---------------------------------------------------------------------------
     if (rafcstab%NEDGE .ne. NEDGE) then
-      
+
       ! Set new number of edges
       rafcstab%NEDGE = NEDGE
 
@@ -1426,13 +1426,13 @@ contains
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_IedgeList,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_EDGELIST))
         end if
       end if
-       
+
       ! Resize array of subdiagonal edges and clear specification
       !-------------------------------------------------------------------------
       if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE) then
@@ -1448,7 +1448,7 @@ contains
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_OFFDIAGONALEDGES))
@@ -1476,7 +1476,7 @@ contains
                                              not(AFCSTAB_HAS_EDGEVALUES))
         end if
       end if
-      
+
       ! Resize array of edge bounds and clear specification
       !-------------------------------------------------------------------------
       if (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE) then
@@ -1492,13 +1492,13 @@ contains
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_BoundsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_EDGEBOUNDS))
         end if
       end if
-      
+
       ! Resize edge vectors for the correction factor and clear specification
       !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorAlpha)) then
@@ -1518,7 +1518,7 @@ contains
                                              not(AFCSTAB_HAS_EDGELIMITER))
         end if
       end if
-      
+
       ! Resize edge vectors for the explicit flux and clear specification
       !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorFlux0)) then
@@ -1532,13 +1532,13 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux0,&
               rafcstab%NEDGE, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_ADFLUXES))
         end if
       end if
-      
+
       ! Resize edge vectors for the implicit flux and clear specification
       !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorFlux)) then
@@ -1552,13 +1552,13 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
               rafcstab%NEDGE, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_ADFLUXES))
         end if
       end if
-      
+
       ! Resize edge vectors for the prelimiting flux and clear specification
       !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorFluxPrel)) then
@@ -1572,7 +1572,7 @@ contains
         else
           call lsyssc_resizeVector(rafcstab%p_rvectorFluxPrel,&
               rafcstab%NEDGE, .false., .false.)
-          
+
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_ADFLUXES))
@@ -1580,18 +1580,18 @@ contains
       end if
 
     end if
-    
+
   contains
 
     !**************************************************************
     ! Checks if bitfield ibitfield in iflag is set.
-    
+
     pure function check(iflag, ibitfield)
 
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
@@ -1625,7 +1625,7 @@ contains
     ! local variables
     integer :: neq, nedge
 
-    
+
     ! Determine number of equations and edges
     neq   = rmatrix%NEQ
     nedge = (rmatrix%NA-rmatrix%NEQ)/2
@@ -1665,7 +1665,7 @@ contains
     ! local variables
     integer :: neq, nedge
 
-    
+
     ! Check if block matrix has only one block
     if ((rmatrixBlock%nblocksPerCol .eq. 1) .and.&
         (rmatrixBlock%nblocksPerRow .eq. 1)) then
@@ -1675,7 +1675,7 @@ contains
       ! That is it
       return
     end if
-    
+
 
     ! Determine number of equations and edges
     neq   = rmatrixBlock%RmatrixBlock(1,1)%NEQ
@@ -1684,12 +1684,12 @@ contains
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
-    
+
     ! Regenerate edge list
     call afcstab_genEdgeList(rmatrixBlock%RmatrixBlock(1,1), rafcstab)
 
   end subroutine afcstab_resizeStabIndBlock
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -1737,7 +1737,7 @@ contains
         call sys_halt()
       end if
     end if
-    
+
   end subroutine afcstab_resizeStabIndGFEM
 
   !*****************************************************************************
@@ -1755,7 +1755,7 @@ contains
 !<input>
     ! Source stabilisation structure
     type(t_afcstab), intent(in) :: rafcstabSrc
-    
+
     ! Duplication flag that decides on how to set up the structure
     integer(I32), intent(in) :: idupFlag
 !</input>
@@ -1765,7 +1765,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstabDest
 !</inputoutput>
 !</subroutine>
-   
+
     ! Copy structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
@@ -1813,7 +1813,7 @@ contains
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
           not(AFCSTAB_SHARE_EDGEVALUES))
     end if
-    
+
     ! Copy off-diagonal edges
     if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
@@ -1916,7 +1916,7 @@ contains
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS))
     end if
-    
+
     ! Copy upper/lower bounds
     if (check(idupFlag, AFCSTAB_DUP_NODEBOUNDS) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)) then
@@ -1981,7 +1981,7 @@ contains
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODELIMITER))
     end if
-    
+
     ! Copy edge-wise limiting coefficients
     if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)) then
@@ -2002,7 +2002,7 @@ contains
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER))
     end if
-    
+
     ! Copy low-order predictor
     if (check(idupFlag, AFCSTAB_DUP_PREDICTOR) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_PREDICTOR)) then
@@ -2030,11 +2030,11 @@ contains
     ! Checks if idupFlag has all bits ibitfield set.
 
     pure function check(idupFlag, ibitfield)
-      
+
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(idupFlag,ibitfield) .eq. ibitfield)
 
     end function check
@@ -2056,7 +2056,7 @@ contains
 !<input>
     ! Source stabilisation structure
     type(t_afcstab), intent(in) :: rafcstabSrc
-    
+
     ! Duplication flag that decides on how to set up the structure
     integer(I32), intent(in) :: idupFlag
 !</input>
@@ -2295,18 +2295,18 @@ contains
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
           AFCSTAB_SHARE_PREDICTOR)
     end if
-    
+
   contains
 
     !**************************************************************
     ! Checks if idupFlag has all bits ibitfield set.
 
     pure function check(idupFlag, ibitfield)
-      
+
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(idupFlag,ibitfield) .eq. ibitfield)
 
     end function check
@@ -2357,7 +2357,7 @@ contains
     end if
 
   end subroutine afcstab_isMatrixCompatibleSc
-  
+
   ! *****************************************************************************
 
 !<subroutine>
@@ -2606,7 +2606,7 @@ contains
       call output_line('vectorFlux0')
       call lsyssc_infoVector(rafcstab%p_rvectorFlux0)
     end if
-    
+
     if (associated(rafcstab%p_rvectorFlux)) then
       call output_lbrk()
       call output_line('vectorFlux')
@@ -2721,7 +2721,7 @@ contains
           call storage_getsize(h_handle, Isize2D)
           call output_line (cstring//trim(sys_siL(h_handle,15))//&
               ' ('//trim(sys_siL(Isize2D(1),15))//','//trim(sys_siL(Isize2D(2),15))//')')
-          
+
         case (3)
           call storage_getsize(h_handle, Isize3D)
           call output_line (cstring//trim(sys_siL(h_handle,15))//&
@@ -2731,7 +2731,7 @@ contains
       else
         call output_line (cstring//trim(sys_siL(h_handle,15)))
       end if
-      
+
     end subroutine checkAndOutputHandle
 
   end subroutine afcstab_infoStabilisation
@@ -2763,7 +2763,7 @@ contains
       nullify(p_IedgeListIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rafcstab%h_IedgeListIdx,&
         p_IedgeListIdx)
@@ -2798,7 +2798,7 @@ contains
       nullify(p_IedgeList)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int2D(rafcstab%h_IedgeList,&
         p_IedgeList,rafcstab%NEDGE)
@@ -2833,7 +2833,7 @@ contains
       nullify(p_IsuperdiagEdgesIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsuperdiagEdgesIdx,&
         p_IsuperdiagEdgesIdx,rafcstab%NEQ+1)
@@ -2869,7 +2869,7 @@ contains
       nullify(p_IsubdiagEdgesIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsubdiagEdgesIdx,&
         p_IsubdiagEdgesIdx,rafcstab%NEQ+1)
@@ -2904,7 +2904,7 @@ contains
       nullify(p_IsubdiagEdges)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsubdiagEdges,&
         p_IsubdiagEdges,rafcstab%NEDGE)
@@ -2939,7 +2939,7 @@ contains
       nullify(p_DcoefficientsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_double2D(rafcstab%h_CoeffsAtEdge,&
         p_DcoefficientsAtEdge, rafcstab%NEDGE)
@@ -2974,7 +2974,7 @@ contains
       nullify(p_FcoefficientsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_single2D(rafcstab%h_CoeffsAtEdge,&
         p_FcoefficientsAtEdge, rafcstab%NEDGE)
@@ -3009,7 +3009,7 @@ contains
       nullify(p_DboundsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_double2D(rafcstab%h_BoundsAtEdge,&
         p_DboundsAtEdge,rafcstab%NEDGE)
@@ -3044,13 +3044,13 @@ contains
       nullify(p_FboundsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_single2D(rafcstab%h_BoundsAtEdge,&
         p_FboundsAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_FboundsAtEdge
- 
+
   !*****************************************************************************
 
 !<subroutine>
@@ -3095,7 +3095,7 @@ contains
           OU_CLASS_WARNING,OU_MODE_STD,'afcstab_genEdgeList')
       return
     end if
-    
+
     ! Generate edge list for a matrix which is structurally symmetric,
     ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
     ! storing the diagonal edges (i,i).
@@ -3129,11 +3129,11 @@ contains
           rafcstab%h_IedgeListIdx)
     end if
 #endif
-    
+
     ! Set state of stabiliation
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)
-        
+
   end subroutine afcstab_genEdgeList
 
   !*****************************************************************************
@@ -3214,16 +3214,16 @@ contains
             rafcstab%h_IsubdiagEdges,ST_NEWBLOCK_NOINIT,.false.)
       end if
     end if
-    
+
     ! Set pointers
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IedgeList(rafcstab,p_IedgeList)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagEdges)
-    
+
     ! Count the number of edges in each row
     do iedge = 1, nedge
-      
+
        ! Determine the start-point of the current edge
       ieq = min(p_IedgeList(1,iedge),&
                 p_IedgeList(2,iedge))
@@ -3236,17 +3236,17 @@ contains
       p_IsuperdiagEdgesIdx(ieq+1) = p_IsuperdiagEdgesIdx(ieq+1)+1
       p_IsubdiagEdgesIdx(jeq+1)   = p_IsubdiagEdgesIdx(jeq+1)+1
     end do
-    
+
     ! Reshuffle pass 1
     rafcstab%NNVEDGE = 0
     p_IsuperdiagEdgesIdx(1) = 1
     p_IsubdiagEdgesIdx(1) = 1
-    
+
     do ieq = 2, neq+1
       ! Compute the maximum number of edges adjacent to one vertex.
       rafcstab%NNVEDGE = max(rafcstab%NNVEDGE,&
           p_IsuperdiagEdgesIdx(ieq)+p_IsubdiagEdgesIdx(ieq))
-      
+
       ! Compute absolute starting positions of edge numbers connected
       ! to the current node IEQ
       p_IsuperdiagEdgesIdx(ieq) =&
@@ -3254,26 +3254,26 @@ contains
       p_IsubdiagEdgesIdx(ieq) =&
           p_IsubdiagEdgesIdx(ieq) + p_IsubdiagEdgesIdx(ieq-1)
     end do
-    
+
     ! Store the subdiagonal edge numbers
     do ieq = 1, neq
       ! Loop over the edges located in the upper right triangular matrix
       do iedge = p_IsuperdiagEdgesIdx(ieq),&
                  p_IsuperdiagEdgesIdx(ieq+1)-1
-        
+
         ! Determine the end-point of the edge, i.e.
         ! the node which is not equal to IEQ
         jeq = p_IedgeList(1,iedge) + p_IedgeList(2,iedge) - ieq
-        
+
         ! Get and update next free position
         istor = p_IsubdiagEdgesIdx(jeq)
         p_IsubdiagEdgesIdx(jeq) = istor+1
-        
+
         ! Store global edge number
         p_IsubdiagEdges(istor)  = iedge
       end do
     end do
-    
+
     ! Reshuffle pass 2:
     ! Adjust the index vector which was tainted in the above loop
     do ieq = neq+1, 2, -1
@@ -3286,7 +3286,7 @@ contains
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
 
   end subroutine afcstab_genOffdiagEdges
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -3317,7 +3317,7 @@ contains
     type(t_matrixScalar), intent(inout) :: rmatrixExtended
 !</inputoutput>
 !</subroutine>
-    
+
     ! Clear output matrix
     if (lsyssc_hasMatrixStructure(rmatrixExtended) .or.&
         lsyssc_hasMatrixContent(rmatrixExtended)) then
@@ -3337,7 +3337,7 @@ contains
 
   subroutine afcstab_allocInternalData(rafcstab, ballocCoefficients,&
       rblockDiscretisation, rdiscretisation)
-    
+
 !<description>
     ! This subroutine allocates the internal data structures of the
     ! stabilisation structure rafcstab.
@@ -3372,7 +3372,7 @@ contains
 
     ! What kind of stabilisation are we?
     select case(rafcstab%cafcstabType)
-      
+
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
@@ -3380,29 +3380,29 @@ contains
       ! No internal data structures are required
 
       !-------------------------------------------------------------------------
-      
+
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_IMPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
-      
+
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
-      
+
       ! We need the 3 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux0(rafcstab)
       call afcstab_allocFlux(rafcstab)
-      
+
       ! We need the edgewise vector for the prelimited fluxes (if any)
       ! or for the semi-implicit version of the FCT algorithm
       if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) .or.&
           (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
-      
+
       ! We need the nodal vector for the predictor
       allocate(rafcstab%p_rvectorPredictor)
 
@@ -3427,13 +3427,13 @@ contains
 
     case (AFCSTAB_TVD,&
           AFCSTAB_GP)
-      
+
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
-      
+
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
-      
+
       ! We need the 3 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux0(rafcstab)
@@ -3443,7 +3443,7 @@ contains
 
     case (AFCSTAB_LINFCT,&
           AFCSTAB_LINFCT_MASS)
-      
+
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
 
@@ -3453,25 +3453,25 @@ contains
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux(rafcstab)
-      
+
       ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
       if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
 
       !-------------------------------------------------------------------------
-      
+
     case (AFCSTAB_SYMMETRIC)
-      
+
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,2)
-      
+
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
-      
+
       ! We need the edgewise vector for the fluxes
       call afcstab_allocFlux(rafcstab)
-      
+
       !-------------------------------------------------------------------------
 
     case (AFCSTAB_NLINLPT_MASS,&
@@ -3480,14 +3480,14 @@ contains
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       ! and one extra nodal vector Q
       call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
-      
+
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux(rafcstab)
 
       ! We need the nodal vector for the predictor
       allocate(rafcstab%p_rvectorPredictor)
-      
+
       ! We need the nodal vector for the predictor
       if (present(rblockDiscretisation)) then
         ! Create block vector by block discretisation
@@ -3507,21 +3507,21 @@ contains
       end if
 
       !-------------------------------------------------------------------------
-      
+
     case (AFCSTAB_NLINLPT_UPWINDBIASED,&
           AFCSTAB_LINLPT_UPWINDBIASED)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
-      
+
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       ! and one extra nodal vector Q
       call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
-      
+
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux(rafcstab)
-      
+
       !-------------------------------------------------------------------------
 
     case (AFCSTAB_NLINLPT_SYMMETRIC,&
@@ -3529,23 +3529,23 @@ contains
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
       if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,2)
-      
+
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       ! and one extra nodal vector Q
       call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
-      
+
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux(rafcstab)
-      
+
       !-------------------------------------------------------------------------
-      
+
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_allocInternalData')
       call sys_halt()
     end select
-    
+
   end subroutine afcstab_allocInternalData
 
   !*****************************************************************************
@@ -3577,14 +3577,14 @@ contains
         call storage_free(rafcstab%h_IedgeListIdx)
     call storage_new('afcstab_allocEdgeStructure', 'IedgeListIdx',&
         2, ST_INT, rafcstab%h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
-    
+
     ! Handle for IedgeList: (/i,j,ij,ji/)
     Isize = (/ndata, rafcstab%NEDGE/)
     if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
         call storage_free(rafcstab%h_IedgeList)
     call storage_new('afcstab_allocEdgeStructure', 'IedgeList',&
         Isize, ST_INT, rafcstab%h_IedgeList, ST_NEWBLOCK_NOINIT)
-    
+
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_EDGELIST))
@@ -3592,7 +3592,7 @@ contains
   end subroutine afcstab_allocEdgeStructure
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocCoeffsAtEdge(rafcstab, ncoeffsAtEdge, cdataType)
@@ -3604,7 +3604,7 @@ contains
 !<input>
     ! Number of coefficients at edge
     integer, intent(in) :: ncoeffsAtEdge
-    
+
     ! OPTIONAL: data type which overwrites internal setting
     integer, intent(in), optional :: cdataType
 !</input>
@@ -3614,7 +3614,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer, dimension(2) :: Isize
     integer :: ctype
@@ -3628,7 +3628,7 @@ contains
         call storage_free(rafcstab%h_CoeffsAtEdge)
     call storage_new('afcstab_allocCoeffsAtEdge', 'DcoefficientsAtEdge',&
         Isize, cType, rafcstab%h_CoeffsAtEdge, ST_NEWBLOCK_NOINIT)
-    
+
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_EDGEVALUES))
@@ -3636,7 +3636,7 @@ contains
   end subroutine afcstab_allocCoeffsAtEdge
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocBoundsAtEdge(rafcstab, cdataType)
@@ -3655,20 +3655,20 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer, dimension(2) :: Isize
     integer :: ctype
 
     ctype = rafcstab%cdataType
     if (present(cdataType)) ctype = cdataType
-    
+
     Isize = (/2, rafcstab%NEDGE/)
     if (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE)&
         call storage_free(rafcstab%h_BoundsAtEdge)
     call storage_new('afcstab_allocBoundsAtEdge', 'DboundsAtEdge',&
         Isize, cType, rafcstab%h_BoundsAtEdge, ST_NEWBLOCK_NOINIT)
-    
+
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_EDGEBOUNDS))
@@ -3676,7 +3676,7 @@ contains
   end subroutine afcstab_allocBoundsAtEdge
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocVectorsPQR(rafcstab, cdataType, ballocCommonQ)
@@ -3717,7 +3717,7 @@ contains
     if (.not.associated(rafcstab%p_rvectorQm)) allocate(rafcstab%p_rvectorQm)
     if (.not.associated(rafcstab%p_rvectorRp)) allocate(rafcstab%p_rvectorRp)
     if (.not.associated(rafcstab%p_rvectorRm)) allocate(rafcstab%p_rvectorRm)
-    
+
     if (rafcstab%p_rvectorPp%NEQ .ne. 0)&
         call lsyssc_releaseVector(rafcstab%p_rvectorPp)
     if (rafcstab%p_rvectorPm%NEQ .ne. 0)&
@@ -3738,7 +3738,7 @@ contains
     end if
 
     if (rafcstab%NVARtransformed .ne. 1) then
-     
+
       call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
           rafcstab%NVARtransformed, .false., ctype)
       call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
@@ -3751,11 +3751,11 @@ contains
           rafcstab%NVARtransformed, .false., ctype)
       call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
           rafcstab%NVARtransformed, .false., ctype)
-    
+
       if (ballocQ)&
           call lsyssc_createVector(rafcstab%p_rvectorQ, rafcstab%NEQ,&
           rafcstab%NVARtransformed, .false., ctype)
-  
+
     else
 
       call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
@@ -3788,7 +3788,7 @@ contains
   end subroutine afcstab_allocVectorsPQR
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocFlux0(rafcstab, cdataType)
@@ -3816,27 +3816,27 @@ contains
 
     if (.not.associated(rafcstab%p_rvectorFlux0))&
         allocate(rafcstab%p_rvectorFlux0)
-    
+
     if (rafcstab%NVAR .ne. 1) then
 
       call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
           rafcstab%NVAR, .false., ctype)
-      
+
     else
 
       call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
           .false., ctype)
 
     end if
-    
+
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_ADFLUXES))
 
   end subroutine afcstab_allocFlux0
-  
+
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocFlux(rafcstab, cdataType)
@@ -3869,7 +3869,7 @@ contains
 
       call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
           rafcstab%NVAR, .false., ctype)
-      
+
     else
 
       call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
@@ -3880,11 +3880,11 @@ contains
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_ADFLUXES))
-    
+
   end subroutine afcstab_allocFlux
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocFluxPrel(rafcstab, cdataType)
@@ -3917,7 +3917,7 @@ contains
 
       call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,  rafcstab%NEDGE,&
           rafcstab%NVAR, .false., ctype)
-      
+
     else
 
       call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,  rafcstab%NEDGE,&
@@ -3928,11 +3928,11 @@ contains
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_ADFLUXES))
-    
+
   end subroutine afcstab_allocFluxPrel
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_allocAlpha(rafcstab, cdataType)
@@ -3963,7 +3963,7 @@ contains
 
     call lsyssc_createVector(rafcstab%p_rvectorAlpha,  rafcstab%NEDGE,&
         .false., ctype)
-    
+
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
         not(AFCSTAB_SHARE_EDGELIMITER))
@@ -3971,7 +3971,7 @@ contains
   end subroutine afcstab_allocAlpha
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_buildBoundsLPT1D(rafcstab, rmatrixCx, rmatrixM,&
@@ -4016,7 +4016,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
       call sys_halt()
     end if
-    
+
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
@@ -4042,7 +4042,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
       call sys_halt()
     end if
-    
+
     ! Check if scaling matrix rmatrixM is diagonal and
     ! has the same data type as the source matrix
     if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)  .or.&
@@ -4060,17 +4060,17 @@ contains
     select case(rmatrixCx%cmatrixFormat)
     case (LSYSSC_MATRIX7)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrixM, p_DdataM)
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4088,17 +4088,17 @@ contains
     case (LSYSSC_MATRIX9)
       call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rmatrixM, p_DdataM)
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4112,7 +4112,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
@@ -4153,7 +4153,7 @@ contains
 
         ! Compute difference (x_i-x_j)
         diff = DdofCoords(i) - DdofCoords(j)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4162,7 +4162,7 @@ contains
         do ik = Kld(i)+1, Kld(i+1)-1
           daux = daux + abs(DdataCx(ik)*diff)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -4174,7 +4174,7 @@ contains
         do jk = Kld(j)+1, Kld(j+1)-1
           daux = daux + abs(DdataCx(jk)*diff)
         end do
-        
+
         ! Store result into second entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -4211,7 +4211,7 @@ contains
 
         ! Compute difference (x_i-x_j)
         diff = DdofCoords(i) - DdofCoords(j)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4220,11 +4220,11 @@ contains
         do ik = Kld(i), Kdiagonal(i)-1
           daux = daux + abs(DdataCx(ik)*diff)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(DdataCx(ik)*diff)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -4236,11 +4236,11 @@ contains
         do jk = Kld(j), Kdiagonal(j)-1
           daux = daux + abs(DdataCx(jk)*diff)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(DdataCx(jk)*diff)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -4277,7 +4277,7 @@ contains
 
         ! Compute difference (x_i-x_j)
         diff = DdofCoords(i) - DdofCoords(j)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4286,7 +4286,7 @@ contains
         do ik = Kld(i)+1, Kld(i+1)-1
           daux = daux + abs(FdataCx(ik)*diff)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -4298,7 +4298,7 @@ contains
         do jk = Kld(j)+1, Kld(j+1)-1
           daux = daux + abs(FdataCx(jk)*diff)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -4335,7 +4335,7 @@ contains
 
         ! Compute difference (x_i-x_j)
         diff = DdofCoords(i) - DdofCoords(j)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4344,11 +4344,11 @@ contains
         do ik = Kld(i), Kdiagonal(i)-1
           daux = daux + abs(FdataCx(ik)*diff)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(FdataCx(ik)*diff)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -4360,11 +4360,11 @@ contains
         do jk = Kld(j), Kdiagonal(j)-1
           daux = daux + abs(FdataCx(jk)*diff)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(FdataCx(jk)*diff)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -4374,7 +4374,7 @@ contains
   end subroutine afcstab_buildBoundsLPT1D
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_buildBoundsLPT2D(rafcstab, rmatrixCx, rmatrixCy,&
@@ -4404,7 +4404,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
-  
+
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
@@ -4445,7 +4445,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
       call sys_halt()
     end if
-    
+
     ! Check if coefficient matrices are compatible
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
 
@@ -4466,7 +4466,7 @@ contains
     select case(rmatrixCx%cmatrixFormat)
     case (LSYSSC_MATRIX7)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
@@ -4474,11 +4474,11 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4498,7 +4498,7 @@ contains
     case (LSYSSC_MATRIX9)
       call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
@@ -4506,11 +4506,11 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4526,7 +4526,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
@@ -4568,7 +4568,7 @@ contains
         ! Compute difference (x_i-x_j)
         diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
         diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4578,7 +4578,7 @@ contains
           daux = daux + abs(DdataCx(ik)*diffX+&
                             DdataCy(ik)*diffY)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -4591,7 +4591,7 @@ contains
           daux = daux + abs(DdataCx(jk)*diffX+&
                             DdataCy(jk)*diffY)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -4629,7 +4629,7 @@ contains
         ! Compute difference (x_i-x_j)
         diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
         diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4639,12 +4639,12 @@ contains
           daux = daux + abs(DdataCx(ik)*diffX+&
                             DdataCy(ik)*diffY)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(DdataCx(ik)*diffX+&
                             DdataCy(ik)*diffY)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -4657,12 +4657,12 @@ contains
           daux = daux + abs(DdataCx(jk)*diffX+&
                             DdataCy(jk)*diffY)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(DdataCx(jk)*diffX+&
                             DdataCy(jk)*diffY)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -4700,7 +4700,7 @@ contains
         ! Compute difference (x_i-x_j)
         diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
         diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4710,7 +4710,7 @@ contains
           daux = daux + abs(FdataCx(ik)*diffX+&
                             FdataCy(ik)*diffY)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -4723,7 +4723,7 @@ contains
           daux = daux + abs(FdataCx(jk)*diffX+&
                             FdataCy(jk)*diffY)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -4761,7 +4761,7 @@ contains
         ! Compute difference (x_i-x_j)
         diffX = DdofCoords(NDIM2D*(i-1)+1) - DdofCoords(NDIM2D*(j-1)+1)
         diffY = DdofCoords(NDIM2D*(i-1)+2) - DdofCoords(NDIM2D*(j-1)+2)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -4771,12 +4771,12 @@ contains
           daux = daux + abs(FdataCx(ik)*diffX+&
                             FdataCy(ik)*diffY)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(FdataCx(ik)*diffX+&
                             FdataCy(ik)*diffY)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -4789,12 +4789,12 @@ contains
           daux = daux + abs(FdataCx(jk)*diffX+&
                             FdataCy(jk)*diffY)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(FdataCx(jk)*diffX+&
                             FdataCy(jk)*diffY)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -4804,7 +4804,7 @@ contains
   end subroutine afcstab_buildBoundsLPT2D
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine afcstab_buildBoundsLPT3D(rafcstab, rmatrixCx, rmatrixCy,&
@@ -4834,7 +4834,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
-  
+
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
@@ -4849,7 +4849,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
       call sys_halt()
     end if
-    
+
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
@@ -4875,7 +4875,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
       call sys_halt()
     end if
-    
+
     ! Check if coefficient matrices are compatible
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCz)
@@ -4897,7 +4897,7 @@ contains
     select case(rmatrixCx%cmatrixFormat)
     case (LSYSSC_MATRIX7)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
@@ -4906,11 +4906,11 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             DdofCoords, dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4931,7 +4931,7 @@ contains
     case (LSYSSC_MATRIX9)
       call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
       call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
-      
+
       ! What type of data format are we?
       select case(rmatrixCx%cdatatype)
       case (ST_DOUBLE)
@@ -4940,11 +4940,11 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
-        
+
         call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             DdofCoords, dscale, p_DboundsAtEdge)
-        
+
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
@@ -4961,7 +4961,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
@@ -5004,7 +5004,7 @@ contains
         diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
         diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
         diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -5015,7 +5015,7 @@ contains
                             DdataCy(ik)*diffY+&
                             DdataCz(ik)*diffZ)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -5029,7 +5029,7 @@ contains
                             DdataCy(jk)*diffY+&
                             DdataCz(jk)*diffZ)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -5068,7 +5068,7 @@ contains
         diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
         diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
         diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -5079,13 +5079,13 @@ contains
                             DdataCy(ik)*diffY+&
                             DdataCz(ik)*diffZ)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(DdataCx(ik)*diffX+&
                             DdataCy(ik)*diffY+&
                             DdataCz(ik)*diffZ)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
 
@@ -5099,13 +5099,13 @@ contains
                             DdataCy(jk)*diffY+&
                             DdataCz(jk)*diffZ)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(DdataCx(jk)*diffX+&
                             DdataCy(jk)*diffY+&
                             DdataCz(jk)*diffZ)
         end do
-        
+
         ! Store result into first entry
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
@@ -5144,7 +5144,7 @@ contains
         diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
         diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
         diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -5155,7 +5155,7 @@ contains
                             FdataCy(ik)*DiffY+&
                             FdataCz(ik)*DiffZ)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -5169,7 +5169,7 @@ contains
                             FdataCy(jk)*diffY+&
                             FdataCz(jk)*diffZ)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -5208,7 +5208,7 @@ contains
         diffX = DdofCoords(NDIM3D*(i-1)+1) - DdofCoords(NDIM3D*(j-1)+1)
         diffY = DdofCoords(NDIM3D*(i-1)+2) - DdofCoords(NDIM3D*(j-1)+2)
         diffZ = DdofCoords(NDIM3D*(i-1)+3) - DdofCoords(NDIM3D*(j-1)+3)
-        
+
         ! Clear temporal variable
         daux = 0.0_DP
 
@@ -5219,13 +5219,13 @@ contains
                             FdataCy(ik)*diffY+&
                             FdataCz(ik)*diffZ)
         end do
-        
+
         do ik = Kdiagonal(i)+1, Kld(i+1)-1
           daux = daux + abs(FdataCx(ik)*diffX+&
                             FdataCy(ik)*diffY+&
                             FdataCz(ik)*diffZ)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
 
@@ -5239,13 +5239,13 @@ contains
                             FdataCy(jk)*diffY+&
                             FdataCz(jk)*diffZ)
         end do
-        
+
         do jk = Kdiagonal(j)+1, Kld(j+1)-1
           daux = daux + abs(FdataCx(jk)*diffX+&
                             FdataCy(jk)*diffY+&
                             FdataCz(jk)*diffZ)
         end do
-        
+
         ! Store result into first entry
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
@@ -5257,7 +5257,7 @@ contains
   !*****************************************************************************
 
 !<function>
-  
+
   elemental function afcstab_limitUnboundedDble(p, q, dval) result(r)
 
 !<description>
@@ -5285,11 +5285,11 @@ contains
       r = dval
     end if
   end function afcstab_limitUnboundedDble
-  
+
   !*****************************************************************************
 
 !<function>
-  
+
   elemental function afcstab_limitUnboundedSngl(p, q, fval) result(r)
 
 !<description>
@@ -5321,7 +5321,7 @@ contains
   !*****************************************************************************
 
 !<function>
-  
+
   elemental function afcstab_limitBoundedDble(p, q, dval, dbound) result(r)
 
 !<description>
@@ -5333,7 +5333,7 @@ contains
 !<input>
     ! (de)nominator
     real(DP), intent(in) :: p,q
-    
+
     ! default value
     real(DP), intent(in) :: dval
 
@@ -5346,7 +5346,7 @@ contains
     real(DP) :: r
 !</result>
 !</function>
-    
+
     if (abs(p) .gt. AFCSTAB_EPSABS) then
       r = min(q/p, dbound)
     else
@@ -5357,7 +5357,7 @@ contains
   !*****************************************************************************
 
 !<function>
-  
+
   elemental function afcstab_limitBoundedSngl(p, q, fval, fbound) result(r)
 
 !<description>
@@ -5370,7 +5370,7 @@ contains
 !<input>
     ! (de)nominator
     real(SP), intent(in) :: p,q
-    
+
     ! default value
     real(SP), intent(in) :: fval
 
@@ -5383,7 +5383,7 @@ contains
     real(SP) :: r
 !</result>
 !</function>
-    
+
     if (abs(p) .gt. AFCSTAB_EPSABS) then
       r = min(q/p, fbound)
     else
@@ -5405,7 +5405,7 @@ contains
     ! This subroutine combines the two fluxes:
     ! Dflux2 := Dflux2 + dscale * Dalpha * Dflux1
 !</description>
-    
+
 !<input>
     ! First flux
     real(DP), dimension(:), intent(in) :: Dflux1
@@ -5429,13 +5429,13 @@ contains
     real(DP), dimension(:), intent(inout) :: Dflux2
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: iedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
     !$ else
@@ -5443,9 +5443,9 @@ contains
     !$ end if
 
     if (present(Dalpha)) then
-      
+
       if (dscale .eq. 1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5454,9 +5454,9 @@ contains
                         + Dalpha(iedge) * Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       elseif (dscale .eq. -1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5465,9 +5465,9 @@ contains
                         - Dalpha(iedge) * Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5476,13 +5476,13 @@ contains
                         + dscale * Dalpha(iedge) * Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     else   ! Dalpha not present
-      
+
       if (dscale .eq. 1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5490,9 +5490,9 @@ contains
           Dflux2(iedge) = Dflux2(iedge) + Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       elseif (dscale .eq. -1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5500,9 +5500,9 @@ contains
           Dflux2(iedge) = Dflux2(iedge) - Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5510,9 +5510,9 @@ contains
           Dflux2(iedge) = Dflux2(iedge) + dscale * Dflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end if
 
   end subroutine afcstab_combFluxesDble
@@ -5531,7 +5531,7 @@ contains
     ! This subroutine combines the two fluxes:
     ! Fflux2 := Fflux2 + fscale * Falpha * Fflux1
 !</description>
-    
+
 !<input>
     ! First flux
     real(SP), dimension(:), intent(in) :: Fflux1
@@ -5555,13 +5555,13 @@ contains
     real(SP), dimension(:), intent(inout) :: Fflux2
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: iedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
     !$ else
@@ -5569,9 +5569,9 @@ contains
     !$ end if
 
     if (present(Falpha)) then
-      
+
       if (fscale .eq. 1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5580,9 +5580,9 @@ contains
                         + Falpha(iedge) * Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       elseif (fscale .eq. -1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5591,9 +5591,9 @@ contains
                         - Falpha(iedge) * Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5602,13 +5602,13 @@ contains
                         + fscale * Falpha(iedge) * Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     else   ! Falpha not present
-      
+
       if (fscale .eq. 1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5616,9 +5616,9 @@ contains
           Fflux2(iedge) = Fflux2(iedge) + Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       elseif (fscale .eq. -1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5626,9 +5626,9 @@ contains
           Fflux2(iedge) = Fflux2(iedge) - Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5636,9 +5636,9 @@ contains
           Fflux2(iedge) = Fflux2(iedge) + fscale * Fflux1(iedge)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end if
 
   end subroutine afcstab_combFluxesSngl
@@ -5687,10 +5687,10 @@ contains
 
     ! local variables
     integer :: iedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
     !$ else
@@ -5700,7 +5700,7 @@ contains
     if (present(Dalpha)) then
 
       if (dscale .eq. 1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5737,7 +5737,7 @@ contains
     else   ! Dalpha not present
 
       if (dscale .eq. 1.0_DP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5768,7 +5768,7 @@ contains
                           + dscale * Dflux1(:,iedge)
         end do
         !$omp end parallel do
-        
+
       end if
 
     end if
@@ -5819,10 +5819,10 @@ contains
 
     ! local variables
     integer :: iedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     !$ if (present(rperfconfig)) then
     !$  p_rperfconfig => rperfconfig
     !$ else
@@ -5832,7 +5832,7 @@ contains
     if (present(Falpha)) then
 
       if (fscale .eq. 1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5869,7 +5869,7 @@ contains
     else   ! Falpha not present
 
       if (fscale .eq. 1.0_SP) then
-        
+
         ! Loop over all edges
         !$omp parallel do default(shared)&
         !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
@@ -5900,7 +5900,7 @@ contains
                           + fscale * Fflux1(:,iedge)
         end do
         !$omp end parallel do
-        
+
       end if
 
     end if
@@ -5940,7 +5940,7 @@ contains
     ! where IPOS and JPOS are the positions where the data
     ! for node I and J is stored, respectively
     real(DP), dimension(:,:), intent(inout) :: Dcoefficients
-    
+
     ! Additional coefficients at the edges
     ! DIMENSION(1:N2,1:2,1:NEDGE)
     real(DP), dimension(:,:,:), intent(inout) :: DcoeffsAtEdge
@@ -5954,10 +5954,10 @@ contains
     ! local variables
     real(DP) :: daux
     integer :: iedge,iaux,naux,nedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -5966,7 +5966,7 @@ contains
 
     nedge = size(IedgeList,2)
     naux  = size(DcoeffsAtEdge,1)
-    
+
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,daux)&
@@ -5977,12 +5977,12 @@ contains
           iaux = IedgeList(1,iedge)
           IedgeList(1,iedge) = IedgeList(2,iedge)
           IedgeList(2,iedge) = iaux
-          
+
           ! Swap edge data data_ij <-> data_ji
           daux = Dcoefficients(ipos,iedge)
           Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
           Dcoefficients(jpos,iedge) = daux
-          
+
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
             daux = DcoeffsAtEdge(iaux,1,iedge)
@@ -6002,22 +6002,22 @@ contains
           iaux = IedgeList(1,iedge)
           IedgeList(1,iedge) = IedgeList(2,iedge)
           IedgeList(2,iedge) = iaux
-          
+
           ! Swap edges ij <-> ji
           iaux = IedgeList(3,iedge)
           IedgeList(3,iedge) = IedgeList(4,iedge)
           IedgeList(4,iedge) = iaux
-          
+
           ! Swap edges ii <-> jj
           iaux = IedgeList(5,iedge)
           IedgeList(5,iedge) = IedgeList(6,iedge)
           IedgeList(6,iedge) = iaux
-          
+
           ! Swap edge data data_ij <-> data_ji
           daux = Dcoefficients(ipos,iedge)
           Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
           Dcoefficients(jpos,iedge) = daux
-          
+
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
             daux = DcoeffsAtEdge(iaux,1,iedge)
@@ -6069,7 +6069,7 @@ contains
     ! where IPOS and JPOS are the positions where the data
     ! for node I and J is stored, respectively
     real(SP), dimension(:,:), intent(inout) :: Fcoefficients
-    
+
     ! Additional coefficients at the edges
     ! DIMENSION(1:N2,1:2,1:NEDGE)
     real(SP), dimension(:,:,:), intent(inout) :: FcoeffsAtEdge
@@ -6083,10 +6083,10 @@ contains
     ! local variables
     real(SP) :: faux
     integer :: iedge,iaux,naux,nedge
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -6095,7 +6095,7 @@ contains
 
     nedge = size(IedgeList,2)
     naux  = size(FcoeffsAtEdge,1)
-    
+
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,faux)&
@@ -6106,12 +6106,12 @@ contains
           iaux = IedgeList(1,iedge)
           IedgeList(1,iedge) = IedgeList(2,iedge)
           IedgeList(2,iedge) = iaux
-          
+
           ! Swap edge data data_ij <-> data_ji
           faux = Fcoefficients(ipos,iedge)
           Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
           Fcoefficients(jpos,iedge) = faux
-          
+
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
             faux = FcoeffsAtEdge(iaux,1,iedge)
@@ -6131,7 +6131,7 @@ contains
           iaux = IedgeList(1,iedge)
           IedgeList(1,iedge) = IedgeList(2,iedge)
           IedgeList(2,iedge) = iaux
-          
+
           ! Swap edges ij <-> ji
           iaux = IedgeList(3,iedge)
           IedgeList(3,iedge) = IedgeList(4,iedge)
@@ -6141,12 +6141,12 @@ contains
           iaux = IedgeList(5,iedge)
           IedgeList(5,iedge) = IedgeList(6,iedge)
           IedgeList(6,iedge) = iaux
-          
+
           ! Swap edge data data_ij <-> data_ji
           faux = Fcoefficients(ipos,iedge)
           Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
           Fcoefficients(jpos,iedge) = faux
-          
+
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
             faux = FcoeffsAtEdge(iaux,1,iedge)
@@ -6156,13 +6156,13 @@ contains
         end if
       end do
       !$omp end parallel do
-    
+
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl')
       call sys_halt()
     end select
-    
+
   end subroutine afcstab_upwindOrientationSngl
 
   !*****************************************************************************
@@ -6356,5 +6356,5 @@ contains
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine afcstab_copyD2H_CoeffsAtEdge
-  
+
 end module afcstabbase

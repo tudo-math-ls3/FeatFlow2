@@ -1,4 +1,4 @@
-!-*- mode: f90; -*-
+
 
 #ifndef _MAGNETOHYDRODYNAMICS_OLD_H_
 #define _MAGNETOHYDRODYNAMICS_OLD_H_

@@ -1,4 +1,4 @@
-!-*- mode: f90; -*-
+
 
 #ifndef _THERMODYNAMICS_H_
 #define _THERMODYNAMICS_H_

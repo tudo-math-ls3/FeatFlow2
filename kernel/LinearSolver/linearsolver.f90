@@ -652,14 +652,18 @@ module linearsolver
   use genoutput
   use iluk
   use spsor
+<<<<<<< HEAD
   use mprimitives
   
+=======
+
+>>>>>>> ENH: Removed header "!-*- mode: f90; -*-"
   use matrixio
-  
+
   implicit none
-  
+
   private
-  
+
   public :: linsol_setMatrices
   public :: linsol_matricesCompatible
   public :: linsol_setOnelevelMatrixDirect
@@ -677,7 +681,7 @@ module linearsolver
   public :: linsol_solveAdaptively
   public :: linsol_convertToSmoother
   public :: linsol_initSolverGeneral
-  
+
   public :: linsol_initDefCorr
   public :: linsol_initJacobi
   public :: linsol_initSOR
@@ -693,12 +697,16 @@ module linearsolver
   public :: linsol_initMultigrid2
   public :: linsol_initSchur
   public :: linsol_initSPSOR
+<<<<<<< HEAD
   public :: linsol_initBlockJac
     
+=======
+
+>>>>>>> ENH: Removed header "!-*- mode: f90; -*-"
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
-  
+
   public :: linsol_getMultigrid2Level,linsol_getMultigrid2LevelCount
-  
+
 !  interface linsol_addMultigridLevel
 !    module procedure linsol_addMultigridLevel1
 !    module procedure linsol_addMultigridLevel2
@@ -708,7 +716,7 @@ module linearsolver
     module procedure linsol_initProjMG2LvByPrj
     module procedure linsol_initProjMG2LvByDiscr
   end interface
-  
+
   public :: linsol_initProjMultigrid2Level
   public :: linsol_initProjMultigrid2
 
@@ -722,29 +730,29 @@ module linearsolver
 
   ! Undefined algorithm
   integer, parameter, public :: LINSOL_ALG_UNDEFINED     = 0
-  
+
   ! Preconditioned defect correction (Richardson iteration);
   ! <tex>$x_{n+1} = x_n + \omega P^{-1} (b-Ax)$</tex>
   integer, parameter, public :: LINSOL_ALG_DEFCORR       = 1
-  
+
   ! Jacobi iteration <tex>$x_1 = x_0 + \omega D^{-1} (b-Ax_0)$</tex>
   integer, parameter, public :: LINSOL_ALG_JACOBI        = 2
-  
+
   ! SOR/GS iteration <tex>$x_1 = x_0 + \omega (D+\omega L)^{-1}(b-Ax_0)$</tex>
   integer, parameter, public :: LINSOL_ALG_SOR           = 4
-  
+
   ! SSOR iteration
   integer, parameter, public :: LINSOL_ALG_SSOR          = 5
-  
+
   ! CG iteration (preconditioned)
   integer, parameter, public :: LINSOL_ALG_CG            = 6
-  
+
   ! BiCGStab iteration (preconditioned)
   integer, parameter, public :: LINSOL_ALG_BICGSTAB      = 7
 
   ! GMRES iteration (preconditioned)
   integer, parameter, public :: LINSOL_ALG_GMRES         = 8
-  
+
   ! Multigrid iteration
   integer, parameter, public :: LINSOL_ALG_MULTIGRID     = 9
 
@@ -753,34 +761,38 @@ module linearsolver
 
   ! UMFPACK4
   integer, parameter, public :: LINSOL_ALG_UMFPACK4      = 11
-  
+
   ! Multigrid iteration
   integer, parameter, public :: LINSOL_ALG_MULTIGRID2    = 12
 
   ! ILU(0) iteration
   integer, parameter, public :: LINSOL_ALG_ILU0          = 50
-  
+
   ! (M)ILU(s) iteration (scalar system)
   integer, parameter, public :: LINSOL_ALG_MILUS1x1      = 51
-  
+
   ! SPAI(0) iteration (scalar system)
   integer, parameter, public :: LINSOL_ALG_SPAI01x1      = 52
 
   ! SPAI(k) iteration (scalar system)
   integer, parameter, public :: LINSOL_ALG_SPAIK1x1      = 53
-  
+
   ! VANKA iteration
   integer, parameter, public :: LINSOL_ALG_VANKA         = 54
-  
+
   ! Schur-complement iteration
   integer, parameter, public :: LINSOL_ALG_SCHUR         = 55
-  
+
   ! SP-SOR iteration
   integer, parameter, public :: LINSOL_ALG_SPSOR         = 56
+<<<<<<< HEAD
   
   ! Block Jacobi iteration
   integer, parameter, public :: LINSOL_ALG_BLOCKJAC      = 57
   
+=======
+
+>>>>>>> ENH: Removed header "!-*- mode: f90; -*-"
 !</constantblock>
 
 ! *****************************************************************************
@@ -789,10 +801,10 @@ module linearsolver
 
   ! Matrices are compatible to a solver node.
   integer, parameter, public :: LINSOL_COMP_OK               = 0
-  
+
   ! Matrices generally not compatible, no special reason.
   integer, parameter, public :: LINSOL_COMP_ERRGENERAL       = 1
-  
+
   ! One of the submatrices is solved in transposed structure,
   ! but one of the subsolvers cannot handle that.
   integer, parameter, public :: LINSOL_COMP_ERRTRANSPOSED    = 2
@@ -804,17 +816,17 @@ module linearsolver
   ! One of the submatrices is a block matrix,
   ! but one of the subsolvers can only handle scalar matrices.
   integer, parameter, public :: LINSOL_COMP_ERRNOTSCALAR     = 4
-  
+
   ! One of the diagonal submatrices (pivot) is zero, but
   ! the solver cannot handle saddle-point matrices.
   integer, parameter, public :: LINSOL_COMP_ERRZEROPIVOT     = 5
-  
+
   ! One of the submatrices has unsupported matrix type.
   integer, parameter, public :: LINSOL_COMP_ERRMATTYPE       = 6
-  
+
   ! The block matrix is rectangular.
   integer, parameter, public :: LINSOL_COMP_ERRMATRECT       = 7
-  
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -834,7 +846,7 @@ module linearsolver
   ! If both are > 0: use one of them, i.e. the iteration stops when the
   !    either the relative OR the absolute stopping criterium holds
   integer, parameter, public :: LINSOL_STOP_ONEOF        = 1
-  
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -849,23 +861,23 @@ module linearsolver
 
   ! Solver can handle multiple levels
   integer(I32), parameter, public :: LINSOL_ABIL_MULTILEVEL   = 2**2
-  
+
   ! Solver allows checking the defect during the iteration.
   ! Solvers not capable of this perform only a fixed number of solution
   ! steps (e.g. UMFPACK performs always one step).
   integer(I32), parameter, public :: LINSOL_ABIL_CHECKDEF     = 2**3
-  
+
   ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
   integer(I32), parameter, public :: LINSOL_ABIL_DIRECT       = 2**4
-  
+
   ! Solver might use subsolvers (preconditioners, smoothers,...)
   integer(I32), parameter, public :: LINSOL_ABIL_USESUBSOLVER = 2**5
-  
+
   ! Solver supports filtering
   integer(I32), parameter, public :: LINSOL_ABIL_USEFILTER    = 2**6
-  
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -886,7 +898,7 @@ module linearsolver
 
   ! Matrix-structure has changed between initStructure and initData
   integer, parameter, public :: LINSOL_ERR_MATRIXHASCHANGED = 3
-  
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -895,7 +907,7 @@ module linearsolver
 
   ! General VANKA solver
   integer, parameter, public :: LINSOL_VANKA_GENERAL           = 0
-  
+
   ! General VANKA solver. Specialised 'direct' version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
@@ -1020,7 +1032,7 @@ module linearsolver
 
   ! One or two Gram-Schmidt calls per GMRES iteration
   logical, parameter, public :: LINSOL_GMRES_DEF_TWICE_GS = .false.
-    
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -1029,16 +1041,16 @@ module linearsolver
 
   ! Diagonal type Schur-complement solver
   integer, parameter, public :: LINSOL_SCHUR_TYPE_DIAG = 0
-  
+
   ! Lower-triangular type Schur-complement solver
   integer, parameter, public :: LINSOL_SCHUR_TYPE_LTRI = 1
-  
+
   ! Upper-triangular type Schur-complement solver (not implemented)
   !integer, parameter, public :: LINSOL_SCHUR_TYPE_UTRI = 2
-  
+
   ! Full type Schur-complement solver (not implemented)
   !integer, parameter, public :: LINSOL_SCHUR_TYPE_FULL = 3
-    
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -1047,13 +1059,13 @@ module linearsolver
 
   ! Dummy command, do-nothing.
   integer, parameter, public :: LINSOL_ALTER_NOTHING                   = 0
-  
+
   ! Change VANKA subtype.
   ! In the configuration block, there must be specified:
   ! Iconfig(1) = identifier for VANKA subtype to be changed.
   ! Iconfig(2) = destination subtype of VANKA solver
   integer, parameter, public :: LINSOL_ALTER_CHANGEVANKA               = 1
-    
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -1065,7 +1077,7 @@ module linearsolver
   ! output, e.g. for the asymptotic convergence rate and for printing
   ! the residual queue in case of errors.
   integer, parameter :: LINSOL_NRESQUEUELENGTH                 = 32
-  
+
 !</constantblock>
 
 !</constants>
@@ -1077,7 +1089,7 @@ module linearsolver
 !<types>
 
 !<typeblock>
-  
+
   ! This is the central structure which repesents a solver.
   ! It collects all information for the solution process.
   !
@@ -1106,21 +1118,21 @@ module linearsolver
   ! maintained internally by the solver.
   ! Parameters marked as READ ONLY are set during the initialisation phase
   ! of the solver and must not be changed by the caller.
-  
+
   type t_linsolNode
-    
+
     ! OUTPUT: Result
     ! The result of the solution process.
     ! =0: success. =1: iteration broke down, diverging, =2: error in the parameters,
     ! <0: algorithm-specific error
     integer                    :: iresult = 0
-    
+
     ! OUTPUT: Number of performed iterations, if the solver
     ! is of iterative nature.
     ! Is to 1 by the solver if not used (indicating at least 1 performed
     ! iteration, which is always the case).
     integer                    :: iiterations = 0
-    
+
     ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Norm of initial residuum
     real(DP)                        :: dinitialDefect = 0.0_DP
@@ -1144,7 +1156,7 @@ module linearsolver
     ! OUTPUT PARAMETER FOR SOLVERS THAT SUPPORT FILTERING:
     ! Total time for filtering
     real(DP)                        :: dtimeFiltering = 0.0_DP
-    
+
     ! INPUT PARAMETER:
     ! Damping parameter for preconditioner. The t_linsolNode structure
     ! represents a preconditioner operator of the form:
@@ -1212,7 +1224,7 @@ module linearsolver
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Maximum number of iterations top perform
     integer                    :: nmaxIterations = 50
-    
+
     ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Perform residual checks
     ! YES: check residuals (default),
@@ -1225,14 +1237,14 @@ module linearsolver
     ! Type of norm to use in the residual checking (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
     integer                    :: iresNorm = 2
-    
+
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Number of iterations that should be used to calculate
     ! the asymptotic convergtence rate, if the solver supports
     ! to generate an asymptotic convergence rate of the last
     ! couple of steps. =0: do not determine asymptotic convergence rate
     integer                    :: niteAsymptoticCVR = 0
-    
+
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
     ! =-1: no output, =0: no output except for warning messages,
@@ -1244,7 +1256,7 @@ module linearsolver
     ! norm of the residual to screen.
     ! =1: Print residual in every iteration
     integer                    :: niteResOutput = 1
-    
+
     ! INPUT PARAMETER: Default data type.
     ! This parameter prescribes the default data type that is used
     ! for temporary verctors inside the solvers. Solvers that need
@@ -1274,7 +1286,7 @@ module linearsolver
     ! solvers from being initialised or allows to initialise
     ! some solvers manually.
     integer                     :: isolverSubgroup = 0
-    
+
     ! INPUT PARAMETER: t_matrixBlock structure that holds
     ! information about the linear system where to solve
     ! (i.e. usually the finest level).
@@ -1287,7 +1299,7 @@ module linearsolver
     ! Depending on the value, a solver-specific structure may be
     ! assigned to this structure below.
     integer                    :: calgorithm = LINSOL_ALG_UNDEFINED
-    
+
     ! READ ONLY: Solver ability tag.
     ! Bitfield. A combination of LINSOL_ABIL_xxxx
     ! flags that specify the ability of the actual solver (e.g.
@@ -1295,7 +1307,7 @@ module linearsolver
     ! Calling a solver that is not able to handle a specific problem
     ! will cause an error by the framework.
     integer(I32)                    :: ccapability = 0
-    
+
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     integer                    :: icurrentIteration
 
@@ -1307,7 +1319,7 @@ module linearsolver
 
     ! Pointer to a structure for the SP-SOR solver; NULL() if not set
     type (t_linsolSubnodeSPSOR), pointer          :: p_rsubnodeSPSOR       => null()
-    
+
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     type (t_linsolSubnodeDefCorr), pointer        :: p_rsubnodeDefCorr     => null()
 
@@ -1325,7 +1337,7 @@ module linearsolver
 
     ! Pointer to a structure for the ILU0 solver; NULL() if not set
     type (t_linsolSubnodeILU0), pointer           :: p_rsubnodeILU0        => null()
-    
+
     ! Pointer to a structure for (M)ILUs 1x1 solver; NULL() if not set
     type (t_linsolSubnodeMILUs1x1), pointer       :: p_rsubnodeMILUs1x1    => null()
 
@@ -1334,18 +1346,18 @@ module linearsolver
 
     ! Pointer to a structure for SSOR; NULL() if not set
     type (t_linsolSubnodeSSOR), pointer           :: p_rsubnodeSSOR        => null()
-    
+
     ! Pointer to a structure for the CG solver; NULL() if not set
     type (t_linsolSubnodeCG), pointer             :: p_rsubnodeCG          => null()
-    
+
     ! Pointer to a structure for the GMRES(m) solver; NULL() if not set
     type (t_linsolSubnodeGMRES), pointer          :: p_rsubnodeGMRES       => null()
-    
+
     ! Pointer to a structure for the Schur-complement solver; NULL() if not set
     type (t_linsolSubnodeSchur), pointer          :: p_rsubnodeSchur       => null()
 
   end type
-  
+
   public :: t_linsolNode
 
 !</typeblock>
@@ -1353,15 +1365,15 @@ module linearsolver
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the SOR solver.
   type t_linsolSubnodeSOR
-  
+
     ! Relaxation parameter for SOR. Must be in range (0,2).
     real(DP) :: drelax
-  
+
   end type
-  
+
   public :: t_linsolSubnodeSOR
 
 !</typeblock>
@@ -1369,36 +1381,36 @@ module linearsolver
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the SSOR solver.
-  
+
   type t_linsolSubnodeSSOR
-  
+
     ! Relaxation parameter for SSOR. Must be in range (0,2).
     real(DP) :: drelax
-  
+
     ! Scaling of the preconditioned solution.
     ! =FALSE is the old FEAT style.
     ! =TRUE gives the implementation as suggested in the literature.
     logical :: bscale
-    
+
   end type
-  
+
   public :: t_linsolSubnodeSSOR
 
 !</typeblock>
-  
+
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the defect correction solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
   ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
-  
+
   type t_linsolSubnodeDefCorr
-  
+
     ! Temporary vector to use during the solution process
     type(t_vectorBlock) :: rtempVector
 
@@ -1408,13 +1420,13 @@ module linearsolver
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
     type(t_linsolNode), pointer       :: p_rpreconditioner            => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
-  
+
   end type
-  
+
   public :: t_linsolSubnodeDefCorr
 
 !</typeblock>
@@ -1422,112 +1434,112 @@ module linearsolver
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the VANKA solver.
-  
+
   type t_linsolSubnodeVANKA
-  
+
     ! Type of VANKA subsolver. One of the LINSOL_VANKA_xxxx constants.
     ! Specifies either thge general VANKA solver or a specialised version
     ! for improved speed.
     integer             :: csubtypeVANKA
-  
+
     ! For general 2D/3D Navier-Stokes problem
     type(t_vanka)       :: rvanka
-  
+
     ! Temporary vector to use during the solution process
     type(t_vectorBlock) :: rtempVector
 
   end type
-  
+
   public :: t_linsolSubnodeVANKA
-  
+
 !</typeblock>
 
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the SP-SOR solver.
   type t_linsolSubnodeSPSOR
-  
+
     ! Type of SP-SOR subsolver. One of the LINSOL_SPSOR_xxxx constants.
     integer             :: csubtype
-  
+
     ! The SP-SOR data structure
     type(t_spsor)       :: rdata
 
   end type
-  
+
   public :: t_linsolSubnodeSPSOR
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the BiCGStab solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
   ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
-  
+
   type t_linsolSubnodeBiCGStab
-  
+
     ! Temporary vectors to use during the solution process
     type(t_vectorBlock), dimension(6) :: RtempVectors
-    
+
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
     type(t_linsolNode), pointer       :: p_rpreconditioner            => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
-  
+
   end type
-  
+
   public :: t_linsolSubnodeBiCGStab
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the CG solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
   ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
-  
+
   type t_linsolSubnodeCG
-  
+
     ! Temporary vectors to use during the solution process
     type(t_vectorBlock), dimension(4) :: RtempVectors
 
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
     type(t_linsolNode), pointer       :: p_rpreconditioner            => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
-  
+
   end type
 
   public :: t_linsolSubnodeCG
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the UMFPACK4 solver.
-  
+
   type t_linsolSubnodeUMFPACK4
-  
+
     ! Matrix output for debug.
     ! If this is set to a value <> 0, the numerical factorisation routine
     ! writes the matrix to a text file before factorising it.
@@ -1541,15 +1553,15 @@ module linearsolver
     ! =2: Write the matrix into a text file in Maple format
     !     using matio_writeMatrixMaple.
     integer :: imatrixDebugOutput = 0
-    
+
     ! Name of the matrix in the matrix file when using imatrixDebugOutput<>0.
     ! If "" is used here, a matrix name is automatically chosen.
     character(LEN=SYS_NAMELEN) :: smatrixName = ""
-  
+
     ! Accuracy string for text output of matrix entries
     ! if imatrixDebugOutput <> 0.
     character(LEN=SYS_NAMELEN) :: saccuracy = "(E15.5)"
-  
+
     ! Control structure for UMFPACK4; contains parameter for the solver
     real(DP), dimension(20) :: Dcontrol
 
@@ -1562,52 +1574,52 @@ module linearsolver
     ! This is not a FEAT-Handle!
     integer :: inumeric = 0
 !    integer(I32) :: inumeric = 0
-    
+
     ! Handle to a temporary vector for storing the solution
     type(t_vectorBlock) :: rtempVector
 
   end type
 
   public :: t_linsolSubnodeUMFPACK4
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the flexible GMRES(m) solver.
-  
+
   type t_linsolSubnodeGMRES
-  
+
     ! Maximum Restarts
     integer :: imaxRestarts
 
     ! Dimension of Krylov Subspace
     integer :: ikrylovDim
-    
+
     ! Maybe we should apply Gram-Schmidt twice?
     logical :: btwiceGS
-    
+
     ! Scale factor for pseudo-residuals
     real(DP) :: dpseudoResScale
-    
+
     ! Some temporary 1D/2D arrays
     real(DP), dimension(:),   pointer :: Dc, Ds, Dq
     real(DP), dimension(:,:), pointer :: Dh
 
     ! The handles of the arrays
     integer :: hDc, hDs, hDq, hDh
-    
+
     ! Some temporary vectors
     type(t_vectorBlock), dimension(:), pointer :: p_rv                => null()
     type(t_vectorBlock), dimension(:), pointer :: p_rz                => null()
     type(t_vectorBlock) :: rx
-  
+
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
     type(t_linsolNode), pointer       :: p_rpreconditioner            => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
@@ -1615,40 +1627,40 @@ module linearsolver
   end type
 
   public :: t_linsolSubnodeGMRES
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the scalar ILU(0) solver.
-  
+
   type t_linsolSubnodeILU0
-  
+
     ! A pointer to the ILU0-decomposition of the main matrix.
     type(t_matrixBlock) :: rmatLU
-    
+
   end type
-  
+
   public :: t_linsolSubnodeILU0
 
 !</typeblock>
-  
+
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! This saves information about ILU(k) matrices as defined in SPLIB.
-  
+
   type t_linsolSubnodeMILUs1x1
 
     ! Fill-in level for decomposition
     integer :: ifill
-    
+
     ! Relaxation factor for (M)ILU(s)
     real(DP) :: drelax
-    
+
     ! Scaling factor of the matrix; usually = 1.0
     real(DP) :: dscaleFactor
 
@@ -1660,7 +1672,7 @@ module linearsolver
   end type
 
   public :: t_linsolSubnodeMILUs1x1
-  
+
 !</typeblock>
 
 ! *****************************************************************************
@@ -1668,35 +1680,35 @@ module linearsolver
 !<typeblock>
 
   ! This structure saves the information for the Schur-Complement solver.
-  
+
   type t_linsolSubnodeSchur
-  
+
     ! Type of preconditioner. One of the LINSOL_SCHUR_TYPE_XXXX constants.
     integer :: ctype = LINSOL_SCHUR_TYPE_DIAG
-  
+
     ! An array of block matrices that saves the sub-matrices A.
     type(t_matrixBlock), dimension(:), pointer :: p_RmatrixA => null()
-    
+
     ! An array of block discretisations for the sub-matrices A.
     type(t_blockDiscretisation), dimension(:), pointer :: p_RdiscrA => null()
-  
+
     ! A block matrix that saves the sub-matrix B.
     type(t_matrixBlock) :: rmatrixB
-  
+
     ! A block matrix that saves the sub-matrix D.
     type(t_matrixBlock) :: rmatrixD
-    
+
     ! An array of block matrices that saves the sub-matrices S.
     type(t_matrixBlock), dimension(:), pointer :: p_RmatrixS => null()
-    
+
     ! A pointer to a solver structure for the sub-matrix A.
     type(t_linsolNode), pointer :: p_rsolverA => null()
-    
+
     ! A pointer to a solver structure for the Schur-complement matrix S.
     type(t_linsolNode), pointer :: p_rsolverS => null()
-  
+
   end type
-  
+
   public :: t_linsolSubnodeSchur
 
 !</typeblock>
@@ -1708,25 +1720,25 @@ module linearsolver
   ! This structure collects timing information for the multigrid solver.
 
   type t_linsolMGTiming
-    
+
     ! Total time for prolongation
     real(DP)                           :: d_tmProlongation
 
     ! Total time for restriction
     real(DP)                           :: d_tmRestriction
-  
+
     ! Total time for defect calculation
     real(DP)                           :: d_tmDefCalc
-    
+
     ! Total time for smoothing
     real(DP)                           :: d_tmSmooth
-    
+
     ! Total time for coarse grid solving
     real(DP)                           :: d_tmCoarseGridSolve
 
     ! Total time for coarse grid corrections
     real(DP)                           :: d_tmCorrection
-  
+
   end type
 
   public :: t_linsolMGTiming
@@ -1736,18 +1748,18 @@ module linearsolver
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! Level data for multigrid. This structure forms an entry in a linked list
   ! of levels which multigrid uses for solving the given problem.
   ! The solver subnode t_linsolSubnodeMultigrid holds pointers to the head
   ! and the tail of the list.
-  
+
   type t_linsolMGLevelInfo
-  
+
     ! A level identifier. Can be set to identify the global number of the
     ! level, this structure refers to. Only for output purposes.
     integer                        :: ilevel                 = 0
-    
+
     ! Pointer to previous (lower) level or NULL() if the node is the
     ! head of the list
     type(t_linsolMGLevelInfo), pointer  :: p_rprevLevel           => null()
@@ -1755,21 +1767,21 @@ module linearsolver
     ! Pointer to next (higher) level or NULL() if the node is the
     ! tail of the list
     type(t_linsolMGLevelInfo), pointer  :: p_rnextLevel           => null()
-  
+
     ! t_matrixBlock structure that holds the system matrix.
     type(t_matrixBlock)                :: rsystemMatrix
-    
+
     ! t_matrixBlock structure for the calculation of the optimal correction.
     ! Normally, this matrix has not to be set. If not defined, rsystemMatrix is
     ! used. If defined, the calculation of the optimal defect (guided by
     ! the parameter rcoarseGridCorrection in the multigrid subnode)
     ! is done with this matrix instead of the system matrix.
     type(t_matrixBlock)                :: rsystemMatrixOptCorrection
-    
+
     ! A temporary vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
     type(t_vectorBlock)                 :: rtempVector
-    
+
     ! A temporary vector that is used for the calculation of the
     ! coarse grid correction. This vector shares its data with the
     ! rprjTempVector vector in the multigrid solver structure
@@ -1798,11 +1810,11 @@ module linearsolver
     ! the level corresponding to this structure represents the coarse
     ! grid. NULL() otherwise.
     type(t_linsolNode), pointer         :: p_rcoarseGridSolver    => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
-    
+
     ! Specifies whether multigrid should set up the rprojection depending on
     ! the system matrix that is passed using the linsol_setMatrices routine or
     ! use a user-specified projection structure.
@@ -1810,7 +1822,7 @@ module linearsolver
     ! If ser to .false., multigrid will use the projection structure that the
     ! user specified when we called the linsol_addMultiGridLevel routine.
     logical                             :: bautoProjection = .false.
-    
+
     ! An interlevel projection structure that configures the transfer of
     ! defect/solution vectors from one level to another.
     ! For the coarse grid, this structure is ignored.
@@ -1818,7 +1830,7 @@ module linearsolver
     ! between the current and the lower level (so here between level 3 and
     ! level 4).
     type(t_interlevelProjectionBlock)   :: rprojection
-    
+
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of cycles to perform on this level.
     integer                        :: ncycles
@@ -1826,41 +1838,41 @@ module linearsolver
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of remaining cycles to perform on this level.
     integer                        :: ncyclesRemaining
-    
+
     ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
     ! level. Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
     real(DP)                       :: dinitResCycle = 0.0_DP
-    
+
     ! STATUS/INTERNAL: Number of current cycle on that level.
     ! Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
     integer                        :: icycleCount   = 0
-    
+
   end type
 
   public :: t_linsolMGLevelInfo
-  
+
 !</typeblock>
 
   ! ***************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the Multigrid solver.
   ! There are pointers to the head and the tail of a linked list of
   ! t_mgLevelInfo structures which hold the data of all levels.
   ! The tail of the list corresponds to the maximum level where
   ! multigrid solves the problem.
-  
+
   type t_linsolSubnodeMultigrid
-  
+
     ! INPUT PARAMETER: Cycle identifier.
     !  0=F-cycle,
     !  1=V-cycle,
     !  2=W-cycle.
     integer                       :: icycle                   = 0
-    
+
     ! INPUT PARAMETER: Adaptive cycle convergence criterion for coarse levels.
     ! This value is usually =1E99_DP which deactivates adaptive cycles.
     ! The user can set this variable on initialisation of Multigrid to
@@ -1871,22 +1883,22 @@ module linearsolver
     ! level before prolongating the solution to the fine grid.
     ! This is an extension to the usual F/V/W-cycle scheme.
     real(DP)                      :: depsRelCycle             = 1E99_DP
-    
+
     ! INPUT PARAMETER: If adaptive cycles are activated by depsRelCycle < 1E99_DP,
     ! this configures the maximum number of cycles that are performed.
     ! The value =-1 deactivates this upper bouns, so coarse grid cycles are
     ! repeated until the convergence criterion given by depsRelCycle is reached.
     integer                       :: nmaxAdaptiveCycles       = -1
-    
+
     ! INPUT PARAMETER: Number of levels in the linked list of multigrid levels
     integer                       :: nlevels                  = 0
-    
+
     ! INPUT PARAMETER: Coarse grid correction structure for step length control.
     ! Defines the algorithm for computing the optimal correction as well as the
     ! minimum and maximum step length ALPHAMIN/ALPHAMAX.
     ! The standard setting/initialisation is suitable for conforming elements.
     type(t_coarseGridCorrection)  :: rcoarseGridCorrection
-    
+
     ! Pointer to the head of the linked list of levels; corresponds
     ! to the lowest level.
     type(t_linsolMGLevelInfo), pointer :: p_rlevelInfoHead         => null()
@@ -1895,42 +1907,42 @@ module linearsolver
     ! to the highest level, i.e. the level where the system should be
     ! solved.
     type(t_linsolMGLevelInfo), pointer :: p_rlevelInfoTail         => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:),pointer :: p_RfilterChain     => null()
-  
+
     ! A temp vector for the prolongation/restriction.
     ! Memory for this vector is allocated in initStructure and released
     ! in doneStructure.
     type(t_vectorScalar) :: rprjTempVector
-    
+
   end type
 
   public :: t_linsolSubnodeMultigrid
-  
+
 !</typeblock>
 
 ! *****************************************************************************
 
 !<typeblock>
-  
+
   ! Level data for multigrid. This structure forms an entry in a linked list
   ! of levels which multigrid uses for solving the given problem.
   ! The solver subnode t_linsolSubnodeMultigrid holds pointers to the head
   ! and the tail of the list.
-  
+
   type t_linsolMG2LevelInfo
-  
+
     ! A level identifier. Can be set to identify the global number of the
     ! level, this structure refers to. Only for output purposes.
     integer                        :: ilevel                 = 0
-    
+
     !<!-- ----------------------------------------------------------------------
     ! Specification of the subsolver components.
     ! Must be initialised by the user prior to calling multigrid!
     ! --------------------------------------------------------------------- -->
-    
+
     ! A pointer to the solver node for the presmoothing or NULL(),
     ! if no presmoother is used.
     type(t_linsolNode), pointer         :: p_rpresmoother         => null()
@@ -1943,16 +1955,16 @@ module linearsolver
     ! the level corresponding to this structure represents the coarse
     ! grid. NULL() otherwise.
     type(t_linsolNode), pointer         :: p_rcoarseGridSolver    => null()
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
-    
+
     !<!-- ----------------------------------------------------------------------
     ! OPTIONAL parameters.
     ! May be initialised by the user in case of special situations
     ! --------------------------------------------------------------------- -->
-    
+
     ! OPTIONAL: An interlevel projection structure that configures the transport
     ! of defect/solution vectors from one level to another.
     ! For the coarse grid, this structure is ignored.
@@ -1964,32 +1976,32 @@ module linearsolver
     ! set a pointer to a user defined projection strategy here or
     ! modify the strategy after doing linsol_initStructure().
     type(t_interlevelProjectionBlock), pointer   :: p_rprojection => null()
-    
+
     ! <!-- ----------------------------------------------------------------------
     ! INTERNAL VARIABLES.
     ! These variables are internally maintained by the MG solver and do not have
     ! to be modified in any sense.
     ! ---------------------------------------------------------------------- -->
-    
+
     ! Specifies if we use the standard interlevel projection strategy.
     ! If this is set to FALSE, the user set the p_rprojection to
     ! a user defined projection strategy, so we do not have to touch it.
     logical :: bstandardProjection = .false.
-    
+
     ! t_matrixBlock structure that holds the system matrix.
     type(t_matrixBlock)                :: rsystemMatrix
-    
+
     ! t_matrixBlock structure for the calculation of the optimal correction.
     ! Normally, this matrix has not to be set. If not defined, rsystemMatrix is
     ! used. If defined, the calculation of the optimal defect (guided by
     ! the parameter rcoarseGridCorrection in the multigrid subnode)
     ! is done with this matrix instead of the system matrix.
     type(t_matrixBlock)                :: rsystemMatrixOptCorrection
-    
+
     ! A temporary vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
     type(t_vectorBlock)                 :: rtempVector
-    
+
     ! A temporary vector that is used for the calculation of the
     ! coarse grid correction. This vector shares its data with the
     ! rprjTempVector vector in the multigrid solver structure
@@ -2013,41 +2025,41 @@ module linearsolver
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of remaining cycles to perform on this level.
     integer                        :: ncyclesRemaining
-    
+
     ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
     ! level. Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
     real(DP)                       :: dinitResCycle = 0.0_DP
-    
+
     ! STATUS/INTERNAL: Number of current cycle on that level.
     ! Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
     integer                        :: icycleCount   = 0
-    
+
   end type
 
   public :: t_linsolMG2LevelInfo
-  
+
 !</typeblock>
 
   ! ***************************************************************************
 
 !<typeblock>
-  
+
   ! This structure realises the subnode for the Multigrid solver.
   ! There are pointers to the head and the tail of a linked list of
   ! t_mgLevelInfo structures which hold the data of all levels.
   ! The tail of the list corresponds to the maximum level where
   ! multigrid solves the problem.
-  
+
   type t_linsolSubnodeMultigrid2
-  
+
     ! INPUT PARAMETER: Cycle identifier.
     !  0=F-cycle,
     !  1=V-cycle,
     !  2=W-cycle.
     integer                       :: icycle                   = 0
-    
+
     ! INPUT PARAMETER: Adaptive cycle convergence criterion for coarse levels.
     ! This value is usually =1E99_DP which deactivates adaptive cycles.
     ! The user can set this variable on initialisation of Multigrid to
@@ -2058,38 +2070,38 @@ module linearsolver
     ! level before prolongating the solution to the fine grid.
     ! This is an extension to the usual F/V/W-cycle scheme.
     real(DP)                      :: depsRelCycle             = 1E99_DP
-    
+
     ! INPUT PARAMETER: If adaptive cycles are activated by depsRelCycle < 1E99_DP,
     ! this configures the maximum number of cycles that are performed.
     ! The value =-1 deactivates this upper bouns, so coarse grid cycles are
     ! repeated until the convergence criterion given by depsRelCycle is reached.
     integer                       :: nmaxAdaptiveCycles       = -1
-    
+
     ! INPUT PARAMETER: Coarse grid correction structure for step length control.
     ! Defines the algorithm for computing the optimal correction as well as the
     ! minimum and maximum step length ALPHAMIN/ALPHAMAX.
     ! The standard setting/initialisation is suitable for conforming elements.
     type(t_coarseGridCorrection)  :: rcoarseGridCorrection
-    
+
     ! Number of levels level in MG.
     integer :: nlevels = 1
-    
+
     ! A pointer to the level info structures for all the levels in multigrid
     type(t_linsolMG2LevelInfo), dimension(:), pointer :: p_RlevelInfo
-    
+
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     type(t_filterChain), dimension(:),pointer :: p_RfilterChain     => null()
-  
+
     ! A temp vector for the prolongation/restriction.
     ! Memory for this vector is allocated in initStructure and released
     ! in doneStructure.
     type(t_vectorScalar) :: rprjTempVector
-    
+
   end type
-  
+
   public :: t_linsolSubnodeMultigrid2
-  
+
 !</typeblock>
 
   ! ***************************************************************************
@@ -2100,19 +2112,19 @@ module linearsolver
   ! function linsol_alterSolver to allow in-computation change of
   ! a solver or its subsolvers.
   type t_linsol_alterSolverConfig
-  
+
     ! A command flag of type LINSOL_ALTER_xxxx.
     integer :: ccommand = LINSOL_ALTER_NOTHING
-  
+
     ! An integer precision configuration block. The meaning of this block
     ! depends on ccommand.
     integer, dimension(16) :: Iconfig
-    
+
     ! A double precision configuration block. The meaning of this block
     ! depends on ccommand.
     real(DP), dimension(16) :: Dconfig
   end type
-  
+
   public :: t_linsol_alterSolverConfig
 
 !</typeblock>
@@ -2128,13 +2140,13 @@ contains
   ! ***************************************************************************
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrices (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! Initialises the system matrices in the solver node rsolverNode and
   ! in all nodes attached to it (preconditioners,...). For this purpose,
   ! the corresponding initialisation routine of each solver is called.
@@ -2152,28 +2164,28 @@ contains
   ! (or more precisely, if handles or structural data of the system matrix
   ! changes), linsol_setMatrices has to be called again to update all
   ! the system matrix/matrices in the solver!
-  
+
 !</description>
-  
+
 !<input>
   ! Array of system matrices on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used
   ! only by the multigrid initialisation routine.
   type(t_matrixBlock), dimension(:), intent(in) :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)             :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Copy the matrix structure on the finest level to the rsolverNode
     ! structure. This corresponds to the system we want to solve.
     call lsysbl_duplicateMatrix (Rmatrices(ubound(Rmatrices,1)), &
         rsolverNode%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    
+
     ! Depending on the solver type, call the corresponding initialisation
     ! routine. For all single-grid solvers, pass the matrix on the highest
     ! level in RlinsysInfo. For multigrid we pass all matrices.
@@ -2207,16 +2219,16 @@ contains
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_matricesCompatible (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
-  
+
   ! This subroutine checks the matrices in Rmatrices if they are compatible
   ! with the solver node rsolverNode. Only if the matrices are compatiable,
   ! they are allowed to be attached to the solver with linsol_setMatrices --
@@ -2247,9 +2259,9 @@ contains
   ! postsmoother on each MG level are identical, this routine will
   ! successfully determine (and return in CcompatibleDetail) if
   ! everything is ok.
-  
+
 !</description>
-  
+
 !<input>
   ! Array of system matrices on all levels of the discretisation.
   type(t_matrixBlock), dimension(:), intent(in) :: Rmatrices
@@ -2262,13 +2274,13 @@ contains
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   integer, intent(out) :: ccompatible
-  
+
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Depending on the solver type, call the corresponding check-routine
@@ -2281,47 +2293,47 @@ contains
     case (LINSOL_ALG_SPSOR)
       ! Ask SP-SOR if the matrices are ok.
       call linsol_matCompatSPSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_JACOBI)
       ! Ask Jacobi if the matrices are ok.
       call linsol_matCompatJacobi (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_SOR)
       ! Ask SOR if the matrices are ok.
       call linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_SSOR)
       ! Ask SSOR if the matrices are ok.
       call linsol_matCompatSSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_DEFCORR)
       ! Ask the defect correction and its subsolvers if the matrices are ok.
       call linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_UMFPACK4)
       ! Ask VANKA if the matrices are ok.
       call linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-    
+
     case (LINSOL_ALG_CG)
       ! Ask CG and its subsolvers if the matrices are ok.
       call linsol_matCompatCG (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_BICGSTAB)
       ! Ask BiCGStab and its subsolvers if the matrices are ok.
       call linsol_matCompatBiCGStab (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_GMRES)
       ! Ask GMRES(m) and its subsolvers if the matrices are ok.
       call linsol_matCompatGMRES (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_MULTIGRID)
       ! Ask Multigrid and its subsolvers if the matrices are ok.
       call linsol_matCompatMultigrid (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_MULTIGRID2)
       ! Ask Multigrid and its subsolvers if the matrices are ok.
       call linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
-      
+
     case (LINSOL_ALG_SCHUR)
       ! Ask Schur and its subsolvers if the matrices are ok.
       call linsol_matCompatSchur (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
@@ -2330,28 +2342,28 @@ contains
       ! Nothing special. Let us assume that the matrices are ok.
       ccompatible = LINSOL_COMP_OK
       CcompatibleDetail(:) = ccompatible
-      
+
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_setOnelevelMatrixDirect (rsolverNode,rmatrix)
-  
+
 !<description>
   ! This is a special-case subroutine for the case that there is only
   ! one level to solve (e.g. when solving directly with UMFPACK).
   ! rmatrix is exactly one matrix of the level where to solve.
 !</description>
-  
+
 !<input>
   ! System matrices of the discretisation.
   type(t_matrixBlock), intent(in),target :: rmatrix
 !</input>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -2362,23 +2374,23 @@ contains
   ! t_matrixBlock structure array that receives the matrix pointer;
   ! it has length 1 here in this special situation.
   type(t_matrixBlock), dimension(1) :: Rmatrices
-    
+
     ! Copy the matrix pointer.
     Rmatrices(1) = rmatrix
-    
+
     ! Call the standard initialisation routine
     call linsol_setMatrices (rsolverNode,Rmatrices)
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructure (rsolverNode, ierror, isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Initialises the problem structure in the solver node rsolverNode by calling
   ! the initialisation routine of the appropriate solver. The solver
   ! initialisation routine itself can call this procedure to initialise
@@ -2387,9 +2399,9 @@ contains
   ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can
   ! perform a symbolical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g..
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -2411,15 +2423,15 @@ contains
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2451,15 +2463,15 @@ contains
     case (LINSOL_ALG_SCHUR)
       call linsol_initStructureSchur (rsolverNode,ierror,isubgroup)
     end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initData (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Initialises the problem data in the solver node rsolverNode by calling
   ! the initialisation routine of the appropriate solver. The solver
@@ -2470,7 +2482,7 @@ contains
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
 !</description>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -2497,7 +2509,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -2532,33 +2544,33 @@ contains
     case (LINSOL_ALG_SCHUR)
       call linsol_initDataSchur (rsolverNode,ierror,isubgroup)
     end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_updateStructure (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Reinitialises the problem structure in the solver node rsolverNode
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be reinitialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2573,7 +2585,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -2585,19 +2597,19 @@ contains
     ! Maybe rewritten later for higher performance or special cases...
     call linsol_doneStructure (rsolverNode,isubgroup)
     call linsol_initStructure (rsolverNode,ierror,isubgroup)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_updateData (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Reinitialises the problem data in the solver node rsolverNode.
 !</description>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -2609,7 +2621,7 @@ contains
   ! The solver node containing the solver confuguration
   type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2619,12 +2631,12 @@ contains
   ! isolverSubgroup are processed.
   integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -2638,28 +2650,28 @@ contains
     call linsol_initData (rsolverNode, isubgroup,ierror)
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_doneData (rsolverNode,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Releases the problem data in the solver node rsolverNode.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The solver node containing the solver confuguration
   type(t_linsolNode), intent(inout)                     :: rsolverNode
-  
+
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -2674,7 +2686,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, handle solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2708,24 +2720,24 @@ contains
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructure (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Releases the problem structure in the solver node rsolverNode.
   ! This is done by calling the appropriate routine of the
   ! actual solver.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be reinitialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2735,12 +2747,12 @@ contains
   ! isolverSubgroup are processed.
   integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, handle solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2774,19 +2786,19 @@ contains
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_releaseSolver (p_rsolverNode,bkeepSolverNode)
-  
+
 !<description>
   ! This routine releases the solver node rsolverNode and all attached
   ! sub-solver nodes (for preconditioning, smoothing etc. if specified)
   ! from the heap.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: If set to TRUE, the structure p_rsolverNode is not released
   ! from memory. If set to FALSE or not existent (the usual setting), the
@@ -2803,16 +2815,16 @@ contains
   ! On return, rsolverNode is NULL().
   type(t_linsolNode), pointer     :: p_rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     if (.not. associated(p_rsolverNode)) then
-      
+
       ! Print a warning message and return
       call output_line ('Solver note not assigned!', &
                         OU_CLASS_WARNING, OU_MODE_STD, 'linsol_releaseSolver')
       return
-      
+
     end if
 
     ! Depending on the solver type, call the corresponding done-routine
@@ -2846,13 +2858,13 @@ contains
     case (LINSOL_ALG_SCHUR)
       call linsol_doneSchur (p_rsolverNode)
     end select
-    
+
     ! Clean up the associated matrix structure.
     ! Of course, the memory of the matrix is not released from memory, because
     ! if there is a matrix attached, it belongs to the application, not to the
     ! solver!
     call lsysbl_releaseMatrix(p_rsolverNode%rsystemMatrix)
-    
+
     ! Finally release the node itself (if we are allowed to).
     ! Deallocate the structure (if we are allowed to), finish.
     if (.not. present(bkeepSolverNode)) then
@@ -2862,15 +2874,15 @@ contains
         deallocate(p_rsolverNode)
       end if
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterSolver (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of an existing solver
   ! configuration. It can be used to explicitely alter the configuration
@@ -2889,7 +2901,7 @@ contains
   !  solvers and smoothers in the solver will react to the configuration
   !  block and change their type, depending on ralterConfig%Iconfig.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -2926,15 +2938,15 @@ contains
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_alterMultigrid2 (rsolverNode, ralterConfig)
     end select
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<function>
-  
+
   logical function linsol_testConvergence (rsolverNode, dvecNorm, rdef) result(loutput)
-  
+
 !<description>
   ! Tests a defect vector rdef whether it is in a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
@@ -2946,16 +2958,16 @@ contains
   ! The solver must have initialised the 'dinitialDefect' variable
   ! of the solver structure for this routine to work properly!
 !</description>
-  
+
 !<result>
   ! Boolean value. =TRUE if the convergence criterion is reached;
   ! =FALSE otherwise.
 !</result>
-  
+
 !<input>
   ! The solver node that contains the convergence criterion
   type(t_linsolNode), intent(in) :: rsolverNode
-  
+
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
   ! If not existent, the routine assumes that dvecNrm is the norm
@@ -2971,7 +2983,7 @@ contains
   ! vector and convergence is tested using dvecNorm.
   real(DP), intent(inout) :: dvecNorm
 !</inputoutput>
-  
+
 !</function>
 
     ! Calculate the norm of the vector or take the one given
@@ -2979,7 +2991,7 @@ contains
     if (present(rdef)) then
       dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
     end if
-    
+
     ! Relative difference in the residuals small enough?
     if (rsolverNode%depsDiff .ne. 0.0_DP) then
       if (abs(dvecNorm-rsolverNode%dlastDefect) .lt. &
@@ -2990,11 +3002,11 @@ contains
     end if
 
     select case (rsolverNode%istoppingCriterion)
-    
+
     case (LINSOL_STOP_ONEOF)
       ! Iteration stops if either the absolute or the relative criterium holds.
       loutput = .false.
-      
+
       ! Absolute convergence criterion? Check the norm directly.
       if (rsolverNode%depsAbs .ne. 0.0_DP) then
         if (.not. (dvecNorm .gt. rsolverNode%depsAbs)) then
@@ -3002,7 +3014,7 @@ contains
           return
         end if
       end if
-      
+
       ! Relative convergence criterion? Multiply with initial residuum
       ! and check the norm.
       if (rsolverNode%depsRel .ne. 0.0_DP) then
@@ -3012,12 +3024,12 @@ contains
           return
         end if
       end if
-    
+
     case default
       ! Standard stopping criterion.
       ! Iteration stops if both the absolute and the relative criterium holds.
       loutput = .true.
-      
+
       ! Absolute convergence criterion? Check the norm directly.
       if (rsolverNode%depsAbs .ne. 0.0_DP) then
         if (dvecNorm .gt. rsolverNode%depsAbs) then
@@ -3025,7 +3037,7 @@ contains
           return
         end if
       end if
-      
+
       ! Relative convergence criterion? Multiply with initial residuum
       ! and check the norm.
       if (rsolverNode%depsRel .ne. 0.0_DP) then
@@ -3035,15 +3047,15 @@ contains
         end if
       end if
     end select
-    
+
   end function
-  
+
   ! ***************************************************************************
 
 !<function>
-  
+
   logical function linsol_testDivergence (rsolverNode, dvecNorm, rdef) result(loutput)
-  
+
 !<description>
   ! Tests a defect vector rx whether it is out of a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
@@ -3054,16 +3066,16 @@ contains
   ! The solver must have initialised the 'dinitialDefect' variable
   ! of the solver structure for this routine to work properly!
 !</description>
-  
+
 !<result>
   ! Boolean value. =TRUE if the divergence criterion is reached;
   ! =FALSE otherwise.
 !</result>
-  
+
 !<input>
   ! The solver node that contains the divergence criterion
   type(t_linsolNode), intent(in) :: rsolverNode
-  
+
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
   ! If not existent, the routine assumes that dvecNrm is the norm
@@ -3087,19 +3099,19 @@ contains
     if (present(rdef)) then
       dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
     end if
-    
+
     loutput = .false.
-    
+
     ! Absolute divergence criterion? Check the norm directly.
     if (rsolverNode%ddivAbs .ne. SYS_INFINITY_DP) then
-     
+
       ! use NOT here - gives a better handling of special cases like NaN!
       if ( .not. (dvecNorm .le. rsolverNode%ddivAbs)) then
         loutput = .true.
       end if
-      
+
     end if
-    
+
     ! Relative divergence criterion? Multiply with initial residuum
     ! and check the norm.
     if (rsolverNode%depsRel .ne. SYS_INFINITY_DP) then
@@ -3107,15 +3119,15 @@ contains
         loutput = .true.
       end if
     end if
-  
+
   end function
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_precondDefect (rsolverNode,rd)
-  
+
 !<description>
   ! This routine applies the linear solver configured in rsolverNode
   ! as preconditioner to the defect vector rd.
@@ -3129,16 +3141,16 @@ contains
   ! The vector rd must be compatible to the system matrix (same number
   ! of equations, same sorting strategy,...).
 !</description>
-  
+
 !<inputoutput>
   ! The solver node containing the solver configuration
   type(t_linsolNode), intent(inout)                :: rsolverNode
-  
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)               :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! The only condition to this routine is that matrix and vector are compatible!
@@ -3182,13 +3194,13 @@ contains
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_solveAdaptively (rsolverNode,rx,rb,rtemp)
-  
+
 !<description>
   ! This routine starts the solution process to solve a linear system of the
   ! form <tex>$Ax=b$</tex>. The solver configuration must be given by rsolverNode.
@@ -3204,25 +3216,25 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<input>
   ! The RHS vector of the system
   type(t_vectorBlock), intent(in), target            :: rb
 !</input>
-  
+
 !<inputoutput>
   ! The solver node containing the solver configuration
   type(t_linsolNode), intent(inout)                  :: rsolverNode
-  
+
   ! The initial solution vector; receives the solution of the system
   type(t_vectorBlock), intent(inout)                 :: rx
-  
+
   ! A temporary vector of the same size and structure as rx.
   type(t_vectorBlock), intent(inout)                 :: rtemp
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
     ! Method-specific remarks:
     ! The linear system <tex>$ Ax=b $</tex> is reformulated into a one-step defect-correction
     ! approach
@@ -3231,13 +3243,13 @@ contains
     ! solve
     !     <tex> $$ Ay = b-Ax_0 $$ </tex>
     ! and the solution $x$ is then calculated by $x=x+y$.
-    
+
     ! Calculate the defect:
     ! To build <tex>$ (b-Ax) $</tex>, copy the RHS to the temporary vector
     ! and make a matrix/vector multiplication.
     call lsysbl_copyVector (rb,rtemp)
     call lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-    
+
     ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rtemp with the correction vector.
     call linsol_precondDefect (rsolverNode,rtemp)
@@ -3245,40 +3257,40 @@ contains
     ! Add the correction vector to the solution vector and release the memory.
     ! In case we have one... If the initial vector was assumed as zero, we do not
     ! have a correction vector, the result is directly in rx.
-    
+
     ! Correct the solution vector: x = x + y
     call lsysbl_vectorLinearComb (rtemp, rx, 1.0_DP, 1.0_DP)
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_convertToSmoother (rsolverNode,nsmoothingSteps,domega)
-  
+
 !<description>
   ! Converts a t_linsolNode to a smoother structure. A smoother is a solver
   ! that performs a fixed number of iterations without respecting any
   ! residuum. nsmoothingSteps is the number of steps the smoother should
   ! perform.
 !</description>
-  
+
 !<input>
   ! Number of steps the smoother should perform
   integer, intent(in)          :: nsmoothingSteps
-  
+
   ! OPTIONAL: Damping parameter.
   ! The parameter rsolverNode%domega is set to this value in order
   ! to set up the damping.
   real(DP), intent(in), optional :: domega
 !</input>
-  
+
 !<inputoutput>
   ! Solver node which should be configured as smoother.
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     rsolverNode%depsRel = 0.0_DP
@@ -3286,27 +3298,27 @@ contains
     rsolverNode%nminIterations = nsmoothingSteps
     rsolverNode%nmaxIterations = nsmoothingSteps
     rsolverNode%iresCheck      = NO
-    
+
     if (present(domega)) rsolverNode%domega = domega
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_initSolverGeneral (p_rsolverNode)
-  
+
 !<description>
   ! Creates a new solver node p_rsolverNode on the heap with default
   ! settings and returns a pointer to it.
 !</description>
-  
+
 !<output>
   ! A pointer to a new solver node on the heap.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
 
     ! Allocate the node - the default initialisation will set most of the
@@ -3314,15 +3326,15 @@ contains
     allocate(p_rsolverNode)
 
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the Defect Correction iteration
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,Rfilter)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the defect correction iteration.
   ! The node can be used to directly solve a problem or to be attached
@@ -3346,13 +3358,13 @@ contains
   ! By specifying an additional filter, the defect vector is filtered before
   ! each preconditioner step.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: A pointer to the solver structure of a solver that should be
   ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
-  
+
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not present, no filtering will be used.
@@ -3360,32 +3372,32 @@ contains
   ! The filter chain must be configured for being applied to defect vectors.
   type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_DEFCORR
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
                                 LINSOL_ABIL_CHECKDEF + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate a subnode for our solver.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeDefCorr)
-    
+
     ! Attach the preconditioner if given.
     if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner => p_rpreconditioner
@@ -3399,17 +3411,17 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterDefCorr (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the Defect correction solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -3427,27 +3439,27 @@ contains
       call linsol_alterSolver(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner,&
           ralterConfig)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDefCorr (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! Check if there is a preconditioner attached. If yes, release it.
     if (associated(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) then
       call linsol_releaseSolver(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
@@ -3456,25 +3468,25 @@ contains
     ! Release memory if still associated
     call linsol_doneDataDefCorr (rsolverNode, rsolverNode%isolverSubgroup)
     call linsol_doneStructureDefCorr (rsolverNode, rsolverNode%isolverSubgroup)
-    
+
     ! Release the subnode structure
     deallocate(rsolverNode%p_rsubnodeDefCorr)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatDefCorr (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -3483,7 +3495,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -3494,7 +3506,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix.
@@ -3506,32 +3518,32 @@ contains
       call linsol_matricesCompatible (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner,&
           Rmatrices,ccompatible,CcompatibleDetail)
     end if
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixDefCorr (rsolverNode,Rmatrices)
-  
+
 !<description>
   ! This routine is called if the system matrix changes.
   ! The routine calls linsol_setMatrices for the preconditioner
   ! to inform also that one about the change of the matrix pointer.
 !</description>
-  
+
 !<input>
   ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Do we have a preconditioner given? If yes, call the general initialisation
@@ -3546,26 +3558,26 @@ contains
 ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureDefCorr (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Solver preparation. Perform symbolic factorisation (not of the defect
   ! correcion solver, but of subsolvers). Allocate temporary memory.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -3580,7 +3592,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -3599,10 +3611,10 @@ contains
       call linsol_initStructure (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
                                 isubgroup,ierror)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Initialisation. In our case: allocate temporary vectors for our data
     ! by using the associated matrix as template.
     ! That vectors are used in the defect correction so save the intermediate
@@ -3614,27 +3626,27 @@ contains
     call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector2,.false.,.false.,&
           rsolverNode%cdefaultDataType)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataDefCorr (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -3656,7 +3668,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -3675,29 +3687,29 @@ contains
       call linsol_initData (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
                             isubgroup,ierror)
     end if
-    
+
     ! Nothing else to do here.
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataDefCorr (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -3712,7 +3724,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -3728,29 +3740,29 @@ contains
       call linsol_doneData (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
                             isubgroup)
     end if
-    
+
     ! Nothing else to do here.
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureDefCorr (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -3765,7 +3777,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -3781,7 +3793,7 @@ contains
       call linsol_doneStructure (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -3790,15 +3802,15 @@ contains
       call lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
       call lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_precDefCorr (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the Defect Correction preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -3809,7 +3821,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
@@ -3818,7 +3830,7 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -3827,22 +3839,22 @@ contains
   type(t_vectorBlock), pointer :: p_rx,p_rdef
   type(t_linsolNode), pointer :: p_rprecSubnode
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
   ! Damping parameter
   real(DP) :: domega
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
-  
+
   ! Minimum number of iterations, print-sequence for residuals
   integer :: nminIterations, niteResOutput
-  
+
   ! Whether to filter/prcondition
   logical bprec,bfilter
-  
+
   ! The local subnode
   type(t_linsolSubnodeDefCorr), pointer :: p_rsubnode
 
@@ -3854,7 +3866,7 @@ contains
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
-    
+
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -3862,7 +3874,7 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
@@ -3874,14 +3886,14 @@ contains
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
-    
+
     ! Damping parameter
     domega = rsolverNode%domega
-      
+
     ! Use preconditioning? Filtering?
     bprec = associated(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
     bfilter = associated(rsolverNode%p_rsubnodeDefCorr%p_RfilterChain)
-    
+
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
@@ -3901,19 +3913,19 @@ contains
     ! during the initialisation phase - now we want to use them!
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
     p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
-    
+
     ! The vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     call lsysbl_assignDiscrIndirect (rd,p_rx)
     call lsysbl_assignDiscrIndirect (rd,p_rdef)
-  
+
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
-  
+
     ! Copy our RHS rd to p_rdef. As the iteration vector is 0, this
     ! is also our initial defect.
     call lsysbl_copyVector(rd,p_rdef)
@@ -3921,7 +3933,7 @@ contains
       ! Apply the filter chain to the vector
       call filter_applyFilterChainVec (p_rdef, p_RfilterChain)
     end if
-    
+
     ! Get the norm of the residuum
     dres = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
     !if (.not.((dres .ge. 1E-99_DP) .and. &
@@ -3939,12 +3951,12 @@ contains
     ! routine filters "everything out"!
     ! In that case we can directly stop our computation.
     if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-     
+
       ! final defect is 0, as initialised in the output variable above
       call lsysbl_clearVector(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
-          
+
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -3955,7 +3967,7 @@ contains
 
       ! Perform at most nmaxIterations loops to get a new vector
       do ite = 1,rsolverNode%nmaxIterations
-      
+
         rsolverNode%icurrentIteration = ite
 
         if (bprec) then
@@ -3963,12 +3975,12 @@ contains
           ! solver structure.
           call linsol_precondDefect (p_rprecSubnode,p_rdef)
         end if
-        
+
         ! In p_rdef, we now have the current residuum <tex>$P^{-1} (b-Ax)$</tex>.
         ! Add it (damped) to the current iterate p_x to get
         ! <tex>  $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$  </tex>
         call lsysbl_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
-        
+
         ! Calculate the residuum for the next step : (b-Ax)
         call lsysbl_copyVector (rd,p_rdef)
         call lsysbl_blockMatVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
@@ -3976,10 +3988,10 @@ contains
           ! Apply the filter chain to the vector
           call filter_applyFilterChainVec (p_rdef, p_RfilterChain)
         end if
-        
+
         ! Get the norm of the new (final?) residuum
         dfr = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
-     
+
         ! Shift the queue with the last residuals and add the new
         ! residual to it.
         Dresqueue = eoshift(Dresqueue,1,dfr)
@@ -4001,13 +4013,13 @@ contains
           rsolverNode%iresult = 1
           exit
         end if
-     
+
         ! At least perform nminIterations iterations
         if (ite .ge. nminIterations) then
-        
+
           ! Check if the iteration converged
           if (linsol_testConvergence(rsolverNode,dfr)) exit
-          
+
         end if
 
         ! print out the current residual
@@ -4048,15 +4060,15 @@ contains
     end if
 
     rsolverNode%iiterations = ite
-    
+
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning.
     call lsysbl_copyVector (p_rx,rd)
-      
+
     ! Do not calculate anything if the final residuum is out of bounds -
     ! would result in NaN`s,...
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-    
+
       ! Calculate asymptotic convergence rate
       if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
         i = min(rsolverNode%iiterations,niteAsymptoticCVR)
@@ -4077,7 +4089,7 @@ contains
       else
         rsolverNode%dconvergenceRate = 0.0_DP
       end if
-      
+
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_lbrk()
         call output_line ('DefCorr statistics:')
@@ -4107,13 +4119,13 @@ contains
               trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
-      
+
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
 
 ! *****************************************************************************
@@ -4121,9 +4133,9 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initJacobi (p_rsolverNode, domega)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the Jacobi solver. The node
   ! can be used to directly solve a problem or to be attached as solver
@@ -4134,7 +4146,7 @@ contains
   ! allocated. The given damping parameter domega is saved to the solver
   ! structure rsolverNode%domega.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
   !
@@ -4144,51 +4156,51 @@ contains
   ! This parameter will be removed in future from this routine!
   real(DP), optional :: domega
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_JACOBI
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
                                 LINSOL_ABIL_DIRECT
-    
+
     ! No subnode for Jacobi. Only save domega to the structure.
     if (present(domega)) then
-    
+
       ! DEPRECATED!
       call output_line ('domega parameter is deprecated!', &
                         OU_CLASS_WARNING,OU_MODE_STD, 'linsol_initJacobi')
-                        
+
       p_rsolverNode%domega = domega
-      
+
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatJacobi (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -4197,7 +4209,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -4208,7 +4220,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,n
@@ -4216,38 +4228,38 @@ contains
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! Get the index of the top-level matrix
     n = ubound(Rmatrices,1)
-    
+
     ! Let us make sure the matrix is not rectangular.
     if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
-      
+
       ! Rectangular block matrix
       ccompatible = LINSOL_COMP_ERRMATRECT
-      
+
     else
-    
+
       ! Okay, let us loop through all main diagonal blocks.
       do i = 1, Rmatrices(n)%nblocksPerRow
-      
+
         ! Get the diagonal block
         p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
-        
+
         ! Is the matrix empty?
         if(p_rblock%NEQ .eq. 0) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! Is the scaling factor zero?
         if(p_rblock%dscaleFactor .eq. 0.0_DP) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! What about the matrix type?
         if((p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
            (p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
@@ -4255,26 +4267,26 @@ contains
           ccompatible = LINSOL_COMP_ERRMATTYPE
           exit
         end if
-        
+
         ! This block is okay, continue with next one
-      
+
       end do
-    
+
     end if
-    
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_precJacobi (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the Jacobi preconditioner <tex>$ D \in A $<tex> to the defect
   ! vector rd and solves <tex>$ Dd_{new} = d $<tex>.
@@ -4285,7 +4297,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Jacobi solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
@@ -4294,29 +4306,29 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
     integer :: ieq, iblock
-    
+
     type(t_matrixScalar), pointer :: p_rmatrix
     integer, dimension(:), pointer :: p_Kdiag
     real(DP) :: dlocOmega
     real(SP) :: flocOmega
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
     real(SP), dimension(:), pointer :: p_Fvector, p_Fmatrix
-    
+
       ! Status reset
       rsolverNode%iresult = 0
 
       ! Loop through all blocks. Each block corresponds to one
       ! diagonal block in the matrix.
       do iblock = 1, rd%nblocks
-        
+
         ! Get the matrix
         p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
-        
+
         ! Now we have to make some decisions. At first, which matrix
         ! structure do we have?
         select case (p_rmatrix%cmatrixFormat)
@@ -4328,7 +4340,7 @@ contains
           else
             call lsyssc_getbase_Kld(p_rmatrix,p_Kdiag)
           end if
-        
+
           ! Get the omega parameter for the matrix. Do not forget the scaling
           ! factor in the matrix!
           dlocomega = rsolverNode%domega / p_rmatrix%dScaleFactor
@@ -4338,13 +4350,13 @@ contains
           case (ST_DOUBLE)
             ! Get the matrix data arrays
             call lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
-            
+
             ! Take care of the accuracy of the vector
             select case (rd%RvectorBlock(iblock)%cdataType)
             case (ST_DOUBLE)
               ! Get the data array
               call lsyssc_getbase_double (rd%RvectorBlock(iblock),p_Dvector)
-              
+
               ! and multiply all entries with the inverse of the diagonal
               ! of the matrix.
               if(dlocOmega .eq. 1.0_DP) then
@@ -4356,11 +4368,11 @@ contains
                   p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))
                 end do
               end if
-              
+
             case (ST_SINGLE)
               ! Get the data array
               call lsyssc_getbase_single (rd%RvectorBlock(iblock),p_Fvector)
-              
+
               ! and multiply all entries with the inverse of the diagonal
               ! of the matrix.
               if(dlocOmega .eq. 1.0_DP) then
@@ -4378,18 +4390,18 @@ contains
                                 OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
               call sys_halt()
             end select
-            
+
           case (ST_SINGLE)
 
             ! Get the matrix data arrays
             call lsyssc_getbase_single (p_rmatrix,p_Fmatrix)
-            
+
             ! Take care of the accuracy of the vector
             select case (rd%RvectorBlock(iblock)%cdataType)
             case (ST_DOUBLE)
               ! Get the data array
               call lsyssc_getbase_double (rd%RvectorBlock(iblock),p_Dvector)
-              
+
               ! and multiply all entries with the inverse of the diagonal
               ! of the matrix.
               if(dlocOmega .eq. 1.0_DP) then
@@ -4401,15 +4413,15 @@ contains
                   p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq))
                 end do
               end if
-              
+
             case (ST_SINGLE)
               ! Get the data array
               call lsyssc_getbase_single (rd%RvectorBlock(iblock),p_Fvector)
-              
+
               ! Multiplication with Omega can be speeded up as we use
               ! sigle-precision only.
               flocOmega = real(dlocOmega,SP)
-              
+
               ! and multiply all entries with the inverse of the diagonal
               ! of the matrix.
               if(flocOmega .eq. 1.0_SP) then
@@ -4433,15 +4445,15 @@ contains
                               OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
             call sys_halt()
           end select
-        
+
         case default
           call output_line ('Unsupported matrix format.', &
                             OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
           call sys_halt()
         end select
-        
+
       end do
-  
+
   end subroutine
 
 ! *****************************************************************************
@@ -4449,9 +4461,9 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initSOR (p_rsolverNode, drelax)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the SOR solver. The node
   ! can be used to directly solve a problem or to be attached as solver
@@ -4465,55 +4477,55 @@ contains
   ! For drelax = 1.0_DP this SOR solver is identical to the Gauss-Seidel
   ! algorithm.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: Relaxation parameter. If not given, 1.0 is used.
   real(DP), intent(in), optional :: drelax
 
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_SOR
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
                                 LINSOL_ABIL_DIRECT
 
     ! Allocate the subnode for SOR.
     allocate(p_rsolverNode%p_rsubnodeSOR)
-    
+
     ! Save the relaxation parameter.
     p_rsolverNode%p_rsubnodeSOR%drelax = 1.0_DP
     if (present(drelax)) then
       p_rsolverNode%p_rsubnodeSOR%drelax = drelax
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatSOR (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -4522,7 +4534,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -4533,7 +4545,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,n
@@ -4541,93 +4553,93 @@ contains
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! Get the index of the top-level matrix
     n = ubound(Rmatrices,1)
-    
+
     ! Let us make sure the matrix is not rectangular.
     if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
-      
+
       ! Rectangular block matrix
       ccompatible = LINSOL_COMP_ERRMATRECT
-      
+
     else
-    
+
       ! Okay, let us loop through all main diagonal blocks.
       do i = 1, Rmatrices(n)%nblocksPerRow
-      
+
         ! Get the diagonal block
         p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
-        
+
         ! Is the matrix empty?
         if(p_rblock%NEQ .eq. 0) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! Is the scaling factor zero?
         if(p_rblock%dscaleFactor .eq. 0.0_DP) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! What about the matrix type?
         if(p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) then
           ! Matrix type not supported
           ccompatible = LINSOL_COMP_ERRMATTYPE
           exit
         end if
-        
+
         ! Is the matrix transposed?
         if (iand(p_rblock%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
           ! Matrix mus not be transposed.
           ccompatible = LINSOL_COMP_ERRTRANSPOSED
           exit
         end if
-        
+
         ! This block is okay, continue with next one
-      
+
       end do
-    
+
     end if
-        
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneSOR (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the SOR solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of SOR which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     deallocate(rsolverNode%p_rsubnodeSOR)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_precSOR (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the SOR preconditioner onto the defect vector rd by solving
   ! <tex> $$ x = omega * relax * (D + relax * L)^{-1} * d $$ </tex>
@@ -4638,7 +4650,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the SOR solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
@@ -4647,47 +4659,47 @@ contains
   ! On exit: The preconditioned defect vector x.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: iblock,jblock
-  
+
   type (t_matrixScalar), pointer :: p_rmatrix
   real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
   integer, dimension(:), pointer :: p_Kcol
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kdiagonal
   real(DP) :: domega, drelax
-  
+
     ! Status reset
     rsolverNode%iresult = 0
 
     ! Okay, get omega and the relaxation parameter
     domega = rsolverNode%domega
     drelax = rsolverNode%p_rsubnodeSOR%drelax
-   
+
     ! Loop through all block rows.
     do iblock = 1, rd%nblocks
-    
+
       ! Loop through all blocks in the lower triangular block matrix.
       do jblock = 1, iblock-1
-      
+
         ! Get the matrix
         p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,jblock)
-        
+
         ! Is it empty?
         if(p_rmatrix%NEQ .eq. 0) cycle
-        
+
         ! Otherwise update the defect.
         call lsyssc_scalarMatVec(p_rmatrix, rd%RvectorBlock(jblock), &
                     rd%RvectorBlock(iblock), drelax, 1.0_DP)
-        
+
       end do
-    
+
       ! Get the main diagonal matrix
       p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
-      
+
       ! Now we have to make some decisions. At first, which matrix
       ! structure do we have?
       select case (p_rmatrix%cmatrixFormat)
@@ -4696,80 +4708,80 @@ contains
         call lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiagonal)
         call lsyssc_getbase_Kcol(p_rmatrix,p_Kcol)
         call lsyssc_getbase_Kld(p_rmatrix,p_Kld)
-      
+
         ! Now, which data format do we have? Single or double?
         select case (p_rmatrix%cdataType)
         case (ST_DOUBLE)
           ! Get the matrix data arrays
           call lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
-          
+
           ! Take care of the accuracy of the vector
           select case (rd%RvectorBlock(iblock)%cdataType)
           case (ST_DOUBLE)
             ! Get the data array
             call lsyssc_getbase_double (rd%RvectorBlock(iblock),p_Dvector)
-            
+
             ! Call the SOR subroutine (see below), do the work.
             call performSOR9_dd (p_Dmatrix,p_Kcol,p_Kld,p_Kdiagonal,&
                 domega,drelax,p_Dvector,p_rmatrix%dscaleFactor)
-            
+
           case default
             call output_line ('Unsupported vector precision.', &
                               OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
             call sys_halt()
           end select
-          
+
         case default
           call output_line ('Unsupported matrix precision.', &
                             OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
           call sys_halt()
         end select
-      
+
       case default
         call output_line ('Unsupported matrix format.', &
                           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
         call sys_halt()
       end select
-      
+
     end do
-    
+
   contains
-  
+
     !--------------------------------------------------------------------------
     ! Auxiliary routine: SOR
     ! Matrix format 9, double precision matrix, double precision vector
-    
+
     subroutine performSOR9_dd (DA,Kcol,Kld,Kdiagonal,domega,drelax,Dx,dscale)
-    
+
     ! input: Matrix array
     real(DP), dimension(:), intent(in) :: DA
-    
+
     ! input: column structure
     integer, dimension(:), intent(in) :: Kcol
-    
+
     ! input: row structure
     integer, dimension(:), intent(in) :: Kld
-    
+
     ! input: position of diagonal entries in the matrix
     integer, dimension(:), intent(in) :: Kdiagonal
-    
+
     ! input: Damping parameter; standard value is 1.0.
     real(DP), intent(in) :: domega
-    
+
     ! input: Relaxation parameter;
     real(DP), intent(in) :: drelax
-    
+
     ! Scaling factor of the matrix; usually = 1.0
     real(DP), intent(in) :: dscale
-    
+
     ! input: vector to be preconditioned.
     ! output: preconditioned vector
     real(DP), dimension(:), intent(inout) :: Dx
-    
+
     ! local variables
     integer :: i,j,k
     real(DP) :: daux,dalpha
-      
+
       ! We want to perform the following preconditioning step:
       !
       !    1/relax * (D + relax * L) * x = d
@@ -4792,35 +4804,35 @@ contains
       ! Additionally, we have to scale the resulting vector by the damping
       ! factor omega. Also do not forget that the a_ij must be scaled by the
       ! matrix` scaling factor.
-      
+
       ! Take care of the damping parameter omega and the scaling factor of
       ! the matrix. We will precalculate an auxiliary scalar alpha that will
       ! be multiplied by d_i in each step - this will do the job.
       dalpha = domega / dscale
-      
+
       ! Loop through all matrix rows
       do i = 1, size(Kld)-1
-        
+
         ! Get the index of the main diagonal entry a_ii
         k = Kdiagonal(i)
-        
+
         ! Loop through the lower triangular row part of A
         daux = 0.0_DP
         do j = Kld(i), k-1
           daux = daux + DA(j)*Dx(Kcol(j))
         end do
-        
+
         ! Calculate x_i
         Dx(i) = drelax*(dalpha*Dx(i) - daux) / DA(k)
-        
+
         ! Remark:
         ! When setting Dx(i) in the line above, daux must NOT be
         ! scaled by domega as one might possibly suggest!
-        
+
       end do
- 
+
     end subroutine
-  
+
   end subroutine
 
 ! *****************************************************************************
@@ -4828,16 +4840,16 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initSSOR (p_rsolverNode, drelax, bscale)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the SSOR solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: Relaxation parameter. If not given, 1.0 is used.
   real(DP), intent(in), optional :: drelax
@@ -4848,51 +4860,51 @@ contains
   ! implementation of SSOR in FEAT.
   logical, intent(in), optional :: bscale
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_SSOR
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
                                 LINSOL_ABIL_DIRECT
-  
+
     ! Allocate the subnode for SSOR.
     allocate(p_rsolverNode%p_rsubnodeSSOR)
-    
+
     ! Save relaxation parameter
     p_rsolverNode%p_rsubnodeSSOR%drelax = 1.0_DP
     if (present(drelax)) p_rsolverNode%p_rsubnodeSSOR%drelax = drelax
-    
+
     ! Save whether the solution should be scaled or not.
     p_rsolverNode%p_rsubnodeSSOR%bscale = .false.
     if (present(bscale)) p_rsolverNode%p_rsubnodeSSOR%bscale = bscale
-  
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatSSOR (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -4901,18 +4913,18 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   integer, intent(out) :: ccompatible
-  
+
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,n
@@ -4920,93 +4932,93 @@ contains
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! Get the index of the top-level matrix
     n = ubound(Rmatrices,1)
-    
+
     ! Let us make sure the matrix is not rectangular.
     if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
-      
+
       ! Rectangular block matrix
       ccompatible = LINSOL_COMP_ERRMATRECT
-      
+
     else
-    
+
       ! Okay, let us loop through all main diagonal blocks.
       do i = 1, Rmatrices(n)%nblocksPerRow
-      
+
         ! Get the diagonal block
         p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
-        
+
         ! Is the matrix empty?
         if(p_rblock%NEQ .eq. 0) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! Is the scaling factor zero?
         if(p_rblock%dscaleFactor .eq. 0.0_DP) then
           ! Zero pivot
           ccompatible = LINSOL_COMP_ERRZEROPIVOT
           exit
         end if
-        
+
         ! What about the matrix type?
         if(p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) then
           ! Matrix type not supported
           ccompatible = LINSOL_COMP_ERRMATTYPE
           exit
         end if
-        
+
         ! Is the matrix transposed?
         if (iand(p_rblock%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
           ! Matrix mus not be transposed.
           ccompatible = LINSOL_COMP_ERRTRANSPOSED
           exit
         end if
-        
+
         ! This block is okay, continue with next one
-      
+
       end do
-    
+
     end if
-        
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneSSOR (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the SSOR solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of SSOR which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     deallocate(rsolverNode%p_rsubnodeSSOR)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_precSSOR (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the SSOR preconditioner onto the defect vector rd by solving
   ! <tex> $$ (D + relax * L) * D^{-1} * (D + relax * U) x = d.$$ </tex>
@@ -5017,7 +5029,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the SSOR solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
@@ -5026,35 +5038,35 @@ contains
   ! On exit: The preconditioned defect vector x.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: iblock
   logical :: bscale
-  
+
   type (t_matrixScalar), pointer :: p_rmatrix
   real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
   integer, dimension(:), pointer :: p_Kcol
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kdiagonal
   real(DP) :: domega, drelax
-    
+
     ! Status reset
     rsolverNode%iresult = 0
 
     ! Get bscale from the solver structure
     bscale = rsolverNode%p_rsubnodeSSOR%bscale
-    
+
     ! And get the damping and relaxation parameters
     domega = rsolverNode%domega
     drelax = rsolverNode%p_rsubnodeSSOR%drelax
-    
+
     ! Loop through all diagonal blocks.
     do iblock = 1,rd%nblocks
       ! Get the matrix
       p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
-      
+
       ! Now we have to make some decisions. At first, which matrix
       ! structure do we have?
       select case (p_rmatrix%cmatrixFormat)
@@ -5063,86 +5075,86 @@ contains
         call lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiagonal)
         call lsyssc_getbase_Kcol(p_rmatrix,p_Kcol)
         call lsyssc_getbase_Kld(p_rmatrix,p_Kld)
-      
+
         ! Now, which data format do we have? Single or double?
         select case (p_rmatrix%cdataType)
         case (ST_DOUBLE)
           ! Get the matrix data arrays
           call lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
-          
+
           ! Take care of the accuracy of the vector
           select case (rd%RvectorBlock(iblock)%cdataType)
           case (ST_DOUBLE)
             ! Get the data array
             call lsyssc_getbase_double (rd%RvectorBlock(iblock),p_Dvector)
-            
+
             ! Call the SSOR subroutine (see below), do the work.
             call performSSOR9_dd (p_Dmatrix, p_Kcol, p_Kld, &
                 p_Kdiagonal, domega, drelax, bscale, p_Dvector, &
                 p_rmatrix%dscaleFactor)
-            
+
           case default
             call output_line ('Unsupported vector precision.', &
                               OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
             call sys_halt()
           end select
-          
+
         case default
           call output_line ('Unsupported matrix precision.', &
                             OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
           call sys_halt()
         end select
-      
+
       case default
         call output_line ('Unsupported matrix format.', &
                           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
         call sys_halt()
       end select
-      
+
     end do
-    
+
   contains
-  
+
     !--------------------------------------------------------------------------
     ! Auxiliary routine: SSOR
     ! Matrix format 9, double precision matrix, double precision vector
-    
+
     subroutine performSSOR9_dd (DA,Kcol,Kld,Kdiagonal,domega,&
                                 drelax,bscale,Dx,dscale)
-    
+
     ! input: Matrix array
     real(DP), dimension(:), intent(in) :: DA
-    
+
     ! input: column structure
     integer, dimension(:), intent(in) :: Kcol
-    
+
     ! input: row structure
     integer, dimension(:), intent(in) :: Kld
-    
+
     ! input: position of diagonal entries in the matrix
     integer, dimension(:), intent(in) :: Kdiagonal
-    
+
     ! input: Damping parameter; standard value is 1.0
     real(DP), intent(in) :: domega
-    
+
     ! input: Relaxation parameter
     real(DP), intent(in) :: drelax
 
     ! input: Scaling factor of the matrix; usually = 1.0
     real(DP), intent(in) :: dscale
-    
+
     ! input: Whether the solution should be scaled as suggested in
     ! the literature
     logical, intent(in) :: bscale
-    
+
     ! input: vector to be preconditioned.
     ! output: preconditioned vector
     real(DP), dimension(:), intent(inout) :: Dx
-    
+
     ! local variables
     integer :: i,j,k,n
     real(DP) :: daux,dalpha,dtheta
-      
+
       ! Get the size of the system
       n = size(Kld)-1
 
@@ -5186,13 +5198,13 @@ contains
       ! Remark:
       ! Actually we are going to overwrite the defect vector d by our
       ! auxiliary vector y in-situ.
-      
+
       ! Take care of the scaling factor of the matrix:
       dalpha = 1.0_DP / dscale
-      
+
       ! Forward insertion
       do i = 1, n
-        
+
         ! Get the index of the main diagonal entry a_ii
         k = Kdiagonal(i)
 
@@ -5204,9 +5216,9 @@ contains
 
         ! Calculate y_i
         Dx(i) = (dalpha*Dx(i) - drelax*daux) / DA(k)
-        
+
       end do
-      
+
       ! What we now have to solve is the following system to get another
       ! (auxiliary) vector z:
       !
@@ -5262,8 +5274,8 @@ contains
       !                                    j=i+1
       !
       ! Now that is it - x is our final preconditioned defect.
-      
-      
+
+
       ! Okay, so let us calculate theta:
       if(bscale) then
         ! Scaled as suggested in literature.
@@ -5277,30 +5289,30 @@ contains
 
         ! Get the index of the main diagonal entry a_ii
         k = Kdiagonal(i)
-        
+
         ! Loop through the upper triangular row part of A
         daux = 0.0_DP
         do j = Kld(i+1)-1, k+1, -1
           daux = daux + DA(j)*Dx(Kcol(j))
         end do
-        
+
         ! And calculate the final x_i
         Dx(i) = dtheta*Dx(i) - drelax*(daux / DA(k))
-      
+
       end do
-      
+
     end subroutine
-  
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the VANKA CC2D/CC3D solver
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initVANKA (p_rsolverNode,domega,csubtypeVANKA)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the VANKA solver. The node
   ! can be used to directly solve a problem or to be attached as solver
@@ -5318,63 +5330,63 @@ contains
   ! is used when solving the system with this special subtype, as each subtype
   ! implements a hardwired processing of matrix/vector data!
 !</description>
-  
+
 !<input>
   ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
   real(DP), optional :: domega
-  
+
   ! OPTIONAL: VANKA subtype.
   ! If not present, the standard VANKA solver is used.
   ! If present, this is one of the LINSOL_VANKA_xxxx flags that indicate a
   ! special VANKA variant for higher performance.
   integer, intent(in), optional       :: csubtypeVANKA
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_VANKA
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
                                 LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for VANKA.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeVANKA)
-    
+
     ! Initialise the VANKA subtype.
     p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = LINSOL_VANKA_GENERAL
     if (present(csubtypeVANKA)) then
       p_rsolverNode%p_rsubnodeVANKA%csubtypeVANKA = csubtypeVANKA
     end if
-    
+
     if (present(domega)) p_rsolverNode%domega = domega
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_alterVANKA (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the VANKA solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -5388,34 +5400,34 @@ contains
 
     ! Check the command.
     if (ralterConfig%ccommand .eq. LINSOL_ALTER_CHANGEVANKA) then
-    
+
       ! That is a command to all VANKA solvers. Are we meant?
       ! Check Iconfig(1) which specifies the VANKA subsolver group
       ! to be changed.
       if (ralterConfig%Iconfig(1) .eq. rsolverNode%p_rsubnodeVANKA%rvanka%csubtype) then
-      
+
         ! Oops, we are meant. Set the VANKA variant as specified in Iconfig(2).
         rsolverNode%p_rsubnodeVANKA%rvanka%csubtype = ralterConfig%Iconfig(2)
-      
+
       end if
-    
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatVANKA (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -5424,7 +5436,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in),target   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -5435,7 +5447,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   integer :: iblock,jblock
@@ -5443,15 +5455,15 @@ contains
 
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! VANKA is a bit tricky. Loop through all scalar submatrices and
     ! check them. The VANKA subtype decides on whether it can use that or not!
-    
+
     p_rmat => Rmatrices(ubound(Rmatrices,1))
     ! VANKA subtype?
     select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
     case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
-      
+
       ! Check all sub-matrices
       do jblock = 1,p_rmat%nblocksPerRow
         do iblock = 1,p_rmat%nblocksPerCol
@@ -5487,7 +5499,7 @@ contains
             LSYSSC_MSPEC_TRANSPOSED) .eq. 0)) then
         ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
       end if
-    
+
     !  ---------------- NEW IMPLEMENTATION ----------------
 
     case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL)
@@ -5507,38 +5519,38 @@ contains
             LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
         ccompatible = LINSOL_COMP_ERRTRANSPOSED
       end if
-      
+
     end select
-    
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initStructureVANKA (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Memory allocation for the VANKA solver.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -5567,7 +5579,7 @@ contains
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureVANKA')
       call sys_halt()
     end if
-    
+
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
@@ -5576,19 +5588,19 @@ contains
     call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeVANKA%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
-        
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initDataVANKA (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs final preparation of the VANKA solver subtype.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
@@ -5600,8 +5612,8 @@ contains
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
-  
+
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -5630,7 +5642,7 @@ contains
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataVANKA')
       call sys_halt()
     end if
-    
+
     ! Which VANKA solver do we actually have?
     select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
     case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
@@ -5638,7 +5650,7 @@ contains
       call vanka_initConformal(rsolverNode%rsystemMatrix,&
                               rsolverNode%p_rsubnodeVANKA%rvanka,&
                               VANKAPC_GENERAL,VANKATP_STANDARD)
-                               
+
     case (LINSOL_VANKA_2DNAVST  , LINSOL_VANKA_2DNAVSTDIRECT  )
       ! Diagonal-type VANKA for Navier-Stokes
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
@@ -5650,7 +5662,7 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_2DNAVIERSTOKES,VANKATP_DIAGONAL_SOLBASED)
-                                
+
     case (LINSOL_VANKA_2DFNAVST , LINSOL_VANKA_2DFNAVSTDIRECT )
       ! Full VANKA for Navier-Stokes
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
@@ -5674,15 +5686,15 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_3DNAVIERSTOKES,VANKATP_DIAGONAL)
-                                
+
     case (LINSOL_VANKA_3DFNAVST , LINSOL_VANKA_3DFNAVSTDIRECT )
       ! Full VANKA for Navier-Stokes
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_3DNAVIERSTOKES,VANKATP_FULL)
-    
+
     ! ------------------------- NEW IMPLEMENTATIONS -------------------------
-                               
+
     case (LINSOL_VANKA_NAVST2D_DIAG)
       ! Diagonal-type VANKA for Navier-Stokes
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
@@ -5700,7 +5712,7 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_DIAG)
-                               
+
     case (LINSOL_VANKA_BOUSS2D_FULL)
       ! Full VANKA for Boussinesq
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
@@ -5720,25 +5732,25 @@ contains
                                 VANKAPC_NAVIERSTOKESOPTC2D,VANKATP_NAVSTOPTC2D_FULL)
 
     end select
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneDataVANKA (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Releases temporary memory of the VANKA solver allocated in
   ! linsol_initDataVANKA
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -5753,7 +5765,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -5761,28 +5773,28 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release VANKA.
     call vanka_doneConformal (rsolverNode%p_rsubnodeVANKA%rvanka)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneStructureVANKA (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Releases temporary memory of the VANKA solver allocated in
   ! linsol_initStrutureVANKA.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -5797,7 +5809,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -5805,35 +5817,35 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the temp vector and associated data if associated
     if (rsolverNode%p_rsubnodeVANKA%rtempVector%NEQ .ne. 0) then
       call lsysbl_releaseVector(rsolverNode%p_rsubnodeVANKA%rtempVector)
     end if
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneVANKA (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the VANKA solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of VANKA which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   integer :: isubgroup
-  
+
     ! The done routine always releases everything.
     isubgroup = rsolverNode%isolverSubgroup
 
@@ -5841,15 +5853,15 @@ contains
     call linsol_doneDataVANKA (rsolverNode, isubgroup)
 
     deallocate(rsolverNode%p_rsubnodeVANKA)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_precVANKA (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the VANKA preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -5860,7 +5872,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
@@ -5869,7 +5881,7 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5886,7 +5898,7 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
@@ -5894,7 +5906,7 @@ contains
 
     ! Damping parameter
     domega = rsolverNode%domega
-    
+
     ! Get our temporary vector.
     p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
 
@@ -5902,35 +5914,35 @@ contains
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vector.
     call lsysbl_assignDiscrIndirect (rd,p_rvector)
-  
+
     ! Clear our solution vector
     call lsysbl_clearVector (p_rvector)
-    
+
     ! Execute VANKA
     call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
         p_rvector, rd, domega)
 
     ! Copy the solution vector to rd - it is our preconditioned defect now.
     call lsysbl_copyVector (p_rvector,rd)
-  
+
   end subroutine
 
-  
+
 ! *****************************************************************************
 ! Routines for the SP-SOR solver
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initSPSOR (p_rsolverNode, csubtype, domega)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the SP-SOR solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! SP-SOR subtype. One of the LINSOL_SPSOR_XXXX constants
   integer, intent(in) :: csubtype
@@ -5938,49 +5950,49 @@ contains
   ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
   real(DP), optional :: domega
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
-  
+
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_SPSOR
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_BLOCK + LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for SP-SOR.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeSPSOR)
-    
+
     ! Store the subtype.
     p_rsolverNode%p_rsubnodeSPSOR%csubtype = csubtype
-    
+
     if (present(domega)) p_rsolverNode%domega = domega
-  
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatSPSOR (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in):: rsolverNode
@@ -5989,7 +6001,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), target, intent(in) :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -6000,7 +6012,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
 !  integer :: iblock,jblock
@@ -6008,7 +6020,7 @@ contains
 
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
-    
+
 !    ! VANKA is a bit tricky. Loop through all scalar submatrices and
 !    ! check them. The VANKA subtype decides on whether it can use that or not!
 !
@@ -6078,36 +6090,36 @@ contains
 !      end if
 !
 !    end select
-    
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initStructureSPSOR (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Memory allocation for the SP-SOR solver.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the SP-SOR solver
   type(t_linsolNode), target, intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6136,11 +6148,11 @@ contains
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
       call sys_halt()
     end if
-    
+
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! And set up the SP-SOR structure
     select case(rsolverNode%p_rsubnodeSPSOR%csubtype)
     case (LINSOL_SPSOR_NAVST2D)
@@ -6152,25 +6164,25 @@ contains
       ! diagonal SP-SOR for 2D Navier-Stokes systems
       call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
                              rsolverNode%rsystemMatrix, SPSOR_FLAG_DIAG)
-    
+
     case default
       call output_line ('Invalid SP-SOR subtype!', &
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
       call sys_halt()
     end select
-        
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initDataSPSOR (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs final preparation of the SP-SOR solver subtype.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the SP-SOR solver
   type(t_linsolNode), target, intent(inout) :: rsolverNode
@@ -6182,8 +6194,8 @@ contains
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
-  
+
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6212,28 +6224,28 @@ contains
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataVANKA')
       call sys_halt()
     end if
-    
+
     ! Initialise the SP-SOR data
     call spsor_initData(rsolverNode%p_rsubnodeSPSOR%rdata)
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneStructureSPSOR (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Releases temporary memory of the SP-SOR solver allocated in
   ! linsol_initStrutureSPSOR.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the SP-SOR solver
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6248,7 +6260,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -6256,33 +6268,33 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the SP-SOR data structure
     call spsor_done(rsolverNode%p_rsubnodeSPSOR%rdata)
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneSPSOR (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the SP-SOR solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of SP-SOR which is to be cleaned up.
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   integer :: isubgroup
-  
+
     ! The done routine always releases everything.
     isubgroup = rsolverNode%isolverSubgroup
 
@@ -6290,15 +6302,15 @@ contains
     call linsol_doneStructureSPSOR (rsolverNode, isubgroup)
 
     deallocate(rsolverNode%p_rsubnodeSPSOR)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_precSPSOR (rsolverNode,rd)
-  
+
 !<description>
   ! Applies the SP-SOR preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -6309,7 +6321,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
@@ -6318,7 +6330,7 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Status reset
@@ -6327,78 +6339,78 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (rsolverNode%rsystemMatrix%NEQ .eq. 0) .or. &
         (rsolverNode%rsystemMatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
-      
+
     end if
 
     ! Call precond-routine of SP-SOR
     call spsor_precond(rsolverNode%p_rsubnodeSPSOR%rdata, rd, &
                        rsolverNode%domega)
-  
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the UMFPACK4 solver
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initUMFPACK4 (rsolverNode)
-  
+
 !<description>
-  
+
   ! Creates a t_linsolNode solver structure for the UMFPACK4 solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
-  
+
 !</description>
-  
+
 !<output>
-  
+
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: rsolverNode
-   
+
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(rsolverNode)
-    
+
     ! Initialise the type of the solver
     rsolverNode%calgorithm = LINSOL_ALG_UMFPACK4
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for UMFPACK4.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(rsolverNode%p_rsubnodeUMFPACK4)
-    
+
     ! Initialise the UMFPACK4 control structure:
     call UMF4DEF(rsolverNode%p_rsubnodeUMFPACK4%Dcontrol)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -6407,7 +6419,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -6418,7 +6430,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix.
@@ -6430,29 +6442,29 @@ contains
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initStructureUMFPACK4 (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs a symbolic factorisation on the assigned matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6480,7 +6492,7 @@ contains
     ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
     ! of a call to the solver routines.
     real(DP), dimension(90) :: Dinfo
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -6494,7 +6506,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureUMFPACK4')
       call sys_halt()
     end if
-    
+
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
@@ -6506,12 +6518,12 @@ contains
       call glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
                                  .true.,.true.)
       p_rmatrix => rmatrixLocal%RmatrixBlock(1,1)
-      
+
       ! We can now modify p_rmatrix without harming the original matrix,
       ! so set the dup-flag for the copy command to rtempMatrix below
       ! to LSYSSC_DUP_SHARE.
       idupFlag = LSYSSC_DUP_SHARE
-    
+
     else
       p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
 
@@ -6536,7 +6548,7 @@ contains
       ! This means: Convert the structure-7 matrix to a structure-9 matrix:
       call lsyssc_convertMatrix (rtempMatrix,LSYSSC_MATRIX9)
     end select
-    
+
     if (p_rmatrix%cdataType .ne. ST_DOUBLE) then
       call output_line ('UMFPACK can only handle double precision matrices!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureUMFPACK4')
@@ -6546,14 +6558,14 @@ contains
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
     call lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
     call lsyssc_addIndex (rtempMatrix%h_Kld,-1)
-    
+
     ! Get the data arrays.
     call lsyssc_getbase_double (rtempMatrix,p_DA)
 
     ! Fill the matrix content by 1.0. That way, UMFPACK will treat
     ! all entries as nonzero.
     call lalg_setVectorDble (p_Da,1.0_DP)
-    
+
     ! Currently, we support only 32 bit integers in UMFPACK;
     ! if necessary, convert!
 !    if (KIND(0) .ne. KIND(0_I32)) then
@@ -6571,14 +6583,14 @@ contains
 !    else
       call storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
       call storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
-      
+
       ! Perform a symbolic factorization...
       call UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld,p_Kcol,p_Da, &
                   rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
                   rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
                   Dinfo)
 !    end if
-                 
+
     ! Check Dinfo(1) if there is an error
     select case (int(Dinfo(1)))
     case (0)
@@ -6600,24 +6612,24 @@ contains
         (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
       call lsysbl_releaseMatrix (rmatrixLocal)
     end if
-    
+
     ! Allocate a temporary vector
     call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initDataUMFPACK4 (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs a numeric factorisation on the assigned matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
@@ -6629,8 +6641,8 @@ contains
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
-  
+
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6659,7 +6671,7 @@ contains
   ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
   ! of a call to the solver routines.
   real(DP), dimension(90) :: Dinfo
-  
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -6668,17 +6680,17 @@ contains
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
 
     ! Stop if there is no matrix assigned
-    
+
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
       call output_line ('No matrix associated!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataUMFPACK4')
       call sys_halt()
     end if
-    
+
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Check out that we can handle the matrix.
     if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
         (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
@@ -6718,7 +6730,7 @@ contains
       ! This means: Convert the structure-7 matrix to a structure-9 matrix:
       call lsyssc_convertMatrix (p_rmatrix,LSYSSC_MATRIX9)
     end select
-    
+
     if (rtempMatrix%dscaleFactor .ne. 1.0_DP) then
       ! The matrix entries have been duplicated above in this case, so we are
       ! allowed to change the entries of rtempMatrix without changing the
@@ -6733,10 +6745,10 @@ contains
         call output_line ('Writing matrix to a text file.',&
             OU_CLASS_WARNING,OU_MODE_STD,'linsol_initDataUMFPACK4')
       end if
-      
+
       call lsyssc_getbase_double (rtempMatrix,p_DA)
       where (abs(p_Da) .lt. 1.0E-12_DP) p_Da = 0.0_DP
-      
+
       ! Matrix name
       smatrixname = rsolverNode%p_rsubnodeUMFPACK4%smatrixName
 
@@ -6746,7 +6758,7 @@ contains
           trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
           ".txt"
       end if
-      
+
       select case (rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput)
       case (2)
         call matio_writeMatrixMaple (p_rmatrix, &
@@ -6760,17 +6772,17 @@ contains
             trim(rsolverNode%p_rsubnodeUMFPACK4%saccuracy))
       end select
     end if
-    
+
     ! DEBUG!!!
     !CALL sys_halt()
 
     ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
     call lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
     call lsyssc_addIndex (rtempMatrix%h_Kld,-1)
-    
+
     ! Get the data arrays.
     call lsyssc_getbase_double (rtempMatrix,p_DA)
-    
+
     ! Currently, we support only 32 bit integers in UMFPACK;
     ! if necessary, convert!
 !    if (KIND(0) .ne. KIND(0_I32)) then
@@ -6789,7 +6801,7 @@ contains
 !    else
       call storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
       call storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
-      
+
       ! Perform a numeric factorization...
       call UMF4NUM(p_Kld,p_Kcol,p_Da, &
               rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
@@ -6797,7 +6809,7 @@ contains
               rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
               Dinfo)
 !    end if
-            
+
     ! Check Dinfo(1) if there is an error
     select case (int(Dinfo(1)))
     case (0)
@@ -6822,24 +6834,24 @@ contains
         (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
       call lsysbl_releaseMatrix (rmatrixLocal)
     end if
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneDataUMFPACK4 (rsolverNode,isolverSubgroup)
-  
+
 !<description>
   ! Releases the memory of the numeric factorisation of the given matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6854,7 +6866,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -6862,30 +6874,30 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the numerical factorisation if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%inumeric .ne. 0) then
       call UMF4FNUM(rsolverNode%p_rsubnodeUMFPACK4%inumeric)
       rsolverNode%p_rsubnodeUMFPACK4%inumeric = 0
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneStructureUMFPACK4 (rsolverNode, isolverSUbgroup)
-  
+
 !<description>
   ! Releases the memory of the numeric factorisation of the given matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -6900,7 +6912,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -6908,58 +6920,58 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the symbolical factorisation if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%isymbolic .ne. 0) then
       call UMF4FSYM(rsolverNode%p_rsubnodeUMFPACK4%isymbolic)
       rsolverNode%p_rsubnodeUMFPACK4%isymbolic = 0
     end if
-    
+
     ! Release the temp vector if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%rtempVector%NEQ .ne. 0) then
       call lsysbl_releaseVector(rsolverNode%p_rsubnodeUMFPACK4%rtempVector)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneUMFPACK4 (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the UMFPACK4 solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   integer :: isubgroup
-  
+
     ! The done routine always releases everything.
     isubgroup = rsolverNode%isolverSubgroup
 
     ! Release symbolical and numerical factorisation if still associated...
     call linsol_doneDataUMFPACK4 (rsolverNode, isubgroup)
     call linsol_doneStructureUMFPACK4 (rsolverNode, isubgroup)
-    
+
     deallocate(rsolverNode%p_rsubnodeUMFPACK4)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_precUMFPACK4 (rsolverNode,rd)
-  
+
 !<description>
   ! Applies UMFPACK preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -6970,7 +6982,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
@@ -6979,9 +6991,9 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
- 
+
   ! local variables
   integer :: KSYS
   real(DP) :: dres
@@ -6992,7 +7004,7 @@ contains
   ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
   ! of a call to the solver routines.
   real(DP), dimension(90) :: Dinfo
-  
+
     ! Check that our RHS db is double precision - UMFPACK supports only
     ! this.
     if (rd%cdataType .ne. ST_DOUBLE) then
@@ -7003,16 +7015,16 @@ contains
 
     ! Status reset
     rsolverNode%iresult = 0
-    
+
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
     p_rb   => p_rsubnode%rtempVector
-    
+
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     call lsysbl_assignDiscrIndirect (rd,p_rb)
-    
+
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
     call lsysbl_copyVector (rd,p_rb)
@@ -7036,7 +7048,7 @@ contains
     KSYS = 1
     call UMF4SOL(KSYS,p_Dx,p_Db,rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
                  rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,Dinfo)
-                
+
     if (rsolverNode%ioutputLevel .ge. 1) then
       dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
       if (.not.((dres .ge. 1E-99_DP) .and. &
@@ -7045,46 +7057,46 @@ contains
       call output_line ('UMFPACK: !!solution!!    = '//trim(sys_sdEL(dres,15))//&
           ' Status = '//trim(sys_siL(int(Dinfo(1)),10)) )
     end if
-                
+
     ! Check the solver status
     select case (int(Dinfo(1)))
     case (0)
       ! Everything ok.
       rsolverNode%iiterations = 1
       rsolverNode%dconvergenceRate = 0.0_DP
-      
+
       ! Just for algorithms that check the residuum, set the
       ! initial/final residuum values to valid values.
       rsolverNode%dinitialDefect = 1.0_DP
       rsolverNode%dlastDefect = 1.0_DP
       rsolverNode%dfinalDefect = 0.0_DP
-      
+
       ! Scale defect by omega
       call lsysbl_scaleVector(rd, rsolverNode%domega)
-      
+
     case default
       ! We had an error. Do not know which one.
       rsolverNode%iresult = -1
     end select
-  
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the ILU(0) solver
 ! *****************************************************************************
 ! This is a 1-step solver usually used for preconditioning: x_1 = C^-1 x_0.
 
 !<subroutine>
-  
+
   subroutine linsol_initILU0 (rsolverNode)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the ILU(0) solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
@@ -7095,40 +7107,40 @@ contains
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(rsolverNode)
-    
+
     ! Normally this solver iterates only once (used e.g. in a preconditioner).
     ! This is the default value. The application can set it higher to
     ! apply it multiple times.
     rsolverNode%nminIterations = 1
     rsolverNode%nmaxIterations = 1
-    
+
     ! Initialise the type of the solver
     rsolverNode%calgorithm = LINSOL_ALG_ILU0
-    
+
     ! Initialise the ability bitfield with the ability of this solver.
     rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK &
                             + LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for ILU(0).
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(rsolverNode%p_rsubnodeILU0)
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatILU0 (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -7137,7 +7149,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -7148,7 +7160,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix.
@@ -7158,27 +7170,27 @@ contains
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureILU0 (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -7200,7 +7212,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -7210,52 +7222,52 @@ contains
 
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Okay, are we talking about a scalar matrix here?
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
-      
+
       ! The system matrix is a scalar matrix - that's fine.
       ! In this case we just need to make a copy of the matrix
       ! structure.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeILU0%rmatLU, &
           LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
-    
+
     else
-    
+
       ! The system matrix is a non-scalar block matrix.
       ! In this case we'll assemble a global scalar matrix of it.
       call glsys_assembleGlobal(rsolverNode%rsystemMatrix, &
          rsolverNode%p_rsubnodeILU0%rmatLU, .true., .false.)
-      
+
     end if
-  
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initDataILU0 (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs a numeric factorisation on the assigned matrix, i.e.
   ! computes the ILU0 decomposition.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -7274,7 +7286,7 @@ contains
   real(DP), dimension(:), pointer :: p_DLU
   real(DP) :: dmult
   integer :: i,j,k,m,n,idx
-  
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -7289,112 +7301,112 @@ contains
     ! Okay, are we talking about a scalar matrix here?
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
-      
+
       ! The system matrix is a scalar matrix - that's fine.
       ! So let's copy the matrix content to our LU matrix.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeILU0%rmatLU, &
           !LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
           LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-          
+
         ! Note: Although we already share the structure of the system matrix,
         ! there is a bug in lsysbl_duplicateMatrix which throws away the
         ! old matrix structure if we specify LSYSSC_DUP_IGNORE for the
         ! structure :(
-    
+
     else
-    
+
       ! The system matrix is a non-scalar block matrix.
       ! In this case we'll assemble a global scalar matrix of it.
       call glsys_assembleGlobal (rsolverNode%rsystemMatrix, &
          rsolverNode%p_rsubnodeILU0%rmatLU, .false., .true.)
-    
+
     end if
-    
+
     ! Now let's fetch the matrix arrays
     call lsyssc_getbase_Kld(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kld)
     call lsyssc_getbase_Kcol(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kcol)
     call lsyssc_getbase_Kdiagonal(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kdiag)
     call lsyssc_getbase_double(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_DLU)
-    
+
     ! ---------- FACTORISATION CODE FOLLOWS ----------
     n = rsolverNode%p_rsubnodeILU0%rmatLU%NEQ
-    
+
     ! allocate an auxiliary array
     allocate(p_Iaux(n))
-    
+
     ! clear the auxiliary array
     call lalg_clearVectorInt(p_Iaux,n)
-    
+
     ! Loop over all rows of the matrix
     do k = 1, n
-    
+
       ! Set up the auxiliary array for this row
       do j = p_Kld(k), p_Kld(k+1)-1
         p_Iaux(p_Kcol(j)) = j
       end do ! j
-      
+
       ! Loop over row k of L
       do j = p_Kld(k), p_Kdiag(k)-1
-      
+
         ! Get the column index
         idx = p_Kcol(j)
-        
+
         ! Calculate L_kj := L_kj / U_jj
         p_DLU(j) = p_DLU(j) * p_DLU(p_Kdiag(idx))
         dmult = p_DLU(j)
-        
+
         do i = p_Kdiag(idx), p_Kld(idx+1)-1
           m = p_Iaux(p_Kcol(i))
           if(m .gt. 0) &
             p_DLU(m) = p_DLU(m) - dmult*p_DLU(i)
         end do ! i
-        
+
       end do ! j
-      
+
       ! Reset auxiliary array
       do j = p_Kld(k), p_Kld(k+1)-1
         p_Iaux(p_Kcol(j)) = 0
       end do ! j
-      
+
       ! Invert main diagonal entry (if possible)
       j = p_Kdiag(k)
       if(abs(p_DLU(j)) .lt. SYS_EPSREAL_DP) then
-        
+
         ! Oops... zero pivot
         ierror = LINSOL_ERR_SINGULAR
-        
+
         ! Exit the main loop
         exit
-        
+
       else
         p_DLU(j) = 1.0_DP / p_DLU(j)
       end if
-      
+
     end do ! k
-    
+
     ! release auxiliary array
     deallocate(p_Iaux)
-    
+
     ! That's it
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneStructureILU0 (rsolverNode,isolverSubgroup)
-  
+
 !<description>
   ! Releases the memory of the numeric factorisation of the given matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -7409,7 +7421,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -7417,50 +7429,50 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the ILU matrix.
     if(rsolverNode%p_rsubnodeILU0%rmatLU%NEQ .gt. 0) &
       call lsysbl_releaseMatrix(rsolverNode%p_rsubnodeILU0%rmatLU)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneILU0 (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of which is to be cleaned up.
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   integer :: isubgroup
-  
+
     ! The done-routine always releases everything.
     isubgroup = rsolverNode%isolverSubgroup
-    
+
     ! Release symbolical and numerical factorisation if still associated...
     call linsol_doneStructureILU0 (rsolverNode, isubgroup)
-    
+
     deallocate(rsolverNode%p_rsubnodeILU0)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_precILU0 (rsolverNode,rd)
-  
+
 !<description>
   ! Applies ILU(0) preconditioner <tex>$ LU \approx A $<tex> to the defect
   ! vector rd and solves <tex>$ LUd_{new} = d $<tex>.
@@ -7471,7 +7483,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the ILU(0) solver
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -7480,7 +7492,7 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout) :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7494,42 +7506,42 @@ contains
 
     ! Get the data array of the vector
     call lsysbl_getbase_double(rd, p_Dx)
-    
+
     ! Fetch the data arrays of the LU decompositon
     call lsyssc_getbase_Kld(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kld)
     call lsyssc_getbase_Kcol(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kcol)
     call lsyssc_getbase_Kdiagonal(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kdiag)
     call lsyssc_getbase_double(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_DLU)
-    
+
     ! Forward insertion
     do i = 2, rd%NEQ
-    
+
       dt = 0.0_DP
       do j = p_Kld(i), p_Kdiag(i)-1
         dt = dt + p_DLU(j)*p_Dx(p_Kcol(j))
       end do ! j
-      
+
       p_Dx(i) = p_Dx(i) - dt
-      
+
     end do ! i
-    
+
     ! Backward insertion
     do i = rd%NEQ, 1, -1
-      
+
       k = p_Kdiag(i)
-      
+
       dt = 0.0_DP
       do j = p_Kld(i+1)-1, k+1, -1
         dt = dt + p_DLU(j)*p_Dx(p_Kcol(j))
       end do ! j
-      
+
       p_Dx(i) = (p_Dx(i) - dt) * p_DLU(k)
-      
+
     end do ! i
-    
+
     ! When the scaling factor is not = 1, scale the vector.
     call lsysbl_scaleVector(rd,rsolverNode%domega)
-    
+
     ! That's it
 
   end subroutine
@@ -7542,27 +7554,27 @@ contains
 ! factorisation.
 
 !<subroutine>
-  
+
   subroutine linsol_initMILUs1x1 (rsolverNode,ifill,drelax)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the (M)ILUs 1x1 solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! Fill-in level for factorisation.
   ! 0=ILU(0), 1=ILU(1),...
   integer, intent(in) :: ifill
-  
+
   ! Relaxation parameter.
   ! 0.0=ILU(s), 1.0=MILU(s), between 0.0 and 1.0=multiplier to use before
   ! adding discarded fill to the diagonal.
   real(DP), intent(in) :: drelax
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
@@ -7573,47 +7585,47 @@ contains
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(rsolverNode)
-    
+
     ! Normally this solver iterates only once (used e.g. in a preconditioner).
     ! This is the default value. The application can set it higher to
     ! apply it multiple times.
     rsolverNode%nminIterations = 1
     rsolverNode%nmaxIterations = 1
-    
+
     ! Initialise the type of the solver
     rsolverNode%calgorithm = LINSOL_ALG_MILUS1x1
-    
+
     ! Initialise the ability bitfield with the ability of this solver.
     ! The solver only solves scalar (1x1) systems.
     ! The solver is a 1-step solver, i.e. does not support to solve
     ! by iteration (it basically perfoms only a forward-backward-substitution
     ! with the (M)ILUs matrix).
     rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for MILUs.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(rsolverNode%p_rsubnodeMILUs1x1)
-    
+
     ! Save the (M)ILU(s) parameters to the structure
     rsolverNode%p_rsubnodeMILUs1x1%ifill = ifill
     rsolverNode%p_rsubnodeMILUs1x1%drelax = drelax
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_matCompatMILUs1x1 (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -7622,7 +7634,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -7633,7 +7645,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix.
@@ -7644,37 +7656,37 @@ contains
        (Rmatrices(ubound(Rmatrices,1))%nblocksPerRow .ne. 1)) then
       ccompatible = LINSOL_COMP_ERRNOTSCALAR
     end if
-    
+
     ! Set the compatibility flag only for the maximum level -- this is a
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initDataMILUs1x1 (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Performs a numeric factorisation on the assigned matrix, i.e.
   ! computes the (M)ILU(s) decomposition.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -7695,9 +7707,9 @@ contains
   real(DP), dimension(:), pointer :: p_DA
   integer :: ifill,ierr
   real(DP) :: drelax
-  
+
   type(t_MILUdecomp), pointer :: rMILUDecomp
-  
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -7711,13 +7723,13 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
       call sys_halt()
     end if
-    
+
     rMILUDecomp => rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp
-    
+
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     p_rmatrix => rsolverNode%rsystemMatrix
 
     ! We only support scalar 1x1 matrices in structure 7 and 9.
@@ -7736,14 +7748,14 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
       call sys_halt()
     end if
-    
+
     if ((p_rmatrixSc%cmatrixFormat .ne. LSYSSC_MATRIX9) .and.&
         (p_rmatrixSc%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
       call output_line ('(M)ILU(s) supports only structure 7 and 9 matrices!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
       call sys_halt()
     end if
-    
+
     ! Get the matrix description
     call lsyssc_getbase_Kld (p_rmatrixSc,p_Kld)
     call lsyssc_getbase_Kcol (p_rmatrixSc,p_Kcol)
@@ -7758,11 +7770,11 @@ contains
     ! initialisatin of the solver.
     ifill = rsolverNode%p_rsubnodeMILUs1x1%ifill
     drelax = rsolverNode%p_rsubnodeMILUs1x1%drelax
-    
+
     call iluk_ilu(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld, &
               ifill,drelax,ierr,rMILUDecomp)
-              
-   
+
+
     ! Error?
     select case (ierr)
     case (:-1)
@@ -7774,42 +7786,42 @@ contains
       ierror = LINSOL_ERR_INITERROR
       return
     end select
-    
+
     ! now here we can reallocate the jlu array in our structure
     if (rMILUDecomp%h_jlu .ne. ST_NOHANDLE) then
       ! If less than the half of the memory ILU wanted to have is used,
       ! we reallocate the memory. It does not make sense to have that much
       ! waste!
-      
+
       ! nzlu is the number of bytes needed for the jlu array
       ! reallocate if it uses more than twice the amount, ILU wanted
       if (rMILUDecomp%nzlu .lt. rMILUDecomp%isize/2) then
         call storage_realloc('linsol_initDataMILUs1x1', rMILUDecomp%nzlu, &
              rMILUDecomp%h_jlu, ST_NEWBLOCK_ZERO, .true.)
       end if
-      
+
       ! Save 1/scaling factor of the matrix -- to support scaled matrices
       ! when preconditioning.
       rsolverNode%p_rsubnodeMILUs1x1%dscaleFactor = 1.0_DP/p_rmatrixSc%dScaleFactor
     end if
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneDataMILUs1x1 (rsolverNode,isolverSubgroup)
-  
+
 !<description>
   ! Releases the memory of teh numeric factorisation of the given matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -7824,7 +7836,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -7832,52 +7844,52 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! Release the ILU matrix.
     !
     if(rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_lu .ne. ST_NOHANDLE) then
       call iluk_freeDecomp(rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneMILUs1x1 (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the UMFPACK4 solver from
   ! the heap.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   integer :: isubgroup
-  
+
     ! The done-routine always releases everything.
     isubgroup = rsolverNode%isolverSubgroup
-    
+
     ! Release symbolical and numerical factorisation if still associated...
     call linsol_doneDataMILUs1x1 (rsolverNode, isubgroup)
-    
+
     deallocate(rsolverNode%p_rsubnodeMILUs1x1)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_precMILUS1x1 (rsolverNode,rd)
-  
+
 !<description>
   ! Applies (M)ILU(s) preconditioner <tex>$ LU \approx A $<tex> to the defect
   ! vector rd and solves <tex>$ LUd_{new} = d $<tex>.
@@ -7888,7 +7900,7 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the (M)ILU(s) solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
@@ -7897,7 +7909,7 @@ contains
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7910,18 +7922,18 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMILUS1x1')
       call sys_halt()
     end if
-    
+
     ! Status reset
     rsolverNode%iresult = 0
 
     ! Get the data array of rd
     call lsysbl_getbase_double (rd,p_Dd)
-    
+
     ! Get MILUs information from the parameter block
     lu = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_lu
     jlu = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_jlu
     ilup = rsolverNode%p_rsubnodeMILUs1x1%rMILUdecomp%h_ilup
-    
+
     ! When the scaling factor is not = 1, scale the vector before
     ! preconditioning. This emulates: d = omega(cA)^-1 d = A^-1 (omega*x/c)!
     ! (The value saved in the structure is 1/c!).
@@ -7941,30 +7953,30 @@ contains
     call storage_getbase_double(lu, p_lu)
 
     call iluk_lusolt (size(p_Dd),p_Dd,p_lu,p_jlu,p_ilup)
-                 
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the CG solver
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initCG (p_rsolverNode,p_rpreconditioner,Rfilter)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the CG solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: A pointer to the solver structure of a solver that should be
   ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
-  
+
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not present, no filtering will be used.
@@ -7972,32 +7984,32 @@ contains
   ! The filter chain must be configured for being applied to defect vectors.
   type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_CG
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
                                 LINSOL_ABIL_CHECKDEF + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate the subnode for CG.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeCG)
-    
+
     ! Attach the preconditioner if given.
     if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeCG%p_rpreconditioner => p_rpreconditioner
@@ -8007,21 +8019,21 @@ contains
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubnodeCG%p_RfilterChain => Rfilter
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterCG (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the CG solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -8039,22 +8051,22 @@ contains
       call linsol_alterSolver(rsolverNode%p_rsubnodeCG%p_rpreconditioner,&
           ralterConfig)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatCG (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -8063,7 +8075,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -8074,7 +8086,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix. This solver can usually handle
@@ -8085,10 +8097,10 @@ contains
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
     ! Do we have a preconditioner given? If yes, call the matrix check
     ! routine on that.
-    
+
     if (associated(rsolverNode%p_rsubnodeCG%p_rpreconditioner)) then
       call linsol_matricesCompatible ( &
           rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
@@ -8096,32 +8108,32 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixCG (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! This routine is called if the system matrix changes.
   ! The routine calls linsol_setMatrices for the preconditioner of CG
   ! to inform also that one about the change of the matrix pointer.
-  
+
 !</description>
-  
+
 !<input>
   ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Do we have a preconditioner given? If yes, call the general initialisation
@@ -8132,25 +8144,25 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureCG (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -8173,7 +8185,7 @@ contains
   ! local variables
   integer :: isubgroup,i
   type(t_linsolSubnodeCG), pointer :: p_rsubnode
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -8192,7 +8204,7 @@ contains
       call linsol_initStructure (rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -8205,27 +8217,27 @@ contains
           p_rsubnode%RtempVectors(i),.false.,.false.,&
           rsolverNode%cdefaultDataType)
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataCG (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -8247,7 +8259,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -8266,27 +8278,27 @@ contains
       call linsol_initData (rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
                             isubgroup,ierror)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataCG (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -8301,7 +8313,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -8317,27 +8329,27 @@ contains
       call linsol_doneData (rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
                             isubgroup)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureCG (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -8353,7 +8365,7 @@ contains
   ! local variables
   integer :: isubgroup,i
   type(t_linsolSubnodeCG), pointer :: p_rsubnode
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -8369,7 +8381,7 @@ contains
       call linsol_doneStructure (rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be released
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -8380,15 +8392,15 @@ contains
         call lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
       end do
     end if
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneCG (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the CG solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
@@ -8397,34 +8409,34 @@ contains
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! A pointer to a t_linsolNode structure of the CG solver.
   type(t_linsolNode), pointer         :: rsolverNode
 !</input>
-  
+
 !</subroutine>
 
     ! Check if there is a preconditioner attached. If yes, release it.
     if (associated(rsolverNode%p_rsubnodeCG%p_rpreconditioner)) then
       call linsol_releaseSolver(rsolverNode%p_rsubnodeCG%p_rpreconditioner)
     end if
-    
+
     ! Release memory if still associated
     call linsol_doneDataCG (rsolverNode, rsolverNode%isolverSubgroup)
     call linsol_doneStructureCG (rsolverNode, rsolverNode%isolverSubgroup)
-    
+
     ! Release the CG subnode
     deallocate(rsolverNode%p_rsubnodeCG)
 
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_precCG (rsolverNode,rd)
-  
+
 !<description>
   ! Applies CG preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -8435,16 +8447,16 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -8453,29 +8465,29 @@ contains
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
-  
+
   ! Minimum number of iterations, print-sequence for residuals
   integer :: nminIterations, niteResOutput
-  
+
   ! Whether to filter/prcondition
   logical bprec,bfilter
-  
+
   ! Our structure
   type(t_linsolSubnodeCG), pointer :: p_rsubnode
-  
+
   ! Pointers to temporary vectors - named for easier access
   type(t_vectorBlock), pointer :: p_DR,p_DP,p_DD,p_rx
   type(t_linsolNode), pointer :: p_rprecSubnode
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
     ! Solve the system!
-  
+
     ! Status reset
     rsolverNode%iresult = 0
-    
+
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeCG
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -8483,7 +8495,7 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
@@ -8495,11 +8507,11 @@ contains
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
-      
+
     ! Use preconditioning? Filtering?
     bprec = associated(rsolverNode%p_rsubnodeCG%p_rpreconditioner)
     bfilter = associated(rsolverNode%p_rsubnodeCG%p_RfilterChain)
-    
+
     ! Iteration when the residuum is printed:
     niteResOutput = max(1,rsolverNode%niteResOutput)
 
@@ -8512,7 +8524,7 @@ contains
     p_DD   => p_rsubnode%RtempVectors(3)
     ! solution vector
     p_rx   => p_rsubnode%RtempVectors(4)
-    
+
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
@@ -8520,25 +8532,25 @@ contains
     call lsysbl_assignDiscrIndirect (rd,p_DP)
     call lsysbl_assignDiscrIndirect (rd,p_DD)
     call lsysbl_assignDiscrIndirect (rd,p_rx)
-    
+
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
     if (bfilter) then
       p_RfilterChain => p_rsubnode%p_RfilterChain
     end if
-    
+
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
-      
+
     ! Initialise used vectors with zero
     call lsysbl_clearVector(p_DR)
     call lsysbl_clearVector(p_DP)
     call lsysbl_clearVector(p_DD)
-    
+
     ! Initialization
     dalpha = 1.0_DP
     dbeta  = 1.0_DP
@@ -8552,8 +8564,8 @@ contains
       ! Apply the filter chain to the vector
       call filter_applyFilterChainVec (p_DR, p_RfilterChain)
     end if
-    
-    
+
+
     ! Get the norm of the residuum
     dres = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
     if (.not.((dres .ge. 1E-99_DP) .and. &
@@ -8570,12 +8582,12 @@ contains
     ! routine filters "everything out"!
     ! In that case we can directly stop our computation.
     if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-     
+
       ! final defect is 0, as initialised in the output variable above
       call lsysbl_clearVector(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
-          
+
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -8586,7 +8598,7 @@ contains
 
       ! Copy the residuum vector p_DR to the preconditioned one.
       call lsysbl_copyVector(p_DR,p_DP)
-    
+
       if (bprec) then
         ! Perform preconditioning with the assigned preconditioning
         ! solver structure.
@@ -8595,16 +8607,16 @@ contains
 
       ! Calculate gamma
       dgamma = lsysbl_scalarProduct (p_DR, p_DP)
-      
+
       ! Perform at most nmaxIterations loops to get a new vector
-      
+
       ! Copy the preconditioned residual vector to the direction vector
       call lsysbl_copyVector (p_DP, p_DD)
       ! And multiply it with -1.0
       call lsysbl_scaleVector (p_DD, -1.0_DP)
 
       do ite = 1,rsolverNode%nmaxIterations
-      
+
         rsolverNode%icurrentIteration = ite
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 1: Calculate alpha
@@ -8630,7 +8642,7 @@ contains
           rsolverNode%iresult = -2
           exit
         end if
-        
+
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 2: Calculate x_{k+1}
         !
@@ -8657,7 +8669,7 @@ contains
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! Get the norm of the new (final?) residuum
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
-     
+
         ! Shift the queue with the last residuals and add the new
         ! residual to it.
         Dresqueue = eoshift(Dresqueue,1,dfr)
@@ -8679,13 +8691,13 @@ contains
           rsolverNode%iresult = 1
           exit
         end if
-     
+
         ! At least perform nminIterations iterations
         if (ite .ge. nminIterations) then
-        
+
           ! Check if the iteration converged
           if (linsol_testConvergence(rsolverNode,dfr)) exit
-          
+
         end if
 
         ! print out the current residuum
@@ -8696,7 +8708,7 @@ contains
               trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
-        
+
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 5: Calculate h_{k+1}
         !
@@ -8705,13 +8717,13 @@ contains
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! Copy the residuum vector p_DR to the preconditioned one.
         call lsysbl_copyVector(p_DR,p_DP)
-    
+
         if (bprec) then
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
           call linsol_precondDefect (p_rprecSubnode,p_DP)
         end if
-        
+
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 6: Calculate gamma
         !
@@ -8720,7 +8732,7 @@ contains
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         dgammaOld = dgamma
         dgamma = lsysbl_scalarProduct (p_DR, p_DP)
-        
+
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         ! STEP 7: Calculate beta
         !
@@ -8736,7 +8748,7 @@ contains
         ! d_{k+1} := beta * d_k - h_{k+1}
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         call lsysbl_vectorLinearComb (p_DP, p_DD, -1.0_DP, dbeta)
-        
+
         ! That is it - next iteration!
       end do
 
@@ -8767,16 +8779,16 @@ contains
     end if
 
     rsolverNode%iiterations = ite
-    
+
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning. Scale the vector by the damping parameter
     ! in the solver structure.
     call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
-      
+
     ! Do not calculate anything if the final residuum is out of bounds -
     ! would result in NaN`s,...
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-    
+
       ! Calculate asymptotic convergence rate
       if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
         i = min(rsolverNode%iiterations,niteAsymptoticCVR)
@@ -8833,7 +8845,7 @@ contains
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
 
 ! *****************************************************************************
@@ -8841,22 +8853,22 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,Rfilter)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the BiCGStab solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! OPTIONAL: A pointer to the solver structure of a solver that should be
   ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
-  
+
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not present, no filtering will be used.
@@ -8864,32 +8876,32 @@ contains
   ! The filter chain must be configured for being applied to defect vectors.
   type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_BICGSTAB
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
                                 LINSOL_ABIL_CHECKDEF + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate the subnode for BiCGStab.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeBiCGStab)
-    
+
     ! Attach the preconditioner if given.
     if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner => p_rpreconditioner
@@ -8899,21 +8911,21 @@ contains
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain => Rfilter
     end if
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterBiCGStab (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the BiCGStab solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -8937,16 +8949,16 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatBiCGStab (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -8955,7 +8967,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -8966,7 +8978,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix. This solver can usually handle
@@ -8980,40 +8992,40 @@ contains
 
     ! Do we have a preconditioner given? If yes, call the matrix check
     ! routine on that.
-    
+
     if (associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) then
       call linsol_matricesCompatible ( &
           rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
           Rmatrices,ccompatible,CcompatibleDetail)
     end if
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixBiCGStab (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! This routine is called if the system matrix changes.
   ! The routine calls linsol_setMatrices for the preconditioner of BiCGStab
   ! to inform also that one about the change of the matrix pointer.
-  
+
 !</description>
-  
+
 !<input>
   ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Do we have a preconditioner given? If yes, call the general initialisation
@@ -9024,25 +9036,25 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureBiCGStab (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -9065,7 +9077,7 @@ contains
   ! local variables
   integer :: isubgroup,i
   type(t_linsolSubnodeBiCGStab), pointer :: p_rsubnode
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -9084,7 +9096,7 @@ contains
       call linsol_initStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -9098,25 +9110,25 @@ contains
     end do
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataBiCGStab (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -9138,7 +9150,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -9157,27 +9169,27 @@ contains
       call linsol_initData (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
                             isubgroup,ierror)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataBiCGStab (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -9192,7 +9204,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -9208,27 +9220,27 @@ contains
       call linsol_doneData (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
                             isubgroup)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureBiCGStab (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -9244,7 +9256,7 @@ contains
   ! local variables
   integer :: isubgroup,i
   type(t_linsolSubnodeBiCGStab), pointer :: p_rsubnode
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -9260,7 +9272,7 @@ contains
       call linsol_doneStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be released
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -9271,15 +9283,15 @@ contains
         call lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
       end do
     end if
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneBiCGStab (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the BiCGStab solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
@@ -9288,23 +9300,23 @@ contains
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! A pointer to a t_linsolNode structure of the BiCGStab solver.
   type(t_linsolNode), pointer         :: rsolverNode
 !</input>
-  
+
 !</subroutine>
 
     ! Check if there is a preconditioner attached. If yes, release it.
     if (associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) then
       call linsol_releaseSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
     end if
-    
+
     ! Release memory if still associated
     call linsol_doneDataBiCGStab (rsolverNode, rsolverNode%isolverSubgroup)
     call linsol_doneStructureBiCGStab (rsolverNode, rsolverNode%isolverSubgroup)
-    
+
     ! Release the BiCGStab subnode
     deallocate(rsolverNode%p_rsubnodeBiCGStab)
 
@@ -9315,7 +9327,7 @@ contains
 !<subroutine>
 
   recursive subroutine linsol_precBiCGStab (rsolverNode,rd)
-  
+
 !<description>
   ! Applies BiCGStab preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -9331,16 +9343,16 @@ contains
   !   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
   !   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the BiCGStab solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -9350,29 +9362,29 @@ contains
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
-  
+
   ! Minimum number of iterations, print-sequence for residuals
   integer :: nminIterations, niteResOutput
-  
+
   ! Whether to filter/prcondition
   logical bprec,bfilter
-  
+
   ! Our structure
   type(t_linsolSubnodeBiCGStab), pointer :: p_rsubnode
-  
+
   ! Pointers to temporary vectors - named for easier access
   type(t_vectorBlock), pointer :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx
   type(t_linsolNode), pointer :: p_rprecSubnode
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
     ! Solve the system!
-  
+
     ! Status reset
     rsolverNode%iresult = 0
-    
+
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -9380,7 +9392,7 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
@@ -9392,11 +9404,11 @@ contains
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
-      
+
     ! Use preconditioning? Filtering?
     bprec = associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
     bfilter = associated(rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain)
-    
+
     ! Iteration when the residuum is printed:
     niteResOutput = max(1,rsolverNode%niteResOutput)
 
@@ -9407,7 +9419,7 @@ contains
     p_DPA  => p_rsubnode%RtempVectors(4)
     p_DSA  => p_rsubnode%RtempVectors(5)
     p_rx   => p_rsubnode%RtempVectors(6)
-    
+
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
@@ -9417,24 +9429,24 @@ contains
     call lsysbl_assignDiscrIndirect (rd,p_DPA)
     call lsysbl_assignDiscrIndirect (rd,p_DSA)
     call lsysbl_assignDiscrIndirect (rd,p_rx)
-    
+
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
     if (bfilter) then
       p_RfilterChain => p_rsubnode%p_RfilterChain
     end if
-    
+
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
-      
+
     ! Initialise used vectors with zero
     call lsysbl_clearVector(p_DP)
     call lsysbl_clearVector(p_DPA)
-    
+
     ! Initialise the iteration vector with zero.
 
     ! Initialization
@@ -9454,7 +9466,7 @@ contains
       ! solver structure.
       call linsol_precondDefect (p_rprecSubnode,p_DR)
     end if
-    
+
     ! Get the norm of the residuum
     dres = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
     if (.not.((dres .ge. 1E-99_DP) .and. &
@@ -9471,13 +9483,13 @@ contains
     ! routine filters "everything out"!
     ! In that case we can directly stop our computation.
     if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-     
+
       ! final defect is 0, as initialised in the output variable above
 
       call lsysbl_clearVector(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
-          
+
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -9490,7 +9502,7 @@ contains
 
       ! Perform at most nmaxIterations loops to get a new vector
       do ite = 1,rsolverNode%nmaxIterations
-      
+
         rsolverNode%icurrentIteration = ite
 
         drho1 = lsysbl_scalarProduct (p_DR0,p_DR)
@@ -9506,7 +9518,7 @@ contains
           rsolverNode%iresult = -1
           rsolverNode%iiterations = ite-1
           exit
-          
+
         end if
 
         dbeta=(drho1*dalpha)/(drho0*domega0)
@@ -9516,7 +9528,7 @@ contains
         call lsysbl_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
 
         call lsysbl_blockMatVec (p_rmatrix, p_DP,p_DPA, 1.0_DP,0.0_DP)
-        
+
         if (bfilter) then
           ! Apply the filter chain to the vector
           call filter_applyFilterChainVec (p_DPA, p_RfilterChain)
@@ -9528,7 +9540,7 @@ contains
         end if
 
         dalpha = lsysbl_scalarProduct (p_DR0,p_DPA)
-        
+
         if (abs(dalpha) .eq. 0.0_DP) then
           ! We are below machine exactness - we can not do anything more...
           ! May happen with very small problems with very few unknowns!
@@ -9538,13 +9550,13 @@ contains
           rsolverNode%iresult = -2
           exit
         end if
-        
+
         dalpha = drho1/dalpha
 
         call lsysbl_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
 
         call lsysbl_blockMatVec (p_rmatrix, p_DR,p_DSA, 1.0_DP,0.0_DP)
-        
+
         if (bfilter) then
           ! Apply the filter chain to the vector
           call filter_applyFilterChainVec (p_DSA, p_RfilterChain)
@@ -9554,10 +9566,10 @@ contains
           ! solver structure.
           call linsol_precondDefect (p_rprecSubnode,p_DSA)
         end if
-        
+
         domega1 = lsysbl_scalarProduct (p_DSA,p_DR)
         domega2 = lsysbl_scalarProduct (p_DSA,p_DSA)
-        
+
         if (domega1 .eq. 0.0_DP) then
           domega0 = 0.0_DP
         else
@@ -9578,7 +9590,7 @@ contains
 
         ! Get the norm of the new (final?) residuum
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
-     
+
         ! Shift the queue with the last residuals and add the new
         ! residual to it.
         Dresqueue = eoshift(Dresqueue,1,dfr)
@@ -9600,13 +9612,13 @@ contains
           rsolverNode%iresult = 1
           exit
         end if
-     
+
         ! At least perform nminIterations iterations
         if (ite .ge. nminIterations) then
-        
+
           ! Check if the iteration converged
           if (linsol_testConvergence(rsolverNode,dfr)) exit
-          
+
         end if
 
         ! print out the current residuum
@@ -9647,7 +9659,7 @@ contains
     end if
 
     rsolverNode%iiterations = ite
-    
+
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning. Scale the vector by the damping parameter
     ! in the solver structure.
@@ -9656,7 +9668,7 @@ contains
     ! Do not calculate anything if the final residuum is out of bounds -
     ! would result in NaN`s,...
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-    
+
       ! Calculate asymptotic convergence rate
       if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
         i = min(rsolverNode%iiterations,niteAsymptoticCVR)
@@ -9707,13 +9719,13 @@ contains
               trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
-      
+
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
 
 ! *****************************************************************************
@@ -9721,28 +9733,28 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initGMRES (p_rsolverNode,ikrylovDim,p_rpreconditioner,&
                                Rfilter,btwiceGS,dpseudoResScale)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the GMRES(m) solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! Maximal dimension of the Krylov subspace for the GMRES iteration.
   ! Is qual to the number of GMRES iterations before a restart is done.
   ! Must not be smaller than 1, otherwise linsol_initStructure will fail!
   integer :: ikrylovDim
-  
+
   ! OPTIONAL: A pointer to the solver structure of a solver that should be
   ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
-  
+
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not present, no filtering will be used.
@@ -9757,7 +9769,7 @@ contains
   ! twice. If btwiceGS is given and it is .TRUE., then the Gram-Schmidt process
   ! will be applied twice per GMRES iteration, otherwise only once.
   logical, optional :: btwiceGS
-  
+
   ! OPTIONAL: Scale factor for the pseudo-residual-norms to test against the
   ! stopping criterion in the inner GMRES loop. Since the pseudo-residual-norms
   ! may be highly inaccurate, this scale factor can be used to scale the
@@ -9768,43 +9780,43 @@ contains
   ! Setting dpseudoresscale to 0 will disable the pseudo-resirudal norm check.
   real(DP), optional :: dpseudoResScale
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer         :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_GMRES
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
                                 LINSOL_ABIL_CHECKDEF + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate the subnode for GMRES.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeGMRES)
-    
+
     ! Save the dimension of the Krylov subspace. This is equal to the number
     ! of GMRES iterations before a restart is done.
     p_rsolverNode%p_rsubnodeGMRES%ikrylovDim = ikrylovDim
-    
+
     ! Save if the Gram-Schmidt process should be applied twice or not.
     if (present(btwiceGS)) then
       p_rsolverNode%p_rsubNodeGMRES%btwiceGS = btwiceGS
     else
       p_rsolverNode%p_rsubNodeGMRES%btwiceGS = LINSOL_GMRES_DEF_TWICE_GS
     end if
-    
+
     ! Save the pseudo-residual-norm scale factor if given, or set
     ! to default scale factor if not given or invalid (i.e. < 1)
     if (present(dpseudoResScale)) then
@@ -9816,7 +9828,7 @@ contains
     else
       p_rsolverNode%p_rsubNodeGMRES%dpseudoResScale = 0.0_DP
     endif
-    
+
     ! Attach the preconditioner if given.
     if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubNodeGMRES%p_rpreconditioner => p_rpreconditioner
@@ -9826,21 +9838,21 @@ contains
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubNodeGMRES%p_RfilterChain => Rfilter
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterGMRES (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the GMRES solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -9860,20 +9872,20 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   recursive subroutine linsol_matCompatGMRES (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -9882,7 +9894,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -9893,7 +9905,7 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
     ! Normally, we can handle the matrix. This solver can usually handle
@@ -9912,34 +9924,34 @@ contains
           rsolverNode%p_rsubnodeGMRES%p_rpreconditioner, &
           Rmatrices,ccompatible,CcompatibleDetail)
     end if
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixGMRES (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! This routine is called if the system matrix changes.
   ! The routine calls linsol_setMatrices for the preconditioner of GMRES(m)
   ! to inform also that one about the change of the matrix pointer.
-  
+
 !</description>
-  
+
 !<input>
   ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Do we have a preconditioner given? If yes, call the general initialisation
@@ -9950,25 +9962,25 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureGMRES (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -9993,7 +10005,7 @@ contains
   integer :: idim
   integer , dimension(2) :: idim2
   type(t_linsolSubnodeGMRES), pointer :: p_rsubnode
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -10013,10 +10025,10 @@ contains
     if (associated(p_rsubnode%p_rpreconditioner)) then
       call linsol_initStructure (p_rsubnode%p_rpreconditioner, isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-    
+
     ! We now need to check if the dimension of the Krylov subspace is
     ! positive. If it is not, we need to cancel the initialization here.
     if (p_rsubnode%ikrylovDim .le. 0) then
@@ -10025,7 +10037,7 @@ contains
       ierror = LINSOL_ERR_INITERROR
       call sys_halt()
     end if
-    
+
     ! Get the stuff out of our solver node
     idim = p_rsubnode%ikrylovDim
     idim2(1) = idim
@@ -10033,7 +10045,7 @@ contains
 
     ! Now comes the intersting part - we need to allocate a lot of arrays
     ! and vectors for the Krylov subspace for GMRES here.
-    
+
     ! Call our storage to allocate the 1D/2D arrays
     call storage_new('linsol_initStructureGMRES', 'Dh', idim2, &
         ST_DOUBLE, p_rsubnode%hDh, ST_NEWBLOCK_NOINIT)
@@ -10043,17 +10055,17 @@ contains
         ST_DOUBLE, p_rsubnode%hDc, ST_NEWBLOCK_NOINIT)
     call storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
         ST_DOUBLE,  p_rsubnode%hDq, ST_NEWBLOCK_NOINIT)
-    
+
     ! Get the pointers
     call storage_getbase_double2D(p_rsubnode%hDh, p_rsubnode%Dh)
     call storage_getbase_double(p_rsubnode%hDc, p_rsubnode%Dc)
     call storage_getbase_double(p_rsubnode%hDs, p_rsubnode%Ds)
     call storage_getbase_double(p_rsubnode%hDq, p_rsubnode%Dq)
-    
+
     ! Allocate space for our auxiliary vectors
     allocate(p_rsubnode%p_rv(idim+1))
     allocate(p_rsubnode%p_rz(idim))
-    
+
     ! Create them
     do i=1, idim+1
       call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
@@ -10063,33 +10075,33 @@ contains
       call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           p_rsubnode%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
-    
+
     ! Create an iteration vector x
     call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
         p_rsubnode%rx,.false.,.false.,rsolverNode%cdefaultDataType)
-    
+
     ! Okay, that is all!
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataGMRES (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -10111,7 +10123,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -10130,27 +10142,27 @@ contains
       call linsol_initData (rsolverNode%p_rsubnodeGMRES%p_rpreconditioner, &
                             isubgroup,ierror)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataGMRES (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -10165,7 +10177,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -10181,27 +10193,27 @@ contains
       call linsol_doneData (rsolverNode%p_rsubnodeGMRES%p_rpreconditioner, &
                             isubgroup)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureGMRES (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -10217,7 +10229,7 @@ contains
   ! local variables
   integer :: isubgroup,i,idim
   type(t_linsolSubnodeGMRES), pointer :: p_rsubnode
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -10233,14 +10245,14 @@ contains
       call linsol_doneStructure (rsolverNode%p_rsubnodeGMRES%p_rpreconditioner, &
                                 isubgroup)
     end if
-    
+
     ! Cancel here, if we do not belong to the subgroup to be released
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
     ! Release temporary data if associated
     p_rsubnode => rsolverNode%p_rsubnodeGMRES
     idim = p_rsubnode%ikrylovDim
-    
+
     ! Release auxiliary vectors
     if (associated(p_rsubnode%p_rz)) then
       do i=1, idim
@@ -10249,7 +10261,7 @@ contains
       do i=1, idim+1
         call lsysbl_releaseVector(p_rsubnode%p_rv(i))
       end do
-    
+
       ! Destroy them
       deallocate(p_rsubnode%p_rz)
       deallocate(p_rsubnode%p_rv)
@@ -10259,7 +10271,7 @@ contains
     if (p_rsubnode%rx%NEQ > 0) then
       call lsysbl_releaseVector(p_rsubnode%rx)
     end if
-    
+
     ! Destroy our 1D/2D arrays
     if (p_rsubnode%hDq .ne. ST_NOHANDLE) then
       call storage_free(p_rsubnode%hDq)
@@ -10267,17 +10279,17 @@ contains
       call storage_free(p_rsubnode%hDc)
       call storage_free(p_rsubnode%hDh)
     end if
-    
+
     ! That is all!
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneGMRES (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the GMRES(m) solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
@@ -10286,23 +10298,23 @@ contains
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! A pointer to a t_linsolNode structure of the GMRES(m) solver.
   type(t_linsolNode), pointer         :: rsolverNode
 !</input>
-  
+
 !</subroutine>
 
     ! Check if there is a preconditioner attached. If yes, release it.
     if (associated(rsolverNode%p_rsubnodeGMRES%p_rpreconditioner)) then
       call linsol_releaseSolver(rsolverNode%p_rsubnodeGMRES%p_rpreconditioner)
     end if
-    
+
     ! Release memory if still associated
     call linsol_doneDataGMRES (rsolverNode, rsolverNode%isolverSubgroup)
     call linsol_doneStructureGMRES (rsolverNode, rsolverNode%isolverSubgroup)
-    
+
     ! Release the GMRES subnode
     deallocate(rsolverNode%p_rsubnodeGMRES)
 
@@ -10311,9 +10323,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_precGMRES (rsolverNode,rd)
-  
+
 !<description>
   ! Applies GMRES(m) preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -10324,54 +10336,54 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
   integer :: ite,i,j,k,niteAsymptoticCVR
-  
+
   ! Here come our 1D/2D arrays
   real(DP), dimension(:), pointer :: p_Dc, p_Ds, p_Dq
   real(DP), dimension(:,:), pointer :: p_Dh
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
 
-  
+
   ! Minimum number of iterations, print-sequence for residuals, dimension
   ! of krylov subspace
   integer :: nminIterations, niteResOutput, idim, hDq
-  
+
   ! Whether to filter/precondition, apply Gram-Schmidt twice
   logical bprec,bfilter,btwiceGS
-  
+
   ! Our structure
   type(t_linsolSubnodeGMRES), pointer :: p_rsubnode
-  
+
   ! Pointers to temporary vectors - named for easier access
   type(t_vectorBlock), pointer :: p_rx
   type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
   type(t_linsolNode), pointer :: p_rprecSubnode
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
     ! Solve the system!
-  
+
     ! Status reset
     rsolverNode%iresult = 0
-    
+
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeGMRES
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -10379,7 +10391,7 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
@@ -10391,23 +10403,23 @@ contains
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
-      
+
     ! Use preconditioning? Filtering?
     bprec = associated(p_rsubnode%p_rpreconditioner)
     bfilter = associated(p_rsubnode%p_RfilterChain)
-    
+
     ! Iteration when the residuum is printed:
     niteResOutput = max(1,rsolverNode%niteResOutput)
-    
+
     ! Apply Gram-Schmidt twice?
     btwiceGS = p_rsubnode%btwiceGS
-    
+
     ! Get the dimension of Krylov subspace
     idim = p_rsubnode%ikrylovdim
-    
+
     ! Get our pseudo-residual-norm scale factor
     dprnsf = p_rsubnode%dpseudoResScale
-    
+
     ! Now we need to check the pseudo-residual scale factor.
     ! If it is non-positive, we set it to 0.
     if (dprnsf .le. 0.0_DP) then
@@ -10432,17 +10444,17 @@ contains
       call lsysbl_assignDiscrIndirect (rd,p_rz(i))
     end do
     call lsysbl_assignDiscrIndirect (rd,p_rx)
-    
+
     ! Set pointers to the 1D/2D arrays
     p_Dh => p_rsubnode%Dh
     p_Dc => p_rsubnode%Dc
     p_Ds => p_rsubnode%Ds
     p_Dq => p_rsubnode%Dq
-    
+
     ! And get the handle of Dq, since we need to call
     ! storage_clear during the iteration
     hDq = p_rsubnode%hDq
-    
+
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
@@ -10453,27 +10465,27 @@ contains
     do i=1,idim+1
       call lsysbl_assignDiscrIndirect (rd, p_rv(i))
     end do
-    
+
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
     if (bfilter) then
       p_RfilterChain => p_rsubnode%p_RfilterChain
     end if
-    
+
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
-      
+
     ! Copy our RHS rd to p_rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
     call lsysbl_copyVector(rd,p_rv(1))
     if (bfilter) then
       call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
     end if
-    
+
     ! Get the norm of the residuum
     ! We need to calculate the norm twice, since we need one for
     ! the stopping criterion (selected by the user) and the
@@ -10495,7 +10507,7 @@ contains
     ! In that case we can directly stop our computation.
 
     if (rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero) then
-     
+
       ! final defect is 0, as initialised in the output variable above
       call lsysbl_clearVector(p_rx)
       ite = 0
@@ -10513,51 +10525,51 @@ contains
       ! -= Outer Loop
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
       do while (ite < rsolverNode%nmaxIterations)
-        
+
         ! Step O.1:
         ! Create elementary vector e_1 scaled by the euclid norm of the
         ! defect, i.e.: q = ( ||v(1)||_2, 0, ..., 0 )
         call storage_clear (hDq)
         p_Dq(1) = dres
-        
+
         ! Step O.2:
         ! Now scale the defect by the inverse of its norm
         call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
-        
+
         ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
         ! -= Inner Loop (GMRES iterations)
         ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
         do i = 1, idim
           ! Another iteration
           ite = ite + 1
-        
+
           ! Step I.1:
           ! Solve P * z(i) = v(i), where P is the preconditioner matrix
           call lsysbl_copyVector (p_rv(i), p_rz(i))
-          
+
           ! Apply preconditioner to z(i)
           if (bprec) then
             call linsol_precondDefect (p_rprecSubnode, p_rz(i))
           end if
-          
+
           ! Apply filter chain to z(i)
           if (bfilter) then
             call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
           end if
-          
-          
+
+
           ! Step I.2:
           ! Calculate v(i+1) = A * z(i)
           call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
-          
-          
+
+
           ! Step I.3:
           ! Perfom Gram-Schmidt process (1st time)
           do k = 1, i
             p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
             call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
           end do
-          
+
           ! If the user wishes, perform Gram-Schmidt one more time
           ! to improve numerical stability.
           if (btwiceGS) then
@@ -10567,11 +10579,11 @@ contains
               call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
             end do
           end if
-          
+
           ! Step I.4:
           ! Calculate alpha = ||v(i+1)||_2
           dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
-          
+
           ! Step I.5:
           ! Scale v(i+1) by the inverse of its euclid norm
           if (dalpha > SYS_EPSREAL_DP) then
@@ -10583,8 +10595,8 @@ contains
                 '): Warning: !!v(i+1)!! < EPS !')
             end if
           end if
-          
-          
+
+
           ! Step I.6:
           ! Apply Givens rotations to the i-th column of h which
           ! renders the Householder matrix an upper triangular matrix
@@ -10593,8 +10605,8 @@ contains
             p_Dh(k,i)   = p_Dc(k) * dtmp + p_Ds(k) * p_Dh(k+1,i)
             p_Dh(k+1,i) = p_Ds(k) * dtmp - p_Dc(k) * p_Dh(k+1,i)
           end do
-          
-          
+
+
           ! Step I.7:
           ! Calculate Beta
           ! Beta = (h(i,i)^2 + alpha^2) ^ (1/2)
@@ -10606,28 +10618,28 @@ contains
                 '): Warning: beta < EPS !')
             end if
           end if
-          
+
           ! Step I.8:
           ! Calculate next plane rotation
           p_Ds(i) = dalpha / dbeta
           p_Dc(i) = p_Dh(i,i) / dbeta;
-          
+
           ! Step I.9
           ! Set h(i,i) = beta
           p_Dh(i,i) = dbeta
-          
+
           ! Step I.10:
           ! Update q(i) and calculate q(i+1)
           p_Dq(i+1) = p_Ds(i) * p_Dq(i)
           p_Dq(i)   = p_Dc(i) * p_Dq(i)
-          
+
           ! Step I.11
           ! Check pseudo-residual-norm and do all the other stuff we
           ! need to do before starting a new GMRES iteration
-          
+
           ! Get pseudo-residual-norm
           dpseudores = abs(p_Dq(i+1))
-          
+
           ! Print our current pseudo-residual-norm
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
@@ -10646,61 +10658,61 @@ contains
           ! If dprnsf is 0, we will check |q(i+1)| against EPS to avoid NaNs
           ! or Infs during the next GMRES iteration.
           dtmp = dpseudores * dprnsf
-          
+
           ! Is |q(i+1)| smaller than our machine`s exactness?
           ! If yes, then exit the inner GMRES loop.
           if (dpseudores .le. SYS_EPSREAL_DP) then
             exit
-          
+
           ! Check if (|q(i+1)| * dprnsf) is greater than the machine`s
           ! exactness (this can only happen if dprnsf is positive).
           ! If yes, call linsol_testConvergence to test against the
           ! stopping criterions.
           else if (dtmp > SYS_EPSREAL_DP) then
-            
+
             ! If (|q(i+1)| * dprnsf) fulfills the stopping criterion
             ! then exit the inner GMRES loop
             if (linsol_testConvergence(rsolverNode,dtmp)) exit
-          
+
             ! We also want to check if our solution is diverging.
             if (linsol_testDivergence(rsolverNode,dpseudores)) then
               if(rsolverNode%ioutputLevel .ge. 2) then
                 call output_line ('GMRES('// trim(sys_siL(idim,10))//&
                   '): Warning: Pseudo-residuals diverging!')
               end if
-              
+
               ! Instead of exiting the subroutine, we just exit the inner loop
               exit
             end if
-          
+
           end if
-          
+
           ! Maybe we have already done enough iterations?
           if (ite .ge. rsolverNode%nmaxIterations) exit
-          
+
           ! Okay, next inner loop iteration, please
         end do
         ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
         ! -= End of Inner Loop
         ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-        
+
         ! Step O.3:
         ! Get the dimension of the current basis of the krylov subspace
         i = min(i, idim)
-        
+
         ! Step O.4:
         ! Solve H' * q = q , where H' is the upper triangular matrix of
         ! the upper left (i x i)-block of H.
         ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
         call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
-        
+
         ! Step O.5:
         ! Update our solution vector
         ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
         do k = 1, i
           call lsysbl_vectorLinearComb(p_rz(k), p_rx, p_Dq(k), 1.0_DP)
         end do
-        
+
         ! Step O.6:
         ! Calculate 'real' residual
         ! v(1) = b - (A * x)
@@ -10712,18 +10724,18 @@ contains
         if (bfilter) then
           call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
         end if
-        
+
         ! Step O.8:
         ! Calculate euclid norm of the residual (needed for next q)
         dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
-        
+
         ! Calculate residual norm for stopping criterion
         ! TODO: try to avoid calculating the norm twice
         dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
-        
+
         ! Step O.9:
         ! Test for convergence, divergence and write some output now
-        
+
         ! Shift the queue with the last residuals and add the new
         ! residual to it.
         Dresqueue = eoshift(Dresqueue,1,dfr)
@@ -10746,15 +10758,15 @@ contains
           rsolverNode%iresult = 1
           exit
         end if
-     
+
         ! At least perform nminIterations iterations
         if (ite .ge. nminIterations) then
-        
+
           ! Check if the iteration converged
           if (linsol_testConvergence(rsolverNode,dfr)) exit
-          
+
         end if
-        
+
         ! We need to check if the euclidian norm of the
         ! residual is maybe < EPS - if this is true,
         ! then starting another GMRES iteration would
@@ -10804,16 +10816,16 @@ contains
     end if
 
     rsolverNode%iiterations = ite
-    
+
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning. Scale the vector by the damping parameter
     ! in the solver structure.
     call lsysbl_vectorLinearComb (p_rx,rd,rsolverNode%domega,0.0_DP)
-      
+
     ! Do not calculate anything if the final residuum is out of bounds -
     ! would result in NaN`s,...
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-    
+
       ! Calculate asymptotic convergence rate
       if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
         i = min(rsolverNode%iiterations,niteAsymptoticCVR)
@@ -10870,92 +10882,92 @@ contains
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the Schur-Complement solver
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initSchur (p_rsolverNode,p_rsolverA,p_rsolverS,&
                                RmatrixS,ctype)
-  
+
 !<description>
   ! Creates a t_linsolNode solver structure for the Schur solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! A pointer to the solver structure of a solver that should be used to
   ! solve the A-submatrix system.
   type(t_linsolNode), pointer :: p_rsolverA
-  
+
   ! A pointer to the solver structure of a solver that should be used to
   ! solve the Schur-complement system.
   type(t_linsolNode), pointer :: p_rsolverS
-  
+
   ! An array of Schur-complement matrices.
   type(t_matrixBlock), dimension(:), target, intent(in) :: RmatrixS
-  
+
   ! OPTIONAL: One of the LINSOL_SCHUR_TYPE_XXXX constants which specifies
   ! which type of preconditioner is to be used.
   ! If not given, LINSOL_SCHUR_TYPE_DIAG is used.
   integer, optional, intent(in) :: ctype
 !</input>
-  
+
 !<output>
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer :: p_rsolverNode
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_SCHUR
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_BLOCK + &
                                 LINSOL_ABIL_DIRECT
-    
+
     ! Allocate the subnode for Schur.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeSchur)
-    
+
     ! Attach the solvers
     p_rsolverNode%p_rsubnodeSchur%p_rsolverA => p_rsolverA
     p_rsolverNode%p_rsubnodeSchur%p_rsolverS => p_rsolverS
-    
+
     ! Attach the Schur-complement matrix
     p_rsolverNode%p_rsubnodeSchur%p_RmatrixS => RmatrixS
-    
+
     ! Set type if given
     if(present(ctype)) &
       p_rsolverNode%p_rsubnodeSchur%ctype = ctype
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatSchur (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -10964,7 +10976,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -10975,28 +10987,28 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
-  
+
   integer :: i,j
 
     ! Normally, we can handle the matrix. This solver can usually handle
     ! everything.
     ccompatible = LINSOL_COMP_OK
-    
+
     i = ubound(Rmatrices,1)
     j = Rmatrices(i)%nblocksPerRow
-    
+
     ! Let us see whether we can handle this matrix.
     ! It needs to be at least a 2x2 block matrix.
     if((Rmatrices(i)%nblocksPerRow .lt. 2) .or. &
        (Rmatrices(i)%nblocksPerCol .lt. 2)) &
       ccompatible = LINSOL_COMP_ERRGENERAL
-    
+
     ! And it needs to be square, of course.
     if(Rmatrices(i)%nblocksPerRow .ne. Rmatrices(i)%nblocksPerRow) &
       ccompatible = LINSOL_COMP_ERRMATRECT
-    
+
     ! And finally, we need to make sure that the block at the lower right
     ! corner has the same dimensions as our Schur-Complement matrix.
     !if((rsolverNode%p_rsubnodeSchur%p_rmatScS%NEQ .ne. &
@@ -11009,32 +11021,32 @@ contains
     ! one-level solver acting only there!
     if (present(CcompatibleDetail)) &
         CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixSchur (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! This routine is called if the system matrix changes.
-  
+
 !</description>
-  
+
 !<input>
   ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
   integer :: i,k,n
@@ -11044,7 +11056,7 @@ contains
 
     ! Now comes the tricky part: We need to decompose the input matrix
     ! into sub-matrices.
-    
+
     ! Allocate a new array of A-submatrices and their underlying
     ! discretisations.
     if(associated(rsolverNode%p_rsubnodeSchur%p_RmatrixA)) &
@@ -11053,27 +11065,27 @@ contains
       deallocate(rsolverNode%p_rsubnodeSchur%p_RdiscrA)
     allocate(rsolverNode%p_rsubnodeSchur%p_RmatrixA(1:k))
     allocate(rsolverNode%p_rsubnodeSchur%p_RdiscrA(1:k))
-    
+
     ! Extract the A-submatrices on all levels. We need to do this on all
     ! levels since the user may want to use multigrid as a solver for
     ! the A-submatrix!
     do i = 1, k
-      
+
       ! Derive a sub-discretisation for the A-submatrices.
       call spdiscr_deriveBlockDiscr(Rmatrices(i)%p_rblockDiscrTrial, &
           rsolverNode%p_rsubnodeSchur%p_RdiscrA(i), 1, n-1)
-      
+
       ! Derive a sub-matrix
       call lsysbl_deriveSubmatrix(Rmatrices(i), &
           rsolverNode%p_rsubnodeSchur%p_rmatrixA(i), &
           LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE, 1, n-1, 1, n-1)
-      
+
       ! And attach the sub-discretisation to the sub-matrix
       rsolverNode%p_rsubnodeSchur%p_rmatrixA(i)%p_rblockDiscrTrial => &
         rsolverNode%p_rsubnodeSchur%p_RdiscrA(i)
       rsolverNode%p_rsubnodeSchur%p_rmatrixA(i)%p_rblockDiscrTest => &
         rsolverNode%p_rsubnodeSchur%p_RdiscrA(i)
-      
+
     end do
 
     ! Extract the B-submatrix on finest level
@@ -11085,7 +11097,7 @@ contains
     call lsysbl_deriveSubmatrix(Rmatrices(k), &
         rsolverNode%p_rsubnodeSchur%rmatrixD, &
         LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE, n, n, 1, n-1)
-        
+
     ! Attach the A-matrices into the corresponding solver
     call linsol_setMatrices(rsolverNode%p_rsubnodeSchur%p_rsolverA, &
                             rsolverNode%p_rsubnodeSchur%p_RmatrixA)
@@ -11095,25 +11107,25 @@ contains
                             rsolverNode%p_rsubnodeSchur%p_RmatrixS)
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureSchur (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -11135,7 +11147,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -11148,25 +11160,25 @@ contains
     call linsol_initStructure(rsolverNode%p_rsubnodeSchur%p_rsolverS, isubgroup)
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataSchur (rsolverNode, ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -11188,7 +11200,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -11201,25 +11213,25 @@ contains
     call linsol_initData(rsolverNode%p_rsubnodeSchur%p_rsolverS, isubgroup)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataSchur (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -11234,7 +11246,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -11242,27 +11254,27 @@ contains
     ! Call the done routines of the subsolvers
     call linsol_doneData(rsolverNode%p_rsubnodeSchur%p_rsolverS, isubgroup)
     call linsol_doneData(rsolverNode%p_rsubnodeSchur%p_rsolverA, isubgroup)
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureSchur (rsolverNode, isolverSubgroup)
-  
+
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -11277,7 +11289,7 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -11285,15 +11297,15 @@ contains
     ! Call the done routines of the subsolvers
     call linsol_doneStructure(rsolverNode%p_rsubnodeSchur%p_rsolverS, isubgroup)
     call linsol_doneStructure(rsolverNode%p_rsubnodeSchur%p_rsolverA, isubgroup)
-      
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneSchur (rsolverNode)
-  
+
 !<description>
   ! This routine releases all temporary memory for the solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
@@ -11302,12 +11314,12 @@ contains
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
 !</description>
-  
+
 !<input>
   ! A pointer to a t_linsolNode structure of the solver.
   type(t_linsolNode), pointer         :: rsolverNode
 !</input>
-  
+
 !</subroutine>
 
   integer :: i
@@ -11315,18 +11327,18 @@ contains
     ! Release memory if still associated
     call linsol_doneDataSchur (rsolverNode, rsolverNode%isolverSubgroup)
     call linsol_doneStructureSchur (rsolverNode, rsolverNode%isolverSubgroup)
-    
+
     ! Release the subsolvers
     call linsol_releaseSolver(rsolverNode%p_rsubnodeSchur%p_rsolverS)
     call linsol_releaseSolver(rsolverNode%p_rsubnodeSchur%p_rsolverA)
-    
+
     !deallocate(rsolverNode%p_rsubnodeSchur%p_rsolverS)
     !deallocate(rsolverNode%p_rsubnodeSchur%p_rsolverA)
-    
+
     ! Release submatrices B and D on finest level
     call lsysbl_releaseMatrix(rsolverNode%p_rsubnodeSchur%rmatrixD)
     call lsysbl_releaseMatrix(rsolverNode%p_rsubnodeSchur%rmatrixB)
-    
+
     ! Release submatrices A and their discretisations on all levels.
     do i = ubound(rsolverNode%p_rsubnodeSchur%p_RmatrixA,1), 1, -1
 
@@ -11337,24 +11349,24 @@ contains
       call spdiscr_releaseBlockDiscr(rsolverNode%p_rsubnodeSchur%p_RdiscrA(i))
 
     end do
-    
+
     ! Release discretisation array
     deallocate(rsolverNode%p_rsubnodeSchur%p_RdiscrA)
-    
+
     ! Release matrix array
     deallocate(rsolverNode%p_rsubnodeSchur%p_RmatrixA)
-    
+
     ! Release the subnode itself
     deallocate(rsolverNode%p_rsubnodeSchur)
 
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_precSchur (rsolverNode,rd)
-  
+
 !<description>
   ! Applies Schur-Complement preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -11365,30 +11377,30 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! Our structure
   type(t_linsolSubnodeSchur), pointer :: p_rsubnode
-  
+
   ! The system matrix
   type(t_matrixblock), pointer :: p_rmatrix
-  
+
   ! Two sub-vectors
   type(t_vectorBlock) :: ru, rp
-  
+
   ! Type of preconditioner
   integer :: ctype
-  
+
     ! The Schur-complement preconditioner works for saddle-point systems
     ! of the following structure:
     !
@@ -11414,10 +11426,10 @@ contains
     ! For solving the sub-systems with A and S, two linear solvers are used.
 
     ! Solve the system!
-  
+
     ! Status reset
     rsolverNode%iresult = 0
-    
+
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeSchur
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -11425,44 +11437,44 @@ contains
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
-    
+
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
     end if
-    
+
     ! Get the preconditioner type
     ctype = p_rsubnode%ctype
-    
+
     ! Derive the sub-vectors u and p for our sub-systems
     call lsysbl_deriveSubvector(rd,ru,1,rd%nblocks-1,.true.)
     call lsysbl_deriveSubvector(rd,rp,rd%nblocks,rd%nblocks,.true.)
-    
+
     !if((ctype .eq. LINSOL_SCHUR_TYPE_DIAG) .or. &
     !   (ctype .eq. LINSOL_SCHUR_TYPE_LTRI)) then
-    
+
       ! Call solver for submatrix A to solve:
       ! A * u = f
       call linsol_precondDefect(p_rsubnode%p_rsolverA, ru)
-    
+
     !end if
-    
+
     if(ctype .eq. LINSOL_SCHUR_TYPE_LTRI) then
-      
+
       ! Update rhs for Schur-complement:
       ! g := g - D * u
       call lsysbl_blockMatVec (p_rsubnode%rmatrixD, ru, rp, -1.0_DP, 1.0_DP)
-      
+
     end if
-    
+
     ! As we now need to solve '-S*p = g <==> 'S*p = -g`, we will simply
     ! scale the defect by -1.
     call lsysbl_scaleVector(rp, -1.0_DP)
-    
+
     ! Call solver for Schur-complement matrix S to solve:
     ! S * p = g
     call linsol_precondDefect(p_rsubnode%p_rsolverS, rp)
-    
+
     ! Release the sub-vectors
     call lsysbl_releaseVector(rp)
     call lsysbl_releaseVector(ru)
@@ -11474,11 +11486,11 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_addMultigridLevel (p_rlevelInfo,rsolverNode, &
                     rprojection, p_rpresmoother,p_rpostsmoother,&
                     p_rcoarseGridSolver, iappend)
-                    
+
 !<description>
   ! This routine adds a new level to the linked list of levels in the multigrid
   ! solver identified by rsolverNode.
@@ -11495,14 +11507,14 @@ contains
   ! spatial discretisation structures on different levels are 'compatible'
   ! what they have to be anyway).
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver, where the level
   ! should be added to. Must already be initialised for the multigrid
   ! solver.
   type(t_linsolNode), intent(inout)                   :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
   ! An interlevel projection structure that configures the projection
   ! between the solutions on a finer and a coarser grid. The structure
@@ -11516,14 +11528,14 @@ contains
   ! what they have to be anyway), so the same structure can be used
   ! to initialise all levels!
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
-  
+
   ! Optional: A pointer to the solver structure of a solver that should be
   ! used for presmoothing. This structure is used as a template to create an
   ! appropriate solver structure for all the levels. The structure itself is
   ! used at the finest level.
   ! If not given or set to NULL(), no presmoother will be used.
   type(t_linsolNode), pointer, optional   :: p_rpresmoother
-  
+
   ! Optional: A pointer to the solver structure of a solver that should be
   ! used for postsmoothing. This structure is used as a template to create an
   ! appropriate solver structure for all the levels. The structure itself is
@@ -11535,7 +11547,7 @@ contains
   ! used for coarse grid solving.
   ! Should only be given for the very first level.
   type(t_linsolNode), pointer, optional   :: p_rcoarseGridSolver
-  
+
   ! Optional: Position where to put the new structure.
   ! YES or not specified: append the structure to the end of the list as new
   ! higher level.
@@ -11545,7 +11557,7 @@ contains
   ! level!)
   integer, intent(in), optional                  :: iappend
 !</input>
-  
+
 !<output>
   ! The t_levelInfo structure for the new level that was added to the
   ! multigrid solver. The application may modify the structure or throw the
@@ -11553,12 +11565,12 @@ contains
   ! structure internally.
   type(t_linsolMGLevelInfo), pointer     :: p_rlevelInfo
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -11566,11 +11578,11 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_addMultigridLevel')
       call sys_halt()
     end if
-    
+
     ! Create a new level-info structure
     nullify(p_rlevelInfo)
     allocate(p_rlevelInfo)
-    
+
     ! Attach the sub-solvers
     if(present(p_rcoarseGridSolver)) then
       if (associated(p_rcoarseGridSolver)) then
@@ -11589,7 +11601,7 @@ contains
         p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
       end if
     end if
-    
+
     ! Attach the projection structure and set bautoProjection to .false. to
     ! indicate that the projection structure was given by the caller.
     p_rlevelInfo%rprojection = rprojection
@@ -11598,38 +11610,38 @@ contains
     ! Attach the level-info structure to the linked list.
     ! Does the list exist?
     if (.not. associated(rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead)) then
-    
+
       ! List does not exist. Create a new one.
       rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead => p_rlevelInfo
       rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail => p_rlevelInfo
       rsolverNode%p_rsubnodeMultigrid%nlevels = 1
-    
+
     else
-    
+
       ! Do we have to insert it as new head?
       i = YES
       if (present(iappend)) i=iappend
-      
+
       if (i .eq. NO) then
-      
+
         ! New lowest level
         p_rlevelInfo%p_rnextLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead%p_rprevLevel => p_rlevelInfo
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead => p_rlevelInfo
-      
+
       else
-      
+
         ! New highest level
         p_rlevelInfo%p_rprevLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail%p_rnextLevel => p_rlevelInfo
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail => p_rlevelInfo
-        
+
       end if
-      
+
       ! Increase the number of existing levels
       rsolverNode%p_rsubnodeMultigrid%nlevels = &
         rsolverNode%p_rsubnodeMultigrid%nlevels + 1
-    
+
     end if
 
   end subroutine
@@ -11637,10 +11649,10 @@ contains
 ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_addMultigridLevel2 (p_rlevelInfo, rsolverNode, &
                  p_rpresmoother, p_rpostsmoother, p_rcoarseGridSolver, iappend)
-                    
+
 !<description>
   ! This routine adds a new level to the linked list of levels in the multigrid
   ! solver identified by rsolverNode.
@@ -11656,23 +11668,23 @@ contains
   ! an interlevel projection structure and will advise multigrid to build
   ! a default projection based on the system matrix.
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver, where the level
   ! should be added to. Must already be initialised for the multigrid
   ! solver.
   type(t_linsolNode),intent(inout)          :: rsolverNode
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional: A pointer to the solver structure of a solver that should be
   ! used for presmoothing. This structure is used as a template to create an
   ! appropriate solver structure for all the levels. The structure itself is
   ! used at the finest level.
   ! If not given or set to NULL(), no presmoother will be used.
   type(t_linsolNode), pointer, optional   :: p_rpresmoother
-  
+
   ! Optional: A pointer to the solver structure of a solver that should be
   ! used for postsmoothing. This structure is used as a template to create an
   ! appropriate solver structure for all the levels. The structure itself is
@@ -11684,7 +11696,7 @@ contains
   ! used for coarse grid solving.
   ! Should only be given for the very first level.
   type(t_linsolNode), pointer, optional   :: p_rcoarseGridSolver
-  
+
   ! Optional: Position where to put the new structure.
   ! YES or not specified: append the structure to the end of the list as new
   ! higher level.
@@ -11694,7 +11706,7 @@ contains
   ! level!)
   integer, intent(in), optional                  :: iappend
 !</input>
-  
+
 !<output>
   ! The t_levelInfo structure for the new level that was added to the
   ! multigrid solver. The application may modify the structure or throw the
@@ -11702,12 +11714,12 @@ contains
   ! structure internally.
   type(t_linsolMGLevelInfo), pointer     :: p_rlevelInfo
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -11715,14 +11727,14 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_addMultigridLevel')
       call sys_halt()
     end if
-    
+
     ! Create a new level-info structure
     nullify(p_rlevelInfo)
     allocate(p_rlevelInfo)
-    
+
     ! Make sure multigrid will create an interlevel projection structure.
     p_rlevelInfo%bautoProjection = .true.
-    
+
     ! Attach the sub-solvers
     if(present(p_rcoarseGridSolver)) then
       if (associated(p_rcoarseGridSolver)) then
@@ -11745,48 +11757,48 @@ contains
     ! Attach the level-info structure to the linked list.
     ! Does the list exist?
     if (.not. associated(rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead)) then
-    
+
       ! List does not exist. Create a new one.
       rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead => p_rlevelInfo
       rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail => p_rlevelInfo
       rsolverNode%p_rsubnodeMultigrid%nlevels = 1
-    
+
     else
-    
+
       ! Do we have to insert it as new head?
       i = YES
       if (present(iappend)) i=iappend
-      
+
       if (i .eq. NO) then
-      
+
         ! New lowest level
         p_rlevelInfo%p_rnextLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead%p_rprevLevel => p_rlevelInfo
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead => p_rlevelInfo
-      
+
       else
-      
+
         ! New highest level
         p_rlevelInfo%p_rprevLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail%p_rnextLevel => p_rlevelInfo
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail => p_rlevelInfo
-        
+
       end if
-      
+
       ! Increase the number of existing levels
       rsolverNode%p_rsubnodeMultigrid%nlevels = &
         rsolverNode%p_rsubnodeMultigrid%nlevels + 1
-    
+
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_removeMultigridLevel (rsolverNode,bcoarseLevel)
-                    
+
 !<description>
   ! This routine removes the highest or lowest multigrid level from the
   ! multigrid structure and from the heap. The associated solver
@@ -11796,7 +11808,7 @@ contains
   ! If the coarse grid is removed, the caller has to make sure that
   ! the new coarse grid receives a coarse grid solver!
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver.
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -11808,18 +11820,18 @@ contains
   ! .FALSE. or not defined = Delete the finest level.
   logical, intent(in), optional :: bcoarseLevel
 !</input>
-  
+
 !</subroutine>
 
   ! local variables
   logical :: bcoarse
-  
+
   ! The t_levelInfo structure to delete
   type(t_linsolMGLevelInfo), pointer     :: p_rlevelInfo
-  
+
     bcoarse = .false.
     if (present(bcoarseLevel)) bcoarse = bcoarseLevel
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -11827,7 +11839,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_removeMultigridLevel')
       call sys_halt()
     end if
-    
+
     ! Where is the levelInfo-structure to delete?
     if (.not. bcoarse) then
       ! Remove the fine level node - if it exists.
@@ -11835,12 +11847,12 @@ contains
 
       if (associated(p_rlevelInfo)) then
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail => p_rlevelInfo%p_rprevLevel
-        
+
         if (rsolverNode%p_rsubnodeMultigrid%nlevels .eq. 1) then
           ! We remove the last node.
           nullify(rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead)
         end if
-        
+
         if (associated(p_rlevelInfo%p_rprevLevel)) then
           nullify(p_rlevelInfo%p_rprevLevel%p_rnextLevel)
         end if
@@ -11849,9 +11861,9 @@ contains
       ! Remove the coarse level node - if it exists.
       p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
       if (associated(p_rlevelInfo)) then
-        
+
         rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead => p_rlevelInfo%p_rnextLevel
-        
+
         if (rsolverNode%p_rsubnodeMultigrid%nlevels .eq. 1) then
           ! We remove the last node.
           nullify(rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail)
@@ -11862,7 +11874,7 @@ contains
         end if
       end if
     end if
-    
+
     if (associated(p_rlevelInfo)) then
       ! Decrease the number of existing levels
       rsolverNode%p_rsubnodeMultigrid%nlevels = &
@@ -11885,7 +11897,7 @@ contains
             call lsysbl_releaseVector(rsolverNode%p_rsubnodeMultigrid% &
                                       p_rlevelInfoHead%rtempVector)
         end if
-        
+
         ! But there may be a solution vector in p_rlevelInfo that
         ! is to be deleted - if the level is not also the coarse grid
         if (rsolverNode%p_rsubnodeMultigrid%nlevels .ne. 0) then
@@ -11907,7 +11919,7 @@ contains
             call lsysbl_releaseVector(rsolverNode%p_rsubnodeMultigrid% &
                                       p_rlevelInfoTail%rsolutionVector)
         end if
-        
+
         ! But there may be a RHS/temporary vector in p_rlevelInfo that
         ! is to be deleted - if the level is not also the coarse grid
         if (rsolverNode%p_rsubnodeMultigrid%nlevels .ne. 0) then
@@ -11917,7 +11929,7 @@ contains
             call lsysbl_releaseVector(p_rlevelInfo%rtempVector)
         end if
       end if
-    
+
       ! Release sub-solvers if associated.
       !
       ! Caution: Pre- and postsmoother may be identical!
@@ -11934,15 +11946,15 @@ contains
       if (associated(p_rlevelInfo%p_rcoarseGridSolver)) then
         call linsol_releaseSolver(p_rlevelInfo%p_rcoarseGridSolver)
       end if
-      
+
       ! Check whether multigrid created the interlevel projection structure.
       if(p_rlevelInfo%bautoProjection) then
-        
+
         ! Yes, so we need to release it now.
         call mlprj_doneProjection(p_rlevelInfo%rprojection)
-        
+
       end if
-      
+
       ! Clean up the associated matrix if there is one.
       ! Of course, the memory of the matrices will not be deallocated
       ! because the matrices belong to the application, not to the solver!
@@ -11950,17 +11962,17 @@ contains
 
       ! Remove the structure
       deallocate(p_rlevelInfo)
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_cleanMultigridLevels (rsolverNode)
-                    
+
 !<description>
   ! This routine removes all level information from the MG solver and releases
   ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
@@ -11968,7 +11980,7 @@ contains
   ! It can be used to clean up all levels before rebuilding the level
   ! structure by addMultigridLevel.
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver.
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -11982,19 +11994,19 @@ contains
     end do
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_getMultigridLevel (rsolverNode,ilevel,p_rlevelInfo)
-                    
+
 !<description>
   ! Searches inside of the multigrid structure for level ilevel and returns
   ! a pointer to the corresponding p_rlevelInfo structure
   ! (or NULL() if the level does not exist).
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -12004,13 +12016,13 @@ contains
   ! Number of the level to fetch.
   integer, intent(in) :: ilevel
 !</input>
-  
+
 !<output>
   ! A pointer to the corresponding t_levelInfo structure or NULL()
   ! if the level does not exist.
   type(t_linsolMGLevelInfo), pointer     :: p_rlevelInfo
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -12022,7 +12034,7 @@ contains
       nullify(p_rlevelInfo)
       return
     end if
-    
+
     ! Go through the linear list to search for the level
     p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
     do i=1,ilevel-1
@@ -12030,17 +12042,17 @@ contains
     end do
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<function>
-  
+
   integer function linsol_getMultigridLevelCount (rsolverNode)
-                    
+
 !<description>
   ! Returns the number of levels currently attached to the multigrid solver.
 !</description>
-  
+
 !<input>
   ! The solver structure of the multigrid solver
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -12049,21 +12061,21 @@ contains
 !<result>
   ! The number of levels in the MG solver.
 !</result>
-  
+
 !</function>
 
     linsol_getMultigridLevelCount = rsolverNode%p_rsubnodeMultigrid%nlevels
 
   end function
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initMultigrid (p_rsolverNode,Rfilter)
-  
+
 !<description>
-  
+
   ! Creates a t_linsolNode solver structure for the Multigrid solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
@@ -12071,47 +12083,47 @@ contains
   ! Before the solver can used for solving the problem, the caller must add
   ! information about all levels (matrices,...) to the solver.
   ! This can be done by linsol_addMultigridLevel.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
   type(t_filterChain), dimension(:), target, optional   :: Rfilter
-  
+
 !</input>
-  
+
 !<output>
-  
+
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer             :: p_rsolverNode
-   
+
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_MULTIGRID
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR     + LINSOL_ABIL_BLOCK        + &
                                 LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKDEF     + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate the subnode for Multigrid.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeMultigrid)
-    
+
     ! Initialise the coarse grid correction structure.1
     call cgcor_init (p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection)
 
@@ -12119,21 +12131,21 @@ contains
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubnodeMultigrid%p_RfilterChain => Rfilter
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterMultigrid (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the Multigrid solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout)                     :: rsolverNode
@@ -12168,47 +12180,47 @@ contains
         call linsol_alterSolver (p_rcurrentLevel%p_rcoarseGridSolver, &
                                  ralterConfig)
       end if
-      
+
       ! Next level -- if there is one.
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
     end do
-    
+
   end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixMultigrid (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! Assigns the system matrix rsystemMatrix to the Multigrid solver on
   ! all levels.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! An array of system matrices on all levels.
   ! Each level in multigrid is initialised separately.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer :: ilevel,nlmin
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -12216,7 +12228,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid')
       call sys_halt()
     end if
-    
+
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid%nlevels) then
       call output_line ('Wrong number of matrices!', &
@@ -12234,23 +12246,23 @@ contains
     nlmin  = lbound(Rmatrices,1)
     ilevel = lbound(Rmatrices,1)
     do while(associated(p_rcurrentLevel))
-    
+
       ! Check whether we need to create an interlevel projection structure,
       ! but only on the non-coarse levels, of course.
       if(p_rcurrentLevel%bautoProjection .and. (ilevel .ne. nlmin)) then
-        
+
         ! Yes, so create a default projection structure based on the system
         ! matrix on this level.
         call mlprj_initProjectionMat(p_rcurrentLevel%rprojection, &
                                      Rmatrices(ilevel))
-        
+
       end if
-    
+
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_setMatrices (p_rcurrentLevel%p_rpreSmoother, &
                                   Rmatrices(nlmin:ilevel))
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
@@ -12259,37 +12271,37 @@ contains
         call linsol_setMatrices (p_rcurrentLevel%p_rpostSmoother, &
                                   Rmatrices(nlmin:ilevel))
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_setMatrices (p_rcurrentLevel%p_rcoarseGridSolver, &
                                   Rmatrices(nlmin:ilevel))
       end if
-      
+
       ! Write a link to the matrix into the level-structure.
       call lsysbl_duplicateMatrix (Rmatrices(ilevel-nlmin+1), &
           p_rcurrentLevel%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      
+
       ! Next level -- if there is one.
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
       ilevel = ilevel + 1
-      
+
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatMultigrid (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -12298,7 +12310,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -12311,16 +12323,16 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer                       :: ilevel,nlmin,ccompatLevel
-    
+
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! Reset all compatibility flags
     if (present(CcompatibleDetail)) CcompatibleDetail (:) = ccompatible
 
@@ -12331,7 +12343,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid')
       call sys_halt()
     end if
-    
+
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid%nlevels) then
       call output_line ('Wrong number of matrices!', &
@@ -12345,20 +12357,20 @@ contains
     ! For this purpose, call the general check routine, but
     ! pass only that part of the Rmatrices array that belongs
     ! to the range of levels between the coarse grid and the current grid.
-    
+
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
     nlmin  = lbound(Rmatrices,1)
     ilevel = lbound(Rmatrices,1)
-    
+
     ! Loop through all levels
     do while(associated(p_rcurrentLevel))
-    
+
       ! Compatibility flag for that level
       ccompatLevel = LINSOL_COMP_OK
-    
+
       ! Check presmoother
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
-      
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
               Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
@@ -12366,22 +12378,22 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
               Rmatrices(nlmin:ilevel),ccompatLevel)
         end if
-      
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
           ilevel = ilevel + 1
           cycle
         end if
-        
+
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) then
-        
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
               Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
@@ -12389,19 +12401,19 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
               Rmatrices(nlmin:ilevel),ccompatLevel)
         end if
-        
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
           ilevel = ilevel + 1
           cycle
         end if
-        
+
       end if
-      
+
       ! Check coarse grid solver
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
-        
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
               Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
@@ -12409,41 +12421,41 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
               Rmatrices(nlmin:ilevel),ccompatLevel)
         end if
-        
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
           ilevel = ilevel + 1
           cycle
         end if
-        
+
       end if
-      
+
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
       ilevel = ilevel + 1
-      
+
     end do
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureMultigrid (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -12469,7 +12481,7 @@ contains
   integer :: imemmax
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rtemplVect
-  
+
   ! A-priori we have no error...
   ierror = LINSOL_ERR_NOERROR
 
@@ -12497,12 +12509,12 @@ contains
     ! coarse grid solver structure attached.
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
     do while(associated(p_rcurrentLevel))
-    
+
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
@@ -12511,16 +12523,16 @@ contains
         call linsol_initStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_initStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
-      
+
     end do
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -12531,13 +12543,13 @@ contains
     ! solution vectors.
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
     do while(associated(p_rcurrentLevel))
-    
+
       p_rmatrix => p_rcurrentLevel%rsystemMatrix
-      
+
       nullify(p_rtemplVect)
-      
+
       if (associated(p_rcurrentLevel%p_rnextLevel)) then
-      
+
         ! On the maximum level we do not need additional memory for the
         ! solution vector - as solution vector on the fine grid,
         ! the vector which comes as parameter
@@ -12545,24 +12557,24 @@ contains
         call lsysbl_createVecBlockIndMat (p_rmatrix, &
               p_rcurrentLevel%rsolutionVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-              
+
         p_rtemplVect => p_rcurrentLevel%rsolutionVector
-        
+
       end if
       ! On the coarse grid, we do not need memory for temporary/RHS
       ! vectors. The RHS on the coarse grid is replaced in-situ
       ! by the solution vector.
       if (associated(p_rcurrentLevel%p_rprevLevel)) then
-      
+
         call lsysbl_createVecBlockIndMat (p_rmatrix, &
               p_rcurrentLevel%rrhsVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
         call lsysbl_createVecBlockIndMat (p_rmatrix, &
               p_rcurrentLevel%rtempVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-              
+
         p_rtemplVect => p_rcurrentLevel%rtempVector
-        
+
       end if
 
       ! Calculate the memory that is probably necessary for resorting
@@ -12570,7 +12582,7 @@ contains
       if (associated(p_rtemplVect)) then
         imemmax = max(imemmax,p_rtemplVect%NEQ)
       end if
-         
+
       ! Ask the prolongation/restriction routines how much memory is necessary
       ! for prolongation/restriction on that level.
       if (associated(p_rcurrentLevel%p_rprevLevel)) then ! otherwise coarse grid
@@ -12595,70 +12607,70 @@ contains
         p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
           -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rnextLevel)) then
         p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
           -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
       end if
-      
+
       ! And the next level...
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
     end do
-    
+
     ! Do we have to allocate memory for prolongation/restriction/resorting?
     if (imemmax .gt. 0) then
-    
+
       call lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
                                 imemmax,.false.,rsolverNode%cdefaultDataType)
-                                
+
       ! Use this vector also for the coarse grid correction.
       ! Create a block vector on every level with the structure of the
       ! RHS that shares the memory with rprjTempVector.
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
       do while(associated(p_rcurrentLevel))
-      
+
         if (associated(p_rcurrentLevel%p_rprevLevel)) then
           call lsysbl_createVecFromScalar (&
               rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
               p_rcurrentLevel%rcgcorrTempVector)
-        
+
           call lsysbl_enforceStructure (&
               p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rcgcorrTempVector)
         end if
-      
+
         p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
       end do
     else
       rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ = 0
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataMultigrid (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -12674,14 +12686,14 @@ contains
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup
-  
+
   ! A-priori we have no error...
   ierror = LINSOL_ERR_NOERROR
 
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
-    
+
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there is not much to do with isubgroup,
     ! as there is no special information (like a factorisation)
@@ -12689,7 +12701,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -12706,7 +12718,7 @@ contains
         call linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
@@ -12714,40 +12726,40 @@ contains
         call linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
     end do
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataMultigrid (rsolverNode,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -12763,7 +12775,7 @@ contains
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -12775,7 +12787,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -12802,33 +12814,33 @@ contains
       end if
       p_rcurrentLevel => p_rcurrentLevel%p_rprevLevel
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureMultigrid (rsolverNode,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -12844,7 +12856,7 @@ contains
   ! local variables
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -12856,7 +12868,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -12869,12 +12881,12 @@ contains
     ! coarse grid solver structure attached.
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
     do while(associated(p_rcurrentLevel))
-    
+
       ! Release the coarse grid solver
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_doneStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
       end if
-      
+
       ! Pre- and postsmoother may be identical! If not, first release the
       ! postsmoother.
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
@@ -12882,12 +12894,12 @@ contains
                             p_rcurrentLevel%p_rpostSmoother))) then
         call linsol_doneStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
       end if
-      
+
       ! Release the presmoother
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_doneStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
       end if
-      
+
       p_rcurrentLevel => p_rcurrentLevel%p_rprevLevel
     end do
 
@@ -12897,13 +12909,13 @@ contains
     ! Release temporary memory.
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
     do while(associated(p_rcurrentLevel))
-    
+
       if (associated(p_rcurrentLevel%p_rprevLevel)) then
-      
+
         if (p_rcurrentLevel%rtempVector%NEQ .ne. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
         end if
-        
+
         if (p_rcurrentLevel%rrhsVector%NEQ .ne. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
         end if
@@ -12934,33 +12946,33 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneMultigrid (rsolverNode)
-  
+
 !<description>
-  
+
   ! This routine releases all temporary memory for the multigrid solver from
   ! the heap. In particular, this releases the solver structures of all
   ! subsolvers (smoother, coarse grid solver).
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! A pointer to a t_linsolNode structure of the Multigrid solver.
   type(t_linsolNode), intent(inout)                :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   !TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
@@ -12993,25 +13005,25 @@ contains
     ! Release data and structure if this has not happened yet.
     call linsol_doneDataMultigrid(rsolverNode)
     call linsol_doneStructureMultigrid(rsolverNode)
-    
+
     ! Remove all the levels
     call linsol_cleanMultigridLevels (rsolverNode)
-    
+
     ! Release the coarse grid correction structure
     call cgcor_release (rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection)
-    
+
     ! Release MG substructure, that is it.
     deallocate(rsolverNode%p_rsubnodeMultigrid)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_smoothCorrection (rsolverNode,&
                        rmatrix,rx,rb,rtemp,p_RfilterChain)
-  
+
 !<description>
   ! This routine performs a smoothing process on the vector rx
   ! belonging to a linear system <tex>$ Ax=b $</tex>.
@@ -13036,30 +13048,30 @@ contains
   ! must have been called to prepare the solver for solving
   ! the problem.
 !</description>
-  
+
 !<input>
   ! The RHS vector of the system
   type(t_vectorBlock), intent(in), target            :: rb
 
   ! The system matrix on the current level.
   type(t_matrixBlock), intent(in)                    :: rmatrix
-  
+
   ! Pointer to the filter chain to use if rsolverNode is a direct
   ! solver. NULL() if no filtering is active.
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 !</input>
-  
+
 !<inputoutput>
   ! The solver node containing the solver configuration
   type(t_linsolNode), intent(inout)                  :: rsolverNode
-  
+
   ! The initial solution vector; receives the solution of the system
   type(t_vectorBlock), intent(inout)                 :: rx
-  
+
   ! A temporary vector of the same size and structure as rx.
   type(t_vectorBlock), intent(inout)                 :: rtemp
 !</inputoutput>
-  
+
 !</subroutine>
 
   integer :: i
@@ -13067,10 +13079,10 @@ contains
   integer :: iiterations
   real(DP) :: dres
   !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-    
+
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
     if (rsolverNode%nmaxIterations .le. 0) return
-    
+
     ! Some solvers can be used without the usual preconditioner approach to gain speed.
     ! First check if we have such a solver; these will not need the additional matrix
     ! vector multiplication below!
@@ -13091,17 +13103,17 @@ contains
       ! vectors that pop up during its iteration.
       ! Or the algorithm filters internally, so we do not have to take into
       ! account the filtering at all.
-    
+
     case (LINSOL_ALG_VANKA)
       ! The basic proceeding is like below: Apply the corresponding solver multiple
       ! times to the solution- and RHS-vector to improve the solution. Let us see
       ! which solver we have.
       ! If the previous IF-guess was wrong, we will leave this IF-clause and
       ! fall back to use the preconditioner approach.
-      
+
       !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
       !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
-      
+
       ! So, let us see if we have a special implementation here...
       select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
       case (LINSOL_VANKA_GENERALDIRECT,&
@@ -13118,82 +13130,82 @@ contains
             LINSOL_VANKA_NAVST2D_FULL,&
             LINSOL_VANKA_BOUSS2D_DIAG,&
             LINSOL_VANKA_BOUSS2D_FULL)
-            
+
         ! Yes, this solver can be applied to a given solution/rhs vector directly.
         ! Call it nmaxIterations times to perform the smoothing.
         do i = 1, rsolverNode%nmaxIterations
-        
+
           ! Probably print the residuum
           if (rsolverNode%ioutputLevel .ge. 2) then
             call lsysbl_copyVector(rb,rtemp)
             call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-            
+
             dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
             if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                      
+
             call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
                 ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
           end if
-        
+
           ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
           ! without explicitly calculating (b-Ax_n) like below.
           call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
                                 rx, rb, rsolverNode%domega)
-                                
+
         end do
 
         ! Probably print the residuum
         if (rsolverNode%ioutputLevel .ge. 2) then
           call lsysbl_copyVector(rb,rtemp)
           call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-          
+
           dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                    
+
           call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
               ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
         end if
 
         ! That is it.
         return
-      
+
       end select
-      
+
     case (LINSOL_ALG_SPSOR)
       ! SP-SOR smoother. We can use a fast implementation for this one, however,
       ! we will only use it if we do not have to print the residuals.
       if(rsolverNode%ioutputLevel .lt. 2) then
-      
+
         ! Now make sure that we do NOT use a SP-SSOR (i.e. symmetric SP-SOR)
         ! variant, as this would result in a fatal error...
         select case(rsolverNode%p_rsubNodeSPSOR%csubtype)
         case (LINSOL_SPSOR_NAVST2D, &
               LINSOL_SPSOR_NAVST2D_DIAG)
-              
+
            ! Okay, let the SP-SOR solver perform nmaxIterations
            call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, rx, rb, &
                              rsolverNode%nmaxIterations, rsolverNode%domega)
-           
+
            ! And jump out of this routine
            return
-        
+
         end select
-      
+
       end if
 
     end select
-      
+
     ! This is a 1-step solver, we have to emulate the smoothing
     ! iterations. Perform rsolverNode%nmaxIterations steps of the
     ! form
     !     <tex>$$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$</tex>
     ! with $x_0 = 0$.
-    
+
     bfilter = associated(p_RfilterChain)
-    
+
     !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
     !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
-    
+
     ! Do we have an iterative or one-step solver given?
     ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
     ! solver is called only once and performs nmaxIterations steps internally.
@@ -13204,28 +13216,28 @@ contains
     else
       iiterations = 1
     end if
-    
+
     do i=1,iiterations
-    
+
       call lsysbl_copyVector(rb,rtemp)
       call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-      
+
       if (rsolverNode%ioutputLevel .ge. 2) then
         dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
         if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                  
+
         call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
             ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
       end if
-      
+
       ! Apply the filter to this defect before preconditioning
       if (bfilter) then
         call filter_applyFilterChainVec (rtemp, p_RfilterChain)
       end if
-      
+
       ! Perform preconditioning
       call linsol_precondDefect(rsolverNode,rtemp)
-      
+
       ! If the preconditioner broke down, cancel the smoothing,
       ! it would destroy out solution!
       if (rsolverNode%iresult .ne. 0) then
@@ -13235,37 +13247,37 @@ contains
           exit
         end if
       end if
-      
+
       call lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
-      
+
     end do
 
     ! Probably print the final residuum
     if (rsolverNode%ioutputLevel .ge. 2) then
       call lsysbl_copyVector(rb,rtemp)
       call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-      
+
       dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
       if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                
+
       call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
           ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
     end if
-    
+
     ! Apply the filter to the solution to enforce e.g. integral-mean-value = 0
     ! (property may be lost for some VANKA smoothers!)
     if (bfilter) then
       call filter_applyFilterChainVec (rtemp, p_RfilterChain)
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_precMultigrid (rsolverNode,rd)
-  
+
 !<description>
   ! Applies Multigrid preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -13276,18 +13288,18 @@ contains
   ! before calling this routine.
   ! The matrices <tex>$ A $</tex> on all levels must be attached to the solver previously
   ! by linsol_setMatrices.
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -13296,27 +13308,27 @@ contains
   real(DP) :: dres,dstep
   logical :: bfilter,bsort
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix on the current level
   type(t_matrixBlock), pointer :: p_rmatrix
-  
+
   ! Our MG structure
   type(t_linsolSubnodeMultigrid), pointer :: p_rsubnode
-  
+
   ! The current level and the next lower one.
   type(t_linsolMGLevelInfo), pointer :: p_rcurrentLevel,p_rlowerLevel
-  
+
     ! Solve the system!
-    
+
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid
-    
+
     bfilter = associated(rsolverNode%p_rsubnodeMultigrid%p_RfilterChain)
     p_RfilterChain => rsolverNode%p_rsubnodeMultigrid%p_RfilterChain
-    
+
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rsystemMatrix
 
@@ -13335,7 +13347,7 @@ contains
       rsolverNode%iresult = 2
       return
     end if
-    
+
     if ((.not. associated(p_rsubnode%p_rlevelInfoHead)) .or. &
         (.not. associated(p_rsubnode%p_rlevelInfoTail)) .or. &
         (p_rsubnode%nlevels .le. 0)) then
@@ -13352,7 +13364,7 @@ contains
     ! Minimum/maximum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
     nmaxIterations = max(rsolverNode%nmaxIterations,0)
-      
+
     ! Iteration when the residuum is printed:
     niteResOutput = max(1,rsolverNode%niteResOutput)
 
@@ -13364,26 +13376,26 @@ contains
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
-    
+
     ! Number of blocks in the current equation
     nblocks = rd%nblocks
-    
+
     ! We start on the maximum level.
     p_rcurrentLevel => p_rsubnode%p_rlevelInfoTail
     ilev = p_rsubnode%nlevels
     nlmax = p_rsubnode%nlevels
     p_rlowerLevel => p_rcurrentLevel%p_rprevLevel
-    
+
     ! Is there only one level? Can be seen if the current level
     ! already contains a coarse grid solver.
     if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
-    
+
       if (rsolverNode%ioutputLevel .gt. 1) then
         call output_line ('Multigrid: Only one level. '//&
              'Switching back to standard solver.')
       end if
       call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
-      
+
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
       rsolverNode%dlastDefect = p_rcurrentLevel%p_rcoarseGridSolver%dlastDefect
@@ -13392,7 +13404,7 @@ contains
       rsolverNode%iiterations = p_rcurrentLevel%p_rcoarseGridSolver%iiterations
       rsolverNode%dasymptoticConvergenceRate = p_rcurrentLevel% &
         p_rcoarseGridSolver%dasymptoticConvergenceRate
-      
+
     else
       ! Get the norm of the initial residuum.
       ! As the initial iteration vector is zero, this is the norm
@@ -13412,20 +13424,20 @@ contains
       ! routine filters "everything out"!
       ! In that case we can directly stop our computation.
       if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-      
+
         ! final defect is 0, as initialised in the output variable above
         call lsysbl_clearVector(rd)
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
         rsolverNode%iiterations = 0
         rsolverNode%dasymptoticConvergenceRate = 0.0_DP
-        
+
       else
-        
+
         ! Ok, we can start with multigrid.
         ! At first check the sorting state of the vector.
         bsort = lsysbl_isVectorSorted(rd)
-        
+
         ! To deal with sorted vectors is a bit tricky! Here a small summary
         ! how sorted vectors is dealed with, in case sorting is activated:
         !
@@ -13445,7 +13457,7 @@ contains
         !     - the unsorted vector on level l is sorted
         ! So at the end of the MG sweep, we have the same situation as at the start
         ! of the algorithm.
-        
+
         ! At first, reset the cycle counters of all levels
         p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
         do while(associated(p_rcurrentLevel%p_rnextLevel))
@@ -13456,11 +13468,11 @@ contains
           end if
           p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
         end do
-        
+
         ! Afterwards, p_rcurrentLevel points to the maximum level again.
         ! There, we set ncycles to 1.
         p_rcurrentLevel%ncycles = 1
-        
+
         ! Print out the initial residuum
 
         if (rsolverNode%ioutputLevel .ge. 2) then
@@ -13468,10 +13480,10 @@ contains
               trim(sys_siL(0,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         end if
-        
+
         ! Copy the initial RHS to the RHS vector on the maximum level.
         call lsysbl_copyVector(rd,p_rcurrentLevel%rrhsVector)
-        
+
         ! Replace the solution vector on the finest level by rd.
         ! Afterwards, rd and the solution vector on the finest level
         ! share the same memory location, so we use rd as iteration
@@ -13482,15 +13494,15 @@ contains
         ! (although this should not happen).
         p_rcurrentLevel%rsolutionVector = rd
         p_rcurrentLevel%rsolutionVector%bisCopy = .true.
-        
+
         ! Clear the initial solution vector.
         call lsysbl_clearVector (p_rcurrentLevel%rsolutionVector)
-        
+
         ! Start multigrid iteration; perform at most nmaxiterations iterations.
         do ite = 1, nmaxiterations
-        
+
           rsolverNode%icurrentIteration = ite
-          
+
           ! Initialise cycle counters for all levels.
           p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
           do while(associated(p_rcurrentLevel%p_rnextLevel))
@@ -13499,11 +13511,11 @@ contains
           end do
           ! Do not forget the highest level.
           p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
-        
+
           ! p_rcurrentLevel now points to the maximum level.
           ilev = p_rsubnode%nlevels
           p_rlowerLevel => p_rcurrentLevel%p_rprevLevel
-          
+
           ! Build the defect...
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           if (ite .ne. 1) then   ! initial solution vector is zero!
@@ -13517,16 +13529,16 @@ contains
             call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                              p_RfilterChain)
           end if
-          
+
           cycleloop: do  ! Loop for the cycles
-          
+
             ! On the maximum level we already built out defect vector. If we are
             ! on a lower level than NLMAX, perform smoothing+restriction down to the
             ! coarse level. We identify the coarse level by checking if
             ! the current level has a coarse grid solver.
-            
+
             do while (.not. associated(p_rcurrentLevel%p_rcoarseGridSolver))
-            
+
               ! Perform the pre-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpreSmoother)) then
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpreSmoother,&
@@ -13535,7 +13547,7 @@ contains
                           p_rcurrentLevel%rrhsVector,&
                           p_rcurrentLevel%rtempVector,p_RfilterChain)
               end if
-            
+
               ! Build the defect vector
               call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
@@ -13548,17 +13560,17 @@ contains
                 call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                                 p_RfilterChain)
               end if
-              
+
               ! Extended output
               if (associated(p_rcurrentLevel%p_rpreSmoother) .and. &
                   (rsolverNode%ioutputLevel .ge. 3) .and. &
                   (mod(ite,niteResOutput).eq.0)) then
-                  
+
                 dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
                     rsolverNode%iresNorm)
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
-                          
+
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after presm.:     !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
@@ -13576,7 +13588,7 @@ contains
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.false.)
               end if
-              
+
               ! When restricting to the coarse grid, we directy restrict into
               ! the solution vector. It is used there as RHS and replaced in-situ
               ! by the solution by the coarse grid solver. So do not need the RHS vector
@@ -13612,7 +13624,7 @@ contains
                   ! resorting routine.
                   p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
                   abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy)
-                  
+
                   p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
                     isortStrategy = abs(p_rlowerLevel%rsolutionVector% &
                     RvectorBlock(1:nblocks)%isortStrategy)
@@ -13620,16 +13632,16 @@ contains
 
                 ! Choose zero as initial vector on lower level.
                 call lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
-                
+
                 ! Extended output and/or adaptive cycles
                 if ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .ne. 1E99_DP) .or.&
                     (rsolverNode%ioutputLevel .ge. 3)) then
-                
+
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   ! In case adaptive cycles are activated, save the 'initial' residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
@@ -13637,18 +13649,18 @@ contains
                     p_rlowerLevel%dinitResCycle = dres
                     p_rlowerLevel%icycleCount = 1
                   end if
-                         
+
                   ! If the output level is high enough, print that residuum norm.
                   if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                       (mod(ite,niteResOutput).eq.0)) then
                     call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
                         ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
                   end if
-                  
+
                 end if
 
               else
-              
+
                 ! The vector is to be restricted to the coarse grid.
                 call mlprj_performRestriction (p_rcurrentLevel%rprojection,&
                       p_rlowerLevel%rsolutionVector, &
@@ -13677,28 +13689,28 @@ contains
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                     (mod(ite,niteResOutput).eq.0)) then
-                    
+
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rsolutionVector,&
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
                       ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
                 end if
 
               end if
-            
+
               ! Go down one level
               ilev = ilev - 1
               p_rcurrentLevel => p_rcurrentLevel%p_rprevLevel
               p_rlowerLevel => p_rcurrentLevel%p_rprevLevel
-              
+
               ! If we are not on the lowest level, repeat the smoothing of
               ! the solution/restriction of the new defect in the next loop
               ! pass...
             end do   ! ilev > minimum level
-            
+
             ! Now we reached the coarse grid.
             ! Apply the filter chain (e.g. to implement boundary conditions)
             ! on the just calculated right hand side,
@@ -13708,12 +13720,12 @@ contains
               call filter_applyFilterChainVec (p_rcurrentLevel%rsolutionVector, &
                                                p_RfilterChain)
             end if
-            
+
             ! Solve the system on lowest level by preconditioning
             ! of the RHS=defect vector.
             call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
                                       p_rcurrentLevel%rsolutionVector)
-            
+
             ! Now we have the solution vector on the lowest level - we have to go
             ! upwards now... but probably not to NLMAX! That depends on the cycle.
             !
@@ -13721,7 +13733,7 @@ contains
               ilev = ilev + 1
               p_rlowerLevel => p_rcurrentLevel
               p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
-              
+
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
               !
@@ -13731,7 +13743,7 @@ contains
               if (bsort) then
                 call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
                       p_rsubnode%rprjTempVector,.false.)
-                
+
                 ! Temp-vector and RHS vector there unused now,
                 ! therefore we can mark them as not sorted without calling the
                 ! resorting routine.
@@ -13766,7 +13778,7 @@ contains
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.true.)
               end if
-              
+
               ! Step length control. Get the optimal damping parameter for the
               ! defect correction.
               ! Use either the standard system matrix for this purpose or
@@ -13791,19 +13803,19 @@ contains
                                           p_RfilterChain,&
                                           dstep)
               end if
-              
+
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to
               ! the current solution.
-              
+
               call lsysbl_vectorLinearComb (p_rcurrentLevel%rtempVector,&
                                             p_rcurrentLevel%rsolutionVector,&
                                             dstep,1.0_DP)
-                            
+
               ! Extended output
               if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                   (mod(ite,niteResOutput).eq.0)) then
-                  
+
                 call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                         p_rcurrentLevel%rtempVector)
                 call lsysbl_blockMatVec (&
@@ -13815,11 +13827,11 @@ contains
                     rsolverNode%iresNorm)
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
-                          
+
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
-                                            
+
               ! Perform the post-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpostSmoother)) then
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpostSmoother,&
@@ -13831,7 +13843,7 @@ contains
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                     (mod(ite,niteResOutput).eq.0)) then
-                    
+
                   call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector)
                   call lsysbl_blockMatVec (&
@@ -13843,11 +13855,11 @@ contains
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                       ' after postsm.:    !!RES!! = '//trim(sys_sdEL(dres,15)) )
                 end if
-                                              
+
               end if
 
               ! Update the iteration counter(s) for realising the MG-cycle(s).
@@ -13859,7 +13871,7 @@ contains
               ! For a W-cycle the cycle counter is resetted to 2 if the sweep is
               ! fulfilled on the current level, for F-cycle it is set to 1 to not
               ! perform more that 1 cycle on the current level anymore.
-              
+
               p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncyclesRemaining-1
               if (p_rcurrentLevel%ncyclesRemaining .le. 0) then
                 if (p_rsubnode%icycle .eq. 0) then
@@ -13870,7 +13882,7 @@ contains
 
                   if ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .ne. 1E99_DP) .and. &
                       associated(p_rcurrentLevel%p_rnextLevel)) then
-                      
+
                     ! Adaptive cycles activated.
                     !
                     ! We are on a level < nlmax.
@@ -13886,7 +13898,7 @@ contains
                         rsolverNode%iresNorm)
                     if (.not.((dres .ge. 1E-99_DP) .and. &
                               (dres .le. 1E99_DP))) dres = 0.0_DP
-                              
+
                     ! Compare it with the initial residuum. If it is not small enough
                     ! and if we have not reached the maximum number of cycles,
                     ! repeat the complete cycle.
@@ -13909,10 +13921,10 @@ contains
                       p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
                       cycle cycleloop
                     end if
-                    
+
                     ! Otherwise: The cycle(s) is/are finished;
                     ! the END DO goes up one level.
-                    
+
                   end if
 
                 end if
@@ -13922,15 +13934,15 @@ contains
                 cycle cycleloop
 
               end if
-              
+
             end do ! ilev < nlmax
-            
+
             ! We finally reached the maximum level. Quit the cycle loop
             ! to go on with the next iteration.
             exit cycleloop
-          
+
           end do cycleloop
-          
+
           ! We have (hopefully) successfully performed one MG-sweep, starting
           ! and ending on the finest level. As we are now on the finest level
           ! again, we can update our defect vector to test the current
@@ -13950,14 +13962,14 @@ contains
           dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. &
                     (dres .le. 1E99_DP))) dres = 0.0_DP
-          
+
           ! Shift the queue with the last residuals and add the new
           ! residual to it.
           Dresqueue = eoshift(Dresqueue,1,dres)
 
           rsolverNode%dlastDefect = rsolverNode%dfinalDefect
           rsolverNode%dfinalDefect = dres
-          
+
           ! Test if the iteration is diverged
           if (linsol_testDivergence(rsolverNode,dres)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
@@ -13972,13 +13984,13 @@ contains
             rsolverNode%iresult = 1
             exit
           end if
-       
+
           ! At least perform nminIterations iterations
           if (ite .ge. nminIterations) then
-          
+
             ! Check if the iteration converged
             if (linsol_testConvergence(rsolverNode,dres)) exit
-            
+
           end if
 
           ! print out the current residuum
@@ -13989,9 +14001,9 @@ contains
                 trim(sys_siL(ite,10))//',  !!RES!! = '//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
-          
+
         end do  ! ite
-        
+
         ! Finish - either with an error or if converged.
         ! Print the last residuum.
 
@@ -14002,7 +14014,7 @@ contains
               trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
-        
+
         ! Set ite to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
@@ -14020,18 +14032,18 @@ contains
 
         ! Final number of iterations
         rsolverNode%iiterations = ite
-      
+
       end if
 
       ! Finally, we look at some statistics:
       !
       ! Do not calculate anything if the final residuum is out of bounds -
       ! would result in NaN`s,...
-        
+
       if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-      
+
         ! Calculate asymptotic convergence rate
-      
+
         if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
           i = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
@@ -14053,17 +14065,17 @@ contains
           rsolverNode%dconvergenceRate = 0.0_DP
         end if
       end if
-    
+
     end if
 
     ! As the solution vector on the finest level shared its memory with rd,
     ! we just calculated the new correction vector!
-      
+
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-      
+
       ! Scale the defect by the damping parameter in the solver structure.
       call lsysbl_scaleVector (rd,rsolverNode%domega)
-      
+
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_lbrk()
         call output_line ('Multigrid statistics:')
@@ -14099,23 +14111,23 @@ contains
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
-  
+
 ! *****************************************************************************
 ! Routines for the Multigrid-2 solver
 ! *****************************************************************************
-  
+
   ! ***************************************************************************
 
 !<function>
-  
+
   integer function linsol_getMultigrid2LevelCount (rsolverNode)
-                    
+
 !<description>
   ! Returns the number of levels currently attached to the multigrid solver.
 !</description>
-  
+
 !<input>
   ! The solver structure of the multigrid solver
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -14124,7 +14136,7 @@ contains
 !<result>
   ! The number of levels in the MG solver.
 !</result>
-  
+
 !</function>
 
     linsol_getMultigrid2LevelCount = rsolverNode%p_rsubnodeMultigrid2%nlevels
@@ -14134,15 +14146,15 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_getMultigrid2Level (rsolverNode,ilevel,p_rlevelInfo)
-                    
+
 !<description>
   ! Searches inside of the multigrid structure for level ilevel and returns
   ! a pointer to the corresponding p_rlevelInfo structure-
   ! If the level does not exist, an error is thrown.
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -14152,12 +14164,12 @@ contains
   ! Number of the level to fetch.
   integer, intent(in) :: ilevel
 !</input>
-  
+
 !<output>
   ! A pointer to the corresponding t_levelInfo structure.
   type(t_linsolMG2LevelInfo), pointer     :: p_rlevelInfo
 !</output>
-  
+
 !</subroutine>
 
     nullify(p_rlevelInfo)
@@ -14178,21 +14190,21 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneMultigrid2Level (rlevelInfo)
-                    
+
 !<description>
   ! Cleans up the multigrid level structure rlevelInfo. All memory allocated
   ! in this structure is released.
 !</description>
-  
+
 !<inputoutput>
   ! The t_levelInfo structure to clean up.
   type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
 !</inputoutput>
 
 !</subroutine>
-  
+
     ! Release the temporary vectors of this level.
     ! The vector may not exist - if the application has not called
     ! initStructure!
@@ -14220,20 +14232,20 @@ contains
     if (associated(rlevelInfo%p_rcoarseGridSolver)) then
       call linsol_releaseSolver(rlevelInfo%p_rcoarseGridSolver)
     end if
-    
+
     ! Clean up the associated matrix if there is one.
     ! Of course, the memory of the matrices will not be deallocated
     ! because the matrices belong to the application, not to the solver!
     call lsysbl_releaseMatrix(rlevelInfo%rsystemMatrix)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_cleanMultigrid2Levels (rsolverNode)
-                    
+
 !<description>
   ! This routine removes all level information from the MG solver and releases
   ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
@@ -14241,7 +14253,7 @@ contains
   !
   ! The level info array is not released.
 !</description>
-  
+
 !<inputoutput>
   ! The solver structure of the multigrid solver.
   type(t_linsolNode), intent(inout) :: rsolverNode
@@ -14266,21 +14278,21 @@ contains
     end do
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initProjMG2LvByPrj (rlevelInfo,rinterlevelProjection)
-  
+
 !<description>
   ! Initialises the interlevel projection structure for one level.
 !</description>
-  
+
 !<inputoutput>
   ! The t_levelInfo structure to set up.
   type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
-  
+
   ! User-specified interlevel projection structure.
   ! Multigrid will use the given projection structure for doing prolongation/
   ! restriction.
@@ -14298,7 +14310,7 @@ contains
         deallocate (rlevelInfo%p_rprojection)
       end if
     end if
-    
+
     ! Remember the user specified projection
     rlevelInfo%p_rprojection => rinterlevelProjection
     rlevelInfo%bstandardProjection = .false.
@@ -14308,14 +14320,14 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initProjMG2LvByDiscr (rlevelInfo,rdiscrCoarse,rdiscrFine)
-  
+
 !<description>
   ! Initialises the interlevel projection structure for one level
   ! based on coarse/fine grid discretisation structures.
 !</description>
-  
+
 !<inputoutput>
   ! The t_levelInfo structure to set up.
   type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
@@ -14346,18 +14358,18 @@ contains
       rlevelInfo%bstandardProjection = .true.
       allocate(rlevelInfo%p_rprojection)
     end if
-    
+
     ! Initialise the projection structure with standard parameters.
     call mlprj_initProjectionDiscr (rlevelInfo%p_rprojection,rdiscrCoarse)
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initProjMultigrid2 (rsolverNode)
-  
+
 !<description>
   ! Initialises the interlevel projection structure for all levels
   ! using the standard parameters for prolongation/restriction.
@@ -14371,7 +14383,7 @@ contains
   ! manually in advance after setMatrices() if the caller wants to
   ! alter the projection structures manually.
 !</description>
-  
+
 !<inputoutput>
   ! A t_linsolNode structure. defining the solver.
   type(t_linsolNode), intent(inout)             :: rsolverNode
@@ -14381,16 +14393,16 @@ contains
 
     integer :: ilevel, nlmax
     type(t_blockDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
-    
+
     nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
-    
+
     ! Loop through all levels. Whereever the projection structure
     ! is missing, create it.
     do ilevel = 2,nlmax
       if (.not. associated( &
           rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
           p_rprojection)) then
-        
+
         ! Initialise the projection structure.
         p_rdiscrCoarse => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-1)%rsystemmatrix%&
           p_rblockDiscrTrial
@@ -14398,23 +14410,23 @@ contains
           p_rblockDiscrTrial
         call linsol_initProjMG2LvByDiscr (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
             p_rdiscrCoarse,p_rdiscrFine)
-        
+
       end if
     end do
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_doneProjMultigrid2 (rsolverNode)
-  
+
 !<description>
   ! Releases all automatically allocated interlevel projection structures
   ! for all levels in the MG solver.
 !</description>
-  
+
 !<inputoutput>
   ! A  t_linsolNode structure. defining the solver.
   type(t_linsolNode), intent(inout)             :: rsolverNode
@@ -14423,9 +14435,9 @@ contains
 !</subroutine>
 
     integer :: ilevel, nlmax
-    
+
     nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
-    
+
     ! Loop through all levels. Whereever the projection structure
     ! is missing, create it.
     do ilevel = 2,nlmax
@@ -14440,23 +14452,23 @@ contains
           ! Just nullify the pointer, the structure does not belong to us.
           nullify (rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)%p_rprojection)
         end if
-        
+
         rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)% &
             bstandardProjection = .false.
-        
+
       end if
     end do
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_initMultigrid2 (p_rsolverNode,nlevels,Rfilter)
-  
+
 !<description>
-  
+
   ! Creates a t_linsolNode solver structure for the Multigrid solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
@@ -14464,76 +14476,76 @@ contains
   ! Before the solver can used for solving the problem, the caller must add
   ! information about all levels (matrices,...) to the solver.
   ! This can be done by linsol_setMultigridLevel.
-  
+
 !</description>
-  
+
 !<input>
 
   ! Number of levels supported by this solver.
   integer, intent(in) :: nlevels
-  
+
   ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the
   ! iteration. If not given or set to NULL(), no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
   type(t_filterChain), dimension(:), target, optional   :: Rfilter
-  
+
 !</input>
-  
+
 !<output>
-  
+
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   type(t_linsolNode), pointer             :: p_rsolverNode
-   
+
 !</output>
-  
+
 !</subroutine>
 
     ! Create a default solver structure
     call linsol_initSolverGeneral(p_rsolverNode)
-    
+
     ! Initialise the type of the solver
     p_rsolverNode%calgorithm = LINSOL_ALG_MULTIGRID2
-    
+
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR     + LINSOL_ABIL_BLOCK        + &
                                 LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKDEF     + &
                                 LINSOL_ABIL_USESUBSOLVER + &
                                 LINSOL_ABIL_USEFILTER
-    
+
     ! Allocate the subnode for Multigrid.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeMultigrid2)
-    
+
     ! Initialise the coarse grid correction structure.1
     call cgcor_init (p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
-    
+
     ! Allocate level information data
     allocate(p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlevels))
     p_rsolverNode%p_rsubnodeMultigrid2%nlevels = nlevels
-    
+
     ! Attach the filter if given.
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubnodeMultigrid2%p_RfilterChain => Rfilter
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   recursive subroutine linsol_alterMultigrid2 (rsolverNode, ralterConfig)
-  
+
 !<description>
   ! This routine allows on-line modification of the Multigrid solver.
   ! ralterConfig%ccommand is analysed and depending on the configuration
   ! in this structure, the solver reacts.
 !</description>
-  
+
 !<inputoutput>
   ! The solver node which should be initialised
   type(t_linsolNode), intent(inout), target             :: rsolverNode
@@ -14552,9 +14564,9 @@ contains
     ! Pass the command structure to all subsolvers and smoothers
     ! on all levels.
     do i=1,rsolverNode%p_rsubnodeMultigrid2%nlevels
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
-      
+
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_alterSolver (p_rcurrentLevel%p_rpreSmoother, &
                                  ralterConfig)
@@ -14571,45 +14583,45 @@ contains
         call linsol_alterSolver (p_rcurrentLevel%p_rcoarseGridSolver, &
                                  ralterConfig)
       end if
-      
+
     end do
-    
+
   end subroutine
 
 ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_setMatrixMultigrid2 (rsolverNode,Rmatrices)
-  
+
 !<description>
-  
+
   ! Assigns the system matrix rsystemMatrix to the Multigrid solver on
   ! all levels.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! An array of system matrices on all levels.
   ! Each level in multigrid is initialised separately.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer                       :: ilevel,nlmax
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
@@ -14617,7 +14629,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid2')
       call sys_halt()
     end if
-    
+
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
       call output_line ('Wrong number of matrices!', &
@@ -14631,10 +14643,10 @@ contains
     ! For this purpose, call the general initialisation routine, but
     ! pass only that part of the Rmatrices array that belongs
     ! to the range of levels between the coarse grid and the current grid.
-    
+
     nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
     do ilevel = 1,nlmax
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
@@ -14653,28 +14665,28 @@ contains
         call linsol_setMatrices (p_rcurrentLevel%p_rcoarseGridSolver, &
                                   Rmatrices(1:ilevel))
       end if
-      
+
       ! Write a link to the matrix into the level-structure.
       call lsysbl_duplicateMatrix (Rmatrices(ilevel), &
           p_rcurrentLevel%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      
+
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,&
       ccompatible,CcompatibleDetail)
-  
+
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
   ! compatible to the solver. Calls linsol_matricesCompatible for possible
   ! subsolvers to check the compatibility.
 !</description>
-  
+
 !<input>
   ! The solver node which should be checked against the matrices
   type(t_linsolNode), intent(in)             :: rsolverNode
@@ -14683,7 +14695,7 @@ contains
   ! routine of the preconditioner.
   type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
-  
+
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
@@ -14696,16 +14708,16 @@ contains
   ! as Rmatrices!
   integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer                       :: ilevel,ccompatLevel
-    
+
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
-    
+
     ! Reset all compatibility flags
     if (present(CcompatibleDetail)) CcompatibleDetail (:) = ccompatible
 
@@ -14716,7 +14728,7 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid2')
       call sys_halt()
     end if
-    
+
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
       call output_line ('Wrong number of matrices!', &
@@ -14730,17 +14742,17 @@ contains
     ! For this purpose, call the general check routine, but
     ! pass only that part of the Rmatrices array that belongs
     ! to the range of levels between the coarse grid and the current grid.
-    
+
     do ilevel = 1,rsolverNode%p_rsubnodeMultigrid2%nlevels
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-    
+
       ! Compatibility flag for that level
       ccompatLevel = LINSOL_COMP_OK
-    
+
       ! Check presmoother
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
-      
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
               Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
@@ -14748,20 +14760,20 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
               Rmatrices(1:ilevel),ccompatLevel)
         end if
-      
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           cycle
         end if
-        
+
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) then
-        
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
               Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
@@ -14769,17 +14781,17 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
               Rmatrices(1:ilevel),ccompatLevel)
         end if
-        
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           cycle
         end if
-        
+
       end if
-      
+
       ! Check coarse grid solver
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
-        
+
         if (present(CcompatibleDetail)) then
           call linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
               Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
@@ -14787,36 +14799,36 @@ contains
           call linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
               Rmatrices(1:ilevel),ccompatLevel)
         end if
-        
+
         if (ccompatLevel .ne. LINSOL_COMP_OK) then
           ccompatible = ccompatLevel
           cycle
         end if
-        
+
       end if
-      
+
     end do
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initStructureMultigrid2 (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
@@ -14842,7 +14854,7 @@ contains
   integer :: imemmax
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rtemplVect
-  
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
@@ -14865,23 +14877,23 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureMultigrid2')
       call sys_halt()
     end if
-    
+
     nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
 
     ! Check for every level, if there is a presmoother, postsmoother or
     ! coarse grid solver structure attached.
-    
+
     do ilevel = 1,nlmax
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,ierror,isubgroup)
       end if
-      
+
       ! Cancel in case of an error
       if (ierror .ne. LINSOL_ERR_NOERROR) return
-      
+
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
@@ -14900,7 +14912,7 @@ contains
       end if
 
     end do
-    
+
     ! Cancel here, if we do not belong to the subgroup to be initialised
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
@@ -14913,7 +14925,7 @@ contains
     ! data. Memory for that is allocated on all levels for temporary, RHS and
     ! solution vectors.
     do ilevel = 1,nlmax
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       p_rmatrix => p_rcurrentLevel%rsystemMatrix
@@ -14946,12 +14958,12 @@ contains
       if (associated(p_rtemplVect)) then
         imemmax = max(imemmax,p_rtemplVect%NEQ)
       end if
-         
+
       ! Ask the prolongation/restriction routines how much memory is necessary
       ! for prolongation/restriction on that level.
       if (ilevel .gt. 1) then ! otherwise coarse grid
         p_rprevLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-1)
-     
+
         ! Calculate the memory that is necessary for prolongation/restriction -
         ! in case there is temporary memory needed.
         ! The system matrix on the fine/coarse grid specifies the discretisation.
@@ -14973,31 +14985,31 @@ contains
         p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
           -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
       end if
-      
+
       if (ilevel .lt. NLMAX) then
         p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
           -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
       end if
-      
+
       ! And the next level...
     end do
-    
+
     ! Do we have to allocate memory for prolongation/restriction/resorting?
     if (imemmax .gt. 0) then
       call lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector,&
                                 imemmax,.false.,rsolverNode%cdefaultDataType)
-                                
+
       ! Use this vector also for the coarse grid correction.
       ! Create a block vector on every level (except for the coarse grid)
       ! with the structure of the RHS that shares the memory with rprjTempVector.
       do ilevel = 2,nlmax
-    
+
         p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-      
+
         call lsysbl_createVecFromScalar (&
             rsolverNode%p_rsubnodeMultigrid2%rprjTempVector,&
             p_rcurrentLevel%rcgcorrTempVector)
-      
+
         call lsysbl_enforceStructure (&
             p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rcgcorrTempVector)
 
@@ -15005,34 +15017,34 @@ contains
     else
       rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ = 0
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_initDataMultigrid2 (rsolverNode,ierror,isolverSubgroup)
-  
+
 !<description>
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
-  
+
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(out) :: ierror
 !</output>
-  
+
 !<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -15048,14 +15060,14 @@ contains
   ! local variables
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel
-  
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
-    
+
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there is not much to do with isubgroup,
     ! as there is no special information (like a factorisation)
@@ -15063,7 +15075,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
@@ -15074,9 +15086,9 @@ contains
 
     ! Check for every level, if there is a presmoother, postsmoother or
     ! coarse grid solver structure attached.
-    
+
     do ilevel = 1,rsolverNode%p_rsubnodeMultigrid2%nlevels
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
 
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
@@ -15085,7 +15097,7 @@ contains
         ! Cancel in case of an error
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
@@ -15095,7 +15107,7 @@ contains
         ! Cancel in case of an error
         if (ierror .ne. LINSOL_ERR_NOERROR) return
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,ierror,isubgroup)
 
@@ -15104,33 +15116,33 @@ contains
       end if
 
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneDataMultigrid2 (rsolverNode,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -15146,7 +15158,7 @@ contains
   ! local variables
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -15158,7 +15170,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
@@ -15169,54 +15181,54 @@ contains
 
     ! Check for every level, if there is a presmoother, postsmoother or
     ! coarse grid solver structure attached.
-    
+
     do ilevel = rsolverNode%p_rsubnodeMultigrid2%nlevels,1,-1
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-      
+
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_doneData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
       end if
-      
+
       ! Pre- and postsmoother may be identical!
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
           (.not. associated(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) then
         call linsol_doneData(p_rcurrentLevel%p_rpostSmoother,isubgroup)
       end if
-      
+
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_doneData(p_rcurrentLevel%p_rpreSmoother,isubgroup)
       end if
-      
+
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneStructureMultigrid2 (rsolverNode,isolverSubgroup)
-  
+
 !<description>
-  
+
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
-   
+
 !</inputoutput>
-  
+
 !<input>
-  
+
   ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -15232,7 +15244,7 @@ contains
   ! local variables
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel
   integer :: isubgroup,ilevel,nlmax
-  
+
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
@@ -15244,7 +15256,7 @@ contains
     ! released or updated...
 
     ! Call the init routine of the preconditioner.
-    
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
@@ -15252,21 +15264,21 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneStructureMultigrid2')
       call sys_halt()
     end if
-    
+
     nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
 
     ! Check for every level, if there is a presmoother, postsmoother or
     ! coarse grid solver structure attached.
-    
+
     do ilevel = 1,nlmax
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-    
+
       ! Release the coarse grid solver
       if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
         call linsol_doneStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
       end if
-      
+
       ! Pre- and postsmoother may be identical! If not, first release the
       ! postsmoother.
       if (associated(p_rcurrentLevel%p_rpostSmoother) .and. &
@@ -15274,12 +15286,12 @@ contains
                             p_rcurrentLevel%p_rpostSmoother))) then
         call linsol_doneStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
       end if
-      
+
       ! Release the presmoother
       if (associated(p_rcurrentLevel%p_rpreSmoother)) then
         call linsol_doneStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
       end if
-      
+
     end do
 
     ! Cancel here, if we do not belong to the subgroup to be initialised
@@ -15287,15 +15299,15 @@ contains
 
     ! Release temporary memory.
     do ilevel = 1,nlmax
-    
+
       p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
-    
+
       if (ilevel .gt. 1) then
-      
+
         if (p_rcurrentLevel%rtempVector%NEQ .ne. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
         end if
-        
+
         if (p_rcurrentLevel%rrhsVector%NEQ .ne. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
         end if
@@ -15323,36 +15335,36 @@ contains
     if (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ .gt. 0) then
       call lsyssc_releaseVector (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector)
     end if
-    
+
     ! Release the interlevel projection structures as far as they were
     ! automatically created.
     call linsol_doneProjMultigrid2 (rsolverNode)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_doneMultigrid2 (rsolverNode)
-  
+
 !<description>
-  
+
   ! This routine releases all temporary memory for the multigrid solver from
   ! the heap. In particular, this releases the solver structures of all
   ! subsolvers (smoother, coarse grid solver).
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! A pointer to a t_linsolNode structure of the Multigrid solver.
   type(t_linsolNode), intent(inout)                :: rsolverNode
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
@@ -15364,25 +15376,25 @@ contains
     ! Release data and structure if this has not happened yet.
     call linsol_doneDataMultigrid2(rsolverNode)
     call linsol_doneStructureMultigrid2(rsolverNode)
-    
+
     ! Remove all the levels
     call linsol_cleanMultigrid2Levels (rsolverNode)
     deallocate(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
-    
+
     ! Release the coarse grid correction structure
     call cgcor_release (rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
-    
+
     ! Release MG substructure, that is it.
     deallocate(rsolverNode%p_rsubnodeMultigrid2)
 
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_precMultigrid2 (rsolverNode,rd)
-  
+
 !<description>
   ! Applies Multigrid preconditioner <tex>$ P \approx A $</tex> to the defect
   ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
@@ -15394,18 +15406,18 @@ contains
   ! can be get by calling linsol_getMultigridLevel2).
   ! The matrices <tex>$ A $</tex> on all levels must be attached to the solver previously
   ! by linsol_setMatrices.
-  
+
 !</description>
-  
+
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
   type(t_linsolNode), intent(inout), target :: rsolverNode
-   
+
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
   type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -15414,30 +15426,30 @@ contains
   real(DP) :: dres,dstep
   logical :: bfilter,bsort
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-  
+
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
-  
+
   ! The system matrix on the current level
   type(t_matrixBlock), pointer :: p_rmatrix
-  
+
   ! Our MG structure
   type(t_linsolSubnodeMultigrid2), pointer :: p_rsubnode
-  
+
   ! The current level and the next lower one.
   type(t_linsolMG2LevelInfo), pointer :: p_rcurrentLevel,p_rlowerLevel
-  
+
     ! Solve the system!
-    
+
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid2
-    
+
     bfilter = associated(p_rsubnode%p_RfilterChain)
     p_RfilterChain => p_rsubnode%p_RfilterChain
-    
+
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rsystemMatrix
-    
+
     ! Check the parameters
     if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
         (p_rmatrix%NEQ .ne. rd%NEQ) ) then
@@ -15453,7 +15465,7 @@ contains
       rsolverNode%iresult = 2
       return
     end if
-    
+
     if (.not. associated(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) then
       call output_line ('No levels attached!', &
           OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMultigrid2')
@@ -15471,7 +15483,7 @@ contains
     ! Minimum/maximum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
     nmaxIterations = max(rsolverNode%nmaxIterations,0)
-      
+
     ! Iteration when the residuum is printed:
     niteResOutput = max(1,rsolverNode%niteResOutput)
 
@@ -15483,23 +15495,23 @@ contains
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
-    
+
     ! Number of blocks in the current equation
     nblocks = rd%nblocks
-    
+
     ! We start on the maximum level.
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlmax)
-    
+
     ! Is there only one level? Can be seen if the current level
     ! already contains a coarse grid solver.
     if (nlmax .eq. 1) then
-    
+
       if (rsolverNode%ioutputLevel .gt. 1) then
         call output_line ('Multigrid: Only one level. '//&
              'Switching back to standard solver.')
       end if
       call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
-      
+
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
       rsolverNode%dfinalDefect = p_rcurrentLevel%p_rcoarseGridSolver%dfinalDefect
@@ -15508,7 +15520,7 @@ contains
       rsolverNode%iiterations = p_rcurrentLevel%p_rcoarseGridSolver%iiterations
       rsolverNode%dasymptoticConvergenceRate = p_rcurrentLevel% &
         p_rcoarseGridSolver%dasymptoticConvergenceRate
-      
+
     else
       ! True multigrid.
       !
@@ -15531,20 +15543,20 @@ contains
       ! In that case we can directly stop our computation.
 
       if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-      
+
         ! final defect is 0, as initialised in the output variable above
         call lsysbl_clearVector(rd)
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
         rsolverNode%iiterations = 0
         rsolverNode%dasymptoticConvergenceRate = 0.0_DP
-        
+
       else
-        
+
         ! Ok, we can start with multigrid.
         ! At first check the sorting state of the vector.
         bsort = lsysbl_isVectorSorted(rd)
-        
+
         ! To deal with sorted vectors is a bit tricky! Here a small summary
         ! how sorted vectors is dealed with, in case sorting is activated:
         !
@@ -15564,7 +15576,7 @@ contains
         !     - the unsorted vector on level l is sorted
         ! So at the end of the MG sweep, we have the same situation as at the start
         ! of the algorithm.
-        
+
         ! At first, reset the cycle counters of all levels
         do i=1,nlmax-1
           p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
@@ -15574,17 +15586,17 @@ contains
             p_rcurrentLevel%ncycles = p_rsubnode%icycle
           end if
         end do
-        
+
         ! We start at the maximum level.
         ilev = nlmax
 
         ! Get current and next lower level.
         p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
         p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
-               
+
         ! On the current (max.) level we set ncycles to 1.
         p_rcurrentLevel%ncycles = 1
-        
+
         ! Print out the initial residuum
 
         if (rsolverNode%ioutputLevel .ge. 2) then
@@ -15595,28 +15607,28 @@ contains
 
         ! Copy the initial RHS to the RHS vector on the maximum level.
         call lsysbl_copyVector(rd,p_rcurrentLevel%rrhsVector)
-        
+
         ! Replace the solution vector on the finest level by rd.
         ! Afterwards, rd and the solution vector on the finest level
         ! share the same memory location, so we use rd as iteration
         ! vector directly.
         call lsysbl_duplicateVector (rd,p_rcurrentLevel%rsolutionVector,&
             LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
-        
+
         ! Clear the initial solution vector.
         call lsysbl_clearVector (p_rcurrentLevel%rsolutionVector)
-        
+
         ! Start multigrid iteration; perform at most nmaxiterations iterations.
         do ite = 1, nmaxiterations
-        
+
           rsolverNode%icurrentIteration = ite
-          
+
           ! Initialise cycle counters for all levels.
           do i=1,nlmax
             p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
             p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
           end do
-        
+
           ! p_rcurrentLevel now points to the maximum level again!
           !
           ! Build the defect...
@@ -15632,16 +15644,16 @@ contains
             call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                              p_RfilterChain)
           end if
-          
+
           cycleloop: do  ! Loop for the cycles
-          
+
             ! On the maximum level we already built out defect vector. If we are
             ! on a lower level than NLMAX, perform smoothing+restriction down to the
             ! coarse level. We identify the coarse level by checking if
             ! the current level has a coarse grid solver.
-            
+
             do while (ilev .gt. 1)
-            
+
               ! Perform the pre-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpreSmoother)) then
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpreSmoother,&
@@ -15650,7 +15662,7 @@ contains
                           p_rcurrentLevel%rrhsVector,&
                           p_rcurrentLevel%rtempVector,p_RfilterChain)
               end if
-            
+
               ! Build the defect vector
               call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
@@ -15663,17 +15675,17 @@ contains
                 call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                                 p_RfilterChain)
               end if
-              
+
               ! Extended output
               if (associated(p_rcurrentLevel%p_rpreSmoother) .and. &
                   (rsolverNode%ioutputLevel .ge. 3) .and. &
                   (mod(ite,niteResOutput).eq.0)) then
-                  
+
                 dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
                     rsolverNode%iresNorm)
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
-                          
+
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after presm.:     !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
@@ -15691,7 +15703,7 @@ contains
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.false.)
               end if
-              
+
               ! When restricting to the coarse grid, we directy restrict into
               ! the solution vector. It is used there as RHS and replaced in-situ
               ! by the solution by the coarse grid solver. So do not need the RHS vector
@@ -15700,7 +15712,7 @@ contains
               ! Otherwise, we restrict to the RHS on the lower level and continue
               ! the smoothing process there.
               if (ilev .gt. 2) then
-              
+
                 ! We do not project to the coarse grid
                 call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rrhsVector, &
@@ -15728,7 +15740,7 @@ contains
                   ! resorting routine.
                   p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
                   abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy)
-                  
+
                   p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
                     isortStrategy = abs(p_rlowerLevel%rsolutionVector% &
                     RvectorBlock(1:nblocks)%isortStrategy)
@@ -15736,16 +15748,16 @@ contains
 
                 ! Choose zero as initial vector on lower level.
                 call lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
-                
+
                 ! Extended output and/or adaptive cycles
                 if ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .ne. 1E99_DP) .or.&
                     (rsolverNode%ioutputLevel .ge. 3)) then
-                
+
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   ! In case adaptive cycles are activated, save the 'initial' residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
@@ -15753,18 +15765,18 @@ contains
                     p_rlowerLevel%dinitResCycle = dres
                     p_rlowerLevel%icycleCount = 1
                   end if
-                         
+
                   ! If the output level is high enough, print that residuum norm.
                   if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                       (mod(ite,niteResOutput).eq.0)) then
                     call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
                         ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
                   end if
-                  
+
                 end if
 
               else
-              
+
                 ! The vector is to be restricted to the coarse grid.
                 call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rsolutionVector, &
@@ -15793,30 +15805,30 @@ contains
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                     (mod(ite,niteResOutput).eq.0)) then
-                    
+
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rsolutionVector,&
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
                       ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
                 end if
 
               end if
-            
+
               ! Go down one level
               ilev = ilev - 1
               p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
-              
+
               if (ilev .ne. 1) &
                 p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
-              
+
               ! If we are not on the lowest level, repeat the smoothing of
               ! the solution/restriction of the new defect in the next loop
               ! pass...
             end do   ! ilev > minimum level
-            
+
             ! Now we reached the coarse grid.
             ! Apply the filter chain (e.g. to implement boundary conditions)
             ! on the just calculated right hand side,
@@ -15826,21 +15838,21 @@ contains
               call filter_applyFilterChainVec (p_rcurrentLevel%rsolutionVector, &
                                                p_RfilterChain)
             end if
-            
+
             ! Solve the system on lowest level by preconditioning
             ! of the RHS=defect vector.
             call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
                                       p_rcurrentLevel%rsolutionVector)
-            
+
             ! Now we have the solution vector on the lowest level - we have to go
             ! upwards now... but probably not to NLMAX! That depends on the cycle.
             !
             do while(ilev .lt. nlmax)
-            
+
               ilev = ilev + 1
               p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
               p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
-              
+
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
               !
@@ -15850,7 +15862,7 @@ contains
               if (bsort) then
                 call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
                       p_rsubnode%rprjTempVector,.false.)
-                
+
                 ! Temp-vector and RHS vector there unused now,
                 ! therefore we can mark them as not sorted without calling the
                 ! resorting routine.
@@ -15885,7 +15897,7 @@ contains
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.true.)
               end if
-              
+
               ! Step length control. Get the optimal damping parameter for the
               ! defect correction.
               ! Use either the standard system matrix for this purpose or
@@ -15910,19 +15922,19 @@ contains
                                           p_RfilterChain,&
                                           dstep)
               end if
-              
+
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to
               ! the current solution.
-              
+
               call lsysbl_vectorLinearComb (p_rcurrentLevel%rtempVector,&
                                             p_rcurrentLevel%rsolutionVector,&
                                             dstep,1.0_DP)
-                            
+
               ! Extended output
               if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                   (mod(ite,niteResOutput).eq.0)) then
-                  
+
                 call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                         p_rcurrentLevel%rtempVector)
                 call lsysbl_blockMatVec (&
@@ -15934,11 +15946,11 @@ contains
                     rsolverNode%iresNorm)
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
-                          
+
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
-                                            
+
               ! Perform the post-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpostSmoother)) then
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpostSmoother,&
@@ -15950,7 +15962,7 @@ contains
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                     (mod(ite,niteResOutput).eq.0)) then
-                    
+
                   call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector)
                   call lsysbl_blockMatVec (&
@@ -15962,11 +15974,11 @@ contains
                       rsolverNode%iresNorm)
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
-                            
+
                   call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                       ' after postsm.:    !!RES!! = '//trim(sys_sdEL(dres,15)) )
                 end if
-                                              
+
               end if
 
               ! Update the iteration counter(s) for realising the MG-cycle(s).
@@ -15978,7 +15990,7 @@ contains
               ! For a W-cycle the cycle counter is resetted to 2 if the sweep is
               ! fulfilled on the current level, for F-cycle it is set to 1 to not
               ! perform more that 1 cycle on the current level anymore.
-              
+
               p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncyclesRemaining-1
               if (p_rcurrentLevel%ncyclesRemaining .le. 0) then
                 if (p_rsubnode%icycle .eq. 0) then
@@ -15989,7 +16001,7 @@ contains
 
                   if ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .ne. 1E99_DP) .and. &
                       (ilev .lt. NLMAX)) then
-                      
+
                     ! Adaptive cycles activated.
                     !
                     ! We are on a level < nlmax.
@@ -16005,7 +16017,7 @@ contains
                         rsolverNode%iresNorm)
                     if (.not.((dres .ge. 1E-99_DP) .and. &
                               (dres .le. 1E99_DP))) dres = 0.0_DP
-                              
+
                     ! Compare it with the initial residuum. If it is not small enough
                     ! and if we have not reached the maximum number of cycles,
                     ! repeat the complete cycle.
@@ -16028,10 +16040,10 @@ contains
                       p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
                       cycle cycleloop
                     end if
-                    
+
                     ! Otherwise: The cycle(s) is/are finished;
                     ! the END DO goes up one level.
-                    
+
                   end if
 
                 end if
@@ -16041,15 +16053,15 @@ contains
                 cycle cycleloop
 
               end if
-              
+
             end do ! ilev < nlmax
-            
+
             ! We finally reached the maximum level. Quit the cycle loop
             ! to go on with the next iteration.
             exit cycleloop
-          
+
           end do cycleloop
-          
+
           ! We have (hopefully) successfully performed one MG-sweep, starting
           ! and ending on the finest level. As we are now on the finest level
           ! again, we can update our defect vector to test the current
@@ -16069,14 +16081,14 @@ contains
           dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. &
                     (dres .le. 1E99_DP))) dres = 0.0_DP
-          
+
           ! Shift the queue with the last residuals and add the new
           ! residual to it.
           Dresqueue = eoshift(Dresqueue,1,dres)
 
           rsolverNode%dlastDefect = rsolverNode%dfinalDefect
           rsolverNode%dfinalDefect = dres
-          
+
           ! Test if the iteration is diverged
           if (linsol_testDivergence(rsolverNode,dres)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
@@ -16091,13 +16103,13 @@ contains
             rsolverNode%iresult = 1
             exit
           end if
-       
+
           ! At least perform nminIterations iterations
           if (ite .ge. nminIterations) then
-          
+
             ! Check if the iteration converged
             if (linsol_testConvergence(rsolverNode,dres)) exit
-            
+
           end if
 
           ! print out the current residuum
@@ -16108,9 +16120,9 @@ contains
                 trim(sys_siL(ite,10))//',  !!RES!! = '//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
-          
+
         end do  ! ite
-        
+
         ! Finish - either with an error or if converged.
         ! Print the last residuum.
 
@@ -16121,7 +16133,7 @@ contains
               trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
-        
+
         ! Set ite to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
@@ -16139,21 +16151,21 @@ contains
 
         ! Final number of iterations
         rsolverNode%iiterations = ite
-      
+
         ! Release the temporary copy of the solution vector.
         call lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
-      
+
       end if
 
       ! Finally, we look at some statistics:
       !
       ! Do not calculate anything if the final residuum is out of bounds -
       ! would result in NaN`s,...
-        
+
       if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-      
+
         ! Calculate asymptotic convergence rate
-      
+
         if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
           i = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
@@ -16173,17 +16185,17 @@ contains
                       (1.0_DP/real(rsolverNode%iiterations,DP))
         end if
       end if
-      
+
     end if
 
     ! As the solution vector on the finest level shared its memory with rd,
     ! we just calculated the new correction vector!
-      
+
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-      
+
       ! Scale the defect by the damping parameter in the solver structure.
       call lsysbl_scaleVector (rd,rsolverNode%domega)
-      
+
       if (rsolverNode%ioutputLevel .ge. 2) then
         call output_lbrk()
         call output_line ('Multigrid statistics:')
@@ -16219,9 +16231,10 @@ contains
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
-  
+
   end subroutine
 
+<<<<<<< HEAD
 ! *****************************************************************************
 ! Routines for the Block-Jacobi solver (for DG discretisations)
 ! *****************************************************************************
@@ -16566,3 +16579,6 @@ contains
   end subroutine
   
 end module
+=======
+end module
+>>>>>>> ENH: Removed header "!-*- mode: f90; -*-"

@@ -19,7 +19,7 @@ module octreebase
 !<constants>
 
 !<constantblock description="Constants for octree structure">
-  
+
   ! Maximum number of items for each node
   integer, parameter, public :: OTREE_MAX    = 8
 
@@ -46,10 +46,10 @@ module octreebase
 
   ! Item in "North-East-Back" position
   integer, parameter, public :: OTREE_NEB    = 8
-  
+
   ! Position of the status information
   integer, parameter, public :: OTREE_STATUS = 0
-  
+
   ! Position of the parent information
   integer, parameter, public :: OTREE_PARENT = -1
 
@@ -88,7 +88,7 @@ module octreebase
   integer, parameter, public :: OTREE_ZMAX   =  6
 
 !</constantblock>
-  
+
 !<constantblock description="Constants for octree operations">
 
   ! Operation on octree failed
@@ -105,7 +105,7 @@ module octreebase
 
   ! Item was deleted from the octree
   integer, parameter, public :: OTREE_DELETED   =  2
-  
+
 !</constantblock>
 
 !</constants>

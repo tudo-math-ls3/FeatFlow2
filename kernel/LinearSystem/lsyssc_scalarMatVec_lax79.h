@@ -1,12 +1,10 @@
-!-*- mode: f90; -*-
-
 #ifdef __NVAR__
-  
+
   ! Perform the multiplication
   if(cx .ne. __MatOne__) then
-    
+
     if(cy .eq. __VecZero__) then
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -22,9 +20,9 @@
         end do
       end do
       !$omp end parallel do
-      
+
     else if(cy .eq. __VecOne__) then
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -40,9 +38,9 @@
         end do
       end do
       !$omp end parallel do
-      
+
     else   ! arbitrary cy value
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -58,13 +56,13 @@
         end do
       end do
       !$omp end parallel do
-      
+
     end if
-    
+
   else   ! arbitrary cx value
-    
+
     if(cy .eq. __VecZero__) then
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -80,9 +78,9 @@
         end do
       end do
       !$omp end parallel do
-      
+
     else if(cy .eq. __VecOne__) then
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -98,9 +96,9 @@
         end do
       end do
       !$omp end parallel do
-      
+
     else   ! arbitrary cy value
-      
+
       !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -116,7 +114,7 @@
         end do
       end do
       !$omp end parallel do
-      
+
     end if
 
   end if
@@ -125,9 +123,9 @@
 
   ! Perform the multiplication
   if(cx .ne. __MatOne__) then
-    
+
     if(cy .eq. __VecZero__) then
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -138,9 +136,9 @@
         Dy(irow) = cx*dtmp
       end do
       !$omp end parallel do
-      
+
     else if(cy .eq. __VecOne__) then
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -151,9 +149,9 @@
         Dy(irow) = Dy(irow) + cx*dtmp
       end do
       !$omp end parallel do
-      
+
     else   ! arbitrary cy value
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -164,13 +162,13 @@
         Dy(irow) = cy*Dy(irow) + cx*dtmp
       end do
       !$omp end parallel do
-      
+
     end if
-    
+
   else   ! arbitrary cx value
-    
+
     if(cy .eq. __VecZero__) then
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -181,9 +179,9 @@
         Dy(irow) = dtmp
       end do
       !$omp end parallel do
-      
+
     else if(cy .eq. __VecOne__) then
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -194,9 +192,9 @@
         Dy(irow) = Dy(irow) + dtmp
       end do
       !$omp end parallel do
-      
+
     else   ! arbitrary cy value
-      
+
       !$omp parallel do private(ia,dtmp) default(shared) &
       !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
       do irow = 1, NEQ
@@ -207,9 +205,9 @@
         Dy(irow) = cy*Dy(irow) + dtmp
       end do
       !$omp end parallel do
-      
+
     end if
-    
+
   end if
-  
+
 #endif

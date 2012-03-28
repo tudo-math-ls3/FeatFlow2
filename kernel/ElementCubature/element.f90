@@ -274,7 +274,7 @@ module element
   use mprimitives
   use perfconfig
   use transformation
-  
+
   use elementbase
   use element_line1d
   use element_tri2d
@@ -285,9 +285,9 @@ module element
   use element_prism3d
 
   implicit none
-  
+
   private
-  
+
   public :: elem_igetID
   public :: elem_igetNDofLoc
   public :: elem_igetNDofLocAssignment
@@ -310,31 +310,31 @@ module element
   public :: elem_generic_sim
   public :: elem_getNDofLoc
   public :: elem_getName
-  
+
   ! Public entities imported from elementbase.f90
   public :: t_evalElement
   public :: t_evalElementSet
   public :: EL_EVLTAG_COORDS, EL_EVLTAG_REFPOINTS, EL_EVLTAG_REALPOINTS, &
             EL_EVLTAG_JAC, EL_EVLTAG_DETJ, EL_EVLTAG_TWISTIDX
-  
+
 !<constants>
 
 !<constantblock description="Internal constants for element ID bitfield.">
   ! Bitmasks for dimension; coincides on purpose with TRAFO_DIM_DIMENSION!
   integer(I32), parameter, public :: EL_DIMENSION = 2**8 + 2**9
-  
+
   ! 1D element; coincides on purpose with TRAFO_DIM_1D!
   integer(I32), parameter, public :: EL_1D = ishft(NDIM1D,8)
 
   ! 2D element; coincides on purpose with TRAFO_DIM_2D!
   integer(I32), parameter, public :: EL_2D = ishft(NDIM2D,8)
-  
+
   ! 3D element; coincides on purpose with TRAFO_DIM_3D!
   integer(I32), parameter, public :: EL_3D = ishft(NDIM3D,8)
-  
+
   ! Bitmask for element number including dimension
   integer(I32), parameter, public :: EL_ELNRMASK = 255 + EL_DIMENSION
-  
+
   ! Bitmask specifying a nonparametric element
   integer(I32), parameter, public :: EL_NONPARAMETRIC = 2**15
 !</constantblock>
@@ -344,32 +344,32 @@ module element
   ! ID of constant discontinous line FE, P0
   integer(I32), parameter, public :: EL_P0_1D   = EL_1D + 0
   integer(I32), parameter, public :: EL_E000_1D = EL_P0_1D
-  
+
   ! ID of linear H1-conforming line FE, P1
   integer(I32), parameter, public :: EL_P1_1D   = EL_1D + 1
   integer(I32), parameter, public :: EL_E001_1D = EL_P1_1D
-  
+
   ! ID of quadratic H1-conforming line FE, P2
   integer(I32), parameter, public :: EL_P2_1D   = EL_1D + 2
   integer(I32), parameter, public :: EL_E002_1D = EL_P2_1D
-  
+
   ! ID of cubic H2-conforming line FE, 3,1-Spline
   integer(I32), parameter, public :: EL_S31_1D  = EL_1D + 17
-  
+
   ! ID of H1-conforming line FE, Pn, 1 <= n <= 256
   integer(I32), parameter, public :: EL_PN_1D   = EL_1D + 128
-  
+
   ! Discontinuous Galerkin taylor basis element - constant.
   integer(I32), parameter, public :: EL_DG_T0_1D   = EL_1D + 30
-  
+
   ! Discontinuous Galerkin taylor basis element - linear.
   integer(I32), parameter, public :: EL_DG_T1_1D   = EL_1D + 31
 
   ! Discontinuous Galerkin taylor basis element - quadratic.
   integer(I32), parameter, public :: EL_DG_T2_1D   = EL_1D + 32
-  
+
 !</constantblock>
-  
+
 !<constantblock description="Element identifiers for 2D elements">
 
   ! unspecified element
@@ -426,7 +426,7 @@ module element
   integer(I32), parameter, public :: EL_E014    = EL_Q3
   integer(I32), parameter, public :: EL_Q3_2D   = EL_Q3
   integer(I32), parameter, public :: EL_E014_2D = EL_Q3
-  
+
   ! ID of piecewise linear element, 4 triangles in a quad
   integer(I32), parameter, public :: EL_QPW4P1_2D = EL_2D + 15
 
@@ -435,13 +435,13 @@ module element
 
   ! ID of piecewise discontinous linear element, 4 triangles in a quad
   integer(I32), parameter, public :: EL_QPW4DCP1_2D = EL_2D + 17
-  
+
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
   integer(I32), parameter, public :: EL_QP1     = EL_2D + 21
   integer(I32), parameter, public :: EL_QP1_2D  = EL_QP1
-  
+
   ! QP1-element, nonparametric
   integer(I32), parameter, public :: EL_QP1NP    = EL_QP1 + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_QP1NP_2D = EL_QP1NP
@@ -479,15 +479,15 @@ module element
   ! is a hanging node must be encoded! (i.e. one must add a corresponding
   ! value to the constant EL_Q1HN1 to get the actual element identifier!)
   integer(I32), parameter, public :: EL_Q1HN1 = EL_2D + 40
-  
+
   ! Quadrilateral <tex>$Q_2$</tex> element with isoparametric mapping from the reference
   ! to the real element. In the property bitfield, one must set the corresponding
   ! bits to identify the edge that should map isoparametric!
   integer(I32), parameter, public :: EL_Q2ISO = EL_2D + 50
-  
+
   ! Discontinuous Galerkin taylor basis element - constant.
   integer(I32), parameter, public :: EL_DG_T0_2D   = EL_2D + 60
-  
+
   ! Discontinuous Galerkin taylor basis element - linear.
   integer(I32), parameter, public :: EL_DG_T1_2D   = EL_2D + 61
 
@@ -519,7 +519,7 @@ module element
   ! ID of constant discontinous tetrahedral FE, P0
   integer(I32), parameter, public :: EL_P0_3D   = EL_3D + 0
   integer(I32), parameter, public :: EL_E000_3D = EL_P0_3D
-  
+
   ! ID of linear H1-conforming tetrahedral FE, P1
   integer(I32), parameter, public :: EL_P1_3D   = EL_3D + 1
   integer(I32), parameter, public :: EL_E001_3D = EL_P1_3D
@@ -535,20 +535,20 @@ module element
   ! ID of trilinear H1-conforming hexahedral FE, Q1
   integer(I32), parameter, public :: EL_Q1_3D   = EL_3D + 11
   integer(I32), parameter, public :: EL_E011_3D = EL_Q1_3D
-  
+
   ! ID of triquadratic H1-conforming hexahedral FE, Q2
   integer(I32), parameter, public :: EL_Q2_3D   = EL_3D + 13
   integer(I32), parameter, public :: EL_E013_3D = EL_Q2_3D
 
   ! ID of constant discontinous pyramid FE, Y0 = Q0
   integer(I32), parameter, public :: EL_Y0_3D   = EL_3D + 60
-  
+
   ! ID of sub-trilinear H1-conforming pyramid FE, Y1 \subset Q1
   integer(I32), parameter, public :: EL_Y1_3D   = EL_3D + 61
-  
+
   ! ID of constant discontinous prism FE, R0 = Q0
   integer(I32), parameter, public :: EL_R0_3D   = EL_3D + 70
-  
+
   ! ID of sub-trilinear H1-conforming prism FE, R1 \subset Q1
   integer(I32), parameter, public :: EL_R1_3D   = EL_3D + 71
 
@@ -556,7 +556,7 @@ module element
   ! parametric, face-midpoint-value based
   integer(I32), parameter, public :: EL_Q1T_3D  = EL_3D + 30
   integer(I32), parameter, public :: EL_E031_3D = EL_Q1T_3D
-  
+
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! parametric, integral mean value based
   integer(I32), parameter, public :: EL_E030_3D = EL_Q1T_3D + 2**16
@@ -564,7 +564,7 @@ module element
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! non-parametric, integral mean value based
   integer(I32), parameter, public :: EL_EM30_3D = EL_Q1T_3D + EL_NONPARAMETRIC + 2**16
-  
+
   ! ID of rotated trilinear non-conforming hexahedral FE, Q1~
   ! non-parametric, integral mean value based, new implementation
   integer(I32), parameter, public :: EL_EM30_NEW_3D = EL_Q1T_3D + EL_NONPARAMETRIC &
@@ -592,7 +592,7 @@ module element
   ! ID of bilinear conforming quadrilateral FE, Q1, non-parametric
   integer(I32), parameter, public :: EL_EM11    = EL_Q1 + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_EM11_2D = EL_EM11
-  
+
   ! ID of rotated linear nonconforming triangular FE, P1~, edge-midpoint based
   integer(I32), parameter, public :: EL_E020    = EL_P1T
   integer(I32), parameter, public :: EL_E020_2D = EL_E020
@@ -620,12 +620,12 @@ module element
   ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly
   ! without pivoting. Faster but less stable.
   integer(I32), parameter, public :: EL_EM30_UNPIVOTED = EL_Q1T + EL_NONPARAMETRIC + 2**17 + 2**16
-  
+
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; 'unscaled' variant, which does not scale the local
   ! coordinate system on every element. Faster but less stable.
   integer(I32), parameter, public :: EL_EM30_UNSCALED = EL_Q1T + EL_NONPARAMETRIC + 2**18 + 2**16
-  
+
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; new interface implementations
   integer(I32), parameter, public :: EL_EM30_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19 + 2**16
@@ -634,12 +634,12 @@ module element
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_EM31_2D = EL_EM31
-  
+
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   ! new interface implementations
   integer(I32), parameter, public :: EL_EM31_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19
   integer(I32), parameter, public :: EL_EN31_2D  = EL_EM31_NEW
-  
+
   ! ID of 'rotated bilinear enhanced' nonconforming quarilateral FE
   integer(I32), parameter, public :: EL_E032    = EL_Q1TB + 2**17
   integer(I32), parameter, public :: EL_E032_2D = EL_E032
@@ -647,7 +647,7 @@ module element
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_E050    = EL_Q2T
   integer(I32), parameter, public :: EL_E050_2D = EL_E050
-  
+
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~,
   ! non-parametric version
   integer(I32), parameter, public :: EL_EM50    = EL_Q2T + EL_NONPARAMETRIC
@@ -657,7 +657,7 @@ module element
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~ with bubble.
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
   integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
-  
+
   ! ID of rotated bicubic nonconforming quadrilateral FE, Q3~
   integer(I32), parameter, public :: EL_E051_2D = EL_Q3T_2D
 
@@ -668,7 +668,7 @@ module element
   ! WARNING: Do not use this element, as it is highly experimental and is not
   ! yet supported by the majority of the kernel routines!
   integer(I32), parameter, public :: EL_Q2H_2D = EL_Q2_2D + 2**16
-  
+
   ! Isoparametric <tex>$Q_2$</tex> element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
@@ -692,10 +692,10 @@ module element
 
   ! Discontinuous Galerkin element based on P1, 2D.
   integer(I32), parameter, public :: EL_DG_P1_2D   = EL_P1 + 101
-  
+
   ! Discontinuous Galerkin element based on Q1, 2D.
   integer(I32), parameter, public :: EL_DG_Q1_2D   = EL_P1 + 102
-  
+
   ! Discontinuous Galerkin element based on Q2, 2D.
   integer(I32), parameter, public :: EL_DG_Q2_2D   = EL_P1 + 103
 
@@ -708,19 +708,19 @@ module element
   ! Do not use this constant anymore - determine the number of local basis
   ! functions dynamically using the 'elem_igetNDofLoc' routine!
   integer, parameter, public :: EL_MAXNBAS = 27
-  
+
   ! Maximum number of derivatives. Corresponds to DER_MAXNDER.
   integer, parameter, public :: EL_MAXNDER = DER_MAXNDER
 
   ! Maximum number of DOFs per vertice.
   integer, parameter, public :: EL_MAXNDOF_PER_VERT = 2
-  
+
   ! Maximum number of DOFs per edge.
   integer, parameter, public :: EL_MAXNDOF_PER_EDGE = 3
-  
+
   ! Maximum number of DOFs per face.
   integer, parameter, public :: EL_MAXNDOF_PER_FACE = 3
-  
+
   ! Maximum number of DOFs per element.
   integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 11
 
@@ -735,7 +735,7 @@ module element
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 3x3-matrix=9 elements
   integer, parameter, public :: EL_NJACENTRIES3D = 9
-  
+
 !</constantblock>
 
 !</constants>
@@ -757,7 +757,7 @@ contains
 !<function>
 
   integer(I32) function elem_igetID(selemName, bcheck)
-  
+
 !<description>
   ! This routine returns the element id to a given element name.
   ! It is  case-insensitive.
@@ -771,18 +771,18 @@ contains
 
   ! Element name - one of the EL_xxxx constants.
   character (LEN=*) :: selemName
-  
+
   ! Check the element type. If set to TRUE and the element
   ! name is invalid, the program is not stopped, but 0 is returned.
   logical, intent(in), optional :: bcheck
 
   !</input>
-  
+
 !</function>
 
     character(len=len(selemName)+1) :: selem
     logical :: bchk
-    
+
     ! SELECT CASE is not allowed for strings (although supported by a majority
     ! of compilers), therefore we have to use a couple of if-commands :(
     ! select case(trim(sys_upcase(scubName)))
@@ -804,7 +804,7 @@ contains
       elem_igetID = EL_DG_T1_1D
     else if (selem .eq. "EL_DG_T2_1D") then
       elem_igetID = EL_DG_T2_1D
-    
+
     ! -= 2D Triangle Elements =-
     else if (selem .eq. "EL_P0" .or. selem .eq. "EL_P0_2D" .or. &
              selem .eq. "EL_E000" .or. selem .eq. "EL_E000_2D") then
@@ -904,13 +904,13 @@ contains
       elem_igetID = EL_DCQP2_2D
     else if (selem .eq. "EL_QPW4DCP1_2D") then
       elem_igetID = EL_QPW4DCP1_2D
-    
+
     ! -= 3D Tetrahedron Elements =-
     else if (selem .eq. "EL_P0_3D" .or. selem .eq. "EL_E000_3D") then
       elem_igetID = EL_P0_3D
     else if (selem .eq. "EL_P1_3D" .or. selem .eq. "EL_E001_3D") then
       elem_igetID = EL_P1_3D
-    
+
     ! -= 3D Hexahedron Elements =-
     else if (selem .eq. "EL_Q0_3D" .or. selem .eq. "EL_E010_3D") then
       elem_igetID = EL_Q0_3D
@@ -934,13 +934,13 @@ contains
       elem_igetID = EL_E050_3D
     else if (selem .eq. "EL_EM50_3D") then
       elem_igetID = EL_EM50_3D
-    
+
     ! -= 3D Pyramid Elements =-
     else if (selem .eq. "EL_Y0_3D") then
       elem_igetID = EL_Y0_3D
     else if (selem .eq. "EL_Y1_3D") then
       elem_igetID = EL_Y1_3D
-    
+
     ! -= 3D Prism Elements =-
     else if (selem .eq. "EL_R0_3D") then
       elem_igetID = EL_R0_3D
@@ -958,9 +958,9 @@ contains
       else
         elem_igetID = 0
       end if
-      
+
     end if
-  
+
   end function
 
   ! ***************************************************************************
@@ -1210,15 +1210,15 @@ contains
 !<output>
   ! Number of DOF`s assigned to the vertices on one element.
   integer, intent(out) :: ndofAtVertices
-  
+
   ! Number of DOF`s assigned to the edges on one element.
   ! Is always 0 for 1D element types.
   integer, intent(out) :: ndofAtEdges
-  
+
   ! Number of DOF`s assigned to the faces on one element.
   ! Is always 0 for 1D/2D element types.
   integer, intent(out) :: ndofAtFaces
-  
+
   ! Number of DOF`s assigned to one element, which do not belong to
   ! vertices or edges.
   integer, intent(out) :: ndofAtElement
@@ -1234,7 +1234,7 @@ contains
     ndofAtElement  = 0
 
     select case (elem_getPrimaryElement(celement))
-    
+
     ! -= 1D Line Elements =-
     case (EL_P0_1D)
       ! local DOFs for P0
@@ -1262,7 +1262,7 @@ contains
     case (EL_DG_T2_1D)
       ! local DOFs for 1D DG Taylor quadratic
       ndofAtElement = 3
-    
+
     ! -= 2D Triangle Elements =-
     case (EL_P0)
       ! local DOFs for Q0
@@ -1287,7 +1287,7 @@ contains
       ndofAtElement = 3
     case (EL_DCTP2_2D)
       ndofAtElement = 6
-    
+
     ! -= 2D Quadrilateral Elements =-
     case (EL_Q0)
       ! local DOFs for Q0
@@ -1350,7 +1350,7 @@ contains
       ndofAtElement = 4
     case (EL_QPW4DCP1_2D)
       ndofAtElement = 11
-      
+
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
       ! local DOFs for P0,Q0,Y0,R0
@@ -1358,7 +1358,7 @@ contains
     case (EL_P1_3D)
       ! local DOFs for P1
       ndofAtVertices = 4
-    
+
     ! -= 3D Hexahedron Elements =-
     case (EL_Q0_3D)
       ! local DOFs for Q0
@@ -1382,7 +1382,7 @@ contains
       ! local DOFs for Ex50
       ndofAtFaces = 18
       ndofAtElement = 1
-      
+
     ! -= 3D Pyramid Elements =-
     case (EL_Y0_3D)
       ! local DOFs for Y0
@@ -1679,7 +1679,7 @@ contains
 !</function>
 
     select case (elem_getPrimaryElement(celement))
-    
+
     ! -= 1D elements =-
     case (EL_P0_1D)
       ! Function
@@ -1705,7 +1705,7 @@ contains
     case (EL_DG_T2_1D)
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 3
-    
+
     ! -= 2D elements =-
     case (EL_P0, EL_Q0)
       ! Function
@@ -1847,7 +1847,7 @@ contains
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
           EL_EVLTAG_JAC + EL_EVLTAG_DETJ
     end select
-    
+
     ! Always evaluate the corners of the cells that define the element shape.
     elem_getEvaluationTag = &
       ior(elem_getEvaluationTag,EL_EVLTAG_COORDS)
@@ -1866,31 +1866,31 @@ contains
   end function
 
   !************************************************************************
-  
+
 !<function>
 
   elemental logical function elem_isNonparametric (celement) result (inonpar)
 
   !<description>
-  
+
   ! Determines whether an element celement is parametric or nonparametric.
-  
+
   !</description>
-  
+
   !<result>
   ! =true, if the element is nonparametric.
   ! =false, if the element is parametric.
   !</result>
-  
+
   !<input>
-  
+
   ! Element type qualifier.
   integer(I32), intent(in) :: celement
-  
+
   !</input>
- 
+
 !</function>
- 
+
     select case(celement)
     case (EL_DCQP1_2D, EL_DCQP2_2D)
       ! There exists no parametric counterpart to these elements, so these do
@@ -1906,7 +1906,7 @@ contains
   end function
 
   !************************************************************************
-  
+
 !<function>
 
   elemental integer(I32) function elem_getPrimaryElement (celement) result (iresult)
@@ -1925,33 +1925,33 @@ contains
   !  = EL_Q1T,
   ! which identifies the 'general' <tex>$\tilde Q_1$</tex> element.
 !</description>
-  
+
 !<result>
   ! The identifier of the 'standard' element, celement refers to.
 !</result>
-  
+
   !<input>
-  
+
   ! Element type qualifier.
    integer(I32), intent(in) :: celement
-  
+
   !</input>
- 
+
 !</function>
 
     ! To get the standard identifier, we just have to mask out all bits
     ! except for bit 0..9. These 10 bits encode the standard element
     ! identifier plus dimension.
     iresult = iand(celement,EL_ELNRMASK)
-  
+
   end function
 
   !************************************************************************
-  
+
 !<function>
 
   elemental integer(I32) function elem_igetShape(celement) result(ishp)
-  
+
 !<description>
   ! This function returns the element shape identifier for a given element
   ! id. The shape identifier is one of the BGEOM_SHAPE_XXXX constants
@@ -1967,7 +1967,7 @@ contains
   ! Element identifier
   integer(I32), intent(in) :: celement
 !</input>
-  
+
 !</function>
 
     select case (elem_getPrimaryElement(celement))
@@ -1975,12 +1975,12 @@ contains
           EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
-    
+
     case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D,&
           EL_DCTP1_2D, EL_DCTP2_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
-      
+
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
@@ -1988,24 +1988,24 @@ contains
           EL_DCQP1_2D, EL_DCQP2_2D, EL_QPW4DCP1_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
-    
+
     case (EL_P0_3D, EL_P1_3D, EL_P2_3D)
       ! 3D Tetrahedron
       ishp = BGEOM_SHAPE_TETRA
-    
+
     case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
           EL_Q1T_3D, EL_Q2T_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
-    
+
     case (EL_Y0_3D, EL_Y1_3D)
       ! 3D Pyramid
       ishp = BGEOM_SHAPE_PYRA
-    
+
     case (EL_R0_3D, EL_R1_3D)
       ! 3D Prism
       ishp = BGEOM_SHAPE_PRISM
-    
+
     case default
       ! Unknown
       ishp = BGEOM_SHAPE_UNKNOWN
@@ -2018,7 +2018,7 @@ contains
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
 ! the element type identifier celement, the right element is called.
- 
+
 !<subroutine>
 
   subroutine elem_generic1 (celement, Dcoords, Djac, ddetj, Bder, &
@@ -2037,14 +2037,14 @@ contains
 !<input>
   ! Element type identifier.
   integer(I32), intent(in)  :: celement
-  
+
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates,
   ! Dcoords(3,.)=z-coordinates.
   real(DP), dimension(:,:), intent(in) :: Dcoords
-  
+
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. The size of this array depends
   ! on the dimension of the space.
@@ -2053,18 +2053,18 @@ contains
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
   real(DP), dimension(:), intent(in) :: Djac
-  
+
   ! Determinant of the mapping from the reference element to the real
   ! element.
   real(DP), intent(in) :: ddetj
-  
+
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder
-  
+
   ! Coordinate of the point where to evaluate.
   ! The dimension depends on the coordinate system of the actual element.
   ! For triangular elements with barycentric 2D coordinates:
@@ -2083,7 +2083,7 @@ contains
   ! Can be omitted if the element does not use this information.
   integer(I32), intent(in), optional :: ItwistIndex
 !</input>
-  
+
 !<output>
   ! Value/derivatives of basis functions.
   ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
@@ -2096,7 +2096,7 @@ contains
 !</output>
 
 ! </subroutine>
-  
+
   ! local variables for the sim2-wrapper
   logical :: bwrapSim2
   real(DP), dimension(size(Dcoords,1),size(Dcoords,2),1), target :: Dcoords2
@@ -2115,11 +2115,11 @@ contains
 
     ! Take care of the 1D PN element
     if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
-      
+
       bwrapSim2 = .true.
-    
+
     else
-    
+
       ! Choose the right element subroutine to call.
       bwrapSim2 = .false.
       select case (celement)
@@ -2242,13 +2242,13 @@ contains
         ! Throw a floating point exception so that the program stops here!
         ! We cannot use "PRINT" here as the routine is PURE!
         call sys_throwFPE()
-        
+
       end select
-    
+
     end if
-    
+
     if(.not. bwrapSim2) return
-    
+
     ! Prepare the variables for the sim2-wrapper
     Dcoords2(:,:,1) = Dcoords(:,:)
     Djac2(:,1,1) = Djac(:)
@@ -2259,7 +2259,7 @@ contains
     else
       ItwistIndex2(1) = 0_I32
     end if
-    
+
     ! Set up the structure
     reval%npointsPerElement = 1
     reval%nelements = 1
@@ -2273,20 +2273,20 @@ contains
     end if
     reval%p_ItwistIndex => ItwistIndex2
     reval%p_rperfconfig => rperfconfig
-    
+
     ! Call sim2-wrapper
     call elem_generic_sim2(celement, reval, Bder, Dbas2)
-    
+
     ! Copy results to Dbas
     Dbas(:,:) = Dbas2(:,:,1,1)
 
   end subroutine
-  
+
 !**************************************************************************
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
 ! the element type identifier celement, the right element is called.
- 
+
 !<subroutine>
 
   subroutine elem_generic2 (celement, revalElement, Bder, Dbas)
@@ -2303,7 +2303,7 @@ contains
 !<input>
   ! Element type identifier.
   integer(I32), intent(in)  :: celement
-  
+
   ! t_evalElement-structure that contains cell-specific information and
   ! coordinates of the evaluation point. revalElementSet must be prepared
   ! for the evaluation.
@@ -2315,9 +2315,9 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder
-  
+
 !</input>
-  
+
 !<output>
   ! Value/derivatives of basis functions.
   ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
@@ -2458,9 +2458,9 @@ contains
     end select
 
   end subroutine
-  
+
   !************************************************************************
-  
+
 !<subroutine>
 
   subroutine elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
@@ -2474,10 +2474,10 @@ contains
 !<input>
   ! Element type identifier
   integer(I32), intent(in)  :: celement
-  
+
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(in) :: npoints
-  
+
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
@@ -2492,18 +2492,18 @@ contains
   !  Djac(4,i) = J_i(2,2)
   !REAL(DP), DIMENSION(:,npoints), INTENT(in) :: Djac
   real(DP), dimension(:,:), intent(in) :: Djac
-  
+
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points:
   real(DP), dimension(:), intent(in) :: Ddetj
-  
+
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder
-  
+
   ! Array with coordinates of the points where to evaluate.
   ! For parametric elements, the coordinates are expected on the
   ! reference element. For nonparametric elements, the coordinates
@@ -2512,13 +2512,13 @@ contains
   !   Dpoints(1,.)=x-coordinates,
   !   Dpoints(2,.)=y-coordinates.
   real(DP), dimension(:,:), intent(in) :: Dpoints
-  
+
   ! OPTIONAL: Twist index bitfield that defines the orientation
   ! of the edges in the element.
   ! Can be omitted if the element does not use this information.
   integer(I32), intent(in), optional :: itwistIndex
 !</input>
-  
+
 !<output>
   ! Value/derivatives of basis functions.
   ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
@@ -2551,7 +2551,7 @@ contains
       call elem_DG_T1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_DG_T2_1D)
       call elem_DG_T2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-      
+
     ! 2D elements
     case (EL_P0)
       call elem_P0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
@@ -2626,9 +2626,9 @@ contains
     end select
 
   end subroutine
-  
+
   !************************************************************************
-  
+
 !<subroutine>
 
   subroutine elem_generic_sim1 (celement, Dcoords, Djac, Ddetj, &
@@ -2644,13 +2644,13 @@ contains
 !<input>
   ! Element type identifier
   integer(I32), intent(in)  :: celement
-  
+
   ! Number of points on every element where to evalate the basis functions.
   integer, intent(in) :: npoints
-  
+
   ! Number of elements, the basis functions are evaluated at
   integer, intent(in)  :: nelements
-  
+
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
@@ -2672,7 +2672,7 @@ contains
   !  Djac(:,:,j) refers to the determinants of the points of element j.
   !REAL(DP), DIMENSION(:,npoints,nelements), INTENT(in) :: Djac
   real(DP), dimension(:,:,:), intent(in) :: Djac
-  
+
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
   !  Ddetj(i,.) = Determinant of point i
@@ -2680,14 +2680,14 @@ contains
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
   real(DP), dimension(:,:), intent(in) :: Ddetj
-  
+
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder
-  
+
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected
   ! - on the reference element, if celement identifies a parametric element
@@ -2700,14 +2700,14 @@ contains
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
-  
+
   ! OPTIONAL: List of twist indices. For every element, the corresponding
   ! entry is a bitfield that defines the orientation of the edge.
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(nelements)
   integer(I32), dimension(:), intent(in), optional :: ItwistIndex
 !</input>
-  
+
 !<output>
   ! Value/derivatives of basis functions.
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npoints,nelements] of double
@@ -2862,9 +2862,9 @@ contains
     end select
 
   end subroutine
-  
+
   !************************************************************************
-  
+
 !<subroutine>
 
   subroutine elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
@@ -2883,7 +2883,7 @@ contains
 
   ! Element type identifier
   integer(I32), intent(in)  :: celement
-  
+
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
@@ -2891,7 +2891,7 @@ contains
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder
 !</input>
-  
+
 !<output>
   ! Value/derivatives of basis functions.
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
@@ -2907,7 +2907,7 @@ contains
 ! </subroutine>
 
   integer :: i
-  
+
     ! Take care of the 1D PN element
     if(elem_getPrimaryElement(celement) .eq. EL_PN_1D) then
       call elem_eval_PN_1D(celement, revalElementSet, Bder, Dbas)
@@ -2916,7 +2916,7 @@ contains
 
     ! Choose the right element subroutine to call.
     select case (celement)
-    
+
     ! *****************************************************
     ! 1D line elements
     case (EL_P0_1D)
@@ -2924,43 +2924,43 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_P1_1D)
       call elem_P1_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_P2_1D)
       call elem_P2_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_S31_1D)
       call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-        
+
     case (EL_DG_T0_1D)
       call elem_DG_T0_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-                              
+
     case (EL_DG_T1_1D)
       call elem_DG_T1_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-                              
+
     case (EL_DG_T2_1D)
       call elem_DG_T2_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     ! *****************************************************
     ! 2D triangle elements
     case (EL_P0)
@@ -2968,19 +2968,19 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_P1,EL_DG_P1_2D, EL_DCTP1_2D)
       call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_P2, EL_DCTP2_2D)
       call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_P1T)
       call elem_P1T_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -2994,19 +2994,19 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-      
+
       ! New implementation
       !call elem_eval_Q1_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_EM11_2D)
       call elem_eval_EM11_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_Q2,EL_DG_Q2_2D)
       call elem_Q2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -3015,13 +3015,13 @@ contains
 
     case (EL_Q2H_2D)
       call elem_eval_Q2H_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal, revalElementSet%p_rperfconfig)
-    
+
     case (EL_QPW4P1_2D)
       ! New implementation
       call elem_eval_QPW4P1_2D(celement, revalElementSet, Bder, Dbas)
@@ -3029,23 +3029,23 @@ contains
     case (EL_QPW4P2_2D)
       ! New implementation
       call elem_eval_QPW4P2_2D(celement, revalElementSet, Bder, Dbas)
-      
+
     case (EL_EN30_2D)
       ! new implementation of 2D EM30
       call elem_eval_EN30_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_E030)
       call elem_E030_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_EB30)
       call elem_EB30_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_Q1TBNP)
       ! non-parametric variant of EB30
       call elem_eval_Q1TBNP_2D(celement, revalElementSet, Bder, Dbas)
@@ -3055,27 +3055,27 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal, revalElementSet%p_rperfconfig)
-    
+
     case (EL_EN31_2D)
       ! new implementation of 2D EM31
       call elem_eval_EN31_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_E031)
       call elem_E031_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_E032)
       call elem_eval_E032_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_E050)
       call elem_E050_sim (celement, revalElementSet%p_Dcoords,&
         revalElementSet%p_ItwistIndex, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_EB50)
       !call elem_EB50_sim (celement, revalElementSet%p_Dcoords,&
       !  revalElementSet%p_ItwistIndex, &
@@ -3085,28 +3085,28 @@ contains
 
       ! New implementation
       call elem_eval_EB50_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_EM50)
       call elem_eval_EN50_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     !case (EL_E051_2D)
     !  call elem_eval_E051_2D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_EN51_2D)
       call elem_eval_EN51_2D(celement, revalElementSet, Bder, Dbas)
-         
+
     case (EL_DG_T0_2D)
       call elem_DG_T0_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-                              
+
     case (EL_DG_T1_2D)
       call elem_DG_T1_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-                              
+
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -3129,7 +3129,7 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_P1_3D)
       call elem_P1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -3143,7 +3143,7 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_Q1_3D)
       call elem_Q1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -3152,7 +3152,7 @@ contains
 
     case (EL_Q2_3D)
       call elem_eval_Q2_3D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_QP1_3D)
       call elem_eval_QP1_3D(celement, revalElementSet, Bder, Dbas)
 
@@ -3168,22 +3168,22 @@ contains
     case (EL_EN30_3D)
       ! new implementation of 3D EM30
       call elem_eval_EN30_3D(celement, revalElementSet, Bder, Dbas)
-    
+
     case (EL_E030_3D)
       call elem_E030_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
+
     case (EL_E031_3D)
       call elem_E031_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-        
+
     case (EL_E050_3D)
       call elem_eval_E050_3D(celement, revalElementSet, Bder, Dbas)
-        
+
     case (EL_EN50_3D)
       call elem_eval_EN50_3D(celement, revalElementSet, Bder, Dbas)
 
@@ -3194,7 +3194,7 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_Y1_3D)
       !call elem_Y1_3D_sim (celement, revalElementSet%p_Dcoords, &
       !  revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
@@ -3211,15 +3211,15 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
-    
+
     case (EL_R1_3D)
       call elem_R1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
-    
-    
-          
+
+
+
     case default
       ! Compatibility handling: evaluate on all elements separately
       if (associated(revalElementSet%p_ItwistIndex)) then
@@ -3262,36 +3262,36 @@ contains
   end subroutine
 
   !************************************************************************
-  
+
 !<function>
 
   elemental logical function elem_isLinearTrafo (celement) result (blinearTrafo)
 
   !<description>
-  
+
   ! Determines whether an element celement has (multi-)linear transformation
-  
+
   !</description>
-  
+
   !<result>
   ! =true, if the element has a (multi-)linear trnasformation.
   ! =false, if the element has a higher-oder transformation.
   !</result>
-  
+
   !<input>
-  
+
   ! Element type qualifier.
   integer(I32), intent(in) :: celement
-  
+
   !</input>
- 
+
 !</function>
 
     ! Use the transformation routine to determine that value!
     blinearTrafo = trafo_isLinearTrafo(elem_igetTrafoType(celement))
-  
+
   end function
-  
+
   !************************************************************************
 
 !<subroutine>
@@ -3318,7 +3318,7 @@ contains
 !</subroutine>
 
     select case (elem_getPrimaryElement(celement))
-    
+
     ! -= 1D Line Elements =-
     case (EL_P0_1D,EL_DG_T0_1D)
       Dpoints(1,1) =  0.0_DP
@@ -3334,7 +3334,7 @@ contains
       Dpoints(1,2) =  1.0_DP
       Dpoints(1,3) = -1.0_DP
       Dpoints(1,4) =  1.0_DP
-      
+
     ! -= 2D Triangle Elements =-
     case (EL_P0)
       Dpoints(1,1) = 1.0_DP/3.0_DP
@@ -3364,7 +3364,7 @@ contains
       Dpoints(1,3) = 0.0_DP
       Dpoints(2,3) = 0.0_DP
       Dpoints(3,3) = 1.0_DP
-      
+
       Dpoints(1,4) = 0.5_DP
       Dpoints(2,4) = 0.5_DP
       Dpoints(3,4) = 0.0_DP
@@ -3372,7 +3372,7 @@ contains
       Dpoints(1,5) = 0.0_DP
       Dpoints(2,5) = 0.5_DP
       Dpoints(3,5) = 0.5_DP
-      
+
       Dpoints(1,6) = 0.5_DP
       Dpoints(2,6) = 0.0_DP
       Dpoints(3,6) = 0.5_DP
@@ -3388,7 +3388,7 @@ contains
       Dpoints(1,3) = 0.0_DP
       Dpoints(2,3) = 0.0_DP
       Dpoints(3,3) = 1.0_DP
-      
+
       Dpoints(1,4) = 0.5_DP
       Dpoints(2,4) = 0.5_DP
       Dpoints(3,4) = 0.0_DP
@@ -3396,7 +3396,7 @@ contains
       Dpoints(1,5) = 0.0_DP
       Dpoints(2,5) = 0.5_DP
       Dpoints(3,5) = 0.5_DP
-      
+
       Dpoints(1,6) = 0.5_DP
       Dpoints(2,6) = 0.0_DP
       Dpoints(3,6) = 0.5_DP
@@ -3408,11 +3408,11 @@ contains
       Dpoints(1,8) = 0.0_DP
       Dpoints(2,8) = 0.5_DP
       Dpoints(3,8) = 0.5_DP
-      
+
       Dpoints(1,9) = 0.5_DP
       Dpoints(2,9) = 0.0_DP
       Dpoints(3,9) = 0.5_DP
-      
+
     case (EL_P1T)
       Dpoints(1,1) = 0.5_DP
       Dpoints(2,1) = 0.5_DP
@@ -3421,7 +3421,7 @@ contains
       Dpoints(1,2) = 0.0_DP
       Dpoints(2,2) = 0.5_DP
       Dpoints(3,2) = 0.5_DP
-      
+
       Dpoints(1,3) = 0.5_DP
       Dpoints(2,3) = 0.0_DP
       Dpoints(3,3) = 0.5_DP
@@ -3483,7 +3483,7 @@ contains
 
       Dpoints(1,4) = -1.0_DP
       Dpoints(2,4) =  0.0_DP
-      
+
     case (EL_Q1TB)
       Dpoints(1,1) =  0.0_DP
       Dpoints(2,1) = -1.0_DP
@@ -3527,11 +3527,11 @@ contains
 
       Dpoints(1,9) =  0.0_DP
       Dpoints(2,9) =  0.0_DP
-      
+
       Dpoints(1,10) =  0.0_DP
       Dpoints(2,10) =  0.0_DP
-      
-    
+
+
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
       Dpoints(1,1) = 1.0_DP/3.0_DP
@@ -3553,12 +3553,12 @@ contains
       Dpoints(2,3) = 0.0_DP
       Dpoints(3,3) = 1.0_DP
       Dpoints(4,3) = 0.0_DP
-      
+
       Dpoints(1,4) = 0.0_DP
       Dpoints(2,4) = 0.0_DP
       Dpoints(3,4) = 0.0_DP
       Dpoints(4,4) = 1.0_DP
-          
+
     ! -= 3D Hexahedron Elements =-
     case (EL_Q0_3D)
       Dpoints(1,1) = 0.0_DP
@@ -3598,9 +3598,9 @@ contains
       Dpoints(3,8) =  1.0_DP
 
     ! -= 3D Pyramid Elements =-
-    
+
     ! -= 3D Prism Elements =-
-      
+
     case default
       call output_line ('Unsupported element.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'elem_getNDofLoc')

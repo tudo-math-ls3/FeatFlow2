@@ -32,10 +32,10 @@ module listbase
 !</constantblock>
 
 !<constantblock description="Internal tags for list status">
-  
+
   ! Tag for empty list
   integer, parameter, public :: LNULL =  0
-  
+
   ! Tag for head of list
   integer, parameter, public :: LHEAD = -2
 

@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
@@ -17,10 +15,10 @@
 !<input>
     ! Number of edges
     integer, intent(in) :: NEDGE
-    
+
     ! Number of nodes
     integer, intent(in) :: NEQ
-    
+
     ! Number of solution variables
     integer, intent(IN) :: NVAR
 
@@ -35,7 +33,7 @@
 
     ! Solution used for flux calculation
     real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
-    
+
     ! Index pointer for edge data structure
     integer, dimension(:), intent(in) :: IedgeListIdx
 

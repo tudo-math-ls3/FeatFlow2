@@ -35,9 +35,9 @@ module linearsolverautoinitialise
   use paramlist
 
   implicit none
-  
+
   private
-  
+
   public :: linsolinit_CC2DMultigrid
   public :: linsolinit_initFromFile
   public :: linsolinit_initParams
@@ -47,15 +47,15 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsolinit_CC2DMultigrid(p_rsolverNode, isolverType, nlevels, &
                         niterationsMin, niterationsMax,daccuracyAbs,daccuracyRel,  &
                         nprecSteps, nsmoothingSteps, &
                         nmaxCoarseGridSteps, dcoarseGridAccuracyAbs, &
                         dcoarseGridAccuracyRel)
-  
+
   !<description>
-  
+
   ! This routine builds a solver node for the linear solver for CC2D-like
   ! applications. The following combinations are supported:
   ! 1.) Multigrid solver, VANKA smoother, VANKA coarse grid solver
@@ -63,11 +63,11 @@ contains
   !     VANKA smoother, VANKA coarse grid solver
   ! The caller must attach the matrices of all levels to the solver manually
   ! by calling linsol_setMatrices. Afterwards the linear solver can be started.
-  
+
   !</description>
-  
+
   !<input>
-  
+
   ! Type of solver structure which should be build up.
   ! 1 = Multigrid solver, VANKA smoother, VANKA coarse grid solver
   ! 2 = BiCGStab-solver, Multigrid preconditioner, VANKA smoother,
@@ -95,33 +95,33 @@ contains
 
   ! Number of pre- and postsmoothing steps
   integer, intent(in)               :: nsmoothingSteps
-  
+
   ! Absolute accuracy on the coarse grid
   real(DP), intent(in)                   :: dcoarseGridAccuracyAbs
 
   ! Relative accuracy on the coarse grid
   real(DP), intent(in)                   :: dcoarseGridAccuracyRel
-  
+
   ! Maximum iterations on the coarse grid
   integer, intent(in)               :: nmaxCoarseGridSteps
 
   ! A list of spatial discretisation structures for the three equations
   ! that are supported by CC2D: x-velocity, y-velocity, pressure
   type(t_spatialDiscretisation), dimension(3) :: RspatialDiscr
-  
+
 !</input>
-  
+
 !<output>
-  
+
   ! The solver node that identifies the solver. The caller must attach
   ! level-dependent data (matrix information) to it with the standard
   ! routines in the module LinearSolver. Afterwards the structure
   ! can be used to solve the problem.
-  
+
   type(t_linsolNode),pointer :: p_rsolverNode
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -132,43 +132,43 @@ contains
   type(t_linsolNode),pointer :: p_rcoarseGridSolver
   type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
   type(t_interlevelProjectionBlock) :: rprojection
-  
+
   ! Create the solver node - either BiCGStab or Multigrid.
   ! If we create BiCGStab, attach multigrid as preconditioner.
-  
+
   call linsol_initMultigrid (p_rmgSolver)
-  
+
   if (isolverType .eq. 1) then
-  
+
     p_rsolverNode => p_rmgSolver
-    
+
   else
-  
+
     call linsol_initBiCGStab (p_rsolverNode,p_rmgSolver)
-    
+
     ! Configure MG preconditioning as a fixed number of MG steps
     ! without checking the residuum.
-    
+
     p_rmgSolver%nminIterations = nprecSteps
     p_rmgSolver%nmaxIterations = nprecSteps
     p_rmgSolver%iresCheck      = NO
-    
+
   end if
-  
+
   ! Configure the solver
   p_rsolverNode%nminIterations = niterationsMin
   p_rsolverNode%nmaxIterations = niterationsMax
   p_rsolverNode%depsRel = daccuracyRel
   p_rsolverNode%depsAbs = daccuracyAbs
-  
+
   ! Initialise a standard interlevel projection structure for all levels.
   call mlprj_initProjectionDirect (rprojection,RspatialDiscr)
-  
+
   ! Continue to configure MG by accessing p_rmgSolver.
   ! Loop through the levels.
-  
+
   do ilevel = 1,nlevels
-  
+
     ! On the lowest level create a coarse grid solver structure
     if (ilevel .eq. 1) then
       call linsol_initVANKA (p_rcoarseGridSolver)
@@ -178,25 +178,25 @@ contains
     else
       nullify(p_rcoarseGridSolver)
     end if
-    
+
     ! Create pre- and postsmoother structure on the current level
     call linsol_initVANKA (p_rpreSmoother)
     call linsol_initVANKA (p_rpostSmoother)
-    
+
     ! Configure the structures to form a smoother. A smoother is a solver
     ! that iterates a finite number of times without respecting the
     ! residuum.
-    
+
     call linsol_convertToSmoother (p_rpreSmoother,nsmoothingSteps)
     call linsol_convertToSmoother (p_rpostSmoother,nsmoothingSteps)
-    
+
     ! Create the level, attrach it to the solver and proceed to the
     ! next level
     call linsol_addMultigridLevel (p_rlevelInfo,p_rmgSolver, rprojection,&
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
-    
+
   end do
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -206,7 +206,7 @@ contains
   recursive subroutine linsolinit_initFromFile (p_rsolverNode, rparamList, &
                                                 ssolverName, nlevels, RfilterChain, &
                                                 rinterlevelProjection)
-  
+
 !<description>
   ! This routine creates a new linear solver node p_rsolverNode of the
   ! heap. The configuration on this solver is set up according to the
@@ -221,11 +221,11 @@ contains
 !<input>
   ! The parameter list that contains the whole solver configuration.
   type(t_parlist), intent(in) :: rparamList
-  
+
   ! The name of a section in rparamList that contains the configuration of
   ! the main linear solver.
   character(LEN=*), intent(in) :: ssolverName
-  
+
   ! Number of levels in the discretisation.
   integer, intent(in) :: nlevels
 
@@ -279,9 +279,9 @@ contains
 
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
-    
+
     call parlst_querysection(rparamList, ssolverName, p_rsection)
-    
+
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section ''' &
           // trim(ssolverName) // '''!', OU_CLASS_ERROR, OU_MODE_STD, &
@@ -289,7 +289,7 @@ contains
       call sys_halt()
 
     end if
-    
+
     ! Ok, we have the section where we can get parameters from.
     ! Get the solver type we should set up.
     ! Let us hope the parameter 'isolverType' exists! That one is
@@ -307,11 +307,11 @@ contains
     call parlst_getvalue_string (p_rsection, 'spreconditioner', sString,'')
     spreconditioner = ''
     if (sString .ne. '') read (sString,*) spreconditioner
-    
+
     ! Now comes a biiig select for all the different types of solvers
     ! that are supported by this routine.
     select case (isolverType)
-    
+
     case (LINSOL_ALG_DEFCORR)
       ! Defect correction
       !
@@ -323,13 +323,13 @@ contains
       end if
       ! Init the solver node
       call linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_Rfilter)
-      
+
     case (LINSOL_ALG_JACOBI)
       ! Jacobi solver
       !
       ! Init the solver node
       call linsol_initJacobi (p_rsolverNode)
-      
+
     case (LINSOL_ALG_SOR)
       ! SOR/GS solver
       !
@@ -337,7 +337,7 @@ contains
       ! to activate GS. The actual domega is initialised later if specified
       ! in the DAT file.
       call linsol_initSOR (p_rsolverNode,1.0_DP)
-      
+
     case (LINSOL_ALG_SSOR)
       ! SSOR solver
       !
@@ -348,7 +348,7 @@ contains
       !         = 0   -> no scaling, original FEAT implementation
       call parlst_getvalue_int (p_rsection, 'bscale', i1, 0)
       call linsol_initSSOR (p_rsolverNode,bscale = i1 .eq. 1)
-      
+
     case (LINSOL_ALG_BICGSTAB)
       ! BiCGStab solver
       !
@@ -361,7 +361,7 @@ contains
 
       ! Init the solver node
       call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
-      
+
     case (LINSOL_ALG_GMRES)
       ! GMRES solver
       !
@@ -378,20 +378,20 @@ contains
 
       ! Krylow space dimension
       call parlst_getvalue_int (p_rsection, 'ikrylovDim', ikrylowDim,40)
-      
+
       ! Apply Gram Schmidt twice
       call parlst_getvalue_int (p_rsection, 'itwiceGS', i1,0)
 
       ! Init the solver node
       call linsol_initGMRES (p_rsolverNode,ikrylowDim,p_rpreconditioner,p_Rfilter,&
         i1 .eq. 1)
-      
+
     case (LINSOL_ALG_UMFPACK4)
       ! UMFPACK4 solver
       !
       ! Init the solver node
       call linsol_initUMFPACK4 (p_rsolverNode)
-      
+
     case (LINSOL_ALG_ILU0)
       ! ILU0 solver
       !
@@ -408,19 +408,19 @@ contains
       !
       ! Get fill-in level
       call parlst_getvalue_int (p_rsection, 'ifill', i1, 0)
-      
+
       ! Get MILU relaxsation parameter
       call parlst_getvalue_double (p_rsection, 'drelax', d1, 0.0_DP)
-      
+
       ! Init the solver node
       call linsol_initMILUs1x1 (p_rsolverNode,i1,d1)
-      
+
     case (LINSOL_ALG_VANKA)
       ! VANKA solver
       !
       ! Init the solver node
       call linsol_initVANKA (p_rsolverNode,1.0_DP,isolverSubtype)
-    
+
     case (LINSOL_ALG_MULTIGRID)
       ! Multigrid solver
       !
@@ -437,7 +437,7 @@ contains
       ! Ok, that is the most complicated one :-)
       ! At first, initialise the solver:
       call linsol_initMultigrid (p_rsolverNode,p_Rfilter)
-      
+
       ! Then, get solver specific data.
       call parlst_getvalue_int (p_rsection, 'icycle', &
                                 p_rsolverNode%p_rsubnodeMultigrid%icycle,&
@@ -451,26 +451,26 @@ contains
       call parlst_getvalue_double (p_rsection, 'dalphaMin', &
            p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin,&
            p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin)
-      
+
       call parlst_getvalue_double (p_rsection, 'dalphaMax', &
            p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax,&
            p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax)
-    
+
       ! Do we have a presmoother?
       call parlst_getvalue_string (p_rsection, 'spreSmootherName', sString,'')
       spresmoother = ''
       if (sString .ne. '') read (sString,*) spresmoother
-      
+
       ! A postsmoother?
       call parlst_getvalue_string (p_rsection, 'spostSmootherName', sString,'')
       spostsmoother = ''
       if (sString .ne. '') read (sString,*) spostsmoother
-      
+
       ! A coarse grid solver?
       call parlst_getvalue_string (p_rsection, 'scoarseGridSolver', sString,'')
       scoarsegridsolver = ''
       if (sString .ne. '') read (sString,*) scoarsegridsolver
-      
+
       ! We need an interlevel projection structure!
       if (.not. present(rinterlevelProjection)) then
         call output_line ('Cannot create linear solver; ' // &
@@ -478,7 +478,7 @@ contains
             'linsolinit_initFromFile')
         call sys_halt()
       end if
-      
+
       ! Initialise the coarse grid solver - if there is one. There must be one!
       if (scoarsegridsolver .eq. '') then
         call output_line ('Cannot create linear solver; ' // &
@@ -488,10 +488,10 @@ contains
       end if
       call linsolinit_initFromFile (p_rcoarsegridsolver,rparamList,&
                                     scoarsegridsolver,nlevels,RfilterChain)
-      
+
       ! Build all levels. Level 1 receives the coarse grid solver.
       do ilev = 1,nlevels
-        
+
         ! Where we have a coarse grid solver (level 1), we do not need smoothers.
         if (associated(p_rcoarsegridsolver)) then
           nullify(p_rpresmoother)
@@ -504,7 +504,7 @@ contains
           else
             nullify(p_rpresmoother)
           end if
-          
+
           ! Is there a postsmoother?
           if (spostsmoother .ne. '') then
             ! Check if pre- and postsmoother are identical.
@@ -517,23 +517,23 @@ contains
               ! Let the pointer point to the presmoother
               p_rpostsmoother => p_rpresmoother
             end if
-          
+
           else
             nullify(p_rpostsmoother)
           end if
         end if
-        
+
         ! Add the level to Multigrid
         call linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, &
                     rinterlevelProjection, &
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
-                    
+
         ! Reset the coarse grid solver pointer to NULL.
         ! That way, the coarse grid solver is only attached to level 1.
         nullify(p_rcoarsegridsolver)
-        
+
       end do
-    
+
     case (LINSOL_ALG_MULTIGRID2)
       ! Multigrid solver
       !
@@ -563,26 +563,26 @@ contains
       call parlst_getvalue_double (p_rsection, 'dalphaMin', &
            p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin,&
            p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin)
-      
+
       call parlst_getvalue_double (p_rsection, 'dalphaMax', &
            p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
            p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
-    
+
       ! Do we have a presmoother?
       call parlst_getvalue_string (p_rsection, 'spreSmootherName', sString,'')
       spresmoother = ''
       if (sString .ne. '') read (sString,*) spresmoother
-      
+
       ! A postsmoother?
       call parlst_getvalue_string (p_rsection, 'spostSmootherName', sString,'')
       spostsmoother = ''
       if (sString .ne. '') read (sString,*) spostsmoother
-      
+
       ! A coarse grid solver?
       call parlst_getvalue_string (p_rsection, 'scoarseGridSolver', sString,'')
       scoarsegridsolver = ''
       if (sString .ne. '') read (sString,*) scoarsegridsolver
-      
+
       ! Initialise the coarse grid solver - if there is one. There must be one!
       if (scoarsegridsolver .eq. '') then
         call output_line ('Cannot create linear solver; ' // &
@@ -596,7 +596,7 @@ contains
 
       call linsolinit_initFromFile(p_rlevelInfo2%p_rcoarseGridSolver, rparamList,&
                                    scoarsegridsolver, nlevels, RfilterChain)
-      
+
       ! Build all the  other levels
       do ilev = 2,nlevels
 
@@ -610,7 +610,7 @@ contains
         else
           nullify(p_rlevelInfo2%p_rpresmoother)
         end if
-          
+
         ! Is there a postsmoother?
         if (spostsmoother .ne. '') then
           ! Check if pre- and postsmoother are identical.
@@ -627,16 +627,16 @@ contains
         else
           nullify(p_rlevelInfo2%p_rpostsmoother)
         end if
-        
+
       end do
-    
+
     case default
       call output_line ('Cannot create linear solver; ' // &
             'unsupported solver type isolverType = ' // &
             trim(sys_si(isolverType,8)), &
              OU_CLASS_ERROR, OU_MODE_STD, 'linsolinit_initFromFile')
       call sys_halt()
-    
+
     end select ! isolverType
 
     ! Ok, we should have a solver node p_rsolverNode now, initialised with
@@ -647,24 +647,24 @@ contains
     ! must be used.
     !
     ! So parse the given parameters now to initialise the solver node:
-    
+
     call linsolinit_initParams (p_rsolverNode,rparamList,ssolverName)
-    
+
     ! Up to now, we initialised for a linear solver. In case this solver is
     ! used as smoother in a Multigrid algorithm, this initialisation
     ! is not comppletely correct - we have to transform the solver into
     ! one that performs a fixed number of iterations.
     !
     ! We identify a smoother by the existence of the parameter nsmoothingSteps:
-    
+
     if (parlst_queryvalue (p_rsection, 'nsmoothingSteps') .ne. 0) then
-    
+
       call parlst_getvalue_int (p_rsection, 'nsmoothingSteps', &
                                 i1, p_rsolverNode%nminIterations)
-                                
+
       ! Convert the solver node into a smoother:
       call linsol_convertToSmoother (p_rsolverNode,i1)
-    
+
     end if
 
   end subroutine
@@ -674,7 +674,7 @@ contains
 !<subroutine>
 
   subroutine linsolinit_initParams (rsolverNode,rparamList,ssection,csolverType)
-  
+
 !<description>
   ! This section reads the standard parameters for a linear solver from the
   ! section ssection in the parameter list rparamList and changes
@@ -697,11 +697,11 @@ contains
 !<input>
   ! The parameter list that contains the whole solver configuration.
   type(t_parlist), intent(in) :: rparamList
-  
+
   ! The name of a section in rparamList that contains the configuration of
   ! the linear solver.
   character(LEN=*), intent(in) :: ssection
-  
+
   ! OPTIONAL: Type of solver structure that should be initialised.
   ! If unspecified or if set to LINSOL_ALG_UNDEFINED, the parameters in the
   ! main solver structure are initialised.
@@ -730,16 +730,16 @@ contains
 
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
-    
+
     call parlst_querysection(rparamList, ssection, p_rsection)
-    
+
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section ''' &
           // trim(ssection) // '''!', OU_CLASS_ERROR, OU_MODE_STD, &
           'linsolinit_initParams')
       call sys_halt()
     end if
-    
+
     ! Now comes a biiig select for all the different types of solvers
     ! that are supported by this routine.
     select case (csolver)
@@ -756,12 +756,12 @@ contains
       if (i1 .ne. -1) then
         rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = i1
       end if
-      
+
       call parlst_getvalue_string (p_rsection, "smatrixName", sstring, "", bdequote=.true.)
       if (sstring .ne. "") then
         rsolverNode%p_rsubnodeUMFPACK4%smatrixName = sstring
       end if
-      
+
     case (LINSOL_ALG_SSOR)
       ! SSOR solver
       !
@@ -774,13 +774,13 @@ contains
       if (i1 .ne. -1) then
         rsolverNode%p_rsubnodeSSOR%bscale = i1 .eq. 1
       end if
-      
+
     case (LINSOL_ALG_GMRES)
       ! GMRES solver
 
       ! Krylow space dimension
       call parlst_getvalue_int (p_rsection, 'ikrylovDim', ikrylowDim,40)
-      
+
       ! Apply Gram Schmidt twice
       call parlst_getvalue_int (p_rsection, 'btwiceGS', i1,-1)
 
@@ -788,7 +788,7 @@ contains
       if (i1 .ne. -1) then
         rsolverNode%p_rsubnodeGMRES%btwiceGS = i1 .eq. 1
       end if
-      
+
     case (LINSOL_ALG_MILUS1x1)
       ! (M)ILU solver
       !
@@ -801,12 +801,12 @@ contains
       call parlst_getvalue_int (p_rsection, 'ifill', &
         rsolverNode%p_rsubnodeMILUs1x1%ifill, &
         rsolverNode%p_rsubnodeMILUs1x1%ifill)
-      
+
       ! Get MILU relaxsation parameter
       call parlst_getvalue_double (p_rsection, 'drelax', &
         rsolverNode%p_rsubnodeMILUs1x1%drelax, &
         rsolverNode%p_rsubnodeMILUs1x1%drelax)
-      
+
     case (LINSOL_ALG_MULTIGRID)
       ! Multigrid solver
       !
@@ -816,7 +816,7 @@ contains
       !                 = 2               -> W-cycle
       !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
       !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
-      
+
       ! Then, get solver specific data.
       call parlst_getvalue_int (p_rsection, 'icycle', &
                                 rsolverNode%p_rsubnodeMultigrid%icycle,&
@@ -830,11 +830,11 @@ contains
       call parlst_getvalue_double (p_rsection, 'dalphaMin', &
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin,&
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin)
-      
+
       call parlst_getvalue_double (p_rsection, 'dalphaMax', &
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax,&
            rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax)
-    
+
     case (LINSOL_ALG_MULTIGRID2)
       ! Multigrid solver
       !
@@ -844,7 +844,7 @@ contains
       !                 = 2               -> W-cycle
       !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
       !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
-      
+
       ! Then, get solver specific data.
       call parlst_getvalue_int (p_rsection, 'icycle', &
                                 rsolverNode%p_rsubnodeMultigrid2%icycle,&
@@ -858,15 +858,15 @@ contains
       call parlst_getvalue_double (p_rsection, 'dalphaMin', &
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin,&
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin)
-      
+
       call parlst_getvalue_double (p_rsection, 'dalphaMax', &
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
-    
+
     case default
-    
+
       ! Initialise the main solver parameters
-    
+
       call parlst_getvalue_double (p_rsection, 'domega', &
                                   rsolverNode%domega, rsolverNode%domega)
 
@@ -885,7 +885,7 @@ contains
         ! in all other cases enable checking of residual norm
         rsolverNode%iresCheck = YES
       endif
-  
+
       call parlst_getvalue_double (p_rsection, 'depsRel', &
                                   rsolverNode%depsRel, rsolverNode%depsRel)
 
@@ -911,7 +911,7 @@ contains
 
       call parlst_getvalue_int (p_rsection, 'niteResOutput', &
                                 rsolverNode%niteResOutput, rsolverNode%niteResOutput)
-                                
+
       call parlst_getvalue_int (p_rsection, 'isolverSubgroup', &
                                 rsolverNode%isolverSubgroup, &
                                 rsolverNode%isolverSubgroup)
@@ -919,5 +919,5 @@ contains
     end select ! isolverType
 
   end subroutine
-  
+
 end module

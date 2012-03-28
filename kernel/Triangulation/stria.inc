@@ -416,7 +416,7 @@
       integer OLCORVG,OLCORMG,OLVERT,OLMID,OLADJ,OLVEL,OLMEL,OLNPR,OLMM
       integer OLVBD,OLEBD,OLBCT,OLVBDP,OLMBDP,OLMBD,OLXNPR,OLEAN
       integer OLMBDI,OLAREA,OIDPFLG,OLFBVT,OLFBMT,ONFBVT,ONFBMT,OTRIUD
-     
+
       integer SZTRIA
 
       parameter (OTRIFL  =  1)
@@ -436,12 +436,12 @@
       parameter (ONIELV  = 15)
       parameter (ONIEVT  = 16)
       parameter (ONANT   = 17)
-      
+
       parameter (ONFBVT  = 18)
       parameter (ONFBMT  = 19)
-    
+
 ! Indices 22..29 reserved for future use
-    
+
       parameter (OLCORVG =  30)
       parameter (OLCORMG =  31)
       parameter (OLVERT  =  32)
@@ -462,14 +462,14 @@
       parameter (OLVBDI  =  47)
       parameter (OLMBDI  =  48)
       parameter (OLAREA  =  49)
-      
+
       parameter (OLFBVT  =  50)
       parameter (OLFBMT  =  51)
-      
+
 ! Indices 54..64 reserved for future use
 ! Indices 65..96 user-defineable.
 
       parameter (OTRIUD  =  65)
-      
+
       parameter (SZTRIA  =  96)
 

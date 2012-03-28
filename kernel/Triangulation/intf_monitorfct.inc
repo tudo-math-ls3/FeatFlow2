@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interface for the subroutine that
   ! calculates the function values of the monitor function
   ! used in grid deformation
@@ -8,7 +6,7 @@
 
 !<subroutine>
   subroutine def_monitorfct(DvertexCoords,Dentries)
-  
+
   use triangulation
   use linearformevaluation
   use spdiscprojection

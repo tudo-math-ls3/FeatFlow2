@@ -65,7 +65,7 @@ module map
 
 !<constants>
 !<constantblock description="Global flags for map implementations">
-  
+
   ! map for integer data
   integer, parameter, public :: MAP_INT           = ST_INT
   integer, parameter, public :: MAP_INT_INT       = ST_INT + 100*ST_INT
@@ -117,7 +117,7 @@ module map
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -140,7 +140,7 @@ contains
     type(t_map), intent(out) :: rmap
 !</output>
 !</subroutine>
-    
+
     select case (cmapType)
     case (MAP_INT)
       allocate(rmap%p_mapInt)
@@ -153,7 +153,7 @@ contains
 
     case (MAP_INT_SINGLE)
       allocate(rmap%p_mapInt_Sngl)
-      
+
     case (MAP_DOUBLE)
       allocate(rmap%p_mapDble)
 
@@ -165,7 +165,7 @@ contains
 
     case (MAP_DOUBLE_SINGLE)
       allocate(rmap%p_mapDble_Sngl)
-    
+
     case (MAP_SINGLE)
       allocate(rmap%p_mapSngl)
 
@@ -174,10 +174,10 @@ contains
 
     case (MAP_SINGLE_DOUBLE)
       allocate(rmap%p_mapSngl_Dble)
-      
+
     case (MAP_SINGLE_SINGLE)
         allocate(rmap%p_mapSngl_Sngl)
-  
+
     case DEFAULT
       call output_line('Invalid map type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'map_init')
@@ -625,5 +625,5 @@ contains
     end if
 
   end subroutine map_getbase_sngl_sngl
-  
+
 end module map

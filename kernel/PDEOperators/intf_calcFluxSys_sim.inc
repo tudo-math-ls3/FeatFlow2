@@ -1,9 +1,7 @@
-   ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
-    
+
   subroutine fcb_calcFluxSys_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 

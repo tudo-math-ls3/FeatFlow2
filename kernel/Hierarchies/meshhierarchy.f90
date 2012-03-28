@@ -33,17 +33,17 @@ module meshhierarchy
   use boundary
   use basicgeometry
   use triangulation
-  
+
   implicit none
-  
+
   private
-  
+
   public :: t_meshHierarchy
   public :: mshh_initHierarchy
   public :: mshh_refineHierarchy2lv
   public :: mshh_releaseHierarchy
   public :: mshh_printHierStatistics
-  
+
 !<constants>
 
 !<constantblock description = "Constants defining information in cflags about the hierarchy.">
@@ -53,7 +53,7 @@ module meshhierarchy
 
   ! The coarse meshes share their point coordinates with the fine mesh.
   integer(I32), parameter, public :: MSHH_FLG_COMPRESSED = 2_I32**1
-  
+
 !</constantblock>
 
 !<constantblock description = "Refinement flags">
@@ -73,7 +73,7 @@ module meshhierarchy
 
   ! A mesh hierarchy structure that describes a hierarchy of triangulations.
   type t_meshHierarchy
-  
+
     ! A flag that specifies which information in this structure.
     integer(I32) :: cflags = 0
 
@@ -85,16 +85,16 @@ module meshhierarchy
 
     ! Reference to the finest mesh.
     type(t_triangulation), pointer :: p_rfineMesh => null()
-    
+
     ! Current number of levels available in this structure.
     integer :: nlevels = 0
 
     ! Maximum number of levels available in this structure.
     integer :: nmaxlevels = 0
-    
+
     ! Level information.
     type(t_triangulation), dimension(:), pointer :: p_Rtriangulations => null()
-    
+
   end type
 
 !</typeblock>
@@ -140,7 +140,7 @@ contains
 
   ! OPTIONAL: A boundary object that defines the domain.
   type(t_boundary), intent(in), target, optional :: rboundary
-  
+
   ! OPTIONAL: Whether to print the current state of the assembly to
   ! the terminal. If set to TRUE, numbers "2 3 4..:" will be printed
   ! to the terminal for every level currently being processed.
@@ -151,64 +151,64 @@ contains
   ! The mesh space hierarchy structure to refine.
   type(t_meshHierarchy), intent(inout), target :: rmeshHierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
     logical :: boutput
     integer(I32) :: clocalflags,clocalTriaFlags
     type(t_boundary), pointer :: p_rboundary
-    
+
     if ((rmeshHierarchy%nmaxLevels .eq. 0) .or. (rmeshHierarchy%nlevels .eq. 0)) then
       call output_line ('Hierarchy not initialised.', &
           OU_CLASS_ERROR,OU_MODE_STD,'mshh_initHierarchyFromFile')
       call sys_halt()
     end if
-    
+
     if (nlevels .le. 0) return
-    
+
     boutput = .false.
     if (present(bprint)) boutput = bprint
-    
+
     p_rboundary => rmeshHierarchy%p_rboundary
     if (present(rboundary)) p_rboundary => rboundary
-    
+
     clocalflags = MSHH_REF_SHAREDCOORDS
     if (present(cflags)) clocalflags = cflags
-    
+
     clocalTriaFlags = TRIA_R2LV_STANDARD
     if (present(ctriaFlags)) clocalTriaFlags = ctriaFlags
-    
+
     ! Indicate the 2-level refinement if the mesh is not yet refined.
     ! Otherwise, we cannot guarantee that the previous levels are refined
     ! by 2-level refinement as well. But if that is the case, the flag
     ! is already set.
     if (rmeshHierarchy%nlevels .eq. 1) then
       rmeshHierarchy%cflags = ior(rmeshHierarchy%cflags,MSHH_FLG_2LVREF)
-    
+
       if (iand(clocalflags,MSHH_REF_SHAREDCOORDS) .ne. 0) then
         ! Indicate the shared coordinates
         rmeshHierarchy%cflags = ior(rmeshHierarchy%cflags,MSHH_FLG_COMPRESSED)
       end if
     end if
-    
+
     ! Initialise the FE spaces on all levels. Refine the mesh by 2-level
     ! refinement to create all missing levels.
     do i=rmeshHierarchy%nlevels+1,max(rmeshHierarchy%nmaxlevels,nlevels)
-    
+
       if (present(bprint)) then
         if (bprint) then
           ! Print current state.
           call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
         end if
       end if
-    
+
       ! Refine.
       call tria_refine2LevelOrdering (rmeshHierarchy%p_Rtriangulations(i-1),&
           rmeshHierarchy%p_Rtriangulations(i),p_rboundary,clocalTriaFlags)
       call tria_initStandardMeshFromRaw (&
           rmeshHierarchy%p_Rtriangulations(i),p_rboundary)
-      
+
       ! Probably share the coordinates of the coarse mesh with the fine mesh.
       if (iand(clocalflags,MSHH_REF_SHAREDCOORDS) .ne. 0) then
         call tria_compress2LevelOrdHierarchy (&
@@ -216,12 +216,12 @@ contains
             rmeshHierarchy%p_Rtriangulations(i-1))
       end if
     end do
-    
+
     ! Now, we have nlevels levels available.
     rmeshHierarchy%nlevels = max(rmeshHierarchy%nmaxlevels,nlevels)
 
     rmeshHierarchy%p_rfineMesh => rmeshHierarchy%p_Rtriangulations(rmeshHierarchy%nlevels)
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -243,7 +243,7 @@ contains
 
   ! Number of pre-refinements to be applied to rtriangulation to get the coarse mesh.
   integer, intent(in) :: npreref
-  
+
   ! Maximum number of refinement levels in the structure
   integer, intent(in) :: nmaxLevels
 
@@ -261,11 +261,11 @@ contains
   ! The mesh space hierarchy structure to create
   type(t_meshHierarchy), intent(out) :: rmeshHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     if (nmaxLevels .le. 0) return
-    
+
     ! Initialise the structure
     rmeshHierarchy%cflags = 0
     rmeshHierarchy%nmaxLevels = nmaxLevels
@@ -273,12 +273,12 @@ contains
       rmeshHierarchy%p_rboundary => rboundary
     end if
     allocate(rmeshHierarchy%p_Rtriangulations(rmeshHierarchy%nmaxLevels))
-    
+
     ! The coarse mesh pointer points to the first level.
     rmeshHierarchy%nlevels = 1
     rmeshHierarchy%p_rcoarseMesh => rmeshHierarchy%p_Rtriangulations(1)
     rmeshHierarchy%p_rfineMesh => rmeshHierarchy%p_Rtriangulations(1)
-    
+
     ! Create the first level. Duplicate the coarse mesh, share all information.
     if (present(cdupFlag)) then
       call tria_duplicate (rtriangulation, &
@@ -287,7 +287,7 @@ contains
       call tria_duplicate (rtriangulation, &
           rmeshHierarchy%p_Rtriangulations(1),TR_SHARE_ALL,.false.)
     end if
-    
+
     ! Pre-refine.
     if (npreref .gt. 0) then
       call tria_quickRefine2LevelOrdering(npreref,&
@@ -295,7 +295,7 @@ contains
       call tria_initStandardMeshFromRaw (&
           rmeshHierarchy%p_Rtriangulations(1),rmeshHierarchy%p_rboundary)
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -312,7 +312,7 @@ contains
 !<input>
   ! A source mesh hierarchy.
   type(t_meshHierarchy), intent(in) :: rmeshHierarchySource
-  
+
   ! OPTIONAL: The minimum level from rmeshHierarchySource that should be
   ! used as coarse mesh in rmeshHierarchyDest.
   ! If not specified, this defaults to 1.
@@ -327,7 +327,7 @@ contains
   ! If not specified, this defaults to the number of meshes to copy from
   ! rmeshHierarchySource.
   integer, intent(in), optional :: nmaxLevels
-  
+
   ! OPTIONAL: Duplication flag. Defines how data is copied from
   ! rmeshHierarchySource to rmeshHierarchyDest. One of the TR_SHARE_xxxx
   ! constants. If not specified, TR_SHARE_ALL is assumed.
@@ -338,59 +338,59 @@ contains
   ! The FE space hierarchy structure to create
   type(t_meshHierarchy), intent(out), target :: rmeshHierarchyDest
 !</output>
-  
+
 !</subroutine>
 
     integer :: ntotalLevels,i,nmin,nmax
     integer(I32) :: cdup
-  
+
     cdup = TR_SHARE_ALL
     if (present(cdupFlag)) cdup = cdupFlag
-  
+
     ! Copy data.
     rmeshHierarchyDest = rmeshHierarchySource
-  
+
     nmin = 1
     if (present(nminLevel)) nmin = max(nmin,nminLevel)
     nmin = min(nmin,rmeshHierarchySource%nlevels)
-    
+
     nmax = rmeshHierarchySource%nlevels
     if (present(nmaxLevel)) nmax = min(nmax,nmaxLevel)
     nmax = max(nmax,1)
-    
+
     ! How much levels should we allocate?
     ntotalLevels = max(1,nmax-nmin+1)
     if (present(nmaxLevels)) ntotalLevels = max(nmaxLevels,ntotalLevels)
-    
+
     ! Allocate local data
     rmeshHierarchyDest%nmaxLevels = ntotalLevels
     rmeshHierarchyDest%nlevels = nmax-nmin+1
     allocate(rmeshHierarchyDest%p_Rtriangulations(rmeshHierarchyDest%nmaxLevels))
-    
+
     ! Copy mesh data of the highest mesh as defined by cdupFlag.
     call tria_duplicate (&
         rmeshHierarchySource%p_Rtriangulations(nmax),&
         rmeshHierarchyDest%p_Rtriangulations(rmeshHierarchyDest%nlevels),cdup)
-        
+
     ! Copy mesh data of the lower levels.
     do i=rmeshHierarchyDest%nlevels-1,1,-1
-    
+
       if (iand(rmeshHierarchySource%cflags,MSHH_FLG_2LVREF+MSHH_FLG_COMPRESSED) &
           .eq. MSHH_FLG_2LVREF+MSHH_FLG_COMPRESSED) then
-      
+
         ! If we have a compressed 2-level hierarchy, don't duplicate the
         ! coordinates in any case. They are replaced anyway.
         call tria_duplicate (&
             rmeshHierarchySource%p_Rtriangulations(nmax-(rmeshHierarchyDest%nlevels-i)),&
             rmeshHierarchyDest%p_Rtriangulations(i),&
             ior(cdup,TR_SHARE_DVERTEXCOORDS))
-            
+
         ! Re-compress the hierarchy.
         call tria_compress2LevelOrdHierarchy (&
             rmeshHierarchyDest%p_Rtriangulations(i+1),&
             rmeshHierarchyDest%p_Rtriangulations(i))
       else
-      
+
         ! Just duplicate.
         call tria_duplicate (&
             rmeshHierarchySource%p_Rtriangulations(nmax-(rmeshHierarchyDest%nlevels-i)),&
@@ -398,14 +398,14 @@ contains
             cdup)
 
       end if
-      
+
     end do
-    
+
     ! The coarse mesh pointer points to the first level.
     rmeshHierarchyDest%p_rcoarseMesh => rmeshHierarchyDest%p_Rtriangulations(1)
     rmeshHierarchyDest%p_rfineMesh => &
         rmeshHierarchyDest%p_Rtriangulations(rmeshHierarchyDest%nlevels)
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -424,7 +424,7 @@ contains
 !<input>
   ! Maximum number of refinement levels in the hierarchy.
   integer, intent(in) :: nmaxLevels
-  
+
   ! Name/path of a triangulation file that specifies the coarse mesh.
   character(len=*), intent(in) :: sTRIFile
 
@@ -447,11 +447,11 @@ contains
   ! The FE space hierarchy structure to create
   type(t_meshHierarchy), intent(out), target :: rmeshHierarchy
 !</output>
-  
+
 !</subroutine>
-  
+
     if (nmaxLevels .le. 0) return
-    
+
     ! Initialise the structure
     rmeshHierarchy%cflags = 0
     rmeshHierarchy%nlevels = 1
@@ -469,17 +469,17 @@ contains
     select case (ndim)
     case (NDIM2D)
       call tria_readTriFile2D (rmeshHierarchy%p_rcoarseMesh, sTRIFile, rboundary)
-      
+
     case default
       call output_line ('Dimension not supported.', &
           OU_CLASS_ERROR,OU_MODE_STD,'mshh_initHierarchyFromFile')
       call sys_halt()
     end select
-    
+
     call tria_quickRefine2LevelOrdering(npreref,rmeshHierarchy%p_rcoarseMesh,&
         rboundary,ctriaflags)
     call tria_initStandardMeshFromRaw(rmeshHierarchy%p_rcoarseMesh, rboundary)
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -496,11 +496,11 @@ contains
   ! The FE space hierarchy structure to release.
   type(t_meshHierarchy), intent(inout) :: rmeshHierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     if (rmeshHierarchy%nmaxLevels .eq. 0)then
       ! Hierarchy not initialised.
       return
@@ -510,18 +510,18 @@ contains
     do i=rmeshHierarchy%nlevels,1,-1
       call tria_done (rmeshHierarchy%p_Rtriangulations(i))
     end do
-    
+
     ! Clean up the rest
     deallocate (rmeshHierarchy%p_Rtriangulations)
-    
+
     nullify(rmeshHierarchy%p_rcoarseMesh)
     nullify(rmeshHierarchy%p_rfineMesh)
     nullify(rmeshHierarchy%p_rboundary)
-    
+
     rmeshHierarchy%nlevels = 0
     rmeshHierarchy%nmaxLevels = 0
     rmeshHierarchy%cflags = 0
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -537,22 +537,22 @@ contains
 !<input>
   ! The FE space hierarchy.
   type(t_meshHierarchy), intent(in) :: rmeshHierarchy
-  
+
   ! Optional: Number of the minimum level in the hierarchy.
   integer, intent(in), optional :: iminlevel
 !</input>
-  
+
 !</subroutine>
-  
+
     integer :: i,iofs
-    
+
     iofs = 0
     if (present(iminlevel)) iofs = iminlevel-1
-  
+
     do i=1,rmeshHierarchy%nlevels
       call tria_infoStatistics (rmeshHierarchy%p_Rtriangulations(i),i .eq. 1,i+iofs)
     end do
-    
+
   end subroutine
 
 end module

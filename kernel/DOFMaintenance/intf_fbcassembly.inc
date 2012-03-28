@@ -1,21 +1,19 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interface for a callback routine that is called
   ! for calculating values at the boundary for boundary conditions of fictitious
   ! boundary components.
-  
+
   interface
-  
+
   !<subroutine>
 
     subroutine fgetBoundaryValuesFBC (Icomponents,rdiscretisation,&
                                       Revaluation, rcollection)
-    
+
     use fsystem
     use collection
     use spatialdiscretisation
     use discretefbc
-    
+
   !<description>
     ! This subroutine is called during the discretisation of boundary
     ! conditions on fictitious boundary components. It calculates a special quantity
@@ -28,7 +26,7 @@
     ! while Binside is set to TRUE for every vertex/edge that is inside of the
     ! corresponding fictitious boundary region (identified by rbcRegion).
   !</description>
-    
+
   !<input>
     ! Component specifier.
     ! For Dirichlet boundary:
@@ -40,18 +38,18 @@
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
     !     (1=x, 2=y component)
     integer, dimension(:), intent(in) :: Icomponents
-  
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_blockDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 
   !</input>
-  
+
   !<inputoutput>
     ! A t_discreteFBCevaluation structure array that defines what to evaluate,
     ! where to evaluate and which accepts the return values.
@@ -73,10 +71,10 @@
     !
     type(t_discreteFBCevaluation), dimension(:), intent(inout) :: Revaluation
   !</inputoutput>
-    
+
   !</subroutine>
-  
+
     end subroutine
-    
+
   end interface
-  
+

@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _LIST_H_
 #define _LIST_H_
 
@@ -253,7 +251,7 @@
   public :: list_sort
   public :: list_isNull
   public :: list_hasSpec
-  
+
   public assignment(=)
   public operator(==)
   public operator(/=)
@@ -296,7 +294,7 @@
   interface list_rbegin
     module procedure FEAT2_PP_TEMPLATE_TD(list_rbegin,T,D)
   end interface
-  
+
   interface list_end
     module procedure FEAT2_PP_TEMPLATE_TD(list_end,T,D)
   end interface
@@ -343,7 +341,7 @@ interface list_getbase_key
   interface list_pop_front
     module procedure FEAT2_PP_TEMPLATE_TD(list_pop_front,T,D)
   end interface
-  
+
   interface list_pop_back
     module procedure FEAT2_PP_TEMPLATE_TD(list_pop_back,T,D)
   end interface
@@ -355,11 +353,11 @@ interface list_getbase_key
   interface list_getbase_front
     module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_front,T,D)
   end interface
-  
+
   interface list_back
     module procedure FEAT2_PP_TEMPLATE_TD(list_back,T,D)
   end interface
-  
+
   interface list_getbase_back
     module procedure FEAT2_PP_TEMPLATE_TD(list_getbase_back,T,D)
   end interface
@@ -378,7 +376,7 @@ interface list_getbase_key
   interface list_size
     module procedure FEAT2_PP_TEMPLATE_TD(list_size,T,D)
   end interface
-  
+
   interface list_max_size
     module procedure FEAT2_PP_TEMPLATE_TD(list_max_size,T,D)
   end interface
@@ -386,7 +384,7 @@ interface list_getbase_key
   interface list_empty
     module procedure FEAT2_PP_TEMPLATE_TD(list_empty,T,D)
   end interface
-  
+
   interface list_find
     module procedure FEAT2_PP_TEMPLATE_TD(list_find1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(list_find2,T,D)
@@ -399,15 +397,15 @@ interface list_getbase_key
   interface list_info
     module procedure FEAT2_PP_TEMPLATE_TD(list_info,T,D)
   end interface
-  
+
   interface list_duplicate
     module procedure FEAT2_PP_TEMPLATE_TD(list_duplicate,T,D)
   end interface
-  
+
   interface list_restore
     module procedure FEAT2_PP_TEMPLATE_TD(list_restore,T,D)
   end interface
-  
+
   interface list_reverse
     module procedure FEAT2_PP_TEMPLATE_TD(list_reverse,T,D)
   end interface
@@ -429,11 +427,11 @@ interface list_getbase_key
     module procedure FEAT2_PP_TEMPLATE_TD(list_fassign,T,D)
   end interface
 
-  
+
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_TD(it_list_eq,T,D)
   end interface
-  
+
   interface operator(/=)
     module procedure FEAT2_PP_TEMPLATE_TD(it_list_ne,T,D)
   end interface
@@ -459,7 +457,7 @@ interface list_getbase_key
 !<types>
 
 !<typeblock>
-  
+
   ! A doubly linked list
 
   type FEAT2_PP_TEMPLATE_TD(t_list,T,D)
@@ -509,9 +507,9 @@ interface list_getbase_key
     ! Pointer to list auxiliary data
     FEAT2_PP_DTYPE(D_TYPE), dimension(:,:), pointer :: p_Data => null()
 #endif
-    
+
   end type
-  
+
 !</typeblock>
 
 !<typeblock>
@@ -528,7 +526,7 @@ interface list_getbase_key
     ! combination of different LIST_LSPEC_xxxx constants and specifies
     ! various details of the list iterator.
     integer(I32) :: iSpec = 0_I32
-    
+
     ! Pointer to the underlying doubly linked list
     type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), pointer :: p_rlist => null()
 
@@ -541,7 +539,7 @@ interface list_getbase_key
 contains
 
   !************************************************************************
-  
+
 !<subroutine>
 
 #ifdef D
@@ -583,16 +581,16 @@ contains
     if (present(dfactor)) then
       if (dfactor > 1.0_DP) rlist%dfactor = dfactor
     end if
-    
+
     ! Initialise list
     rlist%NNA  = max(0,NNA)
     rlist%NNA0 = max(0,NNA)
-    
+
     ! Allocate memory and associate pointers
     call storage_new('list_create', 'Knext', LHEAD, rlist%NNA, ST_INT,&
         rlist%h_Knext, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Knext, rlist%p_Knext)
-    
+
     call storage_new('list_create','Kprev', rlist%NNA, ST_INT,&
         rlist%h_Kprev, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Kprev, rlist%p_Kprev)
@@ -605,7 +603,7 @@ contains
 #else
     allocate(rlist%p_Key(rlist%NNA))
 #endif
-    
+
 #ifdef D
     ! Set size of auxiliary data
     rlist%isizeData = max(0,isizeData)
@@ -632,7 +630,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(list_release,T,D)(rlist)
 
 !<description>
@@ -671,7 +669,7 @@ contains
         deallocate(rlist%p_Data)
 #endif
 #endif
-    
+
     ! Reset linked list
     rlist%NA        = 0
     rlist%NNA       = 0
@@ -682,7 +680,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(list_resize,T,D)(rlist, NNA)
 
 !<description>
@@ -702,7 +700,7 @@ contains
 
     ! local variables
     integer :: NNAOld
-    
+
 #ifndef T_STORAGE
     FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
@@ -742,7 +740,7 @@ contains
     rlist%p_Key(1:NNAOld) = p_Key
     deallocate(p_Key)
 #endif
-    
+
 #ifdef D
     ! Reallocate auxiliary data
     if (rlist%isizeData > 0) then
@@ -766,7 +764,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine FEAT2_PP_TEMPLATE_TD(list_clear,T,D)(rlist)
 
 !<description>
@@ -944,7 +942,7 @@ contains
     D_TYPE, dimension(:,:), pointer :: p_DataDest
 
     if (present(h_DataDest)) then
-    
+
       ! Check key handle
       if (h_KeyDest .eq. ST_NOHANDLE) then
         call storage_new('list_cpy3', 'Key',&
@@ -957,7 +955,7 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-      
+
       if (rlist%isizeData <= 0) then
         if (h_DataDest .ne. ST_NOHANDLE) call storage_free(h_DataDest)
         call output_line('List does not provide auxiliary data!',&
@@ -965,7 +963,7 @@ contains
 
         ! Copy key values from list
         call list_copy(rlist, p_KeyDest)
-        
+
         ! That`s it
         return
       end if
@@ -982,17 +980,17 @@ contains
           call output_line('Size of data array is not compatible!',&
               OU_CLASS_ERROR,OU_MODE_STD,'list_cpy3')
         end if
-        
+
         if (Isize2(2) < rlist%NA) then
           call storage_realloc('list_cpy3',&
               rlist%NA, h_DataDest, ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
       call storage_getbase(h_DataDest, p_DataDest)
-              
+
       ! Copy key and data values from list
       call list_copy(rlist, p_KeyDest, p_DataDest)
-      
+
     else
 
       ! Check key handle
@@ -1007,10 +1005,10 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-      
+
       ! Copy key values from list
       call list_copy(rlist, p_KeyDest)
-      
+
     end if
 #else
     call output_line('List does not support storage handles!',&
@@ -1032,7 +1030,7 @@ contains
       end if
     end if
     call storage_getbase(h_KeyDest, p_KeyDest)
-    
+
     ! Copy key values from list
     call list_copy(rlist, p_KeyDest)
 
@@ -1045,7 +1043,7 @@ contains
 #endif
 
   end subroutine
-  
+
   !************************************************************************
 
 !<subroutine>
@@ -1127,7 +1125,7 @@ contains
 !<description>
     ! This subroutine swaps content of two lists
 !</description>
-    
+
 !<inputoutput>
     ! First linked list
     type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist1
@@ -1139,7 +1137,7 @@ contains
 
     ! local variables
     type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)) :: rlist
-    
+
     ! Swap lists
     rlist  = rlist1
     rlist1 = rlist2
@@ -1166,13 +1164,13 @@ contains
     if (rlist2%h_Data .ne. ST_NOHANDLE) &
         call storage_getbase(rlist2%h_Data, rlist2%p_Data)
 #endif
-    
+
   end subroutine
 
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(list_begin,T,D)(rlist) result(riterator)
 
 !<description>
@@ -1191,7 +1189,7 @@ contains
 !</result>
 
 !</function>
-    
+
     ! Attach list to iterator
     riterator%p_rlist => rlist
 
@@ -1204,7 +1202,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(list_rbegin,T,D)(rlist) result(riterator)
 
 !<description>
@@ -1223,7 +1221,7 @@ contains
 !</result>
 
 !</function>
-    
+
     ! Attach list to iterator
     riterator%p_rlist => rlist
 
@@ -1236,7 +1234,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(list_end,T,D)(rlist) result(riterator)
 
 !<description>
@@ -1254,7 +1252,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
-    
+
     ! Attach list to iterator
     riterator%p_rlist => rlist
 
@@ -1267,7 +1265,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(list_rend,T,D)(rlist) result(riterator)
 
 !<description>
@@ -1285,7 +1283,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
 !</result>
 !</function>
-    
+
     ! Attach list to iterator
     riterator%p_rlist => rlist
 
@@ -1298,7 +1296,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine FEAT2_PP_TEMPLATE_TD(list_next,T,D)(riterator)
 
 !<description>
@@ -1310,7 +1308,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     if (.not.list_isNull(riterator)) then
       if (iand(riterator%iSpec, LIST_LSPEC_REVERSE).eq.0) then
         riterator%ipos = riterator%p_rlist%p_Knext(riterator%ipos)
@@ -1324,13 +1322,13 @@ contains
         riterator%ipos = riterator%p_rlist%p_Knext(LTAIL)
       end if
     end if
-    
+
   end subroutine
 
   !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine FEAT2_PP_TEMPLATE_TD(list_prior,T,D)(riterator)
 
 !<description>
@@ -1342,7 +1340,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     if (.not.list_isNull(riterator)) then
       if (iand(riterator%iSpec, LIST_LSPEC_REVERSE) .eq. 0) then
         riterator%ipos = riterator%p_rlist%p_Kprev(riterator%ipos)
@@ -1356,7 +1354,7 @@ contains
         riterator%ipos = riterator%p_rlist%p_Knext(LHEAD)
       end if
     end if
-    
+
   end subroutine
 
   !************************************************************************
@@ -1383,7 +1381,7 @@ contains
     FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key
 !</output>
 !</subroutine>
-    
+
     ! Get key
     p_key => rlist%p_key(rposition%ipos)
 
@@ -1449,7 +1447,7 @@ contains
     FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
-    
+
     ! Get key
     key = rlist%p_key(rposition%ipos)
 
@@ -1557,7 +1555,7 @@ contains
       call list_next(riterator)
 
     end do
-    
+
   end subroutine
 
   !************************************************************************
@@ -1632,7 +1630,7 @@ contains
       rlist%p_Data(:,ipos) = data
     end if
 #endif
-    
+
   end subroutine
 
   !************************************************************************
@@ -1682,7 +1680,7 @@ contains
       ipos = abs(ipos)
       rlist%p_Knext(LFREE) = rlist%p_Knext(ipos)
     end if
-    
+
     ! Set head and tail
     if (rlist%p_Knext(LHEAD) .eq. LNULL) then
       ! Push to empty list
@@ -1725,10 +1723,10 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
-    
+
     ! Check if list is empty
     if (list_empty(rlist)) return
 
@@ -1755,7 +1753,7 @@ contains
 
     ! local variable
     type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator
-    
+
     ! Check if list is empty
     if (list_empty(rlist)) return
 
@@ -1800,14 +1798,14 @@ contains
 
     ! Check if list is empty
     if (list_empty(rlist)) then
-      
+
       nullify(p_key)
 #ifdef D
       nullify(p_data)
 #endif
 
     else
-      
+
       riterator = list_begin(rlist)
 
 #ifdef D
@@ -1847,7 +1845,7 @@ contains
 
     ! Check if list is empty
     if (list_empty(rlist)) return
-    
+
     riterator = list_begin(rlist)
     key = list_get(rlist, riterator)
 
@@ -1889,14 +1887,14 @@ contains
 
     ! Check if list is empty
     if (list_empty(rlist)) then
-      
+
       nullify(p_key)
 #ifdef D
       nullify(p_data)
 #endif
 
     else
-      
+
       riterator = list_rbegin(rlist)
 
 #ifdef D
@@ -1911,7 +1909,7 @@ contains
   end subroutine
 
   !************************************************************************
-  
+
 !<function>
 
   function FEAT2_PP_TEMPLATE_TD(list_back,T,D)(rlist) result(key)
@@ -1941,7 +1939,7 @@ contains
     key = list_get(rlist, riterator)
 
   end function
-  
+
   !************************************************************************
 
 !<function>
@@ -1985,7 +1983,7 @@ contains
 
     ! local variable
     integer :: ipred,ipos
-    
+
     ! Insert new element at the end of the list?
     if (rposition%ipos .eq. LNULL) then
 #ifdef D
@@ -2004,7 +2002,7 @@ contains
 
     ! Get position of predecessor
     ipred = rlist%p_Kprev(rposition%ipos)
-    
+
     ! Insert new element at the beginning of the list?
     if (ipred .eq. LNULL) then
 #ifdef D
@@ -2035,7 +2033,7 @@ contains
       ipos = abs(ipos)
       rlist%p_Knext(LFREE) = rlist%p_Knext(ipos)
     end if
-    
+
     ! Insert element between its predecessor IPRED and 
     ! the element at position rposition
     rlist%p_Kprev(rposition%ipos) = ipos
@@ -2205,7 +2203,7 @@ contains
 
     ! local variables
     integer :: ipred,ipos,inext
-    
+
     ! Delete element
     rlist%NA = rlist%NA-1
 
@@ -2222,14 +2220,14 @@ contains
       inext = rlist%p_Knext(ipos)
       rlist%p_Knext(ipred) = inext
     end if
-    
+
     ! Are we at the tail of the list?
     if (inext .eq. LNULL) then
       rlist%p_Knext(LTAIL) = ipred
     else
       rlist%p_Kprev(inext) = ipred
     end if
-    
+
     ! Update free position
     rlist%p_Knext(ipos)  = rlist%p_Knext(LFREE)
     rlist%p_Knext(LFREE) = -ipos
@@ -2320,7 +2318,7 @@ contains
     else
       riterator = list_begin(rlist)
     end if
-    
+
     ! Initialisation
     bsuccess = .false.
 
@@ -2330,10 +2328,10 @@ contains
       end if
       riterator%ipos = rlist%p_Knext(riterator%ipos)
     end do
-    
+
     if (.not.bsuccess) then
       riterator%ipos = LNULL
-      
+
       ! If we started searching with an initial guess but we were
       ! unable to find the element then re-search from scratch
       if (present(rpositionGuess))&
@@ -2389,7 +2387,7 @@ contains
     else
       riterator = list_begin(rlist)
     end if
-    
+
     ! Initialisation
     bsuccess = .false.
 
@@ -2419,13 +2417,13 @@ contains
     if (.not.bsuccess) then
       ! Special treatment of position
       riterator%iSpec = riterator%iSpec + LIST_LSPEC_VIRTUAL
-      
+
       ! If we started searching with an initial guess but we were
       ! unable to find the element then re-search from scratch
       if (present(rpositionGuess))&
           riterator = list_find(rlist, key, bisReverse)
     end if
-    
+
   end function
 
   !************************************************************************
@@ -2452,9 +2450,9 @@ contains
       write(*,*) rlist%p_Key(riterator%ipos)
       call list_next(riterator)
     end do
-    
+
 #else
-    
+
     call output_line('Unable to print list with derived data type!',&
         OU_CLASS_WARNING,OU_MODE_STD,'list_print')
 
@@ -2615,7 +2613,7 @@ contains
 
     ! Release list
     call list_release(rlist)
-    
+
     ! Duplicate the backup
     call list_duplicate(rlistBackup, rlist)
 
@@ -2730,7 +2728,7 @@ contains
 
     ! Set size
     rlistDest%NA = rlistSrc%NA
-    
+
     ! Set structure
     rlistDest%p_Knext(LHEAD) = rlistSrc%p_Knext(LHEAD)
     rlistDest%p_Knext(LTAIL) = rlistSrc%p_Knext(LTAIL)
@@ -2741,13 +2739,13 @@ contains
       rlistDest%p_Kprev(i) = rlistSrc%p_Kprev(i)
       rlistDest%p_Key(i)   = rlistSrc%p_Key(i)
     end do
-    
+
 #ifdef D
     do i = 1, rlistSrc%NA
       rlistDest%p_Data(:,i) = rlistSrc%p_Data(:,i)
     end do
 #endif
-    
+
   end subroutine
 
   !************************************************************************
@@ -2828,7 +2826,7 @@ contains
       bswapped  = .false.
       riterator = list_begin(rlist)
       inner: do while (riterator /= rposition)
-        
+
 #ifdef D
         if (rlist%isizeData > 0) then
 

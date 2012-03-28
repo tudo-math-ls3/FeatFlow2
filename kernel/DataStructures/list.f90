@@ -65,7 +65,7 @@ module list
 
 !<constants>
 !<constantblock description="Global flags for list implementations">
-  
+
   ! list for integer data
   integer, parameter, public :: LIST_INT           = ST_INT
   integer, parameter, public :: LIST_INT_INT       = ST_INT + 100*ST_INT
@@ -117,7 +117,7 @@ module list
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -140,7 +140,7 @@ contains
     type(t_list), intent(out) :: rlist
 !</output>
 !</subroutine>
-    
+
     select case (clistType)
     case (LIST_INT)
       allocate(rlist%p_listInt)
@@ -153,7 +153,7 @@ contains
 
     case (LIST_INT_SINGLE)
       allocate(rlist%p_listInt_Sngl)
-      
+
     case (LIST_DOUBLE)
       allocate(rlist%p_listDble)
 
@@ -165,7 +165,7 @@ contains
 
     case (LIST_DOUBLE_SINGLE)
       allocate(rlist%p_listDble_Sngl)
-    
+
     case (LIST_SINGLE)
       allocate(rlist%p_listSngl)
 
@@ -174,10 +174,10 @@ contains
 
     case (LIST_SINGLE_DOUBLE)
       allocate(rlist%p_listSngl_Dble)
-      
+
     case (LIST_SINGLE_SINGLE)
         allocate(rlist%p_listSngl_Sngl)
-  
+
     case DEFAULT
       call output_line('Invalid list type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'list_init')
@@ -625,5 +625,5 @@ contains
     end if
 
   end subroutine list_getbase_sngl_sngl
-  
+
 end module list

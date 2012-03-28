@@ -135,21 +135,21 @@ module uuid
 !$use omp_lib
   use fsystem
   use genoutput
-  
+
   implicit none
-  
+
   private
 
 !<types>
 
 !<typeblock>
-  
+
   ! Type for universally unique identifier
   type t_uuid
     ! the UUID data
     integer, dimension(16) :: data = 0
   end type t_uuid
-  
+
   public :: t_uuid
 
 !</typeblock>
@@ -164,7 +164,7 @@ module uuid
     module procedure uuid_createUUID_directly
     module procedure uuid_createUUID_indirectly
   end interface
-  
+
 !************************************************************************
 !************************************************************************
 !************************************************************************
@@ -172,37 +172,37 @@ module uuid
   interface operator(.eq.)
     module procedure uuid_isEqual
   end interface
-  
+
   public :: operator(.eq.)
 
   interface operator(.gt.)
     module procedure uuid_isGreater
   end interface
-  
+
   public :: operator(.gt.)
 
   interface operator(.ge.)
     module procedure uuid_isGreaterEqual
   end interface
-  
+
   public :: operator(.ge.)
 
   interface operator(.lt.)
     module procedure uuid_isSmaller
   end interface
-  
+
   public :: operator(.lt.)
-  
+
   interface operator(.le.)
     module procedure uuid_isSmallerEqual
   end interface
-  
+
   public :: operator(.le.)
 
   interface operator(.ne.)
     module procedure uuid_isNotEqual
   end interface
-  
+
   public :: operator(.ne.)
 
   public :: uuid_createUUID, uuid_createUUID_directly,uuid_createUUID_indirectly
@@ -213,7 +213,7 @@ module uuid
   public :: uuid_isSmaller
   public :: uuid_isSmallerEqual
   public :: uuid_conv2String
-  
+
 contains
 
 !************************************************************************
@@ -242,40 +242,40 @@ contains
     ! local variables
     real(DP), dimension(16) :: Drandom
     integer :: i
-    
+
     select case(cversion)
     case (0)
       ! nil UUID
       ruuid%data     = 0
-      
+
     case (4)
       ! Pseudo-random UUID following the algorithm outlined on pages 10 and 11 of the
       ! "UUIDs and GUIDs" Internet Draft found at
       ! http://www.ics.uci.edu/pub/ietf/webdav/uuid-guid/draft-leach-uuids-guids-01.txt
-      
+
       ! Generate 16 random double values
       call random_number(Drandom)
-      
+
       do i = 1, 16
         ruuid%data(i) = int(128*Drandom(i))
       end do
-      
+
       ! Include version: Take 7th byte and perform "and" operation with 0x0f
       !                  followed by an "or" operation with 0x40
       ruuid%data(7) = iand(ruuid%data(7), 15)
       ruuid%data(7) = ior(ruuid%data(7), 64)
-      
+
       ! Include variant: Take 9th byte and perform "and" operation with 0x3f
       !                  followed by an "or" operation with 0x80
       ruuid%data(9) = iand(ruuid%data(9), 63)
       ruuid%data(9) = ior(ruuid%data(9), 128)
-            
+
     case default
       call output_line('Unsupported UUID version!',&
           OU_CLASS_ERROR,OU_MODE_STD,'uuid_createUUID_directly')
       call sys_halt()
     end select
-    
+
   end subroutine uuid_createUUID_directly
 
 !************************************************************************
@@ -300,7 +300,7 @@ contains
 !</outptu>
 
 !</subroutine>
-    
+
     ! Set UUID data
     read(svalue( 1: 2), '(Z2)') ruuid%data(1)
     read(svalue( 3: 4), '(Z2)') ruuid%data(2)
@@ -348,7 +348,7 @@ contains
     read(svalue(35:36),'(Z2)') ruuid%data(16)
 
   end subroutine uuid_createUUID_indirectly
-  
+
 !************************************************************************
 
 !<function>
@@ -376,9 +376,9 @@ contains
 
     ! local variable
     integer :: i
-    
+
     bisEqual = .true.
-    
+
     do i = 1, 16
       bisEqual = bisEqual .and. (ruuid1%data(i) .eq. ruuid2%data(i))
     end do
@@ -407,7 +407,7 @@ contains
 
     ! local variable
     type(t_uuid) :: ruuidTmp
-    
+
     ruuidTmp%data = 0
 
     bisNil = uuid_isEqual(ruuid, ruuidTmp)
@@ -441,7 +441,7 @@ contains
 
     ! local variable
     integer :: i
-    
+
     bisGreater = .true.
 
     do i = 1, 16
@@ -476,7 +476,7 @@ contains
 
     ! local variable
     integer :: i
-    
+
     bisGreaterEqual = .true.
 
     do i = 1, 16
@@ -511,7 +511,7 @@ contains
 
     ! local variable
     integer :: i
-    
+
     bisSmaller = .true.
 
     do i = 1, 16
@@ -546,7 +546,7 @@ contains
 
     ! local variable
     integer :: i
-    
+
     bisSmallerEqual = .true.
 
     do i = 1, 16
@@ -607,7 +607,7 @@ contains
     write(svalue( 3: 4),'(Z2.2)') ruuid%data(2)
     write(svalue( 5: 6),'(Z2.2)') ruuid%data(3)
     write(svalue( 7: 8),'(Z2.2)') ruuid%data(4)
-    
+
     svalue(9:9) = '-'
 
     write(svalue(10:11),'(Z2.2)') ruuid%data(5)

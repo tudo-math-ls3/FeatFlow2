@@ -19,7 +19,7 @@ module geneticalgorithm
   use sort
 
   implicit none
-  
+
   private
 
   public :: t_chromosome,t_population
@@ -67,7 +67,7 @@ module geneticalgorithm
     ! population. If is is 100%, then all offsping is made by
     ! crossover.
     real(DP) :: dcrossoverrate = 0.85_DP
-    
+
     ! Mutation probability: recommendation is 0.5% - 1%.
     !
     ! This rate determines how often parts of chromosomes will be
@@ -151,18 +151,18 @@ contains
     do ichromosome = 1, rpopulation%nchromosomes
       call ga_initChromosome(rpopulation%p_Rchromosomes(ichromosome),ndnaLength)
     end do
-    
+
   end subroutine ga_initPopulation
 
   !************************************************************************
-  
+
 !<subroutine>
   subroutine ga_releasePopulation(rpopulation)
 
 !<description>
     ! This subroutine releases a population of chromosomes
 !</description>
-   
+
 !<inputoutput>
     ! Population of chromosomes
     type(t_population), intent(inout) :: rpopulation
@@ -171,7 +171,7 @@ contains
 
     ! local variables
     integer :: ichromosome
-    
+
     do ichromosome = 1, rpopulation%nchromosomes
       call ga_releaseChromosome(rpopulation%p_Rchromosomes(ichromosome))
     end do
@@ -268,7 +268,7 @@ contains
     real(DP), dimension(:), pointer :: Dfitness
     integer, dimension(:), pointer :: Imapping
     integer :: ichromosome
-    
+
     allocate(Dfitness(rpopulation%nchromosomes))
     allocate(Imapping(rpopulation%nchromosomes))
 
@@ -280,7 +280,7 @@ contains
     call sort_dp(Dfitness, SORT_QUICK, Imapping)
     Imapping = Imapping(rpopulation%nchromosomes:1:-1)
     rpopulation%p_Rchromosomes = rpopulation%p_Rchromosomes(Imapping)
-    
+
     deallocate(Dfitness, Imapping)
 
   end subroutine ga_sortPopulation
@@ -299,11 +299,11 @@ contains
     type(t_population), intent(inout) :: rpopulation
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_population) :: rpopulationTmp
     integer :: ichromosome,ioffset,isrc1,isrc2
-    
+
     ! Sort the population according to the fitness levels
     call ga_sortPopulation(rpopulation)
 
@@ -313,7 +313,7 @@ contains
       call ga_copyChromosome(rpopulation%p_Rchromosomes(ichromosome),&
                              rpopulation%p_Rchromosomes(ioffset+ichromosome))
     end do
-    
+
     ! Make a copy of the population
     call ga_copyPopulation(rpopulation,rpopulationTmp)
 
@@ -433,7 +433,7 @@ contains
     integer :: ichromosome
 !</result>
 !</function>
-    
+
     ! local variables
     real(DP) :: dtotalFitness, dfitnessBound
     integer :: ifirstChromosome,ilastChromosome
@@ -450,7 +450,7 @@ contains
       dtotalFitness = dtotalFitness +&
           rpopulation%p_Rchromosomes(ichromosome)%dfitness
     end do
-    
+
     ! Compute bound for fitness level
     call random_number(dfitnessBound)
     dfitnessBound = dfitnessBound*dtotalFitness
@@ -462,10 +462,10 @@ contains
           rpopulation%p_Rchromosomes(ichromosome)%dfitness
       if (dtotalFitness .gt. dfitnessBound) return
     end do
-    
+
     ! Return selected chromosome
     ichromosome = ilastChromosome
-    
+
   end function ga_selectChromosome
 
   !************************************************************************
@@ -563,7 +563,7 @@ contains
 
 !<subroutine>
   subroutine ga_outputChromosome(rchromosome, iunit)
-    
+
 !<description>
     ! This subroutine writes out a chromosome
 !</description>
@@ -593,7 +593,7 @@ contains
       end do
       write(*,*)
     end if
-      
+
   end subroutine ga_outputChromosome
 
   !************************************************************************
@@ -626,11 +626,11 @@ contains
     integer :: ndnaLength
 
     rchromosomeDest%dfitness = 0.0_DP
-    
+
     ndnaLength = min(size(rchromosomeSrc1%p_DNA),&
                      size(rchromosomeSrc2%p_DNA),&
                      size(rchromosomeDest%p_DNA))
-    
+
     ! Generate random crossover points
     call random_number(Drandom)
     if (Drandom(1) .gt. Drandom(2)) Drandom(1:2) = Drandom(2:1:-1)

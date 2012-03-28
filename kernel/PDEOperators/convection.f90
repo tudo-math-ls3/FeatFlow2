@@ -383,7 +383,7 @@ module convection
 !</types>
 
   !************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: conv_perfconfig
 
@@ -1860,7 +1860,7 @@ contains
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
   integer(I32) :: cevaluationTag
-  
+
   ! Cubature formula
   integer(I32) :: ccubature
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
@@ -1910,7 +1910,7 @@ contains
 
     ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
-    
+
     ! Do we have an assembly structure?
     ! If we do not have it, create a cubature info structure that
     ! defines how to do the assembly.
@@ -3827,7 +3827,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
         call sys_halt()
       end if
-      
+
     end if
 
     ! If Newton must be calculated, make sure A12 and A21 exists and that
@@ -4225,7 +4225,7 @@ contains
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
   integer(I32) :: cevaluationTag
-  
+
   ! Cubature formula and cubature info structure
   type(t_scalarCubatureInfo), target :: rtempCubatureInfo
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -4289,7 +4289,7 @@ contains
     else
       p_rcubatureInfo => rcubatureInfo
     end if
-    
+
     ! Cubature
     ccubature = p_rcubatureInfo%p_RinfoBlocks(1)%ccubature
 
@@ -10839,7 +10839,7 @@ contains
     if (.not. bsimpleAij) &
       bsimpleAij = lsyssc_isMatrixContentShared(&
             rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2))
-    
+
     call conv_streamDiff2Blk2dCalc (rconfig,rmatrix%p_rblockDiscrTrial,&
         bsimpleAij,&
         rvelocity,&
@@ -11073,7 +11073,7 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -11160,7 +11160,7 @@ contains
       ! Get typical information: Number of elements, element list,...
       call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
           ielementDistr,celement,ccubature,NEL,p_IelementList)
-    
+
       ! Cancel if this element list is empty.
       if (NEL .le. 0) cycle
 
@@ -11169,7 +11169,7 @@ contains
       ! this is NEL. If there are too many elements, it is at most
       ! NELEMSIM. This is only used for allocating some arrays.
       nelementsPerBlock = min(p_rperfconfig%NELEMSIM, NEL)
-      
+
       ! Initialise cubature and evaluation of the FE basis
       call easminfo_initStdCubature(ccubature,rcubatureData)
 
@@ -11676,7 +11676,7 @@ contains
         ! If ddeltaAdj != 0, set up the adjoint nonlinearity (.,U*grad(u)),
         ! i.e., the convection is applied to the test space.
         ! Basically, this exchanges trial and test space.
-        
+
         if (rconfig%ddeltaAdj .ne. 0.0_DP) then
 
           if (inonlinComplexity .le. 1) then
@@ -11685,7 +11685,7 @@ contains
 
             ! Loop over the elements in the current set.
             do IEL=1,IELmax-IELset+1
-              
+
               ! The adjoint convection is defined by
               !
               !    ddeltaAdj * ( (trial), grad(u_1) * (test) )
@@ -12780,10 +12780,10 @@ contains
 
   ! Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in) :: Dnu
-  
+
   ! Cubature weights in the cubature points on the reference element
   real(DP), dimension(:), intent(in) :: DcubWeights
-  
+
   ! Determinant of the mapping from the reference to the real element
   ! in every cubature point.
   real(DP), dimension(:,:), intent(in) :: Ddetj

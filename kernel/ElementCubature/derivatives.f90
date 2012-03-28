@@ -19,16 +19,16 @@ module derivatives
   use fsystem
 
   implicit none
-  
+
   private
-  
+
 !<constants>
 
 !<constantblock description="Descriptors to identify derivative types in 1D">
 
   ! function value in term
   integer, parameter, public :: DER_FUNC1D     = 1
-  
+
   ! 1st derivative in term
   integer, parameter, public :: DER_DERIV1D_X  = 2
 
@@ -42,7 +42,7 @@ module derivatives
   ! function value in term
   integer, parameter, public :: DER_FUNC       = 1
   integer, parameter, public :: DER_FUNC2D     = 1
-  
+
   ! x derivative in term
   integer, parameter, public :: DER_DERIV_X    = 2
   integer, parameter, public :: DER_DERIV2D_X  = 2
@@ -69,7 +69,7 @@ module derivatives
 
   ! function value in term
   integer, parameter, public :: DER_FUNC3D     = 1
-  
+
   ! x derivative in term
   integer, parameter, public :: DER_DERIV3D_X  = 2
 

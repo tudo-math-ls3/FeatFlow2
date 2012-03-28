@@ -122,7 +122,7 @@ module externalstorage
   use linearalgebra
 
   implicit none
-  
+
   private
 
 !<constants>
@@ -135,7 +135,7 @@ module externalstorage
   ! In-memory/RamDrive container. The 'external storage' is actually 'in memory' and
   ! not on any hard disc or similar external storage.
   integer, parameter, public :: EXSTOR_CONT_RAMDRIVE    = 0
-  
+
   ! The external storage container is a subdirectory on the hard disc.
   integer, parameter, public :: EXSTOR_CONT_DIRECTORY   = 1
 
@@ -167,31 +167,31 @@ module externalstorage
   type t_exstorageContainer
 
     private
-    
+
     ! Type of the external storage container. One of the EXSTOR_CONT_xxxx
     ! flags.
     integer :: ctype = EXSTOR_CONT_UNDEFINED
-    
+
     ! Maximum storage (in bytes) that this storage container can handle.
     ! =-1: Infinite memory available.
     integer(I64) :: imaxStorage = -1_I64
-    
+
     ! Number of bytes currently allocated by this storage container.
     integer(I64) :: icurrentStorage = 0_I64
-    
+
     ! For ctype=EXSTOR_CONT_DIRECTORY: Name of the directory containing
     ! the files with data. The string contains a "/" at the end.
     character(LEN=SYS_STRLEN) :: spath = './'
-    
+
     ! For ctype=EXSTOR_CONT_DIRECTORY: Basic filename of the data files.
     character(LEN=SYS_NAMELEN) :: sfilename = 'feat2exstorage'
-    
+
     ! For ctype=EXSTOR_CONT_DIRECTORY: Whether to save the data formatted
     ! or unformatted.
     logical :: bformatted = .false.
 
   end type t_exstorageContainer
-  
+
   public :: t_exstorageContainer
 
   !</typeblock>
@@ -203,7 +203,7 @@ module externalstorage
   ! location etc.
 
   type t_exstorageNode
-  
+
     private
 
     ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
@@ -219,14 +219,14 @@ module externalstorage
 
     ! Amount of memory (in bytes) associated to this block.
     integer(I64) :: imemBytes = 0_I64
-    
+
     ! Size of the data array. For 1D arrays, the array size can be found in
     ! Isize(1), for 2D arrays, the array size can be found in Isize(1:2),...
     integer, dimension(EXSTOR_MAXDIM) :: Isize = 0
 
     ! Id of the external storage container that contains the data
     integer :: icontainerId = 0
-    
+
     ! Whether the storage block is bound to a container or not.
     ! TRUE=The memory block is bound to container icontainerId.
     ! FALSE=The memory management system may automatically move the memory
@@ -243,17 +243,17 @@ module externalstorage
     ! ST_NEWBLOCK_ORDERED: The storage block is to be treated as initialised
     !                      by a sequence of numbers (1,2,3,...)
     integer :: cinitNewBlock = ST_NEWBLOCK_NOINIT
-    
+
     ! This is a handle to a memory block. The handle is valid if the
     ! storage block is realised in the main memory as part of a RamDrive
     ! container. (A RamDrive container uses the standard memory management
     ! of the storage.f90 and saves memory blocks in the main memory.)
     integer :: istorageHandle = ST_NOHANDLE
-    
+
     ! if the storage block is realised as a file in a directory, this
     ! variable contains the filename of the file.
     character(LEN=SYS_NAMELEN) :: sfilename = ''
-    
+
   end type t_exstorageNode
 
   public :: t_exstorageNode
@@ -321,7 +321,7 @@ module externalstorage
     integer(I64) :: itotalMemMax = 0_I64
 
   end type t_exstorageBlock
-  
+
   public :: t_exstorageBlock
 
   !</typeblock>
@@ -339,12 +339,12 @@ module externalstorage
     module procedure exstor_new
     module procedure exstor_new1D
   end interface
-  
+
   interface exstor_getsize
     module procedure exstor_getsize
     module procedure exstor_getsize1D
   end interface
-  
+
   interface exstor_getdata_int
     module procedure exstor_getdata_int1D
     module procedure exstor_getdata_int2D
@@ -416,7 +416,7 @@ module externalstorage
     module procedure exstor_setdata_single2D
     module procedure exstor_setdata_single3D
   end interface
-  
+
   interface exstor_getdata_double
     module procedure exstor_getdata_double1D
     module procedure exstor_getdata_double2D
@@ -428,7 +428,7 @@ module externalstorage
     module procedure exstor_setdata_double2D
     module procedure exstor_setdata_double3D
   end interface
-  
+
   interface exstor_getdata_quad
     module procedure exstor_getdata_quad1D
     module procedure exstor_getdata_quad2D
@@ -487,7 +487,7 @@ module externalstorage
   public :: exstor_setdata_storage
   public :: exstor_clear
   public :: exstor_copy
-  
+
 contains
 
 !************************************************************************
@@ -571,7 +571,7 @@ contains
     do i=1,ihandles
       p_rheap%p_IfreeHandles(i) = i
     end do
-    
+
     ! Attach a RamDrive container with arbitrary memory size.
     call exstor_attachRamdrive(-1_I64,p_rheap)
 
@@ -622,17 +622,17 @@ contains
       allocate(p_RstorageContainers(size(p_rheap%p_RstorageContainers)+1))
       p_RstorageContainers(1:size(p_rheap%p_RstorageContainers)) = &
           p_rheap%p_RstorageContainers(:)
-      
+
       deallocate(p_rheap%p_RstorageContainers)
     end if
     p_rheap%p_RstorageContainers => p_RstorageContainers
-    
+
     p_rcontainer => p_rheap%p_RstorageContainers(size(p_rheap%p_RstorageContainers))
-    
+
     ! Initialise the container as a RamDrive container
     p_rcontainer%ctype = EXSTOR_CONT_RAMDRIVE
     if(present(imaxMem)) p_rcontainer%imaxStorage = imaxMem
-    
+
   end subroutine exstor_attachRamdrive
 
 !************************************************************************
@@ -655,7 +655,7 @@ contains
   ! in a formatted file format. If set to FALSE (default), the data will
   ! be saved unformatted (which is machine dependent but faster).
   logical, intent(in), optional :: bformatted
-  
+
   ! OPTIONAL: Maximum size of the container (in bytes).
   ! -1 or not present = arbitrary.
   integer(I64), intent(in), optional :: imaxMem
@@ -664,7 +664,7 @@ contains
   ! the name "[filename].[handlenr]". If not specified, a default filename
   ! will be used.
   character(LEN=*), intent(in), optional :: sfilename
-  
+
 !</input>
 
 !<inputoutput>
@@ -695,13 +695,13 @@ contains
       allocate(p_RstorageContainers(size(p_rheap%p_RstorageContainers)+1))
       p_RstorageContainers(1:size(p_rheap%p_RstorageContainers)) = &
           p_rheap%p_RstorageContainers(:)
-      
+
       deallocate(p_rheap%p_RstorageContainers)
     end if
     p_rheap%p_RstorageContainers => p_RstorageContainers
-    
+
     p_rcontainer => p_rheap%p_RstorageContainers(size(p_rheap%p_RstorageContainers))
-    
+
     ! Initialise the container as a Directory container
     p_rcontainer%ctype = EXSTOR_CONT_DIRECTORY
     if (spath .eq. '') then
@@ -712,7 +712,7 @@ contains
     if(present(imaxMem)) p_rcontainer%imaxStorage = imaxMem
     if(present(sfilename)) p_rcontainer%sfilename = sfilename
     if(present(bformatted)) p_rcontainer%bformatted = bformatted
-    
+
   end subroutine exstor_attachDirectory
 
 !************************************************************************
@@ -766,7 +766,7 @@ contains
     ! Release the descriptors
     deallocate(p_rheap%p_IfreeHandles)
     deallocate(p_rheap%p_Rdescriptors)
-    
+
     ! Release the storage containers
     deallocate(p_rheap%p_RstorageContainers)
 
@@ -844,12 +844,12 @@ contains
     if (present(bprintContainers)) then
       if (bprintContainers) then
         call output_line ('Storage containers: ')
-        
+
         do i=1,size(p_rheap%p_RstorageContainers)
           call output_lbrk ()
-          
+
           call output_line ('Storage container:  ' // trim(sys_siL(i,10)))
-          
+
           select case (p_rheap%p_RstorageContainers(i)%ctype)
           case (EXSTOR_CONT_RAMDRIVE)
             call output_line ('Type:               RamDrive')
@@ -857,23 +857,23 @@ contains
             call output_line ('Type:               Directory ('//&
                 trim(p_rheap%p_RstorageContainers(i)%spath)//')')
           end select
-          
+
           if (p_rheap%p_RstorageContainers(i)%imaxStorage .eq. -1_I64) then
             call output_line ('Max. memory:        infinite')
           else
             call output_line ('Max. memory:        '//&
               trim(sys_smemL(p_rheap%p_RstorageContainers(i)%imaxStorage)))
           end if
-          
+
           call output_line ('Current memory:     '//&
             trim(sys_smemL(p_rheap%p_RstorageContainers(i)%icurrentStorage)))
 
         end do
-      
+
         call output_lbrk ()
       end if
     end if
-                      
+
     call output_line ('Number of storage containers:    '//&
                       trim(sys_siL(size(p_rheap%p_RstorageContainers),15)))
     call output_line ('Number of handles in use:        '//&
@@ -1006,7 +1006,7 @@ contains
 
     ! Subtract the memory amount from the statistics
     rheap%itotalMem = rheap%itotalMem - p_rnode%imemBytes
-    
+
     ! The same for the corresponding container
     icontainer = p_rnode%icontainerId
     rheap%p_RstorageContainers(icontainer)%icurrentStorage = &
@@ -1085,7 +1085,7 @@ contains
     end if
 
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     ! Release the memory assigned to that handle. How this is released depends
     ! on the container type.
     select case(p_rcontainer%ctype)
@@ -1125,7 +1125,7 @@ contains
 !<input>
   ! Local heap structure where a container should be searched.
   type(t_exstorageBlock), intent(in), target, optional :: rheap
-  
+
   ! Number of bytes which are to be stored.
   integer(I64), intent(in) :: isize
 !</input>
@@ -1139,7 +1139,7 @@ contains
 !</function>
 
     integer :: icontainer
-    
+
     ! Which strategy should we use for searching for a memory block?
     select case (rheap%ccontainerStrategy)
     case (EXSTOR_STRAT_LASTCONTAINER)
@@ -1153,7 +1153,7 @@ contains
           return
         end if
       end do
-    
+
       ! Return the RamDrive container
       exstor_getContainer = 1
     end select
@@ -1187,7 +1187,7 @@ contains
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
   integer, intent(in) :: cinitNewBlock
-  
+
   ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain
   ! the memory block. If not specified, a container will automatically be
   ! chosen (depending on the allocation strategy ccontainerStrategy of the
@@ -1241,7 +1241,7 @@ contains
     else
       p_rheap => rbaseexternal
     end if
-    
+
     ! Get the size of the memory block
     select case (ctype)
     case (ST_SINGLE)
@@ -1269,24 +1269,24 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_new1D')
       call sys_halt()
     end select
-    
+
     ! Determine the container id.
     icontainer = 0
     bbound = .false.
     if (present(icontainerId)) then
       icontainer = icontainerId
-      
+
       ! The memory block is bound top that container if the
       ! container id is specified.
       bbound = icontainer .ne. 0
     end if
-    
+
     if (icontainer .eq. 0) then
       ! We have to find a container that is large enough to hold the data.
       ! Automatically determine a container.
       icontainer = exstor_getContainer (p_rheap,imemsize)
     end if
-    
+
     if ((icontainer .lt. 1) .or. &
         (icontainer .gt. size(p_rheap%p_RstorageContainers))) then
       call output_line ('Invalid container id!', &
@@ -1322,12 +1322,12 @@ contains
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem
-      
+
     ! Notify the container about the new memory
     p_rheap%p_RstorageContainers(icontainer)%icurrentStorage = &
         p_rheap%p_RstorageContainers(icontainer)%icurrentStorage &
         + p_rnode%imemBytes
-        
+
     ! Some container-specific initialisation
     select case (p_rheap%p_RstorageContainers(icontainer)%ctype)
     case (EXSTOR_CONT_DIRECTORY)
@@ -1370,7 +1370,7 @@ contains
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
   integer, intent(in) :: cinitNewBlock
-  
+
   ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain
   ! the memory block. If not specified, a container will automatically be
   ! chosen (depending on the allocation strategy ccontainerStrategy of the
@@ -1423,7 +1423,7 @@ contains
     else
       p_rheap => rbaseexternal
     end if
-    
+
     ! Get the size of the memory block
     select case (ctype)
     case (ST_SINGLE)
@@ -1451,24 +1451,24 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_new')
       call sys_halt()
     end select
-    
+
     ! Determine the container id.
     icontainer = 0
     bbound = .false.
     if (present(icontainerId)) then
       icontainer = icontainerId
-      
+
       ! The memory block is bound top that container if the
       ! container id is specified.
       bbound = icontainer .ne. 0
     end if
-    
+
     if (icontainer .eq. 0) then
       ! We have to find a container that is large enough to hold the data.
       ! Automatically determine a container.
       icontainer = exstor_getContainer (p_rheap,imemsize)
     end if
-    
+
     if ((icontainerId .lt. 1) .or. &
         (icontainerId .gt. size(p_rheap%p_RstorageContainers))) then
       call output_line ('Invalid container id!', &
@@ -1503,7 +1503,7 @@ contains
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem
-      
+
     ! Notify the container about the new memory
     p_rheap%p_RstorageContainers(icontainer)%icurrentStorage = &
         p_rheap%p_RstorageContainers(icontainer)%icurrentStorage +  p_rnode%imemBytes
@@ -1584,7 +1584,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getsize1D')
       call sys_halt()
     end if
-    
+
     isize = p_rnode%Isize(1)
 
   end subroutine exstor_getsize1D
@@ -1657,10 +1657,10 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
-    
+
     Isize = 0
     Isize(1:p_rnode%idimension) = p_rnode%Isize(1:p_rnode%idimension)
-    
+
   end subroutine exstor_getsize
 
 !************************************************************************
@@ -1724,7 +1724,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int1D')
@@ -1748,34 +1748,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer, dimension(:), pointer :: p_data
 
@@ -1785,44 +1785,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int1D
@@ -1885,7 +1885,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -1909,34 +1909,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer, dimension(:,:), pointer :: p_data
 
@@ -1946,44 +1946,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int2D
@@ -2046,7 +2046,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -2071,34 +2071,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer, dimension(:,:,:), pointer :: p_data
 
@@ -2108,44 +2108,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int3D
@@ -2203,7 +2203,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int1D')
@@ -2215,32 +2215,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer, dimension(:), pointer :: p_data
 
@@ -2251,44 +2251,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int1D
@@ -2346,7 +2346,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -2359,32 +2359,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer, dimension(:,:), pointer :: p_data
 
@@ -2395,44 +2395,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int2D
@@ -2490,7 +2490,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -2504,32 +2504,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer, dimension(:,:,:), pointer :: p_data
 
@@ -2540,44 +2540,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int3D
@@ -2643,7 +2643,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int8_1D')
@@ -2667,34 +2667,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:), pointer :: p_data
 
@@ -2704,44 +2704,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int8_1D
@@ -2804,7 +2804,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -2828,34 +2828,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:,:), pointer :: p_data
 
@@ -2865,44 +2865,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int8_2D
@@ -2965,7 +2965,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -2990,34 +2990,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:,:,:), pointer :: p_data
 
@@ -3027,44 +3027,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I8), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int8_3D
@@ -3122,7 +3122,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int8_1D')
@@ -3134,32 +3134,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:), pointer :: p_data
 
@@ -3170,44 +3170,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int8_1D
@@ -3265,7 +3265,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -3278,32 +3278,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:,:), pointer :: p_data
 
@@ -3314,44 +3314,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int8_2D
@@ -3409,7 +3409,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -3423,32 +3423,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I8), dimension(:,:,:), pointer :: p_data
 
@@ -3459,44 +3459,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int8_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I8), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int8_3D
@@ -3562,7 +3562,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int16_1D')
@@ -3586,34 +3586,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:), pointer :: p_data
 
@@ -3623,44 +3623,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int16_1D
@@ -3723,7 +3723,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -3747,34 +3747,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:,:), pointer :: p_data
 
@@ -3784,44 +3784,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int16_2D
@@ -3884,7 +3884,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -3909,34 +3909,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:,:,:), pointer :: p_data
 
@@ -3946,44 +3946,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I16), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int16_3D
@@ -4041,7 +4041,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int16_1D')
@@ -4053,32 +4053,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:), pointer :: p_data
 
@@ -4089,44 +4089,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int16_1D
@@ -4184,7 +4184,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -4197,32 +4197,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:,:), pointer :: p_data
 
@@ -4233,44 +4233,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int16_2D
@@ -4328,7 +4328,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -4342,32 +4342,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I16), dimension(:,:,:), pointer :: p_data
 
@@ -4378,44 +4378,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int16_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I16), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int16_3D
@@ -4481,7 +4481,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int32_1D')
@@ -4505,34 +4505,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:), pointer :: p_data
 
@@ -4542,44 +4542,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int32_1D
@@ -4642,7 +4642,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -4666,34 +4666,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:,:), pointer :: p_data
 
@@ -4703,44 +4703,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int32_2D
@@ -4803,7 +4803,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -4828,34 +4828,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:,:,:), pointer :: p_data
 
@@ -4865,44 +4865,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I32), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int32_3D
@@ -4960,7 +4960,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int32_1D')
@@ -4972,32 +4972,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:), pointer :: p_data
 
@@ -5008,44 +5008,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int32_1D
@@ -5103,7 +5103,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -5116,32 +5116,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:,:), pointer :: p_data
 
@@ -5152,44 +5152,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int32_2D
@@ -5247,7 +5247,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -5261,32 +5261,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I32), dimension(:,:,:), pointer :: p_data
 
@@ -5297,44 +5297,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int32_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I32), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int32_3D
@@ -5400,7 +5400,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_int64_1D')
@@ -5424,34 +5424,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:), pointer :: p_data
 
@@ -5461,44 +5461,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int64_1D
@@ -5561,7 +5561,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -5585,34 +5585,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:,:), pointer :: p_data
 
@@ -5622,44 +5622,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int64_2D
@@ -5722,7 +5722,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -5747,34 +5747,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Iarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:,:,:), pointer :: p_data
 
@@ -5784,44 +5784,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     integer(I64), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_int64_3D
@@ -5879,7 +5879,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_int64_1D')
@@ -5891,32 +5891,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:), pointer :: p_data
 
@@ -5927,44 +5927,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64 (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int64_1D
@@ -6022,7 +6022,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -6035,32 +6035,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:,:), pointer :: p_data
 
@@ -6071,44 +6071,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64_2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int64_2D
@@ -6166,7 +6166,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Iarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Iarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Iarray, 3)) then
@@ -6180,32 +6180,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Iarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer(I64), dimension(:,:,:), pointer :: p_data
 
@@ -6216,44 +6216,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_int64_3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorInt3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     integer(I64), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_int64_3D
@@ -6319,7 +6319,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_single1D')
@@ -6343,34 +6343,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Farray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:), pointer :: p_data
 
@@ -6380,44 +6380,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_single1D
@@ -6480,7 +6480,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Farray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -6504,34 +6504,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Farray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:,:), pointer :: p_data
 
@@ -6541,44 +6541,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_single2D
@@ -6641,7 +6641,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Farray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Farray, 3)) then
@@ -6666,34 +6666,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Farray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:,:,:), pointer :: p_data
 
@@ -6703,44 +6703,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(SP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_single3D
@@ -6798,7 +6798,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_single1D')
@@ -6810,32 +6810,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Farray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:), pointer :: p_data
 
@@ -6846,44 +6846,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_single1D
@@ -6941,7 +6941,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Farray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -6954,32 +6954,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Farray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:,:), pointer :: p_data
 
@@ -6990,44 +6990,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_single2D
@@ -7085,7 +7085,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Farray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Farray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Farray, 3)) then
@@ -7099,32 +7099,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Farray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(SP), dimension(:,:,:), pointer :: p_data
 
@@ -7135,44 +7135,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_single3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorSngl3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(SP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_single3D
@@ -7238,7 +7238,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_double1D')
@@ -7262,34 +7262,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Darray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:), pointer :: p_data
 
@@ -7299,44 +7299,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_double1D
@@ -7399,7 +7399,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Darray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -7423,34 +7423,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Darray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:,:), pointer :: p_data
 
@@ -7460,44 +7460,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_double2D
@@ -7560,7 +7560,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Darray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Darray, 3)) then
@@ -7585,34 +7585,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Darray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:,:,:), pointer :: p_data
 
@@ -7622,44 +7622,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(DP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_double3D
@@ -7717,7 +7717,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_double1D')
@@ -7729,32 +7729,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Darray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:), pointer :: p_data
 
@@ -7765,44 +7765,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_double1D
@@ -7860,7 +7860,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Darray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -7873,32 +7873,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Darray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:,:), pointer :: p_data
 
@@ -7909,44 +7909,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_double2D
@@ -8004,7 +8004,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Darray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Darray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Darray, 3)) then
@@ -8018,32 +8018,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Darray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(DP), dimension(:,:,:), pointer :: p_data
 
@@ -8054,44 +8054,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_double3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorDble3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(DP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_double3D
@@ -8157,7 +8157,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_quad1D')
@@ -8181,34 +8181,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Qarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:), pointer :: p_data
 
@@ -8218,44 +8218,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_quad1D
@@ -8318,7 +8318,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Qarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -8342,34 +8342,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Qarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:,:), pointer :: p_data
 
@@ -8379,44 +8379,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad2D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_quad2D
@@ -8479,7 +8479,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Qarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Qarray, 3)) then
@@ -8504,34 +8504,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Qarray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:,:,:), pointer :: p_data
 
@@ -8541,44 +8541,44 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad3D (p_data,dataarray)
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     real(QP), dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_quad3D
@@ -8636,7 +8636,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_quad1D')
@@ -8648,32 +8648,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Qarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:), pointer :: p_data
 
@@ -8684,44 +8684,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_quad1D
@@ -8779,7 +8779,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Qarray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -8792,32 +8792,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Qarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:,:), pointer :: p_data
 
@@ -8828,44 +8828,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad2D (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad2D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_quad2D
@@ -8923,7 +8923,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Qarray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Qarray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Qarray, 3)) then
@@ -8937,32 +8937,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Qarray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       real(QP), dimension(:,:,:), pointer :: p_data
 
@@ -8973,44 +8973,44 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_quad3D (rnode%istoragehandle,p_data)
       call lalg_copyVectorQuad3D (dataarray,p_data)
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     real(QP), dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_quad3D
@@ -9049,37 +9049,37 @@ contains
     type(t_exstorageBlock), pointer :: p_rheap
     type(t_exstorageNode), pointer :: p_rnode
     type(t_exstorageContainer), pointer :: p_rcontainer
-    
+
     ! Get the heap to use - local or global one.
-    
+
     if(present(rheap)) then
       p_rheap => rheap
     else
       p_rheap => rbaseexternal
     end if
-    
+
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
-    
+
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
-    
+
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical1D')
       call sys_halt()
     end if
-    
+
     ! If the memory block is a pre-initialised block, we can directly
     ! fill it with data...
     select case (p_rnode%cinitNewBlock)
@@ -9096,34 +9096,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Larray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       logical, dimension(:), pointer :: p_data
       integer :: i
@@ -9134,49 +9134,49 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical (rnode%istoragehandle,p_data)
 
       do i = 1, size(p_data,1)
         dataarray(i) = p_data(i)
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
-    
+
   end subroutine exstor_getdata_logical1D
 
 !************************************************************************
@@ -9213,38 +9213,38 @@ contains
     type(t_exstorageBlock), pointer :: p_rheap
     type(t_exstorageNode), pointer :: p_rnode
     type(t_exstorageContainer), pointer :: p_rcontainer
-    
+
     ! Get the heap to use - local or global one.
-    
+
     if(present(rheap)) then
       p_rheap => rheap
     else
       p_rheap => rbaseexternal
     end if
-    
+
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
       call sys_halt()
     end if
-    
+
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
       call sys_halt()
     end if
-    
+
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Larray, 2)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical2D')
       call sys_halt()
     end if
-    
+
     ! If the memory block is a pre-initialised block, we can directly
     ! fill it with data...
     select case (p_rnode%cinitNewBlock)
@@ -9261,34 +9261,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Larray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       logical, dimension(:,:), pointer :: p_data
       integer :: i,j
@@ -9299,7 +9299,7 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical2D (rnode%istoragehandle,p_data)
 
@@ -9308,42 +9308,42 @@ contains
           dataarray(i,j) = p_data(i,j)
         end do
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
-    
+
   end subroutine exstor_getdata_logical2D
 
 !************************************************************************
@@ -9380,31 +9380,31 @@ contains
     type(t_exstorageBlock), pointer :: p_rheap
     type(t_exstorageNode), pointer :: p_rnode
     type(t_exstorageContainer), pointer :: p_rcontainer
-    
+
     ! Get the heap to use - local or global one.
-    
+
     if(present(rheap)) then
       p_rheap => rheap
     else
       p_rheap => rbaseexternal
     end if
-    
+
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical3D')
       call sys_halt()
     end if
-    
+
     if (p_rheap%p_Rdescriptors(ihandle)%cdataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical3D')
       call sys_halt()
     end if
-    
+
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Larray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Larray, 3)) then
@@ -9412,7 +9412,7 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_logical3D')
       call sys_halt()
     end if
-    
+
     ! If the memory block is a pre-initialised block, we can directly
     ! fill it with data...
     select case (p_rnode%cinitNewBlock)
@@ -9429,34 +9429,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Larray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       logical, dimension(:,:,:), pointer :: p_data
       integer :: i,j,k
@@ -9467,7 +9467,7 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical3D (rnode%istoragehandle,p_data)
 
@@ -9478,42 +9478,42 @@ contains
           end do
         end do
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     logical, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
-    
+
   end subroutine exstor_getdata_logical3D
 
 !************************************************************************
@@ -9569,7 +9569,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_logical1D')
@@ -9581,32 +9581,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Larray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       logical, dimension(:), pointer :: p_data
       integer :: i
@@ -9618,47 +9618,47 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical (rnode%istoragehandle,p_data)
 
       do i = 1, size(dataarray, 1)
         p_data(i) = dataarray(i)
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_logical1D
@@ -9716,7 +9716,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Larray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -9729,32 +9729,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Larray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       logical, dimension(:,:), pointer :: p_data
       integer :: i,j
@@ -9766,7 +9766,7 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical2D (rnode%istoragehandle,p_data)
 
@@ -9775,40 +9775,40 @@ contains
           p_data(i,j) = dataarray(i,j)
         end do
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_logical2D
@@ -9866,7 +9866,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Larray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Larray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Larray, 3)) then
@@ -9880,32 +9880,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Larray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       logical, dimension(:,:,:), pointer :: p_data
       integer :: i,j,k
@@ -9917,7 +9917,7 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_logical3D (rnode%istoragehandle,p_data)
 
@@ -9928,40 +9928,40 @@ contains
           end do
         end do
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     logical, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_logical3D
@@ -10024,7 +10024,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_char1D')
@@ -10047,34 +10047,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Carray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       character, dimension(:), pointer :: p_data
       integer :: i
@@ -10085,47 +10085,47 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char (rnode%istoragehandle,p_data)
 
       do i = 1, size(p_data, 1)
         dataarray(i) = p_data(i)
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:)
       else
         read(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_char1D
@@ -10188,7 +10188,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Carray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -10212,34 +10212,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Carray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       character, dimension(:,:), pointer :: p_data
       integer :: i,j
@@ -10250,7 +10250,7 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char2D (rnode%istoragehandle,p_data)
 
@@ -10259,40 +10259,40 @@ contains
           dataarray(i,j) = p_data(i,j)
         end do
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:)
       else
         read(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_char2D
@@ -10355,7 +10355,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray, 1) .or. &
         p_rnode%Isize(2) .ne. size(Carray, 2) .or. &
         p_rnode%Isize(3) .ne. size(Carray, 3)) then
@@ -10380,34 +10380,34 @@ contains
       ! Ok, there should be data behind. How to handle the data depends
       ! on the container type
       select case(p_rcontainer%ctype)
-      
+
       case (EXSTOR_CONT_RAMDRIVE)
         ! This is a RamDrive container. We use the memory management of the
         ! storage.f90 to maintain it.
         call getdata_ramdrive (p_rnode,Carray)
-                
+
       case (EXSTOR_CONT_DIRECTORY)
         ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
       end select
-        
+
     end select
 
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine getdata_ramdrive (rnode,dataarray)
-    
+
     ! Retrieves the data from a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       character, dimension(:,:,:), pointer :: p_data
       integer :: i,j,k
@@ -10418,7 +10418,7 @@ contains
             sys_siL(ihandle,10), OU_CLASS_ERROR,OU_MODE_STD,'getdata_ramdrive')
         call sys_halt()
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char3D (rnode%istoragehandle,p_data)
 
@@ -10429,40 +10429,40 @@ contains
           end do
         end do
       end do
-      
+
     end subroutine getdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine getdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Retrieves the data from a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(in) :: rnode
-    
+
     ! The destination array for the data
     character, dimension(:,:,:), intent(out) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to read data
       call io_openFileForReading(trim(rcontainer%spath)//rnode%sfilename, &
           cf, bformatted=rcontainer%bformatted)
-      
+
       ! Read the data from the file
       if (rcontainer%bformatted) then
         read(cf,*) dataarray(:,:,:)
       else
         read(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine getdata_directory
 
   end subroutine exstor_getdata_char3D
@@ -10520,7 +10520,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray)) then
       call output_line ('Data array has the wrong size!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_char1D')
@@ -10532,32 +10532,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Carray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       character, dimension(:), pointer :: p_data
       integer :: i
@@ -10569,47 +10569,47 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char (rnode%istoragehandle,p_data)
 
       do i = 1, size(dataarray, 1)
         p_data(i) = dataarray(i)
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
         write(cf) dataarray(:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_char1D
@@ -10667,7 +10667,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Carray, 2)) then
       call output_line ('Data array has the wrong size!', &
@@ -10680,32 +10680,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Carray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       character, dimension(:,:), pointer :: p_data
       integer :: i,j
@@ -10717,7 +10717,7 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:2),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char2D (rnode%istoragehandle,p_data)
 
@@ -10726,40 +10726,40 @@ contains
           p_data(i,j) = dataarray(i,j)
         end do
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
         write(cf) dataarray(:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_char2D
@@ -10817,7 +10817,7 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (p_rnode%Isize(1) .ne. size(Carray, 1) .or.&
         p_rnode%Isize(2) .ne. size(Carray, 2) .or.&
         p_rnode%Isize(3) .ne. size(Carray, 3)) then
@@ -10831,32 +10831,32 @@ contains
 
     ! How to handle the data depends on the container type.
     select case(p_rcontainer%ctype)
-    
+
     case (EXSTOR_CONT_RAMDRIVE)
       ! This is a RamDrive container. We use the memory management of the
       ! storage.f90 to maintain it.
       call setdata_ramdrive (p_rnode,Carray)
-              
+
     case (EXSTOR_CONT_DIRECTORY)
       ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
     end select
-        
+
   contains
-  
+
     ! -------------------------------------------------------------------------
     subroutine setdata_ramdrive (rnode,dataarray)
-    
+
     ! Writes data to a RamDrive container
-    
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       character, dimension(:,:,:), pointer :: p_data
       integer :: i,j,k
@@ -10868,7 +10868,7 @@ contains
         call storage_new ('setdata_ramdrive','exdata',rnode%Isize(1:3),&
             rnode%cdataType,rnode%istorageHandle,ST_NEWBLOCK_NOINIT)
       end if
-    
+
       ! Get the memory block and copy it.
       call storage_getbase_char3D (rnode%istoragehandle,p_data)
 
@@ -10879,40 +10879,40 @@ contains
           end do
         end do
       end do
-      
+
     end subroutine setdata_ramdrive
 
     ! -------------------------------------------------------------------------
     subroutine setdata_directory (rcontainer,rnode,dataarray)
-    
+
     ! Writes data to a directory container
-    
+
     ! The storage container assigned to the storage block
     type(t_exstorageContainer), intent(in) :: rcontainer
-        
+
     ! The storage block containing the data
     type(t_exstorageNode), intent(inout) :: rnode
-    
+
     ! The source array with the data
     character, dimension(:,:,:), intent(in) :: dataarray
-    
+
       ! local variables
       integer :: cf
-      
+
       ! Open the file to write data
       call io_openFileForWriting(trim(rcontainer%spath)//rnode%sfilename, &
           cf, SYS_REPLACE, bformatted=rcontainer%bformatted)
-      
+
       ! Write the data to the file
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
         write(cf) dataarray(:,:,:)
       end if
-      
+
       ! Close the file, finish
       close (cf)
-      
+
     end subroutine setdata_directory
 
   end subroutine exstor_setdata_char3D
@@ -10932,7 +10932,7 @@ contains
 !<input>
   ! The handle
   integer, intent(in) :: ihandle
-  
+
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
   type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</input>
@@ -11010,25 +11010,25 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     if (istoragehandle .eq. ST_NOHANDLE) then
-      
+
       ! Allocate a new memory block with the correct data type that is just
       ! as large that it can hold our data.
-      
+
       call storage_new ('exstor_getdata_storage','datacopy',&
             p_rnode%Isize(1:p_rnode%idimension),p_rnode%cdataType,&
             istoragehandle,ST_NEWBLOCK_NOINIT,rstorageheap)
-      
+
     else
-      
+
       call storage_getdatatype(istoragehandle,ctype,rstorageheap)
       if (p_rnode%cdataType .ne. ctype) then
         call output_line ('Wrong data format!', &
             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
         call sys_halt()
       end if
-      
+
       select case(p_rnode%idimension)
       case (1)
         call storage_getsize (istoragehandle,isize,rstorageheap)
@@ -11037,7 +11037,7 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
           call sys_halt()
         end if
-        
+
       case (2)
         call storage_getsize (istoragehandle,Isize2D,rstorageheap)
         if (any(p_rnode%Isize(1:2) .ne. Isize2D)) then
@@ -11056,14 +11056,14 @@ contains
       end select
 
     end if
-    
+
     ! If the memory block is a pre-initialised block, we can directly
     ! fill it with data...
     if (p_rnode%cinitNewBlock .ne. ST_NEWBLOCK_NOINIT) then
       call storage_initialiseBlock (istoragehandle, p_rnode%cinitNewBlock, rstorageheap)
       return
     end if
-    
+
     ! Ok, we have to copy data from the external storage to the memory block.
     ! This now depends on the data type...
     select case(p_rnode%idimension)
@@ -11195,7 +11195,7 @@ contains
 !<input>
   ! The handle
   integer, intent(in) :: ihandle
-  
+
   ! Handle to a memory block in the main memory, maintained by the
   ! storage.f90. The data in this memory block is directly saved
   ! to the the data container.
@@ -11277,14 +11277,14 @@ contains
     ! Get the container and the storage node
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     p_rcontainer => p_rheap%p_RstorageContainers(p_rnode%icontainerId)
-    
+
     call storage_getdatatype(istoragehandle, ctype, rstorageheap)
     if (p_rnode%cdataType .ne. ctype) then
       call output_line ('Wrong data format!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
       call sys_halt()
     end if
-    
+
     call storage_getdimension (istoragehandle, cdimension, rstorageheap)
 
     ! What dimension are we?
@@ -11297,7 +11297,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'exstor_setdata_storage')
         call sys_halt()
       end if
-      
+
       ! Ok, we have to copy data from the external storage to the memory block.
       ! This now depends on the data type...
       select case (p_rnode%cdataType)
@@ -11507,7 +11507,7 @@ contains
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   type(t_exstorageBlock), intent(inout), target, optional :: rheap
-  
+
 !</input>
 
 !<inputoutput>
@@ -11524,11 +11524,11 @@ contains
     type(t_exstorageBlock), pointer :: p_rheap
     type(t_exstorageNode), pointer :: p_rnode
     integer :: ihandle
-    
+
     ! Read in the data, create a temp array in the main memory.
     ihandle = ST_NOHANDLE
     call exstor_getdata_storage (h_source, ihandle, rheap)
-    
+
     ! If necessary, allocate a new block.
     if (h_dest .eq. ST_NOHANDLE) then
 
@@ -11543,21 +11543,21 @@ contains
                           OU_CLASS_ERROR,OU_MODE_STD,'exstor_getdata_storage')
         call sys_halt()
       end if
-    
+
       ! Get the container and the storage node
       p_rnode => p_rheap%p_Rdescriptors(ihandle)
-      
+
       ! Allocate a new memory block with the correct data type that is just
       ! as large that it can hold our data.
-      
+
       call exstor_new ('exstor_copy','datacopy',p_rnode%Isize(1:p_rnode%idimension),&
           p_rnode%cdataType,h_dest,ST_NEWBLOCK_NOINIT,icontainerId,rheap)
-      
+
     end if
-    
+
     ! Write the data to a new block
     call exstor_setdata_storage (h_dest, ihandle, rheap)
-    
+
     ! Release the temp memory
     call storage_free (ihandle)
 

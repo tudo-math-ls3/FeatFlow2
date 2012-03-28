@@ -16,7 +16,7 @@ module signals
 !$use omp_lib
 
   implicit none
-  
+
   private
   public :: fsignal
 
@@ -67,9 +67,9 @@ module signals
   ! *****************************************************************************
 
 contains
-  
+
 !<subroutine>
-  
+
   subroutine fsignal(sig,func)
 
 !<description>
@@ -81,33 +81,33 @@ contains
 !<input>
     ! signal number
     integer, intent(in) :: sig
-    
+
     ! signal handler
     interface
       function func(sig)
         integer, intent(in) :: sig
         integer :: func
-        
+
       end function func
     end interface
     optional :: func
 !</input>
 !</subroutine>
-    
+
 #if (!WINDOWS)
-    
+
     ! external subroutines written in C
     external :: signal_register
     external :: signal_deregister
-    
+
     ! (De-)register handler
     if (present(func)) then
       call signal_register(sig,func)
     else
       call signal_deregister(sig)
     end if
-    
+
 #endif
-    
+
   end subroutine fsignal
 end module signals

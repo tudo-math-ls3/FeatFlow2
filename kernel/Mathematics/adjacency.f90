@@ -53,23 +53,23 @@ module adjacency
   use storage
 
   implicit none
-  
+
   private
 
 !<constants>
 
 !<constantblock description="flags for the Cuthill-McKee algorithm">
-  
+
   ! If this flag is set, then the nodes on each level are sorted by their
   ! degree in ascending order.
   ! Cannot be used together with ADJ_CMK_FLAG_SORT_MAX.
   integer(I32), parameter, public :: ADJ_CMK_FLAG_SORT_MIN = 1
-  
+
   ! If this flag is set, then the nodes on each level are sorted by their
   ! degree in descending order.
   ! Cannot be used together with ADJ_CMK_FLAG_SORT_MIN.
   integer(I32), parameter, public :: ADJ_CMK_FLAG_SORT_MAX = 2
-  
+
   ! If this flag is set, then a root of minimum degree is chosen.
   ! Cannot be used together with ADJ_CMK_FLAG_ROOT_MAX.
   integer(I32), parameter, public :: ADJ_CMK_FLAG_ROOT_MIN = 4
@@ -100,7 +100,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine adj_applyPermutation_undirected(h_Iptr, h_Iidx, h_Ipermute)
 
 !<description>
@@ -117,7 +117,7 @@ contains
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
   integer, intent(in) :: h_Iptr
-  
+
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(inout) :: h_Iidx
 !</inputoutput>
@@ -127,16 +127,16 @@ contains
   integer :: i,j,k,m, NEL, NNZE
   integer, dimension(:), allocatable :: IptrOld, IidxOld,Iinv
   integer, dimension(:), pointer :: p_Iptr, p_Iidx, p_Ipermute
-  
+
     ! First of all, get the arrays from the storage
     call storage_getbase_int(h_Iptr, p_Iptr)
     call storage_getbase_int(h_Iidx, p_Iidx)
     call storage_getbase_int(h_Ipermute, p_Ipermute)
-    
+
     ! Get the length of the arrays
     NEL = ubound(p_Iptr,1)-1
     NNZE = ubound(p_Iidx,1)
-    
+
     ! Create a backup of the arrays
     allocate(IptrOld(NEL+1))
     allocate(IidxOld(NNZE))
@@ -146,23 +146,23 @@ contains
     do i = 1, NNZE
       IidxOld(i) = p_Iidx(i)
     end do
-    
+
     ! Calculate the inverse permutation
     allocate(Iinv(NEL))
     do i = 1, NEL
       Iinv(p_Ipermute(i)) = i
     end do
-    
+
     ! Now go through all elements
     j = 1
     do i = 1, NEL
-    
+
       ! Set the pointer for this element
       p_Iptr(i) = j
-      
+
       ! Get the index of the element
       m = p_Ipermute(i)
-      
+
       ! And copy the indices
       do k = IptrOld(m), IptrOld(m+1)-1
         p_Iidx(j) = Iinv(IidxOld(k))
@@ -170,12 +170,12 @@ contains
       end do
     end do
     p_Iptr(NEL+1) = j
-    
+
     ! Release the temporary memory
     deallocate(Iinv)
     deallocate(IidxOld)
     deallocate(IptrOld)
-    
+
     ! That is it
 
   end subroutine
@@ -183,7 +183,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine adj_applyPermutation_directed(h_Iptr, h_Iidx, h_IpermutePtr,&
                                            h_IpermuteIdx)
 
@@ -207,7 +207,7 @@ contains
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
   integer, intent(inout) :: h_Iptr
-  
+
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(inout) :: h_Iidx
 !</inputoutput>
@@ -218,7 +218,7 @@ contains
   integer, dimension(:), allocatable :: IptrOld, IidxOld,IinvIdx
   integer, dimension(:), pointer :: p_Iptr, p_Iidx, p_IpermutePtr,&
     p_IpermuteIdx
-  
+
     ! First of all, get the arrays from the storage
     call storage_getbase_int(h_Iptr, p_Iptr)
     call storage_getbase_int(h_Iidx, p_Iidx)
@@ -235,7 +235,7 @@ contains
     end if
     if(h_IpermuteIdx .ne. ST_NOHANDLE) then
       call storage_getbase_int(h_IpermuteIdx, p_IpermuteIdx)
-      
+
       ! Build the inverse permutation
       k = ubound(p_IpermuteIdx,1)
       allocate(IinvIdx(k))
@@ -245,10 +245,10 @@ contains
     else
       nullify(p_IpermuteIdx)
     end if
-    
+
     ! What type of permutation is to be applied?
     if(associated(p_IpermutePtr)) then
-    
+
       ! Create a backup of the arrays
       allocate(IptrOld(NNODE+1))
       allocate(IidxOld(NNZE))
@@ -263,13 +263,13 @@ contains
         ! We permute both arrays.
         j = 1
         do i = 1, NNODE
-        
+
           ! Set the pointer for this element
           p_Iptr(i) = j
-          
+
           ! Get the index of the element
           m = p_IpermutePtr(i)
-          
+
           ! And copy the indices
           do k = IptrOld(m), IptrOld(m+1)-1
             p_Iidx(j) = IinvIdx(IidxOld(k))
@@ -282,13 +282,13 @@ contains
         ! We permute the pointer array.
         j = 1
         do i = 1, NNODE
-        
+
           ! Set the pointer for this element
           p_Iptr(i) = j
-          
+
           ! Get the index of the element
           m = p_IpermutePtr(i)
-          
+
           ! And copy the indices
           do k = IptrOld(m), IptrOld(m+1)-1
             p_Iidx(j) = IidxOld(k)
@@ -296,34 +296,34 @@ contains
           end do
         end do
         p_Iptr(NNODE+1) = j
-      
+
       end if
-    
+
       ! Deallocate the backup
       deallocate(IidxOld)
       deallocate(IptrOld)
 
     else if(associated(p_IpermuteIdx)) then
-      
+
       ! We permute the index array
       do i = 1, NNZE
         p_Iidx(i) = IinvIdx(p_Iidx(i))
       end do
-      
+
     end if
-    
+
     ! Release the temporary memory
     if(allocated(IinvIdx)) &
       deallocate(IinvIdx)
-    
+
     ! That is it
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine adj_sortAdjacencies(h_Iptr, h_Iidx)
 
 !<description>
@@ -334,23 +334,23 @@ contains
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
   integer, intent(in) :: h_Iptr
-  
+
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(in) :: h_Iidx
 !</input>
 
   integer, dimension(:), pointer :: p_Iptr, p_Iidx
   integer :: i,j,k,m,NNODE
-  
+
     ! Get the pointers from the storage
     call storage_getbase_int(h_Iptr, p_Iptr)
     call storage_getbase_int(h_Iidx, p_Iidx)
-    
+
     NNODE = ubound(p_Iptr,1)-1
-    
+
     ! The sorting algorithm used here is bubblesort - it might (and should)
     ! be replaced by a more efficient algorithm later...
-    
+
     ! Go through all nodes
     do i = 1, NNODE
       do j = p_Iptr(i), p_Iptr(i+1)-1
@@ -365,11 +365,11 @@ contains
     end do ! i
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine adj_calcColouring(h_Iptr,h_Iidx,h_Icpt,h_Ipermute,h_InodeOrder)
 
 !<description>
@@ -396,10 +396,10 @@ contains
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
   integer, intent(in) :: h_Iptr
-  
+
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(in) :: h_Iidx
-  
+
   ! OPTIONAL: A storage handle to an array holding the order in which the
   ! colouring algorithm should proceed through the nodes. If not given,
   ! canonical order is used.
@@ -422,11 +422,11 @@ contains
     p_InodeOrder
   integer, dimension(:), allocatable :: InodeColour, IcolourMap, InumNodes
   integer :: i,j,k,inode,DEGREE,NNODE,inumColours,iminColour,iminNodes
-  
+
     ! Get the pointers from the storage
     call storage_getbase_int(h_Iptr, p_Iptr)
     call storage_getbase_int(h_Iidx, p_Iidx)
-    
+
     ! First of all, we need to calculate the degree of the graph, as this
     ! is the upper bound for the number of colours we will need.
     NNODE = ubound(p_Iptr,1)-1
@@ -434,7 +434,7 @@ contains
     do i = 1, NNODE
       DEGREE = max(DEGREE, p_Iptr(i+1)-p_Iptr(i))
     end do
-    
+
     ! Allocate the auxiliary arrays
     allocate(InodeColour(NNODE))
     allocate(IcolourMap(DEGREE))
@@ -443,13 +443,13 @@ contains
       InumNodes(i) = 0
     end do
     inumColours = 0
-    
+
     ! Do we have a node order given?
     if(present(h_InodeOrder)) then
-    
+
       ! Get the node order array from the storage then
       call storage_getbase_int(h_InodeOrder, p_InodeOrder)
-      
+
       ! And format the node-colour array
       do i = 1, NNODE
         InodeColour(i) = 0
@@ -457,44 +457,44 @@ contains
 
       ! Now let us loop through the nodes
       do i = 1, NNODE
-      
+
         ! Get the node index
         inode = p_InodeOrder(i)
-        
+
         ! Format the colour map
         do j = 1, inumColours
           IcolourMap(j) = 0
         end do
-        
+
         ! Go through the adjacencies of this node
         do j = p_Iptr(inode), p_Iptr(inode+1)-1
-          
+
           ! The node`s colour
           k = InodeColour(p_Iidx(j))
-          
+
           if (k .gt. 0) then
             ! Mark this node`s colour as 'used'
             IcolourMap(k) = 1
           end if
-          
+
         end do ! j
-        
+
         ! Now find a free colour with minimum nodes
         iminColour = -1
         iminNodes = NNODE + 100
         do j = 1, inumColours
-        
+
           ! Skip this colour if it is used
           if(IcolourMap(j) .ne. 0) cycle
-          
+
           ! Is this the colour with minimum nodes?
           if(InumNodes(j) .lt. iminNodes) then
             iminNodes = InumNodes(j)
             iminColour = j
           end if
-          
+
         end do ! j
-        
+
         ! Did we find a free colour?
         if(iminColour .gt. 0) then
           ! Yes, so set the node`s colour to this one
@@ -506,48 +506,48 @@ contains
           InodeColour(inode) = inumColours
           InumNodes(inumColours) = 1
         end if
-      
+
       end do ! i
-    
+
     else
-    
+
       ! Now let us loop through the nodes
       do i = 1, NNODE
-        
+
         ! Format the colour map
         do j = 1, inumColours
           IcolourMap(j) = 0
         end do
-        
+
         ! Go through the adjacencies of this node
         do j = p_Iptr(i), p_Iptr(i+1)-1
-          
+
           ! The the node index
           k = p_Iidx(j)
-          
+
           if (k .lt. i) then
             ! Mark this node`s colour as 'used'
             IcolourMap(InodeColour(k)) = 1
           end if
-          
+
         end do ! j
-        
+
         ! Now find a free colour with minimum entries
         iminColour = -1
         iminNodes = NNODE + 100
         do j = 1, inumColours
-        
+
           ! Skip this colour if it is used
           if(IcolourMap(j) .ne. 0) cycle
-          
+
           ! Is this the colour with minimum nodes?
           if(InumNodes(j) .lt. iminNodes) then
             iminNodes = InumNodes(j)
             iminColour = j
           end if
-          
+
         end do ! j
-        
+
         ! Did we find a free colour?
         if(iminColour .gt. 0) then
           ! Yes, so set the node`s colour to this one
@@ -559,16 +559,16 @@ contains
           InodeColour(i) = inumColours
           InumNodes(inumColours) = 1
         end if
-      
+
       end do ! i
-    
+
     end if
-    
+
     ! Now IcellColour contains a valid colouring of our adjacency graph.
     ! We now need to build the colour partition table...
     call storage_new ('adj_calcColouring', 'p_Icpt', inumColours+1, ST_INT,&
                       h_Icpt, ST_NEWBLOCK_NOINIT)
-    
+
     ! Get the array from the storage
     call storage_getbase_int(h_Icpt, p_Icpt)
 
@@ -577,12 +577,12 @@ contains
     do i = 1, inumColours
       p_Icpt(i+1) = p_Icpt(i) + InumNodes(i)
     end do
-    
+
     ! Now make a backup of the cpt - we will need it to build the permutation
     do i = 1, inumColours
       IcolourMap(i) = p_Icpt(i)
     end do
-    
+
     ! Build the inverse permutation array - we will abuse the InodeColour array
     ! to store the inverse permutation.
     do i = 1, NNODE
@@ -594,28 +594,28 @@ contains
     ! Allocate an array for the permuation
     call storage_new ('adj_calcColouring', 'p_Ipermute', NNODE, ST_INT,&
                       h_Ipermute, ST_NEWBLOCK_NOINIT)
-    
+
     ! Get the array from the storage
     call storage_getbase_int(h_Ipermute, p_Ipermute)
-    
+
     ! Calculate the permutation
     do i = 1, NNODE
       p_Ipermute(InodeColour(i)) = i
     end do
-    
+
     ! And release all temporary memory
     deallocate(InodeColour)
     deallocate(InumNodes)
     deallocate(IcolourMap)
-    
+
     ! That is it
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine adj_calcCuthillMcKee(h_Iptr,h_Iidx,h_Ipermute,cflags)
 
 !<description>
@@ -626,10 +626,10 @@ contains
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
   integer, intent(in) :: h_Iptr
-  
+
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(in) :: h_Iidx
-  
+
   ! OPTIONAL: A combination ADJ_CMK_FLAG_XXXX constants defined at the top
   ! of this module specifying the flags for the algorithm. If not given,
   ! only the ADJ_CMK_FLAG_ROOT_MIN flag is set.
@@ -647,10 +647,10 @@ contains
   integer, dimension(:), allocatable :: Iaux
   integer :: i,j,k,n,NNODE,root,lvl1,lvl2,lvl3,lvl_root,sort_choice, root_choice
   logical :: bReverse
-  
+
     ! Reset output handle
     h_Ipermute = ST_NOHANDLE
-  
+
     ! Set the default strategy
     sort_choice = 0
     root_choice = ADJ_CMK_FLAG_ROOT_MIN
@@ -671,20 +671,20 @@ contains
       root_choice = iand(cflags,ior(ADJ_CMK_FLAG_ROOT_MIN,ADJ_CMK_FLAG_ROOT_MAX))
       bReverse = (iand(cflags,ADJ_CMK_FLAG_REVERSE) .ne. 0)
     end if
-    
+
     ! Get the pointers from the storage
     call storage_getbase_int(h_Iptr, p_Iptr)
     call storage_getbase_int(h_Iidx, p_Iidx)
     NNODE = ubound(p_Iptr,1)-1
-    
+
     ! Allocate the permutation array
     call storage_new ('adj_calcCuthillMcKee', 'p_Ipermute', NNODE, ST_INT, &
                       h_Ipermute, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(h_Ipermute,p_Ipermute)
-    
+
     ! Allocate an auxiliary array
     allocate(Iaux(NNODE))
-    
+
     ! Calculate the degree for all nodes
     do i = 1, NNODE
       Iaux(i) = p_Iptr(i+1) - p_Iptr(i)
@@ -693,13 +693,13 @@ contains
     lvl1 = 0
     lvl2 = 0
     do while(lvl2 .lt. NNODE)
-    
+
       ! Usually, the DO-WHILE loop we are in performs just one iteration.
       ! However, if the adjacency graph is reducible, then we cannot reach all
       ! nodes by running through the adjacency levels of only one root - so we
       ! are forced to choose a new root for every disjunct subgraph...
       root = -1
-      
+
       ! Now how do we choose our root node?
       select case(root_choice)
       case (ADJ_CMK_FLAG_ROOT_MIN)
@@ -721,7 +721,7 @@ contains
             n = Iaux(i)
           end if
         end do
-      
+
       case DEFAULT
         ! Choose the first free node as 'root'
         do i = 1, NNODE
@@ -730,64 +730,64 @@ contains
             exit
           end if
         end do
-        
+
       end select
 
       if(root .le. 0) then
-      
+
         ! If we come out here, then something must have gone terribly wrong.
         ! We have not processed all nodes yet, but we cannot find a new root...
         call output_line ('internal error - no root found', &
                           OU_CLASS_ERROR,OU_MODE_STD,'adj_calcCuthillMcKee')
 
         call sys_halt()
-        
+
       end if
-      
+
       ! Initialise the first level for the root node
       lvl1 = lvl1+1
       lvl2 = lvl1
       lvl3 = lvl1
-      
+
       ! Add the root into the permutation array
       lvl_root = lvl1
       p_Ipermute(lvl1) = root
       Iaux(root) = -Iaux(root)
-    
+
       ! Now let us go through the adjacency levels of the root, until there
       ! are no more adjacent nodes left.
       do while(lvl2 .lt. NNODE)
-      
+
         ! Go through all nodes in the current level, and fetch the node
         ! indices for the next level
         do i = lvl1, lvl2
-        
+
           ! Get the index of the node
           n = p_Ipermute(i)
-        
+
           ! Go through all nodes which are adjacent to node n
           do j = p_Iptr(n), p_Iptr(n+1)-1
-          
+
             ! Get the index of the adjacent node
             k = p_Iidx(j)
-            
+
             ! Has this node already been processed?
             if(Iaux(k) .gt. 0) then
-            
+
               ! No, so let us add it to the next level
               lvl3 = lvl3+1
               p_Ipermute(lvl3) = k
-              
+
               ! And negate it is entry in the auxiliary array to mark it
               ! as 'already processed'
               Iaux(k) = -Iaux(k)
-              
+
             end if
-            
+
           end do ! j
-        
+
         end do ! i
-        
+
         ! Did not we find any adjacent nodes anymore?
         ! Then jump out of this loop
         if(lvl3 .le. lvl2) exit
@@ -799,13 +799,13 @@ contains
         case (ADJ_CMK_FLAG_SORT_MAX)
           call adj_cmk_aux_sort_max(lvl2+1,lvl3,p_Ipermute,Iaux)
         end select
-        
+
         ! Otherwise let us proceed with the next adjacency level
         lvl1 = lvl2+1
         lvl2 = lvl3
-      
+
       end do ! WHILE(lvl2 .LT. NNODE)
-      
+
       ! Do we have to reverse the ordering?
       if(bReverse) then
         i = lvl_root
@@ -818,27 +818,27 @@ contains
           j = j-1
         end do
       end if
-      
+
     end do ! WHILE(lvl2 .LT. NNODE)
-    
+
     ! Deallocate the auxiliary array
     deallocate(Iaux)
-    
+
     ! That is it
 
   contains
-  
+
     pure subroutine adj_cmk_aux_sort_min(m,n,Iperm,Iaux)
     integer, intent(in) :: m,n
     integer, dimension(:), intent(inout) :: Iperm, Iaux
-    
+
     integer :: i,j,k
-    
+
       ! Return if there is nothing to do here...
       if(m .le. n) return
-    
+
       ! Bubble-sort - replace with something faster later...
-      
+
       ! Remark:
       ! Keep in mind that the Iaux array contains the negative degree of
       ! the nodes, as the nodes have already been processed! So we need
@@ -853,18 +853,18 @@ contains
           end if
         end do
       end do
-    
+
     end subroutine ! adj_cmk_aux_sort_min
-  
+
     pure subroutine adj_cmk_aux_sort_max(m,n,Iperm,Iaux)
     integer, intent(in) :: m,n
     integer, dimension(:), intent(inout) :: Iperm, Iaux
-    
+
     integer :: i,j,k
-    
+
       ! Return if there is nothing to do here...
       if(m .le. n) return
-    
+
       ! Bubble-sort - replace with something faster later...
       do i = m, n
         do j = i+1, n
@@ -875,9 +875,9 @@ contains
           end if
         end do
       end do
-    
+
     end subroutine ! adj_cmk_aux_sort_max
-  
+
   end subroutine ! adj_calcCuthillMcKee
-  
+
 end module

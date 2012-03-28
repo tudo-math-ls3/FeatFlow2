@@ -55,7 +55,7 @@ module ufci
     !     the UFCI_TASK_XXXX constants which specifies what information is
     !     desired from the callback function by the caller.
     integer :: ctask = UFCI_TASK_NONE
-    
+
     ! IN: Total number of functions which are to be evaluated.
     integer :: nfunctions = 0
 
@@ -63,12 +63,12 @@ module ufci
     !     IfunctionIDs(i) = user-defined ID of the i-th function that is to be
     !                       evaluated
     integer, dimension(UFCI_NITEMSIM) :: IfunctionIDs = 0
-    
+
     ! ---------- ENTRIES FOR EVALUATION TASK ----------
 
     ! IN: The number of points per element.
     integer :: npoints = 0
-    
+
     ! IN: The number of elements.
     integer :: nelements = 0
 
@@ -81,7 +81,7 @@ module ufci
     !      p_Dvalues(i,j,k) = function value of function k on element j
     !                         in point i
     real(DP), dimension(:,:,:), pointer :: p_Dvalues => null()
-   
+
   end type
 
 !</typeblock>

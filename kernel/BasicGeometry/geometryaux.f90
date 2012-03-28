@@ -65,9 +65,9 @@ module geometryaux
   use fsystem
   use basicgeometry
   use genoutput
-  
+
   implicit none
-  
+
   private
 
   public :: gaux_getAspectRatio_quad2D
@@ -92,11 +92,11 @@ module geometryaux
 contains
 
   ! ***************************************************************************
-  
+
 !<function>
 
   pure real(DP) function gaux_getAspectRatio_quad2D (Dpoints)
-  
+
 !<description>
   ! This routine calculates the aspect ratio of a 2D quadrilateral
   ! polygon. The polygon is given by the coordinates of its four corners,
@@ -142,7 +142,7 @@ contains
   ! ***************************************************************************
 
 !<function>
-  
+
   pure real(DP) function gaux_getArea_tria2D (Dpoints)
 
 !<description>
@@ -198,14 +198,14 @@ contains
     !INTEGER, DIMENSION(3), PARAMETER :: IpointSubset = (/1,3,4/)
     !REAL(DP), DIMENSION(2,3) :: Dpoints2
     !REAL(DP) :: daux1,daux2
-    
+
     ! First approach (slow):
     ! Add the area of two subtriangles to get the area of the quad.
     !
     !Dpoints2 = Dpoints(:,IpointSubset)
     !daux1 = ABS(gaux_getArea_tria2D(Dpoints(:,1:3))) + &
     !        ABS(gaux_getArea_tria2D(Dpoints2))
-        
+
     ! For computing the area of the quad, we use a formula documented at
     !
     !   http://softsurfer.com/Archive/algorithm_0101/algorithm_0101.htm
@@ -293,13 +293,13 @@ contains
     !         /           \             .
     !       +--------------+
     !     V0                 V1
-    
+
     gaux_getArea_quad2D = &
             0.5_DP *  abs( (Dpoints(1,3) - Dpoints(1,1) ) * &
                            (Dpoints(2,4) - Dpoints(2,2) ) - &
                            (Dpoints(1,4) - Dpoints(1,2) ) * &
                            (Dpoints(2,3) - Dpoints(2,1) ) )
-                           
+
   end function gaux_getArea_quad2D
 
 !************************************************************************
@@ -328,17 +328,17 @@ contains
 
     ! A temporary array for the edge lengths
     real(DP), dimension(3,3) :: Dv
-    
+
     Dv(1:3,1) = Dpoints(1:3,1) - Dpoints(1:3,4)
     Dv(1:3,2) = Dpoints(1:3,2) - Dpoints(1:3,4)
     Dv(1:3,3) = Dpoints(1:3,3) - Dpoints(1:3,4)
-    
+
     ! Return the absolute volume
     gaux_getVolume_tetra3D = abs(&
         Dv(1,1) * (Dv(2,2)*Dv(3,3) - Dv(3,2)*Dv(2,3)) + &
         Dv(2,1) * (Dv(3,2)*Dv(1,3) - Dv(1,2)*Dv(3,3)) + &
         Dv(3,1) * (Dv(1,2)*Dv(2,3) - Dv(2,2)*Dv(1,3))) / 6.0_DP
-        
+
   end function gaux_getVolume_tetra3D
 
 !************************************************************************
@@ -397,16 +397,16 @@ contains
            -(Dv(1,1)-Dv(1,6))*(Dv(2,1)-Dv(2,8))*(Dv(3,1)-Dv(3,3))&
            -(Dv(2,1)-Dv(2,6))*(Dv(3,1)-Dv(3,8))*(Dv(1,1)-Dv(1,3))&
            -(Dv(3,1)-Dv(3,6))*(Dv(1,1)-Dv(1,8))*(Dv(2,1)-Dv(2,3))))
-             
+
   end function gaux_getVolume_hexa3D
-    
+
 !************************************************************************
 
 !<subroutine>
-  
+
   elemental subroutine gaux_isIntersection_line2D(&
       dx1,dy1,dx2,dy2,dx3,dy3,dx4,dy4, bintersect)
-  
+
 !<description>
   ! Checks whether the two 2D lines given by the start/endpoints
   ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4) intersect each other.
@@ -415,13 +415,13 @@ contains
 !<input>
   ! First point on ray 1.
   real(DP), intent(in) :: dx1,dy1
-  
+
   ! A second point on ray 1. Must be different to (dx1,dy1)
   real(DP), intent(in) :: dx2,dy2
-  
+
   ! First point on ray 2.
   real(DP), intent(in) :: dx3,dy3
-  
+
   ! A second point on ray 2. Must be different to (dx3,dy3)
   real(DP), intent(in) :: dx4,dy4
 !</input>
@@ -462,10 +462,10 @@ contains
 !************************************************************************
 
 !<subroutine>
-  
+
   elemental subroutine gaux_getIntersection_ray2D(&
       dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
-  
+
 !<description>
   ! Calculates the intersection point of two 2D rays given by
   ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
@@ -474,13 +474,13 @@ contains
 !<input>
   ! First point on ray 1.
   real(DP), intent(in) :: dx0,dy0
-  
+
   ! A second point on ray 1. Must be different to (dx1,dy1)
   real(DP), intent(in) :: dx1,dy1
-  
+
   ! First point on ray 2.
   real(DP), intent(in) :: dx2,dy2
-  
+
   ! A second point on ray 2. Must be different to (dx3,dy3)
   real(DP), intent(in) :: dx3,dy3
 !</input>
@@ -495,7 +495,7 @@ contains
   ! = 0: The rays do not intersect.
   ! = 1: The rays intersect in exactly one point.
   integer, intent(out) :: iintersect
-  
+
   ! Parameter value of the intersection.
   ! The intersection point (dx,dy) can be found at position
   ! (dx,dy) = (dx0,dy0) + da*(dx1-dx0,dy1-dy0).
@@ -512,7 +512,7 @@ contains
     dx = 0.0_DP
     dy = 0.0_DP
     iintersect = 0
-    
+
     ! We have (hopefully) the situation
     !
     !               (X1,Y1)
@@ -535,38 +535,38 @@ contains
     ! The determinant of the system is:
 
     ddet = dx1*dy2-dx1*dy3-dx0*dy2+dx0*dy3-dy1*dx2+dy1*dx3+dy0*dx2-dy0*dx3
-       
+
     ! If it is =0, the lines are the same or completely different...
-        
+
     if (ddet .eq. 0.0_DP) then
-       
+
       ! If the vector (X2,Y2)->(X0,Y0) is linear dependent to
       ! (X2,Y2)->(X3,Y3), the lines are the same.
 
       ddet = -dy0*dx2-dx3*dy2+dy0*dx3+dx2*dy3+dx0*dy2-dx0*dy3
-       
+
       if (ddet .eq. 0.0_DP) then
         iintersect = -1
       end if
-      
+
       da = 0
-     
+
     else
 
       ! There is an intersection point. Calculate one of the
       ! "parameter" values along the two lines.
 
       da = (dy0*dx2+dx3*dy2-dy0*dx3-dx2*dy3-dx0*dy2+dx0*dy3) / ddet
-        
+
       !  The intersection point is then
 
       dx = da*dx1 + (1.0_DP-da)*dx0
       dy = da*dy1 + (1.0_DP-da)*dy0
-      
+
       iintersect = 1
-       
+
     end if
-      
+
   end subroutine
 
 !************************************************************************
@@ -578,7 +578,7 @@ contains
 !<subroutine>
   pure subroutine gaux_isInElement_quad2D(dx,dy,DcornerCoords,binside)
 #endif
-  
+
 !<description>
   ! Checks if a point (dx,dy) is inside of a 2D quadrilateral element
   ! given by the corners DcornerCoords.
@@ -587,7 +587,7 @@ contains
 !<input>
   ! Point to check
   real(DP), intent(in) :: dx,dy
-  
+
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
   !
@@ -626,7 +626,7 @@ contains
       call sys_halt()
     end if
 #endif
-      
+
     binside = .true.
 
     ! Compute edge-midpoints and normal vectors to the four
@@ -666,16 +666,16 @@ contains
       binside = binside .and. (dsproduct .le. SYS_EPSREAL_DP*100.0_DP)
 
     end do
-    
+
   end subroutine
 
 !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_getBarycentricCoords_tri2D(&
       DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
-  
+
 !<description>
   ! Calculates the barycentric coordinates (dxi1,dxi2,dxi3) of a
   ! point (dx,dy) relative to a 2D triangular element specified by
@@ -685,7 +685,7 @@ contains
 !<input>
   ! Point in real coordinates
   real(DP), intent(in) :: dx,dy
-  
+
   ! Array with coordinates of the three corner points of the element.
   ! The corners must be ordered in counterclockwise order.
   real(DP), dimension(:,:), intent(in) :: DcornerCoords
@@ -708,10 +708,10 @@ contains
     DBY = DcornerCoords(2, 2)
     DCX = DcornerCoords(1, 3)
     DCY = DcornerCoords(2, 3)
-    
+
     ! Example where to find this formula here:
     ! http://home.t-online.de/home/nagel.klaus/matdir/bary.htm
-    
+
     DDET = 1.0_DP / ( DAX*(DBY-DCY) + DBX*(DCY-DAY) + DCX*(DAY-DBY) )
     dxi1 = (dx*(DBY-DCY)+DBX*(DCY-dy)+DCX*(dy-DBY)) * DDET
     dxi2 = (DAX*(dy-DCY)+dx*(DCY-DAY)+DCX*(DAY-dy)) * DDET
@@ -722,9 +722,9 @@ contains
 !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
-  
+
 !<description>
   ! Checks if a point (dx,dy) is inside of a 2D triangular element
   ! given by the corners DcornerCoords.
@@ -733,7 +733,7 @@ contains
 !<input>
   ! Point to check
   real(DP), intent(in) :: dx,dy
-  
+
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
   !
@@ -795,33 +795,33 @@ contains
     ! and a normal vector
     real(DP), dimension(3) :: Du,Dv,Dw,Dn
     real(DP) :: dt
-    
+
     Du(:) = 0.25_DP * (Dpoints(:,5)+Dpoints(:,6)+Dpoints(:,7)+Dpoints(:,8)&
                       -Dpoints(:,1)-Dpoints(:,2)-Dpoints(:,3)-Dpoints(:,4))
     Dv(:) = 0.25_DP * (Dpoints(:,3)+Dpoints(:,4)+Dpoints(:,7)+Dpoints(:,8)&
                       -Dpoints(:,1)-Dpoints(:,2)-Dpoints(:,5)-Dpoints(:,6))
     Dw(:) = 0.25_DP * (Dpoints(:,1)+Dpoints(:,4)+Dpoints(:,5)+Dpoints(:,8)&
                       -Dpoints(:,2)-Dpoints(:,3)-Dpoints(:,6)-Dpoints(:,7))
-    
+
     ! Calculate normal n := u x v with 3d cross product
     Dn(1) = Du(2)*Dv(3) - Du(3)*Dv(2)
     Dn(2) = Du(3)*Dv(1) - Du(1)*Dv(3)
     Dn(3) = Du(1)*Dv(2) - Du(2)*Dv(1)
-    
+
     ! Calculate scalar product t := < n, w >
     dt = Dn(1)*Dw(1) + Dn(2)*Dw(2) + Dn(3)*Dw(3)
-    
+
     ! Now if dt < 0, then the hexahedron is flipped
     gaux_isFlipped_hexa3D = (dt .lt. 0.0_DP)
 
   end function gaux_isFlipped_hexa3D
-  
+
 !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_isInElement_tetra(dx,dy,dz,Dpoints,binside)
-  
+
 !<description>
   ! Checks if a point (dx,dy) is inside of a 2D triangular element
   ! given by the corners DcornerCoords.
@@ -830,7 +830,7 @@ contains
 !<input>
   ! Point to check
   real(DP), intent(in) :: dx,dy,dz
-  
+
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
   !
@@ -851,7 +851,7 @@ contains
   real(DP), dimension(3,4) :: Dpv
   real(DP), dimension(3,1) :: DP1
   real(DP) :: ddot1,ddot2,ddot3,ddot4
-  
+
   DP1(1,1)=dx
   DP1(2,1)=dy
   DP1(3,1)=dz
@@ -859,16 +859,16 @@ contains
   ! compute the face normals
   Dnormals(1,1) = ((Dpoints(2,2) - Dpoints(2,4)) * (Dpoints(3,3) - Dpoints(3,4))) &
                 - ((Dpoints(3,2) - Dpoints(3,4)) * (Dpoints(2,3) - Dpoints(2,4)))
-                
+
   Dnormals(2,1) = ((Dpoints(3,2) - Dpoints(3,4)) * (Dpoints(1,3) - Dpoints(1,4))) &
                 - ((Dpoints(1,2) - Dpoints(1,4)) * (Dpoints(3,3) - Dpoints(3,4)))
 
   Dnormals(3,1) = ((Dpoints(1,2) - Dpoints(1,4)) * (Dpoints(2,3) - Dpoints(2,4))) &
                 - ((Dpoints(2,2) - Dpoints(2,4)) * (Dpoints(1,3) - Dpoints(1,4)))
-  
+
   Dnormals(1,2) = ((Dpoints(2,1) - Dpoints(2,3)) * (Dpoints(3,4) - Dpoints(3,3))) &
                 - ((Dpoints(3,1) - Dpoints(3,3)) * (Dpoints(2,4) - Dpoints(2,3)))
-                
+
   Dnormals(2,2) = ((Dpoints(3,1) - Dpoints(3,3)) * (Dpoints(1,4) - Dpoints(1,3))) &
                 - ((Dpoints(1,1) - Dpoints(1,3)) * (Dpoints(3,4) - Dpoints(3,3)))
 
@@ -877,7 +877,7 @@ contains
 
   Dnormals(1,3) = ((Dpoints(2,4) - Dpoints(2,2)) * (Dpoints(3,1) - Dpoints(3,2))) &
                 - ((Dpoints(3,4) - Dpoints(3,2)) * (Dpoints(2,1) - Dpoints(2,2)))
-                
+
   Dnormals(2,3) = ((Dpoints(3,4) - Dpoints(3,2)) * (Dpoints(1,1) - Dpoints(1,2))) &
                 - ((Dpoints(1,4) - Dpoints(1,2)) * (Dpoints(3,1) - Dpoints(3,2)))
 
@@ -886,27 +886,27 @@ contains
 
   Dnormals(1,4) = ((Dpoints(2,3) - Dpoints(2,1)) * (Dpoints(3,2) - Dpoints(3,1))) &
                 - ((Dpoints(3,3) - Dpoints(3,1)) * (Dpoints(2,2) - Dpoints(2,1)))
-                
+
   Dnormals(2,4) = ((Dpoints(3,3) - Dpoints(3,1)) * (Dpoints(1,2) - Dpoints(1,1))) &
                 - ((Dpoints(1,3) - Dpoints(1,1)) * (Dpoints(3,2) - Dpoints(3,1)))
 
   Dnormals(3,4) = ((Dpoints(1,3) - Dpoints(1,1)) * (Dpoints(2,2) - Dpoints(2,1))) &
                 - ((Dpoints(2,3) - Dpoints(2,1)) * (Dpoints(1,2) - Dpoints(1,1)))
-  
+
   ! calculate all p-v
   Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,4)
-  
+
   Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,3)
-  
+
   Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,2)
-  
+
   Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,1)
-  
+
   ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
   ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
   ddot3 = Dpv(1,3) * Dnormals(1,3) + Dpv(2,3) * Dnormals(2,3) + Dpv(3,3) * Dnormals(3,3)
   ddot4 = Dpv(1,4) * Dnormals(1,4) + Dpv(2,4) * Dnormals(2,4) + Dpv(3,4) * Dnormals(3,4)
-  
+
   if((ddot1 .le. 0.0001_dp).and.(ddot2 .le. 0.0001_dp).and.(ddot3 .le. 0.0001_dp).and.(ddot4 .le. 0.0001_dp))then
     binside = .true.
   else
@@ -918,9 +918,9 @@ contains
 !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_isInElement_hexa(dx,dy,dz,Dpoints,binside)
-  
+
 !<description>
   ! Checks whether a point (dx,dy,dz) is inside of a hexahedron
 !</description>
@@ -928,7 +928,7 @@ contains
 !<input>
   ! Point to check
   real(DP), intent(in) :: dx,dy,dz
-  
+
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order!
   !
@@ -951,27 +951,27 @@ contains
   real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6,length
   real(DP) :: eps
   integer :: i
-  
+
   DP1(1,1)=dx
   DP1(2,1)=dy
   DP1(3,1)=dz
-  
+
   eps=1e-10
-  
+
   ! compute the face normals 1
   Dnormals(1,1) = ((Dpoints(2,4) - Dpoints(2,1)) * (Dpoints(3,2) - Dpoints(3,1))) &
                 - ((Dpoints(3,4) - Dpoints(3,1)) * (Dpoints(2,2) - Dpoints(2,1)))
-                
+
   Dnormals(2,1) = ((Dpoints(3,4) - Dpoints(3,1)) * (Dpoints(1,2) - Dpoints(1,1))) &
                 - ((Dpoints(1,4) - Dpoints(1,1)) * (Dpoints(3,2) - Dpoints(3,1)))
 
   Dnormals(3,1) = ((Dpoints(1,4) - Dpoints(1,1)) * (Dpoints(2,2) - Dpoints(2,1))) &
                 - ((Dpoints(2,4) - Dpoints(2,1)) * (Dpoints(1,2) - Dpoints(1,1)))
-  
+
   ! compute the face normals 2
   Dnormals(1,2) = ((Dpoints(2,2) - Dpoints(2,1)) * (Dpoints(3,5) - Dpoints(3,1))) &
                 - ((Dpoints(3,2) - Dpoints(3,1)) * (Dpoints(2,5) - Dpoints(2,1)))
-                
+
   Dnormals(2,2) = ((Dpoints(3,2) - Dpoints(3,1)) * (Dpoints(1,5) - Dpoints(1,1))) &
                 - ((Dpoints(1,2) - Dpoints(1,1)) * (Dpoints(3,5) - Dpoints(3,1)))
 
@@ -980,7 +980,7 @@ contains
   ! compute the face normals 3
   Dnormals(1,3) = ((Dpoints(2,7) - Dpoints(2,3)) * (Dpoints(3,2) - Dpoints(3,3))) &
                 - ((Dpoints(3,7) - Dpoints(3,3)) * (Dpoints(2,2) - Dpoints(2,3)))
-                
+
   Dnormals(2,3) = ((Dpoints(3,7) - Dpoints(3,3)) * (Dpoints(1,2) - Dpoints(1,3))) &
                 - ((Dpoints(1,7) - Dpoints(1,3)) * (Dpoints(3,2) - Dpoints(3,3)))
 
@@ -989,7 +989,7 @@ contains
   ! compute the face normals 4
   Dnormals(1,4) = ((Dpoints(2,4) - Dpoints(2,3)) * (Dpoints(3,7) - Dpoints(3,3))) &
                 - ((Dpoints(3,4) - Dpoints(3,3)) * (Dpoints(2,7) - Dpoints(2,3)))
-                
+
   Dnormals(2,4) = ((Dpoints(3,4) - Dpoints(3,3)) * (Dpoints(1,7) - Dpoints(1,3))) &
                 - ((Dpoints(1,4) - Dpoints(1,3)) * (Dpoints(3,7) - Dpoints(3,3)))
 
@@ -998,68 +998,68 @@ contains
   ! compute the face normals 5
   Dnormals(1,5) = ((Dpoints(2,4) - Dpoints(2,8)) * (Dpoints(3,5) - Dpoints(3,8))) &
                 - ((Dpoints(3,4) - Dpoints(3,8)) * (Dpoints(2,5) - Dpoints(2,8)))
-                
+
   Dnormals(2,5) = ((Dpoints(3,4) - Dpoints(3,8)) * (Dpoints(1,5) - Dpoints(1,8))) &
                 - ((Dpoints(1,4) - Dpoints(1,8)) * (Dpoints(3,5) - Dpoints(3,8)))
 
   Dnormals(3,5) = ((Dpoints(1,4) - Dpoints(1,8)) * (Dpoints(2,5) - Dpoints(2,8))) &
                 - ((Dpoints(2,4) - Dpoints(2,8)) * (Dpoints(1,5) - Dpoints(1,8)))
-  
+
   ! compute the face normals 6
   Dnormals(1,6) = ((Dpoints(2,7) - Dpoints(2,6)) * (Dpoints(3,5) - Dpoints(3,6))) &
                 - ((Dpoints(3,7) - Dpoints(3,6)) * (Dpoints(2,5) - Dpoints(2,6)))
-                
+
   Dnormals(2,6) = ((Dpoints(3,7) - Dpoints(3,6)) * (Dpoints(1,5) - Dpoints(1,6))) &
                 - ((Dpoints(1,7) - Dpoints(1,6)) * (Dpoints(3,5) - Dpoints(3,6)))
 
   Dnormals(3,6) = ((Dpoints(1,7) - Dpoints(1,6)) * (Dpoints(2,5) - Dpoints(2,6))) &
                 - ((Dpoints(2,7) - Dpoints(2,6)) * (Dpoints(1,5) - Dpoints(1,6)))
-  
-  
+
+
   do i=1,6
     length=sqrt(Dnormals(1,i)**2+Dnormals(2,i)**2+Dnormals(3,i)**2)
     Dnormals(1,i)=Dnormals(1,i)/length
     Dnormals(2,i)=Dnormals(2,i)/length
     Dnormals(3,i)=Dnormals(3,i)/length
   end do
-  
-  
+
+
   ! calculate all p-v
   Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,1)
-  
+
   Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,2)
-  
+
   Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,3)
-  
+
   Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,4)
-  
+
   Dpv(1:3,5)= DP1(1:3,1) - Dpoints(1:3,5)
-  
+
   Dpv(1:3,6)= DP1(1:3,1) - Dpoints(1:3,6)
-  
+
   ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
   ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
   ddot3 = Dpv(1,3) * Dnormals(1,3) + Dpv(2,3) * Dnormals(2,3) + Dpv(3,3) * Dnormals(3,3)
   ddot4 = Dpv(1,4) * Dnormals(1,4) + Dpv(2,4) * Dnormals(2,4) + Dpv(3,4) * Dnormals(3,4)
   ddot5 = Dpv(1,5) * Dnormals(1,5) + Dpv(2,5) * Dnormals(2,5) + Dpv(3,5) * Dnormals(3,5)
   ddot6 = Dpv(1,6) * Dnormals(1,6) + Dpv(2,6) * Dnormals(2,6) + Dpv(3,6) * Dnormals(3,6)
-  
+
   if((ddot1 .le. eps).and.(ddot2 .le. eps).and.(ddot3 .le. eps).and.&
      (ddot4 .le. eps).and.(ddot5 .le. eps).and.(ddot6 .le. eps))then
     binside = .true.
   else
     binside = .false.
   end if
- 
+
   end subroutine
-  
+
 !************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_isIntersection_face(&
       Dpoint1,Dpoint2,Dface, bintersect)
-  
+
 !<description>
 ! This routine calculates whether there is
 ! an intersection between the face Dface and the
@@ -1074,10 +1074,10 @@ contains
 
   ! second point on ray
   real(DP), dimension(3), intent(in) :: Dpoint2
-  
+
   ! Vertices of the face
   real(DP), dimension(3,4), intent(in) :: Dface
-  
+
   ! TRUE if the two rays intersect. FALSE otherwise.
   logical, intent(out) :: bintersect
 !</result>
@@ -1089,7 +1089,7 @@ contains
     ! we split up the face into two triangles
     real(DP), dimension(3,3) :: Dtri1
     real(DP), dimension(3,3) :: Dtri2
-    
+
     ! build the first triangle
     Dtri1(1:3,1)=Dface(1:3,1)
     Dtri1(1:3,2)=Dface(1:3,2)
@@ -1099,14 +1099,14 @@ contains
     Dtri2(1:3,1)=Dface(1:3,2)
     Dtri2(1:3,2)=Dface(1:3,3)
     Dtri2(1:3,3)=Dface(1:3,4)
-    
+
     ! test for intersection
     call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri1,bintersect)
-    
+
     if (bintersect) then
       return
     end if
-    
+
     ! test for intersection
     call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri2,bintersect)
 
@@ -1120,12 +1120,12 @@ contains
   end subroutine
 
 !************************************************************************
-  
+
 !<subroutine>
-  
+
   pure subroutine gaux_isIntersection_triangle(&
       Dpoint1,Dpoint2,Dtri, bintersect)
-      
+
 !<description>
 ! This routine calculates whether there is
 ! an intersection between the triangle Dtri and
@@ -1138,10 +1138,10 @@ contains
 
   ! 2nd point of the ray
   real(DP), dimension(3), intent(in) :: Dpoint2
-  
+
   ! Vertices of the face
   real(DP), dimension(3,3), intent(in) :: Dtri
-  
+
   ! TRUE if the two rays intersect. FALSE otherwise.
   logical, intent(out) :: bintersect
 !</result>
@@ -1149,7 +1149,7 @@ contains
 !</subroutine>
   real(dp) :: eps, dot, dot2, dot3, u, v, t
   real(dp), dimension(3) :: De1, De2, p, s, q, Ddirect
-  
+
   ! our epsilon when we test for zero
   eps = 0.000001_dp
   ! the algorithm is as follows, it is called the Moeller & Trumbore algorithm
@@ -1163,59 +1163,59 @@ contains
   !      |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),Ddirect))             |
 
   Ddirect(1:3) = Dpoint2(1:3) - Dpoint1(1:3)
-  
+
   De1(1:3) = Dtri(1:3,2) - Dtri(1:3,1)
   De2(1:3) = Dtri(1:3,3) - Dtri(1:3,1)
-      
+
   p(1) = Ddirect(2)*De2(3) - Ddirect(3)*De2(2)
   p(2) = Ddirect(3)*De2(1) - Ddirect(1)*De2(3)
   p(3) = Ddirect(1)*De2(2) - Ddirect(2)*De2(1)
-  
+
   dot = p(1) * De1(1) + p(2) * De1(2) + p(3) * De1(3)
-  
+
   if(dot > -eps .and. dot < eps)then
     bintersect = .false.
     return
   end if
-  
+
   dot = 1.0_dp/dot
-  
+
   s(:) = Dpoint1(:) - Dtri(:,1)
-  
+
   dot2 =  s(1) * p(1) + s(2) * p(2) + s(3) * p(3)
-  
+
   u = dot * dot2
-  
+
   if(u < 0.0_dp .or. u > 1.0_dp)then
     bintersect = .false.
     return
   end if
-  
+
   q(1) = s(2)*De1(3) - s(3)*De1(2)
   q(2) = s(3)*De1(1) - s(1)*De1(3)
   q(3) = s(1)*De1(2) - s(2)*De1(1)
 
   dot3 =  q(1) * Ddirect(1) + q(2) * Ddirect(2) + q(3) * Ddirect(3)
-  
+
   v = dot * dot3
-  
+
   if(v < 0.0_dp .or. v > 1.0_dp)then
     bintersect = .false.
     return
   end if
-  
+
   t = dot * (De2(1) * q(1) + De2(2) * q(2) + De2(3) * q(3))
-  
+
   if(t > 0.0_dp .and. t < 1.0_dp)then
     bintersect = .true.
   end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine gaux_calcDistPEdg2D(DpointA,Dedge1,Dedge2,dist,t)
 
 !<description>
@@ -1242,14 +1242,14 @@ contains
   ! parameter in the edge equation: edge=Dedge1+t*(Dedge2-Dedge1), t in [0,1]
   real(dp) :: r2
   real(DP), dimension(2) :: r,YP
-  
+
   r(:)=Dedge2(:)-Dedge1(:)
-  
+
   r2=r(1)**2+r(2)**2
   YP(:)=DpointA(:)-Dedge1(:)
   t=r(1)*YP(1)+r(2)*YP(2)
   t=t/r2
-  
+
   if(t .le. 0.0_dp)then
     dist = sqrt(YP(1)**2 + YP(2)**2)
     return
@@ -1266,11 +1266,11 @@ contains
   end if
 
   end subroutine gaux_calcDistPEdg2D
-  
+
 !************************************************************************
 
 !<subroutine>
-  
+
  pure subroutine gaux_projectPointPlane(DPoint,DR1,DR2,DQ,DQP)
 !<description>
   ! This routine projects a point onto a plane.
@@ -1296,20 +1296,20 @@ contains
   ! local variables
   real(DP) :: d,n,q
   real(DP), dimension(3) :: DN, DNscaled
-  
+
   DN(1)=DR1(2)*DR2(3)-DR1(3)*DR2(2)
   DN(2)=DR1(3)*DR2(1)-DR1(1)*DR2(3)
   DN(3)=DR1(1)*DR2(2)-DR1(2)*DR2(1)
-  
+
   n=sqrt(DN(1)**2 + DN(2)**2 + DN(3)**2)
   DN(:)=DN(:)/n
-  
+
   d = -1.0_dp * (DN(1)*DPoint(1)+DN(2)*DPoint(2)+DN(3)*DPoint(3))
-  
+
   q = (DQ(1)*DN(1)+DQ(2)*DN(2)+DQ(3)*DN(3))+d
 
   DNscaled(:)=q*DN(:)
-  
+
   DQP(:)=DQ(:)-DNscaled(:)
 
   end subroutine
@@ -1319,7 +1319,7 @@ contains
 !<subroutine>
 
   pure subroutine gaux_isInElement_hexa_aligned(dx,dy,dz,Dpoints,binside)
-  
+
 !<description>
   ! Checks whether a point (dx,dy,dz) is inside of a hexahedron
   ! The subroutine is faster than the general subroutine
@@ -1330,7 +1330,7 @@ contains
 !<input>
   ! Point to check
   real(DP), intent(in) :: dx,dy,dz
-  
+
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order!
   !
@@ -1354,22 +1354,22 @@ contains
   real(DP) :: xmin,xmax,ymin,ymax,zmin,zmax,eps
   integer :: i
   logical :: b2
-  
+
   DP1(1,1)=dx
   DP1(2,1)=dy
   DP1(3,1)=dz
-  
+
   eps=1e-10
-  
+
   xmin=1e+32
   xmax=-1e+32
   ymin=1e+32
   ymax=-1e+32
   zmin=1e+32
   zmax=-1e+32
-  
+
   do i=1,8
-  
+
     if(Dpoints(1,i).lt.xmin)then
       xmin=Dpoints(1,i)
     end if
@@ -1390,9 +1390,9 @@ contains
     if(Dpoints(3,i).gt.zmax)then
       zmax=Dpoints(3,i)
     end if
-    
+
   end do
-  
+
   if((dx .ge. xmin).and.(dx .le. xmax).and. &
      (dy .ge. ymin).and.(dy .le. ymax).and. &
      (dz .ge. zmin).and.(dz .le. zmax))then
@@ -1400,7 +1400,7 @@ contains
   else
      binside=.false.
   end if
-  
+
   end subroutine
 
 !************************************************************************
@@ -1408,7 +1408,7 @@ contains
 !<subroutine>
 
   pure subroutine gaux_intersect_quadcircle(drad,Dc,Dquad,Iresult,Dintersection)
-  
+
 !<description>
   ! This routine calculates the number of intersections
   ! of a circle with a quad and returns the intersection points
@@ -1419,7 +1419,7 @@ contains
   real(DP), intent(in) :: drad
   ! the center of the circle
   real(DP), dimension(2),intent(in) :: Dc
-  
+
   ! The four corner vertices of the quad
   real(DP), dimension(2,4), intent(in) :: Dquad
 !</input>
@@ -1450,7 +1450,7 @@ contains
   real(DP), dimension(2,2) :: Dedge
   real(DP), dimension(2,2) :: Dintersec
   integer :: i,iintersections
-  
+
   Dintersection=0
   Iresult=0
   ! loop over all edges of the quad
@@ -1464,9 +1464,9 @@ contains
     Dintersection(:,2*i-1)=Dintersec(:,1)
     Dintersection(:,2*i)=Dintersec(:,2)
   end do
-  
+
   end subroutine
-  
+
 !************************************************************************
 
 !<subroutine>
@@ -1509,17 +1509,17 @@ contains
 	Ddir(:)=Dedge(:,2)-Dedge(:,1)
 
 	Dp1(:)=Dedge(:,1)
-	
+
 	Ddelta(:)=Dp1(:)-Dc(:)
-	
+
 	dir2=Ddir(1)**2+Ddir(2)**2
-	
+
 	diff=(Ddelta(1)**2+Ddelta(2)**2)-drad**2
-	
+
 	dirdotdelta = Ddir(1)*Ddelta(1)+Ddir(2)*Ddelta(2)
-	
+
 	root = dirdotdelta**2 - dir2*diff
-	
+
 	! the term under the root is negative, there is no intersection
 	if(root < 0.0_dp)then
 	  return

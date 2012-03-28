@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _IDXMANAGER_H_
 #define _IDXMANAGER_H_
 

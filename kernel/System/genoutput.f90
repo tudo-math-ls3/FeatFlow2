@@ -232,7 +232,7 @@ module genoutput
   use fsystem
 
   implicit none
-  
+
   private
 
 !<constants>
@@ -242,24 +242,24 @@ module genoutput
   ! Output mode: Write to main log file / error log file (depending on whether
   ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
   integer(I32), parameter, public :: OU_MODE_LOG      = 2**0
-  
+
   ! Output mode: Write to terminal
   integer(I32), parameter, public :: OU_MODE_TERM     = 2**1
-  
+
   ! Output mode: Write to benchmark log file
   integer(I32), parameter, public :: OU_MODE_BENCHLOG = 2**2
 
   ! Output mode: Write to both, log file and terminal
   integer(I32), parameter, public :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
-  
+
 !</constantblock>
-  
+
 !<constantblock description="Output classification. Prints an additional classification string\\
 !                            when writing a string to a log file / terminal">
 
   ! Output classification: Standard message
   integer, parameter, public :: OU_CLASS_MSG      = 0
-  
+
   ! Output classification: Trace information, level 1
   integer, parameter, public :: OU_CLASS_TRACE1   = 1
 
@@ -271,7 +271,7 @@ module genoutput
 
   ! Output classification: System/Timer message
   integer, parameter, public :: OU_CLASS_SYSTEM   = 4
-  
+
   ! Output classification: Error message.
   integer, parameter, public :: OU_CLASS_ERROR    = 5
 
@@ -311,7 +311,7 @@ module genoutput
 
   ! Separator line: # character
   integer, parameter, public :: OU_SEP_HASH   = 9
-  
+
 !</constantblock>
 
 !<constantblock>
@@ -328,11 +328,11 @@ module genoutput
 
   ! Global device number for errors on terminal
   integer, public :: OU_ERROR               = 6
-  
+
   ! Global device number for log file. The log file is opened in output_init.
   ! <=0: no log file output.
   integer, public :: OU_LOG                 = 0
-  
+
   ! Global device number for error log file. The error log file is opened
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
@@ -372,7 +372,7 @@ module genoutput
   ! =2: Full. Write everything into the benchmark log file independent on whether
   !     OU_BENCHLOG is specified in coutputMode or not.
   integer, public, save :: cbenchLogPolicy = 1
-  
+
   ! Default date/time appending flag. Allows to configure the
   ! output submodule to automatically add the current date/time to the output.
   ! =OU_DTP_NONE:    do not add date/time (standard).
@@ -392,7 +392,7 @@ module genoutput
     module procedure output_line_std
     module procedure output_line_feast
   end interface
-  
+
   interface output_init
     module procedure output_init_simple
     module procedure output_init_logfile
@@ -435,7 +435,7 @@ contains
     !unit of the opened file
     integer, intent(out) :: iunit
   !</output>
-  
+
 !</subroutine>
 
     integer :: istatus ! status variable for opening procedure
@@ -473,7 +473,7 @@ contains
   ! Initialises the output system. The output system is configured to show all
   ! messages on the terminal, no log file is opened.
 !</description>
-  
+
 !</subroutine>
 
     call output_init_standard ("","")
@@ -492,13 +492,13 @@ contains
   ! messages are written to it. If not given, all output is directed to the
   ! terminal only.
 !</description>
-  
+
 !<input>
 
   ! Name of a log file for standard messages. If "" is specified,
   ! output messages are written to the standard output.
   character(LEN=*), intent(in) :: slogFilename
-  
+
 !</input>
 
 !</subroutine>
@@ -523,13 +523,13 @@ contains
   ! the error messages are directed to the log file -- or to the terminal, if
   ! slogFilename does not exist.
 !</description>
-  
+
 !<input>
 
   ! Name of a log file for standard messages. If ""
   ! is specified, output messages are written to the standard output.
   character(LEN=*), intent(in) :: slogFilename
-  
+
   ! Name of an log file for error messages. If ""
   ! is specified, errors are written to the standard log file. The name of
   ! the file may also coincide with slogFilename.
@@ -539,25 +539,25 @@ contains
   ! not present or set to "", benchmark messages are not written out. The
   ! name of the file may also coincide with slogFilename.
   character(LEN=*), intent(in), optional :: sbenchLogfile
-  
+
 !</input>
 
 !</subroutine>
 
     ! Close previously opened log files.
     call output_done ()
-    
+
     ! Name of the standard logfile given?
     if (slogFilename .ne. "") then
-    
+
       ! Open a log file
       call output_openLogfile(slogFilename, OU_LOG)
-    
+
     end if
 
     ! Name of the error logfile given?
     if (serrorFilename .ne. "") then
-    
+
       ! Both filenames the same?
       if (slogFilename .eq. serrorFilename) then
         OU_ERRORLOG = OU_LOG
@@ -565,18 +565,18 @@ contains
         ! Open an error log file
         call output_openLogfile(serrorFilename, OU_ERRORLOG)
       end if
-      
+
     else
-    
+
       ! Write error messages to standard log file.
       OU_ERRORLOG = OU_LOG
-    
+
     end if
 
     ! Name of the benchmark logfile given?
     if (present(sbenchLogfile)) then
       if (sbenchLogfile .ne. "") then
-      
+
         ! Both filenames the same?
         if (slogFilename .eq. serrorFilename) then
           OU_BENCHLOG = OU_LOG
@@ -584,14 +584,14 @@ contains
           ! Open a benchmark log file
           call output_openLogfile(sbenchLogfile, OU_BENCHLOG)
         end if
-        
+
       else
-      
+
         ! No benchmark output
         OU_BENCHLOG = 0
-      
+
       end if
-      
+
     else
 
       ! No benchmark output
@@ -612,12 +612,12 @@ contains
 !</description>
 
 !</subroutine>
-  
+
     ! Close all open channels.
     if (OU_LOG .gt. 0) close(OU_LOG)
     if (OU_ERRORLOG .gt. 0) close(OU_ERRORLOG)
     if (OU_BENCHLOG .gt. 0) close(OU_BENCHLOG)
-    
+
   end subroutine
 
 !************************************************************************************
@@ -664,18 +664,18 @@ contains
     integer :: ioc,cdateTime
     character(LEN=8) :: sdate
     character(LEN=10) :: stime
-    
+
     bsub = .false.
     if (present (ssubroutine)) then
       bsub = (ssubroutine .ne. '')
     end if
-    
+
     cdateTime = cdefaultDateTimeLogPolicy
     if (present(cdateTimeLogPolicy)) cdateTime = cdateTimeLogPolicy
-    
+
     ioc = OU_CLASS_MSG
     if (present(coutputClass)) ioc = coutputClass
-      
+
     if (.not. bsub) then
 
       select case (ioc)
@@ -694,7 +694,7 @@ contains
       case DEFAULT
         s = smessage
       end select
-    
+
     else
 
       select case (ioc)
@@ -717,10 +717,10 @@ contains
     end if
 
     if (cdateTime .ne. OU_DTP_NONE) then
-    
+
       ! Get date and time.
       call date_and_time(sdate,stime)
-      
+
       ! Reformat the message.
       select case (cdatetimeLogFormat)
       case (1)
@@ -746,7 +746,7 @@ contains
               stime(1:2)//":"//stime(3:4)//":"//stime(5:6)//": "//s
         end select
       end select
-    
+
     end if
 
 
@@ -774,7 +774,7 @@ contains
 !<input>
   ! The message to be written out.
   character(LEN=*), intent(in) :: smessage
-  
+
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
   integer(I32), intent(in), optional :: coutputMode
@@ -782,10 +782,10 @@ contains
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in), optional :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
-  
+
   ! OPTIONAL: When specifying bnolinebreak=TRUE, the output routine will
   ! not perform a line break after printing.
   logical, intent(in), optional :: bnolinebreak
@@ -805,7 +805,7 @@ contains
   ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
   ! as default parameter.
   integer, intent(in), optional :: cdateTimeLogPolicy
-  
+
 !</input>
 
 !</subroutine>
@@ -815,19 +815,19 @@ contains
   integer :: coClass, iofChannel, iotChannel
   logical :: bntrim, bnnewline
   character(LEN=len(smessage)+20+SYS_NAMELEN+10+8+3) :: smsg
-  
+
     ! Get the actual parameters.
-    
+
     coMode = OU_MODE_STD
     coClass = OU_CLASS_MSG
     bntrim = .false.
     bnnewline = .false.
-    
+
     if (present(coutputMode))  coMode = coutputMode
     if (present(coutputClass)) coClass = coutputClass
     if (present(bnotrim))      bntrim = bnotrim
     if (present(bnolinebreak)) bnnewline = bnolinebreak
-    
+
     ! Get the file and terminal output channel
     iotChannel = OU_TERMINAL
     if ((coClass .eq. OU_CLASS_ERROR) .or. &
@@ -836,12 +836,12 @@ contains
     iofChannel = OU_LOG
     if ((coClass .eq. OU_CLASS_ERROR) .or. &
         (coClass .eq. OU_CLASS_WARNING)) iofChannel = OU_ERRORLOG
-    
+
     if (bntrim .and. &
         ((coClass .eq. OU_CLASS_MSG) .or. &
          (coClass .eq. OU_CLASS_WARNING) .or. &
          (coClass .eq. OU_CLASS_ERROR)) ) then
-      
+
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
         if (bnnewline) then
@@ -850,7 +850,7 @@ contains
           write (iotChannel,'(A)') smessage
         end if
       end if
-      
+
       ! Output to log file?
       if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
         if (bnnewline) then
@@ -871,12 +871,12 @@ contains
           end if
         end if
       end if
-      
+
     else
-    
+
       ! Build the actual error message
       smsg = output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy)
-      
+
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
         if (bnnewline) then
@@ -885,7 +885,7 @@ contains
           write (iotChannel,'(A)') trim(smsg)
         end if
       end if
-      
+
       ! Output to log file?
       if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
         if (bnnewline) then
@@ -932,13 +932,13 @@ contains
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in) :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in) :: ssubroutine
-  
+
   ! The message to be written out.
   character(LEN=*), intent(in) :: smsg
-  
+
 !</input>
 
 !</subroutine>
@@ -976,10 +976,10 @@ contains
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in), optional :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
-  
+
   ! OPTIONAL: Number of linebreaks
   integer, intent(in), optional :: nlbrk
 
@@ -1043,10 +1043,10 @@ contains
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in), optional :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
-  
+
   ! OPTIONAL: Date/time appending flag. Allows to configure the
   ! output submodule to automatically add the current date/time to the output.
   ! =OU_DTP_NONE:    do not add date/time (standard).
@@ -1107,7 +1107,7 @@ contains
                             csepType
       call sys_halt()
     end select
-    
+
     write (cstr,saux)
 
     call output_line_std (trim(cstr), coutputClass, coutputMode, ssubroutine)
@@ -1139,14 +1139,14 @@ contains
 
   ! OPTIONAL: The message to be written out.
   character(LEN=*), intent(in), optional :: smsg
-  
+
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in), optional :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
-  
+
   ! OPTIONAL: Date/time appending flag. Allows to configure the
   ! output submodule to automatically add the current date/time to the output.
   ! =OU_DTP_NONE:    do not add date/time (standard).
@@ -1161,7 +1161,7 @@ contains
 !</subroutine>
 
   integer(I32) :: coMode
-  
+
     select case (ioutputLevel)
     case (:0)
       coMode = 0
@@ -1207,14 +1207,14 @@ contains
   ! Type of the separator line. One of the OU_SEP_xxxx constants
   ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
   integer, intent(in) :: csepType
-  
+
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
   integer, intent(in), optional :: coutputClass
-  
+
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
-  
+
   ! OPTIONAL: Date/time appending flag. Allows to configure the
   ! output submodule to automatically add the current date/time to the output.
   ! =OU_DTP_NONE:    do not add date/time (standard).
@@ -1229,7 +1229,7 @@ contains
 !</subroutine>
 
   integer(I32) :: coMode
-  
+
     select case (ioutputLevel)
     case (:0)
       coMode = 0
@@ -1242,5 +1242,5 @@ contains
     call output_separator (csepType, coutputClass, coMode, ssubroutine, cdateTimeLogPolicy)
 
   end subroutine
-  
+
 end module

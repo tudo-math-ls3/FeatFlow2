@@ -32,37 +32,37 @@ module timescalehierarchy
   use boundary
   use basicgeometry
   use triangulation
-  
+
   use timediscretisation
-  
+
   implicit none
-  
+
   private
-  
+
   public :: t_timescaleHierarchy
   public :: tmsh_createHierarchy
   public :: tmsh_releaseHierarchy
   public :: tmsh_printHierStatistics
-  
+
 !<types>
 
 !<typeblock>
 
   ! A structure that describes a hierarchy of time discretisations.
   type t_timescaleHierarchy
-  
+
     ! Number of levels available in this structure.
     integer :: nlevels = 0
-    
+
     ! Absolute start time of the simulation
     real(DP) :: dtimeInit = 0.0_DP
-    
+
     ! Maximum time of the simulation
     real(DP) :: dtimeMax = 0.0_DP
 
     ! Level information.
     type(t_timeDiscretisation), dimension(:), pointer :: p_RtimeLevels => null()
-    
+
   end type
 
 !</typeblock>
@@ -82,14 +82,14 @@ contains
   ! based on a coarse time mesh rcoarseDiscr.
   ! The coarse mesh is refined ilevel-1 times.
 !</description>
- 
+
 !<input>
   ! Definition of the underlying time coarse mesh.
   type(t_timeDiscretisation), intent(in) :: rcoarseDiscr
-  
+
   ! Number of pre-refinements to get the coarse time mesh from rcoarseDiscr.
   integer, intent(in) :: npreref
-  
+
   ! Number of refinement levels in the hierarchy including the coarse mesh.
   integer, intent(in) :: nlevels
 
@@ -103,7 +103,7 @@ contains
   ! A new time scale level structure.
   type(t_timescaleHierarchy), intent(out) :: rtimeHierarchy
 !</output>
-  
+
 !</subroutine>
 
     integer :: i
@@ -117,13 +117,13 @@ contains
     rtimeHierarchy%dtimeInit       = rcoarseDiscr%dtimeInit
     rtimeHierarchy%dtimeMax        = rcoarseDiscr%dtimeMax
     allocate(rtimeHierarchy%p_RtimeLevels(nlevels))
-    
+
     ! Initialise the coarse mesh. Copy rcoarseDiscr.
     rtimeHierarchy%p_RtimeLevels(1) = rcoarseDiscr
-    
+
     ! Pre-refine the coarse mesh.
     call tdiscr_refineRegular (rtimeHierarchy%p_RtimeLevels(1),npreref)
-        
+
     ! Refine.
     do i=2,nlevels
 
@@ -137,7 +137,7 @@ contains
       rtimeHierarchy%p_RtimeLevels(i) = rtimeHierarchy%p_RtimeLevels(i-1)
       call tdiscr_refineRegular (rtimeHierarchy%p_RtimeLevels(i),1)
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -154,21 +154,21 @@ contains
   ! The hierarchy structure to release.
   type(t_timescaleHierarchy), intent(inout) :: rtimeHierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
-    
+
     ! Release all levels
     do i=rtimeHierarchy%nlevels,1,-1
       call tdiscr_done (rtimeHierarchy%p_RtimeLevels(i))
     end do
-    
+
     ! Clean up the rest
     deallocate (rtimeHierarchy%p_RtimeLevels)
-    
+
     rtimeHierarchy%nlevels = 0
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -185,15 +185,15 @@ contains
   ! The hierarchy structure.
   type(t_timescaleHierarchy), intent(inout) :: rtimeHierarchy
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     integer :: i
-  
+
     do i=1,rtimeHierarchy%nlevels
       call tdiscr_infoStatistics (rtimeHierarchy%p_RtimeLevels(i),i .eq. 1,i)
     end do
-    
+
   end subroutine
 
 end module

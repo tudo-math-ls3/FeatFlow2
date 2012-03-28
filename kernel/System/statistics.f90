@@ -140,25 +140,25 @@ module statistics
   use genoutput
 
   implicit none
-  
+
   private
 
 !<constants>
-  
+
   !<constantblock description="Timer types">
-  
+
   ! Undefined timer, timer not running.
   integer, parameter, public :: STAT_TIMERNOTRUNNING = 0
-  
+
   ! Short-term timer
   integer, parameter, public :: STAT_TIMERSHORT = 2**0
-  
+
   ! Long-term timer
   integer, parameter, public :: STAT_TIMERLONG = 2**1
-  
+
   ! Standard timer for both, short and long time time measurement
   integer, parameter, public :: STAT_TIMERSTANDARD = STAT_TIMERSHORT + STAT_TIMERLONG
-  
+
   !</constantblock>
 
 !</constants>
@@ -168,20 +168,20 @@ module statistics
 !<typeblock>
   ! Timer object
   type t_timer
-  
+
     ! Type of timer. A STAT_TIMERxxxx constant
     integer :: ctype = STAT_TIMERNOTRUNNING
-    
+
     !<!-- Short time timer -->
-  
+
     ! Short-term timer: Elapsed CPU time (clock cycles / frequency)
     ! warning: might be inaccurate for GPU code or
     ! parallel code
     real(DP) :: delapsedCPU = 0.0_DP
-    
+
     ! Short-term timer: Elapsed real time (wall clock)
     real(DP) :: delapsedReal = 0.0_DP
-    
+
     ! Short-term timer: Start CPU time (clock cycles / frequency)
     ! warning: might be inaccurate for GPU code or
     ! parallel code
@@ -189,22 +189,22 @@ module statistics
 
     ! Short-term timer: Start real time (wall clock)
     real(DP) :: dstartReal = 0.0_DP
-    
+
     ! Value of sysclock counter during last call to stat_startTimer
     !  (to avoid floating point cancellation effects
     integer :: istartCount = 0
-    
+
     !<!-- Long-term timer -->
-    
+
     ! Long-term timer: Start date (wall clock); format is a Julian date.
     integer :: istartCPUdate = 0
-    
+
     ! Long-term timer: Start time (wall clock) in ms relative to 0:00:00
     ! of the current day.
     integer :: istartCPUtime = 0
-    
+
   end type t_timer
-  
+
   public :: t_timer
 !</typeblock>
 
@@ -219,7 +219,7 @@ module statistics
   public :: stat_rcloneTimer
   public :: stat_calender_to_julian
   public :: stat_sampleTimer
-  
+
 contains
 
 ! ***************************************************************************
@@ -266,10 +266,10 @@ contains
 !<input>
     ! Year
     integer, intent(in) :: year
-    
+
     ! Month
     integer, intent(in) :: month
-    
+
     ! Day
     integer, intent(in) :: day
 
@@ -286,7 +286,7 @@ contains
               1461*(year+4800+(month-14)/12)/4+&
               367*(month-2-((month-14)/12)*12)/12-&
               3*((year+4900+(month-14)/12)/100)/4
-              
+
   end function stat_calender_to_julian
 
 ! ***************************************************************************
@@ -350,7 +350,7 @@ contains
     ! Set the type
     rtimer%ctype = STAT_TIMERSTANDARD
     if (present(ctype)) rtimer%ctype = ctype
-    
+
     ! Start the short-term time measurement?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
@@ -360,18 +360,18 @@ contains
 
       call cpu_time(dtime)
       rtimer%dstartCPU = real(dtime, DP)
-      
+
     end if
-    
+
     ! Start the long-term time-measurement?
     if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
-      
+
       call date_and_time(values=itimeLong)
-      
+
       ! Get the Julian date
       rtimer%istartCPUdate = &
           stat_calender_to_julian(itimeLong(1), itimeLong(2), itimeLong(3))
-          
+
       ! Get the time since 0:00:00 in ms.
       rtimer%istartCPUtime = itimeLong(5) * 60 * 60 * 1000 + &
                              itimeLong(6) * 60 * 1000 + &
@@ -386,7 +386,7 @@ contains
 !<subroutine>
 
   subroutine stat_stopTimer(rtimer)
-  
+
 !<description>
   ! Stops the given timer object and accumulates the time since it was started
   ! with the elapsed time this object already holds. In other words:
@@ -429,39 +429,39 @@ contains
         ! get the correct timespan.
         dtmp = dtmp + real(icmax,DP)/real(irate,DP)
       endif
-      
+
       ! Save the wall clock time. This may be modified below...
       delapsed = max(dtmp, 0.0_DP)
-      
+
       ! Get the CPU time.
       call cpu_time(dtime)
       dcurrentCPU = real(dtime, DP)
       rtimer%delapsedCPU = rtimer%delapsedCPU + (dcurrentCPU - rtimer%dstartCPU)
     end if
-    
+
     ! Is that a long-term timer?
     if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
-    
+
       call date_and_time(values=itimeLong)
-      
+
       ! Get the Julian date
       iCPUdate = &
           stat_calender_to_julian(itimeLong(1), itimeLong(2), itimeLong(3))
-          
+
       ! Get the time since 0:00:00 in ms.
       iCPUtime = itimeLong(5) * 60 * 60 * 1000 + &
                              itimeLong(6) * 60 * 1000 + &
                              itimeLong(7) * 1000 + &
                              itimeLong(8)
-                             
+
       ! Calculate the actual time since the last start_timer:
       dtmp = real(iCPUdate - rtimer%istartCPUdate,dp) * dsecPerDay + &
              real(iCPUtime - rtimer%istartCPUtime,dp) * 0.001_DP
-             
+
       ! If both, short- and long-term timer, are activated, take the
       ! wall time that better suits the correct time.
       if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
-      
+
         ! If the difference is more that let us say 100 sec, take
         ! the approximated time. This should also be the case if the
         ! timer from system_clock gets more than one overflow...
@@ -469,17 +469,17 @@ contains
         if (abs(dtmp-delapsed) .gt. 100.0_DP) then
           delapsed = max(dtmp, 0.0_DP)
         end if
-      
+
       else
         ! That is our wall clock time.
         delapsed = max(dtmp, 0.0_DP)
       end if
-      
+
     end if
-    
+
     ! Sum up the wall clock time
     rtimer%delapsedReal = rtimer%delapsedReal + delapsed
-    
+
     ! Switch off the timer.
     rtimer%dstartReal = 0.0_DP
     rtimer%dstartCPU = 0.0_DP
@@ -487,15 +487,15 @@ contains
     rtimer%istartCPUdate = 0
     rtimer%istartCPUtime = 0
     rtimer%ctype = STAT_TIMERNOTRUNNING
-      
+
   end subroutine stat_stopTimer
-  
+
 ! ***************************************************************************
 
 !<subroutine>
 
   subroutine stat_sampleTimer(rtimer,delapsedTime)
-  
+
 !<description>
   ! This routine calculates the wallclock time from starting the timer with
   ! stat_startTimer until now but does not stop the timer.
@@ -540,34 +540,34 @@ contains
         ! get the correct timespan.
         dtmp = dtmp + real(icmax,DP)/real(irate,DP)
       endif
-      
+
       ! Save the wall clock time. This may be modified below...
       delapsedTime = max(dtmp, 0.0_DP)
     end if
-    
+
     ! Is that a long-term timer?
     if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
-    
+
       call date_and_time(values=itimeLong)
-      
+
       ! Get the Julian date
       iCPUdate = &
           stat_calender_to_julian(itimeLong(1), itimeLong(2), itimeLong(3))
-          
+
       ! Get the time since 0:00:00 in ms.
       iCPUtime = itimeLong(5) * 60 * 60 * 1000 + &
                              itimeLong(6) * 60 * 1000 + &
                              itimeLong(7) * 1000 + &
                              itimeLong(8)
-                             
+
       ! Calculate the actual time since the last start_timer:
       dtmp = real(iCPUdate - rtimer%istartCPUdate,dp) * dsecPerDay + &
              real(iCPUtime - rtimer%istartCPUtime,dp) * 0.001_DP
-             
+
       ! If both, short- and long-term timer, are activated, take the
       ! wall time that better suits the correct time.
       if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
-      
+
         ! If the difference is more that let us say 100 sec, take
         ! the approximated time. This should also be the case if the
         ! timer from system_clock gets more than one overflow...
@@ -575,16 +575,16 @@ contains
         if (abs(dtmp-delapsedTime) .gt. 100.0_DP) then
           delapsedTime = max(dtmp, 0.0_DP)
         end if
-      
+
       else
         ! That is our wall clock time.
         delapsedTime = max(dtmp, 0.0_DP)
       end if
-      
+
     end if
-    
+
   end subroutine stat_sampleTimer
-  
+
   ! ***************************************************************************
 
 !<function>

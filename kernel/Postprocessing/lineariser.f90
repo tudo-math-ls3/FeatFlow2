@@ -79,12 +79,12 @@ module lineariser
   public :: lin_evalAtDOFScalar
   public :: lin_calcDofCoords
   public :: lin_calcDofCoordsBlock
-  
+
   interface lin_lineariseVectorGlobal
     module procedure lin_lineariseVecScalarGlobal
     module procedure lin_lineariseVecBlockGlobal
   end interface
-  
+
   interface lin_calcDofCoords
     module procedure lin_calcDofCoordsSc
     module procedure lin_calcDofCoordsBl
@@ -145,7 +145,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulationSrc
     integer, dimension(:), pointer :: p_ImacroElements
 
-    
+
     ! Get discretization of source vector
     if (associated(rvectorSrc%p_rspatialDiscr)) then
       p_rspatialDiscrSrc => rvectorSrc%p_rspatialDiscr
@@ -167,7 +167,7 @@ contains
     ! Generate simplex mesh
     call lin_refineTriaGlobal(p_rtriangulationSrc, rtriangulationDest,&
         nrefsteps, p_ImacroElements, bdiscontinuous)
-    
+
     ! Generate simplex discretisation
     select case(rtriangulationDest%ndim)
     case (NDIM1D)
@@ -184,11 +184,11 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lin_lineariseVecScalarGlobal')
       call sys_halt()
     end select
-    
+
     ! Create scalar vector
     call lsyssc_createVector(rspatialDiscrDest, rvectorDest,&
         .false., rvectorSrc%cdataType)
-    
+
     ! Linearise source vector
     select case(clintype)
     case (LIN_TYPE_DOFEVAL)
@@ -200,7 +200,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lin_lineariseVecScalarGlobal')
       call sys_halt()
     end select
-    
+
     ! Deallocate temporal memory
     deallocate(p_ImacroElements)
 
@@ -322,16 +322,16 @@ contains
             rblockDiscrDest%RspatialDiscr(iblock), rtriangulationDest,&
             rvectorDest%RvectorBlock(iblock), p_ImacroElements)
       end do
-      
+
     case default
       call output_line('Unsupported type of linearisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lin_lineariseVecBlockGlobal')
       call sys_halt()
     end select
-    
+
     ! Deallocate temporal memory
     deallocate(p_ImacroElements)
-    
+
   end subroutine lin_lineariseVecBlockGlobal
 
   !*****************************************************************************
@@ -384,10 +384,10 @@ contains
 
     bisDiscontinuous = .false.
     if (present(bdiscontinuous)) bisDiscontinuous = bdiscontinuous
-    
+
     ! What spatial dimension are we?
     select case(rtriangulationSrc%ndim)
-      
+
     case(NDIM1D)
       ! Set pointers
       call storage_getbase_double2d(&
@@ -396,7 +396,7 @@ contains
           rtriangulationSrc%h_IverticesAtElement, p_IverticesAtElementSrc)
       call storage_getbase_int(&
           rtriangulationSrc%h_InodalProperty, p_InodalPropertySrc)
-      
+
       ! Most attributes are initialised by INTENT(OUT) with standard values
       rtriangulationDest%ndim = NDIM1D
       rtriangulationDest%NNVE = 2
@@ -406,7 +406,7 @@ contains
       ! The number of elements/vertices will be updated below
       rtriangulationDest%NVT  = rtriangulationSrc%NVT
       rtriangulationDest%NEL  = rtriangulationSrc%NEL
-      
+
       ! Duplicate shared vertices?
       if (bisDiscontinuous)&
           call lin_prepareUnshareVertices(p_IverticesAtElementSrc,&
@@ -431,20 +431,20 @@ contains
           ST_DOUBLE, rtriangulationDest%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d(&
           rtriangulationDest%h_DvertexCoords, p_DvertexCoordsDest)
-      
+
       ! Allocate memory for vertices at element list
       Isize = (/2, rtriangulationDest%NEL/)
       call storage_new ('lin_refineTriaGlobal', 'KVERT', Isize,&
           ST_INT, rtriangulationDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int2d(&
           rtriangulationDest%h_IverticesAtElement, p_IverticesAtElementDest)
-      
+
       ! Allocate memory for nodal property array
       call storage_new ('lin_refineTriaGlobal', 'KNPR', rtriangulationDest%NVT,&
           ST_INT, rtriangulationDest%h_InodalProperty, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(&
           rtriangulationDest%h_InodalProperty, p_InodalPropertyDest)
-      
+
       ! Copy arrays which do not change
       call storage_copy(rtriangulationSrc%h_IboundaryCpIdx,&
           rtriangulationDest%h_IboundaryCpIdx)
@@ -458,7 +458,7 @@ contains
           p_DvertexCoordsSrc, p_DvertexCoordsDest, 1, rtriangulationSrc%NVT)
       call lalg_copyVector(&
           p_IverticesAtElementSrc, p_IverticesAtElementDest, 2, rtriangulationSrc%NEL)
-      
+
       ! Make a backup of some quantities
       nel = rtriangulationSrc%NEL
       nvt = rtriangulationSrc%NVT
@@ -467,7 +467,7 @@ contains
         if (bisDiscontinuous)&
             call lin_unshareVertices(p_DvertexCoordsDest,&
             p_IverticesAtElementDest, p_InodalPropertyDest, nvt, nel)
-      
+
       ! Refine mesh globally
       if (present(p_ImacroElements)) then
         allocate(p_ImacroElements(rtriangulationDest%NEL))
@@ -479,7 +479,7 @@ contains
             p_InodalPropertyDest, p_ImacroElementsTmp, nvt, nel, .true., nrefsteps)
         deallocate(p_ImacroElementsTmp)
       end if
-      
+
 
     case (NDIM2D)
       ! Set pointers
@@ -493,18 +493,18 @@ contains
           rtriangulationSrc%h_InodalProperty, p_InodalPropertySrc)
       call storage_getbase_int(&
           rtriangulationSrc%h_IverticesAtBoundary, p_IverticesAtBoundarySrc)
-     
+
       ! Most attributes are initialised by INTENT(OUT) with standard values.
       rtriangulationDest%ndim = NDIM2D
       rtriangulationDest%NNVE = 3
       rtriangulationDest%NBCT = rtriangulationSrc%NBCT
-      
+
       ! The number of elements/vertices/edges will be updated below
       rtriangulationDest%NVBD = rtriangulationSrc%NVBD
       rtriangulationDest%NVT  = rtriangulationSrc%NVT
       rtriangulationDest%NEL  = rtriangulationSrc%NEL
       rtriangulationDest%NMT  = rtriangulationSrc%NMT
-      
+
       ! Duplicate shared vertices?
       if (bisDiscontinuous)&
           call lin_prepareUnshareVertices(p_IverticesAtElementSrc,&
@@ -517,17 +517,17 @@ contains
       if ((rtriangulationSrc%NNVE .eq. 3) .or.&
           (rtriangulationSrc%NEL  .eq. &
           rtriangulationSrc%InelOfType(TRIA_NVETRI2D))) then
-        
+
         ! Compute number of vertices/elements after global refinement
         do istep = 1, nrefsteps
           ! New vertices are inserted at edge midpoints
           rtriangulationDest%NVT = rtriangulationDest%NVT + rtriangulationDest%NMT
-          
+
           ! Each edge is subdivided into two edges (also on the boundary)
           ! Moreover, each element gives rise to three new internal edges
           rtriangulationDest%NMT  = 2*rtriangulationDest%NMT+3*rtriangulationDest%NEL
           rtriangulationDest%NVBD = 2*rtriangulationDest%NVBD
-          
+
           ! Each element is subdivided into four elements
           rtriangulationDest%NEL = 4*rtriangulationDest%NEL
         end do
@@ -567,11 +567,11 @@ contains
             ST_INT, rtriangulationDest%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         call storage_getbase_int(&
             rtriangulationDest%h_IverticesAtBoundary, p_IverticesAtBoundaryDest)
-                
+
         ! Copy arrays which do not change its size
         call storage_copy(rtriangulationSrc%h_IboundaryCpIdx,&
             rtriangulationDest%h_IboundaryCpIdx)
-        
+
         ! Copy data from source to destination triangulation
         call lalg_copyVector(&
             p_InodalPropertySrc, p_InodalPropertyDest, rtriangulationSrc%NVT)
@@ -606,16 +606,16 @@ contains
             end do
           end if
         end if
-        
+
         ! Make a backup of some quantities
         nel = rtriangulationSrc%NEL
         nvt = rtriangulationSrc%NVT
-        
+
         ! Duplicate shared vertices?
         if (bisDiscontinuous)&
             call lin_unshareVertices(p_DvertexCoordsDest,&
             p_IverticesAtElementDest, p_InodalPropertyDest, nvt, nel)
-        
+
         ! Refine mesh globally
         if (present(p_ImacroElements)) then
           allocate(p_ImacroElements(rtriangulationDest%NEL))
@@ -629,9 +629,9 @@ contains
               p_ImacroElementsTmp, nvt, nel, .true., nrefsteps)
           deallocate(p_ImacroElementsTmp)
         end if
-        
+
       else
-        
+
         ! Triangles are kept as is and quadrilaterals are subdivided
         ! into two triangles without introducing new vertices.
         ! Hence, each quadrilateral gives rise to one new edge
@@ -644,33 +644,33 @@ contains
         do istep = 1, nrefsteps
           ! New vertices are inserted at edge midpoints
           rtriangulationDest%NVT = rtriangulationDest%NVT + rtriangulationDest%NMT
-          
+
           ! Each edge is subdivided into two edges (also on the boundary)
           ! Moreover, each element gives rise to three new internal edges
           rtriangulationDest%NMT  = 2*rtriangulationDest%NMT+3*rtriangulationDest%NEL
           rtriangulationDest%NVBD = 2*rtriangulationDest%NVBD
-          
+
           ! Each element is subdivided into four elements
           rtriangulationDest%NEL = 4*rtriangulationDest%NEL
         end do
 
         ! Destination triangulation has only triangles
         rtriangulationDest%InelOfType(TRIA_NVETRI2D) = rtriangulationDest%NEL
-        
+
         ! Allocate memory for coordinate vector
         Isize = (/2, rtriangulationDest%NVT/)
         call storage_new ('lin_refineTriaGlobal', 'DCORVG', Isize,&
             ST_DOUBLE, rtriangulationDest%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         call storage_getbase_double2d(&
             rtriangulationDest%h_DvertexCoords, p_DvertexCoordsDest)
-        
+
         ! Allocate auxiliary memory for vertices at element list
         Isize = (/rtriangulationSrc%NNVE, rtriangulationDest%NEL/)
         h_IverticesAtElement = ST_NOHANDLE
         call storage_new ('lin_refineTriaGlobal', 'KVERT', Isize,&
             ST_INT, h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         call storage_getbase_int2D(h_IverticesAtElement, p_IverticesAtElementTmp)
-        
+
         ! Allocate memory for vertices at element list
         Isize = (/3, rtriangulationDest%NEL/)
         call storage_new ('lin_refineTriaGlobal', 'KVERT', Isize,&
@@ -684,23 +684,23 @@ contains
             ST_INT, rtriangulationDest%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
         call storage_getbase_int2d(&
             rtriangulationDest%h_IneighboursAtElement, p_IneighboursAtElementDest)
-        
+
         ! Allocate memory for nodal property array
         call storage_new ('lin_refineTriaGlobal', 'KNPR', rtriangulationDest%NVT,&
             ST_INT, rtriangulationDest%h_InodalProperty, ST_NEWBLOCK_NOINIT)
         call storage_getbase_int(&
             rtriangulationDest%h_InodalProperty, p_InodalPropertyDest)
-        
+
         ! Allocate memory for vertices at boundary list
         call storage_new ('lin_refineTriaGlobal', 'KVBD', rtriangulationDest%NVBD,&
             ST_INT, rtriangulationDest%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         call storage_getbase_int(&
             rtriangulationDest%h_IverticesAtBoundary, p_IverticesAtBoundaryDest)
-        
+
         ! Copy arrays which do not change its size
         call storage_copy(rtriangulationSrc%h_IboundaryCpIdx,&
             rtriangulationDest%h_IboundaryCpIdx)
-        
+
         ! Copy data from source to destination triangulation and to
         ! the auxiliary list of vertices at elements
         call lalg_copyVector(&
@@ -710,7 +710,7 @@ contains
         call lalg_copyVector(&
             p_IverticesAtElementSrc, p_IverticesAtElementTmp,&
             rtriangulationSrc%NNVE, rtriangulationSrc%NEL)
-        
+
         if (bisDiscontinuous) then
           call lalg_clearVector(p_IneighboursAtElementDest)
         else
@@ -718,16 +718,16 @@ contains
               p_IneighboursAtElementSrc, p_IneighboursAtElementDest,&
               rtriangulationSrc%NNVE, rtriangulationSrc%NEL)
         end if
-        
+
         ! Make a backup of some quantities
         nel = rtriangulationSrc%NEL
         nvt = rtriangulationSrc%NVT
-        
+
         ! Duplicate shared vertices?
         if (bisDiscontinuous)&
             call lin_unshareVertices(p_DvertexCoordsDest,&
             p_IverticesAtElementTmp, p_InodalPropertyDest, nvt, nel)
-        
+
         ! Convert quadrilaterals into triangles and perform global refinement
         if (present(p_ImacroElements)) then
           allocate(p_ImacroElements(rtriangulationDest%NEL))
@@ -747,13 +747,13 @@ contains
               p_ImacroElementsTmp, nvt, nel, .false., nrefsteps)
           deallocate(p_ImacroElementsTmp)
         end if
-        
+
         ! Free temporal memory
         call storage_free(h_IverticesAtElement)
         call storage_free(rtriangulationDest%h_IneighboursAtElement)
-                
+
       end if
-      
+
     end select
 
     ! Regenerate boundary information
@@ -761,10 +761,10 @@ contains
   contains
 
     ! Here, some working routines follow
-    
+
     !**************************************************************
     ! Global refinement of triangulation in 1D
-    
+
     subroutine doRefine1D(DvertexCoords, IverticesAtElement, InodalProperty,&
         ImacroElements, NVT, NEL, binit, nrefsteps)
 
@@ -772,7 +772,7 @@ contains
       ! On output: vertex coordinates of destination triangulation
       ! DIMENSION(NDIM1D,NVT)
       real(DP), dimension(:,:), intent(inout) :: DvertexCoords
-      
+
       ! Vertices at element list
       ! On input: vertices at element list of source triangulation
       ! On output: vertices at element list of destination triangulation
@@ -783,7 +783,7 @@ contains
       ! On output: nodal property list of destination triangulation
       ! DIMENSION(NVT)
       integer, dimension(:), intent(inout) :: InodalProperty
-      
+
       ! On output: mapping between macro element in source triangulation
       ! and element in destination triangulation
       integer, dimension(:), intent(inout) :: ImacroElements
@@ -791,7 +791,7 @@ contains
       ! On input: number of vertices of source triangulation
       ! On output: number of vertices of destination triangulation
       integer, intent(inout) :: NVT
-      
+
       ! On input: number of elements of source triangulation
       ! On output: number of elements of destination triangulation
       integer, intent(inout) :: NEL
@@ -809,7 +809,7 @@ contains
       ! Make a backup of some quantities
       NEL0 = NEL
       NNEL = NEL
-      
+
       ! Initialse element mapping
       if (binit) then
         do iel = 1, NEL0
@@ -822,14 +822,14 @@ contains
 
         ! Loop over all elements of the source triangulation
         do iel = 1, NNEL
-          
+
           ! Get vertex numbers
           i1 = IverticesAtElement(1,iel)
           i2 = IverticesAtElement(2,iel)
-          
+
           ! Increment number of vertices
           NVT = NVT+1
-          
+
           ! Insert new interior vertex at the midpoint
           DvertexCoords(1,NVT) = 0.5_DP*(DvertexCoords(1,i1)+DvertexCoords(1,i2))
           InodalProperty(NVT)  = 0
@@ -857,10 +857,10 @@ contains
       end do
 
     end subroutine doRefine1D
-   
+
     !**************************************************************
     ! Global refinement of triangulation in 2D
-    
+
     subroutine doRefine2D(DvertexCoords, IverticesAtElement, IneighboursAtElement,&
         InodalProperty, ImacroElements, NVT, NEL, binit, nrefsteps)
 
@@ -868,7 +868,7 @@ contains
       ! On output: vertex coordinates of destination triangulation
       ! DIMENSION(NDIM2D,NVT)
       real(DP), dimension(:,:), intent(inout) :: DvertexCoords
-      
+
       ! Vertices at element list
       ! On input: vertices at element list of source triangulation
       ! On output: vertices at element list of destination triangulation
@@ -885,7 +885,7 @@ contains
       ! On output: nodal property list of destination triangulation
       ! DIMENSION(NVT)
       integer, dimension(:), intent(inout) :: InodalProperty
-      
+
       ! On output: mapping between macro element in source triangulation
       ! and element in destination triangulation
       integer, dimension(:), intent(inout) :: ImacroElements
@@ -893,7 +893,7 @@ contains
       ! On input: number of vertices of source triangulation
       ! On output: number of vertices of destination triangulation
       integer, intent(inout) :: NVT
-      
+
       ! On input: number of elements of source triangulation
       ! On output: number of elements of destination triangulation
       integer, intent(inout) :: NEL
@@ -909,11 +909,11 @@ contains
       real(DP), dimension(NDIM2D) :: Dcoords
       integer :: NEL0,NNEL,i1,i2,i3,i4,i5,i6,iel,istep,jel,kel
 
-      
+
       ! Make a backup of some quantities
       NEL0 = NEL
       NNEL = NEL
-      
+
       ! Initialse element mapping
       if (binit) then
         do iel = 1, NEL0
@@ -923,15 +923,15 @@ contains
 
       ! Perform global refinement steps
       do istep = 1, nrefsteps
-        
+
         ! Loop over all elements of the source triangulation
         do iel = 1, NNEL
-          
+
           ! Get vertex numbers
           i1 = IverticesAtElement(1,iel)
           i2 = IverticesAtElement(2,iel)
           i3 = IverticesAtElement(3,iel)
-          
+
           ! New vertices are inserted at the edge midpoints if
           ! (a) the edge is located at the boundary, i.e. there is no
           !     adjacent element neighbour
@@ -949,7 +949,7 @@ contains
             else
               InodalProperty(i4) = 0
             end if
-            
+
             ! Update neighbouring element list along the edge
             IneighboursAtElement(1,NEL+1) = jel
             IneighboursAtElement(3,NEL+2) = jel
@@ -990,7 +990,7 @@ contains
             else
               InodalProperty(i5) = 0
             end if
-            
+
             ! Update neighbouring element list along the edge
             IneighboursAtElement(1,NEL+2) = jel
             IneighboursAtElement(3,NEL+3) = jel
@@ -1001,7 +1001,7 @@ contains
               i5 = IverticesAtElement(ive,jel)
               if (all(Dcoords .eq. DvertexCoords(:,i5))) exit
             end do
-            
+
             ! We have found the midpoint vertex in the adjacent
             ! element. Update the neighbours at element list for both
             ! triangles located at the current edge (I2,I3)
@@ -1031,7 +1031,7 @@ contains
             else
               InodalProperty(i6) = 0
             end if
-            
+
             ! Update neighbouring element list along the edge
             IneighboursAtElement(1,NEL+3) = IneighboursAtElement(3,iel)
             IneighboursAtElement(3,NEL+1) = IneighboursAtElement(3,iel)
@@ -1060,12 +1060,12 @@ contains
               end if
             end do adj31
           end if
-          
+
           ! Update vertices at element lists of the refined triangle
           IverticesAtElement(1,iel) = i4
           IverticesAtElement(2,iel) = i5
           IverticesAtElement(3,iel) = i6
-          
+
           IverticesAtElement(1,NEL+1) = i1
           IverticesAtElement(2,NEL+1) = i4
           IverticesAtElement(3,NEL+1) = i6
@@ -1080,13 +1080,13 @@ contains
 
           ! Set mappings to macro element
           ImacroElements(NEL+1:NEL+3) = iel
-          
+
           ! Update neighbours at element list of the newly created
           ! elements and update list of the interior element
           IneighboursAtElement(2,NEL+1) = iel
           IneighboursAtElement(2,NEL+2) = iel
           IneighboursAtElement(2,NEL+3) = iel
-          
+
           IneighboursAtElement(1,iel) = NEL+2
           IneighboursAtElement(2,iel) = NEL+3
           IneighboursAtElement(3,iel) = NEL+1
@@ -1094,11 +1094,11 @@ contains
           ! Increment number of elements
           NEL = NEL+3
         end do
-        
+
         ! Update total number of elements
         NNEL = NEL
       end do
-      
+
       ! Convert element mapping to original source triangulation
       do iel = NEL0+1, NEL
         ImacroElements(iel) = ImacroElements(ImacroElements(iel))
@@ -1150,7 +1150,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:), pointer :: Icount
     integer :: iel,ive,ivt,ivar
-    
+
     ! Allocate temporal memory
     allocate(Dpoints(rtriangulationDest%ndim,rtriangulationDest%NNVE))
     allocate(Dvalues(rtriangulationDest%NNVE*rvectorDest%NVAR))
@@ -1162,7 +1162,7 @@ contains
         rtriangulationDest%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_int2d(&
         rtriangulationDest%h_IverticesAtElement, p_IverticesAtElement)
-    
+
     ! Initialise destination vector
     call lalg_clearVector(p_Ddata)
 
@@ -1197,10 +1197,10 @@ contains
               p_Ddata((ivt-1)*rvectorDest%NVAR+ivar)/real(Icount(ivt),DP)
         end do
       end do
-      
+
     ! Deallocate temporal memory
     deallocate(Dpoints, Dvalues, Icount)
-      
+
   end subroutine lin_evalAtDOFScalar
 
   !*****************************************************************************
@@ -1236,17 +1236,17 @@ contains
     ! On input: number of boundary vertices of source triangulation
     ! On output: number of boundary vertices of destination triangulation
     integer, intent(inout) :: NVBD
-    
+
     ! Total number of edges
     ! On input: number of edges of source triangulation
     ! On output: number of edges of destinationtriangulation
     integer, intent(inout) :: NMT
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: iel,ive,ivt,NNVE
-    
+
     ! All midpoints (=edges) located in the interior are
     ! duplicated. Thus, we can multiply them by two and substract
     ! those located at the boundary which are not duplicated
@@ -1254,21 +1254,21 @@ contains
 
     ! Get number of vertices per element
     NNVE  = size(IverticesAtElement,1)
-    
+
     ! The total number of vertices is computed by summing the number
     ! of vertices per element (=NVE) over all elements
     NVT = 0; NVBD = 0
-    
+
     ! Loop over all elements
     element: do iel = 1, NEL
-      
+
       ! Loop over all vertices at the element
       do ive = 1, NNVE
-        
+
         ! Get vertex number
         ivt = IverticesAtElement(ive,iel)
         if (ivt .eq. 0) cycle element
-        
+
         ! Increment number of boundary vertices?
         if (InodalProperty(ivt) .gt. 0) NVBD = NVBD+1
 
@@ -1302,19 +1302,19 @@ contains
     ! On output: vertex coordinates of destination triangulation
     ! DIMENSION(1:NDIM,1:NVT)
     real(DP), dimension(:,:), intent(inout) :: DvertexCoords
-    
+
     ! Vertices at element list
     ! On input: vertices at element list of source triangulation
     ! On output: vertices at element list of destination triangulation
     ! DIMENSION(1:NVE,1:NEL)
     integer, dimension(:,:), intent(inout) :: IverticesAtElement
-    
+
     ! Nodal property list
     ! On input: nodal property list of source triangulation
     ! On output: nodal property list of destination triangulation
     ! DIMENSION(1:NVT)
     integer, dimension(:), intent(inout) :: InodalProperty
-    
+
     ! Number of vertices
     ! On input: number of vertices of source triangulation
     ! On output: number of vertices of destination triangulation
@@ -1325,46 +1325,46 @@ contains
     ! local variables
     integer, dimension(:), allocatable :: Icount
     integer :: iel,ive,ivt,NNVE
-    
+
     ! Get the total number of vertices per element
     NNVE = size(IverticesAtElement,1)
-    
+
     ! Allocate temporal memory for vertex counter
     allocate(Icount(NVT)); Icount = 0
 
     ! Loop over all elements of the source triangulation, duplicate
     ! all interior vertices and update the vertices-at-element list
     element: do iel = 1, NEL
-      
+
       ! Loop over all vertices at the element
       do ive = 1, NNVE
-        
+
         ! Get vertex number
         ivt = IverticesAtElement(ive,iel)
         if (ivt .eq. 0) cycle element
-        
+
         ! Check if this vertex which has been visited before
         if (Icount(ivt) .gt. 0) then
-          
+
           ! Increment number of vertices
           NVT = NVT+1
-          
+
           ! Duplicate vertex
           InodalProperty(NVT)  = InodalProperty(ivt)
           DvertexCoords(:,NVT) = DvertexCoords(:,ivt)
-          
+
           ! Update vertex in element list
           IverticesAtElement(ive,iel) = NVT
         end if
-        
+
         ! Update vertex counter
         Icount(ivt) = Icount(ivt)+1
       end do
     end do element
-    
+
     ! Deallocate temporal memory
     deallocate(Icount)
-    
+
   end subroutine lin_unshareVertices
 
   !*****************************************************************************
@@ -1400,7 +1400,7 @@ contains
     ! Mapping between macro element in source triangulation and
     ! element in destination triangulation
     integer, dimension(:), intent(inout) :: ImacroElements
-    
+
     ! Total number of elements
     ! On input: number of elements of source triangulation
     ! On output: number of elements of destination triangulation
@@ -1431,30 +1431,30 @@ contains
 
     ! Loop over all elements of the source triangulation
     do iel = 1, NEL0
-      
+
       ! Get number of vertices per element
       nve = merge(3, 4, IverticesAtElementSrc(4,iel) .eq. 0)
-      
+
       ! Are we a quadrilateral element?
       if (nve .eq. 4) then
-        
+
         ! Subdivide quadrilateral into two triangles such that
         ! the ratio of their areas is as close to unity as possible
-        
+
         ! First triangle 1-2-3
         Dpoints(1:2,1) = DvertexCoords(1:2, IverticesAtElementSrc(1,iel))
         Dpoints(1:2,2) = DvertexCoords(1:2, IverticesAtElementSrc(2,iel))
         Dpoints(1:2,3) = DvertexCoords(1:2, IverticesAtElementSrc(3,iel))
-        
+
         darea1 = gaux_getArea_tria2D(Dpoints)
-        
+
         ! Second triangle 1-3-4
         Dpoints(1:2,1) = DvertexCoords(1:2, IverticesAtElementSrc(1,iel))
         Dpoints(1:2,2) = DvertexCoords(1:2, IverticesAtElementSrc(3,iel))
         Dpoints(1:2,3) = DvertexCoords(1:2, IverticesAtElementSrc(4,iel))
-        
+
         darea2 = gaux_getArea_tria2D(Dpoints)
-        
+
         if (darea1 .gt. darea2) then
           dratio1 = darea2/darea1
         else
@@ -1465,16 +1465,16 @@ contains
         Dpoints(1:2,1) = DvertexCoords(1:2, IverticesAtElementSrc(1,iel))
         Dpoints(1:2,2) = DvertexCoords(1:2, IverticesAtElementSrc(2,iel))
         Dpoints(1:2,3) = DvertexCoords(1:2, IverticesAtElementSrc(4,iel))
-        
+
         darea1 = gaux_getArea_tria2D(Dpoints)
-        
+
         ! Second triangle 2-3-4
         Dpoints(1:2,1) = DvertexCoords(1:2, IverticesAtElementSrc(2,iel))
         Dpoints(1:2,2) = DvertexCoords(1:2, IverticesAtElementSrc(3,iel))
         Dpoints(1:2,3) = DvertexCoords(1:2, IverticesAtElementSrc(4,iel))
-        
+
         darea2 = gaux_getArea_tria2D(Dpoints)
-        
+
         if (darea1 .gt. darea2) then
           dratio2 = darea2/darea1
         else
@@ -1490,7 +1490,7 @@ contains
         if (dratio1 .ge. dratio2) then
           ! Subdivide quadrilateral into triangles 1-2-3 and 1-3-4
           IverticesAtElementDest(1:3,iel) = IverticesAtElementSrc(1:3,iel)
-          
+
           IverticesAtElementDest(1,NEL0+NEL) = IverticesAtElementSrc(1,iel)
           IverticesAtElementDest(2,NEL0+NEL) = IverticesAtElementSrc(3,iel)
           IverticesAtElementDest(3,NEL0+NEL) = IverticesAtElementSrc(4,iel)
@@ -1509,7 +1509,7 @@ contains
               end do
             end if
           end do
-          
+
           ! Update neighbours at elements
           IneighboursAtElement(1,NEL0+NEL) = iel
           IneighboursAtElement(2,NEL0+NEL) = IneighboursAtElement(3,iel)
@@ -1524,7 +1524,7 @@ contains
           IverticesAtElementDest(1,iel) = IverticesAtElementSrc(1,iel)
           IverticesAtElementDest(2,iel) = IverticesAtElementSrc(2,iel)
           IverticesAtElementDest(3,iel) = IverticesAtElementSrc(4,iel)
-          
+
           IverticesAtElementDest(1:3,NEL0+NEL) = IverticesAtElementSrc(2:4,iel)
 
           ! Update element numbe NEL0+NEL in the list of neighbouring
@@ -1552,17 +1552,17 @@ contains
           IneighboursAtElement(3,iel) = IneighboursAtElement(4,iel)
           IneighboursAtElement(4,iel) = 0
         end if
-        
+
       else
         ! Copy the three corner vertices
         IverticesAtElementDest(1:3,iel) = IverticesAtElementSrc(1:3,iel)
       end if
-      
+
     end do
 
     ! Update total number of elements
     NEL = NEL0 + NEL
-    
+
   end subroutine lin_convertQuad2Tri
 
   ! ***************************************************************************
@@ -1601,7 +1601,7 @@ contains
     integer :: icurrentElementDistr,idof,ndofLoc
     integer(I32) :: cevaluationTag,ctrafoType
     integer :: idim,iel
-    
+
     ! Check if vector is compatible
     if ((rvector%NVAR .ne. rdiscretisation%ndimension) .or.&
         (rvector%NEQ  .ne. dof_igetNDofGlob(rdiscretisation))) then
@@ -1609,54 +1609,54 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lin_calcDofCoordsSc')
       call sys_halt()
     end if
-    
+
     ! Set pointer
     call lsyssc_getbase_double(rvector, p_Ddata)
 
     ! Prepare element evaluation set
     call elprep_init(revalElementSet)
-    
+
     ! Set the element evaluation tag of all FE spaces.
     cevaluationTag = EL_EVLTAG_COORDS
     cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
     cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
-    
+
     ! Loop over the different element distributions
     do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
-        
+
       ! Set pointer to current element distribution
       p_relementDistribution =>&
           rdiscretisation%RelementDistr(icurrentElementDistr)
-      
+
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
-      
+
       ! Set pointer to the list of elements in the discretisation
       call storage_getbase_int(&
           p_relementDistribution%h_IelementList, p_IelementList)
-      
+
       ! Get the type of coordinate system
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
-      
+
       ! Get the number of local degrees of freedom for the element
       ndofLoc = elem_igetNDofLoc(p_relementDistribution%celement)
-      
+
       ! Allocate temporal array for the coordinates of the local
       ! degrees of freedom on the reference element
       allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ndofLoc))
       call elem_getNDofLoc(p_relementDistribution%celement,DcubPtsRef)
-      
+
       ! Calculate the global DOF`s into Idofs.
       allocate(Idofs(ndofLoc,size(p_IelementList)))
       call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, Idofs)
-        
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
       call elprep_prepareSetForEvaluation(revalElementSet,&
           cevaluationTag, rdiscretisation%p_rtriangulation,&
           p_IelementList, ctrafoType, DcubPtsRef, rperfconfig=rperfconfig)
-      
+
       ! Distribute data global degrees of freedom
       do iel = 1,size(p_IelementList)
         do idof = 1, ndofLoc
@@ -1666,13 +1666,13 @@ contains
           end do
         end do
       end do
-      
+
       ! Release memory
       deallocate(DcubPtsRef,Idofs)
-      
+
       call elprep_releaseElementSet(revalElementSet)
     end do ! icurrentElementDistribution
-        
+
   end subroutine lin_calcDofCoordsSc
 
     ! ***************************************************************************
@@ -1711,7 +1711,7 @@ contains
     integer :: icurrentElementDistr,idof,ndofLoc
     integer(I32) :: cevaluationTag,ctrafoType
     integer :: idim,iel,ndofglob
-    
+
     ! Check if rvector is a 1-block vector
     if (rvector%nblocks .eq. 1) then
       call lin_calcDofCoordsSc(rdiscretisation,&
@@ -1719,7 +1719,7 @@ contains
       ! That`s it
       return
     end if
-    
+
     ! Calculate number of global DOFs
     ndofglob = dof_igetNDofGlob(rdiscretisation)
 
@@ -1730,54 +1730,54 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'lin_calcDofCoordsBl')
       call sys_halt()
     end if
-    
+
     ! Set pointer
     call lsysbl_getbase_double(rvector, p_Ddata)
 
     ! Prepare element evaluation set
     call elprep_init(revalElementSet)
-    
+
     ! Set the element evaluation tag of all FE spaces.
     cevaluationTag = EL_EVLTAG_COORDS
     cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
     cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
-    
+
     ! Loop over the different element distributions
     do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
-        
+
       ! Set pointer to current element distribution
       p_relementDistribution =>&
           rdiscretisation%RelementDistr(icurrentElementDistr)
-      
+
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
-      
+
       ! Set pointer to the list of elements in the discretisation
       call storage_getbase_int(&
           p_relementDistribution%h_IelementList, p_IelementList)
-      
+
       ! Get the type of coordinate system
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
-      
+
       ! Get the number of local degrees of freedom for the element
       ndofLoc = elem_igetNDofLoc(p_relementDistribution%celement)
-      
+
       ! Allocate temporal array for the coordinates of the local
       ! degrees of freedom on the reference element
       allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ndofLoc))
       call elem_getNDofLoc(p_relementDistribution%celement,DcubPtsRef)
-      
+
       ! Calculate the global DOF`s into Idofs.
       allocate(Idofs(ndofLoc,size(p_IelementList)))
       call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, Idofs)
-        
+
       ! Calculate all information that is necessary to evaluate the
       ! finite element on all cells of our subset. This includes the
       ! coordinates of the points on the cells.
       call elprep_prepareSetForEvaluation(revalElementSet,&
           cevaluationTag, rdiscretisation%p_rtriangulation,&
           p_IelementList, ctrafoType, DcubPtsRef, rperfconfig=rperfconfig)
-      
+
       ! Distribute data global degrees of freedom
       do iel = 1,size(p_IelementList)
         do idof = 1, ndofLoc
@@ -1787,13 +1787,13 @@ contains
           end do
         end do
       end do
-      
+
       ! Release memory
       deallocate(DcubPtsRef,Idofs)
-      
+
       call elprep_releaseElementSet(revalElementSet)
     end do ! icurrentElementDistribution
-        
+
   end subroutine lin_calcDofCoordsBl
 
   ! ***************************************************************************
@@ -1821,7 +1821,7 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
-  
+
     ! local variables
     integer :: i
 
@@ -1837,7 +1837,7 @@ contains
       call lin_calcDofCoordsSc(rdiscretisation%RspatialDiscr(i),&
           rvector%RvectorBlock(i), rperfconfig)
     end do
-    
+
   end subroutine lin_calcDofCoordsBlock
 
 end module lineariser

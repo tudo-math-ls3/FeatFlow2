@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
@@ -18,10 +16,10 @@
 !<input>
     ! Number of edges
     integer, intent(in) :: NEDGE
-    
+
     ! Number of nodes
     integer, intent(in) :: NEQ
-    
+
     ! Number of solution variables
     integer, intent(IN) :: NVAR
 
@@ -39,7 +37,7 @@
 
     ! Edgewise correction factor
     real(DP), dimension(:), intent(in) :: Dalpha
-    
+
     ! Index pointer for edge data structure
     integer, dimension(:), intent(in) :: IedgeListIdx
 

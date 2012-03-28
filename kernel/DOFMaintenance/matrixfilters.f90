@@ -71,9 +71,9 @@ module matrixfilters
   use dofmapping
   use matrixmodification
   use genoutput
-  
+
   implicit none
-  
+
   private
 
   public :: matfil_discreteBC
@@ -95,7 +95,7 @@ contains
 !<subroutine>
 
   subroutine matfil_imposeDirichletBC (rmatrix,boffDiag,rdbcStructure)
-  
+
 !<description>
   ! Implements discrete Dirichlet BC`s into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
@@ -105,10 +105,10 @@ contains
 !</description>
 
 !<input>
-  
+
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteBCDirichlet), intent(in), target  :: rdbcStructure
-  
+
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
@@ -123,11 +123,11 @@ contains
 
   ! The scalar matrix where the boundary conditions should be imposed.
   type(t_matrixScalar), intent(inout), target :: rmatrix
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
   ! local variables
   integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
@@ -142,18 +142,18 @@ contains
 
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
-  
+
   call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
-  
+
   if (.not.associated(p_idx)) then
     call output_line ('DBC not configured',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletBC')
     call sys_halt()
   end if
-  
+
   ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
@@ -168,7 +168,7 @@ contains
     ! We use mmod_replaceLinesByUnit for 'diagonal' matrix blocks (main
     ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
     ! matrix blocks (in case of larger block systems)
-    
+
     if (boffDiag) then
       call mmod_replaceLinesByZero (rmatrix,p_idx(1:rdbcStructure%nDOF))
     else
@@ -184,15 +184,15 @@ contains
     ! back-permutation, as we need this one for the loop below.
     call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
     p_Iperm => p_Iperm(rmatrix%NEQ+1:)
-    
+
     ! How many entries to handle in the first block?
     ilenleft = min(rdbcStructure%nDOF,NBLOCKSIZE)
-    
+
     ! Loop through the DOF-blocks
     do i=0,rdbcStructure%nDOF / NBLOCKSIZE
       ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
-      
+
       ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
@@ -206,17 +206,17 @@ contains
       ! How many DOF`s are left?
       ilenleft = min(rdbcStructure%nDOF-(i+1)*NBLOCKSIZE,NBLOCKSIZE)
     end do
-  
+
   end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine matfil_imposeNLSlipBC (rmatrix,boffDiag,bforprec,rslipBCStructure)
-  
+
 !<description>
   ! Implements discrete Slip BC`s into a scalar matrix.
   ! Slip BC`s are treated like Dirichlet BC`s.
@@ -236,10 +236,10 @@ contains
   !         The matrix therefore is prepared to act as
   !         Jacobi-preconditioner for all slip-nodes.
   logical, intent(in) :: bforprec
-  
+
   ! The t_discreteBCSlip that describes the discrete Slip BC`s
   type(t_discreteBCSlip), intent(in), target  :: rslipBCStructure
-  
+
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
@@ -253,18 +253,18 @@ contains
 
   ! The scalar matrix where the boundary conditions should be imposed.
   type(t_matrixScalar), intent(inout), target :: rmatrix
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
   ! local variables
   integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
   integer, dimension(1000) :: Idofs
   integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
-  
+
   ! If nDOF=0, there are no DOF`s the current boundary condition segment,
   ! so we do not have to do anything. Maybe the case if the user selected
   ! a boundary region that is just too small.
@@ -272,18 +272,18 @@ contains
 
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
-  
+
   call storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
-  
+
   if (.not.associated(p_idx)) then
     call output_line ('DBC not configured',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeNLSlipBC')
     call sys_halt()
   end if
-  
+
   ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
@@ -298,7 +298,7 @@ contains
     ! We use mmod_clearOffdiags for 'diagonal' matrix blocks (main
     ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
     ! matrix blocks (in case of larger block systems)
-    
+
     if (boffDiag) then
       call mmod_replaceLinesByZero (rmatrix,p_idx(1:rslipBCStructure%nDOF))
     else
@@ -318,15 +318,15 @@ contains
     ! back-permutation, as we need this one for the loop below.
     call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
     p_Iperm => p_Iperm(rmatrix%NEQ+1:)
-    
+
     ! How many entries to handle in the first block?
     ilenleft = min(rslipBCStructure%nDOF,NBLOCKSIZE)
-    
+
     ! Loop through the DOF-blocks
     do i=0,rslipBCStructure%nDOF / NBLOCKSIZE
       ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
-      
+
       ! And implement the BC`s with mmod_clearOffdiags/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
@@ -340,21 +340,21 @@ contains
           call mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
         end if
       end if
-      
+
       ! How many DOF`s are left?
       ilenleft = min(rslipBCStructure%nDOF-(i+1)*NBLOCKSIZE,NBLOCKSIZE)
     end do
-  
+
   end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine matfil_imposeDirichletFBC (rmatrix,boffDiag,rdbcStructure)
-  
+
 !<description>
   ! Implements discrete Dirichlet BC`s of fictitious boundary components
   ! into a scalar matrix.
@@ -365,10 +365,10 @@ contains
 !</description>
 
 !<input>
-  
+
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteFBCDirichlet), intent(in), target  :: rdbcStructure
-  
+
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
@@ -383,11 +383,11 @@ contains
 
   ! The scalar matrix where the boundary conditions should be imposed.
   type(t_matrixScalar), intent(inout), target :: rmatrix
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
   ! local variables
   integer, dimension(:), pointer :: p_idx
   integer, parameter :: NBLOCKSIZE = 1000
@@ -402,18 +402,18 @@ contains
 
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
-  
+
   call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
-  
+
   if (.not.associated(p_idx)) then
     call output_line ('DBC not configured',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletFBC')
     call sys_halt()
   end if
-  
+
   ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
@@ -428,7 +428,7 @@ contains
     ! We use mmod_replaceLinesByUnit for 'diagonal' matrix blocks (main
     ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
     ! matrix blocks (in case of larger block systems)
-    
+
     if (boffDiag) then
       call mmod_replaceLinesByZero (rmatrix,p_idx(1:rdbcStructure%nDOF))
     else
@@ -444,15 +444,15 @@ contains
     ! back-permutation, as we need this one for the loop below.
     call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
     p_Iperm => p_Iperm(rmatrix%NEQ+1:)
-    
+
     ! How many entries to handle in the first block?
     ilenleft = min(rdbcStructure%nDOF,NBLOCKSIZE)
-    
+
     ! Loop through the DOF-blocks
     do i=0,rdbcStructure%nDOF / NBLOCKSIZE
       ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
-      
+
       ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
@@ -463,17 +463,17 @@ contains
         call mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
       end if
     end do
-  
+
   end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine matfil_normaliseToL20 (rmatrix,istartColumn,iendColumn)
-  
+
 !<description>
   ! Modifies a scalar matrix to add an additional equation which implements
   ! <tex>$\int_{\Omega} v = 0$</tex> for all <tex>$v$</tex>. This adds another row to the
@@ -503,16 +503,16 @@ contains
   ! The matrix which is to be modified.
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
     ! Local variables
     type(t_matrixScalar) :: rmatrixTemp
     integer :: irowLen,istart,iend,i
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer, dimension(:), pointer :: p_Kcol
-    
+
     ! Matrix must not be transposed
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line (&
@@ -528,7 +528,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'matfil_normaliseToL20')
       call sys_halt()
     end if
-    
+
     ! If structure and/or content is shared, duplicate the matrix to
     ! make the entries belong to rmatrix.
     if (lsyssc_isMatrixStructureShared(rmatrix) .and. &
@@ -542,26 +542,26 @@ contains
       rmatrixTemp = rmatrix
       call lsyssc_duplicateMatrix (rmatrixTemp,rmatrix,LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
     end if
-    
+
     ! Length of the row
     istart = 1
     iend = rmatrix%NCOLS
-    
+
     if (present(istartColumn)) &
       istart = max(istart,min(istartColumn,rmatrix%NCOLS))
 
     if (present(iendColumn)) &
       iend = max(istart,min(iendColumn,rmatrix%NCOLS))
-      
+
     irowLen = iend-istart+1
-    
+
     ! Add another row to the matrix
     call lsyssc_resizeMatrix (rmatrix, rmatrix%NEQ+1, &
         rmatrix%NCOLS, rmatrix%NA+irowLen, .false.)
-        
+
     rmatrix%NEQ = rmatrix%NEQ + 1
     rmatrix%NA = rmatrix%NA+irowLen
-    
+
     ! Add a row containing "1". TOgether with a RHS "0",
     ! this implements "sum_j a_ij v_j = 0".
     call lsyssc_getbase_double (rmatrix,p_Ddata)
@@ -572,47 +572,47 @@ contains
       do i=istart,iend
         p_Ddata(i) = 1.0_DP
       end do
-      
+
     case (LSYSSC_MATRIX7)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
-      
+
       ! New Kld entry
       p_Kld(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ) + irowLen
-      
+
       ! Insert the new row
       do i=p_Kld(rmatrix%NEQ),p_Kld(rmatrix%NEQ+1)-1
         p_Ddata(i) = 1.0_DP
         p_Kcol(i) = istart + (p_Kld(rmatrix%NEQ)-i)
       end do
-    
+
     case (LSYSSC_MATRIX9)
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       call lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
-      
+
       ! New Kld entry
       p_Kld(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ) + irowLen
-      
+
       ! Insert the new row
       do i=p_Kld(rmatrix%NEQ),p_Kld(rmatrix%NEQ+1)-1
         p_Ddata(i) = 1.0_DP
         p_Kcol(i) = istart + (p_Kld(rmatrix%NEQ)-i)
       end do
-      
+
       ! New Kdiagonal entry
       p_Kdiagonal(rmatrix%NEQ) = p_Kld(rmatrix%NEQ) + rmatrix%NCOLS-istart
-    
+
     end select
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine matfil_imposeFeastMirrorBC (rmatrix,boffDiag,rfmbcStructure)
-  
+
 !<description>
   ! Implements discrete Feast mirror BC`s into a scalar matrix.
   ! The FEAST mirror boundary condition is basically a Neumann boundary
@@ -631,10 +631,10 @@ contains
 !</description>
 
 !<input>
-  
+
   ! The t_discreteBCfeastMirror that describes the discrete FEAST mirror BC`s
   type(t_discreteBCfeastMirror), intent(in), target  :: rfmbcStructure
-  
+
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
@@ -649,11 +649,11 @@ contains
 
   ! The scalar matrix where the boundary conditions should be imposed.
   type(t_matrixScalar), intent(inout), target :: rmatrix
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
   ! local variables
   integer, dimension(:), pointer :: p_ImirrorDOFs,p_ImirrorDOFsClosed
   integer :: i,j
@@ -669,68 +669,68 @@ contains
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
-  
+
   if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
       (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
     call output_line ('Only matrix format 7 and 9 supported!',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     call sys_halt()
   end if
-  
+
   if (rmatrix%cdataType .ne. ST_DOUBLE) then
     call output_line ('Matrix must be double precision!',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     call sys_halt()
   end if
-  
+
   if (rfmbcStructure%icomponent .eq. 0) then
     call output_line ('FMBC not configured!',&
         OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     call sys_halt()
   end if
-  
+
   if (rfmbcStructure%h_ImirrorDOFs .eq. ST_NOHANDLE) then
     ! No data inside of this structure.
     ! May happen if the region is not large enough to cover at least one DOF.
     return
   end if
-  
+
   ! Get the matrix data
   call lsyssc_getbase_double (rmatrix,p_Da)
   call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
   call lsyssc_getbase_Kld (rmatrix,p_Kld)
-  
+
   ! Get the weight of the entries.
   ! =2 on finest level, =1.5 on level NLMAX-1,...
   !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
   dmirrorWeight = 1.0_DP+1.0_DP*real(2**rfmbcStructure%icoarseningLevel,DP)
-  
+
   ! Get pointers to the list of DOF`s that belong to that region and have
   ! to be tackled.
   ! p_ImirrorDOFs is a list of all DOF`s in the region.
   ! p_ImirrorDOFsClosed is a list of all DOF`s in the closure of the region.
   ! For every DOF in the region, it is neighbours have to be found in the
   ! clusure. If that is the case, the corresponding matrix entry has to be doubled.
-  
+
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFsClosed,p_ImirrorDOFsClosed)
 
   ! The matrix column corresponds to the DOF. For every DOF decide on
   ! whether it is on the FEAST mirror boundary component or not.
   ! If yes, double the matrix entry.
-  
+
   ! Is the matrix sorted?
   if (rmatrix%isortStrategy .le. 0) then
-    
+
     ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
     do i=1,size(p_ImirrorDOFs)
-    
+
       ! Loop through the matrix row. All DOF`s in that matrix row that
       ! belong to the closed region have to be changed.
       do ia=p_Kld(p_ImirrorDOFs(i)),p_Kld(p_ImirrorDOFs(i)+1)-1
         ! Get the DOF.
         idof = p_Kcol(ia)
-        
+
         ! Search the DOF in our list. Ok, that is an n^2 algorithm.
         ! It could easily replaced by an n log n algorithm using binary
         ! search since the list of DOF`s is sorted!
@@ -741,13 +741,13 @@ contains
             exit
           end if
         end do
-        
+
       end do
-      
+
     end do
-    
+
   else
-  
+
     ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
     !
@@ -756,17 +756,17 @@ contains
     call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
     p_IpermInverse => p_Iperm(1:rmatrix%NEQ)
     p_Iperm => p_Iperm(rmatrix%NEQ+1:)
-    
+
     ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
     do i=1,size(p_ImirrorDOFs)
-    
+
       ! Loop through the matrix row. All DOF`s in that matrix row that
       ! belong to our region have to be changed.
       do ia=p_Kld(p_Iperm(p_ImirrorDOFs(i))),&
             p_Kld(p_Iperm(p_ImirrorDOFs(i))+1)-1
         ! Get the DOF.
         idof = p_IpermInverse(p_Kcol(ia))
-        
+
         ! Search the DOF in our list. Ok, that is an n^2 algorithm.
         ! It could easily replaced by an n log n algorithm since the list
         ! of DOF`s is sorted!
@@ -776,15 +776,15 @@ contains
             exit
           end if
         end do
-        
+
       end do
-      
+
     end do
 
   end if
-  
+
   end subroutine
-  
+
 ! ***************************************************************************
 ! Block matrix filters
 ! ***************************************************************************
@@ -811,7 +811,7 @@ contains
   ! matrix rmatrix are imposed to the matrix.
   type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
-  
+
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
   type(t_matrixBlock), intent(inout),target :: rmatrix
@@ -822,7 +822,7 @@ contains
     integer :: iblock,jblock,i,inumEntries !,icp
     logical :: boffdiagSubmatrix
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
-    
+
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Take the given BC structure or
     ! grab the boundary condition entry list from the matrix. This
@@ -838,27 +838,27 @@ contains
       p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
       inumEntries = rmatrix%p_rdiscreteBC%inumEntriesUsed
     end if
-    
+
     if (.not. associated(p_RdiscreteBC)) return
-    
+
     ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-    
+
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, inumEntries
-    
+
       ! What for BC`s do we have here?
       select case (p_RdiscreteBC(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
-        
+
       case (DISCBC_TPDIRICHLET)
         ! Dirichlet boundary conditions.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
         iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
-        
+
         ! Loop through this matrix row and implement the boundary conditions
         ! into the scalar submatrices.
         ! For now, this implements unit vectors into the diagonal matrices
@@ -874,7 +874,7 @@ contains
                         p_RdiscreteBC(i)%rdirichletBCs)
           end if
         end do
-        
+
       case (DISCBC_TPPRESSUREDROP)
         ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
 
@@ -883,7 +883,7 @@ contains
         ! velocity components.
         ! This is a separate filter must be called manually.
         ! Therefore, there is nothing to do here.
-        
+
       case (DISCBC_TPFEASTMIRROR)
         ! FEAST mirror boundary conditions.
         ! On which component are they defined? The component specifies
@@ -911,10 +911,10 @@ contains
             'Unknown boundary condition'//sys_siL(p_RdiscreteBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteBC')
         call sys_halt()
-        
+
       end select
     end do
-  
+
   end subroutine
 
   ! *************************************************************************
@@ -952,7 +952,7 @@ contains
   ! matrix rmatrix are imposed to the matrix.
   type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
-  
+
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
   type(t_matrixBlock), intent(inout),target :: rmatrix
@@ -963,21 +963,21 @@ contains
     integer :: iblock,jblock,i,icp
     logical :: boffdiagSubmatrix
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
-    
+
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
     p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
-    
+
     if (.not. associated(p_RdiscreteBC)) return
-    
+
     ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, rmatrix%p_rdiscreteBC%inumEntriesUsed
-    
+
       ! Only implement slip boundary conditions.
       if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPSLIP) then
         ! Slip boundary conditions are treated like Dirichlet for all
@@ -995,12 +995,12 @@ contains
                           p_RdiscreteBC(i)%rslipBCs)
             end if
           end do
-          
+
         end do
       end if
-    
+
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1026,7 +1026,7 @@ contains
   ! matrix rmatrix are imposed to the matrix.
   type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
-  
+
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
   type(t_matrixBlock), intent(inout),target :: rmatrix
@@ -1037,35 +1037,35 @@ contains
     integer :: iblock,jblock,i,j
     logical :: boffdiagSubmatrix
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
-    
+
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
     if (.not. associated(rmatrix%p_rdiscreteBCfict)) return
 
     p_RdiscreteFBC => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
-    
+
     if (.not. associated(p_RdiscreteFBC)) return
-    
+
     ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
-    
+
       ! What for BC`s do we have here?
       select case (p_RdiscreteFBC(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
-        
+
       case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions.
         !
         ! Loop through all blocks where to impose the BC`s:
         do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
-        
+
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
-        
+
           ! Loop through this matrix row and implement the boundary conditions
           ! into the scalar submatrices.
           ! For now, this implements unit vectors into the diagonal matrices
@@ -1081,18 +1081,18 @@ contains
                           p_RdiscreteFBC(i)%rdirichletFBCs)
             end if
           end do
-          
+
         end do
-        
+
       case DEFAULT
         call output_line (&
             'Unknown boundary condition'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteFBC')
         call sys_halt()
-        
+
       end select
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1100,7 +1100,7 @@ contains
 !<subroutine>
 
   subroutine matfil_normaliseToL20LmassMat (rmatrix,rlmassMat,irow)
-  
+
 !<description>
   ! Modifies a scalar matrix to impose the equation 
   ! <tex>$\int_{\Omega} v = 0$</tex> for all <tex>$v$</tex> by using a lumped
@@ -1125,14 +1125,14 @@ contains
   ! The matrix which is to be modified.
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
-  
+
 !</subroutine>
-    
+
     ! local variables
     real(DP), dimension(:), pointer :: p_Da1, p_Da2
     integer, dimension(:), pointer :: p_Kld, p_Kdiagonal
     integer :: i,j
-    
+
     ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
     if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
         iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) then
@@ -1140,13 +1140,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
         call sys_halt()
     end if
-    
+
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line("Virtually transposed matrices not supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
       call sys_halt()
     end if
-    
+
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9)
       ! CSR format.
@@ -1156,10 +1156,10 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20LmassMat")
         call sys_halt()
       end if
-      
+
       ! Exoand the matrix structure if necessary.
       call mmod_expandToFullRow (rmatrix,irow)
-      
+
       ! Copy the diagonal entries of the lumped mass matrix
       ! to rmatrix.
       select case (rmatrix%cmatrixFormat)
@@ -1168,10 +1168,10 @@ contains
         call lsyssc_getbase_double (rlMassMat,p_Da1)
         call lsyssc_getbase_double (rmatrix,p_Da2)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
-        
+
         ! Copy the entries
         call lalg_copyVector (p_Da1,p_Da2(p_Kld(irow):),rmatrix%NEQ)
-        
+
       case (LSYSSC_MATRIX9)
 
         ! Get the data arrays
@@ -1179,7 +1179,7 @@ contains
         call lsyssc_getbase_double (rmatrix,p_Da2)
         call lsyssc_getbase_Kld (rmatrix,p_Kld)
         call lsyssc_getbase_Kdiagonal (rlMassMat,p_Kdiagonal)
-        
+
         ! Copy the entries
         j = p_Kld(irow)-1
         do i=1,rmatrix%NEQ
@@ -1194,5 +1194,5 @@ contains
     end select
 
   end subroutine
-  
+
 end module

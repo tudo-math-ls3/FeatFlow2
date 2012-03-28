@@ -55,9 +55,9 @@ module linearalgebra
   use perfconfig
 
   implicit none
-  
+
   private
-  
+
   interface lalg_copyVectorInt
     module procedure lalg_copyVectorI8
     module procedure lalg_copyVectorI8I16
@@ -76,9 +76,9 @@ module linearalgebra
     module procedure lalg_copyVectorI64I16
     module procedure lalg_copyVectorI64I32
   end interface
-  
+
   public :: lalg_copyVectorInt
-  
+
   interface lalg_copyVectorInt2D
     module procedure lalg_copyVectorI8_2D
     module procedure lalg_copyVectorI8I16_2D
@@ -97,7 +97,7 @@ module linearalgebra
     module procedure lalg_copyVectorI64I16_2D
     module procedure lalg_copyVectorI64I32_2D
   end interface
-  
+
   public :: lalg_copyVectorInt2D
 
     interface lalg_copyVectorInt3D
@@ -118,7 +118,7 @@ module linearalgebra
     module procedure lalg_copyVectorI64I16_3D
     module procedure lalg_copyVectorI64I32_3D
   end interface
-  
+
   public :: lalg_copyVectorInt3D
 
   interface lalg_copyVector
@@ -206,7 +206,7 @@ module linearalgebra
     module procedure lalg_copyVectorQuadDbl3D
 #endif
   end interface
-  
+
   public :: lalg_initPerfConfig
 
   public :: lalg_copyVector
@@ -260,7 +260,7 @@ module linearalgebra
     module procedure lalg_scaleVectorQuad3D
 #endif
   end interface
-  
+
   public :: lalg_scaleVector
   public :: lalg_scaleVectorSngl
   public :: lalg_scaleVectorDble
@@ -278,7 +278,7 @@ module linearalgebra
     module procedure lalg_clearVectorI32
     module procedure lalg_clearVectorI64
   end interface
-  
+
   public :: lalg_clearVectorInt
 
   interface lalg_clearVectorInt2D
@@ -287,7 +287,7 @@ module linearalgebra
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
   end interface
-  
+
   public :: lalg_clearVectorInt2D
 
   interface lalg_clearVectorInt3D
@@ -296,7 +296,7 @@ module linearalgebra
     module procedure lalg_clearVectorI32_3D
     module procedure lalg_clearVectorI64_3D
   end interface
-  
+
   public :: lalg_clearVectorInt3D
 
   interface lalg_clearVector
@@ -324,7 +324,7 @@ module linearalgebra
     module procedure lalg_clearVectorQuad3D
 #endif
   end interface
-  
+
   public :: lalg_clearVector
   public :: lalg_clearVectorSngl
   public :: lalg_clearVectorDble
@@ -342,7 +342,7 @@ module linearalgebra
     module procedure lalg_setVectorI32
     module procedure lalg_setVectorI64
   end interface
-  
+
   public :: lalg_setVectorInt
 
   interface lalg_setVectorInt2D
@@ -351,7 +351,7 @@ module linearalgebra
     module procedure lalg_setVectorI32_2D
     module procedure lalg_setVectorI64_2D
   end interface
-  
+
   public :: lalg_setVectorInt2D
 
    interface lalg_setVectorInt3D
@@ -360,7 +360,7 @@ module linearalgebra
     module procedure lalg_setVectorI32_3D
     module procedure lalg_setVectorI64_3D
   end interface
-  
+
   public :: lalg_setVectorInt3D
 
   interface lalg_setVector
@@ -394,7 +394,7 @@ module linearalgebra
     module procedure lalg_setVectorQuad3D
 #endif
   end interface
-  
+
   public :: lalg_setVector
 
   public :: lalg_setVectorQuad
@@ -435,7 +435,7 @@ module linearalgebra
     module procedure lalg_vectorLinearCombDblQuad3D
 #endif
   end interface
-  
+
   public :: lalg_vectorLinearComb
   public :: lalg_vectorLinearCombSngl
   public :: lalg_vectorLinearCombDble
@@ -466,7 +466,7 @@ module linearalgebra
     module procedure lalg_scalarProductQuad2D
 #endif
   end interface
-  
+
   public :: lalg_scalarProduct
   public :: lalg_scalarProductSngl
   public :: lalg_scalarProductDble
@@ -482,7 +482,7 @@ module linearalgebra
     module procedure lalg_normQuad
 #endif
   end interface
-  
+
   public :: lalg_norm,lalg_normSngl,lalg_normDble,lalg_normQuad
 
   interface lalg_errorNorm
@@ -492,7 +492,7 @@ module linearalgebra
     module procedure lalg_errorNormQuad
 #endif
   end interface
-  
+
   public :: lalg_errorNorm
   public :: lalg_errorNormSngl
   public :: lalg_errorNormDble
@@ -502,7 +502,7 @@ module linearalgebra
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
   end interface
-  
+
   public :: lalg_vectorSortInt
 
   interface lalg_vectorSort
@@ -514,7 +514,7 @@ module linearalgebra
     module procedure lalg_vectorSortQuad
 #endif
   end interface
-  
+
   public :: lalg_vectorSort
   public :: lalg_vectorSortSngl
   public :: lalg_vectorSortDble
@@ -528,7 +528,7 @@ module linearalgebra
     module procedure lalg_vectorAddScalarI32
     module procedure lalg_vectorAddScalarI64
   end interface
-  
+
   public :: lalg_vectorAddScalarInt
 
   interface lalg_vectorAddScalar
@@ -545,7 +545,7 @@ module linearalgebra
     module procedure lalg_vectorAddScalarQuad2D
 #endif
   end interface
-  
+
   public :: lalg_vectorAddScalar
   public :: lalg_vectorAddScalarSngl
   public :: lalg_vectorAddScalarDble
@@ -589,24 +589,24 @@ module linearalgebra
 
   ! $l_1$-norm: 1/NEQ * sum(abs(entries))
   integer, parameter, public :: LINALG_NORML1     = 1
-  
+
   ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector)
   integer, parameter, public :: LINALG_NORML2     = 2
-  
+
   ! max-norm
   integer, parameter, public :: LINALG_NORMMAX    = 3
-  
+
 !</constantblock>
 
 !</constants>
 
   !*****************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: lalg_perfconfig
-  
+
   !*****************************************************************************
-  
+
 contains
 
   ! ****************************************************************************
@@ -632,7 +632,7 @@ contains
     else
       call pcfg_initPerfConfig(lalg_perfconfig)
     end if
-  
+
   end subroutine lalg_initPerfConfig
 
   ! ***************************************************************************
@@ -640,28 +640,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSngl (Fx,Fy,n)
-  
+
 !<description>
   ! Copies a single precision vector: Fy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -669,7 +669,7 @@ contains
     else
       call SCOPY(n,Fx,1,Fy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -677,27 +677,27 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDble (Dx,Dy,n)
-  
+
 !<description>
   ! Copies a double precision vector dx: Dy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -705,7 +705,7 @@ contains
     else
       call DCOPY(n,Dx,1,Dy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -713,27 +713,27 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuad (Qx,Qy,n)
-  
+
 !<description>
   ! Copies a quad precision vector dx: Qy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -741,7 +741,7 @@ contains
     else
       call QCOPY(n,Qx,1,Qy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -749,30 +749,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglDbl (Fx,Dy,n)
-  
+
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call SDCOPY(size(Fx),Fx,1,Dy,1)
     else
@@ -786,30 +786,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglQuad (Fx,Qy,n)
-  
+
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call SQCOPY(size(Fx),Fx,1,Qy,1)
     else
@@ -823,30 +823,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDblSngl (Dx,Fy,n)
-  
+
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call DSCOPY(size(Dx),Dx,1,Fy,1)
     else
@@ -860,30 +860,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDblQuad (Dx,Qy,n)
-  
+
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call DQCOPY(size(Dx),Dx,1,Qy,1)
     else
@@ -897,30 +897,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadSngl (Qx,Fy,n)
-  
+
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call QSCOPY(size(Qx),Qx,1,Fy,1)
     else
@@ -934,30 +934,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadDbl (Qx,Dy,n)
-  
+
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call QDCOPY(size(Qx),Qx,1,Dy,1)
     else
@@ -971,44 +971,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      
+
     end if
 
   end subroutine
@@ -1018,44 +1018,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I16 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     end if
 
   end subroutine
@@ -1065,44 +1065,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I32 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     end if
 
   end subroutine
@@ -1112,44 +1112,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I64 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     end if
 
   end subroutine
@@ -1159,44 +1159,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      
+
     end if
 
   end subroutine
@@ -1206,44 +1206,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I8 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     end if
 
   end subroutine
@@ -1253,44 +1253,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I32 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     end if
 
   end subroutine
@@ -1300,44 +1300,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I64 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     end if
 
   end subroutine
@@ -1347,44 +1347,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      
+
     end if
 
   end subroutine
@@ -1394,44 +1394,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I8 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     end if
 
   end subroutine
@@ -1441,44 +1441,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I16 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     end if
 
   end subroutine
@@ -1488,44 +1488,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I64 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I64)
       end do
-      
+
     end if
 
   end subroutine
@@ -1535,44 +1535,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = Ix(i)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = Ix(i)
       end do
-      
+
     end if
 
   end subroutine
@@ -1582,44 +1582,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I8 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I8)
       end do
-      
+
     end if
 
   end subroutine
@@ -1629,44 +1629,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I16 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I16)
       end do
-      
+
     end if
 
   end subroutine
@@ -1676,44 +1676,44 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I32 (Ix,Iy,n)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     else
 
       do i = 1, n
         Iy(i) = int(Ix(i),I32)
       end do
-      
+
     end if
 
   end subroutine
@@ -1723,43 +1723,43 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorLogical (Lx,Ly,n)
-  
+
 !<description>
   ! Copies a logical vector Lx: Ly = Lx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   logical, dimension(:), intent(in) :: Lx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   logical, dimension(:), intent(out) :: Ly
-  
+
 !</output>
-  
+
 !</subroutine>
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Lx)
         Ly(i) = Lx(i)
       end do
-    
+
     else
 
       do i = 1, n
         Ly(i) = Lx(i)
       end do
-    
+
     end if
 
   end subroutine
@@ -1769,43 +1769,43 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorChar (Sx,Sy,n)
-  
+
 !<description>
   ! Copies a character vector sx: Sy = Sx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   character, dimension(:), intent(in) :: Sx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   character, dimension(:), intent(out) :: Sy
-  
+
 !</output>
-  
+
 !</subroutine>
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Sx)
         Sy(i) = Sx(i)
       end do
-    
+
     else
 
       do i = 1, n
         Sy(i) = Sx(i)
       end do
-    
+
     end if
 
   end subroutine
@@ -1815,28 +1815,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSngl2D (Fx,Fy,n,m)
-  
+
 !<description>
   ! Copies a single precision vector: Fy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m)) then
@@ -1844,7 +1844,7 @@ contains
     else
       call SCOPY(size(Fx,1)*size(Fx,2),Fx,1,Fy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1852,28 +1852,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDble2D (Dx,Dy,n,m)
-  
+
 !<description>
   ! Copies a double precision vector: Dy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
-  
+
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m)) then
@@ -1881,7 +1881,7 @@ contains
     else
       call DCOPY(size(Dx,1)*size(Dx,2),Dx,1,Dy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1889,28 +1889,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuad2D (Qx,Qy,n,m)
-  
+
 !<description>
   ! Copies a quad precision vector: Qy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
-  
+
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m)) then
@@ -1918,7 +1918,7 @@ contains
     else
       call QCOPY(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -1926,30 +1926,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglDbl2D (Fx,Dy,n,m)
-  
+
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m)) then
       call SDCOPY(n*m,Fx,1,Dy,1)
     else
@@ -1963,28 +1963,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglQuad2D (Fx,Qy,n,m)
-  
+
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m)) then
@@ -2000,30 +2000,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDblSngl2D (Dx,Fy,n,m)
-  
+
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m)) then
       call DSCOPY(n*m,Dx,1,Fy,1)
     else
@@ -2037,30 +2037,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDblQuad2D (Dx,Qy,n,m)
-  
+
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m)) then
       call DQCOPY(n*m,Dx,1,Qy,1)
     else
@@ -2074,30 +2074,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadSngl2D (Qx,Fy,n,m)
-  
+
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m)) then
       call QSCOPY(n*m,Qx,1,Fy,1)
     else
@@ -2111,30 +2111,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadDbl2D (Qx,Dy,n,m)
-  
+
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m)) then
       call QDCOPY(n*m,Qx,1,Dy,1)
     else
@@ -2148,42 +2148,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
@@ -2191,7 +2191,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2199,42 +2199,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I16_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
@@ -2242,7 +2242,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2250,42 +2250,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I32_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
@@ -2293,7 +2293,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2301,42 +2301,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I64_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
@@ -2344,7 +2344,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2352,42 +2352,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
@@ -2395,7 +2395,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2403,42 +2403,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I8_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
@@ -2446,7 +2446,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2454,42 +2454,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I32_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
@@ -2497,7 +2497,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2505,42 +2505,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I64_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
@@ -2548,7 +2548,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2556,42 +2556,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
@@ -2599,7 +2599,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2607,42 +2607,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I8_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
@@ -2650,7 +2650,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2658,42 +2658,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I16_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
@@ -2701,7 +2701,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2709,42 +2709,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I64_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I64)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I64)
@@ -2752,7 +2752,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2760,42 +2760,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = Ix(i,j)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = Ix(i,j)
@@ -2803,7 +2803,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2811,42 +2811,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I8_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I8)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I8)
@@ -2854,7 +2854,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2862,42 +2862,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I16_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I16)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I16)
@@ -2905,7 +2905,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2913,42 +2913,42 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I32_2D (Ix,Iy,n,m)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if(present(m) .and. present(n)) then
-    
+
       do j = 1, m
         do i = 1, n
           Iy(i,j) = int(Ix(i,j),I32)
         end do
       end do
-    
+
     else
-    
+
       do j = 1, size(Ix,2)
         do i = 1, size(Ix,1)
           Iy(i,j) = int(Ix(i,j),I32)
@@ -2956,7 +2956,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -2964,32 +2964,32 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorLogical2D (Lx,Ly,n,m)
-  
+
 !<description>
   ! Copies a logical vector Lx: Ly = Lx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   logical, dimension(:,:), intent(in) :: Lx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   logical, dimension(:,:), intent(out) :: Ly
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if (present(n) .and. present(m)) then
 
       do j = 1, m
@@ -2999,7 +2999,7 @@ contains
       end do
 
     else
-      
+
       do j = 1, size(Lx,2)
         do i = 1, size(Lx,1)
           Ly(i,j) = Lx(i,j)
@@ -3007,40 +3007,40 @@ contains
       end do
 
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_copyVectorChar2D (Sx,Sy,n,m)
-  
+
 !<description>
   ! Copies a character vector Sx: Sy = Sx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   character, dimension(:,:), intent(in) :: Sx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   character, dimension(:,:), intent(out) :: Sy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j
-  
+
     if (present(n) .and. present(m)) then
 
       do j = 1, m
@@ -3058,7 +3058,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
    ! ***************************************************************************
@@ -3066,28 +3066,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSngl3D (Fx,Fy,n,m,o)
-  
+
 !<description>
   ! Copies a single precision vector: Fy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m) .and. present(o)) then
@@ -3095,7 +3095,7 @@ contains
     else
       call SCOPY(size(Fx,1)*size(Fx,2)*size(Fx,3),Fx,1,Fy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3103,28 +3103,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDble3D (Dx,Dy,n,m,o)
-  
+
 !<description>
   ! Copies a double precision vector: Dy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
-  
+
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m) .and. present(o)) then
@@ -3132,7 +3132,7 @@ contains
     else
       call DCOPY(size(Dx,1)*size(Dx,2)*size(Dx,3),Dx,1,Dy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3140,28 +3140,28 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuad3D (Qx,Qy,n,m,o)
-  
+
 !<description>
   ! Copies a quad precision vector: Qy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
-  
+
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
 
     if (present(n) .and. present(m) .and. present(o)) then
@@ -3169,7 +3169,7 @@ contains
     else
       call QCOPY(size(Qx,1)*size(Qx,2)*size(Qx,3),Qx,1,Qy,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3177,30 +3177,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglDbl3D (Fx,Dy,n,m,o)
-  
+
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call SDCOPY(n*m*o,Fx,1,Dy,1)
     else
@@ -3214,30 +3214,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorSnglQuad3D (Fx,Qy,n,m,o)
-  
+
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call SQCOPY(n*m*o,Fx,1,Qy,1)
     else
@@ -3251,30 +3251,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorDblSngl3D (Dx,Fy,n,m,o)
-  
+
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call DSCOPY(n*m*o,Dx,1,Fy,1)
     else
@@ -3282,36 +3282,36 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_copyVectorDblQuad3D (Dx,Qy,n,m,o)
-  
+
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(DP), dimension(:,:,:), intent(in) :: Dx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(:,:,:), intent(out) :: Qy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call DQCOPY(n*m*o,Dx,1,Qy,1)
     else
@@ -3325,30 +3325,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadSngl3D (Qx,Fy,n,m,o)
-  
+
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(:,:,:), intent(out) :: Fy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call QSCOPY(n*m*o,Qx,1,Fy,1)
     else
@@ -3362,30 +3362,30 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorQuadDbl3D (Qx,Dy,n,m,o)
-  
+
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   real(QP), dimension(:,:,:), intent(in) :: Qx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(:,:,:), intent(out) :: Dy
-  
+
 !</output>
-  
+
 !</subroutine>
-  
+
     if (present(n) .and. present(m) .and. present(o)) then
       call QDCOPY(n*m*o,Qx,1,Dy,1)
     else
@@ -3399,34 +3399,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3434,9 +3434,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3446,7 +3446,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3454,34 +3454,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I16_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3491,7 +3491,7 @@ contains
       end do
 
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3501,7 +3501,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3509,34 +3509,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I32_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3544,9 +3544,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3556,7 +3556,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3564,34 +3564,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI8I64_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I8), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3599,9 +3599,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3611,7 +3611,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3619,34 +3619,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3654,9 +3654,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3666,7 +3666,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3674,34 +3674,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I8_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3709,9 +3709,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3721,7 +3721,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3729,34 +3729,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I32_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3764,9 +3764,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3776,7 +3776,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3784,34 +3784,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI16I64_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I16), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3819,9 +3819,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3831,7 +3831,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3839,34 +3839,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3874,9 +3874,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3886,7 +3886,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3894,34 +3894,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I8_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3929,9 +3929,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3941,7 +3941,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -3949,34 +3949,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I16_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -3984,9 +3984,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -3996,7 +3996,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4004,34 +4004,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI32I64_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I32), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4039,9 +4039,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4051,7 +4051,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4059,34 +4059,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I64), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4094,9 +4094,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4106,7 +4106,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4114,34 +4114,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I8_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I8), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4149,9 +4149,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4161,7 +4161,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4169,34 +4169,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I16_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I16), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4204,9 +4204,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4216,7 +4216,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4224,34 +4224,34 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorI64I32_3D (Ix,Iy,n,m,o)
-  
+
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
 !</description>
 
 !<input>
-  
+
   ! Source vector
   integer(I64), dimension(:,:,:), intent(in) :: Ix
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   integer(I32), dimension(:,:,:), intent(out) :: Iy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if(present(m) .and. present(n) .and. present(o)) then
-    
+
       do k = 1, o
         do j = 1, m
           do i = 1, n
@@ -4259,9 +4259,9 @@ contains
           end do
         end do
       end do
-    
+
     else
-    
+
       do k = 1, size(Ix,3)
         do j = 1, size(Ix,2)
           do i = 1, size(Ix,1)
@@ -4271,7 +4271,7 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4279,32 +4279,32 @@ contains
 !<subroutine>
 
   subroutine lalg_copyVectorLogical3D (Lx,Ly,n,m,o)
-  
+
 !<description>
   ! Copies a logical vector Lx: Ly = Lx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   logical, dimension(:,:,:), intent(in) :: Lx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   logical, dimension(:,:,:), intent(out) :: Ly
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if (present(n) .and. present(m)) then
 
       do k = 1, o
@@ -4316,7 +4316,7 @@ contains
       end do
 
     else
-      
+
       do k = 1, size(Lx,3)
         do j = 1, size(Lx,2)
           do i = 1, size(Lx,1)
@@ -4326,40 +4326,40 @@ contains
       end do
 
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_copyVectorChar3D (Sx,Sy,n,m,o)
-  
+
 !<description>
   ! Copies a character vector Sx: Sy = Sx
 !</description>
 
 !<input>
-  
+
   ! Source vector
   character, dimension(:,:,:), intent(in) :: Sx
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n,m,o
 
 !</input>
 
 !<output>
-  
+
   ! Destination vector
   character, dimension(:,:,:), intent(out) :: Sy
-  
+
 !</output>
-  
+
 !</subroutine>
 
   integer :: i,j,k
-  
+
     if (present(n) .and. present(m)) then
 
       do k = 1, o
@@ -4381,24 +4381,24 @@ contains
       end do
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorSngl (Fx,sc,n)
-  
+
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(SP), dimension(:), intent(inout) :: Fx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4410,7 +4410,7 @@ contains
   integer, intent(in), optional :: n
 
 !</input>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -4426,24 +4426,24 @@ contains
         call SSCAL(n,sc,Fx,1)
       end if
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorDble (Dx,dc,n)
-  
+
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(DP), dimension(:), intent(inout) :: Dx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4455,7 +4455,7 @@ contains
   integer, intent(in), optional :: n
 
 !</input>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -4471,24 +4471,24 @@ contains
         call DSCAL(n,dc,Dx,1)
       end if
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorQuad (Qx,qc,n)
-  
+
 !<description>
   ! Scales a quad precision vector: Qx = qc * Qx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(QP), dimension(:), intent(inout) :: Qx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4500,7 +4500,7 @@ contains
   integer, intent(in), optional :: n
 
 !</input>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -4516,24 +4516,24 @@ contains
         call QSCAL(n,qc,Qx,1)
       end if
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorSngl2D (Fx,sc)
-  
+
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(SP), dimension(:,:), intent(inout) :: Fx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4542,7 +4542,7 @@ contains
   real(SP), intent(in) :: sc
 
 !</input>
-  
+
 !</subroutine>
 
     if(sc .eq. 0.0_DP) then
@@ -4550,24 +4550,24 @@ contains
     else if(sc .ne. 1.0_SP) then
       call SSCAL(size(Fx,1)*size(Fx,2),sc,Fx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorDble2D (Dx,dc)
-  
+
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(DP), dimension(:,:), intent(inout) :: Dx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4576,7 +4576,7 @@ contains
   real(DP), intent(in) :: dc
 
 !</input>
-  
+
 !</subroutine>
 
     if(dc .eq. 0.0_DP) then
@@ -4584,24 +4584,24 @@ contains
     else if(dc .ne. 1.0_DP) then
       call DSCAL(size(Dx,1)*size(Dx,2),dc,Dx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorQuad2D (Qx,qc)
-  
+
 !<description>
   ! Scales a quad precision vector: Qx = dc * Qx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(QP), dimension(:,:), intent(inout) :: Qx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4610,7 +4610,7 @@ contains
   real(QP), intent(in) :: qc
 
 !</input>
-  
+
 !</subroutine>
 
     if(qc .eq. 0.0_QP) then
@@ -4618,24 +4618,24 @@ contains
     else if(qc .ne. 1.0_QP) then
       call QSCAL(size(Qx,1)*size(Qx,2),qc,Qx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorSngl3D (Fx,sc)
-  
+
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(SP), dimension(:,:,:), intent(inout) :: Fx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4644,7 +4644,7 @@ contains
   real(SP), intent(in) :: sc
 
 !</input>
-  
+
 !</subroutine>
 
     if(sc .eq. 0.0_DP) then
@@ -4652,24 +4652,24 @@ contains
     else if(sc .ne. 1.0_SP) then
       call SSCAL(size(Fx,1)*size(Fx,2)*size(Fx,3),sc,Fx,1)
     end if
-  
+
   end subroutine
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorDble3D (Dx,dc)
-  
+
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(DP), dimension(:,:,:), intent(inout) :: Dx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4678,7 +4678,7 @@ contains
   real(DP), intent(in) :: dc
 
 !</input>
-  
+
 !</subroutine>
 
     if(dc .eq. 0.0_DP) then
@@ -4686,24 +4686,24 @@ contains
     else if(dc .ne. 1.0_DP) then
       call DSCAL(size(Dx,1)*size(Dx,2)*size(Dx,3),dc,Dx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine lalg_scaleVectorQuad3D (Qx,qc)
-  
+
 !<description>
   ! Scales a quad precision vector: Qx = dc * Qx
 !</description>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(QP), dimension(:,:,:), intent(inout) :: Qx
-  
+
 !</inputoutput>
 
 !<input>
@@ -4712,7 +4712,7 @@ contains
   real(QP), intent(in) :: qc
 
 !</input>
-  
+
 !</subroutine>
 
     if(qc .eq. 0.0_QP) then
@@ -4720,15 +4720,15 @@ contains
     else if(qc .ne. 1.0_QP) then
       call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorSngl (Fx,n)
-  
+
 !<description>
   ! Clears a single precision vector: Fx = 0
 !</description>
@@ -4742,15 +4742,15 @@ contains
   ! Destination vector to be cleared
   real(SP), dimension(:), intent(out) :: Fx
 !</output>
-  
+
 !</subroutine>
-  
+
     if (.not. present(n)) then
       call SSET(size(Fx),0.0_SP,Fx,1)
     else
       call SSET(n,0.0_SP,Fx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4758,7 +4758,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorDble (Dx,n)
-  
+
 !<description>
   ! Clears a double precision vector: Dx = 0
 !</description>
@@ -4772,7 +4772,7 @@ contains
   ! Destination vector to be cleared
   real(DP), dimension(:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -4780,7 +4780,7 @@ contains
     else
       call DSET(n,0.0_DP,Dx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4788,7 +4788,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorQuad (Qx,n)
-  
+
 !<description>
   ! Clears a quad precision vector: Qx = 0
 !</description>
@@ -4802,7 +4802,7 @@ contains
   ! Destination vector to be cleared
   real(QP), dimension(:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -4810,7 +4810,7 @@ contains
     else
       call QSET(n,0.0_QP,Qx,1)
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -4818,7 +4818,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorI8 (Ix,n)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
@@ -4832,34 +4832,34 @@ contains
   ! Destination vector to be cleared
   integer(I8), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
-      
+
     else
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I8
       end do
-      
+
     end if
-  
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI16 (Ix,n)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
@@ -4873,34 +4873,34 @@ contains
   ! Destination vector to be cleared
   integer(I16), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
-      
+
     else
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I16
       end do
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI32 (Ix,n)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
@@ -4914,34 +4914,34 @@ contains
   ! Destination vector to be cleared
   integer(I32), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
-      
+
     else
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I32
       end do
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI64 (Ix,n)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
@@ -4955,49 +4955,49 @@ contains
   ! Destination vector to be cleared
   integer(I64), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
-      
+
     else
-    
+
       do i = 1, size(Ix)
         Ix(i) = 0_I64
       end do
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorSngl2D (Fx)
-  
+
 !<description>
   ! Clears a single precision vector: Fx = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   real(SP), dimension(:,:), intent(out) :: Fx
-  
+
 !</output>
-  
+
 !</subroutine>
 
     call SSET(size(Fx,1)*size(Fx,2),0.0_SP,Fx,1)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5005,7 +5005,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorDble2D (Dx)
-  
+
 !<description>
   ! Clears a double precision vector: Dx = 0
 !</description>
@@ -5014,7 +5014,7 @@ contains
   ! Destination vector to be cleared
   real(DP), dimension(:,:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     call DSET(size(Dx,1)*size(Dx,2),0.0_DP,Dx,1)
@@ -5026,7 +5026,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorQuad2D (Qx)
-  
+
 !<description>
   ! Clears a quad precision vector: Qx = 0
 !</description>
@@ -5035,7 +5035,7 @@ contains
   ! Destination vector to be cleared
   real(QP), dimension(:,:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     call QSET(size(Qx,1)*size(Qx,2),0.0_QP,Qx,1)
@@ -5047,18 +5047,18 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorI8_2D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I8), dimension(:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5069,26 +5069,26 @@ contains
         Ix(i,j) = 0_I8
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI16_2D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I16), dimension(:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5099,26 +5099,26 @@ contains
         Ix(i,j) = 0_I16
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI32_2D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I32), dimension(:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5129,26 +5129,26 @@ contains
         Ix(i,j) = 0_I32
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI64_2D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I64), dimension(:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5159,7 +5159,7 @@ contains
         Ix(i,j) = 0_I32
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5167,18 +5167,18 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorSngl3D (Fx)
-  
+
 !<description>
   ! Clears a single precision vector: Fx = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   real(SP), dimension(:,:,:), intent(out) :: Fx
-  
+
 !</output>
-  
+
 !</subroutine>
 
     call SSET(size(Fx,1)*size(Fx,2)*size(Fx,3),0.0_SP,Fx,1)
@@ -5190,7 +5190,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorDble3D (Dx)
-  
+
 !<description>
   ! Clears a double precision vector: Dx = 0
 !</description>
@@ -5199,7 +5199,7 @@ contains
   ! Destination vector to be cleared
   real(DP), dimension(:,:,:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     call DSET(size(Dx,1)*size(Dx,2)*size(Dx,3),0.0_DP,Dx,1)
@@ -5211,7 +5211,7 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorQuad3D (Qx)
-  
+
 !<description>
   ! Clears a quad precision vector: Qx = 0
 !</description>
@@ -5220,11 +5220,11 @@ contains
   ! Destination vector to be cleared
   real(QP), dimension(:,:,:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     call QSET(size(Qx,1)*size(Qx,2)*size(Qx,3),0.0_QP,Qx,1)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5232,18 +5232,18 @@ contains
 !<subroutine>
 
   subroutine lalg_clearVectorI8_3D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I8), dimension(:,:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5256,26 +5256,26 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI16_3D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I16), dimension(:,:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5288,26 +5288,26 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI32_3D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I32), dimension(:,:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5320,26 +5320,26 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_clearVectorI64_3D (Ix)
-  
+
 !<description>
   ! Clears an integer vector: Ix = 0
 !</description>
 
 !<output>
-  
+
   ! Destination vector to be cleared
   integer(I64), dimension(:,:,:), intent(out) :: Ix
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5352,15 +5352,15 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
- 
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorSngl (Fx,fvalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
 !</description>
@@ -5385,15 +5385,15 @@ contains
     else
       call SSET(n,fvalue,Fx,1)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorDble (Dx,dvalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
 !</description>
@@ -5410,7 +5410,7 @@ contains
   ! Destination vector to be set
   real(DP), dimension(:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -5418,15 +5418,15 @@ contains
     else
       call DSET(n,dvalue,Dx,1)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorQuad (Qx,qvalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
 !</description>
@@ -5443,7 +5443,7 @@ contains
   ! Destination vector to be set
   real(QP), dimension(:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     if (.not. present(n)) then
@@ -5451,15 +5451,15 @@ contains
     else
       call QSET(n,qvalue,Qx,1)
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI8 (Ix,ivalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5476,34 +5476,34 @@ contains
   ! Destination vector to be set
   integer(I8), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-   
+
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Ix(i) = ivalue
       end do
-      
+
     end if
-  
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI16 (Ix,ivalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5520,34 +5520,34 @@ contains
   ! Destination vector to be set
   integer(I16), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-   
+
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Ix(i) = ivalue
       end do
-      
+
     end if
-  
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI32 (Ix,ivalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5564,34 +5564,34 @@ contains
   ! Destination vector to be set
   integer(I32), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-   
+
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Ix(i) = ivalue
       end do
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI64 (Ix,ivalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5608,26 +5608,26 @@ contains
   ! Destination vector to be set
   integer(I64), dimension(:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-   
+
       do i = 1, size(Ix)
         Ix(i) = ivalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Ix(i) = ivalue
       end do
-      
+
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5635,7 +5635,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorLogical (Lx,lvalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Lx = lvalue
 !</description>
@@ -5652,26 +5652,26 @@ contains
   ! Destination vector to be set
   logical, dimension(:), intent(out) :: Lx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Lx)
         Lx(i) = lvalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Lx(i) = lvalue
       end do
-      
+
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5679,7 +5679,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorChar (Sx,svalue,n)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Sx = svalue
 !</description>
@@ -5696,34 +5696,34 @@ contains
   ! Destination vector to be set
   character, dimension(:), intent(out) :: Sx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i
-  
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Sx)
         Sx(i) = svalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Sx(i) = svalue
       end do
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorSngl2D (Fx,fvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
 !</description>
@@ -5749,7 +5749,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorDble2D (Dx,dvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
 !</description>
@@ -5763,7 +5763,7 @@ contains
   ! Destination vector to be set
   real(DP), dimension(:,:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     call DSET(size(Dx,1)*size(Dx,2),dvalue,Dx,1)
@@ -5775,7 +5775,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorQuad2D (Qx,qvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
 !</description>
@@ -5789,19 +5789,19 @@ contains
   ! Destination vector to be set
   real(QP), dimension(:,:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     call QSET(size(Qx,1)*size(Qx,2),qvalue,Qx,1)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI8_2D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5815,7 +5815,7 @@ contains
   ! Destination vector to be set
   integer(I8), dimension(:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5826,15 +5826,15 @@ contains
         Ix(i,j) = ivalue
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI16_2D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5848,7 +5848,7 @@ contains
   ! Destination vector to be set
   integer(I16), dimension(:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5859,15 +5859,15 @@ contains
         Ix(i,j) = ivalue
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI32_2D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5881,7 +5881,7 @@ contains
   ! Destination vector to be set
   integer(I32), dimension(:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5892,15 +5892,15 @@ contains
         Ix(i,j) = ivalue
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI64_2D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -5914,7 +5914,7 @@ contains
   ! Destination vector to be set
   integer(I64), dimension(:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5925,7 +5925,7 @@ contains
         Ix(i,j) = ivalue
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5933,7 +5933,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorLogical2D (Lx,lvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Lx = lvalue
 !</description>
@@ -5947,18 +5947,18 @@ contains
   ! Destination vector to be set
   logical, dimension(:,:), intent(out) :: Lx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i,j
-  
+
     do j = 1, size(Lx,2)
       do i = 1, size(Lx,1)
         Lx(i,j) = lvalue
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5966,7 +5966,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorChar2D (Sx,svalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Sx = svalue
 !</description>
@@ -5980,7 +5980,7 @@ contains
   ! Destination vector to be set
   character, dimension(:,:), intent(out) :: Sx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -5991,7 +5991,7 @@ contains
         Sx(i,j) = svalue
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -5999,7 +5999,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorSngl3D (Fx,fvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
 !</description>
@@ -6017,7 +6017,7 @@ contains
 !</subroutine>
 
     call SSET(size(Fx,1)*size(Fx,2)*size(Fx,3),fvalue,Fx,1)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6025,7 +6025,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorDble3D (Dx,dvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
 !</description>
@@ -6039,7 +6039,7 @@ contains
   ! Destination vector to be set
   real(DP), dimension(:,:,:), intent(out) :: Dx
 !</output>
-  
+
 !</subroutine>
 
     call DSET(size(Dx,1)*size(Dx,2)*size(Dx,3),dvalue,Dx,1)
@@ -6051,7 +6051,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorQuad3D (Qx,qvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
 !</description>
@@ -6065,19 +6065,19 @@ contains
   ! Destination vector to be set
   real(QP), dimension(:,:,:), intent(out) :: Qx
 !</output>
-  
+
 !</subroutine>
 
     call QSET(size(Qx,1)*size(Qx,2)*size(Qx,3),qvalue,Qx,1)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI8_3D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -6091,7 +6091,7 @@ contains
   ! Destination vector to be set
   integer(I8), dimension(:,:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6104,15 +6104,15 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI16_3D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -6126,7 +6126,7 @@ contains
   ! Destination vector to be set
   integer(I16), dimension(:,:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6139,15 +6139,15 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI32_3D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -6161,7 +6161,7 @@ contains
   ! Destination vector to be set
   integer(I32), dimension(:,:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6174,15 +6174,15 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_setVectorI64_3D (Ix,ivalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Ix = ivalue
 !</description>
@@ -6196,7 +6196,7 @@ contains
   ! Destination vector to be set
   integer(I64), dimension(:,:,:), intent(out) :: Ix
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6209,7 +6209,7 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6217,7 +6217,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorLogical3D (Lx,lvalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Lx = lvalue
 !</description>
@@ -6231,12 +6231,12 @@ contains
   ! Destination vector to be set
   logical, dimension(:,:,:), intent(out) :: Lx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
   integer :: i,j,k
-  
+
     do k = 1, size(Lx,3)
       do j = 1, size(Lx,2)
         do i = 1, size(Lx,1)
@@ -6244,7 +6244,7 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6252,7 +6252,7 @@ contains
 !<subroutine>
 
   subroutine lalg_setVectorChar3D (Sx,svalue)
-  
+
 !<description>
   ! Sets the vector data to a defined value: Sx = svalue
 !</description>
@@ -6266,7 +6266,7 @@ contains
   ! Destination vector to be set
   character, dimension(:,:,:), intent(out) :: Sx
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6279,7 +6279,7 @@ contains
         end do
       end do
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6287,16 +6287,16 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSngl (Fx,Fy,scx,scy,n)
-  
+
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)               :: scx
 
@@ -6305,21 +6305,21 @@ contains
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(SP), dimension(:), intent(inout) :: Fy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(SP) :: c
-  
+
     if (.not. present(n)) then
 
       if (scy .eq. 0.0_SP) then
@@ -6332,9 +6332,9 @@ contains
         call SAXPY(size(Fx),c,Fx,1,Fy,1)
         call SSCAL(size(Fy),scy,Fy,1)
       endif
-      
+
     else
-    
+
       if (scy .eq. 0.0_SP) then
         call SCOPY(n,Fx,1,Fy,1)
         if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
@@ -6347,49 +6347,49 @@ contains
       endif
 
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDble (Dx,Dy,dcx,dcy,n)
-  
+
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)               :: dcx
 
   ! Scaling factor for Dy
   real(DP), intent(in)               :: dcy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP) :: c
-  
+
     if (.not. present(n)) then
-    
+
       if (dcy .eq. 0.0_DP) then
         call DCOPY(size(Dx),Dx,1,Dy,1)
         if (dcx .ne. 1.0_DP) call DSCAL(size(Dy),dcx,Dy,1)
@@ -6400,9 +6400,9 @@ contains
         call DAXPY(size(Dx),c,Dx,1,Dy,1)
         call DSCAL(size(Dy),dcy,Dy,1)
       endif
-      
+
     else
-    
+
       if (dcy .eq. 0.0_DP) then
         call DCOPY(n,Dx,1,Dy,1)
         if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
@@ -6413,51 +6413,51 @@ contains
         call DAXPY(n,c,Dx,1,Dy,1)
         call DSCAL(n,dcy,Dy,1)
       endif
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombQuad (Qx,Qy,qcx,qcy,n)
-  
+
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! Scaling factor for Dx
   real(QP), intent(in)               :: qcx
 
   ! Scaling factor for Dy
   real(QP), intent(in)               :: qcy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(QP) :: c
-  
+
     if (.not. present(n)) then
-    
+
       if (qcy .eq. 0.0_QP) then
         call QCOPY(size(Qx),Qx,1,Qy,1)
         if (qcx .ne. 1.0_QP) call QSCAL(size(Qy),qcx,Qy,1)
@@ -6468,9 +6468,9 @@ contains
         call QAXPY(size(Qx),c,Qx,1,Qy,1)
         call QSCAL(size(Qy),qcy,Qy,1)
       endif
-      
+
     else
-    
+
       if (qcy .eq. 0.0_QP) then
         call QCOPY(n,Qx,1,Qy,1)
         if (qcx .ne. 1.0_QP) call QSCAL(n,qcx,Qy,1)
@@ -6481,49 +6481,49 @@ contains
         call QAXPY(n,c,Qx,1,Qy,1)
         call QSCAL(n,qcy,Qy,1)
       endif
-      
+
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglDble (Fx,Dy,scx,dcy,n)
-  
+
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)               :: scx
 
   ! Scaling factor for Dy
   real(DP), intent(in)               :: dcy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(SP) :: c
-  
+
     if (.not. present(n)) then
 
       if (dcy .eq. 0.0_DP) then
@@ -6536,9 +6536,9 @@ contains
         call SDAXPY(size(Fx),c,Fx,1,Dy,1)
         call DSCAL(size(Dy),dcy,Dy,1)
       endif
-      
+
     else
-    
+
       if (dcy .eq. 0.0_DP) then
         call SDCOPY(n,Fx,1,Dy,1)
         if (scx .ne. 1.0_SP) call DSCAL(size(Dy),real(scx,DP),Dy,1)
@@ -6551,47 +6551,47 @@ contains
       endif
 
     end if
-  
+
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglQuad (Fx,Qy,scx,qcy,n)
-  
+
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)               :: scx
 
   ! Scaling factor for Qy
   real(QP), intent(in)               :: qcy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(SP) :: c
-  
+
     if (.not. present(n)) then
 
       if (qcy .eq. 0.0_QP) then
@@ -6604,9 +6604,9 @@ contains
         call SQAXPY(size(Fx),c,Fx,1,Qy,1)
         call QSCAL(size(Qy),qcy,Qy,1)
       endif
-      
+
     else
-    
+
       if (qcy .eq. 0.0_QP) then
         call SQCOPY(n,Fx,1,Qy,1)
         if (scx .ne. 1.0_SP) call QSCAL(size(Qy),real(scx,QP),Qy,1)
@@ -6619,7 +6619,7 @@ contains
       endif
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6627,39 +6627,39 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDblQuad (Dx,Qy,dcx,qcy,n)
-  
+
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)               :: dcx
 
   ! Scaling factor for Qy
   real(QP), intent(in)               :: qcy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
   real(DP) :: c
-  
+
     if (.not. present(n)) then
 
       if (qcy .eq. 0.0_QP) then
@@ -6672,9 +6672,9 @@ contains
         call DQAXPY(size(Dx),c,Dx,1,Qy,1)
         call QSCAL(size(Qy),qcy,Qy,1)
       endif
-      
+
     else
-    
+
       if (qcy .eq. 0.0_QP) then
         call DQCOPY(n,Dx,1,Qy,1)
         if (dcx .ne. 1.0_DP) call QSCAL(size(Qy),real(dcx,QP),Qy,1)
@@ -6687,7 +6687,7 @@ contains
       endif
 
     end if
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6695,31 +6695,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSngl2D (Fx,Fy,scx,scy)
-  
+
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Dy
   real(SP), intent(in)                 :: scy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(SP), dimension(:,:), intent(inout) :: Fy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6727,7 +6727,7 @@ contains
   integer :: n
 
   n = size(Fx,1)*size(Fx,2)
-  
+
     if (scy .eq. 0.0_SP) then
       call SCOPY(n,Fx,1,Fy,1)
       if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
@@ -6738,7 +6738,7 @@ contains
       call SAXPY(n,c,Fx,1,Fy,1)
       call SSCAL(n,scy,Fy,1)
     endif
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6746,31 +6746,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDble2D (Dx,Dy,dcx,dcy)
-  
+
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)                 :: dcx
 
   ! Scaling factor for Dy
   real(DP), intent(in)                 :: dcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:,:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6778,7 +6778,7 @@ contains
   integer :: n
 
   n = size(Dx,1)*size(Dx,2)
-  
+
     if (dcy .eq. 0.0_DP) then
       call DCOPY(n,Dx,1,Dy,1)
       if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
@@ -6789,7 +6789,7 @@ contains
       call DAXPY(n,c,Dx,1,Dy,1)
       call DSCAL(n,dcy,Dy,1)
     endif
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -6797,31 +6797,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombQuad2D (Qx,Qy,qcx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:,:), intent(in) :: Qx
-  
+
   ! Scaling factor for Qx
   real(QP), intent(in)                 :: qcx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                 :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6842,37 +6842,37 @@ contains
     endif
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglDble2D (Fx,Dy,scx,dcy)
-  
+
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Dy
   real(DP), intent(in)                 :: dcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:,:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -6893,39 +6893,39 @@ contains
     endif
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglQuad2D (Fx,Qy,scx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                 :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
- 
+
   ! local variables
   real(SP) :: c
   integer :: n
@@ -6944,39 +6944,39 @@ contains
     endif
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDblQuad2D (Dx,Qy,dcx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)                 :: dcx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                 :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   real(DP) :: c
   integer :: n
@@ -7001,31 +7001,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSngl3D (Fx,Fy,scx,scy)
-  
+
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                   :: scx
 
   ! Scaling factor for Dy
   real(SP), intent(in)                   :: scy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(SP), dimension(:,:,:), intent(inout) :: Fy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7033,7 +7033,7 @@ contains
   integer :: n
 
   n = size(Fx,1)*size(Fx,2)*size(Fx,3)
-  
+
     if (scy .eq. 0.0_SP) then
       call SCOPY(n,Fx,1,Fy,1)
       if (scx .ne. 1.0_SP) call SSCAL(n,scx,Fy,1)
@@ -7044,7 +7044,7 @@ contains
       call SAXPY(n,c,Fx,1,Fy,1)
       call SSCAL(n,scy,Fy,1)
     endif
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -7052,31 +7052,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDble3D (Dx,Dy,dcx,dcy)
-  
+
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:,:,:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)                   :: dcx
 
   ! Scaling factor for Dy
   real(DP), intent(in)                   :: dcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:,:,:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7084,7 +7084,7 @@ contains
   integer :: n
 
   n = size(Dx,1)*size(Dx,2)*size(Dx,3)
-  
+
     if (dcy .eq. 0.0_DP) then
       call DCOPY(n,Dx,1,Dy,1)
       if (dcx .ne. 1.0_DP) call DSCAL(n,dcx,Dy,1)
@@ -7095,7 +7095,7 @@ contains
       call DAXPY(n,c,Dx,1,Dy,1)
       call DSCAL(n,dcy,Dy,1)
     endif
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -7103,31 +7103,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombQuad3D (Qx,Qy,qcx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:,:,:), intent(in) :: Qx
-  
+
   ! Scaling factor for Qx
   real(QP), intent(in)                   :: qcx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                   :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7154,31 +7154,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglDble3D (Fx,Dy,scx,dcy)
-  
+
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                   :: scx
 
   ! Scaling factor for Dy
   real(DP), intent(in)                   :: dcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:,:,:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -7205,33 +7205,33 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombSnglQuad3D (Fx,Qy,scx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:,:), intent(in) :: Fx
-  
+
   ! Scaling factor for Dx
   real(SP), intent(in)                   :: scx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                   :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
- 
+
   ! local variables
   real(SP) :: c
   integer :: n
@@ -7256,33 +7256,33 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorLinearCombDblQuad3D (Dx,Qy,dcx,qcy)
-  
+
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:,:,:), intent(in) :: Dx
-  
+
   ! Scaling factor for Dx
   real(DP), intent(in)                   :: dcx
 
   ! Scaling factor for Qy
   real(QP), intent(in)                   :: qcy
-  
+
 !</input>
 
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:,:,:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
   ! local variables
   real(DP) :: c
   integer :: n
@@ -7307,23 +7307,23 @@ contains
 !<function>
 
   real(SP) function lalg_scalarProductSngl (Fx,Fy,n) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two single precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Second source vector
   real(SP), dimension(:), intent(in) :: Fy
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<result>
@@ -7339,7 +7339,7 @@ contains
     else
       res = SDOT(size(Fx),Fx,1,Fy,1)
     end if
-  
+
   end function
 
   ! ***************************************************************************
@@ -7347,23 +7347,23 @@ contains
 !<function>
 
   real(DP) function lalg_scalarProductDble (Dx,Dy,n) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two double precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Second source vector
   real(DP), dimension(:), intent(in) :: Dy
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<result>
@@ -7379,31 +7379,31 @@ contains
     else
       res = DDOT(size(Dx),Dx,1,Dy,1)
     end if
-  
+
   end function
-  
+
   ! ***************************************************************************
 
 !<function>
 
   real(QP) function lalg_scalarProductQuad (Qx,Qy,n) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two quad precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! Second source vector
   real(QP), dimension(:), intent(in) :: Qy
-  
+
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
 
 !<result>
@@ -7417,21 +7417,21 @@ contains
 
     res = 0.0_QP
     if (.not. present(n)) then
-    
+
       do i = 1, size(Qx)
         res = res + Qx(i)*Qy(i)
       end do
-      
+
       !res = QDOT(size(Qx),Qx,1,Qy,1)
     else
-    
+
       do i = 1, n
         res = res + Qx(i)*Qy(i)
       end do
-      
+
       !res = QDOT(n,Qx,1,Qy,1)
     end if
-  
+
   end function
 
   ! ***************************************************************************
@@ -7439,20 +7439,20 @@ contains
 !<function>
 
   real(SP) function lalg_scalarProductSngl2D (Fx,Fy) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two single precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:,:), intent(in) :: Fx
-  
+
   ! Second source vector
   real(SP), dimension(:,:), intent(in) :: Fy
-  
+
 !</input>
 
 !<result>
@@ -7464,7 +7464,7 @@ contains
   real(SP) :: SDOT
 
     res = SDOT(size(Fx,1)*size(Fx,2),Fx,1,Fy,1)
-  
+
   end function
 
   ! ***************************************************************************
@@ -7472,20 +7472,20 @@ contains
 !<function>
 
   real(DP) function lalg_scalarProductDble2D (Dx,Dy) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two double precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:,:), intent(in) :: Dx
-  
+
   ! Second source vector
   real(DP), dimension(:,:), intent(in) :: Dy
-  
+
 !</input>
 
 !<result>
@@ -7497,7 +7497,7 @@ contains
   real(DP) :: DDOT
 
     res = DDOT(size(Dx,1)*size(Dx,2),Dx,1,Dy,1)
-  
+
   end function
 
   ! ***************************************************************************
@@ -7505,20 +7505,20 @@ contains
 !<function>
 
   real(DP) function lalg_scalarProductQuad2D (Qx,Qy) result (res)
-  
+
 !<description>
   ! Calculates the scalar product of two quad precision vectors:
   ! res = (vector,vector)
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:,:), intent(in) :: Qx
-  
+
   ! Second source vector
   real(QP), dimension(:,:), intent(in) :: Qy
-  
+
 !</input>
 
 !<result>
@@ -7529,9 +7529,9 @@ contains
 
   !real(QP) :: QDOT
   integer :: i,j
-  
+
     res = 0.0_QP
-  
+
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         res = res + Qx(i,j)*Qy(i,j)
@@ -7539,7 +7539,7 @@ contains
     end do
 
     !res = QDOT(size(Qx,1)*size(Qx,2),Qx,1,Qy,1)
-  
+
   end function
 
   ! ***************************************************************************
@@ -7547,7 +7547,7 @@ contains
 !<function>
 
   real(SP) function lalg_normSngl (Fx,cnorm,iposMax,n) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of a single precision vector. cnorm identifies the
   ! type of norm to calculate.
@@ -7556,7 +7556,7 @@ contains
 !<input>
   ! Vector to calculate the norm of.
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -7575,14 +7575,14 @@ contains
   ! The norm of the given array.
   ! -1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
   real(SP) :: SASUM, SNRM2
   integer :: ISAMAX
 
   integer :: isize, iposmaxlocal
-  
+
     isize = size(Fx)
     if (present(n)) isize = n
 
@@ -7605,13 +7605,13 @@ contains
       ! l_2-norm - like euclidian norm, but divide by sqrt(vector length).
       ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = SNRM2(isize,Fx,1) / sqrt(real(isize,SP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       ! With the BLAS routine, calculate the position. Then get the entry.
       iposmaxlocal = ISAMAX(isize,Fx,1)
       resnorm = abs(Fx(iposmaxlocal))
-      
+
       if(present(iposMax)) then
         iposMax = iposmaxlocal
       end if
@@ -7619,9 +7619,9 @@ contains
     case default
       ! Unknown norm
       resnorm = -1.0_SP
-      
+
     end select
-      
+
   end function
 
   ! ***************************************************************************
@@ -7629,7 +7629,7 @@ contains
 !<function>
 
   real(DP) function lalg_normDble (Dx,cnorm,iposMax,n) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of a double precision vector. cnorm identifies the
   ! type of norm to calculate.
@@ -7638,7 +7638,7 @@ contains
 !<input>
   ! Vector to calculate the norm of.
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -7658,14 +7658,14 @@ contains
   ! The norm of the given array.
   ! -1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
   real(DP) :: DASUM,DNRM2
   integer :: IDAMAX
 
   integer :: isize,iposmaxlocal
-  
+
     isize = size(Dx)
     if (present(n)) isize = n
 
@@ -7688,23 +7688,23 @@ contains
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = DNRM2(isize,Dx,1) / sqrt(real(isize,DP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       ! With the BLAS routine, calculate the position. Then get the entry.
       iposmaxlocal = IDAMAX(isize,Dx,1)
       resnorm = abs(Dx(iposmaxlocal))
-      
+
       if(present(iposMax)) then
         iposMax = iposmaxlocal
       end if
-        
+
     case default
       ! Unknown norm
       resnorm = -1.0_DP
-      
+
     end select
-    
+
   end function
 
   ! ***************************************************************************
@@ -7712,7 +7712,7 @@ contains
 !<function>
 
   real(QP) function lalg_normQuad (Qx,cnorm,iposMax,n) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of a quad precision vector. cnorm identifies the
   ! type of norm to calculate.
@@ -7721,7 +7721,7 @@ contains
 !<input>
   ! Vector to calculate the norm of.
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -7741,17 +7741,17 @@ contains
   ! The norm of the given array.
   ! -1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
 !  real(QP) :: QASUM,QNRM2
 !  integer :: IQAMAX
 
   integer :: isize,iposmaxlocal
-  
+
     isize = size(Qx)
     if (present(n)) isize = n
-    
+
     ! Choose the norm to calculate
     select case (cnorm)
     case (LINALG_NORMSUM)
@@ -7771,23 +7771,23 @@ contains
       ! l_2-norm - like euclidian norm, but divide by vector length.
       ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = QNRM2(isize,Qx,1) / sqrt(real(isize,QP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       ! With the BLAS routine, calculate the position. Then get the entry.
       iposmaxlocal = IQAMAX(isize,Qx,1)
       resnorm = abs(Qx(iposmaxlocal))
-      
+
       if(present(iposMax)) then
         iposMax = iposmaxlocal
       end if
-        
+
       case default
       ! Unknown norm
       resnorm = -1.0_QP
-      
+
     end select
-    
+
   end function
 
   ! ***************************************************************************
@@ -7795,7 +7795,7 @@ contains
 !<function>
 
   real(SP) function lalg_errorNormSngl (Fx,Fy,cnorm,iposMax,n) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of two double precision vectors, !!Fx-Fy!!
   ! cnorm identifies the type of norm to calculate.
@@ -7804,7 +7804,7 @@ contains
 !<input>
   ! Vectors to calculate the norm of their difference
   real(SP), dimension(:), intent(in) :: Fx,Fy
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -7824,15 +7824,15 @@ contains
   ! The norm of the given array.
   ! < 0 >1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
   real(SP) :: stemp
   integer :: i,j,isize
-  
+
     isize = size(Fx)
     if (present(n)) isize = n
-    
+
     resnorm = 0.0_SP
 
     ! Choose the norm to calculate
@@ -7865,7 +7865,7 @@ contains
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
       end do
       resnorm = sqrt(resnorm / real(isize,SP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       resnorm = abs(Fx(1)-Fy(1))
@@ -7878,11 +7878,11 @@ contains
         end if
       end do
       if (present(iposMax)) iposMax = j
-      
+
     case default
       resnorm = -1.0_DP ! Unknown norm.
     end select
-    
+
   end function
 
   ! ***************************************************************************
@@ -7890,7 +7890,7 @@ contains
 !<function>
 
   real(DP) function lalg_errorNormDble (Dx,Dy,cnorm,iposMax,n,Dw) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of two double precision vectors, !!Dx-Dy!!
   ! cnorm identifies the type of norm to calculate.
@@ -7902,7 +7902,7 @@ contains
 !<input>
   ! Vectors to calculate the norm of their difference
   real(DP), dimension(:), intent(in) :: Dx,Dy
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -7924,15 +7924,15 @@ contains
   ! The norm of the given array.
   ! -1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
   real(DP) :: dtemp
   integer :: i,j,isize
-  
+
     isize = size(Dx)
     if (present(n)) isize = n
-    
+
     resnorm = 0.0_DP
 
     ! Choose the norm to calculate
@@ -7977,7 +7977,7 @@ contains
         resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
       end do
       resnorm = sqrt(resnorm / real(isize,DP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       resnorm = abs(Dx(1)-Dy(1))
@@ -7990,11 +7990,11 @@ contains
         end if
       end do
       if (present(iposMax)) iposMax = j
-      
+
     case default
       resnorm = -1.0_DP ! Unknown norm.
     end select
-    
+
   end function
 
   ! ***************************************************************************
@@ -8002,7 +8002,7 @@ contains
 !<function>
 
   real(QP) function lalg_errorNormQuad (Qx,Qy,cnorm,iposMax,n,Qw) result(resnorm)
-  
+
 !<description>
   ! Calculates the norm of two quad precision vectors, !!Qx-Qy!!
   ! cnorm identifies the type of norm to calculate.
@@ -8014,7 +8014,7 @@ contains
 !<input>
   ! Vectors to calculate the norm of their difference
   real(QP), dimension(:), intent(in) :: Qx,Qy
-  
+
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
 
@@ -8036,15 +8036,15 @@ contains
   ! The norm of the given array.
   ! -1, if an error occurred (unknown norm).
 !</result>
-  
+
 !</function>
 
   real(QP) :: qtemp
   integer :: i,j,isize
-  
+
     isize = size(Qx)
     if (present(n)) isize = n
-    
+
     resnorm = 0.0_DP
 
     ! Choose the norm to calculate
@@ -8089,7 +8089,7 @@ contains
         resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
       end do
       resnorm = sqrt(resnorm / real(isize,DP))
-      
+
     case (LINALG_NORMMAX)
       ! MAX-norm. Find the absolute largest entry.
       resnorm = abs(Qx(1)-Qy(1))
@@ -8102,11 +8102,11 @@ contains
         end if
       end do
       if (present(iposMax)) iposMax = j
-      
+
     case default
       resnorm = -1.0_QP ! Unknown norm.
     end select
-    
+
   end function
 
   ! ***************************************************************************
@@ -8114,13 +8114,13 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorSortSngl (Fx, Fd, Itr)
-  
+
 !<description>
   ! Resorts the entries in the vector Fx corresponding to Itr.
   ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
   ! to Dd.
 !</description>
-  
+
 !<input>
   ! Array with permutation of 1..neq
   integer, dimension(:), intent(in) :: Itr
@@ -8128,21 +8128,21 @@ contains
   ! Source vector to be sorted
   real(SP), dimension(:), intent(in) :: Fx
 !</input>
-  
+
 !<output>
   ! The resorted vector
   real(SP), dimension(:), intent(out) :: Fd
 !</output>
-    
+
 !</subroutine>
-    
+
   ! local variable
   integer :: i
-  
+
     do i = 1, size(Itr)
       Fd(i) = Fx(Itr(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -8150,37 +8150,37 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorSortDble (Dx, Dd, Itr)
-  
+
 !<description>
   ! Resorts the entries in the vector Dx corresponding to Itr.
   ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
   ! to Dd.
 !</description>
-  
+
 !<input>
   ! Source vector to be sorted
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Array with permutation of 1..neq.
   ! Itr(i) defines the number of the entry in Dx that should
   ! move to position i.
   integer, dimension(:), intent(in) :: Itr
 !</input>
-  
+
 !<output>
   ! The resorted vector
   real(DP), dimension(:), intent(out) :: Dd
 !</output>
-    
+
 !</subroutine>
-    
+
   ! local variable
   integer :: i
-  
+
     do i = 1, size(Itr)
       Dd(i) = Dx(Itr(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -8188,37 +8188,37 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorSortQuad (Qx, Qd, Itr)
-  
+
 !<description>
   ! Resorts the entries in the vector Qx corresponding to Itr.
   ! In particular, the first SIZE(Itr) entries of Qx are written resortedly
   ! to Qd.
 !</description>
-  
+
 !<input>
   ! Source vector to be sorted
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! Array with permutation of 1..neq.
   ! Itr(i) defines the number of the entry in Dx that should
   ! move to position i.
   integer, dimension(:), intent(in) :: Itr
 !</input>
-  
+
 !<output>
   ! The resorted vector
   real(QP), dimension(:), intent(out) :: Qd
 !</output>
-    
+
 !</subroutine>
-    
+
   ! local variable
   integer :: i
-  
+
     do i = 1, size(Itr)
       Qd(i) = Qx(Itr(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -8226,13 +8226,13 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorSortI32 (Ix, Id, Itr)
-  
+
 !<description>
   ! Resorts the entries in the vector Ix corresponding to Itr.
   ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
   ! to Dd.
 !</description>
-  
+
 !<input>
   ! Array with permutation of 1..neq
   integer, dimension(:), intent(in) :: Itr
@@ -8240,21 +8240,21 @@ contains
   ! Source vector to be sorted
   integer(I32), dimension(:), intent(in) :: Ix
 !</input>
-  
+
 !<output>
   ! The resorted vector
   integer(I32), dimension(:), intent(out) :: Id
 !</output>
-    
+
 !</subroutine>
-    
+
   ! local variable
   integer :: i
-  
+
     do i = 1, size(Itr)
       Id(i) = Ix(Itr(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -8262,13 +8262,13 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorSortI64 (Ix, Id, Itr)
-  
+
 !<description>
   ! Resorts the entries in the vector Ix corresponding to Itr.
   ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
   ! to Dd.
 !</description>
-  
+
 !<input>
   ! Array with permutation of 1..neq
   integer, dimension(:), intent(in) :: Itr
@@ -8276,21 +8276,21 @@ contains
   ! Source vector to be sorted
   integer(I64), dimension(:), intent(in) :: Ix
 !</input>
-  
+
 !<output>
   ! The resorted vector
   integer(I64), dimension(:), intent(out) :: Id
 !</output>
-    
+
 !</subroutine>
-    
+
   ! local variable
   integer :: i
-  
+
     do i = 1, size(Itr)
       Id(i) = Ix(Itr(i))
     end do
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -8317,7 +8317,7 @@ contains
   real(SP), dimension(:,:), intent(out) :: Stensor
 !</output>
 !</subroutine>
-    
+
   ! local variables
   integer :: i,j
 
@@ -8326,7 +8326,7 @@ contains
         Stensor(j,i) = Sx(j)*Sy(i)
       end do
     end do
-      
+
   end subroutine
 
   ! ***************************************************************************
@@ -8353,7 +8353,7 @@ contains
   real(DP), dimension(:,:), intent(out) :: Dtensor
 !</output>
 !</subroutine>
-    
+
   ! local variables
   integer :: i,j
 
@@ -8362,7 +8362,7 @@ contains
         Dtensor(j,i) = Dx(j)*Dy(i)
       end do
     end do
-      
+
   end subroutine
 
   ! ***************************************************************************
@@ -8389,7 +8389,7 @@ contains
   real(QP), dimension(:,:), intent(out) :: Qtensor
 !</output>
 !</subroutine>
-    
+
   ! local variables
   integer :: i,j
 
@@ -8398,18 +8398,18 @@ contains
         Qtensor(j,i) = Qx(j)*Qy(i)
       end do
     end do
-      
+
   end subroutine
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorAddScalarSngl (Fx,fvalue,n)
-  
+
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(SP) :: fvalue
@@ -8424,26 +8424,26 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i
-  
+
     ! Nothing to do?
     if(fvalue .eq. 0.0_SP) return
-    
+
     if (.not. present(n)) then
-      
+
       do i = 1, size(Fx)
         Fx(i) = Fx(i) + fvalue
       end do
-      
+
     else
-      
+
       do i = 1, n
         Fx(i) = Fx(i) + fvalue
       end do
-      
+
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8451,11 +8451,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarDble (Dx,dvalue,n)
-  
+
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Id.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(DP) :: dvalue
@@ -8470,39 +8470,39 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i
-  
+
     ! Nothing to do?
     if(dvalue .eq. 0.0_DP) return
-    
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Dx)
         Dx(i) = Dx(i) + dvalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Dx(i) = Dx(i) + dvalue
       end do
-      
+
     end if
-    
+
   end subroutine
-  
+
 
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorAddScalarQuad (Qx,qvalue,n)
-  
+
 !<description>
   ! This routine adds the value qvalue to each entry of the vector Id.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(QP) :: qvalue
@@ -8517,26 +8517,26 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i
-  
+
     ! Nothing to do?
     if(qvalue .eq. 0.0_DP) return
-    
+
     if (.not. present(n)) then
-    
+
       do i = 1, size(Qx)
         Qx(i) = Qx(i) + qvalue
       end do
-      
+
     else
-    
+
       do i = 1, n
         Qx(i) = Qx(i) + qvalue
       end do
-      
+
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8544,11 +8544,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarSngl2D (Fx,fvalue)
-  
+
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(SP) :: fvalue
@@ -8560,30 +8560,30 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i,j
-  
+
     ! Nothing to do?
     if(fvalue .eq. 0.0_SP) return
-    
+
     do j = 1, size(Fx,2)
       do i = 1, size(Fx,1)
         Fx(i,j) = Fx(i,j) + fvalue
       end do
     end do
-    
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorAddScalarDble2D (Dx,dvalue)
-  
+
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Dx.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(DP) :: dvalue
@@ -8595,30 +8595,30 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i,j
-  
+
     ! Nothing to do?
     if(dvalue .eq. 0.0_DP) return
-    
+
     do j = 1, size(Dx,2)
       do i = 1, size(Dx,1)
         Dx(i,j) = Dx(i,j) + dvalue
       end do
     end do
-    
+
   end subroutine
-  
+
   !****************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorAddScalarQuad2D (Qx,qvalue)
-  
+
 !<description>
   ! This routine adds the value qvalue to each entry of the vector Qx.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   real(QP) :: qvalue
@@ -8630,18 +8630,18 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
   integer :: i,j
-  
+
     ! Nothing to do?
     if(qvalue .eq. 0.0_QP) return
-    
+
     do j = 1, size(Qx,2)
       do i = 1, size(Qx,1)
         Qx(i,j) = Qx(i,j) + qvalue
       end do
     end do
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8649,11 +8649,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarI8 (Ix,ivalue,n)
-  
+
 !<description>
   ! This routine adds the value ivalue to each entry of the vector Ix.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   integer(I8) :: ivalue
@@ -8668,9 +8668,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     integer :: i
-    
+
     if (.not. present(n)) then
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
@@ -8680,7 +8680,7 @@ contains
         Ix(i) = Ix(i) + ivalue
       end do
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8688,11 +8688,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarI16 (Ix,ivalue,n)
-  
+
 !<description>
   ! This routine adds the value ivalue to each entry of the vector Ix.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   integer(I16) :: ivalue
@@ -8707,9 +8707,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     integer :: i
-    
+
     if (.not. present(n)) then
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
@@ -8719,7 +8719,7 @@ contains
         Ix(i) = Ix(i) + ivalue
       end do
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8727,11 +8727,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarI32 (Ix,ivalue,n)
-  
+
 !<description>
   ! This routine adds the value ivalue to each entry of the vector Ix.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   integer(I32) :: ivalue
@@ -8746,9 +8746,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     integer :: i
-    
+
     if (.not. present(n)) then
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
@@ -8758,7 +8758,7 @@ contains
         Ix(i) = Ix(i) + ivalue
       end do
     end if
-    
+
   end subroutine
 
   !****************************************************************************
@@ -8766,11 +8766,11 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorAddScalarI64 (Ix,ivalue,n)
-  
+
 !<description>
   ! This routine adds the value ivalue to each entry of the vector Ix.
 !</description>
-  
+
 !<input>
   ! The value to add to every entry.
   integer(I64) :: ivalue
@@ -8785,9 +8785,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     integer :: i
-    
+
     if (.not. present(n)) then
       do i = 1, size(Ix)
         Ix(i) = Ix(i) + ivalue
@@ -8797,7 +8797,7 @@ contains
         Ix(i) = Ix(i) + ivalue
       end do
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -8805,31 +8805,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorCompMultSngl (Fx,Fy,sc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Fy = sc * Fx * Fy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor
   real(SP), intent(in)               :: sc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(SP), dimension(:), intent(inout) :: Fy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -8850,37 +8850,37 @@ contains
     end if
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorCompMultDble (Dx,Dy,dc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Dy = dc * Dx * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Scaling factor
   real(DP), intent(in)               :: dc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -8907,31 +8907,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorCompMultQuad (Qx,Qy,qc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Qx * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(QP), dimension(:), intent(in) :: Qx
-  
+
   ! Scaling factor
   real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -8958,31 +8958,31 @@ contains
 !<subroutine>
 
   subroutine lalg_vectorCompMultDbleSngl (Fx,Dy,dc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Dy = dc * Fx * Dy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor
   real(DP), intent(in)               :: dc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(DP), dimension(:), intent(inout) :: Dy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -9003,37 +9003,37 @@ contains
     end if
 
   end subroutine
-  
+
 ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorCompMultQuadSngl (Fx,Qy,Qc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Fx * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(SP), dimension(:), intent(in) :: Fx
-  
+
   ! Scaling factor
   real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -9054,37 +9054,37 @@ contains
     end if
 
   end subroutine
- 
+
 ! ***************************************************************************
 
 !<subroutine>
 
   subroutine lalg_vectorCompMultQuadDble (Dx,Qy,Qc,n)
-  
+
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Dx * Qy
 !</description>
 
 !<input>
-  
+
   ! First source vector
   real(DP), dimension(:), intent(in) :: Dx
-  
+
   ! Scaling factor
   real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
   integer, intent(in), optional :: n
-  
+
 !</input>
- 
+
 !<inputoutput>
-  
+
   ! Second source vector; also receives the result
   real(QP), dimension(:), intent(inout) :: Qy
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
@@ -9121,10 +9121,10 @@ contains
 !</descption>
 
 !<inputoutput>
-  
+
   ! Source and destination vector
   real(QP), dimension(*), intent(inout) :: qx
-  
+
 !</inputoutput>
 
 !<input>
@@ -9143,7 +9143,7 @@ contains
 
   ! local variables
   integer :: i,m,mp1,nincx
-  
+
   if( n.le.0 .or. incx.le.0 )return
   if(incx.eq.1)go to 20
 
@@ -9155,7 +9155,7 @@ contains
   end do
   !$omp end parallel do
   return
-  
+
   ! code for increment equal to 1
 20 m = mod(n,5)
   if( m .eq. 0 ) go to 40
@@ -9188,10 +9188,10 @@ contains
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -9213,7 +9213,7 @@ contains
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9260,10 +9260,10 @@ contains
 !</descption>
 
 !<output>
-  
+
   ! Second source and destination vector
   real(QP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -9354,12 +9354,12 @@ contains
   ! local variables
   real(QP) :: qtemp
   integer i,m,mp1,nincx
-  
+
   qasum = 0.0_QP
   qtemp = 0.0_QP
   if( n.le.0 .or. incx.le.0 )return
   if(incx.eq.1)go to 20
-  
+
   ! code for increment not equal to 1
   nincx = n*incx
   do i = 1,nincx,incx
@@ -9441,7 +9441,7 @@ contains
     end do
     norm  = scale * sqrt( ssq )
   end if
-  
+
   qnrm2 = norm
 
   end function qnrm2
@@ -9501,7 +9501,7 @@ contains
     ix = ix + incx
   end do
   return
-  
+
   ! code for increment equal to 1
 20 qmax = abs(qx(1))
   do i = 2,n
@@ -9525,10 +9525,10 @@ contains
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(*), intent(out) :: dy
-  
+
 !</output>
 
 !<input>
@@ -9550,7 +9550,7 @@ contains
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9597,10 +9597,10 @@ contains
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(*), intent(out) :: sy
-  
+
 !</output>
 
 !<input>
@@ -9622,7 +9622,7 @@ contains
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9669,10 +9669,10 @@ end subroutine dscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -9694,7 +9694,7 @@ end subroutine dscopy
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9741,10 +9741,10 @@ end subroutine dscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(*), intent(out) :: sy
-  
+
 !</output>
 
 !<input>
@@ -9766,7 +9766,7 @@ end subroutine dscopy
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9813,10 +9813,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -9838,7 +9838,7 @@ end subroutine qscopy
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9885,10 +9885,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(*), intent(out) :: dy
-  
+
 !</output>
 
 !<input>
@@ -9910,7 +9910,7 @@ end subroutine qscopy
 
   if(n.le.0)return
   if(incx.eq.1.and.incy.eq.1)go to 20
-  
+
   ! code for unequal increments or equal increments not equal to 1
   ix = 1
   iy = 1
@@ -9957,10 +9957,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Second source and destination vector
   real(DP), dimension(*), intent(out) :: dy
-  
+
 !</output>
 
 !<input>
@@ -10030,10 +10030,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Second source and destination vector
   real(QP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -10103,10 +10103,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Second source and destination vector
   real(DP), dimension(*), intent(out) :: qy
-  
+
 !</output>
 
 !<input>
@@ -10180,10 +10180,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(SP), dimension(*), intent(out) :: sx
-  
+
 !</output>
 
 !<input>
@@ -10202,7 +10202,7 @@ end subroutine qscopy
 
   ! local variables
   integer :: i,m,mp1,nincx
-  
+
   if (n.le.0 .or. incx.le.0) return
   if (incx .eq. 1) then
     ! code for increment equal to 1
@@ -10252,10 +10252,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(DP), dimension(*), intent(out) :: dx
-  
+
 !</output>
 
 !<input>
@@ -10274,7 +10274,7 @@ end subroutine qscopy
 
   ! local variables
   integer :: i,m,mp1,nincx
-  
+
   if (n.le.0 .or. incx.le.0) return
   if (incx .eq. 1) then
     ! code for increment equal to 1
@@ -10306,7 +10306,7 @@ end subroutine qscopy
   end if
 
   end subroutine dset
- 
+
 ! ***************************************************************************
 
 !<subroutine>
@@ -10324,10 +10324,10 @@ end subroutine qscopy
 !</descption>
 
 !<output>
-  
+
   ! Destination vector
   real(QP), dimension(*), intent(out) :: qx
-  
+
 !</output>
 
 !<input>
@@ -10346,7 +10346,7 @@ end subroutine qscopy
 
   ! local variables
   integer :: i,m,mp1,nincx
-  
+
   if (n.le.0 .or. incx.le.0) return
   if (incx .eq. 1) then
     ! code for increment equal to 1

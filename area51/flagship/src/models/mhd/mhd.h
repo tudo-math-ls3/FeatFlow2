@@ -1,4 +1,4 @@
-!-*- mode: f90; -*-
+
 
 #ifndef _MHD_H_
 #define _MHD_H_

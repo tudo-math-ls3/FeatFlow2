@@ -1,18 +1,16 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interfaces of the callback routines
   ! ***************************************************************************
-  
+
   interface
-  
+
 !<subroutine>
 
     subroutine fcb_hadaptCallback(iOperation, rcollection)
-      
+
       use fsystem
       use collection
       use triangulation
-      
+
 !<input>
       ! Identifier for the grid modification operation
       integer, intent(in) :: iOperation

@@ -19,13 +19,13 @@ module quadtreebase
 !<constants>
 
 !<constantblock description="Constants for quadtree structure">
-  
+
   ! Maximum number of items for each quad
   integer, parameter, public :: QTREE_MAX    = 4
 
   ! Item in "North-West" position
   integer, parameter, public :: QTREE_NW     = 1
-  
+
   ! Item in "South-West" position
   integer, parameter, public :: QTREE_SW     = 2
 
@@ -34,10 +34,10 @@ module quadtreebase
 
   ! Item in "North-East" position
   integer, parameter, public :: QTREE_NE     = 4
-  
+
   ! Position of the status information
   integer, parameter, public :: QTREE_STATUS = 0
-  
+
   ! Position of the parent information
   integer, parameter, public :: QTREE_PARENT = -1
 
@@ -52,7 +52,7 @@ module quadtreebase
 
   ! Identifier: Quad is deleted
   integer, parameter, public :: QTREE_DEL    = -2
-  
+
 !</constantblock>
 
 !<constantblock description="Constants for quadtree bounding-box">
@@ -70,7 +70,7 @@ module quadtreebase
   integer, parameter, public :: QTREE_YMAX   =  4
 
 !</constantblock>
-  
+
 !<constantblock description="Constants for quadtree operations">
 
   ! Operation on quadtree failed
@@ -90,7 +90,7 @@ module quadtreebase
 
   ! Item was moved in the quadtree
   integer, parameter, public :: QTREE_REPOSITIONED =  3
-  
+
 !</constantblock>
 
 !</constants>

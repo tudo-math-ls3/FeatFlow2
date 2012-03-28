@@ -1,17 +1,15 @@
-  ! -*- mode: f90; -*-
-  
   ! This file describes the interface for a coefficient function that is called
   ! during the matrix assembly of scalar vectors.
-  
+
   interface
-  
+
   !<subroutine>
 
     subroutine ffunctionReference (cderivative, rdiscretisation, &
                                    nelements, npointsPerElement, Dpoints, &
                                    IdofsTest, rdomainIntSubset, &
                                    Dvalues, rcollection)
-    
+
     use fsystem
     use basicgeometry
     use triangulation
@@ -19,7 +17,7 @@
     use domainintegration
     use spatialdiscretisation
     use collection
-    
+
   !<description>
     ! This subroutine is called during the calculation of errors. It has to compute
     ! the (analytical) values of a function in a couple of points on a couple
@@ -31,24 +29,24 @@
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
   !</description>
-    
+
   !<input>
     ! This is a DER_xxxx derivative identifier (from derivative.f90) that
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
     integer, intent(in) :: cderivative
-  
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
@@ -67,9 +65,9 @@
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
-    
+
   !</input>
-  
+
   !<output>
     ! This array has to receive the values of the (analytical) function
     ! in all the points specified in Dpoints, or the appropriate derivative
@@ -77,23 +75,23 @@
     !   DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
-    
+
   !</subroutine>
-  
+
     end subroutine ffunctionReference
-    
+
   end interface
 
   !****************************************************************************
 
   interface
-  
+
   !<subroutine>
 
     subroutine ffunctionWeight (rdiscretisation, nelements,&
                                 npointsPerElement, Dpoints, IdofsTest,&
                                 rdomainIntSubset,  Dvalues, rcollection)
-    
+
     use fsystem
     use basicgeometry
     use triangulation
@@ -101,7 +99,7 @@
     use domainintegration
     use spatialdiscretisation
     use collection
-    
+
   !<description>
     ! This subroutine is called during the calculation of errors. It
     ! has to compute the values of a weighting function in a couple of
@@ -113,19 +111,19 @@
     ! to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
   !</description>
-    
+
   !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
@@ -144,9 +142,9 @@
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
-    
+
   !</input>
-  
+
   !<output>
     ! This array has to receive the values of the weights in all the
     ! points specified in Dpoints, or the appropriate derivative of
@@ -154,10 +152,10 @@
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
-    
+
   !</subroutine>
-  
+
     end subroutine ffunctionWeight
 
   end interface
-  
+

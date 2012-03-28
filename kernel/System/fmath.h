@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _FMATH_H_
 #define _FMATH_H_
 

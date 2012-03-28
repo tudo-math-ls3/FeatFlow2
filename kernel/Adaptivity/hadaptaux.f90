@@ -128,7 +128,7 @@ module hadaptaux
 
   ! Adaptation is undefined
   integer(I32), parameter, public :: HADAPT_UNDEFINED        = 2**0
-  
+
   ! Parameters of adaptivity structure are initialised
   integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
 
@@ -175,7 +175,7 @@ module hadaptaux
                                                                  HADAPT_HAS_NODALPROP+&
                                                                  HADAPT_HAS_NELOFTYPE+&
                                                                  HADAPT_HAS_ELEMATVERTEX
-  
+
   ! Dynamic data structures in 3D are all generated
   integer(I32), parameter, public :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
                                                                  HADAPT_HAS_COORDS+&
@@ -184,7 +184,7 @@ module hadaptaux
                                                                  HADAPT_HAS_NODALPROP+&
                                                                  HADAPT_HAS_NELOFTYPE+&
                                                                  HADAPT_HAS_ELEMATVERTEX
-  
+
   ! Cells are marked for refinement
   integer(I32), parameter, public :: HADAPT_MARKEDREFINE     = 2**10
 
@@ -194,7 +194,7 @@ module hadaptaux
   ! Cells are marked
   integer(I32), parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
                                                                HADAPT_MARKEDCOARSEN
-  
+
 !</constantblock>
 
 
@@ -224,13 +224,13 @@ module hadaptaux
   ! Operation identifier for refinment: 1-tria : 3-tria
   integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA12  = 6
   integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA23  = 7
- 
+
   ! Operation identifier for refinment: 1-tria : 4-tria
   integer, parameter, public :: HADAPT_OPR_REF_TRIA4TRIA    = 8
 
   ! Operation identifier for refinment: 1-quad : 2-quad
   integer, parameter, public :: HADAPT_OPR_REF_QUAD2QUAD    = 9
-  
+
   ! Operation identifier for refinment: 1-quad : 3-tria
   integer, parameter, public :: HADAPT_OPR_REF_QUAD3TRIA    = 10
 
@@ -293,7 +293,7 @@ module hadaptaux
 
   ! Operation identifier for refinement: 1-line : 2-line
   integer, parameter, public :: HADAPT_OPR_REF_LINE2LINE    = 32
-  
+
   ! Operation identifier for coarsening: 2-line : 1-line
   integer, parameter, public :: HADAPT_OPR_CRS_2LINE1LINE   = 33
 
@@ -323,7 +323,7 @@ module hadaptaux
 !<types>
 
   !<typeblock>
-  
+
   ! This type contains all data structures to handle
   ! adaptive grid refinement and grid coarsening.
   type :: t_hadapt
@@ -341,7 +341,7 @@ module hadaptaux
 
     ! Tag: Specifies the strategy for grid refinement and coarsening
     integer :: iadaptationStrategy = HADAPT_NOADAPTATION
-    
+
     ! Maximum number of subdivisions from the original mesh
     integer :: nsubdividemax = 0
 
@@ -365,7 +365,7 @@ module hadaptaux
 
     ! Total number of vertices (initially)
     integer :: NVT0 = 0
-    
+
     ! Total number of vertices
     integer :: NVT = 0
 
@@ -377,22 +377,22 @@ module hadaptaux
 
     ! Total number of boundary vertives
     integer :: NVBD = 0
-    
+
     ! Total number of boundary components (should not change)
     integer :: NBCT = 0
-    
+
     ! Total number of elements (initially)
     integer :: NEL0 = 0
-    
+
     ! Total number of elements
     integer :: NEL = 0
 
     ! Maximum number of elements (before reallocation)
     integer :: NELMAX = 0
-    
+
     ! Total number of green elements (required internally)
     integer :: nGreenElements = 0
-    
+
     ! Nuber of elements with a defined number of vertices per element.
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
@@ -402,7 +402,7 @@ module hadaptaux
     ! Same as InelOfType but this array stores the number of elements
     ! which are initially present in the mesh
     integer, dimension(TRIA_MAXNVE) :: InelOfType0 = 0
-    
+
     ! Element marker array.
     ! Handle to
     !       p_Imarker = array [1..NEL] of integer.
@@ -413,7 +413,7 @@ module hadaptaux
     ! BIT3: Is 0 if third edge is not subdivided, 1 otherwise.
     ! BIT4: Is 0 if fourth edge is not subdivided, 1 otherwise.
     integer :: h_Imarker = ST_NOHANDLE
-    
+
     ! Vertex age array.
     ! Handle to
     !       p_IvertexAge = array [1..NVT] of integer
@@ -451,7 +451,7 @@ module hadaptaux
     ! This array is introduced to increase performance and must
     ! not be modified by the user
     integer, dimension(:), pointer :: p_InodalProperty => null()
-    
+
     ! Vertices adjacent to an element.
     ! Handle to
     !       p_IverticesAtElement = array [1..TRIA_MAXNVE2D,1..NEL] of integer.
@@ -491,19 +491,19 @@ module hadaptaux
     ! This array is introduced to increase performance and must
     ! not be modified by the user
     integer, dimension(:,:), pointer :: p_ImidneighboursAtElement => null ()
-    
+
     ! Handle to h_DVertexCoords in 1D
     integer :: h_DvertexCoords1D
 
     ! Pointer to handle h_DvertexCoords in 1D
     real(DP), dimension(:,:), pointer :: p_DvertexCoords1D => null()
-    
+
     ! Quadtree storing the nodal coordinates in 2D
     type(t_quadtreeDble) :: rVertexCoordinates2D
 
     ! Octree storing the nodal coordinates in 2D
     type(t_octreeDble) :: rVertexCoordinates3D
-    
+
     ! Array of maps storing the boundary data
     ! p_IboundaryCpIdx and p_IverticesAtBoundary
     type(t_mapInt_Dble), dimension(:), pointer :: rBoundary => null()
@@ -552,16 +552,16 @@ contains
       nve = TRIA_NVELINE1D
 
     case (NDIM2D)
-      
+
       ! Do we have quadrilaterals in the triangulation?
       if (rhadapt%InelOfType(TRIA_NVEQUAD2D) .eq. 0) then
-        
+
         ! There are no quadrilaterals in the current triangulation.
         ! Hence, return TRIA_NVETRI2D by default.
         nve = TRIA_NVETRI2D
-        
+
       else
-        
+
         ! There are quadrilaterals and possible also triangles in
         ! the current triangulatin. If the last entry of the
         ! vertices-at-element list is nonzero then TRIA_NVEQUAD2D vertices
@@ -571,7 +571,7 @@ contains
         else
           nve = TRIA_NVEQUAD2D
         end if
-        
+
       end if
 
     case DEFAULT
@@ -759,7 +759,7 @@ contains
                             HADAPT_HAS_COORDS) then
       call qtree_release(rhadapt%rVertexCoordinates2D)
     end if
-    
+
     ! Set pointer
     call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
 
@@ -768,14 +768,14 @@ contains
     xmax = maxval(p_DvertexCoords(1,:))
     ymin = minval(p_DvertexCoords(2,:))
     ymax = maxval(p_DvertexCoords(2,:))
-    
+
     ! Estimate number of initial quadrilaterals
     nnode = int(0.5_DP*nvt)
 
     ! Create quadtree for vertices
     call qtree_create(rhadapt%rVertexCoordinates2D, nvt,&
                       nnode, xmin, ymin, xmax, ymax)
-    
+
     ! Copy vertex coordinates to quadtree
     call qtree_copy(p_DvertexCoords, rhadapt%rVertexCoordinates2D)
 
@@ -841,7 +841,7 @@ contains
     if (present(ndim)) ndim = rhadapt%ndim
     if (present(nvt))  nvt  = rhadapt%NVT
   end subroutine hadapt_getVertexCoords2D
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -885,7 +885,7 @@ contains
                             HADAPT_HAS_COORDS) then
       call otree_release(rhadapt%rVertexCoordinates3D)
     end if
-    
+
     ! Set pointer
     call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
 
@@ -896,14 +896,14 @@ contains
     ymax = maxval(p_DvertexCoords(2,:))
     zmin = minval(p_DvertexCoords(3,:))
     zmax = maxval(p_DvertexCoords(3,:))
-    
+
     ! Estimate number of initial quadrilaterals
     nnode = int(0.5_DP*nvt)
 
     ! Create octree for vertices
     call otree_create(rhadapt%rVertexCoordinates3D, nvt,&
                             nnode, xmin, ymin, zmin, xmax, ymax, zmax)
-    
+
     ! Copy vertex coordinates to octree
     call otree_copy(p_DvertexCoords, rhadapt%rVertexCoordinates3D)
 
@@ -973,7 +973,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine hadapt_setVerticesAtElement(rhadapt, h_IverticesAtElement, nel)
 
 !<description>
@@ -1005,7 +1005,7 @@ contains
     rhadapt%h_IverticesAtElement = h_IverticesAtElement
     call storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
                                rhadapt%p_IverticesAtElement)
-    
+
     ! Set specifier for IverticesAtElement
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_VERTATELEM)
 
@@ -1059,11 +1059,11 @@ contains
     ! Set dimensions
     if(present(nel))   nel = rhadapt%NEL
   end subroutine hadapt_getVerticesAtElement
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine hadapt_setNeighboursAtElement(rhadapt, h_IneighboursAtElement)
 
 !<description>
@@ -1092,7 +1092,7 @@ contains
     rhadapt%h_IneighboursAtElement = h_IneighboursAtElement
     call storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
                                rhadapt%p_IneighboursAtElement)
-    
+
     ! What spatial dimension are we?
     select case(rhadapt%ndim)
     case (NDIM1D,&
@@ -1114,7 +1114,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNeighboursAtElement')
       call sys_halt()
     end select
-    
+
     ! Set specifier for IverticesAtElement
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM)
   end subroutine hadapt_setNeighboursAtElement
@@ -1224,7 +1224,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNelOfType')
       call sys_halt()
     end if
-    
+
     InelOfType = rhadapt%InelOfType
   end subroutine hadapt_getNelOfType
 
@@ -1262,7 +1262,7 @@ contains
     type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(it_mapInt_Dble) :: rmapIter
     real(DP), dimension(:), pointer   :: p_DvertexParameterValue
@@ -1270,7 +1270,7 @@ contains
     integer, dimension(:), pointer    :: p_IverticesAtBoundary
     real(DP), dimension(3) :: Ddata
     integer :: ibct,ioff,ivbd,ivbdEnd,ivbdStart,lvbd
-    
+
     ! Check if handle are not empty
     if ((h_IboundaryCpIdx .eq. ST_NOHANDLE) .or.&
         (h_IverticesAtBoundary .eq. ST_NOHANDLE) .or.&
@@ -1295,10 +1295,10 @@ contains
                              p_IboundaryCpIdx, nbct+1)
     call storage_getbase_int(h_IverticesAtBoundary,&
                              p_IverticesAtBoundary, nvbd)
-    
+
     ! Allocate array of maps
     allocate(rhadapt%rBoundary(nbct))
-    
+
     ! Initialization
     ioff = 0
 
@@ -1326,7 +1326,7 @@ contains
         Ddata(1) =      p_DvertexParameterValue(ivbd)
         Ddata(2) = real(p_IverticesAtBoundary(ivbd-1),DP)
         Ddata(3) = real(p_IverticesAtBoundary(ivbd+1),DP)
-        
+
         rmapIter = map_insert(rhadapt%rBoundary(ibct),&
                               p_IverticesAtBoundary(ivbd), Ddata)
       end do
@@ -1339,7 +1339,7 @@ contains
       rmapIter = map_insert(rhadapt%rBoundary(ibct),&
                             p_IverticesAtBoundary(ivbdEnd), Ddata)
     end do
-    
+
     ! Set dimensions
     rhadapt%NBCT  = nbct
     rhadapt%NVBD  = nvbd
@@ -1349,7 +1349,7 @@ contains
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_BOUNDARY)
 
   end subroutine hadapt_setBoundary
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1372,7 +1372,7 @@ contains
 !<inputoutput>
     ! Handle to p_IboundaryCpIdx
     integer, intent(inout) :: h_IboundaryCpIdx
-    
+
     ! Handle to p_IverticesAtBoundary
     integer, intent(inout) :: h_IverticesAtBoundary
 
@@ -1459,7 +1459,7 @@ contains
     ivbd = 0
 
     do ibct = 1, rhadapt%NBCT
-      
+
       ! Set subdimensions
       lvbd      = map_size(rhadapt%rBoundary(ibct))
       ivbdStart = ioff+1
@@ -1471,9 +1471,9 @@ contains
 
       ! Get static boundary data from map
       rmapIter = map_begin(rhadapt%rBoundary(ibct))
-      
+
       do while(.not.map_isNull(rmapIter))
-        
+
         ! Increase counter
         ivbd = ivbd+1
 
@@ -1536,7 +1536,7 @@ contains
     rhadapt%h_InodalProperty = h_InodalProperty
     call storage_getbase_int(rhadapt%h_InodalProperty,&
                              rhadapt%p_InodalProperty)
-    
+
     ! Set specifier for InodalProperty
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_NODALPROP)
   end subroutine hadapt_setNodalProperty
@@ -1619,7 +1619,7 @@ contains
                             rhadapt%p_IverticesAtElement(ive,iel), iel)
       end do
     end do
-    
+
     ! Set specifier for relementsAtVertex
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_ELEMATVERTEX)
   end subroutine hadapt_genElementsAtVertex

@@ -27,9 +27,9 @@ module pprocindicator
   use triangulation
 
   implicit none
-  
+
   private
-  
+
   public :: ppind_secondDifference
 
 contains
@@ -72,13 +72,13 @@ contains
 
     ! Pointer to element indicator
     real(DP), dimension(:), pointer :: p_Dindicator
-    
+
     ! Pointer to scalar error vector
     real(DP), dimension(:), pointer :: p_Ddata
 
     ! Pointer to vertex coordinates
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    
+
     ! Pointer to vertices at element
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
@@ -90,20 +90,20 @@ contains
 
     ! Handle for nodal coefficients
     integer :: h_Dcoefficients
-    
+
     ! Pointer to p_Dcoefficients
     real(DP), dimension(:,:), pointer :: p_Dcoefficients
 
     ! Handle for nodal indicator
     integer :: h_DnodalIndicator
-    
+
     ! Pointer to p_DnodalIndicator
     real(DP), dimension(:), pointer :: p_DnodalIndicator
 
     ! local variable
     integer, dimension(2) :: Isize
     integer :: i
-    
+
     ! Set pointer to the underlying spatial discretization
     p_rspatialDiscr => rvectorScalar%p_rspatialDiscr
     if (.not.(associated(p_rspatialDiscr))) then
@@ -115,12 +115,12 @@ contains
     ! Loop over all FE spaces an check that linear or multi-linear elements are used
     do i = 1, p_rspatialDiscr%inumFESpaces
       select case (p_rspatialDiscr%RelementDistr(i)%celement)
-        
+
       case (EL_P1_1D,&
             EL_P1_2D, EL_Q1_2D,&
             EL_P1_3D, EL_Q1_3D)
         ! These element types are valid
-        
+
       case DEFAULT
         call output_line('Unsupported type of finite elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'errest_calcSecondDifferenceIndicator')
@@ -144,7 +144,7 @@ contains
     call storage_new('ppind_secondDifference',' DnodalIndicator',&
                      p_rtriangulation%NVT, ST_DOUBLE, h_DnodalIndicator, ST_NEWBLOCK_NOINIT)
     call storage_getbase_double(h_DnodalIndicator, p_DnodalIndicator)
-    
+
     ! Set pointers
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
                                   p_DvertexCoords)
@@ -177,7 +177,7 @@ contains
 
       ! Release temporal memory
       call storage_free(h_Dcoefficients)
-      
+
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -189,7 +189,7 @@ contains
     call storage_free(h_DnodalIndicator)
 
   contains
-    
+
     ! Here, the real working routines follow.
 
     !**************************************************************
@@ -199,7 +199,7 @@ contains
                                        IneighboursAtElement, InodalProperty, &
                                        dweight, dfilter, NEL, NVT, Dcoefficients,&
                                        DnodalIndicator, Dindicator)
-      
+
       real(DP), dimension(:), intent(in) :: Ddata
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -227,12 +227,12 @@ contains
 
       ! Loop over all elements in triangulation
       do iel = 1, NEL
-        
+
         ! What type of element are we
         select case(tria_getNVE(IverticesAtElement, iel))
-          
+
         case(TRIA_NVETRI2D)
-          
+
           ! Determine global degrees of freedom
           i1 = IverticesAtElement(1, iel)
           i2 = IverticesAtElement(2, iel)
@@ -259,7 +259,7 @@ contains
           ! Calculate averages of solution on triangle
           Dfunc(1)  = (abs(u1*(y2-y3)) + abs(u2*(y3-y1)) + abs(u3*(y1-y2))) / abs(ddet)
           Dfunc(2)  = (abs(u1*(x3-x2)) + abs(u2*(x1-x3)) + abs(u3*(x2-x1))) / abs(ddet)
-          
+
           ! Calculate derivatives of solution on triangle
           Dderiv(1) = (u1*(y2-y3) + u2*(y3-y1) + u3*(y1-y2)) / ddet
           Dderiv(2) = (u1*(x3-x2) + u2*(x1-x3) + u3*(x2-x1)) / ddet
@@ -277,7 +277,7 @@ contains
 
           ! Calculate absolute values of basis functions
           DabsBas = abs(Dbas)
-          
+
           ! Update nodal coefficient vector for node I1
           Dcoefficients(1,i1) = Dcoefficients(1,i1) + Dbas(1,1) * Dderiv(1) * darea
           Dcoefficients(2,i1) = Dcoefficients(2,i1) + Dbas(1,1) * Dderiv(2) * darea
@@ -294,7 +294,7 @@ contains
           Dcoefficients(11,i1) = Dcoefficients(11,i1) + DabsBas(2,1) * dweight * Dfunc(1) * darea
           Dcoefficients(12,i1) = Dcoefficients(12,i1) + DabsBas(2,1) * dweight * Dfunc(2) * darea
 
-          
+
           ! Update nodal coefficient vector for node I2
           Dcoefficients(1,i2) = Dcoefficients(1,i2) + Dbas(1,2) * Dderiv(1) * darea
           Dcoefficients(2,i2) = Dcoefficients(2,i2) + Dbas(1,2) * Dderiv(2) * darea
@@ -330,7 +330,7 @@ contains
 
 
         case (TRIA_NVEQUAD2D)
-          
+
           ! Each quadrilateral 1-2-3-4 is subdivided into two triangles 1-2-3 and 1-3-4
 
           ! Determine global degrees of freedom
@@ -338,7 +338,7 @@ contains
           i2 = IverticesAtElement(2, iel)
           i3 = IverticesAtElement(3, iel)
           i4 = IverticesAtElement(4, iel)
-          
+
           ! Determine vertex coordinates
           x1 = DvertexCoords(1, i1)
           y1 = DvertexCoords(2, i1)
@@ -367,7 +367,7 @@ contains
           ! Calculate derivatives of solution on triangle
           Dderiv(1) = (u1*(y2-y3) + u2*(y3-y1) + u3*(y1-y2)) / ddet
           Dderiv(2) = (u1*(x3-x2) + u2*(x1-x3) + u3*(x2-x1)) / ddet
-          
+
           ! Calculate absolute values of derivatives
           DabsDeriv = abs(Dderiv)
 
@@ -381,7 +381,7 @@ contains
 
           ! Calculate absolute values of basis functions
           DabsBas = abs(Dbas)
-          
+
 
           ! Update nodal coefficient vector for node I1
           Dcoefficients(1,i1) = Dcoefficients(1,i1) + Dbas(1,1) * Dderiv(1) * darea
@@ -422,7 +422,7 @@ contains
           Dcoefficients(2,i3) = Dcoefficients(2,i3) + Dbas(1,3) * Dderiv(2) * darea
           Dcoefficients(3,i3) = Dcoefficients(3,i3) + Dbas(2,3) * Dderiv(1) * darea
           Dcoefficients(4,i3) = Dcoefficients(4,i3) + Dbas(2,3) * Dderiv(2) * darea
-          
+
           Dcoefficients(5,i3) = Dcoefficients(5,i3) + DabsBas(1,3) * DabsDeriv(1) * darea
           Dcoefficients(6,i3) = Dcoefficients(6,i3) + DabsBas(1,3) * DabsDeriv(2) * darea
           Dcoefficients(7,i3) = Dcoefficients(7,i3) + DabsBas(2,3) * DabsDeriv(1) * darea
@@ -433,7 +433,7 @@ contains
           Dcoefficients(11,i3) = Dcoefficients(11,i3) + DabsBas(2,3) * dweight * Dfunc(1) * darea
           Dcoefficients(12,i3) = Dcoefficients(12,i3) + DabsBas(2,3) * dweight * Dfunc(2) * darea
 
-          
+
           ! Calculate determinant and area for triangle (1-3-4)
           ddet  = (x3-x1)*(y4-y1) - (x4-x1)*(y3-y1)
           darea = 0.5_DP*abs(ddet)
@@ -456,7 +456,7 @@ contains
           Dbas(2,2) = (x1-x4) / ddet
           Dbas(1,3) = (y1-y3) / ddet
           Dbas(2,3) = (x3-x1) / ddet
-          
+
           ! Calculate absolute values of basis functions
           DabsBas = abs(Dbas)
 
@@ -541,14 +541,14 @@ contains
         ! Compute nodal indicator
         DnodalIndicator(ivt) = sqrt(daux1/(daux2+max(dfilter, daux3)))
       end do
-      
-      
+
+
       ! Clear array
       call lalg_clearVectorDble(Dindicator)
 
       ! Loop over all elements in triangulation
       do iel = 1, NEL
-        
+
         ! Initialise number of contributions
         ncontributions = 0
 
@@ -567,7 +567,7 @@ contains
           ! Increase number of contributions
           ncontributions = ncontributions+1
         end do
-        
+
         ! Scale element indicator by number of contributions
         if (ncontributions .ne. 0) then
           Dindicator(iel) = Dindicator(iel) / real(ncontributions, DP)
@@ -575,7 +575,7 @@ contains
           Dindicator(iel) = 0.0_DP
         end if
       end do
-      
+
     end subroutine doSecondDiffIndicator2D
   end subroutine ppind_secondDifference
 

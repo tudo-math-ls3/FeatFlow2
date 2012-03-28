@@ -37,7 +37,7 @@ module boundaryaux
   use spatialdiscretisation
   use storage
   use triangulation
-  
+
   implicit none
 
   private
@@ -48,7 +48,7 @@ module boundaryaux
   public :: bdraux_getNELAtBoundary
   public :: bdraux_getNELAtRegion
   public :: bdraux_getNELAtBdrComp
-  
+
 contains
 
   !****************************************************************************
@@ -68,7 +68,7 @@ contains
 !<input>
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(in) :: rdiscretisation
-    
+
     ! OPTIONAL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
@@ -110,7 +110,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBoundary')
       call sys_halt()
     end if
-    
+
     NELbdc = 0
     ! Create a boundary region for each boundary component and call
     ! the calculation routine for that.
@@ -129,7 +129,7 @@ contains
 
       NELbdc = NELbdc + NEL
     end do
-    
+
   end subroutine bdraux_getElementsAtBoundary
 
   !****************************************************************************
@@ -216,7 +216,7 @@ contains
         p_DedgeParameterValue)
     call storage_getbase_double (p_rtriangulation%h_DvertexParameterValue,&
         p_DvertexParameterValue)
-    
+
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
@@ -237,7 +237,7 @@ contains
         call sys_halt()
       end if
     end if
-    
+
     ! Do we have a uniform discretisation? Would simplify a lot...
     if (rdiscretisation%ccomplexity.eq. SPDISC_UNIFORM) then
 
@@ -248,7 +248,7 @@ contains
           return
         end if
       end if
-      
+
       ! Loop through the edges on the boundary component ibdc. If the
       ! edge is inside, remember the element number and figure out the
       ! orientation of the edge, whereby iel counts the total number
@@ -258,19 +258,19 @@ contains
       do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-2
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
-          
+
           iel = iel + 1
-          
+
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
-          
+
           ! Element orientation; i.e. the local number of the boundary edge
           do ilocaledge = 1,ubound(p_IedgesAtElement,1)
             if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
                 p_IedgesAtBoundary(iedge)) exit
           end do
           IelementOrientation(iel) = ilocaledge
-          
+
           if (present(DedgePosition)) then
             ! Save the start and end parameter values of the edge
             DedgePosition(1,iel) = p_DvertexParameterValue(iedge)
@@ -285,15 +285,15 @@ contains
           call boundary_convertParameterList(rdiscretisation%p_rboundary,&
           ibdc, DedgePosition(:,1:iel), DedgePosition(:,1:iel),&
           rboundaryRegion%cparType, cpar)
-      
+
       ! Handle the last edge differently
       iedge = p_IboundaryCpIdx(ibdc+1)-1
-      
+
       if (boundary_isInRegion(rboundaryRegion, ibdc,&
           p_DedgeParameterValue(iedge))) then
-          
+
         iel = iel + 1
-          
+
         ! Element number
         IelementList(iel) = p_IelementsAtBoundary(iedge)
 
@@ -303,20 +303,20 @@ contains
               p_IedgesAtBoundary(iedge)) exit
         end do
         IelementOrientation(iel) = ilocaledge
-        
+
         if (present(DedgePosition)) then
           ! Save the start parameter value of the edge -- in length parametrisation.
           DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary,&
               ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, cpar)
-          
+
           ! Save the end parameter value of the edge -- in length parametrisation.
           DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
               ibdc, cpar)
         end if
       end if
-      
+
     else
-      
+
       ! Set pointer
       call storage_getbase_int (rdiscretisation%h_IelementDistr,&
           p_IelementDistr)
@@ -330,7 +330,7 @@ contains
       do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-2
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
-          
+
           ! Check if we are the correct element distribution
           if (present(celement)) then
             if (celement .ne. p_RelementDistribution(&
@@ -340,14 +340,14 @@ contains
 
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
-          
+
           ! Element orientation; i.e. the local number of the boundary edge
           do ilocaledge = 1,ubound(p_IedgesAtElement,1)
             if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
                 p_IedgesAtBoundary(iedge)) exit
           end do
           IelementOrientation(iel) = ilocaledge
-          
+
           if (present(DedgePosition)) then
             ! Save the start and end parameter values of the edge
             DedgePosition(1,iel) = p_DvertexParameterValue(iedge)
@@ -366,10 +366,10 @@ contains
 
       ! Handle the last edge differently
       iedge = p_IboundaryCpIdx(ibdc+1)-1
-      
+
       if (boundary_isInRegion(rboundaryRegion, ibdc,&
           p_DedgeParameterValue(iedge))) then
-        
+
         ! Check if we are the correct element distribution
         if (present(celement)) then
           if (celement .ne. p_RelementDistribution(&
@@ -380,22 +380,22 @@ contains
           end if
         end if
         iel = iel + 1
-        
+
         ! Element number
         IelementList(iel) = p_IelementsAtBoundary(iedge)
-        
+
         ! Element orientation; i.e. the local number of the boundary edge
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
           if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
               p_IedgesAtBoundary(iedge)) exit
         end do
         IelementOrientation(iel) = ilocaledge
-        
+
         if (present(DedgePosition)) then
           ! Save the start parameter value of the edge -- in length parametrisation.
           DedgePosition(1,iel) = boundary_convertParameter(rdiscretisation%p_rboundary, &
               ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, cpar)
-          
+
           ! Save the end parameter value of the edge -- in length parametrisation.
           DedgePosition(2,iel) = boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
               ibdc, cpar)
@@ -407,7 +407,7 @@ contains
 
     ! Adjust number of elements
     NELbdc = iel
-        
+
   end subroutine bdraux_getElementsAtRegion
 
   !****************************************************************************
@@ -499,7 +499,7 @@ contains
 
       ! Do we have a uniform discretisation? Would simplify a lot...
       if (rdiscretisation%ccomplexity.eq. SPDISC_UNIFORM) then
-        
+
         ! Check if there are elements which satisfy the type of element
         if (present(celement)) then
           if (p_RelementDistribution(1)%celement .ne. celement) then
@@ -511,12 +511,12 @@ contains
         ! Determine the element numbers and their orientation at the boundary
         iel = 0
         do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
-          
+
           iel = iel+1
-          
+
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
-          
+
           ! Element orientation, i.e. the local number of the boundary vertex
           if (p_InodalProperty(&
               p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
@@ -529,13 +529,13 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBdrComp')
           end if
         end do
-        
+
       else
 
         ! Set pointer
         call storage_getbase_int (rdiscretisation%h_IelementDistr,&
             p_IelementDistr)
-        
+
         ! Determine the element numbers and their orientation at the boundary
         iel = 0
         do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
@@ -546,10 +546,10 @@ contains
                 p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) cycle
           end if
           iel = iel+1
-          
+
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
-          
+
           ! Element orientation, i.e. the local number of the boundary vertex
           if (p_InodalProperty(&
               p_IverticesAtElement(1,IelementList(iel))).eq. ibdc) then
@@ -562,9 +562,9 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBdrComp')
           end if
         end do
-        
+
       end if
-      
+
 
     case(NDIM2D)
       ! The discretisation must provide a boundary structure
@@ -575,7 +575,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBdrComp')
         call sys_halt()
       end if
-      
+
       ! Create region for entire boundary and determine elements
       call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
       call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation, NELbdc,&
@@ -617,14 +617,14 @@ contains
 
     ! local variables
     integer :: ibdc
-    
+
     NELbdc = 0
     ! Create a boundary region for each boundary component and call
     ! the calculation routine for that.
     do ibdc = 1,boundary_igetNBoundComp(rboundary)
       NELbdc = NELbdc+bdraux_getNELAtBdrComp(ibdc, rtriangulation)
     end do
-    
+
   end function bdraux_getNELAtBoundary
 
   !****************************************************************************
@@ -660,13 +660,13 @@ contains
 
     ! Set pointer
     call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-    
+
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
     ! Number of elements on that boundary component?
     NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-    
+
   end function bdraux_getNELAtRegion
 
   !****************************************************************************
@@ -699,10 +699,10 @@ contains
 
     ! Set pointer
     call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-    
+
     ! Number of elements on that boundary component?
     NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-    
+
   end function bdraux_getNELAtBdrComp
-  
+
 end module boundaryaux

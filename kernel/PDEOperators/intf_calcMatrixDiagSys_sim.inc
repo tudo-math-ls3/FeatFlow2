@@ -1,9 +1,7 @@
-   ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
-    
+
   subroutine fcb_calcMatrixDiagSys_sim(DdataAtNode, DcoeffsAtNode,&
       InodeList, dscale, nnodes, DmatrixAtNode, rcollection)
 

@@ -99,11 +99,11 @@ module mprimitives
 !$use omp_lib
   use fsystem
   use genoutput
-  
+
   implicit none
-  
+
   private
-  
+
   interface mprim_signum
     module procedure mprim_signum_dble
     module procedure mprim_signum_real
@@ -127,11 +127,11 @@ module mprimitives
   interface mprim_stdDeviation
     module procedure mprim_stdDeviationDble
   end interface
-  
+
   interface mprim_meanDeviation
     module procedure mprim_meanDeviationDble
   end interface
-    
+
   interface mprim_meanValue
     module procedure mprim_meanValueDble
   end interface
@@ -191,26 +191,26 @@ contains
   ! ***************************************************************************
 
 !<function>
-  
+
   elemental real(DP) function mprim_getParabolicProfile (dpos,dlength,dmaxvalue)
-  
+
 !<description>
   ! Calculates the value of a parabolic profile along a line.
   ! dpos is a parameter value along a line of length dlength. The return value
   ! is the value of the profile and has its maximum dmax at position 0.5.
 !</description>
-  
+
 !<input>
-  
+
   ! Position on the line segment where to calculate the velocity
   real(DP), intent(in) :: dpos
-  
+
   ! Length of the line segment
   real(DP), intent(in) :: dlength
-  
+
   ! Maximum value of the profile
   real(DP), intent(in) :: dmaxvalue
-  
+
 !</input>
 
 !<result>
@@ -220,19 +220,19 @@ contains
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
     mprim_getParabolicProfile = 4.0_DP*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
-    
+
   end function
 
   ! ***************************************************************************
 
 !<function>
-  
+
   elemental real(DP) function mprim_signum_dble (dval)
-  
+
 !<description>
   ! Signum function
 !</description>
-  
+
 !<input>
   ! Value to be checked
   real(DP), intent(in) :: dval
@@ -257,13 +257,13 @@ contains
   ! ***************************************************************************
 
 !<function>
-  
+
   elemental real(SP) function mprim_signum_real (fval)
-  
+
 !<description>
   ! Signum function.
 !</description>
-  
+
 !<input>
   ! Value to be checked
   real(SP), intent(in) :: fval
@@ -288,13 +288,13 @@ contains
   ! ***************************************************************************
 
 !<function>
-  
+
   elemental integer function mprim_signum_int (ival)
-  
+
 !<description>
   ! Signum function.
 !</description>
-  
+
 !<input>
   ! Value to be checked
   integer(I32), intent(in) :: ival
@@ -462,7 +462,7 @@ contains
           Da(idim1,ix)=Da(idim1,iy)
           Da(idim1,iy)=daux
         end do
-        
+
         Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
       end do
 
@@ -486,7 +486,7 @@ contains
         else
           return
         end if
-        
+
       case (2)
         call mprim_invert2x2MatrixDirectDble(Da,Db,bsuccess)
         if (.not. bsuccess) return
@@ -514,7 +514,7 @@ contains
               + Db(3,3)*Df(3) + Db(3,4)*Df(4)
         Dx(4) = Db(4,1)*Df(1) + Db(4,2)*Df(2) &
               + Db(4,3)*Df(3) + Db(4,4)*Df(4)
-      
+
       case (5)
         call mprim_invert5x5MatrixDirectDble(Da,Db,bsuccess)
         if (.not. bsuccess) return
@@ -562,17 +562,17 @@ contains
         ! Use LAPACK routine for general NxN system, where N > 6
         Ipiv=0; Dx=Df
         call DGESV(ndim,1,Da,ndim,Ipiv,Dx,ndim,info)
-        
+
         if (info .ne. 0) return
-        
+
       end select
-      
+
     end select
-    
+
     bsuccess = .true.
-    
+
   end subroutine mprim_invertMatrixDble
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -596,7 +596,7 @@ contains
 !<output>
   ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(2,2), intent(out) :: Db
-  
+
   ! TRUE, if successful. FALSE if the system is indefinite.
   ! If FALSE, Db is undefined.
   logical, intent(out) :: bsuccess
@@ -605,7 +605,7 @@ contains
 !</subroutine>
 
   real(DP) :: daux
-    
+
     ! Explicit formula for 2x2 system
     Db(1,1)= Da(2,2)
     Db(2,1)=-Da(2,1)
@@ -618,7 +618,7 @@ contains
     else
       bsuccess = .false.
     end if
-    
+
   end subroutine mprim_invert2x2MatrixDirectDble
 
     ! ***************************************************************************
@@ -653,7 +653,7 @@ contains
 !</subroutine>
 
   real(DP) :: daux
-    
+
     ! Explicit formula for 3x3 system
     Db(1,1)=Da(2,2)*Da(3,3)-Da(2,3)*Da(3,2)
     Db(2,1)=Da(2,3)*Da(3,1)-Da(2,1)*Da(3,3)
@@ -674,7 +674,7 @@ contains
     else
       bsuccess = .false.
     end if
-    
+
   end subroutine mprim_invert3x3MatrixDirectDble
 
   ! ***************************************************************************
@@ -758,7 +758,7 @@ contains
       Db(4,4)=det*( Da(3,1)*W(4)-Da(3,2)*W(2)+Da(3,3)*W(1))
 
       ! 'old' implementation follows
-      
+
 !      real(DP) :: daux
 !
 !        ! Explicit formula for 4x4 system
@@ -826,9 +826,9 @@ contains
 !            &,3)-Da(1,4)*Da(2,2)*Da(3,3)*Da(4,1)-Da(1,4)*Da(2,3)*Da(3&
 !            &,1)*Da(4,2)
 !        Db=Db*(1.0_DP/daux)
-  
+
         bsuccess = .true.
-  
+
       else
         bsuccess = .false.
       end if
@@ -869,7 +869,7 @@ contains
   ! auxiliary variables
   real(DP) :: det,daux
   real(DP), dimension(10) :: V,W
-  
+
     ! 2x2 determinants of rows 4-5
     V( 1) = Da(4,1)*Da(5,2)-Da(4,2)*Da(5,1)
     V( 2) = Da(4,1)*Da(5,3)-Da(4,3)*Da(5,1)
@@ -966,7 +966,7 @@ contains
       Db(3,5) = det*(-Da(4,1)*W( 9)+Da(4,2)*W( 6)-Da(4,4)*W( 3)+Da(4,5)*W( 2))
       Db(4,5) = det*( Da(4,1)*W( 8)-Da(4,2)*W( 5)+Da(4,3)*W( 3)-Da(4,5)*W( 1))
       Db(5,5) = det*(-Da(4,1)*W( 7)+Da(4,2)*W( 4)-Da(4,3)*W( 2)+Da(4,4)*W( 1))
-      
+
       bsuccess = .true.
     else
       bsuccess = .false.
@@ -1210,13 +1210,13 @@ contains
       Db(4,6) = det*( Da(5,1)*W(13)-Da(5,2)*W(9)+Da(5,3)*W(6)-Da(5,5)*W(3)+Da(5,6)*W(2))
       Db(5,6) = det*(-Da(5,1)*W(12)+Da(5,2)*W(8)-Da(5,3)*W(5)+Da(5,4)*W(3)-Da(5,6)*W(1))
       Db(6,6) = det*( Da(5,1)*W(11)-Da(5,2)*W(7)+Da(5,3)*W(4)-Da(5,4)*W(2)+Da(5,5)*W(1))
-      
+
       bsuccess = .true.
-      
+
     else
-    
+
       bsuccess = .false.
-    
+
     end if
 
   end subroutine mprim_invert6x6MatrixDirectDble
@@ -1330,10 +1330,10 @@ contains
         Da(idim1,ix)=Da(idim1,iy)
         Da(idim1,iy)=daux
       end do
-      
+
       Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
     end do
-    
+
     bsuccess = .true.
 
   end subroutine mprim_invertMatrixPivotDble
@@ -1471,7 +1471,7 @@ contains
           Fa(idim1,ix)=Fa(idim1,iy)
           Fa(idim1,iy)=faux
         end do
-        
+
         Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
       end do
 
@@ -1496,9 +1496,9 @@ contains
         Fb(1,2)=-Fa(1,2)
         Fb(2,2)= Fa(1,1)
         faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
-            
+
         if (faux .eq. 0.0_SP) return
-        
+
         Fx=matmul(Fb,Ff)/faux
 
       case (3)
@@ -1515,9 +1515,9 @@ contains
         faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
             &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
             &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
-            
+
         if (faux .eq. 0.0_SP) return
-        
+
         Fx=matmul(Fb,Ff)/faux
 
       case (4)
@@ -1585,31 +1585,31 @@ contains
             &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
             &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
             &,1)*Fa(4,2)
-            
+
         if (faux .eq. 0.0_SP) return
-        
+
         Fx=matmul(Fb,Ff)/faux
 
       case default
         ! Use LAPACK routine for general NxN system, where N>4
         Fpiv=0; Fx=Ff
         call SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
-        
+
         if (info .ne. 0) return
-        
+
       end select
     end select
-    
+
     bsuccess = .true.
-    
+
   end subroutine mprim_invertMatrixSngl
-  
+
   ! ***************************************************************************
 
 !<function>
 
   elemental function kronecker(i,j) result(kron)
-    
+
 !<description>
     ! Compute the Kronecker delta symbol
     ! <tex> $$
@@ -1636,9 +1636,9 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   elemental subroutine mprim_linearRescale(dx,da,db,dc,dd,dy)
-  
+
 !<description>
   ! Scales a coordinate x linearly from the interval [a,b] to the
   ! interval [c,d].
@@ -1647,10 +1647,10 @@ contains
 !<input>
   ! coordinate to be rescaled
   real(DP), intent(in) :: dx
-  
+
   ! [a,b] - source interval
   real(DP), intent(in) :: da,db
-  
+
   ! [c,d] - destination interval
   real(DP), intent(in) :: dc,dd
 !</input>
@@ -1676,7 +1676,7 @@ contains
     d3 = 1.0_DP/(da-db)
     d1 = (dc-dd)*d3
     d2 = (-db*dc+da*dd)*d3
-    
+
     dy = d1*dx+d2
 
   end subroutine mprim_linearRescale
@@ -1686,7 +1686,7 @@ contains
 !<subroutine>
 
   elemental subroutine mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
-  
+
 !<description>
   ! <tex>
   ! Calculates a quadratic interpolation. dx is a value in the range $[-1,1]$.
@@ -1694,11 +1694,11 @@ contains
   ! interpolation polynomial with $p(-1)=d1$, $p(0)=d2$ and $p(1)=d3$.
   ! </tex>
 !</description>
-  
+
 !<input>
   ! The parameter value in the range <tex>$ [-1,1] $</tex> where the polynomial should be evaluated.
   real(DP), intent(in) :: dx
-  
+
   ! The value <tex>$ p(-1) $</tex>.
   real(DP), intent(in) :: d1
 
@@ -1713,7 +1713,7 @@ contains
   ! The value <tex>$ p(dx) $</tex>.
   real(DP), intent(out) :: dy
 !</output>
-  
+
 !</subroutine>
 
     ! The polynomial p(t) = a + bt + ct^2 has to fulfill:
@@ -1724,7 +1724,7 @@ contains
     !
     ! The Horner scheme gives us:
     !   p(t) = 1/2 ( (d3-2d2+d1)t + (d3-d1) ) t + d2
-    
+
     dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d2
 
   end subroutine mprim_quadraticInterpolation
@@ -1760,7 +1760,7 @@ contains
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
     logical, intent(in), optional                 :: btransposedOpt
 !</input>
-    
+
 !<inputoutput>
     ! Matrix that should be factorised on input.
     ! Matrix U on output.
@@ -1803,22 +1803,22 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
       call sys_halt()
     end if
-    
-    
+
+
     if (btransposed) then
 
       ! Householder reduction to bidiagonal form
       g     = 0.0_DP
       scale = 0.0_DP
       anorm = 0.0_DP
-      
+
       do i = 1, n
-        
+
         l      = i+1
         rv1(i) = scale*g
         g      = 0.0_DP
         scale  = 0.0_DP
-        
+
         if (i .le. m) then
           scale = sum(abs(Da(i,i:m)))
           if (scale .ne. 0.0_DP) then
@@ -1848,7 +1848,7 @@ contains
             end do
           end if
         end if
-        
+
         Dd(i) = scale*g
         g     = 0.0_DP
         s     = 0.0_DP
@@ -1868,7 +1868,7 @@ contains
             do k = l, n
               rv1(k) = Da(k,i)/h
             end do
-            
+
             if (i .ne. m) then
               do j = l, m
                 s = 0.0_DP
@@ -1880,7 +1880,7 @@ contains
                 end do
               end do
             end if
-            
+
             do k = l, n
               Da(k,i) = scale*Da(k,i)
             end do
@@ -1888,7 +1888,7 @@ contains
         end if
         anorm = max(anorm,(abs(Dd(i))+abs(rv1(i))))
       end do
-      
+
       ! Accumulation of right-hand transformations
       do i = n, 1, -1
         if (i .lt. n) then
@@ -2002,7 +2002,7 @@ contains
           f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
           g = sqrt(f*f+1.0_DP)
           f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
-          
+
           ! Next QR transformation
           c = 1.0_DP
           s = 1.0_DP
@@ -2055,14 +2055,14 @@ contains
       g     = 0.0_DP
       scale = 0.0_DP
       anorm = 0.0_DP
-      
+
       do i = 1, n
-        
+
         l      = i+1
         rv1(i) = scale*g
         g      = 0.0_DP
         scale  = 0.0_DP
-        
+
         if (i .le. m) then
           scale = sum(abs(Da(i:m,i)))
           if (scale .ne. 0.0_DP) then
@@ -2092,12 +2092,12 @@ contains
             end do
           end if
         end if
-        
+
         Dd(i) = scale*g
         g     = 0.0_DP
         s     = 0.0_DP
         scale = 0.0_DP
-        
+
         if ((i .le. m) .and. (i .ne. n)) then
           scale = sum(abs(Da(i,l:n)))
           if (scale .ne. 0.0_DP) then
@@ -2112,7 +2112,7 @@ contains
             do k = l, n
               rv1(k) = Da(i,k)/h
             end do
-            
+
             if (i .ne. m) then
               do j = l, m
                 s = 0.0_DP
@@ -2124,7 +2124,7 @@ contains
                 end do
               end do
             end if
-            
+
             do k = l, n
               Da(i,k) = scale*Da(i,k)
             end do
@@ -2246,7 +2246,7 @@ contains
           f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
           g = sqrt(f*f+1.0_DP)
           f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
-          
+
           ! Next QR transformation
           c = 1.0_DP
           s = 1.0_DP
@@ -2292,7 +2292,7 @@ contains
         end do
 3       continue
       end do
-      
+
     end if
   end subroutine mprim_SVD_factorise
 
@@ -2355,14 +2355,14 @@ contains
     else
       n=ndim; m=mdim
     end if
-    
+
     ! Check if number of equations is larger than number of unknowns
     if (m < n) then
       call output_line('Fewer equations than unknowns!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst1')
       call sys_halt()
     end if
-    
+
     ! Compute aux = (U^T * f)/D where D_i /= 0
     if (btransposed) then
       call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
@@ -2377,7 +2377,7 @@ contains
         Daux(i) = 0.0_DP
       end if
     end do
-    
+
     ! Compute x = B * aux
     call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
   end subroutine mprim_SVD_backsubst1
@@ -2444,14 +2444,14 @@ contains
     else
       n=ndim; m=mdim
     end if
-    
+
     ! Check if number of equations is larger than number of unknowns
     if (m < n) then
       call output_line('Fewer equations than unknowns!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst2')
       call sys_halt()
     end if
-    
+
     ! Compute aux = (U^T * f)/D where D_i /= 0
     if (btransposed) then
       call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
@@ -2466,7 +2466,7 @@ contains
         Daux(i) = 0.0_DP
       end if
     end do
-    
+
     ! Compute x = B * aux
     call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
   end subroutine mprim_SVD_backsubst2
@@ -2495,14 +2495,14 @@ contains
     ! local variable
     real(DP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = Dval(1)
-    
+
     do i = 2, size(Dval)
       mean = mean + Dval(i)
     end do
-    
+
     mean = mean/real(size(Dval), DP)
 
     ! Compute standard deviation
@@ -2540,14 +2540,14 @@ contains
     ! local variable
     real(SP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = Fval(1)
-    
+
     do i = 2, size(Fval)
       mean = mean + Fval(i)
     end do
-    
+
     mean = mean/real(size(Fval), SP)
 
     ! Compute standard deviation
@@ -2585,14 +2585,14 @@ contains
     ! local variable
     real(DP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = real(Ival(1), DP)
-    
+
     do i = 2, size(Ival)
       mean = mean + real(Ival(i), DP)
     end do
-    
+
     mean = mean/real(size(Ival), DP)
 
     ! Compute standard deviation
@@ -2630,14 +2630,14 @@ contains
     ! local variable
     real(DP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = Dval(1)
-    
+
     do i = 2, size(Dval)
       mean = mean + Dval(i)
     end do
-    
+
     mean = mean/real(size(Dval), DP)
 
     ! Compute mean deviation
@@ -2675,14 +2675,14 @@ contains
     ! local variable
     real(SP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = Fval(1)
-    
+
     do i = 2, size(Fval)
       mean = mean + Fval(i)
     end do
-    
+
     mean = mean/real(size(Fval), SP)
 
     ! Compute mean deviation
@@ -2697,7 +2697,7 @@ contains
   end function mprim_meanDeviationSngl
 
   !************************************************************************
-  
+
 !<function>
 
   pure function mprim_meanDeviationInt(Ival) result(meanDev)
@@ -2720,14 +2720,14 @@ contains
     ! local variable
     real(DP)     :: mean
     integer(I32) :: i
-    
+
     ! Compute mean
     mean = real(Ival(1), DP)
-    
+
     do i = 2, size(Ival)
       mean = mean + real(Ival(i), DP)
     end do
-    
+
     mean = mean/real(size(Ival), DP)
 
     ! Compute mean deviation
@@ -2764,14 +2764,14 @@ contains
 
     ! local variable
     integer(I32) :: i
-    
+
     ! Compute mean value
     meanVal = Dval(1)
-    
+
     do i = 2, size(Dval)
       meanVal = meanVal + Dval(i)
     end do
-    
+
     meanVal = meanVal/real(size(Dval), DP)
   end function mprim_meanValueDble
 
@@ -2798,14 +2798,14 @@ contains
 
     ! local variable
     integer(I32) :: i
-    
+
     ! Compute mean value
     meanVal = Fval(1)
-    
+
     do i = 2, size(Fval)
       meanVal = meanVal + Fval(i)
     end do
-    
+
     meanVal = meanVal/real(size(Fval), SP)
   end function mprim_meanValueSngl
 
@@ -2832,21 +2832,21 @@ contains
 
     ! local variable
     integer(I32) :: i
-    
+
     ! Compute mean value
     meanVal = Ival(1)
-    
+
     do i = 2, size(Ival)
       meanVal = meanVal + Ival(i)
     end do
-    
+
     meanVal = meanVal/size(Ival)
   end function mprim_meanValueInt
 
   ! *****************************************************************************
 
 !<function>
-  
+
   elemental function mprim_degToRad(d) result(r)
 
 !<description>
@@ -2863,7 +2863,7 @@ contains
     real(DP) :: r
 !</result>
 !</function>
-      
+
     r = d * (SYS_PI / 180._DP)
   end function mprim_degToRad
 
@@ -2872,7 +2872,7 @@ contains
 !<function>
 
   elemental function mprim_radToDeg(r) result(d)
-    
+
 !<description>
     ! This function converts RAD to DEG
 !</description>
@@ -2887,7 +2887,7 @@ contains
     real(DP) :: d
 !</result>
 !</function>
-    
+
     d = r * (180._DP / SYS_PI)
 
   end function mprim_radToDeg
@@ -2922,14 +2922,14 @@ contains
 
     ! local variables
     real(DP) :: ddet,x1,x2
-    
+
     ! Explicit formula for 2x2 systems, computed with Maple.
     ddet = 1.0_DP / (Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1))
     x1 = Db(1)
     x2 = Db(2)
     Db(1) = -(Da(1,2)*x2 - Da(2,2)*x1) * ddet
     Db(2) =  (Da(1,1)*x2 - Da(2,1)*x1) * ddet
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -2962,7 +2962,7 @@ contains
 
     ! local variables
     real(DP) :: ddet,x1,x2,x3
-    
+
     ! Explicit formula for 3x3 systems, computed with Maple.
     ddet = 1.0_DP / &
         (Da(1,1)*Da(2,2)*Da(3,3) &
@@ -2995,7 +2995,7 @@ contains
         -Da(2,2)*Da(3,1)*x1 &
         -Da(2,1)*Da(1,2)*x3 &
         +Da(3,1)*Da(1,2)*x2)
-    
+
   end subroutine
 
   ! ************************************************************************
@@ -3003,7 +3003,7 @@ contains
 !<subroutine>
 
   pure subroutine mprim_solve2x2BandDiag (neqA,Da,Db,Dd,Dc,Dvec1,Dvec2)
-  
+
 !<description>
   ! This routine solves to a 2x2 block matrix with all blocks consisting
   ! of only diagonal bands.
@@ -3032,10 +3032,10 @@ contains
 !<input>
   ! Dimension of the matrix blocks
   integer, intent(in) :: neqA
-  
+
   ! Submatrix A, only diagonal entries.
   real(DP), dimension(*), intent(in) :: Da
-  
+
   ! Diagonal entries in the submatrix B.
   real(DP), dimension(*), intent(in) :: Db
 
@@ -3050,7 +3050,7 @@ contains
   ! On entry: Right hand side F1.
   ! On exit: Solution vector U1.
   real(DP), dimension(*), intent(inout) :: Dvec1
-  
+
   ! On entry: Right hand side F2.
   ! On exit: Solution vector U2.
   real(DP), dimension(*), intent(inout) :: Dvec2
@@ -3061,13 +3061,13 @@ contains
     ! local variables
     integer :: i
     real(DP) :: ddet,a11,a12,a21,a22,x1,x2
-    
+
     ! Such a system can be solved by reducing it to neqA*neqA 2x2 systems
     ! as there is only minimal coupling present between the entries.
     !
     ! Loop over the entries of the A matrix.
     do i=1,neqA
-    
+
       ! Fetch a 2x2 system from the big matrix
       a11 = Da(i)
       a21 = Dd(i)
@@ -3075,12 +3075,12 @@ contains
       a22 = Dc(i)
       x1 = Dvec1(i)
       x2 = Dvec2(i)
-      
+
       ! Solve the system, overwrite the input vector.
       ddet = 1.0_DP / (a11*a22 - a12*a21)
       Dvec1(i) = -(a12*x2 - a22*x1) * ddet
       Dvec2(i) =  (a11*x2 - a21*x1) * ddet
-      
+
     end do
 
   end subroutine

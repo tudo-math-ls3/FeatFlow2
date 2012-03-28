@@ -245,7 +245,7 @@ module groupfembase
   public :: gfem_infoGroupFEMBlock
   public :: gfem_getbase_array
   public :: gfem_clearArray
-  
+
   public :: gfem_allocCoeffs
   public :: gfem_copyH2D_IdofsList
   public :: gfem_copyD2H_IdofsList
@@ -267,7 +267,7 @@ module groupfembase
   public :: gfem_copyD2H_CoeffsAtEdge
 
   public :: gfem_infoNodeList
-  
+
 !<constants>
 !<constantblock description="Global format flag for group FEM assembly">
 
@@ -335,16 +335,16 @@ module groupfembase
 
 !<constantblock description="Duplication flags. Specifies which information is duplicated \
 !                            between group finite element structures">
-  
+
   ! Duplicate atomic structure
   integer(I32), parameter, public :: GFEM_DUP_STRUCTURE = 2_I32**16
-  
+
   ! Duplicate list of restricted DOFs: IdofsTest/IdofsTrial
   integer(I32), parameter, public :: GFEM_DUP_DOFLIST   = GFEM_HAS_DOFLIST
 
   ! Duplicate diagonal pointers: IdiagList
   integer(I32), parameter, public :: GFEM_DUP_DIAGLIST  = GFEM_HAS_DIAGLIST
-  
+
   ! Duplicate edge-nodal structure: InodeList
   integer(I32), parameter, public :: GFEM_DUP_NODELIST  = GFEM_HAS_NODELIST
 
@@ -374,7 +374,7 @@ module groupfembase
 
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between group finite element structures">
-  
+
   ! Share list of restricted DOFs: IdofsTest/IdofsTrial
   integer(I32), parameter, public :: GFEM_SHARE_DOFLIST  = GFEM_HAS_DOFLIST
 
@@ -424,7 +424,7 @@ module groupfembase
     ! GFEM_HAS_xxxx constants and specifies various properties of the
     ! structure.
     integer(I32) :: isetSpec = GFEM_UNDEFINED
-    
+
     ! Number of non-zero entries of the sparsity pattern
     integer :: NA = 0
 
@@ -458,7 +458,7 @@ module groupfembase
     ! the same. If FALSE, there are different restrictions for trial
     ! and test spaces.
     logical :: bidenticalTrialAndTest = .false.
-    
+
     ! Handle to diagonal positions of the underlying matrix
     ! IdiagList(1,1:NEQ) : the node number i of the equation ieq
     ! IdiagList(2,1:NEQ) : the position of the diagonal entry ii that
@@ -485,7 +485,7 @@ module groupfembase
     !
     ! Example IedgeList(:,iedge) -> (/ i, j, ij, ji, ii, jj /)
     integer :: h_IedgeList = ST_NOHANDLE
-    
+
     ! If no restriction of DOFs is used:
     !
     ! InodeListIdx(1:NEQ+1) : the index separator of the node list
@@ -518,22 +518,22 @@ module groupfembase
     !   j = InodeList(1,id)
     !  ij = InodeList(2,idx)
     ! and ij is the absolute position in the matrix connecting nodes i and j
-    
+
     ! Handle to index pointer for node structure
     integer :: h_InodeListIdx = ST_NOHANDLE
 
     ! Handle to nodal structure
     integer :: h_InodeList = ST_NOHANDLE
-    
+
     ! Handle to precomputed coefficiets at matrix diagonal
     integer :: h_CoeffsAtDiag = ST_NOHANDLE
-    
+
     ! Handle to precomputed coefficients at edges
     integer :: h_CoeffsAtEdge = ST_NOHANDLE
-    
+
     ! Handle to precomputed coefficients at nodes
     integer :: h_CoeffsAtNode = ST_NOHANDLE
-    
+
     ! Internal array used for consistency checks
     ! Iconsistency(1) : NA of the matrix
     ! Iconsistency(2) : NEQ of the matrix
@@ -546,7 +546,7 @@ module groupfembase
 !<typeblock>
 
   ! This structure holds multiple sets of degrees of freedom
-  
+
   type t_groupFEMBlock
 
     ! Number of blocks
@@ -665,7 +665,7 @@ contains
 
     ! Number of edges
     integer, intent(in) :: NEDGE
-    
+
     ! Number of local variables
     integer, intent(in) :: NVAR
 
@@ -766,7 +766,7 @@ contains
     integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,neq,ncols,nedge
     logical :: bisIdenticalTrialAndTest
-    
+
     bisIdenticalTrialAndTest = .false.
     if (present(bidenticalTrialAndTest))&
         bisIdenticalTrialAndTest = bidenticalTrialAndTest
@@ -778,7 +778,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_initGFEMSetByMatrix')
       call sys_halt()
     end if
-    
+
     ! Calculate dimensions of matrix (possibly with restriction)
     if (present (IdofsTest) .and. present(IdofsTrial)) then
       ! Use individual restrictions for trial and test space
@@ -810,7 +810,7 @@ contains
       ! Calculate dimensions of matrix without restriction
       call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
     end if
-    
+
     ! Call initialisation routine
     call gfem_initGroupFEMSet(rgroupFEMSet, na, neq, nedge, rmatrix%NVAR,&
         ncoeffsAtDiag, ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType)
@@ -822,17 +822,17 @@ contains
     rgroupFEMSet%Iconsistency(1) = rmatrix%NA
     rgroupFEMSet%Iconsistency(2) = rmatrix%NEQ
     rgroupFEMSet%Iconsistency(3) = rmatrix%NCOLS
-    
+
     ! Set handle to restricted DOF list for test space
     if (present(IdofsTest)) then
       call storage_new('gfem_initGFEMSetByMatrix', 'IdofsTest',&
           size(IdofsTest), ST_INT, rgroupFEMSet%h_IdofsTest,&
           ST_NEWBLOCK_NOINIT)
-      
+
       ! Copy list of restricted DOFs
       call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
       call lalg_copyVector(IdofsTest, p_IdofsTest)
-      
+
       ! DOF list for trial and test spaces are identical
       if (rgroupFEMSet%bidenticalTrialAndTest)&
           rgroupFEMSet%h_IdofsTrial = rgroupFEMSet%h_IdofsTest
@@ -840,17 +840,17 @@ contains
       ! Set specifier
       rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
     end if
-    
+
     ! Set handle to restricted DOF list for trial space
     if (present(IdofsTrial)) then
       call storage_new('gfem_initGFEMSetByMatrix', 'IdofsTrial',&
           size(IdofsTrial), ST_INT, rgroupFEMSet%h_IdofsTrial,&
           ST_NEWBLOCK_NOINIT)
-      
+
       ! Copy list of restricted DOFs
       call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
       call lalg_copyVector(IdofsTrial, p_IdofsTrial)
-      
+
       ! DOF list for trial and test spaces are identical
       if (rgroupFEMSet%bidenticalTrialAndTest)&
           rgroupFEMSet%h_IdofsTest = rgroupFEMSet%h_IdofsTrial
@@ -858,9 +858,9 @@ contains
       ! Set specifier
       rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
     end if
-    
+
   end subroutine gfem_initGFEMSetByMatrix
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -904,7 +904,7 @@ contains
     ! OPTIONAL: data type
     ! If not present, ST_DOUBLE will be used
     integer, intent(in), optional :: cdataType
-    
+
     ! OPTIONAL: boundary regions for the test and trial spaces
     type(t_boundaryRegion), intent(in), optional :: rregionTest
     type(t_boundaryRegion), intent(in), optional :: rregionTrial
@@ -917,18 +917,18 @@ contains
     ! of freedom to restrict the test and trial space is identical
     logical, intent(in), optional :: bcheckIdentical
 !</input>
-    
+
 !<output>
     ! Group finite element set
     type(t_groupFEMSet), intent(out) :: rgroupFEMSet
 !</output>
 !</subroutine>
-    
+
     ! local variable
     integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
     integer :: h_IdofsTest,h_IdofsTrial
     logical :: bboundary,bcheck,bisIdentical
-    
+
     bboundary = .false.
     if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
 
@@ -964,7 +964,7 @@ contains
       call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTrial, h_IdofsTrial)
       call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
     end if
-    
+
     if (h_IdofsTest .ne. ST_NOHANDLE) then
       if (h_IdofsTrial .ne. ST_NOHANDLE) then
 
@@ -979,7 +979,7 @@ contains
         else
           bisIdentical = .false.
         end if
-        
+
         if (bisIdentical) then
           ! Initialise group finite element set using the same list of
           ! degrees of freedom for the trial and test space, ! respectively
@@ -1021,7 +1021,7 @@ contains
             ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType)
       end if
     end if
-    
+
   end subroutine gfem_initGFEMSetByMatrixBdry
 
   ! ***************************************************************************
@@ -1063,7 +1063,7 @@ contains
       ! Re-allocate memory
       deallocate(rgroupFEMBlock%RgroupFEMBlock)
       allocate(rgroupFEMBlock%RgroupFEMBlock(nblocks))
-      
+
       ! Copy data from backup
       do i = 1, min(nblocks,rgroupFEMBlock%nblocks)
         rgroupFEMBlock%RgroupFEMBlock(i) = p_RgroupFEMBlock(i)
@@ -1175,17 +1175,17 @@ contains
 
     !**************************************************************
     ! Checks if bitfield ibitfield in iflag is not set.
-    
+
     pure function check(iflag, ibitfield)
-      
+
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .ne. ibitfield)
-      
+
     end function check
-    
+
   end subroutine gfem_releaseGroupFEMSet
 
   ! ***************************************************************************
@@ -1211,10 +1211,10 @@ contains
       do i = 1, rgroupFEMBlock%nblocks
         call gfem_releaseGroupFEMSet(rgroupFEMBlock%RgroupFEMBlock(i))
       end do
-      
+
       deallocate(rgroupFEMBlock%RgroupFEMBlock)
     end if
-    
+
     rgroupFEMBlock%nblocks = 0
 
   end subroutine gfem_releaseGroupFEMBlock
@@ -1260,7 +1260,7 @@ contains
 
       ! Set new number of nonzero entries
       rgroupFEMSet%NA = NA
-      
+
       !-----------------------------------------------------------------------
       if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)) then
@@ -1287,7 +1287,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NA, rgroupFEMSet%h_InodeList,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_NODELIST))
@@ -1308,20 +1308,20 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NA, rgroupFEMSet%h_CoeffsAtNode,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_NODEDATA))
         end if
       end if
-      
+
     end if
 
     !---------------------------------------------------------------------------
     ! Resize nodal quantities
     !---------------------------------------------------------------------------
     if (rgroupFEMSet%NEQ .ne. NEQ) then
-      
+
       ! Set new number of nodes
       rgroupFEMSet%NEQ = NEQ
 
@@ -1340,7 +1340,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NEQ, rgroupFEMSet%h_IdiagList,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_DIAGLIST))
@@ -1373,7 +1373,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NEQ+1, rgroupFEMSet%h_InodeListIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_NODELIST))
@@ -1394,7 +1394,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NEQ, rgroupFEMSet%h_CoeffsAtDiag,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_DIAGDATA))
@@ -1407,7 +1407,7 @@ contains
     ! Resize edge-based quantities
     !---------------------------------------------------------------------------
     if (rgroupFEMSet%NEDGE .ne. NEDGE) then
-      
+
       ! Set new number of edges
       rgroupFEMSet%NEDGE = NEDGE
 
@@ -1426,7 +1426,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NEDGE, rgroupFEMSet%h_IedgeList,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifiert
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_EDGELIST))
@@ -1447,7 +1447,7 @@ contains
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NEDGE, rgroupFEMSet%h_CoeffsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
-          
+
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_EDGEDATA))
@@ -1460,19 +1460,19 @@ contains
 
     !**************************************************************
     ! Checks if bitfield ibitfield in iflag is set.
-    
+
     pure function check(iflag, ibitfield)
 
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
 
   end subroutine gfem_resizeGFEMSetDirect
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1520,11 +1520,11 @@ contains
     integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,neq,ncols,nedge
     logical :: bisIdenticalTrialAndTest
-    
+
     bisIdenticalTrialAndTest = .true.
     if (present(bidenticalTrialAndTest))&
         bisIdenticalTrialAndTest = bidenticalTrialAndTest
-    
+
     if (bisIdenticalTrialAndTest .and.&
         present (IdofsTest) .and. present(IdofsTrial)) then
       call output_line('Different DOF lsit must not be given if '//&
@@ -1532,10 +1532,10 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetByMatrix')
       call sys_halt()
     end if
-    
+
     ! Set flag
     rgroupFEMSet%bidenticalTrialAndTest = bisIdenticalTrialAndTest
-    
+
     ! Do we have a list of restricted DOFs?
     if (present(IdofsTest) .or. present(IdofsTrial)) then
 
@@ -1575,7 +1575,7 @@ contains
                 IdofsTrial=IdofsTrial)
           end if
         end if
-        
+
         ! Set handle to restricted DOF list for test space
         if (present(IdofsTest)) then
           if (rgroupFEMSet%h_IdofsTest .eq. ST_NOHANDLE) then
@@ -1587,15 +1587,15 @@ contains
                 size(IdofsTest), rgroupFEMSet%h_IdofsTest,&
                 ST_NEWBLOCK_NOINIT, .false.)
           end if
-          
+
           ! Copy list of restricted DOFs
           call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
           call lalg_copyVector(IdofsTest, p_IdofsTest)
-          
+
           ! DOF list for trial and test spaces are identical
           if (rgroupFEMSet%bidenticalTrialAndTest)&
               rgroupFEMSet%h_IdofsTrial = rgroupFEMSet%h_IdofsTest
-          
+
           ! Set specifier
           rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
         end if
@@ -1611,20 +1611,20 @@ contains
                 size(IdofsTrial), rgroupFEMSet%h_IdofsTrial,&
                 ST_NEWBLOCK_NOINIT, .false.)
           end if
-          
+
           ! Copy list of restricted DOFs
           call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
           call lalg_copyVector(IdofsTrial, p_IdofsTrial)
-          
+
           ! DOF list for trial and trial spaces are identical
           if (rgroupFEMSet%bidenticalTrialAndTest)&
               rgroupFEMSet%h_IdofsTest = rgroupFEMSet%h_IdofsTrial
-          
+
           ! Set specifier
           rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
         end if
       end if
-      
+
     elseif (check(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)) then
       ! Calculate dimensions of matrix with internally defined restriction
 
@@ -1636,7 +1636,7 @@ contains
       else
         if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE) then
           call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
-          
+
           if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE) then
             call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
             ! Use individual restrictions for trial and test space
@@ -1648,9 +1648,9 @@ contains
             call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
                 IdofsTest=p_IdofsTest)
           end if
-          
+
         else
-          
+
           if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE) then
             call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
             ! Use p_IdofTrial restriction only for trial space and leave the
@@ -1663,12 +1663,12 @@ contains
           end if
         end if
       end if
-      
+
     else
       ! Calculate dimensions of matrix without restriction
       call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
     end if
-    
+
     ! Call direct resize routine
     call gfem_resizeGroupFEMSet(rgroupFEMSet, na, neq, nedge)
 
@@ -1676,22 +1676,22 @@ contains
     rgroupFEMSet%Iconsistency(1) = rmatrix%NA
     rgroupFEMSet%Iconsistency(2) = rmatrix%NEQ
     rgroupFEMSet%Iconsistency(3) = rmatrix%NCOLS
-    
+
   contains
 
     !**************************************************************
     ! Checks if bitfield ibitfield in iflag is set.
-    
+
     pure function check(iflag, ibitfield)
 
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
-    
+
   end subroutine gfem_resizeGFEMSetByMatrix
 
   ! ***************************************************************************
@@ -1724,7 +1724,7 @@ contains
 !<input>
     ! Scalar template matrix
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! OPTIONAL: boundary regions for the test and trial spaces
     type(t_boundaryRegion), intent(in), optional :: rregionTest
     type(t_boundaryRegion), intent(in), optional :: rregionTrial
@@ -1737,7 +1737,7 @@ contains
     ! of freedom to restrict the test and trial space is identical
     logical, intent(in), optional :: bcheckIdentical
 !</input>
-    
+
 !<inputoutput>
     ! Group finite element set
     type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
@@ -1748,7 +1748,7 @@ contains
     integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
     integer :: h_IdofsTest,h_IdofsTrial
     logical :: bboundary,bcheck,bisIdentical
-    
+
     bboundary = .false.
     if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
 
@@ -1784,7 +1784,7 @@ contains
       call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTrial, h_IdofsTrial)
       call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
     end if
-    
+
     if (h_IdofsTest .ne. ST_NOHANDLE) then
       if (h_IdofsTrial .ne. ST_NOHANDLE) then
 
@@ -1869,11 +1869,11 @@ contains
 
     ! local variables
     integer :: i
-    
+
     do i = 1, rgroupFEMBlock%nblocks
       call gfem_resizeGroupFEMSet(rgroupFEMBlock%RgroupFEMBlock(i), NA, NEQ, NEDGE)
     end do
-  
+
   end subroutine gfem_resizeGFEMBlockDirect
 
   ! ***************************************************************************
@@ -1902,7 +1902,7 @@ contains
 !<input>
     ! Scalar template matrix
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! OPTIONAL: flag which states whether the restriction of degrees
     ! of freedom from the test and trial spaces are identical
     logical, intent(in), optional :: bidenticalTrialAndTest
@@ -1921,7 +1921,7 @@ contains
 
     ! local variables
     integer :: i
-    
+
     do i = 1, rgroupFEMBlock%nblocks
       call gfem_resizeGroupFEMSet(rgroupFEMBlock%RgroupFEMBlock(i),&
           rmatrix, bidenticalTrialAndTest, IdofsTest, IdofsTrial)
@@ -1982,7 +1982,7 @@ contains
       rgroupFEMSetDest%ncoeffsAtNode = rgroupFEMSetSrc%ncoeffsAtNode
       rgroupFEMSetDest%ncoeffsAtEdge = rgroupFEMSetSrc%ncoeffsAtEdge
     end if
-    
+
 
     ! Copy list of restricted DOFs
     if (check(idupFlag, GFEM_DUP_DOFLIST)) then
@@ -2002,7 +2002,7 @@ contains
               call storage_free(rgroupFEMSetDest%h_IdofsTrial)
         end if
       end if
-      
+
       ! Copy content from source to destination structure
       if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DOFLIST)) then
         ! Do we have the same DOFs for test and trial space?
@@ -2025,11 +2025,11 @@ contains
       ! Set flag of the destination structure
       rgroupFEMSetDest%bidenticalTrialAndTest =&
           rgroupFEMSetSrc%bidenticalTrialAndTest
-      
+
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DOFLIST))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_DOFLIST))
@@ -2076,11 +2076,11 @@ contains
         call storage_copy(rgroupFEMSetSrc%h_InodeList,&
             rgroupFEMSetDest%h_InodeList)
       end if
-        
+
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODELIST))
@@ -2107,7 +2107,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_EDGELIST))
@@ -2131,7 +2131,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DIAGDATA))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_DIAGDATA))
@@ -2155,7 +2155,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODEDATA))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODEDATA))
@@ -2179,23 +2179,23 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGEDATA))
-      
+
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_EDGEDATA))
     end if
-      
+
   contains
 
     !**************************************************************
     ! Checks if iflag has all bits ibitfield set.
 
     pure function check(iflag, ibitfield)
-      
+
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
@@ -2204,11 +2204,11 @@ contains
     ! Checks if ibitfield is not set in idupFlag.
 
     pure function checkOwner(idupFlag, ibitfield)
-      
+
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: checkOwner
-      
+
       checkOwner = (iand(idupFlag,ibitfield) .ne. ibitfield)
 
     end function checkOwner
@@ -2250,12 +2250,12 @@ contains
       rgroupFEMBlockDest%nblocks = rgroupFEMBlockSrc%nblocks
       allocate(rgroupFEMBlockDest%RgroupFEMBlock(rgroupFEMBlockDest%nblocks))
     end if
-    
+
     do i = 1, rgroupFEMBlockSrc%nblocks
       call gfem_copyGroupFEMSet(rgroupFEMBlockSrc%RgroupFEMBlock(i),&
           rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag)
     end do
-    
+
   end subroutine gfem_copyGroupFEMBlock
 
   ! ***************************************************************************
@@ -2332,7 +2332,7 @@ contains
               call storage_free(rgroupFEMSetDest%h_IdofsTrial)
         end if
       end if
-      
+
       ! Copy handle from source to destination structure
       rgroupFEMSetDest%h_IdofsTest  = rgroupFEMSetSrc%h_IdofsTest
       rgroupFEMSetDest%h_IdofsTrial = rgroupFEMSetSrc%h_IdofsTrial
@@ -2361,16 +2361,16 @@ contains
 
       ! Copy handle from source to destination structure
       rgroupFEMSetDest%h_IdiagList = rgroupFEMSetSrc%h_IdiagList
-      
+
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DIAGLIST))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DIAGLIST))
     end if
-    
+
 
     ! Duplicate node structure
     if (check(idupFlag, GFEM_DUP_NODELIST)) then
@@ -2384,11 +2384,11 @@ contains
       ! Copy handle from source to destination structure
       rgroupFEMSetDest%h_InodeListIdx = rgroupFEMSetSrc%h_InodeListIdx
       rgroupFEMSetDest%h_InodeList = rgroupFEMSetSrc%h_InodeList
-      
+
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
@@ -2407,11 +2407,11 @@ contains
       ! Copy handle from source to destination structure
       rgroupFEMSetDest%h_IedgeListIdx = rgroupFEMSetSrc%h_IedgeListIdx
       rgroupFEMSetDest%h_IedgeList = rgroupFEMSetSrc%h_IedgeList
-      
+
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
@@ -2432,7 +2432,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DIAGDATA))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DIAGDATA))
@@ -2453,7 +2453,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODEDATA))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODEDATA))
@@ -2474,7 +2474,7 @@ contains
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGEDATA))
-      
+
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGEDATA))
@@ -2486,11 +2486,11 @@ contains
     ! Checks if iflag has all bits ibitfield set.
 
     pure function check(iflag, ibitfield)
-      
+
       integer(I32), intent(in) :: iflag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
@@ -2499,11 +2499,11 @@ contains
     ! Checks if ibitfield is not set in idupFlag.
 
     pure function checkOwner(idupFlag, ibitfield)
-      
+
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: checkOwner
-      
+
       checkOwner = (iand(idupFlag,ibitfield) .ne. ibitfield)
 
     end function checkOwner
@@ -2545,18 +2545,18 @@ contains
       rgroupFEMBlockDest%nblocks = rgroupFEMBlockSrc%nblocks
       allocate(rgroupFEMBlockDest%RgroupFEMBlock(rgroupFEMBlockDest%nblocks))
     end if
-    
+
     do i = 1, rgroupFEMBlockSrc%nblocks
       call gfem_duplicateGroupFEMSet(rgroupFEMBlockSrc%RgroupFEMBlock(i),&
           rgroupFEMBlockDest%RgroupFEMBlock(i), idupFlag)
     end do
-        
+
   end subroutine gfem_duplicateGroupFEMBlock
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine gfem_initCoeffsFromMatrix1(rgroupFEMSet, rmatrix, iposition,&
       cinitcoeffs)
 
@@ -2570,7 +2570,7 @@ contains
 !<input>
     ! Scalar coefficient matrices
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! OPTIONAL: integer which indicate the positions of the given
     ! matrices. If this parameter is not given, then the matrix is
     ! stored at position one.
@@ -2614,7 +2614,7 @@ contains
 !<input>
     ! Array of scalar coefficient matrices
     type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
-    
+
     ! OPTIONAL: Array of integers which indicate the positions of the
     ! given matrices. If this parameter is not given, then the
     ! matrices are stored starting at position one.
@@ -2651,7 +2651,7 @@ contains
     ! Determine types of coefficients to be initialised
     cinit = 2_I32**rgroupFEMSet%cassemblyType
     if (present(cinitcoeffs)) cinit=cinitcoeffs
-    
+
     ! Set pointer to matrix positions
     if (present(Iposition)) then
       p_Iposition => Iposition
@@ -2661,7 +2661,7 @@ contains
         p_Iposition(imatrix) = imatrix
       end do
     end if
-    
+
     ! Set maximum position
     nmaxpos = maxval(p_Iposition)
 
@@ -2671,7 +2671,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
       call sys_halt()
     end if
-    
+
     !---------------------------------------------------------------------------
     ! Node-based assembly
     !---------------------------------------------------------------------------
@@ -2684,7 +2684,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end if
-      
+
       ! Check if coefficient array has enough positions
       call storage_getsize(rgroupFEMSet%h_CoeffsAtNode, Isize2D)
       if (Isize2D(1) .lt. nmaxpos) then
@@ -2697,7 +2697,7 @@ contains
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .ne. 0) then
         call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
       end if
-      
+
       ! What data type we we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
@@ -2705,20 +2705,20 @@ contains
 
         ! Associate data of each matrix separately
         do imatrix = 1, nmatrices
-          
+
           ! Get matrix position
           ipos = p_Iposition(imatrix)
-          
+
           ! What data type are we?
           select case(Rmatrices(imatrix)%cdataType)
           case (ST_DOUBLE)
             !-------------------------------------------------------------------
             ! Copy double-precision matrix to double-precision coefficients
             !-------------------------------------------------------------------
-            
+
             ! Set pointer to matrix data
             call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-            
+
             if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
               ! Loop over all nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
@@ -2730,7 +2730,7 @@ contains
                 p_DcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(2,ia))
               end do
             end if
-            
+
           case (ST_SINGLE)
             !-------------------------------------------------------------------
             ! Copy single-precision matrix to double-precision coefficients
@@ -2738,7 +2738,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
-            
+
             if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
               ! Loop over all nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
@@ -2750,26 +2750,26 @@ contains
                 p_DcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(2,ia))
               end do
             end if
-            
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
-        
+
         ! Set specifier for precomputed nodal coefficients
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)
-        
+
       case (ST_SINGLE)
         call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
 
         ! Associate data of each matrix separately
         do imatrix = 1, nmatrices
-          
+
           ! Get matrix position
           ipos = p_Iposition(imatrix)
-          
+
           ! What data type are we?
           select case(Rmatrices(imatrix)%cdataType)
           case (ST_DOUBLE)
@@ -2779,7 +2779,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-            
+
             if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
               ! Loop over all nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
@@ -2791,15 +2791,15 @@ contains
                 p_FcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(2,ia))
               end do
             end if
-            
+
           case (ST_SINGLE)
             !-------------------------------------------------------------------
             ! Copy single-precision matrix to single-precision coefficients
             !-------------------------------------------------------------------
-            
+
             ! Set pointer to matrix data
             call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
-            
+
             if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
               ! Loop over all nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
@@ -2811,31 +2811,31 @@ contains
                 p_FcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(2,ia))
               end do
             end if
-            
+
           case default
             call output_line('Unsupported data type!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
-        
+
         ! Set specifier for precomputed nodal coefficients
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end select
     end if
-               
-    
+
+
     !---------------------------------------------------------------------------
     ! Edge-based assembly
     !---------------------------------------------------------------------------
 
     if (iand(cinit, GFEM_INITCOEFFS_EDGEBASED) .eq. GFEM_INITCOEFFS_EDGEBASED) then
-      
+
       ! Check if structure provides edge-based structure and coefficient array
       if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
           (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0)) then
@@ -2856,7 +2856,7 @@ contains
       ! Set pointers
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-     
+
       ! What data type we we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
@@ -2865,10 +2865,10 @@ contains
 
         ! Associate data of each matrix separately
         do imatrix = 1, nmatrices
-          
+
           ! Get matrix position
           ipos = p_Iposition(imatrix)
-          
+
           ! What data type are we?
           select case(Rmatrices(imatrix)%cdataType)
           case (ST_DOUBLE)
@@ -2878,7 +2878,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-            
+
             ! Loop over all edges and copy off-diagonal entries
             do iedge = 1, rgroupFEMSet%NEDGE
               ij = p_IedgeList(3,iedge)
@@ -2892,7 +2892,7 @@ contains
               ii = p_IdiagList(2,ieq)
               p_DcoeffsAtDiag(ipos,ieq) = p_Ddata(ii)
             end do
-            
+
           case (ST_SINGLE)
             !-------------------------------------------------------------------
             ! Copy single-precision matrix to double-precision coefficients
@@ -2900,7 +2900,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
-            
+
             ! Loop over all edges and copy off-diagonal entries
             do iedge = 1, rgroupFEMSet%NEDGE
               ij = p_IedgeList(3,iedge)
@@ -2908,7 +2908,7 @@ contains
               p_DcoeffsAtEdge(ipos,1,iedge) = p_Fdata(ij)
               p_DcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
-            
+
             ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
@@ -2921,11 +2921,11 @@ contains
             call sys_halt()
           end select
         end do
-        
+
         ! Set specifier for precomputed edge and node coefficients
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA)
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)
-        
+
 
       case (ST_SINGLE)
         call gfem_getbase_FcoeffsAtDiag(rgroupFEMSet, p_FcoeffsAtDiag)
@@ -2933,10 +2933,10 @@ contains
 
         ! Associate data of each matrix separately
         do imatrix = 1, nmatrices
-          
+
           ! Get matrix position
           ipos = p_Iposition(imatrix)
-          
+
           ! What data type are we?
           select case(Rmatrices(imatrix)%cdataType)
           case (ST_DOUBLE)
@@ -2946,7 +2946,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-            
+
             ! Loop over all edges and copy off-diagonal entries
             do iedge = 1, rgroupFEMSet%NEDGE
               ij = p_IedgeList(3,iedge)
@@ -2960,7 +2960,7 @@ contains
               ii = p_IdiagList(2,ieq)
               p_FcoeffsAtDiag(ipos,ieq) = p_Ddata(ii)
             end do
-            
+
           case (ST_SINGLE)
             !-------------------------------------------------------------------
             ! Copy single-precision matrix to single-precision coefficients
@@ -2968,7 +2968,7 @@ contains
 
             ! Set pointer to matrix data
             call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
-            
+
             ! Loop over all edges and copy off-diagonal entries
             do iedge = 1, rgroupFEMSet%NEDGE
               ij = p_IedgeList(3,iedge)
@@ -2976,7 +2976,7 @@ contains
               p_FcoeffsAtEdge(ipos,1,iedge) = p_Fdata(ij)
               p_FcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
-            
+
             ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
@@ -2989,11 +2989,11 @@ contains
             call sys_halt()
           end select
         end do
-        
+
         ! Set specifier for precomputed edge and node coefficients
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA)
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
@@ -3049,9 +3049,9 @@ contains
 
     ! Perform expensive checks?
     if (bexpensive) then
-      
+
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-    
+
         ! Matrix/group finite element set must have the same size
         if ((rgroupFEMSet%NVAR  .ne. rmatrix%NVAR) .or.&
             (rgroupFEMSet%NEDGE .ne. (rmatrix%NA-rmatrix%NEQ)/2)) then
@@ -3065,9 +3065,9 @@ contains
             call sys_halt()
           end if
         end if
-        
+
       else   ! consider list of restricted DOFs
-        
+
         call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
         call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
         if (associated(p_idofsTest)) then
@@ -3086,7 +3086,7 @@ contains
             call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
           end if
         end if
-        
+
         ! Matrix/group finite element set must have the same size
         if ((rgroupFEMSet%NA    .ne. na)           .or.&
             (rgroupFEMSet%NEQ   .ne. neq)          .or.&
@@ -3102,10 +3102,10 @@ contains
             call sys_halt()
           end if
         end if
-        
+
       end if
     end if
-    
+
     ! Perform standard checks
     if ((rgroupFEMSet%Iconsistency(1) .ne. rmatrix%NA)  .or.&
         (rgroupFEMSet%Iconsistency(2) .ne. rmatrix%NEQ) .or.&
@@ -3120,11 +3120,11 @@ contains
         call sys_halt()
       end if
     end if
-    
+
   end subroutine gfem_isMatrixCompatibleSc
 
   ! *****************************************************************************
-  
+
 !<subroutine>
 
   subroutine gfem_isMatrixCompatibleBl(rgroupFEMSet, rmatrix, bcompatible,&
@@ -3143,7 +3143,7 @@ contains
 !<input>
     ! Block matrix
     type(t_matrixBlock), intent(in) :: rmatrix
-    
+
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
@@ -3166,7 +3166,7 @@ contains
     integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,ncols,nedge,neq
     logical :: bexpensive
-    
+
     ! Check if matrix has only one block
     if ((rmatrix%nblocksPerCol .eq. 1) .and.&
         (rmatrix%nblocksPerRow .eq. 1)) then
@@ -3198,12 +3198,12 @@ contains
     ! Perform expensive checks?
     bexpensive = .false.
     if (present(bexpensiveCheck)) bexpensive = bexpensiveCheck
-    
+
     ! Perform expensive checks?
     if (bexpensive) then
-      
+
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-        
+
         ! Matrix/operator must have the same size
         if ((rgroupFEMSet%NVAR  .ne. rmatrix%nblocksPerCol)         .or.&
             (rgroupFEMSet%NA    .ne. rmatrix%RmatrixBlock(1,1)%NA)  .or.&
@@ -3220,9 +3220,9 @@ contains
             call sys_halt()
           end if
         end if
-        
+
       else   ! consider list of restricted DOFs
-        
+
         call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
         call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
         if (associated(p_idofsTest)) then
@@ -3243,7 +3243,7 @@ contains
                 na, neq, ncols, nedge)
           end if
         end if
-        
+
         ! Matrix/group finite element set must have the same size
         if ((rgroupFEMSet%NVAR  .ne. rmatrix%nblocksPerCol) .or.&
             (rgroupFEMSet%NA    .ne. na)                    .or.&
@@ -3323,7 +3323,7 @@ contains
         call sys_halt()
       end if
     end if
-    
+
   end subroutine gfem_isVectorCompatibleSc
 
 !*****************************************************************************
@@ -3364,7 +3364,7 @@ contains
           rvectorBlock%RvectorBlock(1), bcompatible)
       return
     end if
-    
+
     ! Vector/operator must have the same size
     if (rgroupFEMSet%Iconsistency(2)*rgroupFEMSet%NVAR&
         .ne. rvectorBlock%NEQ) then
@@ -3378,7 +3378,7 @@ contains
         call sys_halt()
       end if
     end if
-    
+
   end subroutine gfem_isVectorCompatibleBl
 
   !*****************************************************************************
@@ -3408,13 +3408,13 @@ contains
       nullify(p_IedgeListIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rgroupFEMSet%h_IedgeListIdx,&
         p_IedgeListIdx)
 
   end subroutine gfem_getbase_IedgeListIdx
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -3443,7 +3443,7 @@ contains
       nullify(p_IedgeList)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int2D(rgroupFEMSet%h_IedgeList,&
         p_IedgeList, rgroupFEMSet%NEDGE)
@@ -3477,7 +3477,7 @@ contains
       nullify(p_InodeListIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rgroupFEMSet%h_InodeListIdx,&
         p_InodeListIdx, rgroupFEMSet%NEQ+1)
@@ -3511,11 +3511,11 @@ contains
       nullify(p_InodeListIdx)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int2d(rgroupFEMSet%h_InodeListIdx,&
         p_InodeListIdx, rgroupFEMSet%NEQ+1)
-    
+
   end subroutine gfem_getbase_InodeListIdx2D
 
   !*****************************************************************************
@@ -3546,11 +3546,11 @@ contains
       nullify(p_InodeList)
       return
     end if
-       
+
     ! Get the array
     call storage_getbase_int(rgroupFEMSet%h_InodeList,&
         p_InodeList, rgroupFEMSet%NA)
-    
+
   end subroutine gfem_getbase_InodeList1D
 
   !*****************************************************************************
@@ -3581,7 +3581,7 @@ contains
       nullify(p_InodeList)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int2D(rgroupFEMSet%h_InodeList,&
         p_InodeList, rgroupFEMSet%NA)
@@ -3615,11 +3615,11 @@ contains
       nullify(p_IdiagList)
       return
     end if
-       
+
     ! Get the array
     call storage_getbase_int2D(rgroupFEMSet%h_IdiagList,&
         p_IdiagList, rgroupFEMSet%NEQ)
-    
+
   end subroutine gfem_getbase_IdiagList
 
   !*****************************************************************************
@@ -3649,7 +3649,7 @@ contains
       nullify(p_DcoeffsAtNode)
       return
     end if
-    
+
     ! Get the array
     select case(rgroupFEMSet%cassemblyType)
     case (GFEM_NODEBASED)
@@ -3701,7 +3701,7 @@ contains
       nullify(p_FcoeffsAtNode)
       return
     end if
-    
+
     ! Get the array
     select case(rgroupFEMSet%cassemblyType)
     case (GFEM_NODEBASED)
@@ -3754,7 +3754,7 @@ contains
       nullify(p_DcoeffsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_double3D(rgroupFEMSet%h_CoeffsAtEdge,&
         p_DcoeffsAtEdge, rgroupFEMSet%NEDGE)
@@ -3789,7 +3789,7 @@ contains
       nullify(p_FcoeffsAtEdge)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_single3D(rgroupFEMSet%h_CoeffsAtEdge,&
         p_FcoeffsAtEdge, rgroupFEMSet%NEDGE)
@@ -3824,7 +3824,7 @@ contains
       nullify(p_DcoeffsAtDiag)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_double2D(rgroupFEMSet%h_CoeffsAtDiag,&
         p_DcoeffsAtDiag, rgroupFEMSet%NEQ)
@@ -3859,7 +3859,7 @@ contains
       nullify(p_FcoeffsAtDiag)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_single2D(rgroupFEMSet%h_CoeffsAtDiag,&
         p_FcoeffsAtDiag, rgroupFEMSet%NEQ)
@@ -3893,7 +3893,7 @@ contains
       nullify(p_IdofsTest)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rgroupFEMSet%h_IdofsTest, p_IdofsTest)
 
@@ -3926,7 +3926,7 @@ contains
       nullify(p_IdofsTrial)
       return
     end if
-    
+
     ! Get the array
     call storage_getbase_int(rgroupFEMSet%h_IdofsTrial, p_IdofsTrial)
 
@@ -3963,7 +3963,7 @@ contains
     integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer, dimension(2) :: Isize2D
     integer :: idx,ieq,iidx,ij,isize,jcol
-    
+
     ! Check if node structure is owned by the structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST) .eq.&
         GFEM_SHARE_NODELIST) then
@@ -3972,7 +3972,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
       call sys_halt()
     end if
-    
+
     ! Check if list of DOFs has been attached
     if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
 
@@ -3985,11 +3985,11 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
         call sys_halt()
       end if
-    
+
       ! General node data structure
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
-        
+
         ! Allocate new memory for node list if required
         if (rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) then
           call storage_new('gfem_genNodeList', 'InodeList',&
@@ -4003,7 +4003,7 @@ contains
                 ST_NEWBLOCK_NOINIT, .false.)
           end if
         end if
-        
+
         ! Allocate memory for index pointer to node list if required
         if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
           call storage_new('gfem_genNodeList', 'InodeListIdx',&
@@ -4017,30 +4017,30 @@ contains
                 ST_NEWBLOCK_NOINIT)
           end if
         end if
-        
+
         ! Set pointers
         call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
         call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
         ! Initialise counter and index pointer
         idx = 1; iidx = 1; p_InodeListIdx1D(1) = 1
-        
+
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
-          
+
           ! Increase index counter
           iidx = iidx+1
-          
+
           ! Loop over all matrix entries in current row
           do jcol = 1, rmatrix%NCOLS
-            
+
             ! Set column number and matrix position
             p_InodeList1D(idx) = jcol
-            
+
             ! Increase counter
             idx = idx+1
           end do
-          
+
           ! Set starting position of new node
           p_InodeListIdx1D(iidx) = idx
         end do
@@ -4048,7 +4048,7 @@ contains
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,&
             LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
 
@@ -4057,11 +4057,11 @@ contains
           call storage_free(rgroupFEMSet%h_InodeListIdx)
           call storage_free(rgroupFEMSet%h_InodeList)
         end if
-        
+
         ! Set handles to matrix handles
         rgroupFEMSet%h_InodeListIdx = rmatrix%h_Kld
         rgroupFEMSet%h_InodeList    = rmatrix%h_Kcol
-        
+
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
@@ -4075,13 +4075,13 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
         call sys_halt()
       end select
-      
+
     else   ! use list of DOFs for restriction
 
       ! Set pointer
       call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
       call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
-      
+
       ! Allocate memory for node list if required
       if (rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) then
         Isize2D = (/2,rgroupFEMSet%NA/)
@@ -4098,7 +4098,7 @@ contains
               ST_NEWBLOCK_NOINIT)
         end if
       end if
-      
+
       ! Allocate memory for index pointer to node list if required
       if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
         Isize2D = (/3,rgroupFEMSet%NEQ+1/)
@@ -4123,7 +4123,7 @@ contains
       ! General node data structure
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
-        
+
         ! Generate set of active degrees of freedom for the test space
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
         if (associated(p_IdofsTest)) then
@@ -4145,13 +4145,13 @@ contains
         else
           BisActiveColumn=.true.
         end if
-        
+
         ! Initialise counter and index pointer
         idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
 
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActiveRow(ieq)) cycle
 
@@ -4161,28 +4161,28 @@ contains
 
           ! Increase index counter
           iidx = iidx+1
-          
+
           ! Loop over all matrix entries in current row
           do jcol = 1, rmatrix%NCOLS
-            
+
             ! Check if this column belongs to an active DOF
             if (.not.BisActiveColumn(jcol)) cycle
 
             ! Set column number and matrix position
             p_InodeList2D(1,idx) = jcol
             p_InodeList2D(2,idx) = rmatrix%NCOLS*(ieq-1)+jcol
-            
+
             ! Increase counter
             idx = idx+1
           end do
-          
+
           ! Set starting position of new node
           p_InodeListIdx2D(1,iidx) = idx
         end do
-        
+
         ! Deallocate temporal memory
         deallocate(BisActiveRow,BisActiveColumn)
-        
+
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
@@ -4192,7 +4192,7 @@ contains
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-        
+
         ! Generate set of active degrees of freedom for the test space
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
         if (associated(p_IdofsTest)) then
@@ -4217,7 +4217,7 @@ contains
 
         ! Initialise counter and index pointer
         idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
-        
+
         ! Loop over all rows
         do ieq = 1, size(p_Kld)-1
 
@@ -4230,7 +4230,7 @@ contains
 
           ! Increase index counter
           iidx = iidx+1
-          
+
           ! Loop over all off-diagonal matrix entries in current row
           do ij = p_Kld(ieq), p_Kld(ieq+1)-1
 
@@ -4243,7 +4243,7 @@ contains
             ! Set column number and matrix position
             p_InodeList2D(1,idx) = jcol
             p_InodeList2D(2,idx) = ij
-            
+
             ! Increase counter
             idx = idx+1
           end do
@@ -4265,7 +4265,7 @@ contains
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-        
+
         ! Generate set of active degrees of freedom for the test space
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
         if (associated(p_IdofsTest)) then
@@ -4290,7 +4290,7 @@ contains
 
         ! Initialise counter and index pointer
         idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
-        
+
         ! Loop over all rows
         do ieq = 1, size(p_Kld)-1
 
@@ -4303,20 +4303,20 @@ contains
 
           ! Increase index counter
           iidx = iidx+1
-          
+
           ! Loop over all matrix entries in current row
           do ij = p_Kld(ieq), p_Kld(ieq+1)-1
-            
+
             ! Get column number
             jcol = p_Kcol(ij)
-            
+
             ! Check if this column belongs to an active DOF
             if (.not.BisActiveColumn(jcol)) cycle
-                        
+
             ! Set column number and matrix position
             p_InodeList2D(1,idx) = jcol
             p_InodeList2D(2,idx) = ij
-            
+
             ! Increase counter
             idx = idx+1
           end do
@@ -4331,28 +4331,28 @@ contains
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
-   
+
       case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
         call sys_halt()
       end select
-      
+
     end if
 
   contains
 
     !**************************************************************
     ! Checks if idupFlag has all bits ibitfield set.
-    
+
     pure function check(idupFlag, ibitfield)
-      
+
       integer(I32), intent(in) :: idupFlag,ibitfield
-      
+
       logical :: check
-      
+
       check = (iand(idupFlag,ibitfield) .eq. ibitfield)
-      
+
     end function check
 
   end subroutine gfem_genNodeList
@@ -4397,7 +4397,7 @@ contains
 
     ! Check if list of DOFs has been attached
     if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-      
+
       ! Check if matrix and group finite element set are compatible
       if ((rgroupFEMSet%NA    .ne. rmatrix%NA)  .or.&
           (rgroupFEMSet%NEQ   .ne. rmatrix%NEQ) .or.&
@@ -4407,7 +4407,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
         call sys_halt()
       end if
-      
+
       ! Generate edge list for a matrix which is structurally symmetric,
       ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
       ! storing the diagonal edges (i,i).
@@ -4425,17 +4425,17 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
         call sys_halt()
       end if
-      
+
       ! Set pointer
       call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
-      
+
       ! Generate edge list for a matrix which is structurally symmetric,
       ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
       ! storing the diagonal edges (i,i).
       call lsyssc_genEdgeList(rmatrix, rgroupFEMSet%h_IedgeList,&
           LSYSSC_EDGELIST_NODESANDPOS, .true., .true., rgroupFEMSet%NEDGE,&
           p_IdofsTest)
-      
+
     end if
 
     ! Allocate memory
@@ -4443,10 +4443,10 @@ contains
       call storage_new('gfem_genEdgeList', 'IedgeListIdx',&
           2, ST_INT, rgroupFEMSet%h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
     end if
-    
+
     ! Set pointer to edge structure
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
-    
+
     ! If no OpenMP is used, then all edges belong to the same
     ! group. Otherwise, the edges will be reordered below.
     p_IedgeListIdx    = rgroupFEMSet%NEDGE+1
@@ -4468,7 +4468,7 @@ contains
 
     ! Set state of structure
     rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST)
- 
+
   end subroutine gfem_genEdgeList
 
   !*****************************************************************************
@@ -4499,7 +4499,7 @@ contains
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer, dimension(2) :: Isize
     integer :: idx,ieq
-    
+
     ! Check if diagonal pointer is owned by the structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DIAGLIST) .eq.&
         GFEM_SHARE_DIAGLIST) then
@@ -4508,10 +4508,10 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_genDiagList')
       call sys_halt()
     end if
-    
+
     ! Check if list of DOFs has been attached
     if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-      
+
       ! Check if matrix and group finite element set are compatible
       if ((rgroupFEMSet%NA    .ne. rmatrix%NA)  .or.&
           (rgroupFEMSet%NEQ   .ne. rmatrix%NEQ) .or.&
@@ -4521,7 +4521,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genDiagList')
         call sys_halt()
       end if
-      
+
       ! Allocate new memory for diagonal pointer if required
       if (rgroupFEMSet%h_IdiagList .eq. ST_NOHANDLE) then
         Isize = (/2,rgroupFEMSet%NEQ/)
@@ -4539,23 +4539,23 @@ contains
 
       ! Set pointer
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
-      
+
       ! What matrix type are we?
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
-        
+
         ! Loop over all rows of the matrix
         p_IdiagList(1,1) = 1
         do ieq = 2, rmatrix%NEQ
           p_IdiagList(1,ieq) = ieq
           p_IdiagList(2,ieq) = p_IdiagList(2,ieq-1)+rmatrix%NCOLS
         end do
-        
+
         ! Set specifier
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)
-        
+
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-        
+
         ! Set pointer
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
 
@@ -4564,12 +4564,12 @@ contains
           p_IdiagList(1,ieq) = ieq
           p_IdiagList(2,ieq) = p_Kld(ieq)
         end do
-        
+
         ! Set specifier
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)
-                
+
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-        
+
         ! Set pointer
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 
@@ -4578,10 +4578,10 @@ contains
           p_IdiagList(1,ieq) = ieq
           p_IdiagList(2,ieq) = p_Kdiagonal(ieq)
         end do
-        
+
         ! Set specifier
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)
-        
+
       case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initGFEMSetByMatrix')
@@ -4608,7 +4608,7 @@ contains
       ! Set pointer
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
       call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
-      
+
       ! What matrix type are we?
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
@@ -4629,13 +4629,13 @@ contains
 
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
-          
+
           ! Check if this row belongs to an active DOF
           if (.not.BisActive(ieq)) cycle
-          
+
           ! Increase index counter
           idx = idx+1
-          
+
           ! Set position of diagonal entry
           p_IdiagList(1,idx) = ieq
           p_IdiagList(2,idx) = rmatrix%NCOLS*(ieq-1)+ieq
@@ -4658,7 +4658,7 @@ contains
         else
           call lsyssc_getbase_Kld(rmatrix, p_Kdiagonal)
         end if
-        
+
         ! Generate set of active degrees of freedom
         allocate(BisActive(rmatrix%NEQ))
         if (associated(p_IdofsTest)) then
@@ -4669,10 +4669,10 @@ contains
         else
           BisActive=.true.
         end if
-        
+
         ! Initialise index
         idx = 0
-        
+
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
 
@@ -4681,22 +4681,22 @@ contains
 
           ! Increase index counter
           idx = idx+1
-          
+
           ! Set position of diagonal entry
           p_IdiagList(1,idx) = ieq
           p_IdiagList(2,idx) = p_Kdiagonal(ieq)
         end do
-        
+
         ! Deallocate temporal memory
         deallocate(BisActive)
-        
+
         ! Set specifier
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)
-        
+
       end select
-      
+
     end if
-    
+
   end subroutine gfem_genDiagList
 
     !*****************************************************************************
@@ -4802,7 +4802,7 @@ contains
           call storage_getsize(h_handle, Isize2D)
           call output_line (cstring//trim(sys_siL(h_handle,15))//&
               ' ('//trim(sys_siL(Isize2D(1),15))//','//trim(sys_siL(Isize2D(2),15))//')')
-          
+
         case (3)
           call storage_getsize(h_handle, Isize3D)
           call output_line (cstring//trim(sys_siL(h_handle,15))//&
@@ -4812,7 +4812,7 @@ contains
       else
         call output_line (cstring//trim(sys_siL(h_handle,15)))
       end if
-      
+
     end subroutine checkAndOutputHandle
 
   end subroutine gfem_infoGroupFEMSet
@@ -4841,11 +4841,11 @@ contains
     call output_line('--------------')
     call output_line('nblocks: '//trim(sys_siL(rgroupFEMBlock%nblocks,15)))
     call output_lbrk()
-    
+
     do i = 1, rgroupFEMBlock%nblocks
       call gfem_infoGroupFEMSet(rgroupFEMBlock%RgroupFEMBlock(i))
     end do
-    
+
   end subroutine gfem_infoGroupFEMBlock
 
   !*****************************************************************************
@@ -4994,7 +4994,7 @@ contains
 
     if (associated(rarray%p_Ddata)) call lalg_clearVector(rarray%p_Ddata)
     if (associated(rarray%p_Fdata)) call lalg_clearVector(rarray%p_Fdata)
-    
+
   end subroutine gfem_clearArraySingle
 
   !*****************************************************************************
@@ -5018,7 +5018,7 @@ contains
     do i=1,size(rarray)
       call gfem_clearArraySingle(rarray(i))
     end do
-    
+
   end subroutine gfem_clearArrayScalar
 
   !*****************************************************************************
@@ -5044,7 +5044,7 @@ contains
         call gfem_clearArraySingle(rarray(i,j))
       end do
     end do
-    
+
   end subroutine gfem_clearArrayBlock
 
   ! ***************************************************************************
@@ -5094,7 +5094,7 @@ contains
           call storage_free(rgroupFEMSet%h_CoeffsAtNode)
       rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
     end if
-      
+
     if (ncoeffsAtEdge .ge. 0) then
       if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA) .eq. 0)&
         .and.(rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE))&
@@ -5104,7 +5104,7 @@ contains
 
     ! Set data type
     if (present(cdataType)) rgroupFEMSet%cdataType = cdataType
-    
+
     if (ncoeffsAtDiag .gt. 0) rgroupFEMSet%ncoeffsAtDiag = ncoeffsAtDiag
     if (ncoeffsAtNode .gt. 0) rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
     if (ncoeffsAtEdge .gt. 0) rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
@@ -5116,7 +5116,7 @@ contains
           Isize2D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtDiag,&
           ST_NEWBLOCK_NOINIT)
     end if
-    
+
     ! Allocate nodal data arary
     if ((rgroupFEMSet%NA .gt. 0) .and. (rgroupFEMSet%ncoeffsAtNode .gt. 0)) then
       Isize2D = (/rgroupFEMSet%ncoeffsAtNode, rgroupFEMSet%NA/)
@@ -5132,7 +5132,7 @@ contains
           Isize3D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtEdge,&
           ST_NEWBLOCK_NOINIT)
     end if
-    
+
   end subroutine gfem_allocCoeffs
 
   !*****************************************************************************
@@ -5534,7 +5534,7 @@ contains
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_InodeList
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -5586,7 +5586,7 @@ contains
 
     ! OPTIONAL: if true then the memory is transposed.
     logical, intent(in), optional :: btranspose
-    
+
     ! OPTIONAL: stream for asynchronious transfer.
     ! If istream is present and if asynchroneous transfer is supported
     ! then all memory transfers are carried out asynchroneously
@@ -5630,7 +5630,7 @@ contains
     if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtEdge,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
-    
+
   end subroutine gfem_copyH2D_CoeffsAtEdge
 
   !*****************************************************************************
@@ -5695,7 +5695,7 @@ contains
     if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtDiag,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
-    
+
   end subroutine gfem_copyH2D_CoeffsAtDiag
 
   !*****************************************************************************
@@ -5754,12 +5754,12 @@ contains
     ! Check if the node list is available
     if ((rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE) .and.&
         (rgroupFEMSet%h_InodeList    .ne. ST_NOHANDLE)) then
-      
+
       call output_line ('GroupFEMSet: Nodelist')
       call output_line ('---------------------')
-      
+
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-        
+
         ! Set pointers
         call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
         call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
@@ -5770,7 +5770,7 @@ contains
             call output_line ('... from node: '//trim(sys_siL(p_InodeList1D(idx),8)))
           end do
         end do
-        
+
       else
 
         ! Set pointers
@@ -5784,14 +5784,14 @@ contains
             call output_line ('... from node: '//trim(sys_siL(p_InodeList2D(1,iidx),8)))
           end do
         end do
-        
+
       end if
 
     else
       call output_line('Group finite element structure does not provide node list!',&
           OU_CLASS_WARNING,OU_MODE_STD,'gfem_infoNodeList')
     end if
-    
+
   end subroutine gfem_infoNodeList
 
 end module groupfembase

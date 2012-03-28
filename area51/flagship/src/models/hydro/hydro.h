@@ -1,4 +1,4 @@
-!-*- mode: f90; -*-
+
 
 #ifndef _HYDRO_H_
 #define _HYDRO_H_

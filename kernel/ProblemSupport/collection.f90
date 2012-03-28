@@ -301,13 +301,13 @@ module collection
   use groupfembase, only: t_groupFEMSet, t_groupFEMBlock
 
   implicit none
-  
+
   private
 
 !<constants>
 
 !<constantblock>
-  
+
   ! Maximum length of a section name.
   integer, parameter, public :: COLLCT_MLSECTION = 64
 
@@ -334,25 +334,25 @@ module collection
 
   ! Length of each 'quick-access' array in the collection.
   integer, parameter, public :: COLLCT_QALENGTH = 128
-  
+
   ! Number of 'quick-access' strings in the collection
   integer, parameter, public :: COLLCT_QASTRINGS = 4
 !</constantblock>
 
 !<constantblock description="Type identifier for values">
-  
+
   ! Undefined value
   integer, parameter, public :: COLLCT_UNDEFINED    = 0
-  
+
   ! Character value
   integer, parameter, public :: COLLCT_CHARACTER    = 1
 
   ! String value
   integer, parameter, public :: COLLCT_STRING       = 2
-  
+
   ! Integer value
   integer, parameter, public :: COLLCT_INTEGER      = 3
-  
+
   ! Double precision REAL value
   integer, parameter, public :: COLLCT_REAL         = 4
 
@@ -376,7 +376,7 @@ module collection
 
   ! A block matrix
   integer, parameter, public :: COLLCT_BLKMATRIX    = 11
-  
+
   ! A parameter structure
   integer, parameter, public :: COLLCT_PARAMETERS   = 12
 
@@ -394,7 +394,7 @@ module collection
 
   ! Scalar interlevel projection structure
   integer, parameter, public :: COLLCT_INTERLVPRJSC = 17
-  
+
   ! Block interlevel projection structure
   integer, parameter, public :: COLLCT_INTERLVPRJ   = 18
 
@@ -406,7 +406,7 @@ module collection
 
   ! Integer value type array
   integer, parameter, public :: COLLCT_INTEGERARR   = 21
-  
+
   ! Double precision REAL value type array
   integer, parameter, public :: COLLCT_REALARR      = 22
 
@@ -442,10 +442,10 @@ module collection
 
   ! Particles structure
   integer, parameter, public :: COLLCT_PARTICLES    = 34
-  
+
   ! Particles structure3D
   integer, parameter, public :: COLLCT_PARTICLES3D    = 35
-  
+
   ! Mesh hierarchy
   integer, parameter, public :: COLLCT_MSHHIERARCHY   = 36
 
@@ -475,34 +475,34 @@ module collection
 !</constants>
 
 !<types>
-  
+
 !<typeblock>
-  
+
   ! This structure realises a value in the scalar collection.
   ! It contains a type and some data variables that contain the value.
 
   type t_collctValue
-  
+
     private
-   
+
     ! The type of the value (COLLCT_UNDEFINED, COLLCT_CHARACTER,...)
     integer :: itype = COLLCT_UNDEFINED
-    
+
     ! A user defined tag. Standard value is =0.
     integer :: itag = 0
-    
+
     ! Name of the value
     character(LEN=COLLCT_MLNAME) :: sname
-    
+
     ! Character value
     character :: csvalue = " "
 
     ! String value
     character, dimension(:), pointer :: p_svalue => null()
-    
+
     ! Integer value
     integer :: ivalue = 0
-    
+
     ! Double precision value
     real(DP) :: dvalue = 0.0_DP
 
@@ -520,7 +520,7 @@ module collection
 
     ! Pointer to a scalar matrix
     type(t_matrixScalar), pointer               :: p_rmatrixScalar => null()
-    
+
     ! Pointer to a block vector
     type(t_vectorBlock), pointer                :: p_rvector => null()
 
@@ -544,7 +544,7 @@ module collection
 
     ! Pointer to a geometry object
     type(t_geometryObject), pointer             :: p_rgeometry => null()
-    
+
     ! Pointer to a particle collection
     type(t_particleCollection), pointer         :: p_rparticles => null()
 
@@ -620,45 +620,45 @@ module collection
     ! Pointer to a cubature information structure
     type(t_scalarCubatureInfo), pointer    :: p_rcubatureInfo => null()
   end type
-  
+
   public :: t_collctValue
-  
-!</typeblock>
-  
-!<typeblock>
-  
-  ! This structure realises a level structure containing multiple values.
-  
-  type t_collctLevel
-  
-    private
-   
-    ! Actual number of values in this section.
-    integer :: ivalueCount = 0
-    
-    ! Indicates whether the first ivalueCount values are 'en-block'
-    ! or if there are 'holes' inbetween because of deleted values.
-    logical :: bisFull = .true.
-    
-    ! A list of values.
-    type(t_collctValue), dimension(:), pointer :: p_Rvalues => null()
-    
-  end type
-  
-  public :: t_collctLevel
-  
+
 !</typeblock>
 
 !<typeblock>
-  
+
+  ! This structure realises a level structure containing multiple values.
+
+  type t_collctLevel
+
+    private
+
+    ! Actual number of values in this section.
+    integer :: ivalueCount = 0
+
+    ! Indicates whether the first ivalueCount values are 'en-block'
+    ! or if there are 'holes' inbetween because of deleted values.
+    logical :: bisFull = .true.
+
+    ! A list of values.
+    type(t_collctValue), dimension(:), pointer :: p_Rvalues => null()
+
+  end type
+
+  public :: t_collctLevel
+
+!</typeblock>
+
+!<typeblock>
+
   ! This structure realises a section. Each section contains a list of
   ! level substructures and one substructure not assigned to a level,
   ! containing level independent parameters.
-  
+
   type t_collctSection
-  
+
     private
-  
+
     ! The name of the section. '' identifies an/the unnamed section.
     character(LEN=COLLCT_MLSECTION) :: ssectionName = ''
 
@@ -666,31 +666,31 @@ module collection
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is currently not initialised.
     integer :: ilevelCount = 0
-    
+
     ! The 0th level collecting general variables, level-independent
     type(t_collctLevel) :: rlevel0
-    
+
     ! A list of levels or NULL(), if there are no additional 'level'
     ! subgroups than level 0.
     type(t_collctLevel), dimension(:), pointer :: p_Rlevels => null()
-    
+
   end type
-  
+
   public :: t_collctSection
-  
+
 !</typeblock>
-  
+
 !<typeblock>
-  
+
   ! This structure realises a collection.
   ! A collection contains one unnamed section (containing general data)
   ! and arbitrary many named sections.
   ! Each section contains a level structure for level 0 (containing
   ! level independent data) and a number of levels where data can
   ! be stored.
-  
+
   type t_collection
-  
+
     ! USER DEFINED:
     ! Quick-access array for integers. This is a short, temporary
     ! array that can be used by the application to save intermediate
@@ -700,7 +700,7 @@ module collection
     ! information should be named and added as such to the collection
     ! directly. The collection itself does not maintain this array!
     integer, dimension(COLLCT_QALENGTH) :: IquickAccess = 0
-  
+
     ! USER DEFINED:
     ! Quick-access array for reals. This is a short, temporary
     ! array that can be used by the application to save intermediate
@@ -710,7 +710,7 @@ module collection
     ! information should be named and added as such to the collection
     ! directly. The collection itself does not maintain this array!
     real(DP), dimension(COLLCT_QALENGTH) :: DquickAccess = 0.0_DP
-  
+
     ! USER DEFINED:
     ! A simple string array for direct access.
     character(LEN=SYS_STRLEN), dimension(COLLCT_QASTRINGS) :: SquickAccess
@@ -746,7 +746,7 @@ module collection
     ! USER DEFINED:
     ! A quick access pointer to a vector.
     type(t_vectorBlock), pointer :: p_rvectorQuickAccess8 => null()
-    
+
     ! USER DEFINED:
     ! A quick access pointer to a matrix.
     type(t_matrixBlock), pointer :: p_rmatrixQuickAccess1 => null()
@@ -783,18 +783,18 @@ module collection
     ! A quick access pointer to another collection structure.
     ! Can be used to link collection structures.
     type(t_collection), pointer :: p_rnextCollection => null()
-    
+
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
     ! unnamed section.
     integer :: isectionCount = 0
-    
+
     ! A list of levels or NULL(), if there are no additional 'level'
     ! subgroups than level 0.
     type(t_collctSection), dimension(:), pointer :: p_Rsections => null()
-    
+
   end type
-  
+
   public :: t_collection
 
 !</typeblock>
@@ -806,7 +806,7 @@ module collection
     module procedure collct_addlevel_direct
     module procedure collct_addlevel_all
   end interface
-  
+
   interface collct_queryvalue
     module procedure collct_queryvalue_direct
     module procedure collct_queryvalue_indir
@@ -816,7 +816,7 @@ module collection
     module procedure collct_getmaxlevel_direct
     module procedure collct_getmaxlevel_indir
   end interface
-  
+
   public :: collct_init
   public :: collct_done
   public :: collct_addlevel
@@ -879,7 +879,7 @@ module collection
   public :: collct_gettype
   public :: collct_settag
   public :: collct_gettag
-  
+
   public :: collct_getvalue_struc
   public :: collct_getvalue_string
   public :: collct_getvalue_intarr
@@ -923,15 +923,15 @@ module collection
   public :: collct_getvalue_gfemset
   public :: collct_getvalue_gfemblk
   public :: collct_getvalue_cubinfo
-  
+
 contains
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_initlevel (rcollctLevel)
-    
+
 !<description>
 
     ! Internal subroutine: Initialise a newly created level subgroup.
@@ -945,23 +945,23 @@ contains
 
 !</inputoutput>
 !</subroutine>
-    
+
     ! Nullify the level pointer. Is allocated when the first entry is put
     ! into the list.
     nullify(rcollctLevel%p_Rvalues)
-    
+
     ! No variables in here for the moment
     rcollctLevel%ivalueCount = 0
-    
+
     ! No holes.
     rcollctLevel%bisFull = .true.
-    
+
   end subroutine collct_initlevel
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_donelevel (rcollctLevel)
 
 !<description>
@@ -980,7 +980,7 @@ contains
 
     ! local variable
     integer :: i
-    
+
     ! Deallocate the value list on the current level if there is one.
     if (associated(rcollctLevel%p_Rvalues)) then
       ! Release and deallocate
@@ -989,19 +989,19 @@ contains
       end do
       deallocate(rcollctLevel%p_Rvalues)
     end if
-    
+
     ! No variables in here for the moment
     rcollctLevel%ivalueCount = 0
-    
+
     ! No holes anymore.
     rcollctLevel%bisFull = .true.
-    
+
   end subroutine collct_donelevel
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_realloclevel (rcollctLevel, inewsize)
 
 !<description>
@@ -1027,34 +1027,34 @@ contains
 
 !</inputoutput>
 !</subroutine>
-       
+
     ! Pointers to new lists for replacing the old.
     type(t_collctValue), dimension(:), pointer :: p_Rvalues
-    
+
     ! local variables
     integer :: sz
-    
+
     sz = max(size(rcollctLevel%p_Rvalues), inewsize)
-    
+
     if (size(rcollctLevel%p_Rvalues) .eq. sz) return ! nothing to do
-    
+
     ! Allocate the pointers for the new list
     allocate(p_Rvalues(sz))
-    
+
     ! Copy the content of the old ones
     p_Rvalues(1:sz) = rcollctLevel%p_Rvalues (1:sz)
-    
+
     ! Throw away the old array, replace by the new one
     deallocate(rcollctLevel%p_Rvalues)
-    
+
     rcollctLevel%p_Rvalues => p_Rvalues
-    
+
   end subroutine collct_realloclevel
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-    
+
   subroutine collct_addvalue (rcollection, ssectionName, sparamName, itype, &
                               ilevel, p_rvalue)
 
@@ -1070,10 +1070,10 @@ contains
 
     ! The name of the section; '' identifies the unnamed section
     character(LEN=*), intent(in) :: ssectionName
-    
+
     ! The name of the value to add. Must be <> ''!
     character(LEN=*), intent(in) :: sparamName
-    
+
     ! The type of the parameter
     integer, intent(in) :: itype
 
@@ -1096,56 +1096,56 @@ contains
 
 !</output>
 !</subroutine>
-    
+
     ! local variables
     type(t_collctSection), pointer :: p_rSection
     type(t_collctLevel), pointer :: p_rLevel
     type(t_collctValue), dimension(:), pointer :: p_Rvalues
     integer :: i
-    
+
     nullify(p_rvalue)
-    
+
     ! The name must be given!
     if (sparamName .eq. '') return
-    
+
     ! Get the section
     call collct_fetchsection(rcollection, ssectionName, p_rsection)
     if (.not. associated(p_rsection)) return
-    
+
     ! Get the level
     i = max(ilevel,0)
     if (i .gt. p_rsection%ilevelCount) return
-    
+
     if (i .eq. 0) then
       p_rLevel => p_rsection%rlevel0
     else
       p_rLevel => p_rsection%p_Rlevels(i)
     end if
-    
+
     ! Get space for the new structure in the list
     if (.not. associated(p_rLevel%p_Rvalues)) then
-      
+
       ! Create an array for the entries
       allocate(p_rLevel%p_Rvalues(COLLCT_NVALUES))
-      
+
       ! Take a pointer to the first position for storing data.
       p_rvalue => p_Rlevel%p_Rvalues(1)
-      
+
     else if (p_rLevel%ivalueCount .ge. size(p_rLevel%p_Rvalues)) then
-      
+
       ! Reallocate the entry array to get space for the new entry
       allocate(p_Rvalues(size(p_rLevel%p_Rvalues)+COLLCT_NVALUES))
       p_Rvalues(1:p_rLevel%ivalueCount) = p_rLevel%p_Rvalues (1:p_rLevel%ivalueCount)
       deallocate(p_rLevel%p_Rvalues)
       p_rLevel%p_Rvalues => p_Rvalues
-      
+
       ! Store the value at the new free position.
       p_rvalue => p_Rlevel%p_Rvalues(p_rLevel%ivalueCount+1)
-      
+
       ! There are definitely no holes anymore in the list on this
       ! level, as all free positions are filled up when we are here.
       p_rLevel%bisFull = .true.
-      
+
     else
       ! Are there holes or can we directly take the maximum position?
       if (p_rLevel%bisFull) then
@@ -1156,38 +1156,38 @@ contains
         do i = 1, size(p_rLevel%p_Rvalues)
           if (p_rLevel%p_Rvalues(i)%itype .eq. COLLCT_UNDEFINED) exit
         end do
-        
+
         ! This must work, otherwise ivalueCount is wrong!
         if (i .gt. size(p_rLevel%p_Rvalues)) then
           call output_line('Collection structure inconsistent!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'collct_addvalue')
           call sys_halt()
         end if
-        
+
         ! If i is larger than ivalueCount, all holes are filled up again,
         ! i.e. we add 'behind' all elements.
         if (i .gt. p_rLevel%ivalueCount) p_rLevel%bisFull = .true.
-        
+
       end if
-      
+
       ! Take that value for storing data.
       p_rvalue => p_Rlevel%p_Rvalues(i)
-      
+
     end if
-    
+
     ! Fill the value with initial data and increase the counter.
     p_rLevel%ivalueCount = p_rLevel%ivalueCount + 1
     p_rvalue%itype = itype
-    
+
     ! Store the name in upper case
     p_rvalue%sname = sys_upcase(sparamName)
-    
+
   end subroutine collct_addvalue
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_initsection (rcollctSection, ssectionName)
 
 !<description>
@@ -1210,26 +1210,26 @@ contains
 
 !</inputoutput>
 !</subroutine>
-    
+
     ! Simply allocate the pointers with an empty list
     allocate(rcollctSection%p_Rlevels(COLLCT_NVALUES))
-    
+
     ! No variables in here for the moment
     rcollctSection%ilevelCount = 0
-    
+
     ! Set the section name - uppercase
     rcollctSection%ssectionName = ssectionName
     call sys_toupper(rcollctSection%ssectionName)
-    
+
     ! Init level 0
     call collct_initlevel (rcollctSection%rlevel0)
-  
+
   end subroutine collct_initsection
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_donesection (rcollctSection)
 
 !<description>
@@ -1245,24 +1245,24 @@ contains
 
 !</inputoutput>
 !</subroutine>
-  
+
     ! local variables
     integer :: i
-    
+
     ! Clean up level 0
     call collct_donelevel (rcollctSection%rlevel0)
-  
+
     ! Clean up the other levels in this section
     do i = rcollctSection%ilevelCount, 1, -1
       call collct_donelevel (rcollctSection%p_Rlevels(i))
     end do
-    
+
     ! Deallocate the pointers with an empty list
     deallocate(rcollctSection%p_Rlevels)
-    
+
     ! No variables in here for the moment
     rcollctSection%ilevelCount = 0
-    
+
   end subroutine collct_donesection
 
   ! ***************************************************************************
@@ -1270,7 +1270,7 @@ contains
 !<subroutine>
 
   subroutine collct_reallocsection (rcollctSection, inewsize)
-  
+
 !<description>
 
     ! Internal subroutine: Reallocate a section.
@@ -1291,37 +1291,37 @@ contains
 
     ! The section to reallocate.
     type(t_collctSection), intent(inout) :: rcollctSection
-    
+
 !</inputoutput>
 !</subroutine>
-    
+
     ! Pointers to new lists for replacing the old.
     type(t_collctLevel), dimension(:), pointer :: p_Rlevels
 
     ! local variables
     integer :: sz
-    
+
     sz = max(size(rcollctSection%p_Rlevels),inewsize)
-    
+
     if (size(rcollctSection%p_Rlevels) .eq. sz) return ! nothing to do
-    
+
     ! Allocate the pointers for the new list
     allocate(p_Rlevels(sz))
-    
+
     ! Copy the content of the old ones
     p_Rlevels(1:sz) = rcollctSection%p_Rlevels (1:sz)
-    
+
     ! Throw away the old array, replace by the new one
     deallocate(rcollctSection%p_Rlevels)
-    
+
     rcollctSection%p_Rlevels => p_Rlevels
-    
+
   end subroutine collct_reallocsection
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_realloccollection (rcollection, inewsize)
 
 !<description>
@@ -1347,34 +1347,34 @@ contains
 !</inputoutput>
 
 !</subroutine
-    
+
     ! Pointers to new lists for replacing the old.
     type(t_collctSection), dimension(:), pointer :: p_Rsections
 
     ! local variables
     integer :: sz
-    
+
     sz = max(size(rcollection%p_Rsections),inewsize)
-    
+
     if (size(rcollection%p_Rsections) .eq. sz) return ! nothing to do
-    
+
     ! Allocate the pointers for the new lists
     allocate(p_Rsections(sz))
-    
+
     ! Copy the content of the old ones
     p_Rsections(1:sz) = rcollection%p_Rsections (1:sz)
-    
+
     ! Throw away the old array, replace by the new one
     deallocate(rcollection%p_Rsections)
-    
+
     rcollection%p_Rsections => p_Rsections
-    
+
   end subroutine collct_realloccollection
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_fetchparameter_indir (rlevel, sname, iparamnum)
 
 !<description>
@@ -1388,12 +1388,12 @@ contains
 
     ! The level where to search
     type(t_collctLevel), intent(in) :: rlevel
-    
+
     ! The parameter name to look for.
     character(LEN=*), intent(in) :: sname
 
 !</input>
-  
+
 !<output>
 
     ! The number of the parameter in the list or 0 if it does not exist.
@@ -1401,40 +1401,40 @@ contains
 
 !</output>
 !<subroutine>
-  
+
     ! local variables
     integer :: i,nsections
     character(LEN=COLLCT_MLNAME)  :: sname2
-    
+
     ! Convert the name to uppercase.
     sname2 = sname
     call sys_toupper (sname2)
-    
+
     iparamnum = 0
-    
+
     ! If the parameter list is empty, the section does not exist for sure
     if (rlevel%ivalueCount .eq. 0) return
-    
+
     ! Loop through all sections to see if the section exists
     if (rlevel%bisfull) then
       nsections = rlevel%ivalueCount
     else
       nsections = size(rlevel%p_Rvalues)
     end if
-    
+
     do i = 1, nsections
       if (rlevel%p_Rvalues(i)%sname .eq. sname2) then
         iparamnum = i
         return
       end if
     end do
-    
+
   end subroutine collct_fetchparameter_indir
 
   ! ***************************************************************************
- 
+
 !<subroutine>
-  
+
   subroutine collct_fetchparameter_direct (rcollection, ssectionName, ilevel, &
                                            sparameter, p_rvalue)
 
@@ -1449,18 +1449,18 @@ contains
 
     ! The collection where to search
     type(t_collection), intent(in) :: rcollection
-    
+
     ! The section name where to search - '' identifies the unnamed section
     character(LEN=*), intent(in) :: ssectionName
-    
+
     ! The level where to search; maybe 0 for level-independent parameters
     integer, intent(in) :: ilevel
-    
+
     ! The parameter name to look for.
     character(LEN=*), intent(in) :: sparameter
 
 !</input>
-  
+
 !<output>
 
     ! A pointer to the parameter.
@@ -1468,55 +1468,55 @@ contains
 
 !</output>
 !</subroutine>
-    
+
     ! local variables
     integer :: i,ilv
     type(t_collctSection), pointer :: p_rsection
     type(t_collctLevel), pointer :: p_rlevel
-    
+
     ! Some basic checks
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_fetchparameter_direct')
       call sys_halt()
     end if
-    
+
     nullify(p_rvalue)
-    
+
     call collct_fetchsection(rcollection, ssectionName, p_rsection)
-    
+
     if (.not. associated(p_rsection)) then
       ! Section does not exist - return NULL
       return
     end if
-    
+
     ! Get the level - if it exists.
     ilv = max(0,ilevel)
     if(ilv .gt. p_rsection%ilevelCount) then
       ! Level does not exist - return NULL
       return
     end if
-    
+
     if (ilv .eq. 0) then
       p_rlevel => p_rsection%rlevel0
     else
       p_rlevel => p_rsection%p_Rlevels(ilv)
     end if
-    
+
     ! Get the index of the value
     call collct_fetchparameter_indir (p_rlevel, sparameter, i)
-    
+
     ! and finally the pointer to it
     if (i .ne. 0) then
       p_rvalue => p_rlevel%p_Rvalues(i)
     end if
-    
+
   end subroutine collct_fetchparameter_direct
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_fetchsection(rcollection, sname, p_rsection, isectionIndex)
 
 !<description>
@@ -1531,7 +1531,7 @@ contains
 
     ! The section.
     type(t_collection), intent(in) :: rcollection
-    
+
     ! The parameter name to look for.
     character(LEN=*), intent(in) :: sname
 
@@ -1541,37 +1541,37 @@ contains
 
     ! A pointer to the section or NULL() if it does not exist.
     type(t_collctSection), pointer :: p_rsection
-    
+
     ! OPTIONAL: Index of the section in the section array.
     integer, intent(out), optional :: isectionIndex
 
 !</output>
 !</subroutine>
-    
+
     ! local variables
     integer :: i
     character(LEN=COLLCT_MLSECTION) :: sname2
-    
+
     ! Convert the name to uppercase.
     sname2 = sname
     call sys_toupper (sname2)
-    
+
     nullify(p_rsection)
-    
+
     ! If the parameter list is empty, the section does not exist for sure
     if (rcollection%isectionCount .eq. 0) return
-    
+
     ! Loop through all sections to see if the section exists
     do i = 1, rcollection%isectionCount
       if (rcollection%p_Rsections(i)%ssectionName .eq. sname2) then
         p_rsection => rcollection%p_Rsections(i)
-        
+
         if (present(isectionIndex)) isectionIndex = i
-        
+
         return
       end if
     end do
-    
+
   end subroutine collct_fetchsection
 
   ! ***************************************************************************
@@ -1592,10 +1592,10 @@ contains
 
     ! The section.
     type(t_collection), intent(in) :: rcollection
-    
+
     ! The section name to look for.
     character(LEN=*), intent(in) :: ssectionName
-    
+
     ! The level number where to search for
     integer, intent(in) :: ilevel
 
@@ -1608,109 +1608,109 @@ contains
 
 !</output>
 !</subroutine>
-    
+
     ! local variables
     integer :: i
     type(t_collctSection), pointer :: p_rsection
-    
+
     nullify(p_rlevel)
-    
+
     ! Get the section
     call collct_fetchsection(rcollection, ssectionName, p_rsection)
     if (.not. associated(p_rsection)) return
-    
+
     ! Get the level
     i = max(0,ilevel)
     if (i .gt. p_rsection%ilevelCount) return
-    
+
     if (i .eq. 0) then
       ! Get level 0 - the always-existing level
       p_rlevel => p_rsection%rlevel0
     else
       p_rlevel => p_rsection%p_Rlevels(i)
     end if
-    
+
   end subroutine collct_fetchlevel
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_init (rcollection)
-  
+
 !<description>
-  
+
   ! This routine initialises a collection. It must be applied
   ! before doing anything to it, just to initialise.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list to initialise.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! Allocate memory for the sections. We have at least one unnamed section
     ! and allocate memory for COLLCT_NSECTIONS more named sections in advance.
     allocate(rcollection%p_Rsections(1+COLLCT_NSECTIONS))
-    
+
     ! Add one section - the unnamed one
     rcollection%isectionCount = 1
     call collct_initsection (rcollection%p_Rsections(1), '')
-    
+
   end subroutine collct_init
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine collct_done (rcollection)
-  
+
 !<description>
-  
+
   ! This routine releases a parameter list. All memory allocated by the
   ! parameter list is released.
-  
+
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list to release.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
     integer :: i
-    
+
     ! Structure initialised?
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Trying to release an uninitialised collection.',&
                        OU_CLASS_WARNING,OU_MODE_STD,'collct_done')
       return
     end if
-    
+
     ! Loop through the sections and release the content
     do i = rcollection%isectionCount, 1, -1
       call collct_donesection(rcollection%p_Rsections(i))
     end do
-    
+
     ! Release all section structures
     deallocate(rcollection%p_Rsections)
-    
+
     ! Mark the structure as 'empty', finish
     rcollection%isectionCount = 0
-    
+
   end subroutine collct_done
-  
+
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_getmaxlevel_direct (rcollection,ssectionName) result (ilevel)
@@ -1723,31 +1723,31 @@ contains
 
   ! The collection
   type(t_collection), intent(in) :: rcollection
-  
+
   ! The name of the section
   character(LEN=*), intent(in) :: ssectionName
-  
+
 !</input>
-  
+
 !<result>
   ! The maximum level in rcollection.
 !</result>
-  
+
 !</function>
 
     type(t_collctSection), pointer :: p_rsection
-  
+
     ! Fetch the section number
     call collct_fetchsection(rcollection, ssectionName, p_rsection)
-    
+
     if (.not. associated(p_rsection)) then
       call output_line('Section not found: '//ssectionName,&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_getmaxlevel_direct')
       call sys_halt()
     end if
-    
+
     ilevel = p_rsection%ilevelCount
-    
+
   end function collct_getmaxlevel_direct
 
   ! ***************************************************************************
@@ -1766,13 +1766,13 @@ contains
 
   ! The collection
   type(t_collctsection), intent(in) :: rsection
-  
+
 !</input>
-  
+
 !<result>
   ! The maximum level in rcollection.
 !</result>
-  
+
 !</function>
 
     ilevel = rsection%ilevelCount
@@ -1780,28 +1780,28 @@ contains
   end function collct_getmaxlevel_indir
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_addlevel_indir (rsection, ilevelid)
-  
+
 !<description>
   ! Adds a new level to a section rsection.
   ! ilevelid returns the id of the new level and is >= 1.
 !</description>
 
 !<inputoutput>
-  
+
   ! The section where to add the level
   type(t_collctSection), intent(inout) :: rsection
-  
+
 !</inputoutput>
-  
+
 !<output>
-  
+
   ! OPTIONAL: The id of the newly added level.
   integer, intent(out), optional :: ilevelid
-  
+
 !</output>
 
 !</subroutine>
@@ -1813,20 +1813,20 @@ contains
       call collct_reallocsection (rsection, size(rsection%p_Rlevels)+COLLCT_NLEVELS)
     end if
     rsection%ilevelCount = rsection%ilevelCount + 1
-    
+
     ! Initialise the new level.
     call collct_initlevel(rsection%p_Rlevels(rsection%ilevelCount))
-    
+
     if (present(ilevelid)) ilevelid = rsection%ilevelCount
-    
+
   end subroutine collct_addlevel_indir
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_addlevel_direct (rcollection, ilevelid, ssectionName)
-  
+
 !<description>
   ! Adds a new level to a section with the name ssectionName.
   ! If ssectionName='', the new level is added to the unnamed section.
@@ -1834,12 +1834,12 @@ contains
 !</description>
 
 !<inputoutput>
-  
+
   ! The collection where to add the level
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
-  
+
 !<input>
 
   ! OPTIONAL: The section name where to add the level. If ='' or not
@@ -1847,25 +1847,25 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
-  
+
   ! The id of the newly added level.
   integer, intent(out) :: ilevelid
-  
+
 !</output>
 
 !</subroutine>
 
     ! local variables
     type(t_collctSection), pointer :: p_rsection
-  
+
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_addlevel_direct')
       call sys_halt()
     end if
-    
+
     ! Get the section
     if (present(ssectionName)) then
       call collct_fetchsection(rcollection, ssectionName, p_rsection)
@@ -1878,72 +1878,72 @@ contains
       ! unnamed section
       p_rsection => rcollection%p_Rsections(1)
     end if
-    
+
     ! Add the level
     call collct_addlevel_indir (p_rsection, ilevelid)
-    
+
   end subroutine collct_addlevel_direct
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_addlevel_all (rcollection)
-  
+
 !<description>
   ! Adds a new level to all sections in the collection.
 !</description>
 
 !<inputoutput>
-  
+
   ! The collection where to add the level
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! local variables
     integer :: i,ilevelid
-    
+
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_addlevel_all')
       call sys_halt()
     end if
-    
+
     ! Go through all sections
     do i = 1, rcollection%isectionCount
       ! Add the level there
       call collct_addlevel_indir (rcollection%p_Rsections(i), ilevelid)
     end do
-    
+
   end subroutine collct_addlevel_all
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_addsection (rcollection, ssectionName)
-  
+
 !<description>
   ! Adds a new section to a collection. The section gets the name ssectionName.
 !</description>
 
 !<inputoutput>
-  
+
   ! The parameter list where to add the section.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-  
+
   ! The name of the section. Must not be ''!
   character(LEN=*), intent(in) :: ssectionName
-  
+
 !</input>
-  
+
 !</subroutine>
 
     if (ssectionName .eq. '') then
@@ -1951,13 +1951,13 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_addsection')
       call sys_halt()
     end if
-    
+
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_addsection')
       call sys_halt()
     end if
-    
+
     ! Add a new section - reallocate the memory if necessary
     if (.not. associated(rcollection%p_Rsections)) then
       allocate(rcollection%p_Rsections(COLLCT_NSECTIONS))
@@ -1965,18 +1965,18 @@ contains
       call collct_realloccollection (rcollection, size(rcollection%p_Rsections)+COLLCT_NSECTIONS)
     end if
     rcollection%isectionCount = rcollection%isectionCount + 1
-    
+
     ! Initialise the new section.
     call collct_initsection(rcollection%p_Rsections(rcollection%isectionCount),ssectionName)
-    
+
   end subroutine collct_addsection
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_deletesection (rcollection, ssectionName)
-  
+
 !<description>
   ! Removes the section ssectionName with all its content from the collection.
   !
@@ -1985,59 +1985,59 @@ contains
 !</description>
 
 !<inputoutput>
-  
+
   ! The parameter list where to add the section.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-  
+
   ! The name of the section. Must not be ''!
   character(LEN=*), intent(in) :: ssectionName
-  
+
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctSection), pointer :: p_rsection
     integer :: isectionIndex,i
-    
+
     ! Some basic checks
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_deletesection')
       call sys_halt()
     end if
-    
+
     call collct_fetchsection(rcollection, ssectionName, p_rsection, isectionIndex)
-    
+
     if (.not. associated(p_rsection)) then
       call output_line('Section does not exist: '//ssectionName,&
                        OU_CLASS_WARNING,OU_MODE_STD,'collct_deletesection')
       return
     end if
-    
+
     ! Remove the section data
     call collct_donesection (p_rsection)
-    
+
     ! Now 'relocate' all sections. This makes all pointers to sections
     ! in the main application invalid, but it is rather unlikely that the
     ! application maintains a section pointer in a stage where sections are
     ! modified - hopefully :-)
-    
+
     do i = isectionIndex+1, rcollection%isectionCount
       rcollection%p_Rsections(i-1) = rcollection%p_Rsections(i)
     end do
-    
+
     ! Reduce the number of sections in the collection, finish.
     rcollection%isectionCount = rcollection%isectionCount - 1
-    
+
   end subroutine collct_deletesection
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_cleanupvalue (rvalue)
@@ -2045,7 +2045,7 @@ contains
 !<description>
   ! Cleans up a value structure. Releases all associated memory.
 !</description>
-  
+
 !<inputoutput>
   ! The value to clean up.
   type(t_collctValue), intent(inout) :: rvalue
@@ -2079,17 +2079,17 @@ contains
       nullify(rvalue%p_rcollection)
       nullify(rvalue%p_rhadapt)
       nullify(rvalue%p_rafcstab)
-      
+
       if (associated(rvalue%p_Iarray)) deallocate(rvalue%p_Iarray)
       if (associated(rvalue%p_Darray)) deallocate(rvalue%p_Darray)
 
       rvalue%itype = COLLCT_UNDEFINED
     end if
-    
+
   end subroutine collct_cleanupvalue
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_deletevalue (rcollection, sparameter, ilevel, ssectionName)
@@ -2099,18 +2099,18 @@ contains
   ! This simply removes a pointer or value from the collection, no memory
   ! is released.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2119,17 +2119,17 @@ contains
   ! If ='' or not given, the search is in the unnamed section.
   character(LEN=*), intent(in), optional :: ssectionName
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     type(t_collctLevel), pointer :: p_rlevel
     integer :: ilv
-    
+
     ilv = 0
     if (present(ilevel)) ilv = ilevel
-    
+
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
@@ -2138,32 +2138,32 @@ contains
       call collct_fetchparameter_direct (rcollection, '', ilv, &
                                          sparameter, p_rvalue)
     end if
-    
+
     ! Does the value exist?
     if (associated(p_rvalue)) then
-      
+
       ! Ok, we have the parameter. Clean it up.
       call collct_cleanupvalue(p_rvalue);
-      
+
       ! Modify the level info:
       if (present(ssectionName)) then
         call collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)
       else
         call collct_fetchlevel(rcollection, '', ilv, p_rlevel)
       end if
-      
+
       ! Decrement the value counter
       p_rLevel%ivalueCount = p_rLevel%ivalueCount - 1
-      
+
       ! Indicate that there is at least one free position now
       p_rLevel%bisFull = .false.
-      
+
     end if
-  
+
   end subroutine collct_deletevalue
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_printStatistics (rcollection)
@@ -2172,7 +2172,7 @@ contains
   ! This routine prints the current content of the whole collection in
   ! user-readable form to screen.
 !</description>
-  
+
 !<input>
   ! The parameter list.
   type(t_collection), intent(in) :: rcollection
@@ -2182,79 +2182,79 @@ contains
 
     ! local variables
     integer :: isection, ilevel
-    
+
     ! Loop through all sections in the collection
     do isection = 1, rcollection%isectionCount
-      
+
       ! Print the segment name:
       call output_line ('['//trim(rcollection%p_Rsections(isection)%ssectionName)//']')
-      
+
       ! Print the content of level 0 of the current section
       call printlevel(0,rcollection%p_Rsections(isection)%rlevel0)
-      
+
       ! Loop through all levels and print them
       do ilevel = 1,rcollection%p_Rsections(isection)%ilevelCount
         call printlevel(ilevel,rcollection%p_Rsections(isection)%p_Rlevels(ilevel))
       end do
-      
+
     end do
-    
+
   contains
-    
+
     !****************************************************************
     ! Print out the content of a level to screen
     subroutine printlevel (ilevel,rlevel)
-      
+
       ! Number of the level; 0=level 0
       integer, intent(in) :: ilevel
-      
+
       ! The level structure
       type(t_collctLevel), intent(in) :: rlevel
-      
+
       ! local variables
       integer :: ivalue
       type(t_collctValue), pointer :: p_rvalue
-      
+
       ! Is there data in the level?
       if (rlevel%ivalueCount .ne. 0) then
-        
+
         ! A level > 0 has a name:
         if (ilevel .gt. 0) then
           call output_line ('  [Level '//trim(sys_siL(ilevel,8))//']')
         end if
-        
+
         ! Loop through all values
         do ivalue = 1,size(rlevel%p_Rvalues)
           ! Get the value structure
           p_rvalue => rlevel%p_Rvalues(ivalue)
-          
+
           ! Is there data in it?
           if (p_rvalue%itype .ne. COLLCT_UNDEFINED) then
-          
+
             ! Print that there is data:
             call output_line ('  '//trim(p_rvalue%sname)//' (Type: '//&
                               trim(sys_siL(p_rvalue%itype,8))//')')
-          
+
           end if
         end do
-        
+
       end if
-      
+
     end subroutine printlevel
 
   end subroutine collct_printStatistics
 
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_queryvalue_indir (rsection, sparameter, ilevel) &
                result (exists)
-          
+
 !<description>
   ! Checks whether a parameter sparameter exists in in section rsection.
 !</description>
-  
+
 !<result>
   ! >0, if the parameter exists in the section rsection (it is the index of the
   !     parameter within the section),
@@ -2262,33 +2262,33 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collctSection), intent(in), target :: rsection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
-  
+
 !</input>
-  
+
 !</function>
 
     ! local variables
     integer :: ilv
     type(t_collctLevel), pointer :: p_rlevel
-    
+
     exists = 0
-    
+
     if (.not. present(ilevel)) then
       ilv = 0
     else
       ilv = max(ilevel,0)
     end if
-    
+
     ! Get the right level structure
     if (ilv .eq. 0) then
       p_rlevel => rsection%rlevel0
@@ -2299,19 +2299,19 @@ contains
     else
       p_rlevel => rsection%p_Rlevels(ilv)
     end if
-    
+
     ! Search for the parameter in the level
     call collct_fetchparameter_indir(p_rlevel, sparameter, exists)
-    
+
   end function collct_queryvalue_indir
 
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_queryvalue_direct (rcollection, sparameter, &
                         ilevel, ssectionName) result (exists)
-          
+
 !<description>
   ! Checks whether a parameter sparameter exists in in section.
   ! ilevel and ssectionName are optional parameters.
@@ -2320,7 +2320,7 @@ contains
   ! If ssectionName='' or not given, the parameter is searched in the unnamed
   ! section, otherwise in section ssectionName.
 !</description>
-  
+
 !<result>
   ! >0, if the parameter exists in the section (it is the index of the
   !     parameter within the section),
@@ -2328,13 +2328,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(in) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2344,26 +2344,26 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</function>
 
     ! local variables
     integer :: ilv
     type(t_collctSection), pointer :: p_rsection
-    
+
     if (rcollection%isectionCount .eq. 0) then
       call output_line('Collection not initalised!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'collct_queryvalue_direct')
       call sys_halt()
     end if
-    
+
     ! Fall back to the 'indirect' search.
     if (.not. present(ilevel)) then
       ilv = 0
     else
       ilv = max(0,ilevel)
     end if
-    
+
     if (.not. present(ssectionName)) then
       p_rsection => rcollection%p_Rsections(1)
     else
@@ -2374,13 +2374,13 @@ contains
         call sys_halt()
       end if
     end if
-    
+
     exists = collct_queryvalue_indir (p_rsection, sparameter, ilv)
-    
+
   end function collct_queryvalue_direct
 
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_gettype (rcollection, sparameter, &
@@ -2388,19 +2388,19 @@ contains
 !<description>
   ! Returns the data type of the parameter sparameter.
 !</description>
-  
+
 !<result>
   ! One of the COLLCT_XXXX constants (COLLCT_UNDEFINED,...).
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(in) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2410,7 +2410,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -2424,10 +2424,10 @@ contains
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     integer :: ilv
-    
+
     ilv = 0
     if (present(ilevel)) ilv = ilevel
-    
+
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
@@ -2436,21 +2436,21 @@ contains
       call collct_fetchparameter_direct (rcollection, '', ilv, &
                                          sparameter, p_rvalue)
     end if
-    
+
     ! Return whether or not that thing exists
     if (present(bexists)) bexists = associated(p_rvalue)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       itype = p_rvalue%itype
     else
       itype = COLLCT_UNDEFINED
     end if
-    
+
   end function collct_gettype
 
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_gettag (rcollection, sparameter, &
@@ -2458,19 +2458,19 @@ contains
 !<description>
   ! Returns the user defined tag of the parameter sparameter.
 !</description>
-  
+
 !<result>
   ! User defined integer tag.
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(in) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2480,7 +2480,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -2494,10 +2494,10 @@ contains
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     integer :: ilv
-    
+
     ilv = 0
     if (present(ilevel)) ilv = ilevel
-    
+
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
@@ -2506,21 +2506,21 @@ contains
       call collct_fetchparameter_direct (rcollection, '', ilv, &
                                          sparameter, p_rvalue)
     end if
-    
+
     ! Return whether or not that thing exists
     if (present(bexists)) bexists = associated(p_rvalue)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       itag = p_rvalue%itag
     else
       itag = 0
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_settag (rcollection, sparameter, itag, &
@@ -2528,23 +2528,23 @@ contains
 !<description>
   ! Sets the user defined tag of the parameter sparameter.
 !</description>
-  
+
 !<result>
   ! User defined integer tag.
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(in) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! Tag that should be associated to the parameter.
   ! User defined integer value.
   integer, intent(in) :: itag
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2554,7 +2554,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -2568,10 +2568,10 @@ contains
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     integer :: ilv
-    
+
     ilv = 0
     if (present(ilevel)) ilv = ilevel
-    
+
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
@@ -2580,19 +2580,19 @@ contains
       call collct_fetchparameter_direct (rcollection, '', ilv, &
                                          sparameter, p_rvalue)
     end if
-    
+
     ! Return whether or not that thing exists
     if (present(bexists)) bexists = associated(p_rvalue)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       p_rvalue%itag = itag
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_getvalue_struc (rcollection, sparameter, itype, &
@@ -2616,24 +2616,24 @@ contains
   ! If itype <> COLLCT_UNDEFINED is specified, there is a type check:
   ! If the value exists but is not of type itype, an error is thrown.
 !</description>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! Expected type for that parameter.
   ! =COLLCT_UNDEFINED: suppress type check.
   integer, intent(in) :: itype
-  
+
   ! Whether to add the parameter if it does not exists.
   ! =TRUE: add the parameter if necessary.
   ! =FALSE: throw an error that the parameter does not exist.
   logical, intent(in) :: badd
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2643,13 +2643,13 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
-  
+
   ! A pointer to the structure with name sparameter.
   ! Points to NULL() if the value does not exist.
   type(t_collctValue), pointer :: p_rvalue
@@ -2660,10 +2660,10 @@ contains
 
     ! local variables
     integer :: ilv
-  
+
     ilv = 0
     if (present(ilevel)) ilv = ilevel
-    
+
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
@@ -2672,7 +2672,7 @@ contains
       call collct_fetchparameter_direct (rcollection, '', ilv, &
                                          sparameter, p_rvalue)
     end if
-    
+
     ! Return whether or not that thing exists.
     ! If it does not exist, create it or throw an error.
     if (present(bexists)) then
@@ -2684,9 +2684,9 @@ contains
         call sys_halt()
       end if
     end if
-    
+
     if (associated(p_rvalue)) then
-      
+
       ! Type check
       if (itype .ne. COLLCT_UNDEFINED) then
         ! Throw an error if the type is wrong. Otherwise, get the value.
@@ -2698,7 +2698,7 @@ contains
           call sys_halt()
         end if
       end if
-      
+
     else
       if (badd) then
         if (present(ssectionName)) then
@@ -2711,11 +2711,11 @@ contains
         if (present(bexists)) bexists = .true.
       end if
     end if
-    
+
   end subroutine collct_getvalue_struc
-  
+
   ! ***************************************************************************
-  
+
 !<function>
 
   character function collct_getvalue_char (rcollection, sparameter, &
@@ -2724,20 +2724,20 @@ contains
   ! Returns the the parameter sparameter as character.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2747,7 +2747,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -2760,22 +2760,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_CHARACTER,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value = p_rvalue%csvalue
     else
       value = " "
     end if
-    
+
   end function collct_getvalue_char
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_getvalue_string (rcollection, sparameter, value, &
@@ -2784,15 +2784,15 @@ contains
   ! Returns the the parameter sparameter as string.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2802,7 +2802,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! The string.
@@ -2811,7 +2811,7 @@ contains
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
-  
+
 !</output>
 
 !</subroutine>
@@ -2819,7 +2819,7 @@ contains
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     integer :: i,j
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_STRING,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
@@ -2834,11 +2834,11 @@ contains
     else
       value = ''
     end if
-    
+
   end subroutine collct_getvalue_string
-  
+
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function collct_getvalue_int (rcollection, sparameter, &
@@ -2847,20 +2847,20 @@ contains
   ! Returns the the parameter sparameter as integer.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2870,7 +2870,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -2887,18 +2887,18 @@ contains
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGER,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value = p_rvalue%ivalue
     else
       value = 0
     end if
-    
+
   end function collct_getvalue_int
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_getvalue_intarr (rcollection, sparameter, value, &
@@ -2910,7 +2910,7 @@ contains
   ! The routine returns the actual array, not a reference to it. The previous
   ! content of the destination array is overwritten.
 !</description>
-  
+
 !<inputoutput>
   ! The value of the parameter an array. The destination array must have the
   ! same length as the array in the collection!
@@ -2919,13 +2919,13 @@ contains
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2935,7 +2935,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There is no error thrown if a variable does not exist.
@@ -2950,7 +2950,7 @@ contains
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGERARR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       if (size(p_rvalue%p_Iarray) .ne. size(value)) then
@@ -2962,11 +2962,11 @@ contains
     else
       value = 0
     end if
-    
+
   end subroutine collct_getvalue_intarr
 
   ! ***************************************************************************
-  
+
 !<function>
 
   real(DP) function collct_getvalue_real (rcollection, sparameter, &
@@ -2975,20 +2975,20 @@ contains
   ! Returns the the parameter sparameter as real.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -2998,7 +2998,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3011,22 +3011,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_REAL,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value = p_rvalue%dvalue
     else
       value = 0
     end if
-    
+
   end function collct_getvalue_real
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_getvalue_realarr (rcollection, sparameter, value, &
@@ -3038,7 +3038,7 @@ contains
   ! The routine returns the actual array, not a reference to it. The previous
   ! content of the destination array is overwritten.
 !</description>
-  
+
 !<inputoutput>
   ! The value of the parameter an array. The destination array must have the
   ! same length as the array in the collection!
@@ -3047,13 +3047,13 @@ contains
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3063,7 +3063,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3076,11 +3076,11 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_REALARR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       if (size(p_rvalue%p_Darray) .ne. size(value)) then
@@ -3092,11 +3092,11 @@ contains
     else
       value = 0
     end if
-    
+
   end subroutine collct_getvalue_realarr
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_discr (rcollection, sparameter, &
@@ -3106,22 +3106,22 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
 !</result>
-  
+
   type(t_spatialDiscretisation), pointer :: value
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3131,7 +3131,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3144,22 +3144,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rdiscretisation
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_discr
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_bldiscr (rcollection, sparameter, &
@@ -3169,7 +3169,7 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3179,13 +3179,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3195,7 +3195,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3212,18 +3212,18 @@ contains
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLDISCR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rblockDiscretisation
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_bldiscr
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_tria (rcollection, sparameter, &
@@ -3233,7 +3233,7 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3243,13 +3243,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3259,7 +3259,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3276,18 +3276,18 @@ contains
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TRIA,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rtriangulation
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_tria
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_bdry (rcollection, sparameter, &
@@ -3297,7 +3297,7 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3307,13 +3307,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3323,7 +3323,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3336,7 +3336,7 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
@@ -3347,11 +3347,11 @@ contains
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_bdry
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_bdreg (rcollection, sparameter, &
@@ -3361,7 +3361,7 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3371,13 +3371,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3387,7 +3387,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3400,7 +3400,7 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BDREGION,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
@@ -3411,11 +3411,11 @@ contains
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_bdreg
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_bc (rcollection, sparameter, &
@@ -3425,7 +3425,7 @@ contains
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3435,13 +3435,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3451,7 +3451,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3464,22 +3464,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARYCOND,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rboundaryConditions
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_bc
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_vecsca (rcollection, sparameter, &
@@ -3488,7 +3488,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a scalar vector.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3498,13 +3498,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3514,7 +3514,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3527,22 +3527,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAVECTOR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rvectorScalar
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_vecsca
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_matsca (rcollection, sparameter, &
@@ -3551,7 +3551,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3561,13 +3561,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3577,7 +3577,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3590,22 +3590,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAMATRIX,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmatrixScalar
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_matsca
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_vec (rcollection, sparameter, &
@@ -3614,7 +3614,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a block vector.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3622,15 +3622,15 @@ contains
   type(t_vectorBlock), pointer :: value
 
 !</result>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3640,7 +3640,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3653,22 +3653,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKVECTOR,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rvector
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_vec
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_mat (rcollection, sparameter, &
@@ -3677,7 +3677,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3687,13 +3687,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3703,7 +3703,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3716,22 +3716,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKMATRIX,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmatrix
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_mat
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_linsol (rcollection, sparameter, &
@@ -3741,7 +3741,7 @@ contains
   ! configuration node.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3751,13 +3751,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3767,7 +3767,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3780,22 +3780,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_LINSOL,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rlinearSolver
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_linsol
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_discbc (rcollection, sparameter, &
@@ -3805,7 +3805,7 @@ contains
   ! condition structure
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3815,13 +3815,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3831,7 +3831,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3844,22 +3844,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCRBC,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rdiscreteBC
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_discbc
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_parlst (rcollection, sparameter, &
@@ -3868,7 +3868,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a parameter list.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3878,13 +3878,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3894,7 +3894,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3907,22 +3907,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARAMETERS,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rparlist
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_parlst
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_ilvpsc (rcollection, sparameter, &
@@ -3932,7 +3932,7 @@ contains
   ! projection structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -3942,13 +3942,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -3958,7 +3958,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -3971,22 +3971,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJSC,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rilvProjectionSc
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_ilvpsc
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_ilvp (rcollection, sparameter, &
@@ -3996,7 +3996,7 @@ contains
   ! projection structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4004,15 +4004,15 @@ contains
   type(t_interlevelProjectionBlock), pointer :: value
 
 !</result>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4022,7 +4022,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4035,22 +4035,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJ,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rilvProjection
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_ilvp
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_coll (rcollection, sparameter, &
@@ -4059,7 +4059,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a collection object.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4069,13 +4069,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4085,7 +4085,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4098,7 +4098,7 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_COLLECTION,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
@@ -4109,11 +4109,11 @@ contains
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_coll
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_pars (rcollection, sparameter, &
@@ -4122,7 +4122,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a parser object.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4132,13 +4132,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4148,7 +4148,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4161,22 +4161,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FPARSER,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rparser
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_pars
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_geom (rcollection, sparameter, &
@@ -4185,7 +4185,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a geometry object.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4195,13 +4195,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4211,7 +4211,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4224,22 +4224,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GEOMETRY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rgeometry
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_geom
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_particles(rcollection, sparameter, &
@@ -4248,7 +4248,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a particle collection object.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4258,13 +4258,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4274,7 +4274,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4287,22 +4287,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rparticles
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_particles
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_particles3D(rcollection, sparameter, &
@@ -4311,7 +4311,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a particle3D collection object.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4321,13 +4321,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4337,7 +4337,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4350,22 +4350,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES3D,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rparticles3D
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_particles3D
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_fchn (rcollection, sparameter, &
@@ -4374,7 +4374,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a filter chain.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4384,13 +4384,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4400,7 +4400,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4413,22 +4413,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_RfilterChain
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_fchn
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_hadapt (rcollection, sparameter, &
@@ -4437,7 +4437,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a grid adaptation structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4445,15 +4445,15 @@ contains
   type(t_hadapt), pointer :: value
 
 !</result>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4463,7 +4463,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4476,22 +4476,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rhadapt
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_hadapt
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_afcstab (rcollection, sparameter, &
@@ -4500,7 +4500,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a stabilisation structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4508,15 +4508,15 @@ contains
   type(t_afcstab), pointer :: value
 
 !</result>
-  
+
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4526,7 +4526,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4539,22 +4539,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_AFCSTAB,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rafcstab
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_afcstab
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_timer (rcollection, sparameter, &
@@ -4563,7 +4563,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a timer structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4573,13 +4573,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4589,7 +4589,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4602,22 +4602,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TIMER,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rtimer
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_timer
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_list (rcollection, sparameter, &
@@ -4626,7 +4626,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a linked list.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4636,13 +4636,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4652,7 +4652,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4665,22 +4665,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_LIST,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rlist
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_list
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_arraylist (rcollection, sparameter, &
@@ -4689,7 +4689,7 @@ contains
   ! Returns the the parameter sparameter as pointer to an arraylist.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4699,13 +4699,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4715,7 +4715,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4728,22 +4728,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_ARRAYLIST,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rarraylist
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_arraylist
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_map (rcollection, sparameter, &
@@ -4752,7 +4752,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a map.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4762,13 +4762,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4778,7 +4778,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4791,22 +4791,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MAP,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmap
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_map
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_graph (rcollection, sparameter, &
@@ -4815,7 +4815,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a graph structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4825,13 +4825,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4841,7 +4841,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4854,22 +4854,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GRAPH,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rgraph
     else
       nullify(value)
     end if
-    
+
   end function collct_getvalue_graph
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_mshh (rcollection, sparameter, &
@@ -4878,7 +4878,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a mesh hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4888,13 +4888,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4904,7 +4904,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4917,22 +4917,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MSHHIERARCHY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmeshhierarchy
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_fesp (rcollection, sparameter, &
@@ -4941,7 +4941,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a finite element space level.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -4951,13 +4951,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -4967,7 +4967,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -4980,22 +4980,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FESPACE,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rfeSpace
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_feh (rcollection, sparameter, &
@@ -5004,7 +5004,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a finite element hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5014,13 +5014,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5030,7 +5030,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5043,22 +5043,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FEHIERARCHY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rfeHierarchy
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_tsh (rcollection, sparameter, &
@@ -5067,7 +5067,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a time scale hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5077,13 +5077,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5093,7 +5093,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5106,22 +5106,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TSHIERARCHY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rtsHierarchy
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_mlprjh (rcollection, sparameter, &
@@ -5130,7 +5130,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a multilevel projection structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5140,13 +5140,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5156,7 +5156,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5169,22 +5169,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MLPRJHIERARCHY,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmlprjHierarchy
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_gfemset (rcollection, sparameter, &
@@ -5193,7 +5193,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a group finite element set.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5203,13 +5203,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5219,7 +5219,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5232,22 +5232,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMSET,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rgroupFEMSet
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_gfemblk (rcollection, sparameter, &
@@ -5256,7 +5256,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a group finite element block.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5266,13 +5266,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5282,7 +5282,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5295,22 +5295,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMBLOCK,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rgroupFEMBlock
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function collct_getvalue_cubinfo (rcollection, sparameter, &
@@ -5319,7 +5319,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a group finite element block.
   ! An error is thrown if the value is of the wrong type.
 !</description>
-  
+
 !<result>
 
   ! The value of the parameter.
@@ -5329,13 +5329,13 @@ contains
 !</result>
 
 !<input>
-    
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
   ! The parameter name to search for.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
   integer, intent(in), optional :: ilevel
@@ -5345,7 +5345,7 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
@@ -5358,22 +5358,22 @@ contains
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
-    
+
     ! Get the pointer to the parameter
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_CUBINFO,&
                                 .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rcubatureInfo
     else
       nullify(value)
     end if
-    
+
   end function
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -5387,22 +5387,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   character, intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5417,24 +5417,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_CHARACTER,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%csvalue = value
-    
+
   end subroutine collct_setvalue_char
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_string (rcollection, sparameter, value, badd, &
@@ -5448,22 +5448,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   character(LEN=*), intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5478,28 +5478,28 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
     integer :: i
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_STRING,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value; slightly more complicated for strings
     allocate(p_rvalue%p_svalue(len(value)))
     do i = 1, len(value)
       p_rvalue%p_svalue(i) = value (i:i)
     end do
-    
+
   end subroutine collct_setvalue_string
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_int (rcollection, sparameter, value, badd, &
@@ -5513,22 +5513,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   integer, intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5543,24 +5543,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGER,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%ivalue = value
-    
+
   end subroutine collct_setvalue_int
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_intarr (rcollection, sparameter, value, badd, &
@@ -5577,22 +5577,22 @@ contains
   ! The routine creates a new memory block on the heap and copies the
   ! data to there. There is no reference to the old array stored.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   integer, dimension(:), intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5607,17 +5607,17 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGERARR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! (Re-)allocate memory for the value if necessary.
     if (.not. associated(p_rvalue%p_Iarray)) then
       allocate(p_rvalue%p_Iarray(size(value)))
@@ -5625,14 +5625,14 @@ contains
       deallocate(p_rvalue%p_Iarray)
       allocate(p_rvalue%p_Iarray(size(value)))
     end if
-    
+
     ! Set the value
     p_rvalue%p_Iarray = value
-    
+
   end subroutine collct_setvalue_intarr
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_real (rcollection, sparameter, value, badd, &
@@ -5646,22 +5646,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   real(DP), intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5676,24 +5676,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_REAL,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%dvalue = value
-    
+
   end subroutine collct_setvalue_real
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_realarr (rcollection, sparameter, value, badd, &
@@ -5710,22 +5710,22 @@ contains
   ! The routine creates a new memory block on the heap and copies the
   ! data to there. There is no reference to the old array stored.
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   real(DP), dimension(:),intent(in) :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5740,17 +5740,17 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_REALARR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! (Re-)allocate memory for the value if necessary.
     if (.not. associated(p_rvalue%p_Darray)) then
       allocate(p_rvalue%p_Darray(size(value)))
@@ -5758,14 +5758,14 @@ contains
       deallocate(p_rvalue%p_Darray)
       allocate(p_rvalue%p_Darray(size(value)))
     end if
-    
+
     ! Set the value
     p_rvalue%p_Darray = value
-    
+
   end subroutine collct_setvalue_realarr
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_discr (rcollection, sparameter, value, badd, &
@@ -5779,22 +5779,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_spatialDiscretisation), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5809,24 +5809,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rdiscretisation => value
-    
+
   end subroutine collct_setvalue_discr
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_bldiscr (rcollection, sparameter, value, badd, &
@@ -5840,22 +5840,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_blockDiscretisation), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5870,24 +5870,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLDISCR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rblockDiscretisation => value
-    
+
   end subroutine collct_setvalue_bldiscr
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_tria (rcollection, sparameter, value, badd, &
@@ -5901,22 +5901,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_triangulation), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5931,24 +5931,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TRIA,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rtriangulation => value
-    
+
   end subroutine collct_setvalue_tria
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_bdry (rcollection, sparameter, value, badd, &
@@ -5962,22 +5962,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_boundary), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -5992,24 +5992,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rboundary => value
-    
+
   end subroutine collct_setvalue_bdry
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_bdreg (rcollection, sparameter, value, badd, &
@@ -6023,22 +6023,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_boundaryRegion), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6053,24 +6053,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BDREGION,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rboundaryRegion => value
-    
+
   end subroutine collct_setvalue_bdreg
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_bc (rcollection, sparameter, value, badd, &
@@ -6084,22 +6084,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_boundaryConditions), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6114,24 +6114,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARYCOND,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rboundaryConditions => value
-    
+
   end subroutine collct_setvalue_bc
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_vecsca (rcollection, sparameter, value, badd, &
@@ -6145,22 +6145,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_vectorScalar), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6175,24 +6175,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAVECTOR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rvectorScalar => value
-    
+
   end subroutine collct_setvalue_vecsca
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_matsca (rcollection, sparameter, value, badd, &
@@ -6206,22 +6206,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_matrixScalar), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6236,24 +6236,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAMATRIX,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rmatrixScalar => value
-    
+
   end subroutine collct_setvalue_matsca
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_vec (rcollection, sparameter, value, badd, &
@@ -6267,22 +6267,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_vectorBlock), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6297,24 +6297,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKVECTOR,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rvector => value
-    
+
   end subroutine collct_setvalue_vec
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_mat (rcollection, sparameter, value, badd, &
@@ -6328,22 +6328,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_matrixBlock), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6358,24 +6358,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKMATRIX,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rmatrix => value
-    
+
   end subroutine collct_setvalue_mat
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_parlst (rcollection, sparameter, value, badd, &
@@ -6389,22 +6389,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_parlist), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6419,24 +6419,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARAMETERS,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rparlist => value
-    
+
   end subroutine collct_setvalue_parlst
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_linsol (rcollection, sparameter, value, badd, &
@@ -6450,22 +6450,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_linsolNode), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6480,24 +6480,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_LINSOL,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rlinearSolver => value
-    
+
   end subroutine collct_setvalue_linsol
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_discbc (rcollection, sparameter, value, badd, &
@@ -6511,22 +6511,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_discreteBC), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6541,24 +6541,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCRBC,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-  
+
     ! Set the value
     p_rvalue%p_rdiscreteBC => value
-    
+
   end subroutine collct_setvalue_discbc
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_ilvpsc (rcollection, sparameter, value, badd, &
@@ -6572,22 +6572,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_interlevelProjectionScalar), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6602,24 +6602,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJSC,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rilvProjectionSc => value
-    
+
   end subroutine collct_setvalue_ilvpsc
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_ilvp (rcollection, sparameter, value, badd, &
@@ -6633,22 +6633,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_interlevelProjectionBlock), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6663,24 +6663,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJ,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rilvProjection => value
-    
+
   end subroutine collct_setvalue_ilvp
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_coll (rcollection, sparameter, value, badd, &
@@ -6694,22 +6694,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_collection), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6724,24 +6724,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_COLLECTION,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rcollection => value
-    
+
   end subroutine collct_setvalue_coll
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_pars (rcollection, sparameter, value, badd, &
@@ -6755,22 +6755,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_fparser), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6785,24 +6785,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FPARSER,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rparser => value
-    
+
   end subroutine collct_setvalue_pars
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_geom (rcollection, sparameter, value, badd, &
@@ -6816,22 +6816,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_geometryObject), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6846,24 +6846,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GEOMETRY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rgeometry => value
-    
+
   end subroutine collct_setvalue_geom
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_fchn (rcollection, sparameter, value, badd, &
@@ -6877,22 +6877,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_filterChain), dimension(:), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6907,24 +6907,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_RfilterChain => value
-    
+
   end subroutine collct_setvalue_fchn
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_hadapt (rcollection, sparameter, value, badd, &
@@ -6938,22 +6938,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_hadapt), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -6968,24 +6968,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_HADAPT,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rhadapt => value
-    
+
   end subroutine collct_setvalue_hadapt
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_afcstab (rcollection, sparameter, value, badd, &
@@ -6999,22 +6999,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_afcstab), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7029,24 +7029,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_AFCSTAB,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rafcstab => value
-    
+
   end subroutine collct_setvalue_afcstab
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_timer (rcollection, sparameter, value, badd, &
@@ -7060,22 +7060,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_timer), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7090,24 +7090,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TIMER,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rtimer => value
-    
+
   end subroutine collct_setvalue_timer
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_list (rcollection, sparameter, value, badd, &
@@ -7121,22 +7121,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_list), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7151,24 +7151,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_LIST,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rlist => value
-    
+
   end subroutine collct_setvalue_list
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_arraylist (rcollection, sparameter, value, badd, &
@@ -7182,22 +7182,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_arraylist), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7212,24 +7212,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_ARRAYLIST,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rarraylist => value
-    
+
   end subroutine collct_setvalue_arraylist
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_map (rcollection, sparameter, value, badd, &
@@ -7243,22 +7243,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_map), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7273,24 +7273,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MAP,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rmap => value
-    
+
   end subroutine collct_setvalue_map
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_mshh (rcollection, sparameter, value, badd, &
@@ -7304,22 +7304,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_meshHierarchy), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7334,24 +7334,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MSHHIERARCHY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rmeshHierarchy => value
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_fesp (rcollection, sparameter, value, badd, &
@@ -7365,22 +7365,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_feSpaceLevel), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7395,24 +7395,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FESPACE,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rfeSpace => value
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_feh (rcollection, sparameter, value, badd, &
@@ -7426,22 +7426,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_feHierarchy), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7456,24 +7456,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_FEHIERARCHY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rfeHierarchy => value
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_tsh (rcollection, sparameter, value, badd, &
@@ -7487,22 +7487,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_timescaleHierarchy), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7517,24 +7517,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_TSHIERARCHY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rtsHierarchy => value
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_mlprjh (rcollection, sparameter, value, badd, &
@@ -7548,22 +7548,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_interlevelProjectionHier), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7578,24 +7578,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_MLPRJHIERARCHY,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rmlprjHierarchy => value
-    
+
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_graph (rcollection, sparameter, value, badd, &
@@ -7609,22 +7609,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_graph), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7639,24 +7639,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GRAPH,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rgraph => value
-    
+
   end subroutine collct_setvalue_graph
-  
+
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_particles(rcollection, sparameter, value, badd, &
@@ -7670,22 +7670,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_particleCollection), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7700,24 +7700,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rparticles => value
-    
+
   end subroutine collct_setvalue_particles
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_particles3D(rcollection, sparameter, value, badd, &
@@ -7731,22 +7731,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_particleCollection3D), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7761,24 +7761,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES3D,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rparticles3D => value
-    
+
   end subroutine collct_setvalue_particles3D
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_gfemset(rcollection, sparameter, value, badd, &
@@ -7792,22 +7792,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_groupFEMSet), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7822,24 +7822,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMSET,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rgroupFEMSet => value
-    
+
   end subroutine collct_setvalue_gfemset
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_gfemblk(rcollection, sparameter, value, badd, &
@@ -7853,22 +7853,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_groupFEMBlock), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7883,24 +7883,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMBLOCK,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rgroupFEMBlock => value
-    
+
   end subroutine collct_setvalue_gfemblk
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_setvalue_cubinfo(rcollection, sparameter, value, badd, &
@@ -7914,22 +7914,22 @@ contains
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
 !</description>
-  
+
 !<inputoutput>
-  
+
   ! The parameter list.
   type(t_collection), intent(inout) :: rcollection
-  
+
 !</inputoutput>
 
 !<input>
-    
+
   ! The parameter name.
   character(LEN=*), intent(in) :: sparameter
-  
+
   ! The value of the parameter.
   type(t_scalarCubatureInfo), intent(in), target :: value
-  
+
   ! Whether to add the variable if it does not exist.
   ! =false: do not add the variable, throw an error
   ! =true : add the variable
@@ -7944,24 +7944,24 @@ contains
   character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue
     logical :: bexists
-    
+
     ! Get the pointer to the parameter. Add the parameter if necessary
     call collct_getvalue_struc (rcollection, sparameter, COLLCT_CUBINFO,&
                                 badd,p_rvalue, ilevel, bexists, ssectionName)
-    
+
     ! Set the value
     p_rvalue%p_rcubatureInfo => value
-    
+
   end subroutine 
 
 ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine collct_copyQuickAccess(rcollectionSrc, rcollectionDest)
@@ -7980,23 +7980,23 @@ contains
   ! Destination collection structure
   type(t_collection), intent(inout) :: rcollectionDest
 !</inputoutput>
-  
+
 !</subroutine>
 
     rcollectionDest%IquickAccess = rcollectionSrc%IquickAccess
     rcollectionDest%DquickAccess = rcollectionSrc%DquickAccess
     rcollectionDest%SquickAccess = rcollectionSrc%SquickAccess
-    
+
     rcollectionDest%p_rvectorQuickAccess1 => rcollectionSrc%p_rvectorQuickAccess1
     rcollectionDest%p_rvectorQuickAccess2 => rcollectionSrc%p_rvectorQuickAccess2
     rcollectionDest%p_rvectorQuickAccess3 => rcollectionSrc%p_rvectorQuickAccess3
     rcollectionDest%p_rvectorQuickAccess4 => rcollectionSrc%p_rvectorQuickAccess4
-    
+
     rcollectionDest%p_rmatrixQuickAccess1 => rcollectionSrc%p_rmatrixQuickAccess1
     rcollectionDest%p_rmatrixQuickAccess2 => rcollectionSrc%p_rmatrixQuickAccess2
     rcollectionDest%p_rmatrixQuickAccess3 => rcollectionSrc%p_rmatrixQuickAccess3
     rcollectionDest%p_rmatrixQuickAccess4 => rcollectionSrc%p_rmatrixQuickAccess4
-    
+
     rcollectionDest%p_rparlistQuickAccess1 => rcollectionSrc%p_rparlistQuickAccess1
     rcollectionDest%p_rparlistQuickAccess2 => rcollectionSrc%p_rparlistQuickAccess2
     rcollectionDest%p_rparlistQuickAccess3 => rcollectionSrc%p_rparlistQuickAccess3

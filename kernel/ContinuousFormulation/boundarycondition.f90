@@ -133,7 +133,7 @@ module boundarycondition
   use fsystem
   use boundary
   use fictitiousboundary
-  
+
   implicit none
 
   private
@@ -161,16 +161,16 @@ module boundarycondition
   ! equation. t_bcRegion\%nequations is set =1 and t_bcRegion\%Iequations(1)
   ! identifies the number of the equation, the boundary conditions refer to.
   integer, parameter, public :: BC_DIRICHLET      = 1
-  
+
   ! Robin boundary conditions
   integer, parameter, public :: BC_ROBIN          = 2
-  
+
   ! Pressure-drop boundary conditions
   integer, parameter, public :: BC_PRESSUREDROP   = 3
-  
+
   ! Flux boundary conditions
   integer, parameter, public :: BC_FLUX           = 4
-  
+
   ! FEAST mirror boundary for domain decomposition
   integer, parameter, public :: BC_FEASTMIRROR    = 5
 
@@ -187,7 +187,7 @@ module boundarycondition
 
   ! The boundary segment is unspecified.
   integer, parameter, public :: BC_RTYPE_UNDEFINED = 0
-  
+
   ! The boundary dition region corresponds to a specific region on
   ! the real boundary.
   integer, parameter, public :: BC_RTYPE_REAL      = 1
@@ -196,53 +196,53 @@ module boundarycondition
   ! but does not correspond to a specific segment ('free' real
   ! boundar condition).
   integer, parameter, public :: BC_RTYPE_FREE      = 2
-  
+
   ! The boundary condition region corresponds to a fictitious boundary
   ! object.
   integer, parameter, public :: BC_RTYPE_FBCOBJECT = 3
-  
+
 !</constantblock>
 
 !<constantblock>
-  
+
   ! Default blocksize for allocating new structures in the
   ! p_RregionsSpecific / p_RregionsFree list - if the list is full.
   integer, parameter, public :: BC_LISTBLOCKSIZE = 10
-  
+
   ! Maximum number of equations that are supported simultaneously by
   ! boundary conditions.
   integer, parameter, public :: BC_MAXEQUATIONS = 16
-  
+
 !</constantblock>
 
 !</constants>
 
 !<types>
 !<typeblock>
-  
+
   ! The following structure realises a 'region' on the boundary where
   ! boundary conditions are defined. This is realised using the
   ! 'boundary region' structure from the 'boundary' module.
   ! The structure contains  user defined integer, double precision and
   ! string tag, which can be set by the application to arbitrary,
   ! problem dependent values (e.g. identifier tags for callback routines).
-  
+
   type t_bcRegion
-  
+
     ! Type of BC region, this structure defines. One of the BC_RTYPE_xxxx
     ! constants.
     integer :: cbcRegionType = BC_RTYPE_UNDEFINED
-    
+
     ! Type of boundary conditions, this structure describes.
     ! One of the BC_xxxx constants.
     integer :: ctype = BC_DONOTHING
-    
+
     ! Number of equations, this BC refers to. This is usually =1 but can be
     ! higher if the BC couples multiple equations (like <tex>$u_x + u_y = c$</tex> or so).
     ! Normally, this is the length of the Iequations list below, but the
     ! meaning might be different for special type BC`s.
     integer :: nequations = 0
-    
+
     ! A list of up to BC_MAXEQUATIONS numbers identifying the equations,
     ! a boundary condition refers to. The use of this is defined
     ! as follows:
@@ -271,7 +271,7 @@ module boundarycondition
     ! the list in a different way to remember which equations take part
     ! on a special BC.
     integer, dimension(BC_MAXEQUATIONS) :: Iequations = 0
-    
+
     ! Whether or not this boundary region is a 'static' region.
     ! If TRUE, the discretisation routine will discretise this boundary
     !  region only once and then never touch it anymore when called again.
@@ -281,24 +281,24 @@ module boundarycondition
     !  and will therefore always rebuild the information for this boundary
     !  region when being called again.
     logical :: bisStatic = .false.
-    
+
     ! User defined tag to identify what to evaluate on the boundary.
     ! =0: undefined.
     ! This tag can be e.g. an identifier that tells the application whether
     ! to evaluate a constant, a parabolic profile or an expression
     ! on the boundary. Not used by the framework internally.
     integer      :: ibdrexprtype = 0
-    
+
     ! user defined integer tag
     integer(I32) :: itag = 0
-    
+
     ! User defined double precision tag
     real(DP) :: dtag = 0.0_DP
-    
+
     ! User defined string tag; usually set to the name of an expression to
     ! evaluate in this boundary condition region.
     character(LEN=SYS_STRLEN) :: stag = ''
-     
+
     ! Definition of a region on the boundary where the boundary conditions
     ! 'live'. This can be either a 'specific' region (i.e. a region
     ! connected with a boundary segment) in case the boundary region
@@ -307,70 +307,70 @@ module boundarycondition
     ! For boundary conditions of fictitious boundary objects,
     ! this structure is undefined!
     type (t_boundaryRegion) :: rboundaryRegion
-    
+
     ! Definition of a fictitious boundary region. If boundary conditions
     ! in a fictitious boundary region are discretised, this structure
     ! allows the application to identify the boundary region.
     ! For boundary conditions on the real boundary, this structure
     ! is undefined.
     type (t_fictBoundaryRegion) :: rfictBoundaryRegion
-    
+
   end type
-  
+
 !</typeblock>
 
 !<typeblock>
-  
+
   ! Definition of a boundary condition. The structure basically contains
   ! a type-identifier specifying the type of boundary conditions
   ! the structure describes as well as a list of 'boundary region'
   ! segments that describe the position of the boundary condition
   ! on tghe boundary.
-  
+
   type t_boundaryConditions
-  
+
     ! Pointer to the domain that is connected with this boundary
     ! condition
     type(t_boundary), pointer :: p_rboundary => null()
-    
+
     ! Number of regions in the list of boundary condition regions,
     ! corresponding to boundary regions.
     ! On each region, the boundary condition of type ctype
     ! is specified.
     integer :: iregionCount = 0
-    
+
     ! A list of t_BCregion structures that define the position
     ! of boundary condition ctype on the boundary.
     ! The first iregionCount elements in the array are valid,
     ! the rest may be undefined.
     type(t_bcRegion), dimension(:), pointer :: p_Rregions => null()
-    
+
     ! Number of regions in the list of boundary condition regions,
     ! not corresponding to specific boundary regions.
     ! On each region, the boundary condition of type ctype
     ! is specified.
     !INTEGER :: iregionCountFree = 0
-    
+
     ! A list of t_BCregion structures that define the position
     ! of boundary condition ctype on the boundary.
     ! The first iregionCountFree elements in the array are valid,
     ! the rest may be undefined.
     !TYPE(t_bcRegion), DIMENSION(:), POINTER :: p_RregionsFree => NULL()
-    
+
     ! Number of regions in the list of boundary condition regions,
     ! corresponding to fictitious boundary objects.
     ! On each region, the boundary condition of type ctype
     ! is specified.
     integer :: iregionCountFBC = 0
-    
+
     ! A list of t_BCregion structures that define the position
     ! of boundary condition ctype on the boundary.
     ! The first iregionCountFBC elements in the array are valid,
     ! the rest may be undefined.
     type(t_bcRegion), dimension(:), pointer :: p_RregionsFBC => null()
-    
+
   end type
-  
+
 !</typeblock>
 
 !</types>
@@ -382,7 +382,7 @@ contains
 !<subroutine>
 
   subroutine bcond_initBC (p_rboundaryConditions,rboundary,ibcRegionsCount)
-  
+
 !<description>
   ! This routine initialises a boundary condition structure.
   ! If p_rboundaryConditions is NULL(), a new structure will be created.
@@ -392,7 +392,7 @@ contains
 !<input>
   ! The domain which is to be connected to the boundary conditions.
   type(t_boundary), intent(in), target :: rboundary
-  
+
   ! OPTIONAL: The initial size of the lists saving boundary conditions.
   ! When adding boundary conditions to the rboundaryConditions structure,
   ! if there is not enough space, the lists saving the boundary conditions
@@ -421,13 +421,13 @@ contains
   ! The 'default constructor' does most of the necessary work, as
   ! rboundaryConditions is assumed as 'intent=out'. We only have to make
   ! the connection to the domain.
-  
+
   p_rboundaryConditions%p_rboundary => rboundary
-  
+
   ! Allocate memory for boundary condition lists
   ibcCount = BC_LISTBLOCKSIZE
   if (present(ibcRegionsCount)) ibcCount = max(1,ibcRegionsCount)
-  
+
   allocate(p_rboundaryConditions%p_Rregions(ibcCount))
   !ALLOCATE(p_rboundaryConditions%p_RregionsFree(ibcCount))
   allocate(p_rboundaryConditions%p_RregionsFBC(ibcCount))
@@ -439,7 +439,7 @@ contains
 !<subroutine>
 
   subroutine bcond_doneBC (p_rboundaryConditions,bkeepStructure)
-  
+
 !<description>
   ! This routine cleans up a boundary condition structure. All reserved
   ! memory is released.
@@ -479,14 +479,14 @@ contains
   end if
 
   end subroutine
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newBC (ctype,cbdtype,rboundaryConditions,&
                           p_rbcRegion, rboundaryRegion, rfictBoundaryRegion)
-  
+
 !<description>
   ! Adds a general boundary condition region to the boundary condition structure..
   ! A pointer to the region is returned
@@ -561,7 +561,7 @@ contains
     p_temp(1:size(p_Rregion)) = p_Rregion(:)
     deallocate(p_Rregion)
     p_Rregion => p_temp
-    
+
     select case (cbdtype)
     case (BC_RTYPE_REAL,BC_RTYPE_FREE)
       rboundaryConditions%p_Rregions => p_Rregion
@@ -571,7 +571,7 @@ contains
       rboundaryConditions%p_RregionsFBC => p_Rregion
     end select
   end if
-  
+
   ! Add the region
   ifull = ifull + 1
   p_rbcRegionLocal => p_Rregion(ifull)
@@ -579,7 +579,7 @@ contains
   ! Initialise the structure
   p_rbcRegionLocal%cbcRegionType = cbdtype
   p_rbcRegionLocal%ctype = ctype
-  
+
   if (present(rboundaryRegion)) then
     p_rbcRegionLocal%rboundaryRegion = rboundaryRegion
   else
@@ -595,21 +595,21 @@ contains
       print *,'bcond_newBC: Fictitious Boundary not specified'
     end if
   end if
-  
+
   ! If p_rbcRegion is given, return the pointer
   if (present(p_rbcRegion)) then
     p_rbcRegion => p_rbcRegionLocal
   end if
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<function>
 
   integer function bcond_getBCRegion (rboundaryConditions,&
                                       iboundCompIdx,dparam,cparType,istartIndex)
-  
+
 !<description>
   ! The tupel (iboundCompIdx,dparam) specifies a point on the real 2D boundary.
   ! The routine tries to find the index of the first bonudary condition region
@@ -627,7 +627,7 @@ contains
 
   ! The parameter value of the point to be checked.
   real(DP), intent(in) :: dparam
-  
+
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
   integer, intent(in), optional :: cparType
@@ -654,7 +654,7 @@ contains
 
     real(DP) :: dparValue
     integer :: cactParType, iindexBC
-    
+
     cactParType = BDR_PAR_01
     if (present(cparType)) then
       cactParType = cparType
@@ -670,13 +670,13 @@ contains
 
     ! Loop through the boundary condition regions
     do while (iindexBC .le. rboundaryConditions%iregionCount)
-    
+
       ! Convert the parameter value to the correct parametrisation if necessary
       dparValue = boundary_convertParameter(rboundaryConditions%p_rboundary, &
           iboundCompIdx, dparam, &
           rboundaryConditions%p_Rregions(iindexBC)%rboundaryRegion%cparType, &
           cactParType)
-          
+
       ! Check if it is inside of the region
       select case (rboundaryConditions%p_Rregions(iindexBC)%cbcRegionType)
       case (BC_RTYPE_REAL,BC_RTYPE_FREE)
@@ -690,23 +690,23 @@ contains
         end if
 
       end select
-      
+
       iindexBC = iindexBC+1
-      
+
     end do
-              
+
     ! No region was found. Return 0.
     bcond_getBCRegion = 0
 
   end function
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newDirichletBConRealBD (rboundaryConditions,iequation,&
                                            rboundaryRegion,p_rbcRegion)
-  
+
 !<description>
   ! Adds a Dirichlet boundary condition region to the boundary condition
   ! structure. A pointer to the region is returned in p_rbcRegion, the caller
@@ -767,14 +767,14 @@ contains
   if (present(p_rbcRegion)) p_rbcRegion => p_rbcReg
 
   end subroutine
-      
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newFeastMirrorBConRealBD (rboundaryConditions,iequation,&
                                              rboundaryRegion,p_rbcRegion)
-  
+
 !<description>
   ! Adds a FEAST mirror boundary condition region to the boundary condition
   ! structure. A pointer to the region is returned in p_rbcRegion, the caller
@@ -835,14 +835,14 @@ contains
   if (present(p_rbcRegion)) p_rbcRegion => p_rbcReg
 
   end subroutine
-      
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newPressureDropBConRealBD (rboundaryConditions,IvelEqns,&
                                               rboundaryRegion,p_rbcRegion)
-  
+
 !<description>
   ! Adds a Pressure-Drop boundary condition region to the boundary condition
   ! structure. A pointer to the region is returned in p_rbcRegion, the caller
@@ -902,12 +902,12 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newSlipBConRealBD (rboundaryConditions,IvelEqns,&
                                       rboundaryRegion,p_rbcRegion)
-  
+
 !<description>
   ! Adds a nonlinear Slip boundary condition region to the boundary condition
   ! structure. A pointer to the region is returned in p_rbcRegion, the caller
@@ -967,12 +967,12 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine bcond_newDirichletBConFictBD (rboundaryConditions,Iequations,&
                                            rboundaryRegion,p_rbcRegion)
-  
+
 !<description>
   ! Adds a Dirichlet boundary condition region for a fictitious boundary
   ! component to the boundary condition structure.
@@ -1023,5 +1023,5 @@ contains
   if (present(p_rbcRegion)) p_rbcRegion => p_rbcReg
 
   end subroutine
-      
+
 end module

@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #include "../feat2constants.h"
 
 ! ------------------------------------------------------------------------------
@@ -63,7 +61,7 @@
 
   subroutine template(lsyssc_LAX79,__MatName__,__VecName__)&
       (Kld,Kcol,Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -82,7 +80,7 @@
     ! --------------------------------------------------------------------------
     ! Explicit instantiation for NVAR = 1,...,8
     ! --------------------------------------------------------------------------
-    
+
     select case(NVAR)
 
     case(1)
@@ -90,7 +88,7 @@
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_lax79.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_lax79.h"
@@ -142,7 +140,7 @@
 
   subroutine template(lsyssc_LAX9rowc,__MatName__,__VecName__)&
       (Kld,Kcol,KrowIdx,Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -154,7 +152,7 @@
     integer, intent(in) :: NEQ,NVAR
 
     type(t_perfconfig), intent(in) :: rperfconfig
-    
+
     integer :: ia,icol,irow,ivar
     real(__MatType__), dimension(NVAR) :: Ddtmp
     real(__MatType__) :: dtmp
@@ -162,15 +160,15 @@
     ! --------------------------------------------------------------------------
     ! Explicit instantiation for NVAR = 1,...,8
     ! --------------------------------------------------------------------------
-    
+
     select case(NVAR)
-      
+
     case(1)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_lax9rowc.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_lax9rowc.h"
@@ -222,7 +220,7 @@
 
   subroutine template(lsyssc_LAX79INTL1,__MatName__,__VecName__)&
       (Kld,Kcol,Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -233,7 +231,7 @@
     integer, intent(in) :: NEQ,NVAR
 
     type(t_perfconfig), intent(in) :: rperfconfig
-    
+
     integer :: ia,icol,irow,ivar,jvar
     real(__MatType__), dimension(NVAR) :: Ddtmp
     real(__MatType__) :: dtmp
@@ -241,15 +239,15 @@
     ! --------------------------------------------------------------------------
     ! Explicit instantiation for NVAR = 1,...,8
     ! --------------------------------------------------------------------------
-    
+
     select case(NVAR)
-      
+
     case(1)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_lax79.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_lax79intl1.h"
@@ -301,7 +299,7 @@
 
   subroutine template(lsyssc_LAX79INTLD,__MatName__,__VecName__)&
       (Kld,Kcol,Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -312,7 +310,7 @@
     integer, intent(in) :: NEQ,NVAR
 
     type(t_perfconfig), intent(in) :: rperfconfig
-    
+
     integer :: ia,icol,irow,ivar,jvar
     real(__MatType__), dimension(NVAR) :: Ddtmp
     real(__MatType__) :: dtmp
@@ -320,15 +318,15 @@
     ! --------------------------------------------------------------------------
     ! Explicit instantiation for NVAR = 1,...,8
     ! --------------------------------------------------------------------------
-    
+
     select case(NVAR)
-      
+
     case(1)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_lax79.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_lax79intld.h"
@@ -380,7 +378,7 @@
 
   subroutine template(lsyssc_LATXD,__MatName__,__VecName__)&
       (Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -393,13 +391,13 @@
     integer :: irow,ivar
 
 select case(NVAR)
-      
+
     case(1)
 #ifdef __NVAR__
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_latxd.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_latxd.h"
@@ -451,7 +449,7 @@ select case(NVAR)
 
   subroutine template(lsyssc_LTX79,__MatName__,__VecName__)&
       (Kld,Kcol,Da,Dx,Dy,cx,cy,NEQ,NVAR,rperfconfig)
-    
+
     real(__MatType__), dimension(:), intent(in) :: Da
     real(__VecType__), dimension(:), intent(in) :: Dx
     real(__VecType__), dimension(:), intent(inout) :: Dy
@@ -462,7 +460,7 @@ select case(NVAR)
     integer, intent(in) :: NEQ,NVAR
 
     type(t_perfconfig), intent(in) :: rperfconfig
-    
+
     integer :: ia,icol,irow,ivar
     real(__MatType__), dimension(NVAR) :: Ddtmp
     real(__MatType__) :: dtmp
@@ -470,7 +468,7 @@ select case(NVAR)
     ! --------------------------------------------------------------------------
     ! Explicit instantiation for NVAR = 1,...,8
     ! --------------------------------------------------------------------------
-    
+
     select case(NVAR)
 
     case(1)
@@ -478,7 +476,7 @@ select case(NVAR)
 #undef __NVAR__
 #endif
 #include "lsyssc_scalarMatVec_ltx79.h"
-      
+
     case(2)
 #define __NVAR__ 2
 #include "lsyssc_scalarMatVec_ltx79.h"

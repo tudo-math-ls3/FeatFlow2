@@ -1,4 +1,3 @@
-
 /*
     Copyright, 1991, The Regents of the University of
     California.  This software was produced under a U. S.
@@ -618,7 +617,7 @@ void gmvwrite_node_data_lstruct(void *nxv, void *nyv, void *nzv,
       iy = tmpnyv;
       iz = tmpnzv;
      }
-  
+
    /*  Write node x,y,z's for logicaly structured grids.  */
    n_nodes = nndes;
    if (filetype == IEEE_F)
@@ -984,7 +983,7 @@ void gmvwrite_nodev_data_lstruct(void *nxv, void *nyv, void *nzv,
          tempy[count] = *((float *) y + count);
          tempz[count] = *((float *) z + count);
         }
-  
+
    /*  Write node x,y,z's for logicaly structured grids.  */
    n_nodes = nndes;
    if (filetype == IEEE_F)
@@ -1141,7 +1140,7 @@ void gmvwrite_cells_amr(void *numcells, void *numtop, void *daughters)
 void gmvwrite_cells_fromfile(char *filename, long nclls)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("cells   fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"cells   fromfile\"%s\"",filename);
@@ -1334,7 +1333,7 @@ void gmvwrite_general_cell_type(char cell_type[], int nverts[], int nfaces,
 void gmvwrite_faces_fromfile(char *filename, long nclls)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("faces   fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"faces   fromfile\"%s\"",filename);
@@ -1482,7 +1481,7 @@ void gmvwrite_face_data(int nverts, void *nodeids, void *cellid1,
 void gmvwrite_vfaces_fromfile(char *filename, long nclls)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("vfaces  fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"vfaces  fromfile\"%s\"",filename);
@@ -1628,7 +1627,7 @@ void gmvwrite_vface_data(int nverts, int facepe, void *oppface,
 void gmvwrite_xfaces_fromfile(char *filename, long nfces, long nclls)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("xfaces  fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"xfaces  fromfile\"%s\"",filename);
@@ -1684,7 +1683,7 @@ void gmvwrite_xface_data(long totverts, void *nverts, void *nodeids,
   int  *tempface, *tempnodeids, *tempptr;
   long  *tempface64, *tempnodeids64, *tempptr64, nc, tempnverts;
   int *nodesptr, count;
-   
+
    /*  Allocate output arrays.  */
    tempnverts = totverts;
    if (iflag64)
@@ -1878,7 +1877,7 @@ void gmvwrite_xface_data(long totverts, void *nverts, void *nodeids,
       else
          write_ascii_int(n_faces, tempface);
      }
- 
+
    if (iflag64)
       free(tempface64);
    else
@@ -1890,16 +1889,16 @@ void gmvwrite_xface_data(long totverts, void *nverts, void *nodeids,
 void gmvwrite_material_fromfile(char *filename)
  {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("materialfromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"materialfromfile\"%s\"",filename);
- 
+
    if (filetype == IEEE_F)
       fwrite(tmpbuf,sizeof(char),strlen(tmpbuf),fp);
    else
       fprintf(fp,"%s",tmpbuf);
- 
+
    free(tmpbuf);
    return;
 }
@@ -2172,7 +2171,7 @@ void gmvwrite_variable_endvars()
 void gmvwrite_flag_fromfile(char *filename)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("flags   fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"flags   fromfile\"%s\"",filename);
@@ -2181,7 +2180,7 @@ void gmvwrite_flag_fromfile(char *filename)
       fwrite(tmpbuf,sizeof(char),strlen(tmpbuf),fp);
    else
       fprintf(fp,"%s\n",tmpbuf);
- 
+
    free(tmpbuf);
    return;
 }
@@ -2270,11 +2269,11 @@ void gmvwrite_flag_endflag()
 void gmvwrite_polygons_fromfile(char *filename)
  {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("polygonsfromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"polygonsfromfile\"%s\"",filename);
- 
+
    if (filetype == IEEE_F)
       fwrite(tmpbuf,sizeof(char),strlen(tmpbuf),fp);
    else
@@ -2393,7 +2392,7 @@ void gmvwrite_tracers_header(int ntracers, void *x, void *y, void *z)
   int tmpntracers, count;
   float *tempx, *tempy, *tempz;
   double *tempx64, *tempy64, *tempz64;
- 
+
   if (rflag64)
     {
      tempx64 = (double*)malloc(sizeof(double)*ntracers);
@@ -2408,7 +2407,7 @@ void gmvwrite_tracers_header(int ntracers, void *x, void *y, void *z)
     }
 
   strcpy(tmpname, "tracers "); 
-  
+
   tmpntracers = ntracers;
   if (rflag64)
     {
@@ -2482,7 +2481,7 @@ void gmvwrite_tracers_name_data(int ntracers, char tracername[], void *data)
      tmpdata64 = (double*)malloc(sizeof(double) * ntracers); 
   else
      tmpdata = (float*)malloc(sizeof(float) * ntracers); 
-    
+
   if (rflag64)
     {
      for (count = 0; count < ntracers; count++)
@@ -2543,7 +2542,7 @@ void gmvwrite_probtime(double ptime)
      tmpptime64 = ptime;
   else
      tmpptime = ptime;
-  
+
    if (filetype == IEEE_F)
      {
       fwrite(tmpname,sizeof(char),8,fp);
@@ -2626,7 +2625,7 @@ void gmvwrite_nodeids(void *nodeids)
 void gmvwrite_nodeids_fromfile(char *filename)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("nodeids fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"nodeids fromfile\"%s\"",filename);
@@ -2687,7 +2686,7 @@ void gmvwrite_cellids(void *cellids)
 void gmvwrite_cellids_fromfile(char *filename)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("cellids fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"cellids fromfile\"%s\"",filename);
@@ -3084,16 +3083,16 @@ void gmvwrite_surfflag_endflag()
 void gmvwrite_units_fromfile(char *filename)
  {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("units   fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"units   fromfile\"%s\"",filename);
- 
+
    if (filetype == IEEE_F)
       fwrite(tmpbuf,sizeof(char),strlen(tmpbuf),fp);
    else
       fprintf(fp,"%s\n",tmpbuf);
- 
+
    free(tmpbuf);
    return;
 }
@@ -3324,7 +3323,7 @@ void gmvwrite_traceids(int ntracers, void *traceids)
 void gmvwrite_traceids_fromfile(char *filename)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("traceidsfromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"traceidsfromfile\"%s\"",filename);
@@ -3381,7 +3380,7 @@ void gmvwrite_faceids(void *faceids)
 void gmvwrite_faceids_fromfile(char *filename)
 {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("faceids fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"faceids fromfile\"%s\"",filename);
@@ -3399,16 +3398,16 @@ void gmvwrite_faceids_fromfile(char *filename)
 void gmvwrite_group_fromfile(char *filename)
  {
    char *tmpbuf;
- 
+
    tmpbuf = (char *)malloc((strlen(filename) + strlen("groups  fromfile") + 3)
             * sizeof(char));
    sprintf(tmpbuf,"groups  fromfile\"%s\"",filename);
- 
+
    if (filetype == IEEE_F)
       fwrite(tmpbuf,sizeof(char),strlen(tmpbuf),fp);
    else
       fprintf(fp,"%s\n",tmpbuf);
- 
+
    free(tmpbuf);
    return;
 }

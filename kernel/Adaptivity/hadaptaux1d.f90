@@ -83,9 +83,9 @@ module hadaptaux1d
   use linearsystemscalar
   use storage
   use triangulation
-  
+
   implicit none
-  
+
   private
   public :: hadapt_markRefinement1D
   public :: hadapt_markCoarsening1D
@@ -96,7 +96,7 @@ module hadaptaux1d
 !<constants>
 
 !<constantblock description="Constants for element marker in 1D">
-  
+
   ! Mark for keeping element 'as is'
   integer, parameter, public :: MARK_ASIS                   = 0
 
@@ -143,7 +143,7 @@ contains
     integer, dimension(:),  pointer :: p_Imarker
     integer, dimension(TRIA_MAXNVE1D) :: IverticesAtElement
     integer  :: ivt,iel,ive,isubdivide
-    
+
     ! Check if dynamic data structures are generated and contain data
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA1D) .ne.&
                             HADAPT_HAS_DYNAMICDATA1D) then
@@ -161,20 +161,20 @@ contains
     ! Set pointers
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-    
+
     ! Set state of all vertices to "free". Note that vertices of the
     ! initial triangulation are always "locked", i.e. have no positive age.
     do ivt = 1, size(rhadapt%p_IvertexAge, 1)
       rhadapt%p_IvertexAge(ivt) = abs(rhadapt%p_IvertexAge(ivt))
     end do
-    
+
     ! Loop over all elements and mark those for which the
     ! indicator is greater than the prescribed treshold
     mark_elem: do iel = 1, rhadapt%NEL
-      
+
       ! Check if element indicator exceeds tolerance
       if (p_Dindicator(iel) .gt. rhadapt%drefinementTolerance) then
-        
+
         ! Retrieve local data
         IverticesAtElement(1:TRIA_NVELINE1D) =&
             rhadapt%p_IverticesAtElement(1:TRIA_NVELINE1D, iel)
@@ -185,7 +185,7 @@ contains
                                 IverticesAtElement(1:TRIA_NVELINE1D))))
 
         if (isubdivide .lt. rhadapt%nsubdividemax) then
-          
+
           ! Mark element IEL for subdivision
           p_Imarker(iel) = MARK_REF_LINE2LINE
 
@@ -211,17 +211,17 @@ contains
             ivt = IverticesAtElement(ive)
             rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
           end do
-          
+
         end if
-        
+
       else   ! p_Dindicator(IEL) <= drefinementTolerance
-        
+
         ! Unmark element for refinement
         p_Imarker(iel) = MARK_ASIS
-        
+
       end if
     end do mark_elem
-    
+
     ! Set specifier to "marked for refinement"
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_MARKEDREFINE)
 
@@ -272,7 +272,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markCoarsening1D')
       call sys_halt()
     end if
-    
+
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
@@ -292,7 +292,7 @@ contains
     ! indicator is considered and all vertices are "locked" if
     ! re-coarsening is not allowed due to accuracy reasons.
     do iel = 1, rhadapt%NEL
-      
+
       ! Check if the current element is marked for refinement.
       if ((p_Imarker(iel) .eq. MARK_REF_LINE2LINE) .or.&
           lockElement(iel)) then
@@ -304,13 +304,13 @@ contains
           ivt = rhadapt%p_IverticesAtElement(ive, iel)
           rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
         end do
-        
+
       else   ! no need to keep element
-        
+
         ! Get global vertex numbers
         ivt = rhadapt%p_IverticesAtElement(1, iel)
         jvt = rhadapt%p_IverticesAtElement(2, iel)
-        
+
         ! "Lock" the older endpoint
         if (abs(rhadapt%p_IvertexAge(ivt)) .lt.&
             abs(rhadapt%p_IvertexAge(jvt))) then
@@ -318,7 +318,7 @@ contains
         else
           rhadapt%p_IvertexAge(jvt) = -abs(rhadapt%p_IvertexAge(jvt))
         end if
-        
+
       end if
     end do
 
@@ -329,10 +329,10 @@ contains
       ! Get global vertex numbers
       ivt = rhadapt%p_IverticesAtElement(1, iel)
       jvt = rhadapt%p_IverticesAtElement(2, iel)
-      
+
       ! Check if left vertex is "free"
       if (rhadapt%p_IvertexAge(ivt) .gt. 0) then
-        
+
         ! Set marker for left neighbour
         p_Imarker(iel) = MARK_CRS_LINE_LEFT
 
@@ -343,26 +343,26 @@ contains
         p_Imarker(iel) = MARK_CRS_LINE_RIGHT
       end if
     end do
-        
+
     ! Set specifier to "marked for coarsening"
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_MARKEDCOARSEN)
 
   contains
-    
+
     ! Here, the real working routines follow.
-    
+
     !**************************************************************
     ! For a given element IEL, check if all corners vertices need
     ! to be locked. In particular, this is the case if the element
-    
+
     function lockElement(iel) result (blockElement)
-      
+
       integer, intent(in) :: iel
       logical :: blockElement
-      
+
       ! Check if element marker is available for this element
       blockElement = (iel .le. size(p_Dindicator, 1))
-      
+
       if (blockElement) then
         blockElement = (p_Dindicator(iel) .ge. rhadapt%dcoarseningTolerance)
       end if
@@ -390,16 +390,16 @@ contains
     integer :: nel
 !</result>
 !</function>
-      
+
     ! local variables
     integer, dimension(:), pointer :: p_Imarker
     integer :: iel
 
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-    
+
     ! Initialise number of elements by current number
     nel = rhadapt%NEL0
-    
+
     ! Loop over all elements and check marker
     do iel = 1, rhadapt%NEL0
       select case(p_Imarker(iel))
@@ -410,7 +410,7 @@ contains
   end function hadapt_CalcNumberOfElements1D
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine hadapt_refine1D(rhadapt, rcollection, fcb_hadaptCallback)
@@ -433,7 +433,7 @@ contains
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer, dimension(:), pointer :: p_Imarker
     integer :: iel
@@ -452,7 +452,7 @@ contains
 
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-    
+
     ! Perform red-green refinement
     do iel = 1, size(p_Imarker, 1)
 
@@ -477,10 +477,10 @@ contains
         call sys_halt()
       end select
     end do
-    
+
     ! Increase the number of refinement steps by one
     rhadapt%nRefinementSteps = rhadapt%nRefinementSteps+1
-    
+
     ! The markers are no longer valid
     rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDREFINE))
   end subroutine hadapt_refine1D
@@ -504,7 +504,7 @@ contains
 !<inputoutput>
     ! adativity structure
     type(t_hadapt), intent(inout) :: rhadapt
-    
+
     ! OPTIONAL Collection
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
@@ -529,12 +529,12 @@ contains
 
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
-    
+
     ! Perform hierarchical recoarsening
     element: do iel = size(p_Imarker,1), 1, -1
       select case(p_Imarker(iel))
       case(MARK_ASIS:)
-        
+
         ! Do nothing for elements that should be kept 'as is'
         ! and those which are marked for refinement.
 
@@ -557,33 +557,33 @@ contains
     ! Loop over all vertices 1...NVT0 present in the triangulation
     ! before refinement and check if they are free for vertex removal.
     vertex: do ivt = rhadapt%NVT0, 1, -1
-      
+
       ! If the vertex is locked, then skip this vertex
       if (rhadapt%p_IvertexAge(ivt) .le. 0) cycle vertex
-      
+
       ! Remove vertex physically. Note that this vertex is no longer
       ! associated to any element. All associations have been removed
       ! in the above element coarsening/conversion step. In order to
       ! prevent "holes" in the vertex list, vertex IVT is replaced by
       ! the last vertex if it is not the last one itself.
       call remove_vertex1D(rhadapt, ivt, ivtReplace)
-      
+
       ! If vertex IVT was not the last one, update the
       ! "elements-meeting-at-vertex" list
       if (ivtReplace .ne. 0) then
-        
+
         ! Start with first element in "elements-meeting-at-vertex"
         ! list of the replaced vertex
         ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivtReplace)
 
         update: do while(.not.alst_isNull(ralstIter))
-          
+
           ! Get element number JEL from arraylist
           jel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
-          
+
           ! Proceed to next element
           call alst_next(ralstIter)
-          
+
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           do ive = 1, TRIA_NVELINE1D
             if (rhadapt%p_IverticesAtElement(ive, jel) .eq. ivtReplace) then
@@ -591,20 +591,20 @@ contains
               cycle update
             end if
           end do
-          
+
           ! If the replaced vertex ivtReplace could not be found in element JEL
           ! something is wrong and we stop the simulation
           call output_line('Unable to find replacement vertex in element',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen1D')
           call sys_halt()
         end do update
-        
+
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
         call alst_swapTbl(rhadapt%rElementsAtVertex, ivt, ivtReplace)
         call alst_releaseTbl(rhadapt%rElementsAtVertex, ivtReplace)
-        
+
       else
-        
+
         ! Release table IVT
         call alst_releaseTbl(rhadapt%rElementsAtVertex, ivt)
       end if
@@ -615,10 +615,10 @@ contains
         call fcb_hadaptCallback(HADAPT_OPR_REMOVEVERTEX, rcollection)
       end if
     end do vertex
-    
+
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
-    
+
     ! The markers are no longer valid
     rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDCOARSEN))
   end subroutine hadapt_coarsen1D
@@ -669,10 +669,10 @@ contains
     ! Get coordinates of vertices
     x1 = rhadapt%p_DvertexCoords1D(1,i1)
     x2 = rhadapt%p_DvertexCoords1D(1,i2)
-    
+
     ! Compute coordinates of new vertex
     x12 = 0.5_DP*(x1+x2)
-    
+
     ! Search for vertex coordinate: Stupid linear search.
     do ivt = 1, rhadapt%NVT
       if (abs(x12 - rhadapt%p_DvertexCoords1D(1,ivt)) .lt. SYS_EPSREAL_DP) return
@@ -681,12 +681,12 @@ contains
     ! Otherwise, update number of vertices
     rhadapt%NVT = rhadapt%NVT+1
     i12         = rhadapt%NVT
-    
+
     ! Set age of vertex
     rhadapt%p_IvertexAge(i12) = &
         1+max(abs(rhadapt%p_IvertexAge(i1)),&
               abs(rhadapt%p_IvertexAge(i2)))
-    
+
     ! Set nodal property
     rhadapt%p_InodalProperty(i12) = 0
 
@@ -703,9 +703,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine remove_vertex1D(rhadapt, ivt, ivtReplace)
-  
+
 !<description>
     ! This subroutine removes an existing vertex from the adaptivity structure
     ! and moves the last vertex at its position. The number of the replacement
@@ -717,7 +717,7 @@ contains
     ! Number of the vertex to be deleted
     integer, intent(in) :: ivt
 
-    
+
 !</input>
 
 !<inputoutput>
@@ -730,7 +730,7 @@ contains
     integer, intent(out) :: ivtReplace
 !</output>
 !</subroutine>
-    
+
     ! Check if we are not the last vertex
     if (ivt .lt. rhadapt%NVT) then
 
@@ -746,7 +746,7 @@ contains
       rhadapt%p_InodalProperty(ivtReplace)    = 0
       rhadapt%p_IvertexAge(ivtReplace)        = 0
       rhadapt%p_DvertexCoords1D(1,ivtReplace) = 0.0_DP
-      
+
     else
 
       ! IVT is the last vertex of the adaptivity structure
@@ -756,12 +756,12 @@ contains
       rhadapt%p_InodalProperty(ivt)    = 0
       rhadapt%p_IvertexAge(ivt)        = 0
       rhadapt%p_DvertexCoords1D(1,ivt) = 0.0_DP
-      
+
     end if
 
     ! Decrease number of vertices by one
     rhadapt%NVT = rhadapt%NVT-1
-    
+
   end subroutine remove_vertex1D
 
   ! ***************************************************************************
@@ -769,7 +769,7 @@ contains
 !<subroutine>
 
   subroutine replace_element1D(rhadapt, iel, i1, i2, e1, e2)
-  
+
 !<description>
     ! This subroutine replaces the vertices and
     ! adjacent elements for a given element in 1D
@@ -798,7 +798,7 @@ contains
   end subroutine replace_element1D
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine add_element1D(rhadapt, i1, i2, e1, e2)
@@ -821,7 +821,7 @@ contains
     type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
-    
+
     ! Increase number of elements
     rhadapt%NEL = rhadapt%NEL+1
     rhadapt%InelOfType(TRIA_NVELINE1D) = rhadapt%InelOfType(TRIA_NVELINE1D)+1
@@ -835,7 +835,7 @@ contains
 !<subroutine>
 
   subroutine remove_element1D(rhadapt, iel, ielReplace)
-  
+
 !<description>
     ! This subroutine removes an existing element and moves the last
     ! element of the adaptation data structure to its position.
@@ -869,7 +869,7 @@ contains
 
     ! Check if we are the last element
     if (iel .ne. ielReplace) then
-      
+
       ! Element is not the last one. Then the element that should be removed must
       ! have a smaller element number. If this is not the case, something is wrong.
       if (iel > ielReplace) then
@@ -892,19 +892,19 @@ contains
         ! Start with first element in "elements-meeting-at-vertex" list
         ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
         elements: do while(.not.alst_isNull(ralstIter))
-          
+
           ! Check if element number corresponds to the replaced element
           call alst_getbase_key(rhadapt%rElementsAtVertex, ralstIter, p_iel)
           if (p_iel .eq. ielReplace) then
             p_iel = iel
             exit elements
           end if
-          
+
           ! Proceed to next element in list
           call alst_next(ralstIter)
         end do elements
 
-                
+
         ! Get element number of element JEL which
         ! is adjacent to element ielReplace
         jel = rhadapt%p_IneighboursAtElement(ive, ielReplace)
@@ -941,7 +941,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine update_ElementNeighbors1D(rhadapt, jel, iel0, iel)
 
 !<description>
@@ -978,7 +978,7 @@ contains
         return
       end if
     end do
-  
+
     ! If we end up here, the neighboring element could not be found
     call output_line('Inconsistent adjacency lists!',&
                      OU_CLASS_ERROR,OU_MODE_STD,'update_ElementNeighbors1D')
@@ -1032,7 +1032,7 @@ contains
           cycle adjacent
         end if
       end do
-      
+
       ! If the old element number was not found in adjacent element JEL
       ! then something went wrong and we should not proceed.
       call output_line('Inconsistent adjacency lists!',&
@@ -1040,7 +1040,7 @@ contains
       call sys_halt()
     end do adjacent
   end subroutine update_AllElementNeighbors1D
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1121,14 +1121,14 @@ contains
     call alst_push_back(rhadapt%relementsAtVertex, i2, nel0+1)
     call alst_push_back(rhadapt%relementsAtVertex, i3, iel)
     call alst_push_back(rhadapt%relementsAtVertex, i3, nel0+1)
-    
+
     ! Optionally, invoke callback routine
     if (present(fcb_hadaptCallback) .and. present(rcollection)) then
       rcollection%IquickAccess(1:3) = (/i1, i2, i3/)
       call fcb_hadaptCallback(HADAPT_OPR_REF_LINE2LINE, rcollection)
     end if
   end subroutine refine_Line2Line
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1186,12 +1186,12 @@ contains
     case (MARK_CRS_LINE_RIGHT)
       ! Get right-adjacent element number
       iel1 = rhadapt%p_IneighboursAtElement(2,iel)
-      
+
       ! Store vertex- and element values of the two elements
       i1 = rhadapt%p_IverticesAtElement(1, iel)
       i3 = rhadapt%p_IverticesAtElement(2, iel)
       i2 = rhadapt%p_IverticesAtElement(2, iel1)
-      
+
       e1 = rhadapt%p_IneighboursAtElement(1, iel)
       e2 = rhadapt%p_IneighboursAtElement(2, iel1)
 
@@ -1199,7 +1199,7 @@ contains
       if (iel .lt. iel1) then
         ! Keep IEL, remove, IEL1
         jel=iel; ielRemove=iel1
-        
+
         ! Update list of neighboring elements
         call update_ElementNeighbors1D(rhadapt, e2, iel1, iel)
 
@@ -1210,15 +1210,15 @@ contains
         ! Update list of neighboring elements
         call update_ElementNeighbors1D(rhadapt, e1, iel, iel1)
       end if
-      
+
       ! Replace the element JEL
       call replace_element1D(rhadapt, jel, i1, i2, e1, e2)
-      
+
       ! Remove the other element
       call remove_element1D(rhadapt, ielRemove, ielReplace)
       if (ielReplace .ne. 0)&
           call update_AllElementNeighbors1D(rhadapt, ielReplace, ielRemove)
-      
+
       ! Update list of elements meeting at vertices
       if (ielRemove .eq. iel1) then
 
@@ -1255,12 +1255,12 @@ contains
         rcollection%IquickAccess(1:3) = (/i1, i2, i3/)
         call fcb_hadaptCallback(HADAPT_OPR_CRS_2LINE1LINE, rcollection)
       end if
-            
+
     case DEFAULT
       call output_line('Invalid element coarsening marker!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Line1Line')
       call sys_halt()
     end select
   end subroutine coarsen_2Line1Line
-  
+
 end module hadaptaux1d

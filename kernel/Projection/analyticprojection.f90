@@ -55,11 +55,11 @@ module analyticprojection
   use storage
   use transformation
   use triangulation
-  
+
   implicit none
-  
+
   private
-  
+
   public :: t_configL2ProjectionByMass
   public :: anprj_analytL2projectionByMass
   public :: anprj_analytL2projectionConstr
@@ -73,7 +73,7 @@ module analyticprojection
   ! Configuration block for the function anevl_L2projectionByMass which carries
   ! out the $L_2$ projection of an analytically given function by defect correction.
   type t_configL2ProjectionByMass
-  
+
     ! Relative error criterium. Standard = $10^-{5}$.
     ! anevl_L2projectionByMass carries out the iteration until the relative as well
     ! the absolute error criterium is reached.
@@ -89,10 +89,10 @@ module analyticprojection
     ! Maximum iterations to be carried out. Standard = 100.
     ! The iteration stops prematurely if the number of iterations reaches this number.
     integer :: nmaxIterations = 100
-    
+
     ! Type of norm to use for measuring errors. Standard is LINALG_NORML2.
     integer :: cnorm = LINALG_NORML2
-    
+
     ! Type of preconditioner to use.
     ! =0: Use damped Jacobi or lumped mass matrix (depending on whether
     !     rmatrixMassLumped is specified or not).
@@ -101,13 +101,13 @@ module analyticprojection
     !     in the call to l2prj_analytL2projectionByMass.
     ! Standard = 0.
     integer :: cpreconditioner = 0
-    
+
     ! Damping parameter for the iteration.
     ! If SYS_MAXREAL_DP is specified, the standard damping parameters are used,
     ! which are: = 1.0, if the lumped mass matrix is used for preconditioning,
     !            = 0.7, if the Jacobi preconditioner is used for preconditioning.
     real(DP) :: domega = SYS_MAXREAL_DP
-    
+
     ! Output: Returns the initial residuum.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
     ! not computed and left to 1.0_DP.
@@ -124,16 +124,16 @@ module analyticprojection
     ! Output: Returns the number of performed iterations
     integer :: iiterations = 0
   end type
-  
+
 !</typeblock>
 
 !</types>
-  
+
   !************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: anprj_perfconfig
-  
+
   !************************************************************************
 
 contains
@@ -145,7 +145,7 @@ contains
   subroutine anprj_analytL2projectionByMass (rvector, rmatrixMass,&
       fcoeff_buildVectorSc_sim, rcollection,&
       rL2ProjectionConfig, rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
-      
+
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
   ! to a finite element vector rvector by using mass matrices.
@@ -165,7 +165,7 @@ contains
 !<input>
   ! The consistent mass matrix of the FE space of rvector.
   type(t_matrixScalar), intent(in) :: rmatrixMass
-  
+
   ! A callback routine for the function to be discretised. The callback routine
   ! has the same syntax as that for evaluating analytic functions for the
   ! computation of RHS vectors.
@@ -206,11 +206,11 @@ contains
     type(t_vectorScalar), pointer :: p_rvectorTemp1,p_rvectorTemp2
     real(dp) :: domega
     type(t_scalarCubatureInfo) :: rcubatureInfo
-    
+
     ! Evaluate the optional arguments as far as possible
     if (present(rL2ProjectionConfig)) rconfig = rL2ProjectionConfig
     ! otherwise use the standard initialisation of that structure!
-    
+
     ! Check the parameters.
     if ((rconfig%cpreconditioner .eq. 2) .and. &
         (.not. present(rmatrixMassLumped))) then
@@ -218,7 +218,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'l2prj_analytL2projectionByMass')
       call sys_halt()
     end if
-    
+
     ! Create temporary vectors if necessary.
     if (present(rvectorTemp1)) then
       p_rvectorTemp1 => rvectorTemp1
@@ -235,7 +235,7 @@ contains
       call lsyssc_duplicateVector (rvector,p_rvectorTemp2,&
           LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
     end if
-    
+
     ! We want to solve the system:
     !
     !     (rvector,phi) = (f,phi)
@@ -251,17 +251,17 @@ contains
 
     ! Assemble a RHS vector using the analytically given function in rtempVector1.
     call spdiscr_createDefCubStructure (rvector%p_rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO)
-    
+
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     call linf_buildVectorScalar (rlinform,.true.,&
         p_rvectorTemp1,rcubatureInfo,fcoeff_buildVectorSc_sim,rcollection)
-        
+
     call spdiscr_releaseCubStructure (rcubatureInfo)
-              
+
     ! This is also the initial defect because x=0!
     call lsyssc_copyVector (p_rvectorTemp1,p_rvectorTemp2)
-              
+
     ! Get some parameters.
     domega = rconfig%domega
     if (domega .eq. SYS_MAXREAL_DP) then
@@ -274,7 +274,7 @@ contains
 
     depsRel = rconfig%depsRel
     depsAbs = rconfig%depsAbs
-    
+
     ! Probably calculate the initial residuum.
     if (rconfig%depsRel .ne. 0.0_DP) then
       dresInit = lsyssc_vectorNorm (p_rvectorTemp2,rconfig%cnorm)
@@ -286,10 +286,10 @@ contains
       depsRel = depsAbs
       dresInit = 1.0_DP
     end if
-    
+
     ! Now, let us start the iteration.
     do iiteration = 1,rconfig%nmaxIterations
-    
+
       select case (rconfig%cpreconditioner)
       case (0)
         if (present(rmatrixMassLumped)) then
@@ -314,33 +314,33 @@ contains
         call lsyssc_invertedDiagMatVec (rmatrixMassLumped,p_rvectorTemp2,&
             1.0_DP,p_rvectorTemp2)
       end select
-    
+
       ! Add to the main vector:  x = x + omega*d
       call lsyssc_vectorLinearComb (p_rvectorTemp2,rvector,domega,1.0_DP)
-      
+
       ! Set up the defect: d := b-Mx
       call lsyssc_copyVector (p_rvectorTemp1,p_rvectorTemp2)
       call lsyssc_scalarMatVec (rmatrixMass, rvector, p_rvectorTemp2, -1.0_DP, 1.0_DP)
-      
+
       ! Check norms?
       if ((rconfig%depsAbs .ne. 0.0_DP) .or. (rconfig%depsRel .ne. 0.0_DP)) then
-      
+
         rconfig%dabsError = lsyssc_vectorNorm (p_rvectorTemp2,rconfig%cnorm)
         rconfig%drelError = rconfig%dabsError / dresInit
-      
+
         if (((rconfig%dabsError .le. depsAbs) .or. (depsAbs .eq. 0.0_DP)) .and. &
             (rconfig%dabsError .le. depsRel*dresInit)) then
           ! Quit the loop
           exit
         end if
-        
+
       end if
-    
+
     end do
 
     ! There is iiterations = niterations+1 if the loop is carried out completely!
     rconfig%iiterations = min(iiteration,rconfig%nmaxIterations)
-    
+
     ! Return the configuration block
     if (present(rL2ProjectionConfig)) rL2ProjectionConfig = rconfig
 
@@ -363,7 +363,7 @@ contains
 
   subroutine anprj_discrDirect (rvector,&
       ffunctionReference, rcollection, iorder, rperfconfig)
-      
+
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
   ! to a finite element vector rvector by direct point evaluation.
@@ -423,95 +423,95 @@ contains
     integer(I32) :: ccub
     real(dp), dimension(:), pointer :: p_Dweight
     integer :: iactualorder
-    
+
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder
-    
+
     ! Cubature point coordinates on the reference element
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
 
     ! For every cubature point on the reference element,
     ! the corresponding cubature weight
     real(DP), dimension(CUB_MAXCUBP) :: Domega
-    
+
     ! number of cubature points on the reference element
     integer :: ncubp
-    
+
     ! Number of local degees of freedom for test functions
     integer :: indofTrial
-    
+
     ! The triangulation structure - to shorten some things...
     type(t_triangulation), pointer :: p_rtriangulation
-    
+
     ! A pointer to an element-number list
     integer, dimension(:), pointer :: p_IelementList
-    
+
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
     real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
 
     ! Current element distribution
     type(t_elementDistribution), pointer :: p_relementDistribution
-    
+
     ! Number of elements in the current element distribution
     integer :: NEL
 
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:), allocatable :: Dcoefficients
-    
+
     ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
-    
+
     ! A t_domainIntSubset structure that is used for storing information
     ! and passing it to callback routines.
     type(t_domainIntSubset) :: rintSubset
     type(t_evalElementSet) :: revalElementSet
-    
+
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
-  
+
     ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
-    
+
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
     integer(I32) :: cevaluationTag
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => anprj_perfconfig
     end if
-    
+
     ! Evaluate optional parameters.
     iactualorder = 0
     if (present(iorder)) iactualorder = iorder
     if (iactualorder .eq. 0) iactualorder = 2
-    
+
     ! We choose the midpoint rule for evaluation. Actually, we do not compute
     ! integrals but point values...
     Bder = .false.
     Bder(DER_FUNC) = .true.
-    
+
     ! Get a pointer to the triangulation - for easier access.
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     p_rdiscretisation => rvector%p_rspatialDiscr
-    
+
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
     ! NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
-    
+
     ! Get the data of the FE function we want to initialise.
     ! Clear the FE function in-advance.
     call lsyssc_clearVector (rvector)
     call lsyssc_getbase_double (rvector,p_Ddata)
-    
+
     ! Allocate an array that contains the DOF weight;
     ! Initialise with zero. For 'primal' elements e.g., the entries count
     ! how often a DOF was touched. The contributions are summed up and
@@ -524,16 +524,16 @@ contains
     ! of trial and test functions) in the discretisation.
 
     do icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
-    
+
       ! Activate the current element distribution
       p_relementDistribution => p_rdiscretisation%RelementDistr(icurrentElementDistr)
-    
+
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
-      
+
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
@@ -572,7 +572,7 @@ contains
           ! on all 4 lines of the element shape. Get the coordinates of the
           ! cubature points on a line [-1,1].
           call cub_getCubPoints(CUB_G2_1D, ncubp, Dxi, Domega)
-          
+
           ! Transfer the coordinates to the four edges of the reference element
           allocate(p_DcubPtsRef(NDIM2D,CUB_MAXCUBP))
           p_DcubPtsRef(1,1) = Dxi(1,1)
@@ -594,16 +594,16 @@ contains
           p_DcubPtsRef(2,7) = -Dxi(1,1)
           p_DcubPtsRef(1,8) = -1.0_DP
           p_DcubPtsRef(2,8) = -Dxi(2,1)
-          
+
           ncubp = 8
-        
+
         end if
-        
+
       case (EL_Q2)
         ! Get the coordinates of that points.
         ! Here, we have to follow the order of the local DOF´s of Q2!
         allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-        
+
         p_DcubPtsRef(1,1) = -1.0_DP
         p_DcubPtsRef(2,1) = -1.0_DP
 
@@ -660,13 +660,13 @@ contains
         end if
 
       end select
-      
+
       ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
 
       ! Allocate memory for the function values
       allocate(Dcoefficients(ncubp,nelementsPerBlock))
-    
+
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
 
@@ -679,31 +679,31 @@ contains
       ! reference and on the real elements. Jacobian mapping, Jacobian determinants
       ! etc. are not needed since we do not evaluate...
       cevaluationTag = EL_EVLTAG_COORDS + EL_EVLTAG_REFPOINTS + EL_EVLTAG_REALPOINTS
-                      
+
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
       call storage_getbase_int (p_relementDistribution%h_IelementList, &
                                 p_IelementList)
-                     
+
       ! Get the number of elements there.
       NEL = p_relementDistribution%NEL
-    
+
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, p_rperfconfig%NELEMSIM
-      
+
         ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
         ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
-      
+
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
-                                         
+
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
@@ -733,36 +733,36 @@ contains
 
         ! Another element dependent part: evaluation of the functional.
         select case (p_relementDistribution%celement)
-        
+
         case (EL_E030,EL_EM30)
-        
+
           if (iactualorder .eq. 1) then
-          
+
             ! Loop through elements in the set and for each element,
             do IEL=1,IELmax-IELset+1
-            
+
               do icubp = 1, ncubp
-              
+
                 ! Sum up the calculated value to the existing value of the
                 ! corresponding DOF.
                 p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
                   Dcoefficients(icubp,IEL)
-                  
+
                 ! Count the entry
                 p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
 
               end do ! ICUBP
 
             end do ! IEL
-            
+
           else
-          
+
             ! Loop through elements in the set and for each element,
             do IEL=1,IELmax-IELset+1
-            
+
               ! Loop through the DOF`s on the current element.
               do idof = 1,indofTrial
-              
+
                 ! Calculate the DOF. For that purpose, calculate the line
                 ! integral (using the cubature points calculated above).
                 ! Weight by 0.5 to get the integral corresponding to an interval
@@ -772,7 +772,7 @@ contains
                 p_Ddata(IdofsTrial(idof,IEL)) = p_Ddata(IdofsTrial(idof,IEL)) + &
                   0.5_DP * (Dcoefficients(2*(idof-1)+1,IEL) * Domega(1) + &
                             Dcoefficients(2*(idof-1)+2,IEL) * Domega(2))
-              
+
                 ! Count the entry
                 p_Dweight(IdofsTrial(idof,IEL)) = p_Dweight(IdofsTrial(idof,IEL)) + 1.0_DP
 
@@ -783,48 +783,48 @@ contains
           end if
 
         case default
-        
+
           ! Loop through elements in the set and for each element,
           do IEL=1,IELmax-IELset+1
-          
+
             do icubp = 1, ncubp
-            
+
               ! Sum up the calculated value to the existing value of the
               ! corresponding DOF.
               p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
                 Dcoefficients(icubp,IEL)
-                
+
               ! Count the entry
               p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
 
             end do ! ICUBP
 
           end do ! IEL
-          
+
 
         end select
-        
+
         ! Release the temporary domain integration structure again
         call domint_doneIntegration (rintSubset)
-    
+
       end do ! IELset
-      
+
       ! Release memory
       call elprep_releaseElementSet(revalElementSet)
-      
+
       deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
 
     end do ! icurrentElementDistr
-    
+
     ! Take the mean value in all entries. We just summed up all contributions and now
     ! this divides by the number of contributions...
     ! All DOF`s should be touched, so we assume that there is Dweight != 0 everywhere.
     do i=1,size(p_Ddata)
       p_Ddata(i) = p_Ddata(i) / p_Dweight(i)
     end do
-    
+
     ! Release temp data
     call storage_free (h_Dweight)
 
@@ -835,7 +835,7 @@ contains
 !<subroutine>
 
   subroutine anprj_charFctRealBdComp (rboundaryRegion, rvector)
-      
+
 !<description>
   ! Calculates the characteristic function of a boundary region.
   ! rvector is a FE solution vector, discretised by P1,Q1,P2,Q2 or Ex3x,
@@ -867,13 +867,13 @@ contains
     ! We only support a special set of discretisations, it get`s too
     ! complicated otherwise...
     if (rvector%p_rspatialDiscr%inumFESpaces .eq. 1) then
-    
+
       if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P1_2D) .or. &
           (rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_Q1_2D)) then
         ! P1 or Q1
         call charFctRealBdComp2d_P1Q1 (rboundaryRegion,rvector)
         return
-        
+
       else if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P2_2D) .or. &
                (rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_Q2_2D)) then
         ! P1 or Q1
@@ -889,9 +889,9 @@ contains
         return
 
       end if
-      
+
     else if (rvector%p_rspatialDiscr%inumFESpaces .eq. 2) then
-    
+
       if ((rvector%p_rspatialDiscr%RelementDistr(1)%celement .eq. EL_P1_2D) .and. &
           (rvector%p_rspatialDiscr%RelementDistr(2)%celement .eq. EL_Q1_2D)) then
         ! Mixed P1/Q1
@@ -903,7 +903,7 @@ contains
     call output_line ('Discretisation not supported!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'anprj_charFctRealBdComp')
     call sys_halt()
-  
+
   end subroutine
 
   ! ---------------------------------------------------------------
@@ -912,14 +912,14 @@ contains
     ! Worker routine for P1/Q1 space.
     type(t_boundaryRegion), intent(in), target :: rboundaryRegion
     type(t_vectorScalar), intent(inout), target :: rvector
-    
+
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
     real(dp), dimension(:), pointer :: p_DvertexParameterValue
     integer :: ibct,ivbd
     real(DP), dimension(:), pointer :: p_Ddata
-    
+
     ! Get some data
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
@@ -929,7 +929,7 @@ contains
     call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
         p_DvertexParameterValue)
     call lsyssc_getbase_double (rvector,p_Ddata)
-    
+
     ! Loop through the boundary components.
     do ibct = 1,p_rtriangulation%nbct
       ! Loop through the vertices
@@ -943,16 +943,16 @@ contains
         end if
       end do
     end do
-    
+
   end subroutine
-  
+
   ! ---------------------------------------------------------------
 
   subroutine charFctRealBdComp2d_P2Q2(rboundaryRegion,rvector)
     ! Worker routine for P1/Q1 space.
     type(t_boundaryRegion), intent(in), target :: rboundaryRegion
     type(t_vectorScalar), intent(inout), target :: rvector
-    
+
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
@@ -961,7 +961,7 @@ contains
     real(dp), dimension(:), pointer :: p_DedgeParameterValue
     integer :: ibct,ivbd,iebd
     real(DP), dimension(:), pointer :: p_Ddata
-    
+
     ! Get some data
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
@@ -977,7 +977,7 @@ contains
     call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
         p_DedgeParameterValue)
     call lsyssc_getbase_double (rvector,p_Ddata)
-    
+
     ! Loop through the boundary components.
     do ibct = 1,p_rtriangulation%nbct
       ! Loop through the vertices
@@ -1002,23 +1002,23 @@ contains
         end if
       end do
     end do
-    
+
   end subroutine
-  
+
   ! ---------------------------------------------------------------
 
   subroutine charFctRealBdComp2d_Ex3x (rboundaryRegion,rvector)
     ! Worker routine for Ex3x~-spaces.
     type(t_boundaryRegion), intent(in), target :: rboundaryRegion
     type(t_vectorScalar), intent(inout), target :: rvector
-    
+
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IedgesAtBoundary,p_IboundaryCpIdx
     real(dp), dimension(:), pointer :: p_DedgeParameterValue
     integer :: ibct,iebd
     real(DP), dimension(:), pointer :: p_Ddata
-    
+
     ! Get some data
     p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,&
@@ -1028,7 +1028,7 @@ contains
     call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
         p_DedgeParameterValue)
     call lsyssc_getbase_double (rvector,p_Ddata)
-    
+
     ! Loop through the boundary components.
     do ibct = 1,p_rtriangulation%nbct
       ! Loop through the vertices
@@ -1042,7 +1042,7 @@ contains
         end if
       end do
     end do
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -1090,7 +1090,7 @@ contains
   ! OPTIONAL: A configuration block for the iteration.
   ! If not specified, the standard settings are used.
   type(t_configL2ProjectionByMass), intent(inout), optional :: rL2ProjectionConfig
-  
+
   ! OPTIONAL: A temporary vector of the same size as rvector.
   type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp1
 
@@ -1132,7 +1132,7 @@ contains
     call anprj_analytL2projectionByMass(rvectorAux, rmatrixMass,&
         fcoeff_buildVectorSc_sim, rcollection, rL2ProjectionConfig,&
         p_rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
-    
+
     ! Initialise the stabilisation structure
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
     rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
@@ -1161,7 +1161,7 @@ contains
       call lsyssc_releaseMatrix(p_rmatrixMassLumped)
       deallocate(p_rmatrixMassLumped)
     end if
-    
+
   end subroutine
-  
+
 end module

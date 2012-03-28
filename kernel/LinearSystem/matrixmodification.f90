@@ -40,9 +40,9 @@ module matrixmodification
   use linearsystemscalar
   use linearsystemblock
   use genoutput
-  
+
   implicit none
-  
+
   private
 
   public :: mmod_replaceLinesByUnit
@@ -53,13 +53,13 @@ module matrixmodification
   public :: mmod_expandToFullRow
 
 contains
- 
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_replaceLinesByUnit (rmatrix,Irows)
-  
+
 !<description>
     ! This routine replaces some lines of a given scalar matrix by unit vectors.
 !</description>
@@ -90,27 +90,27 @@ contains
     case (LSYSSC_MATRIX7)
       call replaceLines_format7 (rmatrix,Irows)
     end select
-    
+
   contains
-    
+
     ! ****************************************
     ! The replacement routine for format 9
-    
+
     subroutine replaceLines_format9 (rmatrix,Irows)
-      
+
       integer, intent(in), dimension(:) :: Irows
       type(t_matrixScalar), intent(inout) :: rmatrix
-      
+
       ! local variables
       integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
-      
+
       ! Get Kld and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
-      
+
       ! Take care of the format of the entries
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
@@ -121,18 +121,18 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format9')
           call sys_halt()
         end if
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Clear the row
           p_DA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_DP
-          
+
           ! And put a unit vector there
           p_DA(p_Kdiagonal(Irows(irow))) = 1.0_DP
-          
+
         end do
-        
+
       case (ST_SINGLE)
         ! Get the data array
         call lsyssc_getbase_single(rmatrix,p_FA)
@@ -141,43 +141,43 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format9')
           call sys_halt()
         end if
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Clear the row
           p_FA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_SP
-          
+
           ! And put a unit vector there
           p_FA(p_Kdiagonal(Irows(irow))) = 1.0_SP
-          
+
         end do
-        
+
       case DEFAULT
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format9')
         call sys_halt()
       end select
-      
+
     end subroutine replaceLines_format9
-    
+
     ! ****************************************
     ! The replacement routine for format 7
-    
+
     subroutine replaceLines_format7 (rmatrix,Irows)
-      
+
       integer, intent(in), dimension(:) :: Irows
       type(t_matrixScalar), intent(inout) :: rmatrix
-      
+
       ! local variables
       integer :: irow
       integer, dimension(:), pointer :: p_Kld
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
-      
+
       ! Get Kld:
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
-      
+
       ! Take care of the format of the entries
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
@@ -188,16 +188,16 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format7')
           call sys_halt()
         end if
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Put a unit vector there
           p_DA(p_Kld(Irows(irow))) = 1.0_DP
-          
+
           ! and clear the row
           p_DA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_DP
-          
+
         end do
 
       case (ST_SINGLE)
@@ -208,34 +208,34 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format7')
           call sys_halt()
         end if
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Put a unit vector there
           p_FA(p_Kld(Irows(irow))) = 1.0_SP
-          
+
           ! and clear the row
           p_FA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_SP
-          
+
         end do
-        
+
       case DEFAULT
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLines_format7')
         call sys_halt()
       end select
-      
+
     end subroutine replaceLines_format7
-    
+
   end subroutine mmod_replaceLinesByUnit
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_clearOffdiags (rmatrix,Irows)
-  
+
 !<description>
     ! This routine replaces the offdiagonal entries in some lines of
     ! a given scalar matrix by zero. The diagonal elements are not
@@ -268,133 +268,133 @@ contains
     case (LSYSSC_MATRIX7)
       call removeOffdiags_format7 (rmatrix,Irows)
     end select
-    
+
   contains
-    
+
     ! ****************************************
     ! The replacement routine for format 9
-    
+
     subroutine removeOffdiags_format9 (rmatrix,Irows)
-      
+
       integer, intent(in), dimension(:) :: Irows
       type(t_matrixScalar), intent(inout) :: rmatrix
-      
+
       ! local variables
       integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       real(DP) :: ddiag,fdiag
-      
+
       ! Get Kld and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
-      
+
       ! Take care of the format of the entries
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         ! Get the data array
         call lsyssc_getbase_double(rmatrix,p_DA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Get the diagonal
           ddiag = p_DA(p_Kdiagonal(Irows(irow)))
-          
+
           ! Clear the row
           p_DA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_DP
-          
+
           ! restore the diagonal
           p_DA(p_Kdiagonal(Irows(irow))) = ddiag
-          
+
         end do
 
       case (ST_SINGLE)
         ! Get the data array
         call lsyssc_getbase_single(rmatrix,p_FA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Get the diagonal
           fdiag = p_FA(p_Kdiagonal(Irows(irow)))
-          
+
           ! Clear the row
           p_FA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_SP
-          
+
           ! restore the diagonal
           p_FA(p_Kdiagonal(Irows(irow))) = fdiag
-          
+
         end do
-        
+
       case DEFAULT
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'removeOffdiags_format9')
         call sys_halt()
       end select
-      
+
     end subroutine removeOffdiags_format9
-    
+
     ! ****************************************
     ! The replacement routine for format 7
-    
+
     subroutine removeOffdiags_format7 (rmatrix,Irows)
-      
+
       integer, intent(in), dimension(:) :: Irows
       type(t_matrixScalar), intent(inout) :: rmatrix
-      
+
       ! local variables
       integer :: irow
       integer, dimension(:), pointer :: p_Kld
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
-      
+
       ! Get Kld:
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
-      
+
       ! Take care of the format of the entries
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         ! Get the data array
         call lsyssc_getbase_double(rmatrix,p_DA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Clear the row except for the diagonal
           p_DA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_DP
-          
+
         end do
 
       case (ST_SINGLE)
         ! Get the data array
         call lsyssc_getbase_single(rmatrix,p_FA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
-          
+
           ! Clear the row except for the diagonal
           p_FA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_SP
-          
+
         end do
-        
+
       case DEFAULT
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'removeOffdiags_format7')
         call sys_halt()
       end select
-      
+
     end subroutine removeOffdiags_format7
-    
+
   end subroutine mmod_clearOffdiags
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_replaceLinesByZero (rmatrix,Irows)
-  
+
 !<description>
     ! This routine replaces some lines of a given scalar matrix by unit vectors.
 !</description>
@@ -423,33 +423,33 @@ contains
     case (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
       call replaceLinesZero_format97 (rmatrix,Irows)
     end select
-    
+
   contains
-    
+
     ! ****************************************
     ! The replacement routine for format 9 and 7
-    
+
     subroutine replaceLinesZero_format97 (rmatrix,Irows)
-      
+
       integer, intent(in), dimension(:) :: Irows
       type(t_matrixScalar), intent(inout) :: rmatrix
-    
+
       ! local variables
       integer :: irow
       real(DP), dimension(:), pointer :: p_DA
       real(SP), dimension(:), pointer :: p_FA
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
-      
+
       ! Get Kld and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
-      
+
       ! Take care of the format of the entries
       select case (rmatrix%cdataType)
       case (ST_DOUBLE)
         ! Get the data array
         call lsyssc_getbase_double(rmatrix,p_DA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
           ! Clear the row
@@ -459,29 +459,29 @@ contains
       case (ST_SINGLE)
         ! Get the data array
         call lsyssc_getbase_single(rmatrix,p_FA)
-        
+
         ! loop through the rows
         do irow = 1,size(Irows)
           ! Clear the row
           p_FA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_SP
         end do
-        
+
       case DEFAULT
         call output_line('Unsupported data format',&
             OU_CLASS_ERROR,OU_MODE_STD,'replaceLinesZero_format97')
         call sys_halt()
       end select
-      
+
     end subroutine replaceLinesZero_format97
-    
+
   end subroutine mmod_replaceLinesByZero
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_mergeLines (rmatrix,Irows,bsymmetric)
-  
+
 !<description>
     ! This routine merges some pairs of lines of a given scalar matrix.
     ! Note that the data (if any) will be cleared. If the optional parameter
@@ -491,7 +491,7 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be merged.
     integer, intent(in), dimension(:,:) :: Irows
-    
+
     ! OPTIONAL: If bsymmetric=.TRUE. the sparsity pattern will be symmetric
     logical, intent(in), optional                    :: bsymmetric
 !</input>
@@ -516,13 +516,13 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
         call sys_halt()
     end if
-    
+
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line('Virtually transposed matrices not supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
       call sys_halt()
     end if
-    
+
     ! Allocate temporal memory
     call storage_new('mmod_mergeLines', 'p_ImergeWithRow', rmatrix%NEQ, ST_INT,&
         h_ImergeWithRow, ST_NEWBLOCK_ZERO)
@@ -535,18 +535,18 @@ contains
     ! Loop over the list of rows to be merged
     naIncr = 0
     do ieq = 1, size(Irows,2)
-      
+
       ! Get row numbers to be merged
       irow = Irows(1, ieq)
       jrow = Irows(2, ieq)
-      
+
       ! If both numbers are identical, then nothing needs to be done
       if (irow .eq. jrow) cycle
-      
+
       ! Mark rows for merging
       p_ImergeWithRow(irow) = jrow
       p_ImergeWithRow(jrow) = irow
-      
+
       ! Loop over row number irow
       loop1: do ild = p_Kld(irow), p_Kld(irow+1)-1
         icol = p_Kcol(ild)
@@ -555,7 +555,7 @@ contains
         end do loop2
         naIncr = naIncr+1
       end do loop1
-      
+
       ! Loop over row number jrow
       loop3: do jld = p_Kld(jrow), p_Kld(jrow+1)-1
         jcol = p_Kcol(jld)
@@ -565,26 +565,26 @@ contains
         naIncr = naIncr+1
       end do loop3
     end do
-    
+
     ! Ok, we now know the number of nonzero entries that need to be added to the
     ! global matrix, hence, set new matix dimension and resize Kcol
     rmatrix%NA = rmatrix%NA+naIncr
     call storage_realloc('mmod_mergeLines', rmatrix%NA, rmatrix%h_Kcol,&
         ST_NEWBLOCK_NOINIT, .true.)
-    
+
     ! At first we must take care of the matrix type and modify the structure
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
       call mergeLines_format9 (rmatrix, p_ImergeWithRow)
-      
+
       ! Do we have to generate a symmetric sparsity graph?
       if (present(bsymmetric)) then
         if (bsymmetric) call mergeColumns_format9(rmatrix, p_ImergeWithRow)
       end if
-      
+
     case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
       call mergeLines_format7 (rmatrix, p_ImergeWithRow)
-      
+
       ! Do we have to generate a symmetric sparsity graph?
       if (present(bsymmetric)) then
         if (bsymmetric) call mergeColumns_format7(rmatrix, p_ImergeWithRow)
@@ -604,15 +604,15 @@ contains
       case (LSYSSC_MATRIXUNDEFINED)
         call storage_realloc('mmod_mergeLines', rmatrix%NA, rmatrix%h_DA,&
             ST_NEWBLOCK_ZERO, .false.)
-        
+
       case (LSYSSC_MATRIXD)
         call storage_realloc('mmod_mergeLines', rmatrix%NA*rmatrix%NVAR,&
             rmatrix%h_DA, ST_NEWBLOCK_ZERO, .false.)
-        
+
       case (LSYSSC_MATRIX1)
         call storage_realloc('mmod_mergeLines', rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR,&
             rmatrix%h_DA, ST_NEWBLOCK_ZERO, .false.)
-        
+
       case DEFAULT
         call output_line('Unsupported interleave matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'mmod_mergeLines')
@@ -620,14 +620,14 @@ contains
     end if
 
   contains
-    
+
     ! ****************************************
     ! The row merging routine for format 7
 
     subroutine mergeLines_format7(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(inout)            :: rmatrix
       integer, intent(in), dimension(:) :: ImergeWithRow
-      
+
       ! local variables
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol
@@ -636,7 +636,7 @@ contains
       ! Get Kld and Kcol
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-      
+
       ! Initialise current position
       na = rmatrix%NA
 
@@ -645,7 +645,7 @@ contains
 
         ! Ok, so what do we have to do with this row?
         if (ImergeWithRow(ieq) .eq. 0) then
-          
+
           ! Set current position
           naIncr = na
 
@@ -657,11 +657,11 @@ contains
             ! Decrease position counter
             naIncr = naIncr-1
           end do
-          
+
           ! Update Kld for next column and reduce number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
-          
+
         elseif (ImergeWithRow(ieq) .gt. ieq) then
 
           ! The two rows have already been merged, hence
@@ -675,7 +675,7 @@ contains
           do jld = p_Kld(jeq+1)-1, p_Kld(jeq), -1
             ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
-            
+
             ! Decrease position counter
             naIncr = naIncr-1
           end do
@@ -688,7 +688,7 @@ contains
               ! Swap the first entry which corresponds to the diagonal entry of the copied row with current position
               p_Kcol(ild)      = jeq
               p_Kcol(naIncr+1) = ieq
-              
+
               ! Move the swapped diagonal entry from the copied row to its correct position
               do jld = ild+1, na
                 if (p_Kcol(jld) .gt. jeq) exit sort
@@ -698,13 +698,13 @@ contains
               exit sort
             end if
           end do sort
-          
+
           ! Update Kld for next column and reduce number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
 
         else
-          
+
           ! We actually have to merge the two rows
           jeq = ImergeWithRow(ieq)
 
@@ -716,7 +716,7 @@ contains
             p_Kcol(jld-1) = p_Kcol(jld)
             p_Kcol(jld)   = jeq
           end do
-          
+
           ! Ok, now the row is in ascending order
           ild = p_Kld(ieq+1)-1
           jld = p_Kld(jeq+1)-1
@@ -758,13 +758,13 @@ contains
             naIncr = naIncr-1
             jld    = jld-1
           end do
-          
+
           ! Copy leftover from the row that corresponds to IEQ?
           ! Here, we explicitly copy the diagonal entry to the first position.
           do while (ild .ge. p_Kld(ieq))
             ! Copy column index
             p_Kcol(naIncr) = p_Kcol(ild)
-            
+
             ! Decrease position counter
             naIncr = naIncr-1
             ild    = ild-1
@@ -787,19 +787,19 @@ contains
       end if
     end subroutine mergeLines_format7
 
-    
+
     ! ****************************************
     ! The row merging routine for format 9
 
     subroutine mergeLines_format9(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(inout)            :: rmatrix
       integer, intent(in), dimension(:) :: ImergeWithRow
-      
+
       ! local variables
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       integer, dimension(:), pointer :: p_Kcol
       integer :: ieq,jeq,ild,jld,icol,jcol,na,naIncr
-      
+
       ! Get Kld, Kcol and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
@@ -810,13 +810,13 @@ contains
 
       ! Loop over all equations of the matrix but in reverse order (!!!)
       do ieq = rmatrix%NEQ, 1, -1
-        
+
         ! Ok, so what do we have to do with this row?
         if (ImergeWithRow(ieq) .eq. 0) then
-          
+
           ! Set current position
           naIncr = na
-          
+
           ! Just copy the row without modifications
           do ild = p_Kld(ieq+1)-1, p_Kld(ieq), -1
             ! Copy column index
@@ -824,15 +824,15 @@ contains
 
             ! Check for diagonal entry
             if (p_Kcol(naIncr) .eq. ieq) p_Kdiagonal(ieq) = naIncr
-            
+
             ! Decrease position counter
             naIncr = naIncr-1
           end do
-          
+
           ! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
-          
+
         elseif (ImergeWithRow(ieq) .gt. ieq) then
 
           ! The two rows have already been merged, hence
@@ -846,20 +846,20 @@ contains
           do jld = p_Kld(jeq+1)-1, p_Kld(jeq), -1
             ! Copy column index
             p_Kcol(naIncr) = p_Kcol(jld)
-            
+
             ! Check for diagonal entry
             if (p_Kcol(naIncr) .eq. ieq) p_Kdiagonal(ieq) = naIncr
 
             ! Decrease position counter
             naIncr = naIncr-1
           end do
-          
+
           ! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
 
         else
-          
+
           ! We actually have to merge the two rows
           jeq = ImergeWithRow(ieq)
 
@@ -904,7 +904,7 @@ contains
 
             ! Check for diagonal entry
             if (p_Kcol(naIncr) .eq. ieq) p_Kdiagonal(ieq) = naIncr
-            
+
             ! Decrease position counter
             naIncr = naIncr-1
             jld    = jld-1
@@ -947,7 +947,7 @@ contains
     subroutine mergeColumns_format7(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(inout)            :: rmatrix
       integer, intent(in), dimension(:) :: ImergeWithRow
-      
+
       ! local variables
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_KldAux
@@ -1024,7 +1024,7 @@ contains
       end do
       p_KldAux(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ+1)
       p_Kld(rmatrix%NEQ+1)    = p_Kld(rmatrix%NEQ)+idxIncr
-      
+
       ! In the first step, move the column data to their new positions
       do ieq = rmatrix%NEQ, 1, -1
         ! Compute offset to new position
@@ -1040,10 +1040,10 @@ contains
 
       ! Loop over all matrix rows
       loop1: do ieq = 1, rmatrix%NEQ
-        
+
         ! If the row has not been merged then skip it
         if (ImergeWithRow(ieq) .eq. 0) cycle
-        
+
         ! Otherwise, we process all entries of the current row
         ! and check if the corresponding column entries exist
         loop2: do ild = p_KldAux(ieq)+1, p_KldAux(ieq+1)-1
@@ -1053,7 +1053,7 @@ contains
 
           ! Skip diagonal entries
           if (icol .eq. ieq) cycle loop2
-          
+
           ! Loop over row number icol and check if entry ieq exists
           loop3: do jld = p_Kld(icol)+1, p_Kld(icol+1)-1
 
@@ -1065,7 +1065,7 @@ contains
 
             ! Skip left off-diagonal entries
             if (jcol .lt. ieq) cycle
-            
+
             ! No, the entry was not found
             do jjld = p_Kld(icol+1)-1, jld+1, -1
               p_Kcol(jjld) = p_Kcol(jjld-1)
@@ -1075,20 +1075,20 @@ contains
           end do loop3
         end do loop2
       end do loop1
-      
+
       ! Free temporal storage
       call storage_free(h_KldAux)
       call storage_free(h_KcolAux)
     end subroutine mergeColumns_format7
 
-    
+
     ! ****************************************
     ! The column merging routine for format 9
 
     subroutine mergeColumns_format9(rmatrix, ImergeWithRow)
       type(t_matrixScalar), intent(inout)            :: rmatrix
       integer, intent(in), dimension(:) :: ImergeWithRow
-      
+
       ! local variables
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       integer, dimension(:), pointer :: p_KldAux
@@ -1165,7 +1165,7 @@ contains
       end do
       p_KldAux(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ+1)
       p_Kld(rmatrix%NEQ+1)    = p_Kld(rmatrix%NEQ)+idxIncr
-      
+
       ! In the first step, move the column data to their new positions
       do ieq = rmatrix%NEQ, 1, -1
         ! Compute offset to new position
@@ -1181,10 +1181,10 @@ contains
 
       ! Loop over all matrix rows
       loop1: do ieq = 1, rmatrix%NEQ
-        
+
         ! If the row has not been merged then skip it
         if (ImergeWithRow(ieq) .eq. 0) cycle
-        
+
         ! Otherwise, we process all entries of the current row
         ! and check if the corresponding column entries exist
         loop2: do ild = p_KldAux(ieq), p_KldAux(ieq+1)-1
@@ -1194,7 +1194,7 @@ contains
 
           ! Skip diagonal entries
           if (icol .eq. ieq) cycle loop2
-          
+
           ! Loop over row number icol and check if entry ieq exists
           loop3: do jld = p_Kld(icol), p_Kld(icol+1)-1
 
@@ -1206,7 +1206,7 @@ contains
 
             ! Skip left off-diagonal entries
             if (jcol .lt. ieq) cycle
-            
+
             ! No, the entry was not found
             do jjld = p_Kld(icol+1)-1, jld+1, -1
               p_Kcol(jjld) = p_Kcol(jjld-1)
@@ -1216,7 +1216,7 @@ contains
           end do loop3
         end do loop2
       end do loop1
-      
+
       ! Rebuild the diagonal array
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
       call lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
@@ -1228,11 +1228,11 @@ contains
   end subroutine mmod_mergeLines
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_replaceLinesByUnitBlk (rmatrix,iblockRow,Irows)
-  
+
   !<description>
     ! This routine replaces some lines in a given block matrix by unit vectors.
   !</description>
@@ -1257,7 +1257,7 @@ contains
   !</subroutine>
 
     integer :: icol
-    
+
     ! Loop through all column matrices
     do icol = 1,rmatrix%nblocksPerCol
       if (lsysbl_isSubmatrixPresent(rmatrix,iblockRow,icol)) then
@@ -1269,15 +1269,15 @@ contains
         end if
       end if
     end do
-    
+
   end subroutine
-    
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine mmod_expandToFullRow (rmatrix,irow)
-  
+
 !<description>
     ! Expands one row of a matrix to a 'full' row.
     ! For Full matrices, this has no effect.
@@ -1309,26 +1309,26 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
         call sys_halt()
     end if
-    
+
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line("Virtually transposed matrices not supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
       call sys_halt()
     end if
-    
+
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
       ! Full matrix, nothing to be done.
-      
+
     case (LSYSSC_MATRIX9)
       ! CSR format.
-      
+
       ! Get the row pointer. Figure out the number of elements
       ! in row irow.
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       ncol = p_Kld(irow+1)-p_Kld(irow)
       icoldiff = rmatrix%NCOLS - ncol
-      
+
       if (icoldiff .gt. 0) then
 
         ! We have to expand; reallocate memory.
@@ -1340,7 +1340,7 @@ contains
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
             p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
-            
+
         ! Restructure the data if there is any
         if (lsyssc_hasMatrixContent(rmatrix)) then
 
@@ -1352,17 +1352,17 @@ contains
 
           call storage_realloc ("mmod_expandToFullRow",&
               rmatrix%NA+icoldiff,rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
-              
+
           ! Move the data
           call lsyssc_getbase_double (rmatrix,p_Da)
           call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
               p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
-          
+
         end if
 
         ! Restructure the Kld array.
         call lalg_vectorAddScalar(p_Kld(irow+1:rmatrix%NEQ+1),icoldiff)
-        
+
         ! Restructure the Kdiagonal array.
         ! icoldiff must be added to the entry of row irow+1,... end,
         ! and the entry of row irow has to be calculated appropriately.
@@ -1372,7 +1372,7 @@ contains
 
         ! Fix the matrix size
         rmatrix%NA = rmatrix%NA+icoldiff
-                
+
       end if
 
     case default
@@ -1382,11 +1382,11 @@ contains
     end select
 
   contains
-  
+
   ! ***************************************************************************
 
     subroutine copyVectorInt (Ix,Iy,n)
-    
+
     ! Copies an integer vector Ix: Iy = Ix.
     ! Copies backwards; used to copy parts in a vector
     ! to a higher address.
@@ -1401,19 +1401,19 @@ contains
     integer, dimension(:), intent(out) :: Iy
 
     integer :: i
-    
+
       if (.not. present(n)) then
-      
+
         do i = size(Ix),1,-1
           Iy(i) = Ix(i)
         end do
-        
+
       else
 
         do i =  n,1,-1
           Iy(i) = Ix(i)
         end do
-        
+
       end if
 
     end subroutine
@@ -1422,7 +1422,7 @@ contains
   ! ***************************************************************************
 
     subroutine copyVectorDble (Dx,Dy,n)
-    
+
     ! Copies an integer vector Dx: Dy = Dx.
     ! Copies backwards; used to copy parts in a vector
     ! to a higher address.
@@ -1437,19 +1437,19 @@ contains
     real(DP), dimension(:), intent(out) :: Dy
 
     integer :: i
-    
+
       if (.not. present(n)) then
-      
+
         do i = size(Dx),1,-1
           Dy(i) = Dx(i)
         end do
-        
+
       else
 
         do i =  n,1,-1
           Dy(i) = Dx(i)
         end do
-        
+
       end if
 
     end subroutine

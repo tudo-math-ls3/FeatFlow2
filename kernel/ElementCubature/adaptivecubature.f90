@@ -43,7 +43,7 @@ module adaptivecubature
   implicit none
 
   private
-  
+
   public :: adcub_determineSummedCubature
   public :: adcub_integrateFunction
 
@@ -83,16 +83,16 @@ contains
 
   ! Underlying mesh where ffunctionReference should be evaluated.
   type(t_triangulation), intent(in) :: rtriangulation
-  
+
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
   ! quads, hexas or similar); it is not allowed to mix e.g. triangles and
   ! quads in this list.
   integer, dimension(:), intent(in) :: Ielements
-  
+
   ! Reference function which should be tested for integration.
   include '../Postprocessing/intf_functionScSimple.inc'
-  
+
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -106,16 +106,16 @@ contains
     real(DP) :: dvalue, dvalue2, derror, dvalueinit
     integer(I32) :: ccurrentcubtype
     integer :: icubref
-    
+
     ! The inital cubature rule is without refinement.
     icubref = 0
     ccurrentcubtype = cub_getStdCubType(ccubType)
-    
+
     ! Determine the initial value of the integral.
     call adcub_integrateFunction(dvalueinit,ccurrentcubtype,rtriangulation,&
         Ielements,ffunctionRefSimple,rcollection,rperfconfig)
     dvalue = dvalueinit
-        
+
     ! Now refine the integration until the error is small enough.
     do
       icubref = icubref + 1
@@ -123,9 +123,9 @@ contains
       dvalue2 = dvalue
       call adcub_integrateFunction(dvalue,ccurrentcubtype,rtriangulation,&
           Ielements,ffunctionRefSimple,rcollection,rperfconfig)
-      
+
       derror = (dvalue-dvalue2) / (2**icubref - 1)
-      
+
       ! Stop if the error is small enough. Ok, this formula is actually
       ! slightly wrong, since we stop, if the error on the 'fine' mesh
       ! is small enough while we return the cubature formula of the coarse
@@ -140,7 +140,7 @@ contains
         ccubType = cub_getSummedCubType(ccubType,icubref-1)
         exit
       end if
-    
+
     end do
 
   end subroutine
@@ -163,16 +163,16 @@ contains
 
   ! Underlying mesh where ffunctionReference should be evaluated.
   type(t_triangulation), intent(in) :: rtriangulation
-  
+
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
   ! quads, hexas or similar); it is not allowed to mix e.g. triangles and
   ! quads in this list.
   integer, dimension(:), intent(in), target :: Ielements
-  
+
   ! Reference function which should be tested for integration.
   include '../Postprocessing/intf_functionScSimple.inc'
-  
+
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -208,7 +208,7 @@ contains
 
     ! Number of elements
     NEL = size(Ielements)
-    
+
     ! Determine the number of elements in each set in such a way,
     ! that the element blocks are not too large and that the
     ! number of simultaneous treated cubature points is not too large.
@@ -218,7 +218,7 @@ contains
     ! elements if necessary -- but treat at least one element.
     nmaxelements = max(1,min(ncubp*1000,16*16*16*1000)/ncubp)
     nelementsPerBlock = min(nmaxelements,NEL)
-    
+
     ! Allocate memory for the coefficients
     allocate(Dcoefficients(ncubp,nelementsPerBlock))
 
@@ -226,7 +226,7 @@ contains
     call elprep_init(revalElementSet)
     cevaluationtag = EL_EVLTAG_REALPOINTS + EL_EVLTAG_JAC + EL_EVLTAG_DETJ + &
         EL_EVLTAG_REFPOINTS + EL_EVLTAG_COORDS
-    
+
     ! Get the transformation type from the basic P1/Q1 element in the
     ! current dimension
     ! Get the shape of the cubature id
@@ -246,15 +246,15 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'adcub_integrateFunction')
       call sys_halt()
     end select
-    
+
     dvalue = 0.0_DP
-    
+
     ! Loop throgh the elements in sets.
     do IELset = 1,NEL,nmaxelements
-    
+
       ! Maximum element of the set
       IELmax = min(NEL, IELset-1+nmaxelements)
-    
+
       ! Prepare the element set to calculate information of the transformation.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, rtriangulation, Ielements(IELset:IELmax), &
@@ -269,30 +269,30 @@ contains
       call ffunctionRefSimple (IELmax-IELset+1,ncubp,Ielements(IELset:IELmax),&
           revalElementSet%p_DpointsReal,Dcoefficients(:,1:IELmax-IELset+1),rcollection,&
           revalElementSet%p_DpointsRef,revalElementSet%p_Djac,revalElementSet%p_Ddetj)
-      
+
       ! Sum up to the contribution of the integral.
       do IEL = 1, IELmax-IELset+1
-        
+
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
-          
+
           ! calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
           ! Take the absolut value of the determinant of the mapping.
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that is normal!
-          
+
           OM = DomegaRef(icubp)*abs(p_Ddetj(icubp,IEL))
-          
+
           dvalue = dvalue + OM * Dcoefficients(icubp,IEL)
-          
+
         end do ! ICUBP
-        
+
       end do ! iel
-    
+
     end do
-    
+
     ! Release memory, finish
     call elprep_releaseElementSet(revalElementSet)
     deallocate(DomegaRef)

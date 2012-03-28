@@ -1,5 +1,3 @@
-  ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
@@ -18,10 +16,10 @@
 !<input>
     ! Number of edges
     integer, intent(in) :: NEDGE
-    
+
     ! Number of nodes
     integer, intent(in) :: NEQ
-    
+
     ! Number of solution variables
     integer, intent(IN) :: NVAR
 

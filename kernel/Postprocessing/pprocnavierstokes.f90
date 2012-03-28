@@ -107,7 +107,7 @@ module pprocnavierstokes
 !</constants>
 
   !************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: ppns_perfconfig
 
@@ -147,7 +147,7 @@ contains
       call pcfg_initPerfConfig(ppns_perfconfig)
       ppns_perfconfig%NELEMSIM = PPNS_NELEMSIM
     end if
-  
+
   end subroutine ppns_initPerfConfig
 
   !****************************************************************************
@@ -2462,7 +2462,7 @@ contains
 !<input>
   ! The FE solution vector.
   type(t_vectorBlock), intent(in)    :: rvector
-  
+
   ! OPTIONAL: Defines the start index in rvector where the velocity starts.
   ! Default = 1.
   integer, intent(in), optional :: isubvectorVel
@@ -2999,7 +2999,7 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else

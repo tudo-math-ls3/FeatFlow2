@@ -77,14 +77,14 @@ module groupfemscalar
   implicit none
 
   private
-  
+
   public :: gfsc_initPerfConfig
   public :: gfsc_buildOperatorNode
   public :: gfsc_buildOperatorEdge
   public :: gfsc_buildVectorNode
   public :: gfsc_buildVectorEdge
   public :: gfsc_buildJacobian
-  
+
 !<constants>
 
 !<constantblock description="Constants defining the blocking of the assembly">
@@ -111,10 +111,10 @@ module groupfemscalar
 !</constants>
 
   !************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: gfsc_perfconfig
-  
+
   ! ****************************************************************************
 
   interface gfsc_buildOperatorNode
@@ -132,7 +132,7 @@ module groupfemscalar
     module procedure gfsc_buildOperatorEdgeBlock2
     module procedure gfsc_buildOperatorEdgeBlock3
   end interface
-  
+
   interface gfsc_buildVectorNode
     module procedure gfsc_buildVectorNodeScalar
     module procedure gfsc_buildVectorNodeBlock
@@ -149,7 +149,7 @@ module groupfemscalar
   end interface
 
 contains
- 
+
   !****************************************************************************
 
 !<subroutine>
@@ -176,7 +176,7 @@ contains
       gfsc_perfconfig%NEDGESIM = GFSC_NEDGESIM
       gfsc_perfconfig%NASIM    = GFSC_NASIM
     end if
-  
+
   end subroutine gfsc_initPerfConfig
 
   !*****************************************************************************
@@ -213,7 +213,7 @@ contains
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
-    
+
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FALSE : assemble matrix in an additive way
@@ -257,13 +257,13 @@ contains
     integer, dimension(:,:), pointer :: p_InodeListIdx2D
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer, dimension(:), pointer :: p_InodeListIdx1D
-    
+
     integer :: ccType
     logical :: bsymm
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -301,14 +301,14 @@ contains
         call output_line('Stabilisation is not feasible in node-by-node assembly!',&
             OU_CLASS_WARNING,OU_MODE_STD,'gfsc_buildOperatorConst')
       end if
-      
+
       ! What data types are we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
-        
+
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
 
@@ -339,12 +339,12 @@ contains
           end select
 
         end if
-        
+
       case (ST_SINGLE)
         ! Set pointers
         call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
         call lsyssc_getbase_single(rmatrix, p_Fdata)
-        
+
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
 
@@ -352,7 +352,7 @@ contains
           case (GFEM_MATC_CONSISTENT)
             call doOperatorNodeConsistSngl(p_FcoeffsAtNode,&
                 real(dscale,SP), bclear, p_Fdata)
-            
+
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
             call doOperatorNodeLumpedSngl(p_InodeListIdx1D,&
@@ -373,16 +373,16 @@ contains
             call doOperatorNodeLumpedSnglSel(p_InodeListIdx2D, p_InodeList,&
                 p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
           end select
-            
+
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
         call sys_halt()
       end select
 
-      
+
     case (GFEM_EDGEBASED)
       !-------------------------------------------------------------------------
       ! Edge-based assembly
@@ -397,12 +397,12 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
         call sys_halt()
       end if
-      
+
       ! Set pointers
       call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
-      
+
       ! What data types are we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
@@ -410,47 +410,47 @@ contains
         call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
         call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
-        
+
         ! Assemble matrix diagonal
         call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
             dscale, bclear, p_Ddata)
-                
+
         ! Do we have to build the stabilisation?
         if (present(rafcstab)) then
-          
+
           ! Check if stabilisation has been prepared
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
             call output_line('Stabilisation has not been prepared!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
             call sys_halt()
           end if
-          
+
           ! Symmetric artificial diffusion?
           bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
-          
+
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
-            
+
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
               call output_line('Stabilisation must have double precision!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
               call sys_halt()
             end if
-            
+
             ! Set additional pointers
             call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doOperatorEdgeAFCDble(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata, p_Dcoefficients)
-            
+
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
                 ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-            
+
             ! Do we need edge orientation?
             if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
               call afcstab_upwindOrientation(p_Dcoefficients, p_IedgeList,&
@@ -461,71 +461,71 @@ contains
               rafcstab%istabilisationSpec =&
                   iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
             end if
-            
+
           else
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorEdgeStabDble(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata)
           end if
-          
+
         else   ! no stabilisation structure present
-          
+
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
           call doOperatorEdgeDble(p_IedgeListIdx, p_IedgeList,&
               p_DcoeffsAtEdge, dscale, bclear, p_Ddata)
         end if
-        
+
       case (ST_SINGLE)
         ! Set pointers
         call gfem_getbase_FcoeffsAtDiag(rgroupFEMSet, p_FcoeffsAtDiag)
         call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
         call lsyssc_getbase_single(rmatrix, p_Fdata)
-        
+
         ! Assemble matrix diagonal
         call doOperatorDiagSngl(p_IdiagList, p_FcoeffsAtDiag,&
             real(dscale,SP), bclear, p_Fdata)
-        
+
         ! Do we have to build the stabilisation?
         if (present(rafcstab)) then
-          
+
           ! Check if stabilisation has been prepared
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
             call output_line('Stabilisation has not been prepared!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
             call sys_halt()
           end if
-          
+
           ! Symmetric artificial diffusion?
           bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
-          
+
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
-            
+
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_SINGLE) then
               call output_line('Stabilisation must have double precision!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
               call sys_halt()
             end if
-            
+
             ! Set additional pointers
             call afcstab_getbase_FcoeffsAtEdge(rafcstab, p_Fcoefficients)
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation
             !-------------------------------------------------------------------
             call doOperatorEdgeAFCSngl(p_IedgeListIdx, p_IedgeList,&
                 p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata, p_Fcoefficients)
-            
+
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
                 ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-            
+
             ! Do we need edge orientation?
             if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
               call afcstab_upwindOrientation(p_Fcoefficients, p_IedgeList,&
@@ -536,44 +536,44 @@ contains
               rafcstab%istabilisationSpec =&
                   iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
             end if
-            
+
           else
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorEdgeStabSngl(p_IedgeListIdx, p_IedgeList,&
                 p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata)
           end if
-          
+
         else   ! no stabilisation structure present
-          
+
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
           call doOperatorEdgeSngl(p_IedgeListIdx, p_IedgeList,&
               p_FcoeffsAtEdge, real(dscale,SP), bclear, p_Fdata)
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported assembly type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
       call sys_halt()
     end select
-    
+
   contains
-    
+
     ! Here, the working routine follow
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
-    
+
     subroutine doOperatorNodeConsistDble(DcoeffsAtNode, dscale, bclear, Ddata)
 
       ! input parameters
@@ -583,45 +583,45 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! local variables
       integer :: ia
 
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over all matrix entries
         !$omp parallel do default(shared)&
         !$omp if(size(Ddata) > p_rperfconfig%NAMIN_OMP)
         do ia = 1, size(Ddata)
-          
+
           ! Update the matrix coefficient
           Ddata(ia) = dscale*DcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all matrix entries
         !$omp parallel do default(shared)&
         !$omp if(size(Ddata) > p_rperfconfig%NAMIN_OMP)
         do ia = 1, size(Ddata)
-          
+
           ! Update the matrix coefficient
           Ddata(ia) = Ddata(ia) + dscale*DcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorNodeConsistDble
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
-    
+
     subroutine doOperatorNodeLumpedDble(InodeListIdx,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
@@ -633,7 +633,7 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: ieq,ia
@@ -641,58 +641,58 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(dtemp,ia)&
         !$omp if(size(Ddata) > p_rperfconfig%NAMIN_OMP)
         do ieq = 1, size(InodeListIdx)-1
-          
+
           ! Clear temporal data
           dtemp = 0.0_DP
 
           ! Loop over all matrix enties in current row
           do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-            
+
             ! Update the matrix coefficient
             dtemp = dtemp + DcoeffsAtNode(1,ia)
           end do
-          
+
           ! Update the diagonal entry of the global operator
           Ddata(InodeListIdx(ieq)) = dscale*dtemp
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(dtemp,ia)&
         !$omp if(size(Ddata) > p_rperfconfig%NAMIN_OMP)
         do ieq = 1, size(InodeListIdx)-1
-          
+
           ! Clear temporal data
           dtemp = 0.0_DP
 
           ! Loop over all matrix enties in current row
           do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-            
+
             ! Update the matrix coefficient
             dtemp = dtemp + DcoeffsAtNode(1,ia)
           end do
-          
+
           ! Update the diagonal entry of the global operator
           Ddata(InodeListIdx(ieq)) = Ddata(InodeListIdx(ieq)) + dscale*dtemp
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorNodeLumpedDble
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
-    
+
     subroutine doOperatorNodeConsistDbleSel(InodeList,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
@@ -704,7 +704,7 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! local variables
       integer :: ia,idx
 
@@ -713,42 +713,42 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
-          
+
           ! Get position of matrix entry
           ia = InodeList(2,idx)
-          
+
           ! Update the matrix coefficient
           Ddata(ia) = dscale*DcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
-          
+
           ! Get position of matrix entry
           ia = InodeList(2,idx)
-          
+
           ! Update the matrix coefficient
           Ddata(ia) = Ddata(ia) + dscale*DcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
-        
+
       end if
 
     end subroutine doOperatorNodeConsistDbleSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
-    
+
     subroutine doOperatorNodeLumpedDbleSel(InodeListIdx, InodeList,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
@@ -760,7 +760,7 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: ia,idx
@@ -768,14 +768,14 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(dtemp,ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeListIdx,2)
-          
+
           ! Clear temporal data
           dtemp = 0.0_DP
 
@@ -790,14 +790,14 @@ contains
           Ddata(InodeListIdx(2,idx)) = dscale*dtemp
         end do
         !$omp end parallel do
-        
+
       else
 
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(dtemp,ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeListIdx,2)
-          
+
           ! Clear temporal data
           dtemp = 0.0_DP
 
@@ -814,7 +814,7 @@ contains
         !$omp end parallel do
 
       end if
-      
+
     end subroutine doOperatorNodeLumpedDbleSel
 
     !**************************************************************
@@ -829,45 +829,45 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! local variables
       integer :: ia
 
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over all matrix entries
         !$omp parallel do default(shared)&
         !$omp if (size(Fdata) > p_rperfconfig%NAMIN_OMP)
         do ia = 1, size(Fdata)
-          
+
           ! Update the matrix coefficient
           Fdata(ia) = fscale*FcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all matrix entries
         !$omp parallel do default(shared)&
         !$omp if (size(Fdata) > p_rperfconfig%NAMIN_OMP)
         do ia = 1, size(Fdata)
-          
+
           ! Update the matrix coefficient
           Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorNodeConsistSngl
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
-    
+
     subroutine doOperatorNodeLumpedSngl(InodeListIdx,&
         FcoeffsAtNode, fscale, bclear, Fdata)
 
@@ -879,7 +879,7 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! local variables
       real(SP) :: ftemp
       integer :: ieq,ia
@@ -887,53 +887,53 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ftemp,ia)&
         !$omp if(size(Fdata) > p_rperfconfig%NAMIN_OMP)
         do ieq = 1, size(InodeListIdx)-1
-          
+
           ! Clear temporal data
           ftemp = 0.0_SP
 
           ! Loop over all matrix enties in current row
           do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-            
+
             ! Update the matrix coefficient
             ftemp = ftemp + FcoeffsAtNode(1,ia)
           end do
-          
+
           ! Update the diagonal entry of the global operator
           Fdata(InodeListIdx(ieq)) = fscale*ftemp
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ftemp,ia)&
         !$omp if(size(Fdata) > p_rperfconfig%NAMIN_OMP)
         do ieq = 1, size(InodeListIdx)-1
-          
+
           ! Clear temporal data
           ftemp = 0.0_SP
 
           ! Loop over all matrix enties in current row
           do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-            
+
             ! Update the matrix coefficient
             ftemp = ftemp + FcoeffsAtNode(1,ia)
           end do
-          
+
           ! Update the diagonal entry of the global operator
           Fdata(InodeListIdx(ieq)) = Fdata(InodeListIdx(ieq)) + fscale*ftemp
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorNodeLumpedSngl
 
     !**************************************************************
@@ -950,7 +950,7 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! local variables
       integer :: ia,idx
 
@@ -959,42 +959,42 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
-          
+
           ! Get position of matrix entry
           ia = InodeList(2,idx)
-          
+
           ! Update the matrix coefficient
           Fdata(ia) = fscale*FcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
-          
+
           ! Get position of matrix entry
           ia = InodeList(2,idx)
-          
+
           ! Update the matrix coefficient
           Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorNodeConsistSnglSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
-    
+
     subroutine doOperatorNodeLumpedSnglSel(InodeListIdx, InodeList,&
         FcoeffsAtNode, fscale, bclear, Fdata)
 
@@ -1006,7 +1006,7 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! local variables
       real(SP) :: ftemp
       integer :: ia,idx
@@ -1014,14 +1014,14 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ftemp,ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeListIdx,2)
-          
+
           ! Clear temporal data
           ftemp = 0.0_SP
 
@@ -1036,14 +1036,14 @@ contains
           Fdata(InodeListIdx(2,idx)) = fscale*ftemp
         end do
         !$omp end parallel do
-        
+
       else
 
         ! Loop over the subset of equations
         !$omp parallel do default(shared) private(ftemp,ia)&
         !$omp if (size(InodeList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(InodeListIdx,2)
-          
+
           ! Clear temporal data
           ftemp = 0.0_SP
 
@@ -1060,7 +1060,7 @@ contains
         !$omp end parallel do
 
       end if
-      
+
     end subroutine doOperatorNodeLumpedSnglSel
 
     !**************************************************************
@@ -1077,48 +1077,48 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! local variables
       integer :: ia,idx
 
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) then
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(IdiagList,2)
-          
+
           ! Get position of diagonal entry
           ia = IdiagList(2,idx)
-          
+
           ! Update the diagonal coefficient
           Ddata(ia) = dscale*DcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(IdiagList,2)
-          
+
           ! Get position of diagonal entry
           ia = IdiagList(2,idx)
-          
+
           ! Update the diagonal coefficient
           Ddata(ia) = Ddata(ia) + dscale*DcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorDiagDble
-    
+
     !**************************************************************
     ! Assemble diagonal part of the operator
 
@@ -1133,7 +1133,7 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! local variables
       integer :: ia,idx
 
@@ -1142,45 +1142,45 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(IdiagList,2)
-          
+
           ! Get position of diagonal entry
           ia = IdiagList(2,idx)
-          
+
           ! Update the diagonal coefficient
           Fdata(ia) = fscale*FcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
-        
+
       else
-        
+
         ! Loop over all equations
         !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(IdiagList,2)
-          
+
           ! Get position of diagonal entry
           ia = IdiagList(2,idx)
-          
+
           ! Update the diagonal coefficient
           Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
-        
+
       end if
-      
+
     end subroutine doOperatorDiagSngl
-        
+
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
-    
+
     subroutine doOperatorEdgeDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, Ddata)
-      
+
       ! input parameters
       real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
@@ -1196,23 +1196,23 @@ contains
 
       !$omp parallel default(shared) private(ij,ji)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
- 
+
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
       if (bclear) then
-        
+
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           !$omp do
           do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-        
+
             ! Get node numbers and matrix positions
             ij = IedgeList(3,iedge)
             ji = IedgeList(4,iedge)
-            
+
             ! Update the global operator
             Ddata(ij) = dscale*DcoeffsAtEdge(1,1,iedge)
             Ddata(ji) = dscale*DcoeffsAtEdge(1,2,iedge)
@@ -1227,11 +1227,11 @@ contains
         do igroup = 1, size(IedgeListIdx)-1
           !$omp do
           do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
+
             ! Get node numbers and matrix positions
             ij = IedgeList(3,iedge)
             ji = IedgeList(4,iedge)
-            
+
             ! Update the global operator
             Ddata(ij) = Ddata(ij) + dscale*DcoeffsAtEdge(1,1,iedge)
             Ddata(ji) = Ddata(ji) + dscale*DcoeffsAtEdge(1,2,iedge)
@@ -1246,10 +1246,10 @@ contains
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
-    
+
     subroutine doOperatorEdgeSngl(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, Fdata)
-      
+
       ! input parameters
       real(SP), dimension(:,:,:), intent(in) :: FcoeffsAtEdge
       real(SP), intent(in) :: fscale
@@ -1262,7 +1262,7 @@ contains
 
       ! local variables
       integer :: iedge,igroup,ij,ji
-      
+
       !$omp parallel default(shared) private(ij,ji)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
@@ -1271,17 +1271,17 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-        
+
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronise memory access
         do igroup = 1, size(IedgeListIdx)-1
           !$omp do
           do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-        
+
             ! Get node numbers and matrix positions
             ij = IedgeList(3,iedge)
             ji = IedgeList(4,iedge)
-            
+
             ! Update the global operator
             Fdata(ij) = fscale*FcoeffsAtEdge(1,1,iedge)
             Fdata(ji) = fscale*FcoeffsAtEdge(1,2,iedge)
@@ -1296,11 +1296,11 @@ contains
         do igroup = 1, size(IedgeListIdx)-1
           !$omp do
           do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
+
             ! Get node numbers and matrix positions
             ij = IedgeList(3,iedge)
             ji = IedgeList(4,iedge)
-            
+
             ! Update the global operator
             Fdata(ij) = Fdata(ij) + fscale*FcoeffsAtEdge(1,1,iedge)
             Fdata(ji) = Fdata(ji) + fscale*FcoeffsAtEdge(1,2,iedge)
@@ -1315,10 +1315,10 @@ contains
 
     !**************************************************************
     ! Assemble edge-by-edge operator with stabilisation
-    
+
     subroutine doOperatorEdgeStabDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, bsymm, Ddata)
-      
+
       ! input parameters
       real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
@@ -1332,7 +1332,7 @@ contains
       ! local variables
       real(DP) :: d_ij
       integer :: iedge,igroup,ii,ij,ji,jj
-      
+
       !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
@@ -1341,7 +1341,7 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-   
+
         if (bsymm) then
 
           ! Loop over the edge groups and process all edges of one group
@@ -1349,16 +1349,16 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Symmetric artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1375,17 +1375,17 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Non-symmetric artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP,&
                   -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,2,iedge))
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1396,9 +1396,9 @@ contains
           end do ! igroup
 
         end if
-        
+
       else   ! do not clear matrix
-        
+
         if (bsymm) then
 
           ! Loop over the edge groups and process all edges of one group
@@ -1406,16 +1406,16 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Symmetric artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1426,23 +1426,23 @@ contains
           end do ! igroup
 
         else
-          
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Non-symmetric artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP,&
                   -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,2,iedge))
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1461,7 +1461,7 @@ contains
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation
-    
+
     subroutine doOperatorEdgeStabSngl(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, bsymm, Fdata)
 
@@ -1478,7 +1478,7 @@ contains
       ! local variables
       real(SP) :: d_ij
       integer :: iedge,igroup,ii,ij,ji,jj
-      
+
       !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
@@ -1487,7 +1487,7 @@ contains
       !-------------------------------------------------------------------------
 
       if (bclear) then
-   
+
         if (bsymm) then
 
           ! Loop over the edge groups and process all edges of one group
@@ -1495,16 +1495,16 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Symmetric artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1515,23 +1515,23 @@ contains
           end do ! igroup
 
         else
-          
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Non-symmetric artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP,&
                   -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1540,11 +1540,11 @@ contains
             end do
             !$omp end do
           end do ! igroup
-          
+
         end if
 
       else   ! do not clear matrix
-        
+
         if (bsymm) then
 
           ! Loop over the edge groups and process all edges of one group
@@ -1552,16 +1552,16 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Symmetric atificial diffusion coefficient
               d_ij = fscale*max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1578,17 +1578,17 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Non-symmetric atificial diffusion coefficient
               d_ij = fscale*max(0.0_SP,&
                   -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1597,7 +1597,7 @@ contains
             end do
             !$omp end do
           end do ! igroup
-          
+
         end if
 
       end if
@@ -1607,7 +1607,7 @@ contains
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
-    
+
     subroutine doOperatorEdgeAFCDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, bsymm, Ddata, Dcoefficients)
 
@@ -1620,14 +1620,14 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! output parameters
       real(DP), dimension(:,:), intent(out) :: Dcoefficients
-      
+
       ! local variables
       real(DP) :: d_ij,k_ij,k_ji
       integer :: iedge,igroup,ii,ij,ji,jj
-      
+
       !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
@@ -1638,26 +1638,26 @@ contains
       if (bclear) then
 
         if (bsymm) then
-        
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
               k_ij = dscale*max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
-              
+
               ! Symmetric AFC w/o edge orientation
               Dcoefficients(1:2,iedge) = (/d_ij, k_ij/)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1674,22 +1674,22 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP,&
                   -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,2,iedge))
               k_ij = dscale*DcoeffsAtEdge(1,1,iedge) + d_ij
               k_ji = dscale*DcoeffsAtEdge(1,2,iedge) + d_ij
-              
+
               ! Non-symmetric AFC w/o edge orientation
               Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1702,28 +1702,28 @@ contains
         end if
 
       else   ! do not clear matrix
-        
+
         if (bsymm) then
-          
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
               k_ij = dscale*max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
-              
+
               ! Symmetric AFC w/o edge orientation
               Dcoefficients(1:2,iedge) = (/d_ij, k_ij/)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1740,22 +1740,22 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = dscale*max(0.0_DP,&
                   -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,2,iedge))
               k_ij = dscale*DcoeffsAtEdge(1,1,iedge) + d_ij
               k_ji = dscale*DcoeffsAtEdge(1,2,iedge) + d_ij
-              
+
               ! Non-symmetric AFC w/o edge orientation
               Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - d_ij
               Ddata(jj) = Ddata(jj) - d_ij
@@ -1766,7 +1766,7 @@ contains
           end do ! igroup
 
         end if
-        
+
       end if
       !$omp end parallel
 
@@ -1774,7 +1774,7 @@ contains
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
-    
+
     subroutine doOperatorEdgeAFCSngl(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, bsymm, Fdata, Fcoefficients)
 
@@ -1787,14 +1787,14 @@ contains
 
       ! input/output parameters
       real(SP), dimension(:), intent(inout) :: Fdata
-      
+
       ! output parameters
       real(SP), dimension(:,:), intent(out) :: Fcoefficients
-      
+
       ! local variables
       real(SP) :: d_ij,k_ij,k_ji
       integer :: iedge,igroup,ii,ij,ji,jj
-      
+
       !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
@@ -1805,26 +1805,26 @@ contains
       if (bclear) then
 
         if (bsymm) then
-        
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
               k_ij = fscale*max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
-              
+
               ! Symmetric AFC w/o edge orientation
               Fcoefficients(1:2,iedge) = (/d_ij, k_ij/)
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1841,22 +1841,22 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP,&
                   -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
               k_ij = fscale*FcoeffsAtEdge(1,1,iedge) + d_ij
               k_ji = fscale*FcoeffsAtEdge(1,2,iedge) + d_ij
-              
+
               ! Non-symmetric AFC w/o edge orientation
               Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1869,28 +1869,28 @@ contains
         end if
 
       else   ! do not clear matrix
-        
+
         if (bsymm) then
-          
+
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronise memory access
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
               k_ij = fscale*max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
-              
+
               ! Symmetric AFC w/o edge orientation
               Fcoefficients(1:2,iedge) = (/d_ij, k_ij/)
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1907,22 +1907,22 @@ contains
           do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
+
               ! Get node numbers and matrix positions
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Artificial diffusion coefficient
               d_ij = fscale*max(0.0_SP,&
                   -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
               k_ij = fscale*FcoeffsAtEdge(1,1,iedge) + d_ij
               k_ji = fscale*FcoeffsAtEdge(1,2,iedge) + d_ij
-              
+
               ! Non-symmetric AFC w/o edge orientation
               Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
-              
+
               ! Update the global operator
               Fdata(ii) = Fdata(ii) - d_ij
               Fdata(jj) = Fdata(jj) - d_ij
@@ -1933,7 +1933,7 @@ contains
           end do ! igroup
 
         end if
-        
+
       end if
       !$omp end parallel
 
@@ -1948,7 +1948,7 @@ contains
   subroutine gfsc_buildOperatorNodeBlock1(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -1965,7 +1965,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the matrix entries may depend.
     type(t_vectorBlock), intent(in) :: rx
 
@@ -2005,14 +2005,14 @@ contains
     type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorNodeSc)) then
-      
+
       call fcb_calcOperatorNodeSc(rgroupFEMSet, rx, rmatrix,&
           dscale, bclear, cconstrType, fcb_calcMatrixDiagSc_sim,&
           rcollection, rafcstab)
-      
+
     elseif ((rx%nblocks            .eq. 1) .and.&
             (rmatrix%nblocksPerCol .eq. 1) .and.&
             (rmatrix%nblocksPerRow .eq. 1)) then
@@ -2021,13 +2021,13 @@ contains
       call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
           cconstrType, rcollection, rafcstab, rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Matrix/Vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock1')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorNodeBlock1
 
   !*****************************************************************************
@@ -2037,7 +2037,7 @@ contains
   subroutine gfsc_buildOperatorNodeBlock2(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSc_sim, dscale, bclear, cconstrType, rmatrix,&
       rcollection, rafcstab, fcb_calcOperatorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -2054,7 +2054,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the matrix entries may depend.
     type(t_vectorScalar), intent(in) :: rx
 
@@ -2094,20 +2094,20 @@ contains
     type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! Local variables
     type(t_vectorBlock) :: rxBlock
 
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorNodeSc)) then
-      
+
       ! Create auxiliary 1-block vector
       call lsysbl_createVecFromScalar(rx, rxBlock)
 
       call fcb_calcOperatorNodeSc(rgroupFEMSet, rxBlock, rmatrix,&
           dscale, bclear, cconstrType, fcb_calcMatrixDiagSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vector
       call lsysbl_releaseVector(rxBlock)
 
@@ -2118,13 +2118,13 @@ contains
       call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx,&
           fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
           cconstrType, rcollection, rafcstab, rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Matrix must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock2')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorNodeBlock2
 
   !*****************************************************************************
@@ -2134,7 +2134,7 @@ contains
   subroutine gfsc_buildOperatorNodeBlock3(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -2151,7 +2151,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the matrix entries may depend.
     type(t_vectorBlock), intent(in) :: rx
 
@@ -2191,20 +2191,20 @@ contains
     type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! Local variables
     type(t_matrixBlock) :: rmatrixBlock
 
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorNodeSc)) then
-      
+
       ! Create auxiliary 1-block matrix
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
 
       call fcb_calcOperatorNodeSc(rgroupFEMSet, rx, rmatrixBlock,&
           dscale, bclear, cconstrType, fcb_calcMatrixDiagSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block matrix
       call lsysbl_releaseMatrix(rmatrixBlock)
 
@@ -2214,13 +2214,13 @@ contains
       call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix,&
           cconstrType, rcollection, rafcstab, rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock3')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorNodeBlock3
 
   !*****************************************************************************
@@ -2230,7 +2230,7 @@ contains
   subroutine gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -2243,7 +2243,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the matrix entries may depend.
     type(t_vectorScalar), intent(in) :: rx
 
@@ -2257,7 +2257,7 @@ contains
 
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
-    
+
     ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
     ! GFEM_MATC_CONSISTENT is used.
@@ -2295,18 +2295,18 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorNodeSc)) then
       ! Create auxiliary 1-block vector and matrix
       call lsysbl_createVecFromScalar(rx, rxBlock)
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
-      
+
       ! Call user-defined assembly
       call fcb_calcOperatorNodeSc(rgroupFEMSet, rxBlock, rmatrixBlock,&
           dscale, bclear, cconstrType, fcb_calcMatrixDiagSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vector and matrix
       call lsysbl_releaseVector(rxBlock)
       call lsysbl_releaseMatrix(rmatrixBlock)
@@ -2357,16 +2357,16 @@ contains
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
         call lsyssc_getbase_double(rx, p_Dx)
-        
+
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-          
+
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             call doOperatorConsistDble(p_InodeList1D,&
                 p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
-            
+
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
@@ -2396,7 +2396,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported assembly type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
@@ -2422,16 +2422,16 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
-      
+
       ! local variables
       integer :: idx,IAset,IAmax
       integer :: ij,j
-      
+
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
@@ -2439,12 +2439,12 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,IAmax,idx,ij,j)&
       !$omp if (size(InodeList) > p_rperfconfig%NAMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtNode(p_rperfconfig%NASIM))
       allocate(Dcoefficients(1,p_rperfconfig%NASIM))
       allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
-      
+
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
       do IAset = 1, size(InodeList), p_rperfconfig%NASIM
@@ -2453,25 +2453,25 @@ contains
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
-        
+
         IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
 
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IAmax-IAset+1
-          
+
           ! Get position of matrix entry
           ij = idx+IAset-1
-          
+
           ! Get column number of matrix entry
           j = InodeList(ij)
-          
+
           ! Fill auxiliary array
           IdofsAtNode(1,idx) = j
           IdofsAtNode(2,idx) = ij
           DdataAtNode(idx)   = Dx(j)
         end do
-        
+
         ! Use callback function to compute matrix entries
         call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IAmax-IAset+1),&
@@ -2479,40 +2479,40 @@ contains
             IdofsAtNode(:,1:IAmax-IAset+1),&
             dscale, IAmax-IAset+1,&
             Dcoefficients(:,1:IAmax-IAset+1), rcollection)
-        
+
         ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
 
           do idx = 1, IAmax-IAset+1
-            
+
             ! Get position of matrix entry
             ij = idx+IAset-1
-            
+
             ! Update the global operator
             Ddata(ij) = Dcoefficients(1,idx)
           end do
-          
+
         else   ! do not clear matrix
-          
+
           do idx = 1, IAmax-IAset+1
-            
+
             ! Get position of matrix entry
             ij = idx+IAset-1
-            
+
             ! Update the global operator
             Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
           end do
         end if
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorConsistDble
 
     !**************************************************************
@@ -2530,19 +2530,19 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idiag,idx,ieq
 
       ! OpenMP-Extension
       !$ integer, external :: omp_get_max_threads
-      
+
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
@@ -2561,7 +2561,7 @@ contains
       !$omp private(Dcoefficients,DdataAtNode,dtemp,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idiag,idx,ieq)&
       !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtNode(p_rperfconfig%NASIM))
       allocate(Dcoefficients(1,p_rperfconfig%NASIM))
@@ -2570,19 +2570,19 @@ contains
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
       do IEQset = 1, size(InodeListIdx)-1, NEQSIM
-        
+
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
-        
+
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
         ! NASIM nonzero entries simultaneously.
-        
+
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
         ! equation number to which the nonzero matrix entries belong
@@ -2591,10 +2591,10 @@ contains
 
         ! Also initialise the absolute position of first nonzero entry
         IApos = InodeListIdx(IEQset)
-        
+
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
-          
+
           ! Initialise local index which will run from IAset..IAmax.
           ! Since IAset and IAmax are not fixed but they are updated
           ! step-by-step we need this complicated while-loop
@@ -2608,24 +2608,24 @@ contains
 
             ! Exit if more than NASIM nonzero entries would be processed
             if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
-            
+
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
             do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Fill auxiliary arrays
               IdofsAtNode(1,idx) = InodeList(ia)     ! absolut nodal value j
               IdofsAtNode(2,idx) = ia                ! absolute matrix position ia
               DdataAtNode(idx)   = Dx(InodeList(ia)) ! solution value at node j
             end do
-            
+
             ! Increase the upper bound for nonzero entries
             IAmax = IAmax+1
           end do
-          
+
           ! Use callback function to compute matrix entries
           call fcb_calcMatrixDiagSc_sim(&
               DdataAtNode(1:idx),&
@@ -2640,31 +2640,31 @@ contains
           ! Loop through all nonzero matrix entries in the current set
           ! and scatter the entries to the diagonal of the global matrix
           do ieq = IAset, IAmax-1
-            
+
             ! Clear temporal data
             dtemp = 0.0_DP
-            
+
             ! Loop over all contributions to this equation
             do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(1,idx)
 
               ! Get absolute position of diagonal entry
               if (InodeList(ia) .eq. ieq) idiag=ia
             end do
-            
+
             ! Update the diagonal entry of the global operator
             Ddata(idiag) = Ddata(idiag)+dtemp
           end do
-          
+
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
           IApos = InodeListIdx(IASet)
-          
+
         end do
       end do
       !$omp end do
@@ -2692,11 +2692,11 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
-      
+
       ! local variables
       integer :: idx,IAset,IAmax
       integer :: ij,j
@@ -2708,30 +2708,30 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtNode(p_rperfconfig%NASIM))
       allocate(Dcoefficients(1,p_rperfconfig%NASIM))
-      
+
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
       do IAset = 1, size(InodeList,2), p_rperfconfig%NASIM
-        
+
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
-        
+
         IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
-        
+
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IAmax-IAset+1
-          
+
           ! Fill auxiliary array
           DdataAtNode(idx) = Dx(InodeList(1,idx+IAset-1))
         end do
-        
+
         ! Use callback function to compute matrix entries
         call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IAmax-IAset+1),&
@@ -2739,24 +2739,24 @@ contains
             InodeList(:,IAset:IAmax),&
             dscale, IAmax-IAset+1,&
             Dcoefficients(:,1:IAmax-IAset+1), rcollection)
-        
+
         ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
 
           do idx = 1, IAmax-IAset+1
-            
+
             ! Get position of matrix entry
             ij = InodeList(2,idx+IAset-1)
-            
+
             ! Update the global operator
             Ddata(ij) = Dcoefficients(1,idx)
           end do
-          
+
         else   ! do not clear matrix
-          
+
           do idx = 1, IAmax-IAset+1
-            
+
             ! Get position of matrix entry
             ij = InodeList(2,idx+IAset-1)
 
@@ -2766,12 +2766,12 @@ contains
         end if
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorConsistDbleSel
 
     !**************************************************************
@@ -2789,11 +2789,11 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,iidx
@@ -2814,32 +2814,32 @@ contains
       ! work into as many equally sized tasks as we have threads.
       NEQSIM = size(InodeListIdx,2)-1
       !$ NEQSIM = NEQSIM/omp_get_max_threads()+1
-      
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,dtemp,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,iidx)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtNode(p_rperfconfig%NASIM))
       allocate(Dcoefficients(1,p_rperfconfig%NASIM))
-      
+
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
       do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
-        
+
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
-        
+
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
         ! NASIM nonzero entries simultaneously.
-        
+
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
         ! equation number to which the nonzero matrix entries belong
@@ -2848,10 +2848,10 @@ contains
 
         ! Also initialise the absolute position of first nonzero entry
         IApos = InodeListIdx(1,IEQset)
-        
+
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
-          
+
           ! Initialise local index which will run from IAset..IAmax.
           ! Since IAset and IAmax are not fixed but they are updated
           ! step-by-step we need this complicated while-loop
@@ -2865,22 +2865,22 @@ contains
 
             ! Exit if more than NASIM nonzero entries would be processed
             if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
-            
+
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
             do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Fill auxiliary arrays
               DdataAtNode(idx) = Dx(InodeList(1,ia)) ! solution value at node j
             end do
-            
+
             ! Increase the upper bound for nonzero entries
             IAmax = IAmax+1
           end do
-        
+
           ! Use callback function to compute matrix entries
           call fcb_calcMatrixDiagSc_sim(&
               DdataAtNode(1:idx),&
@@ -2891,36 +2891,36 @@ contains
 
           ! Initialise local index which will run from IAset..IAmax
           idx = 0
-          
+
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
           do iidx = IAset, IAmax-1
-                        
+
             ! Clear temporal date
             dtemp = 0.0_DP
 
             ! Loop over all contributions to this equation
             do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
-              
+
               ! Update local index
               idx = idx+1
 
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(1,idx)
             end do
-            
+
             ! Update the diagonal entry of the global operator
             Ddata(InodeListIdx(3,iidx)) = Ddata(InodeListIdx(3,iidx))+dtemp
           end do
-          
+
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
           IApos = InodeListIdx(1,IASet)
-          
+
         end do
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
@@ -2929,7 +2929,7 @@ contains
     end subroutine doOperatorLumpedDbleSel
 
   end subroutine gfsc_buildOperatorNodeScalar
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -2939,7 +2939,7 @@ contains
       fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
       fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
       rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -2969,7 +2969,7 @@ contains
 
     ! Vector on which the matrix entries may depend.
     type(t_vectorBlock), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
@@ -3011,11 +3011,11 @@ contains
 
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorEdgeSc)) then
-      
+
       call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrix,&
           dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
-      
+
     elseif ((rx%nblocks            .eq. 1) .and.&
             (rmatrix%nblocksPerCol .eq. 1) .and.&
             (rmatrix%nblocksPerRow .eq. 1)) then
@@ -3025,13 +3025,13 @@ contains
           fcb_calcMatrixSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
           fcb_calcMatrixDiagSc_sim, cconstrType, rcollection, rafcstab,&
           rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Matrix/Vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock1')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorEdgeBlock1
 
   !*****************************************************************************
@@ -3042,7 +3042,7 @@ contains
       fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
       fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
       rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -3072,7 +3072,7 @@ contains
 
     ! Vector on which the matrix entries may depend.
     type(t_vectorScalar), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
@@ -3120,29 +3120,29 @@ contains
 
       ! Create auxiliary 1-block vector
       call lsysbl_createVecFromScalar(rx, rxBlock)
-      
+
       call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrix,&
           dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vector
       call lsysbl_releaseVector(rxBlock)
-      
+
     elseif ((rmatrix%nblocksPerCol .eq. 1) .and.&
             (rmatrix%nblocksPerRow .eq. 1)) then
-      
+
       ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
           fcb_calcMatrixSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
           fcb_calcMatrixDiagSc_sim, cconstrType, rcollection, rafcstab,&
           rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Matrix must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorEdgeBlock2
 
   !*****************************************************************************
@@ -3153,7 +3153,7 @@ contains
       fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
       fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
       rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete operator by the group
     ! finite element formulation. The matrix entries may depend on the
@@ -3183,7 +3183,7 @@ contains
 
     ! Vector on which the matrix entries may depend.
     type(t_vectorBlock), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
@@ -3228,33 +3228,33 @@ contains
 
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorEdgeSc)) then
-      
+
       ! Create auxiliary 1-block matrix
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
-      
+
       call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrixBlock,&
           dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block matrix
       call lsysbl_releaseMatrix(rmatrixBlock)
-      
+
     elseif (rx%nblocks .eq. 1) then
-      
+
       ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
           fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
           rafcstab, rperfconfig=rperfconfig)
-      
+
     else
       call output_line('Vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
       call sys_halt()
     end if
-    
+
   end subroutine gfsc_buildOperatorEdgeBlock3
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -3292,7 +3292,7 @@ contains
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
-    
+
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FALSE : assemble matrix in an additive way
@@ -3344,18 +3344,18 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorEdgeSc)) then
       ! Create auxiliary 1-block vector and matrix
       call lsysbl_createVecFromScalar(rx, rxBlock)
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
-      
+
       ! Call user-defined assembly
       call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrixBlock,&
           dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vector and matrix
       call lsysbl_releaseVector(rxBlock)
       call lsysbl_releaseMatrix(rmatrixBlock)
@@ -3378,7 +3378,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
       call sys_halt()
     end if
-    
+
     ! Set type of matrix construction method
     ccType = GFEM_MATC_CONSISTENT
     if (present(cconstrType)) ccType = cconstrType
@@ -3390,7 +3390,7 @@ contains
       !-------------------------------------------------------------------------
       ! Edge-based assembly
       !-------------------------------------------------------------------------
-      
+
       if ((ccType .eq. GFEM_MATC_LUMPED) .and. bclear)&
           call lsyssc_clearMatrix(rmatrix)
 
@@ -3401,11 +3401,11 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
         call sys_halt()
       end if
-        
+
       ! Set pointers
       call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-      
+
       ! What data types are we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
@@ -3413,10 +3413,10 @@ contains
         call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
         call lsyssc_getbase_double(rx, p_Dx)
-        
+
         ! Assemble matrix diagonal?
         if (present(fcb_calcMatrixDiagSc_sim)) then
-          
+
           ! Check if group finite element set is prepared
           if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
               (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0)) then
@@ -3424,48 +3424,48 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
             call sys_halt()
           end if
-          
+
           ! Assemble diagonal entries
           call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
           call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
           call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
               p_Dx, dscale, bclear, p_Ddata)
         end if
-        
+
         ! Do we have to build the stabilisation?
         if (present(rafcstab)) then
-          
+
           ! Check if stabilisation has been prepared
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
             call output_line('Stabilisation has not been prepared!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
             call sys_halt()
           end if
-          
+
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
-            
+
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
               call output_line('Stabilisation must have double precision!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
               call sys_halt()
             end if
-            
+
             ! Set additional pointers
             call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doOperatorAFCDble(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType,&
                 p_Ddata, p_Dcoefficients)
-            
+
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
                 ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-            
+
             ! Do we need edge orientation?
             if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
               call afcstab_upwindOrientation(p_Dcoefficients, p_IedgeList,&
@@ -3476,25 +3476,25 @@ contains
               rafcstab%istabilisationSpec =&
                   iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
             end if
-            
+
           else
-            
+
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorStabDble(p_IedgeListIdx, p_IedgeList,&
                   p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
           end if
-          
+
         else   ! no stabilisation structure present
-          
+
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
           call doOperatorDble(p_IedgeListIdx, p_IedgeList,&
               p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
@@ -3506,14 +3506,14 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
       call sys_halt()
     end select
-    
+
   contains
 
     ! Here, the working routine follow
-    
+
     !**************************************************************
     ! Assemble diagonal part of the operator
-    
+
     subroutine doOperatorDiagDble(IdiagList, DcoeffsAtDiag, Dx,&
         dscale, bclear, Ddata)
 
@@ -3526,7 +3526,7 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
@@ -3537,33 +3537,33 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
-      
+
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IEQmax,i,idx,ia)&
       !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtNode(p_rperfconfig%NEQSIM))
       allocate(Dcoefficients(1,p_rperfconfig%NEQSIM))
-      
+
       ! Loop over the equations
       !$omp do schedule(static,1)
       do IEQset = 1, size(IdiagList,2), p_rperfconfig%NEQSIM
-        
+
         ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations simultaneously.
-        
+
         IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
-        
+
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IEQmax-IEQset+1
-          
+
           ! Get actual equation number
           i = IdiagList(1,idx+IEQset-1)
-          
+
           ! Fill auxiliary array
           DdataAtNode(idx) = Dx(i)
         end do
@@ -3575,48 +3575,48 @@ contains
             IdiagList(:,IEQset:IEQmax),&
             dscale, IEQmax-IEQset+1,&
             Dcoefficients(:,1:IEQmax-IEQset+1), rcollection)
-        
+
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
 
           do idx = 1, IEQmax-IEQset+1
-            
+
             ! Get position of diagonal entry
             ia = IdiagList(2,idx+IEQset-1)
-            
+
             ! Update the diagonal coefficient
             Ddata(ia) = Dcoefficients(1,idx)
           end do
-          
+
         else   ! do not clear matrix
-          
+
           do idx = 1, IEQmax-IEQset+1
-            
+
             ! Get position of diagonal entry
             ia = IdiagList(2,idx+IEQset-1)
-            
+
             ! Update the diagonal coefficient
             Ddata(ia) = Ddata(ia) + Dcoefficients(1,idx)
           end do
         end if
-        
+
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorDiagDble
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
-    
+
     subroutine doOperatorDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
-      
+
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
@@ -3628,7 +3628,7 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: Dcoefficients
@@ -3636,7 +3636,7 @@ contains
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax
       integer :: iedge,igroup,ii,jj,ij,ji
-      
+
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
@@ -3665,21 +3665,21 @@ contains
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
-        
+
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
-        
+
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-            
+
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-            
+
             ! Fill auxiliary arrays
             DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
             DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
-          
+
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3687,17 +3687,17 @@ contains
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
-          
+
           ! What type of assembly are we?
           if (ccType .eq. GFEM_MATC_LUMPED) then
 
             ! Loop through all edges in the current set and scatter
             ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
-              
+
               ! Get actual edge number
               iedge = idx+IEDGEset-1
-              
+
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
@@ -3706,17 +3706,17 @@ contains
               Ddata(ii) = Ddata(ii) + Dcoefficients(1,idx)
               Ddata(jj) = Ddata(jj) + Dcoefficients(2,idx)
             end do
-            
+
           else
             ! Loop through all edges in the current set
             ! and scatter the entries to the global matrix
             if (bclear) then
-              
+
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
@@ -3725,23 +3725,23 @@ contains
                 Ddata(ij) = Dcoefficients(1,idx)
                 Ddata(ji) = Dcoefficients(2,idx)
               end do
-              
+
             else   ! do not clear matrix
-              
+
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Update the global operator
                 Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
                 Ddata(ji) = Ddata(ji) + Dcoefficients(2,idx)
               end do
-              
+
             end if
           end if
         end do
@@ -3753,12 +3753,12 @@ contains
       deallocate(DdataAtEdge)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorDble
-    
+
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation.
-    
+
     subroutine doOperatorStabDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
@@ -3773,11 +3773,11 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: Dcoefficients
-      
+
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax
       integer :: iedge,igroup,ii,ij,ji,jj
@@ -3789,11 +3789,11 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ii,ij,ji,jj)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,p_rperfconfig%NEDGESIM))
       allocate(Dcoefficients(3,p_rperfconfig%NEDGESIM))
-      
+
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
@@ -3810,24 +3810,24 @@ contains
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
-          
+
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
-          
+
           ! Dcoefficients is not allocated as temporal array
           ! since it is given as global output parameter.
-          
+
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-            
+
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-            
+
             ! Fill auxiliary arrays
             DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
             DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
-          
+
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3835,21 +3835,21 @@ contains
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
-          
+
           ! What type of assembly are we?
           if (ccType .eq. GFEM_MATC_LUMPED) then
 
             ! Loop through all edges in the current set and scatter
             ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
-              
+
               ! Get actual edge number
               iedge = idx+IEDGEset-1
-              
+
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) + Dcoefficients(2,idx)
               Ddata(jj) = Ddata(jj) + Dcoefficients(3,idx)
@@ -3860,20 +3860,20 @@ contains
             ! Loop through all edges in the current set
             ! and scatter the entries to the global matrix
             if (bclear) then
-              
+
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Get position of diagonal entries
                 ii = IedgeList(5,iedge)
                 jj = IedgeList(6,iedge)
-              
+
                 ! Update the global operator
                 Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
                 Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
@@ -3884,25 +3884,25 @@ contains
             else   ! do not clear matrix
 
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Get position of diagonal entries
                 ii = IedgeList(5,iedge)
                 jj = IedgeList(6,iedge)
-                
+
                 ! Update the global operator
                 Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
                 Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
                 Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx)
                 Ddata(ji) = Ddata(ji) + Dcoefficients(3,idx) + Dcoefficients(1,idx)
               end do
-              
+
             end if
           end if
         end do
@@ -3914,12 +3914,12 @@ contains
       deallocate(DdataAtEdge)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorStabDble
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
-    
+
     subroutine doOperatorAFCDble(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata, Dcoefficients)
 
@@ -3934,13 +3934,13 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! output parameters
       real(DP), dimension(:,:), intent(out) :: Dcoefficients
-      
+
       ! auxiliary arras
       real(DP), dimension(:,:), pointer :: DdataAtEdge
-      
+
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax
       integer :: iedge,igroup,ii,ij,ji,jj
@@ -3952,10 +3952,10 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,IEDGEmax,idx,iedge,ii,ij,ji,jj)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
-      
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,p_rperfconfig%NEDGESIM))
-      
+
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronise memory access
       do igroup = 1, size(IedgeListIdx)-1
@@ -3972,24 +3972,24 @@ contains
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
-          
+
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
-          
+
           ! Dcoefficients is not allocated as temporal array
           ! since it is given as global output parameter.
-          
+
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-            
+
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-            
+
             ! Fill auxiliary arrays
             DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
             DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
-          
+
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3997,86 +3997,86 @@ contains
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
-          
+
           ! What type of assembly are we?
           if (ccType .eq. GFEM_MATC_LUMPED) then
-            
+
             ! Loop through all edges in the current set and scatter
             ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
-              
+
               ! Get actual edge number
               iedge = idx+IEDGEset-1
-              
+
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) + Dcoefficients(2,iedge)
               Ddata(jj) = Ddata(jj) + Dcoefficients(3,iedge)
             end do
-            
+
           else
 
             ! Loop through all edges in the current set
             ! and scatter the entries to the global matrix
             if (bclear) then
-              
+
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Get position of diagonal entries
                 ii = IedgeList(5,iedge)
                 jj = IedgeList(6,iedge)
-                
+
                 ! Compute entries of low-order operator
                 Dcoefficients(2,iedge) = Dcoefficients(2,iedge)&
                                        + Dcoefficients(1,iedge)
                 Dcoefficients(3,iedge) = Dcoefficients(3,iedge)&
                                        + Dcoefficients(1,iedge)
-                
+
                 ! Update the global operator
                 Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
                 Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
                 Ddata(ij) =             Dcoefficients(2,iedge)
                 Ddata(ji) =             Dcoefficients(3,iedge)
               end do
-              
+
             else   ! do not clear matrix
-              
+
               do idx = 1, IEDGEmax-IEDGEset+1
-                
+
                 ! Get actual edge number
                 iedge = idx+IEDGEset-1
-                
+
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Get position of diagonal entries
                 ii = IedgeList(5,iedge)
                 jj = IedgeList(6,iedge)
-                
+
                 ! Compute entries of low-order operator
                 Dcoefficients(2,iedge) = Dcoefficients(2,iedge)&
                                        + Dcoefficients(1,iedge)
                 Dcoefficients(3,iedge) = Dcoefficients(3,iedge)&
                                        + Dcoefficients(1,iedge)
-                
+
                 ! Update the global operator
                 Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
                 Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
                 Ddata(ij) = Ddata(ij) + Dcoefficients(2,iedge)
                 Ddata(ji) = Ddata(ji) + Dcoefficients(3,iedge)
               end do
-              
+
             end if
           end if
         end do
@@ -4087,9 +4087,9 @@ contains
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       !$omp end parallel
-      
+
     end subroutine doOperatorAFCDble
-        
+
   end subroutine gfsc_buildOperatorEdgeScalar
 
   !*****************************************************************************
@@ -4099,7 +4099,7 @@ contains
   subroutine gfsc_buildVectorNodeBlock(rgroupFEMSet, rx,&
       fcb_calcVectorSc_sim, dscale, bclear, rvector,&
       rcollection, rafcstab, fcb_calcVectorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete vector by the group
     ! finite element formulation. The vector entries may depend on the
@@ -4116,7 +4116,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the vector entries may depend.
     type(t_vectorBlock), intent(in) :: rx
 
@@ -4157,7 +4157,7 @@ contains
 
       call fcb_calcVectorNodeSc(rgroupFEMSet, rx, rvector, dscale,&
           bclear, fcb_calcVectorSc_sim, rcollection, rafcstab)
-      
+
     elseif ((rx%nblocks .eq. 1) .and. (rvector%nblocks .eq. 1)) then
 
       ! Call scalar version of this routine
@@ -4180,7 +4180,7 @@ contains
   subroutine gfsc_buildVectorNodeScalar(rgroupFEMSet, rx,&
       fcb_calcVectorSc_sim, dscale, bclear, rvector,&
       rcollection, rafcstab, fcb_calcVectorNodeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a discrete vector by the group
     ! finite element formulation. The vector entries may depend on the
@@ -4193,7 +4193,7 @@ contains
 !<input>
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
-    
+
     ! Vector on which the vector entries may depend.
     type(t_vectorScalar), intent(in) :: rx
 
@@ -4235,20 +4235,20 @@ contains
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
     integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcVectorNodeSc)) then
       ! Create auxiliary 1-block vectors
       call lsysbl_createVecFromScalar(rx, rxBlock)
       call lsysbl_createVecFromScalar(rvector, rvectorBlock)
-      
+
       ! Call user-defined assembly
       call fcb_calcVectorNodeSc(rgroupFEMSet, rxBlock, rvectorBlock,&
           dscale, bclear, fcb_calcVectorSc_sim, rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vectors
       call lsysbl_releaseVector(rxBlock)
       call lsysbl_releaseVector(rvectorBlock)
@@ -4256,7 +4256,7 @@ contains
       ! That`s it
       return
     end if
-    
+
     ! Set pointer to performance configuration
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -4271,7 +4271,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeScalar')
       call sys_halt()
     end if
-    
+
     ! What type of assembly should be performed
     select case(rgroupFEMSet%cassemblyType)
 
@@ -4287,7 +4287,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeScalar')
         call sys_halt()
       end if
-      
+
       ! What data types are we?
       select case(rvector%cdataType)
       case (ST_DOUBLE)
@@ -4295,7 +4295,7 @@ contains
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
         call lsyssc_getbase_double(rvector, p_Ddata)
         call lsyssc_getbase_double(rx, p_Dx)
-        
+
         ! Check if only a subset of the vector is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
@@ -4314,13 +4314,13 @@ contains
           call doVectorDbleSel(p_InodeListIdx2D, p_InodeList2D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeScalar')
         call sys_halt()
       end select
-      
+
     case default
       call output_line('Unsupported assembly type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeScalar')
@@ -4328,13 +4328,13 @@ contains
     end select
 
   contains
-    
+
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
     subroutine doVectorDble(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
-      
+
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
@@ -4344,11 +4344,11 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
       integer, dimension(:,:), pointer  :: IdofsAtNode
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq
@@ -4359,7 +4359,7 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) call lalg_clearVector(Ddata)
 
       ! OpenMP-Extension: Compute number of equations processed by
@@ -4383,19 +4383,19 @@ contains
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
       do IEQset = 1, size(InodeListIdx)-1, NEQSIM
-        
+
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+NEQSIM)
-        
+
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
         ! NASIM nonzero entries simultaneously.
-        
+
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
         ! equation number to which the nonzero matrix entries belong
@@ -4404,10 +4404,10 @@ contains
 
         ! Also initialise the absolute position of first nonzero entry
         IApos = InodeListIdx(IEQset)
-        
+
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
-          
+
           ! Initialise local index which will run from IAset..IAmax.
           ! Since IAset and IAmax are not fixed but they are updated
           ! step-by-step we need this complicated while-loop
@@ -4421,24 +4421,24 @@ contains
 
             ! Exit if more than NASIM nonzero entries would be processed
             if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
-            
+
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
             do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Fill auxiliary arrays
               IdofsAtNode(1,idx) = InodeList(ia)     ! absolut nodal value j
               IdofsAtNode(2,idx) = ia                ! absolute matrix position ia
               DdataAtNode(idx)   = Dx(InodeList(ia)) ! solution value at node j
             end do
-            
+
             ! Increase the upper bound for nonzero entries
             IAmax = IAmax+1
           end do
-          
+
           ! Use callback function to compute matrix entries
           call fcb_calcVectorSc_sim(&
               DdataAtNode(1:idx),&
@@ -4446,23 +4446,23 @@ contains
               IdofsAtNode(:,1:idx),&
               dscale, idx,&
               Dcoefficients(1:idx), rcollection)
-          
+
           ! Initialise local index which will run from IAset..IAmax
           idx = 0
 
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
           do ieq = IAset, IAmax-1
-            
+
             ! Clear temporal data
             dtemp = 0.0_DP
 
             ! Loop over all contributions to this equation
             do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(idx)
             end do
@@ -4470,15 +4470,15 @@ contains
             ! Update the global vector
             Ddata(ieq) = Ddata(ieq)+dtemp
           end do
-          
+
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
           IApos = InodeListIdx(IASet)
-          
+
         end do
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
@@ -4492,7 +4492,7 @@ contains
 
     subroutine doVectorDbleSel(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
-      
+
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
@@ -4502,10 +4502,10 @@ contains
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
-      
+
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
-      
+
       ! local variables
       real(DP) :: dtemp
       integer :: IAmax,IApos,IAset,IEQmax,IEQset,NEQSIM,ia,idx,ieq,iidx
@@ -4516,7 +4516,7 @@ contains
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
-      
+
       if (bclear) call lalg_clearVector(Ddata)
 
       ! OpenMP-Extension: Compute number of equations processed by
@@ -4539,19 +4539,19 @@ contains
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
       do IEQset = 1, size(InodeListIdx,2)-1, NEQSIM
-        
+
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+NEQSIM)
-        
+
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
         ! NASIM nonzero entries simultaneously.
-        
+
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
         ! equation number to which the nonzero matrix entries belong
@@ -4560,10 +4560,10 @@ contains
 
         ! Also initialise the absolute position of first nonzero entry
         IApos = InodeListIdx(1,IEQset)
-        
+
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
-          
+
           ! Initialise local index which will run from IAset..IAmax.
           ! Since IAset and IAmax are not fixed but they are updated
           ! step-by-step we need this complicated while-loop
@@ -4577,22 +4577,22 @@ contains
 
             ! Exit if more than NASIM nonzero entries would be processed
             if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
-            
+
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
             do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Fill auxiliary arrays
               DdataAtNode(idx) = Dx(InodeList(1,ia)) ! solution value at node j
             end do
-            
+
             ! Increase the upper bound for nonzero entries
             IAmax = IAmax+1
           end do
-          
+
           ! Use callback function to compute matrix entries
           call fcb_calcVectorSc_sim(&
               DdataAtNode(1:idx),&
@@ -4600,42 +4600,42 @@ contains
               InodeList(:,IApos:IApos+idx-1),&
               dscale, idx,&
               Dcoefficients(1:idx), rcollection)
-          
+
           ! Initialise local index which will run from IAset..IAmax
           idx = 0
 
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
           do iidx = IAset, IAmax-1
-            
+
             ! Get actual node number
             ieq = InodeListIdx(2,iidx)
-            
+
             ! Clear temporal date
             dtemp = 0.0_DP
 
             ! Loop over all contributions to this equation
             do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
-              
+
               ! Update local index
               idx = idx+1
-              
+
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(idx)
             end do
-            
+
             ! Update the global vector
             Ddata(ieq) = Ddata(ieq)+dtemp
           end do
-          
+
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
           IApos = InodeListIdx(1,IASet)
-          
+
         end do
       end do
       !$omp end do
-      
+
       ! Deallocate temporal memory
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
@@ -4652,7 +4652,7 @@ contains
   subroutine gfsc_buildVectorEdgeBlock(rgroupFEMSet, rx,&
       fcb_calcFluxSc_sim, dscale, bclear, rvector,&
       rcollection, rafcstab, fcb_calcVectorEdgeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a vector operator by the group
     ! finite element formulation. The vector entries may depend on the
@@ -4680,7 +4680,7 @@ contains
 
     ! Vector on which the vector entries may depend.
     type(t_vectorBlock), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
@@ -4741,7 +4741,7 @@ contains
   subroutine gfsc_buildVectorEdgeScalar(rgroupFEMSet, rx,&
       fcb_calcFluxSc_sim, dscale, bclear, rvector,&
       rcollection, rafcstab, fcb_calcVectorEdgeSc, rperfconfig)
-    
+
 !<description>
     ! This subroutine assembles a vector operator by the group
     ! finite element formulation. The vector entries may depend on the
@@ -4765,7 +4765,7 @@ contains
 
     ! Vector on which the vector entries may depend.
     type(t_vectorScalar), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
@@ -4797,7 +4797,7 @@ contains
     type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_vectorBlock) :: rxBlock,rvectorBlock
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
@@ -4808,17 +4808,17 @@ contains
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcVectorEdgeSc)) then
       ! Create auxiliary 1-block vector
       call lsysbl_createVecFromScalar(rx, rxBlock)
       call lsysbl_createVecFromScalar(rvector, rvectorBlock)
-      
+
       ! Call user-defined assembly
       call fcb_calcVectorEdgeSc(rgroupFEMSet, rxBlock, rvectorBlock,&
           dscale, bclear, fcb_calcFluxSc_sim, rcollection, rafcstab)
-      
+
       ! Release auxiliary 1-block vectors
       call lsysbl_releaseVector(rxBlock)
       call lsysbl_releaseVector(rvectorBlock)
@@ -4849,7 +4849,7 @@ contains
       !-------------------------------------------------------------------------
       ! Edge-based assembly
       !-------------------------------------------------------------------------
-      
+
       ! Check if group finite element set is prepared
       if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
           (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
@@ -4857,7 +4857,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
         call sys_halt()
       end if
-        
+
       ! Set pointers
       call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
@@ -4869,40 +4869,40 @@ contains
         call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
         call lsyssc_getbase_double(rx, p_Dx)
         call lsyssc_getbase_double(rvector, p_Ddata)
-        
+
         ! Do we have to build the stabilisation?
         if (present(rafcstab)) then
-          
+
           ! Check if stabilisation has been prepared
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
             call output_line('Stabilisation has not been prepared!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
             call sys_halt()
           end if
-          
+
           ! Check if coefficients should be stored in stabilisation
           if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
-            
+
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
               call output_line('Stabilisation must have double precision!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
               call sys_halt()
             end if
-            
+
             ! Set additional pointers
             call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-            
+
             !-------------------------------------------------------------------
             ! Assemble vector with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
                 p_Dx, dscale, bclear, p_Ddata, p_Dcoefficients)
-            
+
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
                 ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-            
+
             ! Do we need edge orientation?
             if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
               call afcstab_upwindOrientation(p_Dcoefficients, p_IedgeList,&
@@ -4913,26 +4913,26 @@ contains
               rafcstab%istabilisationSpec =&
                   iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
             end if
-            
+
           else
-            
+
             !-------------------------------------------------------------------
             ! Assemble vector without stabilisation
             !-------------------------------------------------------------------
             call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
                 p_Dx, dscale, bclear, p_Ddata)
           end if
-          
+
         else   ! no stabilisation structure present
-          
+
           !---------------------------------------------------------------------
           ! Assemble vector without stabilisation
           !---------------------------------------------------------------------
           call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
               p_Dx, dscale, bclear, p_Ddata)
-          
+
         end if
-        
+
       case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
@@ -4944,7 +4944,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
       call sys_halt()
     end select
-      
+
   contains
 
     ! Here, the working routines follow
@@ -4972,7 +4972,7 @@ contains
       ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
-      
+
       ! local variables
       integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
 
@@ -5002,21 +5002,21 @@ contains
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
-          
+
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
-          
+
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
           do idx = 1, IEDGEmax-IEDGEset+1
-            
+
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-            
+
             ! Fill auxiliary arrays
             DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
             DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
-          
+
           ! Use callback function to compute internodal fluxes
           if (present(Dcoefficients)) then
             call fcb_calcFluxSc_sim(&
@@ -5035,18 +5035,18 @@ contains
                 DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
                 rcollection=rcollection)
           end if
-          
+
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
-            
+
             ! Get actual edge number
             iedge = idx+IEDGEset-1
-            
+
             ! Get position of nodes
             i = IedgeList(1,iedge)
             j = IedgeList(2,iedge)
-            
+
             ! Update the global vector
             Ddata(i) = Ddata(i)+DfluxesAtEdge(1,idx)
             Ddata(j) = Ddata(j)+DfluxesAtEdge(2,idx)
@@ -5086,7 +5086,7 @@ contains
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
-    
+
     ! perturbation parameter
     real(DP), intent(in) :: hstep
 
@@ -5118,17 +5118,17 @@ contains
 
     ! Check if block vector contains exactly one block
     if (rx%nblocks .ne. 1) then
-      
+
       call output_line('Solution vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock')
       call sys_halt()
 
     else
-      
+
       call gfsc_buildJacobianScalar(&
           RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim, hstep,&
           dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
-      
+
     end if
 
   end subroutine gfsc_buildJacobianBlock
@@ -5151,7 +5151,7 @@ contains
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
-    
+
     ! perturbation parameter
     real(DP), intent(in) :: hstep
 
@@ -5185,21 +5185,21 @@ contains
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Jac,p_Dx
     integer :: h_Ksep,ndim
-    
-    
+
+
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rjacobian)
-    
+
     ! Set pointers
     call lsyssc_getbase_double(rjacobian, p_Jac)
     call lsyssc_getbase_double(rx, p_Dx)
-    
+
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
       call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
-      
+
     case (NDIM2D)
       call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
       call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
@@ -5214,8 +5214,8 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
       call sys_halt()
     end select
-    
-    
+
+
     ! What kind of matrix are we?
     select case(rjacobian%cmatrixFormat)
     case(LSYSSC_MATRIX7)
@@ -5226,15 +5226,15 @@ contains
       ! Set pointers
       call lsyssc_getbase_Kld(rjacobian, p_Kld)
       call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
-      
+
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       call storage_copy(rjacobian%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
-      
+
       ! Do we have to build the upwind Jacobian?
       if (bbuildStabilisation) then
-        
+
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
@@ -5265,8 +5265,8 @@ contains
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
-      
-      
+
+
     case(LSYSSC_MATRIX9)
       !-------------------------------------------------------------------------
       ! Matrix format 9
@@ -5276,15 +5276,15 @@ contains
       call lsyssc_getbase_Kld(rjacobian, p_Kld)
       call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
-      
+
       ! Create diagonal separator
       h_Ksep = ST_NOHANDLE
       call storage_copy(rjacobian%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
-      
+
       ! Do we have to build the upwind Jacobian?
       if (bbuildStabilisation) then
-        
+
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
@@ -5296,7 +5296,7 @@ contains
           call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
-      
+
       else   ! bbuildStabilisation
 
         select case(ndim)
@@ -5325,7 +5325,7 @@ contains
   contains
 
     ! Here, the working routine follow
-    
+
     !**************************************************************
     ! Assemble standard Jacobian matrix for convective
     ! operator in 1D and assume zero row-sums.
@@ -5344,14 +5344,14 @@ contains
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -5372,10 +5372,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-                    
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -5392,56 +5392,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients k_ij and k_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -5464,19 +5464,19 @@ contains
 
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -5497,10 +5497,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-                    
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -5518,56 +5518,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients k_ij and k_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -5576,7 +5576,7 @@ contains
       end do
     end subroutine doGalerkinMat7_2D
 
-    
+
     !**************************************************************
     ! Assemble standard Jacobian matrix for convective
     ! operator in 3D and assume zero row-sums.
@@ -5595,14 +5595,14 @@ contains
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -5623,10 +5623,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-                    
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -5645,56 +5645,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients k_ij and k_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -5703,7 +5703,7 @@ contains
       end do
     end subroutine doGalerkinMat7_3D
 
-    
+
     !**************************************************************
     ! Assemble standard Jacobian matrix for convective
     ! operator in 1D and assume zero row-sums.
@@ -5718,19 +5718,19 @@ contains
 
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
-      
+
+
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -5751,10 +5751,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -5771,56 +5771,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -5844,19 +5844,19 @@ contains
 
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
-      
+
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -5877,10 +5877,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -5898,56 +5898,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -5976,14 +5976,14 @@ contains
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6004,10 +6004,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6026,56 +6026,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-k_ij)/hstep
           a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6103,14 +6103,14 @@ contains
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
-      
-      
+
+
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6131,10 +6131,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-                    
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6151,56 +6151,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6208,7 +6208,7 @@ contains
         end do
       end do
     end subroutine doUpwindMat7_1D
-    
+
 
     !**************************************************************
     ! Assemble upwind Jacobian matrix for convective
@@ -6228,14 +6228,14 @@ contains
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6256,10 +6256,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-                    
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6277,56 +6277,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6355,13 +6355,13 @@ contains
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
 
-      
+
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kld(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6382,10 +6382,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6404,56 +6404,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6461,8 +6461,8 @@ contains
         end do
       end do
     end subroutine doUpwindMat7_3D
-    
-    
+
+
     !**************************************************************
     ! Assemble Jacobian matrix for convective
     ! operator in 1D and assume zero row-sums.
@@ -6483,13 +6483,13 @@ contains
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
 
-      
+
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6510,10 +6510,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6530,56 +6530,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6608,14 +6608,14 @@ contains
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6636,10 +6636,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6657,56 +6657,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff
@@ -6735,14 +6735,14 @@ contains
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
-      
+
 
       ! Loop over all rows I of Jacobian matrix
       do i = 1, NEQ
-        
+
         ! Get position of diagonal entry II
         ii = Kdiagonal(i)
-        
+
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
         ! upper triangular matrix
@@ -6763,10 +6763,10 @@ contains
           ! However, the coefficients a_ij and a_ji resulting from a
           ! divided difference approximation of the derivatives of the
           ! transport operator need to be handled separately.
-          
+
           ! Due to the fact, that we need the unperturbed quantities
           ! quite frequently, we store them in local auxiliary variables
-          
+
           ! Compute solution difference Dx_j-Dx_i
           diff = Dx(j)-Dx(i)
 
@@ -6785,56 +6785,56 @@ contains
           ! which are known a priori(!!)
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-          
+
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
           Jac(ji) = Jac(ji)+b_ji
           Jac(jj) = Jac(jj)-b_ji
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the I-th column of the I-th and J-th row
           Jac(ii) = Jac(ii)+a_ij*diff
           Jac(ji) = Jac(ji)-a_ji*diff
 
-          
+
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
 !!$          ! Compute perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-          
+
 !!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
 !!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
 !!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-          
+
           ! Apply the average of the perturbed coefficients for J=K
           b_ij =(a_ij+l_ij+d_ij)/2._DP
           Jac(ij) = Jac(ij)+b_ij
           Jac(ii) = Jac(ii)-b_ij
-          
+
           ! Compute final coefficients a_ij and a_ji as the second
           ! order divided differences of the low-order coefficients
           a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
           a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-          
+
           ! Update the K-th column of the I-th row, that is, the
           ! entriy IK of the Jacobian matrix
           Jac(ij) = Jac(ij)+a_ij*diff

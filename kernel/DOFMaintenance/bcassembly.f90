@@ -96,9 +96,9 @@ module bcassembly
   use spatialdiscretisation
   use storage
   use triangulation
-  
+
   implicit none
-  
+
   private
 
 !<constants>
@@ -119,7 +119,7 @@ module bcassembly
 
   ! Discretise BC`s for implementing them into matrix and defect vector
   integer(I32), parameter, public :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
-  
+
   ! Discretise BC`s for implementing them into everything
   integer(I32), parameter, public :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
                                                 BCASM_DISCFORRHS + BCASM_DISCFORMAT
@@ -145,7 +145,7 @@ module bcassembly
 #ifndef BCASM_NITEMSIM
   integer, parameter, public :: BCASM_NITEMSIM   = 1000
 #endif
-  
+
 !</constantblock>
 
 !</constants>
@@ -158,21 +158,21 @@ module bcassembly
   ! boundary condition is very special since it is level dependent and needs
   ! special parameters which are not known by the analytical definition.
   type t_configDiscreteFeastMirrorBC
-  
+
     ! Coarsening level. Used when adding additional contributions to the
     ! matrix/vector. Usually = 0. Must be increased for every level coarser
     ! than the maximum one in a mesh hierarchy.
     real(DP) :: icoarseningLevel = 0
-    
+
     ! Subtype of the FEAST mirror boundary conditions.
     ! =0: apply to matrix and defect vectors.
     ! =1: apply only to matrix; apply Dirichlete BC`s to defect vectors
     integer :: isubtype
-    
+
   end type
-  
+
   public :: t_configDiscreteFeastMirrorBC
-  
+
 !</typeblock>
 
 !<typeblock>
@@ -182,12 +182,12 @@ module bcassembly
   ! represented purely analytically and are discretised by a call to
   ! bcasm_discretiseLevelDepBC.
   type t_levelDependentBC
-  
+
     ! Parameter block for discretising the FEAST mirror boundary conditions.
     type(t_configDiscreteFeastMirrorBC) :: rconfigFeastMirrorBC
-  
+
   end type
-  
+
   public :: t_levelDependentBC
 
 !</typeblock>
@@ -211,14 +211,14 @@ module bcassembly
   public :: bcasm_releaseSlip
 
   !*****************************************************************************
-  
+
   ! global performance configuration
   type(t_perfconfig), target, save :: bcasm_perfconfig
 
   !*****************************************************************************
-  
+
 contains
-  
+
   !****************************************************************************
 
 !<subroutine>
@@ -243,7 +243,7 @@ contains
       call pcfg_initPerfConfig(bcasm_perfconfig)
       bcasm_perfconfig%NITEMSIM = BCASM_NITEMSIM
     end if
-  
+
   end subroutine bcasm_initPerfConfig
 
 ! *****************************************************************************
@@ -274,7 +274,7 @@ contains
 
     ! Allocate memory for a first couple of entries.
     call bcasm_newBCentry(rdiscreteBC)
-    
+
     ! Reset the number of used handles.
     rdiscreteBC%inumEntriesUsed = 0
 
@@ -300,15 +300,15 @@ contains
 !</inputoutput>
 
 !</subroutine>
-    
+
     ! local variables
     integer :: icurrentRegion
 
     if (associated(rdiscreteBC%p_RdiscBCList)) then
-    
+
       ! Destroy all the substructures in the array.
       do icurrentRegion = 1,size(rdiscreteBC%p_RdiscBCList)
-        
+
         ! Release all allocated information to this boundary region
         select case (rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype)
         case (DISCBC_TPDIRICHLET)
@@ -335,13 +335,13 @@ contains
 
         ! BC released, indicate this
         rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
-        
+
       end do
-      
+
       ! Reset the counters
       rdiscreteBC%inumEntriesUsed = 0
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -349,7 +349,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseDiscreteBC (rdiscreteBC)
-  
+
 !<description>
   ! This routine cleans up the rdiscreteBC structure.
   ! All allocated memory is released.
@@ -364,7 +364,7 @@ contains
 
     ! Clear the structure
     call bcasm_clearDiscreteBC(rdiscreteBC)
-    
+
     ! Release memory
     if (associated(rdiscreteBC%p_RdiscBCList)) then
       deallocate(rdiscreteBC%p_RdiscBCList)
@@ -373,7 +373,7 @@ contains
     rdiscreteBC%inumEntriesAlloc = 0
 
   end subroutine
-      
+
 ! *****************************************************************************
 
 !<subroutine>
@@ -400,10 +400,10 @@ contains
 
     ! Allocate memory for a first couple of entries.
     call bcasm_newFBCentry(rdiscreteFBC)
-    
+
     ! Reset the number of used handles.
     rdiscreteFBC%inumEntriesUsed = 0
-    
+
     ! The rest of the structure is initialised by default initialisation.
 
   end subroutine
@@ -426,16 +426,16 @@ contains
 !</inputoutput>
 
 !</subroutine>
-  
+
     ! local variables
     integer :: icurrentRegion
-    
+
     ! Destroy the content of the structure completely!
     if (associated(rdiscreteFBC%p_RdiscFBCList)) then
-    
+
       ! Destroy all the substructures in the array.
       do icurrentRegion = 1,size(rdiscreteFBC%p_RdiscFBCList)
-        
+
         ! Release all allocated information to this boundary region
         select case (rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype)
         case (DISCBC_TPDIRICHLET)
@@ -447,11 +447,11 @@ contains
 
         ! BC released, indicate this
         rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
-        
+
       end do
-      
+
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -459,7 +459,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseDiscreteFBC (rdiscreteFBC)
-  
+
 !<description>
   ! This routine cleans up the rdiscreteBC structure.
   ! All allocated memory is released.
@@ -474,14 +474,14 @@ contains
 
     ! Clear the structure
     call bcasm_clearDiscreteFBC(rdiscreteFBC)
-    
+
     ! Release memory
     deallocate(rdiscreteFBC%p_RdiscFBCList)
     rdiscreteFBC%inumEntriesUsed = 0
     rdiscreteFBC%inumEntriesAlloc = 0
 
   end subroutine
-      
+
 ! *****************************************************************************
 ! Auxiliary routines
 ! *****************************************************************************
@@ -514,13 +514,13 @@ contains
 
     ! Allocate some new dbc entries if necessary
     if(rdiscreteBC%inumEntriesAlloc .eq. 0) then
-      
+
       ! The list is currently empty - so allocate it
       allocate(rdiscreteBC%p_RdiscBCList(DISCBC_LISTBLOCKSIZE))
       rdiscreteBC%inumEntriesAlloc = DISCBC_LISTBLOCKSIZE
-      
+
     else if(rdiscreteBC%inumEntriesUsed .ge. rdiscreteBC%inumEntriesAlloc) then
-      
+
       ! We need to reallocate the list as it is full
       inumAlloc = rdiscreteBC%inumEntriesAlloc
       allocate(p_RdbcList(inumAlloc+DISCBC_LISTBLOCKSIZE))
@@ -528,11 +528,11 @@ contains
       deallocate(rdiscreteBC%p_RdiscBCList)
       rdiscreteBC%p_RdiscBCList => p_RdbcList
       rdiscreteBC%inumEntriesAlloc = inumAlloc + DISCBC_LISTBLOCKSIZE
-      
+
     end if
-    
+
     rdiscreteBC%inumEntriesUsed = rdiscreteBC%inumEntriesUsed + 1
-    
+
     if (present(iindex)) &
       iindex = rdiscreteBC%inumEntriesUsed
 
@@ -568,13 +568,13 @@ contains
 
     ! Allocate some new dbc entries if necessary
     if(rdiscreteFBC%inumEntriesAlloc .eq. 0) then
-      
+
       ! The list is currently empty - so allocate it
       allocate(rdiscreteFBC%p_RdiscFBCList(DISCBC_LISTBLOCKSIZE))
       rdiscreteFBC%inumEntriesAlloc = DISCBC_LISTBLOCKSIZE
-      
+
     else if(rdiscreteFBC%inumEntriesUsed .ge. rdiscreteFBC%inumEntriesAlloc) then
-      
+
       ! We need to reallocate the list as it is full
       inumAlloc = rdiscreteFBC%inumEntriesAlloc
       allocate(p_RdbcList(inumAlloc+DISCBC_LISTBLOCKSIZE))
@@ -582,11 +582,11 @@ contains
       deallocate(rdiscreteFBC%p_RdiscFBCList)
       rdiscreteFBC%p_RdiscFBCList => p_RdbcList
       rdiscreteFBC%inumEntriesAlloc = inumAlloc + DISCBC_LISTBLOCKSIZE
-      
+
     end if
-    
+
     rdiscreteFBC%inumEntriesUsed = rdiscreteFBC%inumEntriesUsed + 1
-    
+
     if (present(iindex)) &
       iindex = rdiscreteFBC%inumEntriesUsed
 
@@ -607,7 +607,7 @@ contains
 !<input>
   ! The underlying block discretisation structure.
   type(t_blockDiscretisation), intent(in) :: rblockDiscr
-  
+
   ! The dirichlet boundary values for the left and right interval ends.
   real(DP), intent(in), optional :: dleft, dright
 
@@ -621,7 +621,7 @@ contains
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
-  
+
 !</subroutine>
 
     ! A hand full of local variables
@@ -638,43 +638,43 @@ contains
         p_IvertAtBnd, p_IbndCpIdx
     integer, dimension(128) :: IDOFs
     integer, dimension(2) :: IbcIndex
-    
+
     if (rdiscreteBC%inumEntriesAlloc .eq. 0) then
       call output_line ('BC structure not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBC_1D')
       call sys_halt()
     end if
-    
+
     ! Get one or two new entries in the BC structure.
     if (.not. present(dleft) .and. .not. present(dright)) return ! nothing to do
     if (present(dleft))  call bcasm_newBCentry(rdiscreteBC, IbcIndex(1))
     if (present(dright)) call bcasm_newBCentry(rdiscreteBC, IbcIndex(2))
-    
+
     ! Which component is to be discretised?
     p_rspatialDiscr => rblockDiscr%RspatialDiscr(1)
     p_rtria => p_rspatialDiscr%p_rtriangulation
-    
+
     ! Make sure that there is only one FE space in the discretisation.
     if (p_rspatialDiscr%inumFESpaces .ne. 1) then
-    
+
       ! Print an error message
       call output_line ('Spatial discretisation must have 1 FE space!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBC_1D')
-      
+
       ! And exit the program
       call sys_halt()
-      
+
     end if
-    
+
     ! Get the element distribution from the spatial discretisation
     p_relemDist => p_rspatialDiscr%RelementDistr(1)
-    
+
     ! Get the element type of the trial functions
     ielemType = elem_getPrimaryElement(p_relemDist%celement)
-    
+
     ! Get the boundary component index array
     call storage_getbase_int(p_rtria%h_IboundaryCpIdx, p_IbndCpIdx)
-    
+
     ! Get the elements that are adjacent to the boundary
     call storage_getbase_int(p_rtria%h_IverticesAtBoundary, p_IvertAtBnd)
     call storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
@@ -684,16 +684,16 @@ contains
     if (present(dleft)) then
 
       idx = IbcIndex(1)
-    
+
       ! Get the boundary condition entry
       p_rdiscrBCEntry => rdiscreteBC%p_RdiscBCList(idx)
-      
+
       ! We have dirichlet conditions here
       p_rdiscrBCEntry%itype = DISCBC_TPDIRICHLET
-      
+
       ! Get the dirichlet boundary condition
       p_rdirichlet => p_rdiscrBCEntry%rdirichletBCs
-      
+
       ! In the current setting, there is always 1 boundary component
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
@@ -708,21 +708,21 @@ contains
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
       call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
-      
+
       ! Get the arrays for the dirichlet DOFs and values
       call storage_getbase_int(p_rdirichlet%h_IdirichletDOFs, p_IdirichletDOFs)
       call storage_getbase_double(p_rdirichlet%h_DdirichletValues, p_DdirichletValues)
-      
+
       ! Set the value of the dirichlet condition
       p_DdirichletValues(1) = dleft
-      
+
       ! Get the index of the boundary vertex
       ibndVert = p_IvertAtBnd(1)
-      
+
       ! As we know that a boundary vertex has only one element that is
       ! adjacent to it, we can read it out directly
       ibndElem = p_IelemAtVert(p_IelemAtVertIdx(ibndVert))
-      
+
       ! Now we need to find the DOF for this boundary condition.
       ! This is element-dependent...
       select case(ielemType)
@@ -732,7 +732,7 @@ contains
         ! is the one we are searching for...
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-      
+
       case (EL_P1_1D)
         ! P1_1D element
         ! In this case the boundary vertex is one of the two DOFs of the
@@ -740,44 +740,44 @@ contains
         ! the left boundary element, for the right one it is the second.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-        
+
       case (EL_P2_1D)
         ! P2_1D element
         ! For the left boundary vertex we need to fix the first DOF, for
         ! the right boundary we need the second DOF.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-      
+
       case (EL_S31_1D)
         ! S31_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-      
+
       case (EL_PN_1D)
         ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-              
+
       end select
-          
+
       ! Store the DOF
       p_IdirichletDOFs(1) = iDOF
-    
+
     end if
-    
+
     if (present(dright)) then
-    
+
       idx = IbcIndex(2)
-    
+
       ! Get the boundary condition entry
       p_rdiscrBCEntry => rdiscreteBC%p_RdiscBCList(idx)
-      
+
       ! We have dirichlet conditions here
       p_rdiscrBCEntry%itype = DISCBC_TPDIRICHLET
-      
+
       ! Get the dirichlet boundary condition
       p_rdirichlet => p_rdiscrBCEntry%rdirichletBCs
-      
+
       ! In the current setting, there is always 1 boundary component
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
@@ -792,21 +792,21 @@ contains
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
       call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
-      
+
       ! Get the arrays for the dirichlet DOFs and values
       call storage_getbase_int(p_rdirichlet%h_IdirichletDOFs, p_IdirichletDOFs)
       call storage_getbase_double(p_rdirichlet%h_DdirichletValues, p_DdirichletValues)
-      
+
       ! Set the value of the dirichlet condition
       p_DdirichletValues(1) = dright
-      
+
       ! Get the index of the boundary vertex
       ibndVert = p_IvertAtBnd(2)
-      
+
       ! As we know that a boundary vertex has only one element that is
       ! adjacent to it, we can read it out directly
       ibndElem = p_IelemAtVert(p_IelemAtVertIdx(ibndVert))
-      
+
       ! Now we need to find the DOF for this boundary condition.
       ! This is element-dependent...
       select case(ielemType)
@@ -816,7 +816,7 @@ contains
         ! is the one we are searching for...
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
-      
+
       case (EL_P1_1D)
         ! P1_1D element
         ! In this case the boundary vertex is one of the two DOFs of the
@@ -824,7 +824,7 @@ contains
         ! the left boundary element, for the right one it is the second.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(2)
-        
+
       case (EL_P2_1D)
         ! P2_1D element
         ! For the left boundary vertex we need to fix the first DOF, for
@@ -836,23 +836,23 @@ contains
         ! S31_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(2)
-      
+
       case (EL_PN_1D)
         ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(2)
 
       end select
-          
+
       ! Store the DOF
       p_IdirichletDOFs(1) = iDOF
-    
+
     end if
-    
+
     ! That is it
-      
+
   end subroutine
-    
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -860,7 +860,7 @@ contains
   subroutine bcasm_newDirichletBConRealBd (rblockDiscretisation, &
       iequation, rboundaryRegion, rdiscreteBC, &
       fgetBoundaryValues,rcollection, ccomplexity, coptions)
-  
+
 !<description>
   ! Creates a discrete version of Dirichlet boundary conditions.
   ! rboundaryRegion describes the region which is to be discretised. The discretised
@@ -885,7 +885,7 @@ contains
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_bcassembly.inc'.
   include 'intf_bcassembly.inc'
-  
+
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
@@ -897,7 +897,7 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
-  
+
   ! Optional: A field specifying additional options for the assembly.
   ! If not specified, BCASM_DISCOPT_STD is assumed.
   integer(I32), intent(in), optional :: coptions
@@ -933,15 +933,15 @@ contains
     integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
     integer, dimension(:), allocatable          :: IelementsAtBoundary
     integer, dimension(:), allocatable          :: IelementsAtBoundaryIdx
-    
+
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
-    
+
     real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2,dval3
     integer :: nve,nnve,nvbd
-    
+
     integer ::iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
-    
+
     ! Position of cubature points for 2-point Gauss formula on an edge.
     ! Used for Q2T.
     real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
@@ -955,18 +955,18 @@ contains
     real(DP), parameter :: Q3W1 =  0.5555555555555556_DP ! 5/9
     real(DP), parameter :: Q3W2 =  0.8888888888888888_DP ! 8/9
     real(DP), parameter :: Q3W3 =  0.5555555555555556_DP ! 5/9
-    
+
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
     integer(I32) :: casmComplexity, cmyoptions
-    
+
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
-    
+
     cmyoptions = BCASM_DISCOPT_STD
     if (present(coptions)) cmyoptions = coptions
-    
+
     if ((iequation .lt. 1) .or. &
         (iequation .gt. size(rblockDiscretisation%RspatialDiscr))) then
       call output_line (&
@@ -974,7 +974,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConRealBd')
       call sys_halt()
     end if
-    
+
     ! Which component is to be discretised?
     p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(iequation)
 
@@ -985,7 +985,7 @@ contains
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
 
     p_RelementDistribution => p_rspatialDiscr%RelementDistr
-    
+
     ! The parameter value arrays may not be initialised.
     if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
       call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
@@ -1013,21 +1013,21 @@ contains
       celement = p_rspatialDiscr%RelementDistr(1)%celement
       nve = tria_getNVE (p_rtriangulation,1)
     end if
-    
+
     ! Get a new BC entry
     call bcasm_newBCentry(rdiscreteBC, iidx)
     p_rdiscreteBCentry => rdiscreteBC%p_RdiscBCList(iidx)
-    
+
     ! We have Dirichlet boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPDIRICHLET
-    
+
     ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rdirichletBCs => p_rdiscreteBCentry%rdirichletBCs
-    
+
     p_rdirichletBCs%icomponent = iequation
     Icomponents(1) = iequation
-    
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     !
@@ -1036,16 +1036,16 @@ contains
     ! What we have is a boundary segment. Now ask the boundary-index routine
     ! to give us the vertices and edges on the boundary that belong to
     ! this boundary segment.
-    
+
     allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundaryIdx(p_rtriangulation%NVBD))
-    
+
     call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
         IverticesAtBoundaryIdx,IedgesAtBoundaryIdx)
-                                   
+
     if (icount .eq. 0) then
       deallocate(IverticesAtBoundaryIdx)
       deallocate(IedgesAtBoundaryIdx)
@@ -1053,13 +1053,13 @@ contains
       deallocate(IelementsAtBoundaryIdx)
       return
     end if
-                                   
+
     ! Reserve some memory to save temporarily all DOF`s of all boundary
     ! elements.
     ! We handle all boundary elements simultaneously - let us hope that there are
     ! never so many elements on the boundary that our memory runs out :-)
     allocate (Idofs(EL_MAXNBAS,icount))
-    
+
     ! If the boundary conditions are only to be discretised for modifying the
     ! defect vector, we can skip calculating the values in the boundary.
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
@@ -1085,25 +1085,25 @@ contains
             Idofs(:,ielement))
       end do
     end if
-                   
+
     ! Loop through the elements
     do ielidx = 1,icount
 
       ! Get the element and information about it.
       ielement = IelementsAtBoundary (ielidx)
-      
+
       ! Index in the boundary arrays.
       I = IelementsAtBoundaryIdx (ielidx)
-      
+
       ! Get the element type in case we do not have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
         celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
         nve = tria_getNVE (p_IverticesAtElement,ielidx)
       end if
-        
+
       ilocaledge = 0
-      
+
       if (IverticesAtBoundaryIdx(ielidx) .ne. 0) then
         ! Get the local index of the edge -- it coincides with the local index
         ! of the vertex.
@@ -1125,9 +1125,9 @@ contains
       else
         iedge = 0
       end if
-      
+
       dpar = -1.0_DP
-    
+
       ! Now the element-dependent part. For each element type, we have to
       ! figure out which DOF`s are on the boundary!
       !
@@ -1136,55 +1136,55 @@ contains
       ! the necessary value and translate them into a DOF value.
       ! All DOF values are collected later.
       select case (elem_getPrimaryElement(celement))
-      
+
       case (EL_P0,EL_Q0,EL_DG_T0_2D)
         ! Nice element, only one DOF :-)
         ! Either the edge or an adjacent vertex is on the boundary.
-        
+
         ! If parameter values are available, get the parameter value.
         ! Otherwise, take the standard value from above!
         if (associated(p_DvertexParameterValue)) &
           dpar = p_DvertexParameterValue(I)
-      
+
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
         call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                 ipoint1,dpar, Dvalues, rcollection)
-                                  
+
         if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-        
+
           ! Dvalues(1) gives us the function value in the point. Save it
           DdofValue(1,ielidx) = Dvalues(1)
-          
+
         end if
-        
+
         ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
         ! Dirichlet boundary.
         if (Dvalues(1) .ne. SYS_INFINITY_DP) then
           ! Set the DOF number < 0 to indicate that it is Dirichlet
           Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
         end if
-        
+
       case (EL_P1,EL_Q1,EL_QPW4P1_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
-        
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
             DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1195,7 +1195,7 @@ contains
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
           end if
         end if
-        
+
         ! The right point does not have to be checked! It comes later
         ! with the next edge. The situation when an element crosses the
         ! maximum parameter value with its boundary is handled by the
@@ -1203,27 +1203,27 @@ contains
         ! A boundary region with parameter value e.g. [3.0,TMAX]
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
-        
-        
+
+
         case (EL_DG_P1_2D,EL_DG_Q1_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
-        
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
             DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1234,10 +1234,10 @@ contains
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
           end if
         end if
-        
+
         ! Right point inside? -> Corresponding DOF must be computed
         if ( ipoint2 .ne. 0 ) then
-        
+
           ! Index of the endpoint. If we are at the last element, the
           ! endpoint is the start point.
           if (ielidx .lt. icount) then
@@ -1250,16 +1250,16 @@ contains
             i2 = IelementsAtBoundaryIdx (ielidx)
             dpar = rboundaryRegion%iboundSegIdx
           end if
-          
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint2,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
             DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1277,21 +1277,21 @@ contains
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
-        
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the corner.
             DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1302,7 +1302,7 @@ contains
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
           end if
         end if
-        
+
         ! The right point does not have to be checked! It comes later
         ! with the next edge. The situation when an element crosses the
         ! maximum parameter value with its boundary is handled by the
@@ -1313,23 +1313,23 @@ contains
         !
         ! Edge inside? -> Calculate point value on midpoint of edge iedge
         if ( iedge .ne. 0 ) then
-          
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DedgeParameterValue)) &
             dpar = p_DedgeParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
                                   iedge,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
             DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1339,30 +1339,30 @@ contains
             ! in this array correspond to the values in the corners.
             Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
           end if
-              
+
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
         end if
-        
+
       case (EL_DG_Q2_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
-        
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the corner.
             DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1373,10 +1373,10 @@ contains
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
           end if
         end if
-        
+
         ! Right point inside? -> Corresponding DOF must be computed
         if ( ipoint2 .ne. 0 ) then
-        
+
           ! Index of the endpoint. If we are at the last element, the
           ! endpoint is the start point.
           if (ielidx .lt. icount) then
@@ -1389,16 +1389,16 @@ contains
             i2 = IelementsAtBoundaryIdx (ielidx)
             dpar = rboundaryRegion%iboundSegIdx
           end if
-          
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint2,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
             DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1410,27 +1410,27 @@ contains
             Idofs(mod(ilocalEdge,NNVE)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,NNVE)+1,ielidx))
           end if
         end if
-        
-        
+
+
         ! Edge inside? -> Calculate point value on midpoint of edge iedge
         if ( iedge .ne. 0 ) then
-          
+
           ! If parameter values are available, get the parameter value.
           ! Otherwise, take the standard value from above!
           if (associated(p_DedgeParameterValue)) &
             dpar = p_DedgeParameterValue(I)
-                
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
                                   iedge,dpar, Dvalues, rcollection)
-                                    
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
             DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1440,7 +1440,7 @@ contains
             ! in this array correspond to the values in the corners.
             Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
           end if
-              
+
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
         end if
@@ -1449,75 +1449,75 @@ contains
         ! Three DOF`s: Function value in the element midpoint
         ! and derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
-        
+
         ! If parameter values are available, get the parameter value.
         ! Otherwise, take the standard value from above!
         if (associated(p_DvertexParameterValue)) &
           dpar = p_DvertexParameterValue(I)
-              
+
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
         call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                 ipoint1,dpar, Dvalues,rcollection)
-                                
+
         if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 
           ! Dvalues(1) gives us the function value in the point. Save it
           DdofValue(1,ielidx) = Dvalues(1)
-          
+
           ! Save 0 as X- and Y-derivative.
           DdofValue(2,ielidx) = 0.0_DP
           DdofValue(3,ielidx) = 0.0_DP
-          
+
         end if
-        
+
         ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
         ! Dirichlet boundary.
         if (Dvalues(1) .ne. SYS_INFINITY_DP) then
           ! Set the DOF numbers < 0 to indicate that it is Dirichlet
           Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
         end if
-        
+
       case (EL_DG_T2_2D)
         ! Six DOF`s: Function value in the element midpoint
         ! and first and second derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
-        
+
         ! If parameter values are available, get the parameter value.
         ! Otherwise, take the standard value from above!
         if (associated(p_DvertexParameterValue)) &
           dpar = p_DvertexParameterValue(I)
-              
+
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
         call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                 ipoint1,dpar, Dvalues,rcollection)
-                                
+
         if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 
           ! Dvalues(1) gives us the function value in the point. Save it
           DdofValue(1,ielidx) = Dvalues(1)
-          
+
           ! Save 0 as X- and Y-derivative.
           DdofValue(2,ielidx) = 0.0_DP
           DdofValue(3,ielidx) = 0.0_DP
-          
+
           ! Save 0 as second derivatives
           DdofValue(4,ielidx) = 0.0_DP
           DdofValue(5,ielidx) = 0.0_DP
           DdofValue(6,ielidx) = 0.0_DP
-          
+
         end if
-        
+
         ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
         ! Dirichlet boundary.
         if (Dvalues(1) .ne. SYS_INFINITY_DP) then
           ! Set the DOF numbers < 0 to indicate that it is Dirichlet
           Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
         end if
-        
+
       case (EL_P1T)
 
         ! Edge midpoint based element.
@@ -1528,16 +1528,16 @@ contains
           ! Otherwise, take the standard value from above!
           if (associated(p_DedgeParameterValue)) &
               dpar = p_DedgeParameterValue(I)
-          
+
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
               rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
               iedge,dpar, Dvalues,rcollection)
-          
+
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
             DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1547,17 +1547,17 @@ contains
         end if
 
       case (EL_Q1T,EL_Q1TB)
-      
+
         ! The Q1T-element has different variants. Check which variant we have
         ! and choose the right way to calculate boundary values.
-      
+
         if (iand(celement,int(2**16,I32)) .ne. 0) then
-        
+
           ! Integral mean value based element.
-          
+
           ! Edge inside? -> Calculate integral mean value over the edge
           if ( iedge .ne. 0 ) then
-          
+
             if (iand(cmyoptions,BCASM_DISCOPT_INTBYCB) .ne. 0) then
               ! Callback routine calculates the exact integral mean value.
               !
@@ -1574,14 +1574,14 @@ contains
                 ! Save the computed function value
                 DdofValue(ilocalEdge,ielidx) = Dvalues(1)
               end if
-              
+
               ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
               ! Dirichlet boundary.
               if (Dvalues(1) .ne. SYS_INFINITY_DP) then
                 ! Set the DOF number < 0 to indicate that it is Dirichlet
                 Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
               end if
-              
+
             else
               ! Use a 2-point Gauss cubature formula to compute the integral
               ! mean value.
@@ -1607,7 +1607,7 @@ contains
                 ! Number of vertices on the current boundary component?
                 nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
                         p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-                        
+
                 ! Get the start- and end-parameter value of the vertices on the edge.
                 dpar1 = p_DvertexParameterValue(I)
                 if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
@@ -1623,13 +1623,13 @@ contains
                 ! Dummy; hopefully this is never used...
                 dpar = Q2G1
               end if
-              
+
               ! Get the value in the Gauss point
               call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                       rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                       iedge,dpar, Dvalues,rcollection)
               dval1 = Dvalues(1)
-              
+
               ! 2nd Gauss point
               if (associated(p_DvertexParameterValue)) then
 
@@ -1639,30 +1639,30 @@ contains
                 ! Dummy; hopefully this is never used...
                 dpar = Q2G2
               end if
-              
+
               ! Get the value in the Gauss point
               call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                       rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                       iedge,dpar, Dvalues,rcollection)
               dval2 = Dvalues(1)
-              
+
               ! Calculate the integral.
               !
               ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
               ! Dirichlet boundary.
               if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
-              
+
                 ! Compute the integral mean value of the 0th moment -- that
                 ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
                 ! This is the same value as for Q1T, but we do the integration
                 ! manually by using Gauss.
                 dval = ( dval1 + dval2 ) * 0.5_DP
-              
+
                 if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
                   ! Save the computed function value
                   DdofValue(ilocalEdge,ielidx) = dval
                 end if
-                
+
                 ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
                 ! Dirichlet boundary.
                 if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1672,11 +1672,11 @@ contains
               end if
 
             end if
-            
+
           end if
 
         else
-          
+
           ! Edge midpoint based element.
           !
           ! Edge inside? -> Calculate point value on midpoint of edge iedge
@@ -1689,12 +1689,12 @@ contains
             call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                     rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
                                     iedge,dpar, Dvalues,rcollection)
-                                      
+
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
               ! Save the computed function value
               DdofValue(ilocalEdge,ielidx) = Dvalues(1)
             end if
-            
+
             ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
             ! Dirichlet boundary.
             if (Dvalues(1) .ne. SYS_INFINITY_DP) then
@@ -1706,7 +1706,7 @@ contains
         end if
 
       case (EL_Q2T,EL_Q2TB)
-      
+
         ! The Q2T-element is only integral mean value based.
         ! On the one hand, we have integral mean values over the edges.
         ! On the other hand, we have integral mean values of function*parameter
@@ -1714,7 +1714,7 @@ contains
         !
         ! Edge inside?
         if ( iedge .ne. 0 ) then
-          
+
           ! We neet to set up two values for each edge E: On one hand the
           ! integral mean value as for Q1T (with x:[-1,1]->E):
           !             1/|E| int_[-1,1] v(x(t)) dt
@@ -1733,7 +1733,7 @@ contains
             ! Number of vertices on the current boundary component?
             nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
                     p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-                    
+
             ! Get the start- and end-parameter value of the vertices on the edge.
             dpar1 = p_DvertexParameterValue(I)
             if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
@@ -1749,13 +1749,13 @@ contains
             ! Dummy; hopefully this is never used...
             dpar = Q2G1
           end if
-          
+
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval1 = Dvalues(1)
-          
+
           ! 2nd Gauss point
           if (associated(p_DvertexParameterValue)) then
 
@@ -1765,17 +1765,17 @@ contains
             ! Dummy; hopefully this is never used...
             dpar = Q2G2
           end if
-          
+
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval2 = Dvalues(1)
-          
+
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
-            
+
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 
 !                ! Convert the parameter values of the corners of the edge
@@ -1800,29 +1800,29 @@ contains
               ! This is the same value as for Q1T, but we do the integration
               ! manually by using Gauss.
               dval = ( dval1 + dval2 ) * 0.5_DP
-              
+
               ! Save the computed value
               DdofValue(ilocalEdge,ielidx) = dval
-              
+
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
               dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) * 0.5_DP
-            
+
               ! Save the computed function value
               DdofValue(ilocalEdge+nve,ielidx) = dval
             end if
-            
+
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
 
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
           end if
-          
+
         end if
 
       case (EL_Q3T_2D)
-      
+
         ! The Q3T-element is only integral mean value based.
         ! On the one hand, we have integral mean values over the edges.
         ! On the other hand, we have integral mean values of function*parameter
@@ -1830,7 +1830,7 @@ contains
         !
         ! Edge inside?
         if ( iedge .ne. 0 ) then
-          
+
           ! We neet to set up two values for each edge E: On one hand the
           ! integral mean value as for Q1T (with x:[-1,1]->E):
           !             1/|E| int_[-1,1] v(x(t)) dt
@@ -1849,7 +1849,7 @@ contains
             ! Number of vertices on the current boundary component?
             nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
                     p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-                    
+
             ! Get the start- and end-parameter value of the vertices on the edge.
             dpar1 = p_DvertexParameterValue(I)
             if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
@@ -1865,13 +1865,13 @@ contains
             ! Dummy; hopefully this is never used...
             dpar = Q3G1
           end if
-          
+
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval1 = Dvalues(1)
-          
+
           ! 2nd Gauss point
           if (associated(p_DvertexParameterValue)) then
 
@@ -1881,13 +1881,13 @@ contains
             ! Dummy; hopefully this is never used...
             dpar = Q3G2
           end if
-          
+
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval2 = Dvalues(1)
-          
+
           ! 3rd Gauss point
           if (associated(p_DvertexParameterValue)) then
 
@@ -1897,7 +1897,7 @@ contains
             ! Dummy; hopefully this is never used...
             dpar = Q3G3
           end if
-          
+
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
@@ -1907,7 +1907,7 @@ contains
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
           ! Dirichlet boundary.
           if ((dval1 .ne. SYS_INFINITY_DP) .and. (dval2 .ne. SYS_INFINITY_DP)) then
-            
+
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 
               ! Compute the integral mean value of the 0th moment -- that
@@ -1915,14 +1915,14 @@ contains
               ! This is the same value as for Q1T, but we do the integration
               ! manually by using Gauss.
               dval = Q3W1*dval1 + Q3W2*dval2 + Q3W3*dval3
-              
+
               ! Save the computed value
               DdofValue(ilocalEdge,ielidx) = dval
-              
+
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
               dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3W3
-            
+
               ! Save the computed value
               DdofValue(ilocalEdge+nve,ielidx) = dval
 
@@ -1930,27 +1930,27 @@ contains
               dval = (Q3W1*dval1*(Q3G1**2 - 1.0_DP) &
                    +  Q3W2*dval2*(Q3G2**2 - 1.0_DP) &
                    +  Q3W3*dval3*(Q3G3**2 - 1.0_DP)) * 0.5_DP
-            
+
               ! Save the computed value
               DdofValue(ilocalEdge+2*nve,ielidx) = dval
 
             end if
-            
+
             ! Set the DOF number < 0 to indicate that it is Dirichlet
             Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
             Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
             Idofs(ilocalEdge+2*nve,ielidx) = -abs(Idofs(ilocalEdge+2*nve,ielidx))
           end if
-          
+
         end if
 
       case DEFAULT
-      
+
         print *,'bcasm_newDirichletBC: Unsupported element!'
         call sys_halt()
-      
+
       end select
-      
+
     end do
 
     ! Temp arrays no more necessary
@@ -1958,7 +1958,7 @@ contains
     deallocate(IedgesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)
     deallocate(IelementsAtBoundaryIdx)
-    
+
     ! Now count how many values we actually have.
     icount = 0
     do J=1,size(Idofs,2)
@@ -1966,25 +1966,25 @@ contains
         if (Idofs(I,J) < 0) icount = icount + 1
       end do
     end do
-    
+
     p_rdirichletBCs%nDOF = icount
-    
+
     if (icount .gt. 0) then
-    
+
       ! Allocate arrays for storing these DOF`s and their values - if values are
       ! computed.
       call storage_new('bcasm_newDirichletBConRealBd', 'h_IdirichletDOFs', &
                       icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
                       ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
-      
+
       if (iand(casmComplexity,int(not(BCASM_DISCFORDEFMAT),I32)) .ne. 0) then
         call storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', &
                         icount, ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                         ST_NEWBLOCK_NOINIT)
         call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_DdirichletValues)
       end if
-      
+
       ! Transfer the DOF`s and their values to these arrays.
       icount = 0
       do J=1,size(Idofs,2)
@@ -1998,15 +1998,15 @@ contains
           end if
         end do
       end do
-    
+
     else
-    
+
       ! Let us hope there is nothing saved here :-)
       p_rdirichletBCs%h_IdirichletDOFs = ST_NOHANDLE
       p_rdirichletBCs%h_DdirichletValues = ST_NOHANDLE
-    
+
     end if
-    
+
     ! Remove temporary memory, finish.
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
       deallocate (DdofValue)
@@ -2020,7 +2020,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseDirichlet (rdiscreteBCDirichlet)
-  
+
 !<description>
   ! This routine cleans up the discrete Dirichlet boundary conditions
   ! rdiscreteBCDirichlet.
@@ -2034,7 +2034,7 @@ contains
 !</subroutine>
 
   ! Release what is associated
-  
+
   rdiscreteBCDirichlet%nDOF = 0
   if (rdiscreteBCDirichlet%h_DdirichletValues .ne. ST_NOHANDLE) &
     call storage_free(rdiscreteBCDirichlet%h_DdirichletValues)
@@ -2042,7 +2042,7 @@ contains
     call storage_free(rdiscreteBCDirichlet%h_IdirichletDOFs)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -2050,7 +2050,7 @@ contains
   subroutine bcasm_discrBCFeastMirror (rblockDiscretisation, &
                                        iequation, rboundaryRegion, rdiscreteBC, &
                                        rconfigFeastMirrorBC, ccomplexity)
-  
+
 !<description>
   ! Creates a discrete version of FEAST mirror boundary conditions.
   ! rboundaryRegion describes the region which is to be discretised. The discretised
@@ -2098,19 +2098,19 @@ contains
     type(t_triangulation), pointer              :: p_rtriangulation
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
-    
+
     integer, dimension(:), pointer              :: p_ImirrorDOFs
-    
+
     integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
     integer, dimension(:), allocatable          :: IelementsAtBoundary
-    
+
     type (t_boundaryregion) :: rboundaryRegionClosed
 
     integer ::iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
-    
+
     integer(I32) :: casmComplexity
-    
+
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
 
@@ -2119,7 +2119,7 @@ contains
     ! It was build to find a bug in FEAST. E.g. it works only if there are
     ! 'enough' points in the boundary region and if the discretisation is
     ! done with Q1!
-    
+
     ! The BC`s only exist as modification of the matrix.
     ! If we should not compute them for the matrix/defect, we do not
     ! have to do anything.
@@ -2134,7 +2134,7 @@ contains
       print *,'for uniform discretisations!'
       call sys_halt()
     end if
-    
+
     ! For easier access:
     p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int2d(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
@@ -2143,7 +2143,7 @@ contains
       print *,'FEAST mirror boundary only support 2D!'
       call sys_halt()
     end if
-    
+
     celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
       print *,'Discrete FEAST mirror boundary conditions currently only supported'
@@ -2157,17 +2157,17 @@ contains
 
     ! We have FEAST mirror boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPFEASTMIRROR
-    
+
     ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rfeastMirrorBCs => p_rdiscreteBCentry%rfeastMirrorBCs
-    
+
     p_rfeastMirrorBCs%icomponent = iequation
-    
+
     ! Copy the coarsening level from the configuration block
     p_rfeastMirrorBCs%icoarseningLevel = rconfigFeastMirrorBC%icoarseningLevel
     p_rfeastMirrorBCs%isubtype = rconfigFeastMirrorBC%isubtype
-    
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     !
@@ -2175,10 +2175,10 @@ contains
     ! which points are on the boundary.
     allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
-    
+
     call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
-    
+
     ! Cancel if the set is empty!
     if (icount .eq. 0) then
       ! Assign ST_NOHANDLE to the h_ImirrorBCs handle to instruct the BC filter
@@ -2188,52 +2188,52 @@ contains
       deallocate(IelementsAtBoundary)
       return
     end if
-    
+
     ! Allocate an array for all the DOF`s
     call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFs', &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFs,p_ImirrorDOFs)
-    
+
     ! Put all DOF`s in that array.
     do i=1,icount
       p_ImirrorDOFs(i) = p_IverticesAtElement (&
           IverticesAtBoundaryIdx(i),IelementsAtBoundary(i))
     end do
-    
+
     ! Sort the array for quicker access.
     call sort_int(p_ImirrorDOFs)
-    
+
     ! p_ImirrorDOFs contains all BC`s that have to be processed.
     ! But it does not contain all DOF`s that are to be doubled in the matrix.
     !
     ! Duplicate the boundary region and include start- and endpoint
     rboundaryRegionClosed = rboundaryRegion
     rboundaryRegionClosed%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    
+
     ! Then collect all DOF`s inside of that like above.
     call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegionClosed, &
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
-                                   
+
     ! Allocate an array for all the DOF`s
     call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFsClosed', &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFsClosed, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFsClosed,p_ImirrorDOFs)
-    
+
     ! Put all DOF`s in that array.
     do i=1,icount
       p_ImirrorDOFs(i) = p_IverticesAtElement (&
           IverticesAtBoundaryIdx(i),IelementsAtBoundary(i))
     end do
-    
+
     ! Sort the array for quicker access.
     call sort_int(p_ImirrorDOFs)
-    
+
     ! Clean up, finish
     deallocate(IverticesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)
-                                     
+
   end subroutine
 
   ! ***************************************************************************
@@ -2241,7 +2241,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseFeastMirror (rdiscreteBCFeastMirror)
-  
+
 !<description>
   ! This routine cleans up the discrete FEAST mirror boundary conditions
   ! rdiscreteBCFeastMirror.
@@ -2255,14 +2255,14 @@ contains
 !</subroutine>
 
   ! Release what is associated
-  
+
   if (rdiscreteBCFeastMirror%h_ImirrorDOFsClosed .ne. ST_NOHANDLE) &
     call storage_free(rdiscreteBCFeastMirror%h_ImirrorDOFsClosed)
   if (rdiscreteBCFeastMirror%h_ImirrorDOFs .ne. ST_NOHANDLE) &
     call storage_free(rdiscreteBCFeastMirror%h_ImirrorDOFs)
 
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -2270,7 +2270,7 @@ contains
   subroutine bcasm_newPdropBConRealBd (rblockDiscretisation, &
                                        Iequations, rboundaryRegion, rdiscreteBC, &
                                        fgetBoundaryValues,rcollection, ccomplexity)
-  
+
 !<description>
   ! Creates a discrete version of pressure drop boundary conditions.
   ! rboundaryRegion describes the region which is to be discretised. The discretised
@@ -2293,7 +2293,7 @@ contains
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_bcassembly.inc'.
   include 'intf_bcassembly.inc'
-  
+
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
@@ -2324,14 +2324,14 @@ contains
     integer                                    :: ielement
     integer                                    :: iedge
     integer, dimension(2)                      :: ImodifierSize
-    
+
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     type(t_triangulation), pointer              :: p_rtriangulation
     integer, dimension(:,:), pointer            :: p_IedgesAtElement
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
-    
+
     type(t_discreteBCpressureDrop), pointer     :: p_rpressureDropBCs
     integer, dimension(:), pointer              :: p_IpressureDropDOFs
     real(DP), dimension(:,:), pointer           :: p_Dmodifier
@@ -2343,7 +2343,7 @@ contains
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
 
     integer(I32) :: casmComplexity
-    
+
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
 
@@ -2358,7 +2358,7 @@ contains
     ! Fill the structure for discrete pressure drop BC`s in the
     ! t_discreteBCEntry structure
     p_rpressureDropBCs => p_rdiscreteBCentry%rpressureDropBCs
-    
+
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
     p_rspatialDiscr => &
@@ -2376,12 +2376,12 @@ contains
       print *,'for Q1~ element!'
       call sys_halt()
     end if
-    
+
     if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
       print *,'Pressure drop boundary conditions only support 2D!'
       call sys_halt()
     end if
-    
+
     ! For easier access:
     p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
@@ -2389,22 +2389,22 @@ contains
     !
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPPRESSUREDROP
-    
+
     ! Which components of the solution vector are affected by this boundary
     ! condition?
     p_rpressureDropBCs%ncomponents = NDIM2D
     allocate(p_rpressureDropBCs%Icomponents(1:NDIM2D))
     p_rpressureDropBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
-    
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
-    
+
     call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IedgeLocal=IedgesAtBoundaryIdx)
-                                   
+
     ! Cancel if the set is empty!
     if (icount .eq. 0) then
       deallocate(IedgesAtBoundaryIdx)
@@ -2423,7 +2423,7 @@ contains
     call storage_new('bcasm_discrBCpressureDrop', 'h_Dmodifier', &
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
-                      
+
     call storage_getbase_int(p_rpressureDropBCs%h_IpressureDropDOFs,p_IpressureDropDOFs)
     call storage_getbase_double2d(p_rpressureDropBCs%h_Dmodifier,p_Dmodifier)
 
@@ -2450,23 +2450,23 @@ contains
       ! Get information about the edge and the adjacent element
       ielement = IelementsAtBoundary(i)
       iedge = p_IedgesAtElement (IedgesAtBoundaryIdx(i),ielement)
-      
+
       ! Get the adjacent points in counterclockwise order. The local
       ! number of the edge and the vertex coincide...
       ipoint1 = p_IverticesAtElement (IedgesAtBoundaryIdx(i),ielement)
       ipoint2 = p_IverticesAtElement (mod(IedgesAtBoundaryIdx(i),TRIA_NVEQUAD2D)+1,ielement)
-    
+
       ! Get the coordinates of the endpoints to build the tangential
       ! vector of the edge:
       Dtangential(1:NDIM2D) = p_DvertexCoords(1:NDIM2D,ipoint2) &
                             - p_DvertexCoords(1:NDIM2D,ipoint1)
-                            
+
       ! Get the inner normal vector. This compensates the '-' sign in front of
       ! the RHS in the formula on poage 269 in Turek`s book where the outer
       ! normal vector is used.
       Dnormal(1) = -Dtangential(2)
       Dnormal(2) =  Dtangential(1)
-      
+
       ! Do not scale the normal vector! The scaling factor cancels out later
       ! when calculating the integral on the edge with the midpoint rule!
       !
@@ -2481,14 +2481,14 @@ contains
       call fgetBoundaryValues (p_rpressureDropBCs%Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDNORMALSTRESS,&
                                 iedge,p_DedgeParameterValue(I), Dvalues,rcollection)
-      
+
       ! Save the current modifier (normal stress value)*n to the structure for
       ! later implementation in to the RHS vector.
       p_IpressureDropDOFs(i) = iedge
       p_Dmodifier(1:NDIM2D,i) = Dvalues(1:NDIM2D)*Dnormal(1:NDIM2D)
-    
+
     end do ! i
-    
+
     deallocate(IedgesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)
 
@@ -2499,7 +2499,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releasePressureDrop (p_rdiscreteBCentryPD)
-  
+
 !<description>
   ! This routine cleans up the discrete Pressure Drop boundary conditions
   ! p_rdiscreteBCentryPD.
@@ -2513,13 +2513,13 @@ contains
 !</subroutine>
 
     ! Release what is associated
-    
+
     p_rdiscreteBCentryPD%nDOF = 0
     if (p_rdiscreteBCentryPD%h_IpressureDropDOFs .ne. ST_NOHANDLE) &
       call storage_free(p_rdiscreteBCentryPD%h_IpressureDropDOFs)
     if (p_rdiscreteBCentryPD%h_Dmodifier .ne. ST_NOHANDLE) &
       call storage_free(p_rdiscreteBCentryPD%h_Dmodifier)
-      
+
     deallocate(p_rdiscreteBCentryPD%Icomponents)
     p_rdiscreteBCentryPD%ncomponents = 0
 
@@ -2531,7 +2531,7 @@ contains
 
   subroutine bcasm_newSlipBConRealBd (rblockDiscretisation, &
      Iequations, rboundaryRegion, rdiscreteBC, ccomplexity)
-  
+
 !<description>
   ! Creates a discrete version of Slip boundary conditions.
   ! rboundaryRegion describes the region which is to be discretised. The discretised
@@ -2576,14 +2576,14 @@ contains
     integer                                     :: ielement
     integer                                     :: iedge
     integer, dimension(2)                       :: InormalsSize
-    
+
     type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     type(t_triangulation), pointer              :: p_rtriangulation
     integer, dimension(:,:), pointer            :: p_IedgesAtElement
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
     real(DP), dimension(:), pointer             :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer           :: p_DvertexCoords
-    
+
     type(t_discreteBCSlip), pointer             :: p_rslipBCs
     integer, dimension(:), pointer              :: p_IslipDOFs
     real(DP), dimension(:,:), pointer           :: p_Dnormals
@@ -2596,7 +2596,7 @@ contains
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
 
     integer(I32) :: casmComplexity
-    
+
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
 
@@ -2613,7 +2613,7 @@ contains
     ! Fill the structure for discrete pressure drop BC`s in the
     ! t_discreteBCEntry structure
     p_rslipBCs => p_rdiscreteBCentry%rslipBCs
-    
+
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
     p_rspatialDiscr => &
@@ -2631,12 +2631,12 @@ contains
       print *,'for Q1~ element!'
       call sys_halt()
     end if
-    
+
     if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
       print *,'Pressure drop boundary conditions only support 2D!'
       call sys_halt()
     end if
-    
+
     ! For easier access:
     p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
@@ -2644,13 +2644,13 @@ contains
     !
     ! We have pressure drop boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPSLIP
-    
+
     ! Which components of the solution vector are affected by this boundary
     ! condition?
     p_rslipBCs%ncomponents = NDIM2D
     allocate(p_rslipBCs%Icomponents(1:NDIM2D))
     p_rslipBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
-    
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
@@ -2659,10 +2659,10 @@ contains
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
-    
+
     call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IedgeLocal=IedgesAtBoundaryIdx)
-                                   
+
     ! Cancel if the set is empty!
     if (icount .eq. 0) then
       deallocate(IedgesAtBoundaryIdx)
@@ -2681,7 +2681,7 @@ contains
     call storage_new('bcasm_discrBCSlip', 'h_Dnormals', &
                       InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                       ST_NEWBLOCK_NOINIT)
-                      
+
     call storage_getbase_int(p_rslipBCs%h_IslipDOFs,p_IslipDOFs)
     call storage_getbase_double2d(p_rslipBCs%h_DnormalVectors,p_Dnormals)
 
@@ -2705,11 +2705,11 @@ contains
     ! Loop through all edges on the boundary belonging to our current
     ! boundary segment.
     do i=1,icount
-    
+
       ! Get information about the edge and the adjacent element
       ielement = IelementsAtBoundary(i)
       iedge = p_IedgesAtElement (IedgesAtBoundaryIdx(i),ielement)
-      
+
       ! Get the adjacent points in counterclockwise order. The local
       ! number of the edge and the vertex coincide...
       ipoint1 = p_IverticesAtElement (IedgesAtBoundaryIdx(i),ielement)
@@ -2719,22 +2719,22 @@ contains
       ! vector of the edge:
       Dtangential(1:NDIM2D) = p_DvertexCoords(1:NDIM2D,ipoint2) &
                             - p_DvertexCoords(1:NDIM2D,ipoint1)
-                            
+
       ! Get the outer normal vector.
       Dnormal(1) =  Dtangential(2)
       Dnormal(2) = -Dtangential(1)
-      
+
       ! Scale the vector to be of length 1.
-      
+
       d = 1.0_DP / sqrt(Dnormal(1)**2+Dnormal(2)**2)
       Dnormal(1:2) = Dnormal(1:2) * d
-      
+
       ! Save the DOF and the normal of the edge.
       p_IslipDOFs(i) = iedge
       p_Dnormals(1:NDIM2D,i) = Dnormal(1:NDIM2D)
-    
+
     end do ! i
-    
+
     deallocate(IedgesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)
 
@@ -2745,7 +2745,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseSlip (rdiscreteBCSlip)
-  
+
 !<description>
   ! This routine cleans up the discrete Pressure Drop boundary conditions
   ! rdiscreteBCPD.
@@ -2759,7 +2759,7 @@ contains
 !</subroutine>
 
     ! Release what is associated
-    
+
     rdiscreteBCSlip%nDOF = 0
     if (rdiscreteBCSlip%h_IslipDOFs .ne. ST_NOHANDLE) &
       call storage_free(rdiscreteBCSlip%h_IslipDOFs)
@@ -2780,7 +2780,7 @@ contains
   subroutine bcasm_newDirichletBConFBD (rblockDiscretisation, &
       Iequations, rdiscreteFBC, &
       fgetBoundaryValuesFBC,rcollection, ccomplexity, rperfconfig)
-  
+
 !<description>
   ! Creates a discrete version of Dirichlet boundary conditions for a fictitious
   ! boundary component.
@@ -2802,7 +2802,7 @@ contains
   ! A callback function that calculates values in the domain.
   ! Is declared in the interface include file 'intf_fbcassembly.inc'.
   include 'intf_fbcassembly.inc'
-  
+
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
@@ -2850,16 +2850,16 @@ contains
     real(dp), dimension(:,:), pointer :: p_Dwhere
     integer, dimension(:), pointer :: p_Iwhere,p_Iinside
     logical :: bok
-    
+
     real(dp), dimension(:,:), pointer :: p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtFace
-    
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-    
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -2868,14 +2868,14 @@ contains
 
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
-    
+
     ! Get the discretisation structure of the first component.
     ! In this first rough implementation, we assume that all equations
     ! are discretised with the same discretisation!
     ! Furthermore, Dirichlet values can only be specified for all solution
     ! components; something like 'slip' where one component is left free
     ! is not supported!
-    
+
     p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     ! For easier access:
@@ -2886,19 +2886,19 @@ contains
     ! Get a new FBC entry
     call bcasm_newFBCentry (rdiscreteFBC,iidx)
     p_rdiscreteFBCentry => rdiscreteFBC%p_RdiscFBCList(iidx)
-    
+
     ! We have Dirichlet boundary conditions
     p_rdiscreteFBCentry%itype = DISCFBC_TPDIRICHLET
-    
+
     ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rdirichletFBCs => p_rdiscreteFBCentry%rdirichletFBCs
-    
+
     nequations = size(Iequations)
     p_rdirichletFBCs%ncomponents = nequations
     allocate(p_rdirichletFBCs%Icomponents(1:nequations))
     p_rdirichletFBCs%Icomponents(1:nequations) = Iequations(1:nequations)
-    
+
     ! We have to collect all DOF`s and their values that belong to our current
     ! fictitious boundary object. Depending on the element type we will loop
     ! through all vertices, edges and elements in the triangulation
@@ -2908,9 +2908,9 @@ contains
     ! values. Allocate an integer array of the same size that receives a flag
     ! whether the DOF is actually used by our current FB object.
     ! More specifically, we remember the DOF value for each of the components!
-    
+
     nDOFs = dof_igetNDofGlob(p_rspatialDiscr)
-    
+
     IdofCount = (/nequations,nDOFs/)
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
       call storage_new ('bcasm_discrFBCDirichlet', 'DofValues', &
@@ -2918,12 +2918,12 @@ contains
                         ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Ddofs,p_Ddofs)
     end if
-    
+
     ! Initialise p_Idofs with zero.
     call storage_new ('bcasm_discrFBCDirichlet', 'DofUsed', nDOFs, &
                       ST_INT, h_Idofs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int (h_Idofs,p_Idofs)
-    
+
     ! At most, we calculate nmaxInfoPerElement pieces of information
     ! simultaneously.
     select case (p_rtriangulation%ndim)
@@ -2940,7 +2940,7 @@ contains
       ! -> at most 12 per call
       nmaxInfoPerElement = 12
     end select
-    
+
     ! Initialise a p_Revaluation structure array for the evaluation
     allocate(p_Revaluation(nequations))
     allocate(p_Iwhere(p_rperfconfig%NITEMSIM*nmaxInfoPerElement))
@@ -2956,19 +2956,19 @@ contains
       p_Revaluation(ieq)%p_Iwhere => p_Iwhere
       p_Revaluation(ieq)%p_Dwhere => p_Dwhere
     end do
-    
+
     ! To collect the values of all the DOF's in question, we loop in sets
     ! about the elements in every element distribution.
     !
     ! So at first, we loop over the element distribution which tells us the
     ! current element type.
     do ieldist = 1,p_rspatialDiscr%inumFESpaces
-    
+
       ! Get the element distribution
       p_relementDist => p_rspatialDiscr%RelementDistr(ieldist)
-      
+
       if (p_relementDist%NEL .eq. 0) cycle
-      
+
       ! Number of corner vertices.
       nve = elem_igetNVE(p_relementDist%celement)
 
@@ -2976,30 +2976,30 @@ contains
       ndofloc = elem_igetNDofLoc(p_relementDist%celement)
       allocate (Idofs(ndofloc,p_rperfconfig%NITEMSIM))
       Idofs(:,:) = 0
-      
+
       ! Get the elements in that distribution
       call storage_getbase_int(p_relementDist%h_IelementList,p_Ielements)
-      
+
       ! Loop through the elements in sets a p_rperfconfig%NITEMSIM.
       do isubsetStart = 1,p_relementDist%NEL,p_rperfconfig%NITEMSIM
-      
+
         ! Remaining elements here...
         isubsetLength = min(p_relementDist%NEL-isubsetStart+1,&
                             p_rperfconfig%NITEMSIM)
-        
+
         ! Get all the DOF's on all the elements in the current set.
         call dof_locGlobMapping_mult(p_rspatialDiscr, &
                   p_Ielements(isubsetStart:isubsetStart+isubsetLength-1), Idofs)
-                  
+
         ! Now the element dependent part. What's the dimension of the current space?
         bok = .false.
         select case (p_rspatialDiscr%ndimension)
         case (NDIM1D)
         case (NDIM2D)
-        
+
           call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
           call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
-        
+
           ! Element type? That decides on how to handle the DOF values.
           !
           ! -----
@@ -3008,9 +3008,9 @@ contains
               (p_relementDist%celement .eq. EL_Q1) .or. &
               (p_relementDist%celement .eq. EL_P2) .or. &
               (p_relementDist%celement .eq. EL_Q2)) then
-              
+
             bok = .true.
-              
+
             ! Loop through the vertices of the elements and collect them.
             ! The local DOF's 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
@@ -3025,7 +3025,7 @@ contains
                 end do
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNC
             p_Revaluation(:)%nvalues = isubsetLength*nve
@@ -3033,7 +3033,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3052,7 +3052,7 @@ contains
               end do
             end do
           end if
-          
+
           if ((p_relementDist%celement .eq. EL_P2) .or. &
               (p_relementDist%celement .eq. EL_Q2)) then
 
@@ -3072,7 +3072,7 @@ contains
                 end do
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
             p_Revaluation(:)%nvalues = isubsetLength*nve
@@ -3080,7 +3080,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3118,7 +3118,7 @@ contains
                                       + p_DvertexCoords(i,p_IverticesAtElement(4,iel)) )
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCELMID
             p_Revaluation(:)%nvalues = isubsetLength
@@ -3126,7 +3126,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3144,7 +3144,7 @@ contains
               end if
             end do
           end if
-          
+
           ! -----
           ! Q1~, all implementations
           if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T .or.&
@@ -3168,7 +3168,7 @@ contains
                 end do
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
             if (iand(p_relementDist%celement,int(2**16,I32)) .ne. 0) then
@@ -3180,7 +3180,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3199,7 +3199,7 @@ contains
               end do
             end do
           end if
-          
+
         case (NDIM3D)
 
           call storage_getbase_int2d (p_rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
@@ -3212,9 +3212,9 @@ contains
           ! but will have to be done similar to 2D.
           if ((p_relementDist%celement .eq. EL_P1_3D) .or. &
               (p_relementDist%celement .eq. EL_Q1_3D)) then
-              
+
             bok = .true.
-              
+
             ! Loop through the vertices of the elements and collect them.
             ! The local DOF's 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
@@ -3229,7 +3229,7 @@ contains
                 end do
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNC
             p_Revaluation(:)%nvalues = isubsetLength*nve
@@ -3237,7 +3237,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3256,7 +3256,7 @@ contains
               end do
             end do
           end if
-          
+
           ! -----
           ! Q1~, all implementations
           if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T_3D) then
@@ -3281,7 +3281,7 @@ contains
                 end do
               end do
             end do
-          
+
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
             if (iand(p_relementDist%celement,int(2**16,I32)) .ne. 0) then
@@ -3293,7 +3293,7 @@ contains
             call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
-                                        
+
             ! Save the computed values to the corresponding DOF's.
             ! Already processed DOF's are strictily positive, they have
             ! the DOF number in p_Idofs!
@@ -3312,9 +3312,9 @@ contains
               end do
             end do
           end if
-                    
+
         end select
-        
+
         if (.not. bok) then
           call output_line (&
               'Element space not supported!', &
@@ -3323,7 +3323,7 @@ contains
         end if
 
       end do ! isubsetStart
-    
+
     end do
 
     ! Release memory
@@ -3348,7 +3348,7 @@ contains
 
     ! Cancel if we did not find any DOF.
     if (icount .gt. 0) then
-      
+
       ! Reallocate to save memory. Store the final handles in the structure.
       if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
         ! In the 2D-array, the size of the 2nd dimension is changed to the
@@ -3357,7 +3357,7 @@ contains
                               h_Ddofs, ST_NEWBLOCK_NOINIT)
         p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
       end if
-      
+
       call storage_realloc ('bcasm_discrFBCDirichlet', icount, &
                             h_Idofs, ST_NEWBLOCK_NOINIT)
       p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
@@ -3858,7 +3858,7 @@ contains
 !<subroutine>
 
   subroutine bcasm_releaseFBCDirichlet (rdiscreteFBCDirichlet)
-  
+
 !<description>
   ! This routine cleans up the discrete Dirichlet conditions for fictitious
   ! boundary objects in rdiscreteFBCDirichlet.
@@ -3872,7 +3872,7 @@ contains
 !</subroutine>
 
     ! Release what is associated
-    
+
     rdiscreteFBCDirichlet%nDOF = 0
     if (rdiscreteFBCDirichlet%h_DdirichletValues .ne. ST_NOHANDLE) &
       call storage_free(rdiscreteFBCDirichlet%h_DdirichletValues)
@@ -3887,11 +3887,11 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine bcasm_newDirichletBConMR (rblockDiscretisation, iequation, &
                                        rdiscreteBC, rmeshRegion, &
                                        fgetBoundaryValuesMR, rcollection)
-  
+
 !<description>
   ! Adds a Dirichlet boundary condition entry to the discrete boundary condition
   ! structure, based on a mesh region.
@@ -3900,7 +3900,7 @@ contains
 !<input>
   ! The block discretisation structure of the underlying PDE.
   type(t_blockDiscretisation), intent(in) :: rblockDiscretisation
-  
+
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
@@ -3908,7 +3908,7 @@ contains
 
   ! The mesh region structure that is used for the boundary region.
   type(t_meshRegion), intent(in)          :: rmeshRegion
-  
+
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_discretebc.inc'.
   include 'intf_discretebc.inc'
@@ -3962,15 +3962,15 @@ contains
   logical :: buniform
   integer :: iidx
   real(DP) :: daux1, daux2, daux3, daux4
-  
+
   real(DP), parameter :: Q12 = 0.5_DP
   real(DP), parameter :: Q13 = 0.333333333333333_DP
   real(DP), parameter :: Q14 = 0.25_DP
   real(DP), parameter :: Q18 = 0.125_DP
-  
+
   real(DP), parameter :: G2P = 0.577350269189626_DP ! = sqrt(1/3)
   real(DP), parameter :: G3P = 0.774596669241483_DP ! = sqrt(3/5)
-  
+
   ! Value of second Legendre-Polynomial in G3P
   real(DP), parameter :: L2G3P = 0.4_DP
 
@@ -3981,19 +3981,19 @@ contains
 
     ! Is this a uniform discretisation?
     if (p_rspatDisc%inumFESpaces .gt. 1) then
-  
+
       ! Get the element distribution array, if given
       call storage_getbase_int(p_rspatDisc%h_IelementDistr, p_IelemDist)
       buniform = .false.
-  
+
     else
-  
+
       ! Get the one and only element type
       ielemType = p_rspatDisc%RelementDistr(1)%celement
       buniform = .true.
-  
+
     end if
-    
+
     ! Get the triangulation of the spatial discretisation
     p_rtria => p_rspatDisc%p_rtriangulation
 
@@ -4007,7 +4007,7 @@ contains
       call sys_halt()
 
     end if
-    
+
     ! Get the vertex coordinates and vertex index arrays from the triangulation
     call storage_getbase_double2D(p_rtria%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertsAtElem)
@@ -4063,21 +4063,21 @@ contains
 
     ! Get a new entry for the BC`s.
     call bcasm_newBCentry (rdiscreteBC,iidx)
-    
+
     ! Get the next discrete BC entry
     p_rdbcEntry => rdiscreteBC%p_RdiscBCList(iidx)
-    
+
     ! Set the bc type to Dirichlet
     p_rdbcEntry%itype = DISCBC_TPDIRICHLET
     ! And get a pointer to the Dirichlet BC structure
     p_rdirichlet => p_rdbcEntry%rdirichletBCs
-    
+
     ! set the component number and the number of DOFs
     p_rdirichlet%icomponent = iequation
-    
+
     ! Get the total number of global DOFs
     inumGlobalDofs = dof_igetNDofGlob(p_rspatDisc)
-    
+
     ! We have to ensure that one DOF does not get added to the dirichlet BC
     ! array twice. To ensure this, we will create an array called DOF-Bitmap.
     ! This is an array of 32-bit integers, but we will interpret it as an
@@ -4105,109 +4105,109 @@ contains
     ! The DOF bitmap works for both 32- and 64-bit systems. Remember that on
     ! a 64-Bit system 'idofHigh' is 64-Bit where 'idofMask' is 32-Bit.
     !
-    
+
     ! The length of the dof bitmap is = inumGlobalDofs/32 + 1
     ilenDofBitmap = (inumGlobalDofs / 32) + 1
-    
+
     ! Allocate a DOF bitmap
     allocate(p_IdofBitmap(1:ilenDofBitmap))
-    
+
     ! Format the DOF bitmap to 0
     do i=1, ilenDofBitmap
       p_IdofBitmap(i) = 0
     end do
-    
+
     ! Calculate an initial guess of the number of DOFs that will be affected
     ! with this dirichlet condition.
     ndofs = 0
     if (p_rspatDisc%inumFESpaces .eq. 1) then
-    
+
       ! The discretisation is uniform. In this nice case, our initial
       ! guess will be exact.
       select case(elem_getPrimaryElement(&
         p_rspatDisc%RelementDistr(1)%celement))
-      
+
       ! P0/Q0 elements (and 2D QP1 element)
       case (EL_P0_1D,EL_P0,EL_Q0,EL_QP1,EL_P0_3D,EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
         ndofs = iregionNEL
-      
+
       ! P1/Q1 elements (and 1D S31 element)
       case (EL_P1_1D,EL_S31_1D,EL_P1,EL_Q1,EL_P1_3D,EL_Q1_3D,EL_Y1_3D,EL_R1_3D)
         ndofs = iregionNVT
-      
+
       ! 1D P2 element
       case (EL_P2_1D)
         ndofs = iregionNVT + iregionNEL
-      
+
       ! 2D P2 element
       case (EL_P2)
         ndofs = iregionNVT + iregionNMT
-      
+
       ! 2D Q2 element
       case (EL_Q2)
         ndofs = iregionNVT + iregionNMT + iregionNEL
-            
+
       ! 2D P1~/Q1~ element
       case (EL_P1T,EL_Q1T)
         ndofs = iregionNMT
-      
+
       ! 2D Q1~ with bubble element
       case (EL_Q1TB)
         ndofs = iregionNMT + iregionNEL
-      
+
       ! 2D Q2~ element
       case (EL_Q2T)
         ndofs = 2*iregionNMT + iregionNEL
-       
+
       ! 2D Q2~ with bubble element
       case (EL_Q2TB)
         ndofs = 2*iregionNMT + 2*iregionNEL
-      
+
       ! 3D Q1~ element
       case (EL_Q1T_3D)
         ndofs = iregionNAT
-      
+
       ! 3D Q2~ element
       case (EL_Q2T_3D)
         ndofs = 2*iregionNAT + iregionNEL
-      
+
       end select
 
     end if
-    
+
     ! If the discretisation is not uniform or we did not calculate an initial guess
     ! for whatever reason, we will set it to the maximum of the array lengths.
     if (ndofs .eq. 0) ndofs = max(iregionNVT,iregionNMT,iregionNAT,iregionNEL)
-    
+
     ! Reset Iwhere
     Iwhere = 0
-    
+
     ! First of all, go through all vertices in the mesh region (if any at all)
     do i = 1, iregionNVT
-    
+
       ! Get the index of the vertex
       ivt = p_IvertexIdx(i)
-      
+
       ! Store it to Iwhere
       Iwhere(1) = ivt
-      
+
       ! And go through all elements which are adjacent to this vertex
       do idx=p_IelemAtVertIdx(ivt), p_IelemAtVertIdx(ivt+1)-1
-      
+
         ! Get the index of the element
         iel = p_IelemAtVert(idx)
-        
+
         ! Store the element number to Iwhere
         Iwhere(4) = iel
-        
+
         ! Get all global dofs on this element
         call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
-        
+
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
         if (.not. buniform) ielemType = &
           p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
-        
+
         ! Now we need to find which global DOF the currently processed
         ! vertices belongs to.
         idof = 0
@@ -4220,7 +4220,7 @@ contains
               exit
             end if
           end do
-          
+
         ! 2D P1/P2/P3 element
         case (EL_P1,EL_P2,EL_P3)
           do j = 1, 3
@@ -4276,69 +4276,69 @@ contains
           end do
 
         end select
-        
+
         ! If we come out here and idof is 0, then either the element
         ! does not have DOFs in the vertices or something unforseen has
         ! happened...
         if (idof .eq. 0) cycle
-        
+
         ! Let us check if we have already processed this dof.
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
         if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
-        
+
         ! This is a new DOF for the list - so call the boundary values callback
         ! routine to calculate the value
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere, p_DvertexCoords(:,ivt), Dvalues,&
             rcollection)
-        
+
         ! Okay, finally add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-        
+
         ! And mark the DOF as 'processed' in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-        
+
         ! Let us go for the next element adjacent to the vertex
-      
+
       end do ! idx
-      
+
       ! Go for the next vertex in the mesh region
-    
+
     end do ! ivt
-    
+
     ! Reset Iwhere
     Iwhere = 0
-    
+
     if (p_rtria%ndim .eq. NDIM2D) then
-      
+
       ! Go through all edges in the mesh region
       do i=1, iregionNMT
-      
+
         ! Get the index of the edge
         imt = p_IedgeIdx(i)
-        
+
         ! Store the edge number
         Iwhere(2) = imt
-        
+
         ! And go through all elements which are adjacent to this edge
         do idx = 1, 2
-        
+
           ! Get the index of the element
           iel = p_IelemAtEdge2D(idx, imt)
           if (iel .eq. 0) cycle
-          
+
           ! Store the element number
           Iwhere(4) = iel
-        
+
           ! Get all global dofs on this element
           call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
-          
+
           ! Now get the element type for this element (if the discretisation
           ! is not uniform)
           if (.not. buniform) ielemType = &
             p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
-          
+
           ! Now we need to find which global DOF the currently processed
           ! edge belongs to.
           idof = 0
@@ -4371,7 +4371,7 @@ contains
                 exit
               end if
             end do
-            
+
           ! 2D Q1~ element
           case (EL_Q1T,EL_Q1TB)
             do j=1,4
@@ -4380,11 +4380,11 @@ contains
                 exit
               end if
             end do
-            
+
           ! 2D Q2~ element
           case (EL_Q2T,EL_Q2TB)
             do j=1,4
-            
+
               if ((p_IedgesAtElem(j,iel)) .ne. imt) cycle
 
               ! Get the first DOF on this edge
@@ -4394,7 +4394,7 @@ contains
               idofHigh = ishft(idof-1,-5) + 1
               idofMask = int(ishft(1,iand(idof-1,31)),I32)
               if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) exit
-              
+
               ! Okay, the DOF has not been set yet.
               ! So let us take care of the first Gauss point.
               Dwhere(1) = -G2P
@@ -4413,48 +4413,48 @@ contains
               call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
                   cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord2D, Dvalues, rcollection)
               daux2 = Dvalues(1)
-              
+
               ! Add integral-mean DOF value
               call addDofToDirichletEntry(p_rdirichlet, idof, &
                   0.5_DP*(daux1+daux2), ndofs)
               p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-              
+
               ! Calculate DOF of weighted integral-mean
               idof = IdofGlob(j+4)
               idofHigh = ishft(idof-1,-5) + 1
               idofMask = int(ishft(1,iand(idof-1,31)),I32)
-              
+
               ! Add weighted integral-mean DOF value
               call addDofToDirichletEntry(p_rdirichlet, idof, &
                   0.5_DP*G2P*(-daux1+daux2), ndofs)
               p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-              
+
               ! That is it for this edge
               exit
-              
+
             end do
-            
+
             ! Set idof to 0 to avoid that the code below is executed
             idof = 0
-          
+
           ! 2D P3, Q3 and others are currently not supported
-          
+
           end select
 
           ! If we come out here and idof is 0, then either the element
           ! does not have DOFs in the edges or something unforseen has
           ! happened...
           if (idof .eq. 0) cycle
-          
+
           ! Let us check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
           if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
-          
+
           ! Calculate the coordinates of the edge midpoint
           Dcoord2D(1:2) = Q12 * (p_DvertexCoords(1:2, p_IvertsAtEdge(1,imt)) +&
             p_DvertexCoords(1:2, p_IvertsAtEdge(2,imt)))
-            
+
           ! Dwhere is always 0
           Dwhere = 0.0_DP
 
@@ -4462,49 +4462,49 @@ contains
           ! routine to calculate the value
           call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
               cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord2D, Dvalues, rcollection)
-          
+
           ! Okay, finally add the DOF into the list
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-          
+
           ! And mark the DOF as 'processed' in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-          
+
           ! Let us go for the next element adjacent to the edge
-                
+
         end do ! idx
-      
+
         ! Go for the next edge in the mesh region
-      
+
       end do ! imt
-    
+
     else if (p_rtria%ndim .eq. NDIM3D) then
-      
+
       ! Go through all edges in the mesh region
       do i=1, iregionNMT
-      
+
         ! Get the index of the edge
         imt = p_IedgeIdx(i)
-        
+
         ! Store the edge number
         Iwhere(2) = imt
-        
+
         ! And go through all elements which are adjacent to this edge
         do idx = p_IelemAtEdgeIdx(imt), p_IelemAtEdgeIdx(imt+1)-1
-        
+
           ! Get the index of the element
           iel = p_IelemAtEdge(idx)
-          
+
           ! Store the element number
           Iwhere(4) = iel
-        
+
           ! Get all global dofs on this element
           call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
-          
+
           ! Now get the element type for this element (if the discretisation
           ! is not uniform)
           if (.not. buniform) ielemType = &
             p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
-          
+
           ! Now we need to find which global DOF the currently processed
           ! edge belongs to.
           idof = 0
@@ -4518,23 +4518,23 @@ contains
                 exit
               end if
             end do
-          
+
           end select
 
           ! If we come out here and idof is 0, then either the element
           ! does not have DOFs in the edges or something unforseen has
           ! happened...
           if (idof .eq. 0) cycle
-          
+
           ! Let us check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
           if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
-          
+
           ! Calculate the coordinates of the edge midpoint
           Dcoord3D(1:3) = Q12 * (p_DvertexCoords(1:3, p_IvertsAtEdge(1,imt)) +&
             p_DvertexCoords(1:3, p_IvertsAtEdge(2,imt)))
-            
+
           ! Dwhere is always 0
           Dwhere = 0.0_DP
 
@@ -4542,53 +4542,53 @@ contains
           ! routine to calculate the value
           call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
               cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord3D, Dvalues, rcollection)
-          
+
           ! Okay, finally add the DOF into the list
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-          
+
           ! And mark the DOF as 'processed' in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-          
+
           ! Let us go for the next element adjacent to the edge
-                
+
         end do ! idx
-      
+
         ! Go for the next edge in the mesh region
-      
+
       end do ! imt
-    
+
     end if
-    
+
     ! Reset Iwhere
     Iwhere = 0
-    
+
     ! Go through all faces in the mesh region
     do i=1, iregionNAT
-    
+
       ! Get the index of the face
       iat = p_IfaceIdx(i)
-      
+
       ! Store the face number
       Iwhere(3) = iat
-      
+
       ! And go through all elements which are adjacent to this face
       do idx=1,2
-      
+
         ! Get the index of the element
         iel = p_IelemAtFace(idx,iat)
         if (iel .eq. 0) cycle
-        
+
         ! Store the element number
         Iwhere(4) = iel
-      
+
         ! Get all global dofs on this element
         call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
-        
+
         ! Now get the element type for this element (if the discretisation
         ! is not uniform)
         if (.not. buniform) ielemType = &
           p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
-        
+
         ! Now we need to find which global DOF the currently processed
         ! face belongs to.
         idof = 0
@@ -4610,11 +4610,11 @@ contains
               exit
             end if
           end do
-        
+
         ! 3D Q2~ element
         case (EL_Q2T_3D)
           do j = 1, 6
-          
+
             if ((p_IfacesAtElem(j,iel)) .ne. iat) cycle
 
             ! Get the first DOF on this face
@@ -4682,7 +4682,7 @@ contains
             idof = IdofGlob(6+2*(j-1)+1)
             idofHigh = ishft(idof-1,-5) + 1
             idofMask = int(ishft(1,iand(idof-1,31)),I32)
-              
+
             ! Add first weighted integral-mean DOF value
             call addDofToDirichletEntry(p_rdirichlet, idof, &
                0.25_DP*G2P*(-daux1+daux2+daux3-daux4), ndofs)
@@ -4692,38 +4692,38 @@ contains
             idof = IdofGlob(6+2*(j-1)+2)
             idofHigh = ishft(idof-1,-5) + 1
             idofMask = int(ishft(1,iand(idof-1,31)),I32)
-              
+
             ! Add second weighted integral-mean DOF value
             call addDofToDirichletEntry(p_rdirichlet, idof, &
                0.25_DP*G2P*(-daux1-daux2+daux3+daux4), ndofs)
             p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-            
+
             ! That is it for this face
             exit
-          
+
           end do
 
           ! Set idof to 0 to avoid that the code below is executed
           idof = 0
-        
+
         end select
 
         ! If we come out here and idof is 0, then either the element
         ! does not have DOFs in the faces or something unforseen has
         ! happened...
         if (idof .eq. 0) cycle
-        
+
         ! Let us check if we have already processed this dof
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
         if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
-        
+
         ! Calculate the coordinates of the face midpoint
         Dcoord3D(1:3) = Q14 * (p_DvertexCoords(1:3, p_IvertsAtFace(1,iat)) +&
           p_DvertexCoords(1:3, p_IvertsAtFace(2,iat)) +&
           p_DvertexCoords(1:3, p_IvertsAtFace(3,iat)) +&
           p_DvertexCoords(1:3, p_IvertsAtFace(4,iat)))
-        
+
         ! Dwhere is always (0, 0)
         Dwhere = 0.0_DP
 
@@ -4731,41 +4731,41 @@ contains
         ! routine to calculate the value
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord3D, Dvalues, rcollection)
-        
+
         ! Okay, finally add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-        
+
         ! And mark the DOF as 'processed' in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
-        
+
         ! Let us go for the next element adjacent to the face
 
       end do ! idx
-      
+
       ! Go for the next face in the mesh region
-    
+
     end do
-    
+
     ! Reset Iwhere
     Iwhere = 0
-    
+
     ! Go through all elements in the mesh region
     do i=1, iregionNEL
-    
+
       ! Get the element index
       iel = p_IelementIdx(i)
-      
+
       ! Store the element number
       Iwhere(4) = iel
 
       ! Get all global dofs on this element
       call dof_locGlobMapping(p_rspatDisc, iel, IdofGlob)
-      
+
       ! Now get the element type for this element (if the discretisation
       ! is not uniform)
       if (.not. buniform) ielemType = &
         p_rspatDisc%RelementDistr(p_IelemDist(iel))%celement
-      
+
       ! Now we need to find which global DOF the currently processed
       ! element belongs to.
       idof = 0
@@ -4774,14 +4774,14 @@ contains
       case (EL_P0_1D)
         ! The line-midpoint DOF has number 1
         idof = IdofGlob(1)
-        
+
         ! Calculate line-midpoint
         Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
-        
+
         ! Dwhere is 0
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord1D, Dvalues, rcollection)
@@ -4793,38 +4793,38 @@ contains
       case (EL_P2_1D)
         ! The line-midpoint DOF has number 3
         idof = IdofGlob(3)
-        
+
         ! Calculate line-midpoint
         Dcoord1D(1) = Q12 * (p_DvertexCoords(1,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1,p_IvertsAtElem(2,iel)))
 
         ! Dwhere is 0
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:1), Dcoord1D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-      
+
       ! 2D P0 element
       case (EL_P0)
         ! The triangle-midpoint DOF has number 1
         idof = IdofGlob(1)
-        
+
         ! Calculate triangle-midpoint
         Dcoord2D(1:2) = Q13 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
-        
+
         ! Dwhere is (1/3, 1/3)
         Dwhere = Q13
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
-      
+
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
@@ -4832,19 +4832,19 @@ contains
       case (EL_P2)
         ! The triangle-midpoint DOF has number 7
         idof = IdofGlob(7)
-        
+
         ! Calculate triangle-midpoint
         Dcoord2D(1:2) = Q13 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)))
-        
+
         ! Dwhere is (1/3, 1/3)
         Dwhere = Q13
 
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2),Dcoord2D, Dvalues, rcollection)
-      
+
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
@@ -4852,16 +4852,16 @@ contains
       case (EL_Q0,EL_QP1)
         ! The quad-midpoint DOF has number 1
         idof = IdofGlob(1)
-        
+
         ! Calculate quad-midpoint
         Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
-        
+
         ! Dwhere is (0,0)
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
@@ -4873,49 +4873,49 @@ contains
       case (EL_Q2)
         ! The quad-midpoint DOF has number 9
         idof = IdofGlob(9)
-        
+
         ! Calculate quad-midpoint
         Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
-        
+
         ! Dwhere is (0,0)
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-        
+
       ! 2D Q1TB element
       case (EL_Q1TB)
         ! The quad-integral-mean DOF has number 5
         idof = IdofGlob(5)
-        
+
         ! Calculate quad-midpoint to approximate the integral mean
         Dcoord2D(1:2) = Q14 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(3,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(4,iel)))
-        
+
         ! Dwhere is (0,0)
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere(1:2), Dcoord2D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-        
+
       ! 2D Q2T element
       case (EL_Q2T)
         ! The quad-integral-mean DOF has number 9
         idof = IdofGlob(9)
-        
+
         ! Gauss-Point 1
         Dwhere(1) = -G2P
         Dwhere(2) = -G2P
@@ -4967,12 +4967,12 @@ contains
         ! Add the integral-mean DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, &
             0.25_DP*(daux1+daux2+daux3+daux4), ndofs)
-        
+
       ! 3D Q0 element
       case (EL_Q0_3D)
         ! The hexa-midpoint DOF has number 1
         idof = IdofGlob(1)
-        
+
         ! Calculate hexa-midpoint
         Dcoord3D(1:2) = Q18 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
@@ -4982,10 +4982,10 @@ contains
           p_DvertexCoords(1:2,p_IvertsAtElem(6,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(7,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(8,iel)))
-        
+
         ! Dwhere is (0,0,0)
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere, Dcoord3D, Dvalues, rcollection)
@@ -4997,7 +4997,7 @@ contains
       case (EL_Q2_3D)
         ! The quad-midpoint DOF has number 27
         idof = IdofGlob(27)
-        
+
         ! Calculate hexa-midpoint
         Dcoord3D(1:2) = Q18 * (p_DvertexCoords(1:2,p_IvertsAtElem(1,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(2,iel)) +&
@@ -5007,91 +5007,91 @@ contains
           p_DvertexCoords(1:2,p_IvertsAtElem(6,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(7,iel)) +&
           p_DvertexCoords(1:2,p_IvertsAtElem(8,iel)))
-        
+
         ! Dwhere is (0,0,0)
         Dwhere = 0.0_DP
-        
+
         ! Call the boundary condition callback routine
         call fgetBoundaryValuesMR(Icomponents, p_rspatDisc, rmeshRegion,&
             cinfoNeeded, Iwhere, Dwhere, Dcoord3D, Dvalues, rcollection)
 
         ! Add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
-      
+
       end select
 
       ! Let us go for the next element in the mesh region
-      
+
     end do
-   
+
     ! Deallocate the DOF map
     deallocate(p_IdofBitmap)
-    
+
     ! That is it - unbelievable!
-    
+
   contains
-  
+
     ! This auxiliary routine adds a dof and a dirichlet value into a
     ! discrete dirichlet boundary condition structure.
     subroutine addDofToDirichletEntry(rdirichlet, idof, dvalue, ndofs)
-    
+
     ! The dirichlet boundary condition structure
     type(t_discreteBCDirichlet), intent(inout) :: rdirichlet
-    
+
     ! The number of the dof that is to be added
     integer, intent(in) :: idof
-    
+
     ! The dirichlet value of the dof
     real(DP), intent(in) :: dvalue
-    
+
     ! If the dirichlet entry structure is already initialised, then this
     ! corresponds to the total number of currently allocated dofs in the
     ! dirichlet entry structure.
     ! If the structure is uninitialised, then ndofs specifies the initial
     ! size which is to be used for the arrays.
     integer, intent(inout) :: ndofs
-    
+
     ! Some local variables
     integer, dimension(:), pointer :: p_Idofs
     real(DP), dimension(:), pointer :: p_Dvalues
-    
+
     ! Number of entries added if the list is full
     integer, parameter :: NINC = 64
-    
+
       ! If the list is empty, then allocate it
       if (rdirichlet%nDOF .eq. 0) then
-      
+
         ! Make sure that we do not allocate empty arrays
         if (ndofs .le. 0) ndofs = NINC
-      
+
         ! allocate the arrays
         call storage_new('addDofToDirichletEntry', 'p_IdirichletDOFs',&
           ndofs, ST_INT, rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO)
         call storage_new('addDofToDirichletEntry', 'p_DdirichletValues',&
           ndofs, ST_DOUBLE, rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO)
-      
+
       else if (rdirichlet%nDOF .ge. ndofs) then
-        
+
         ! The list is full, so resize it
         call storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
           rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO, .true.)
         call storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
           rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO, .true.)
-        
+
         ! And remember that we have increased the list size
         ndofs = ndofs + NINC
-      
+
       end if
 
       ! Get the lists
       call storage_getbase_int(rdirichlet%h_IdirichletDOFs, p_Idofs)
       call storage_getbase_double(rdirichlet%h_DdirichletValues, p_Dvalues)
-      
+
       ! Add the new dof to the lists
       rdirichlet%nDOF = rdirichlet%nDOF + 1
       p_Idofs(rdirichlet%nDOF) = idof
       p_Dvalues(rdirichlet%nDOF) = dvalue
-          
+
     end subroutine ! addDofToDirichletEntry(...)
 
   end subroutine

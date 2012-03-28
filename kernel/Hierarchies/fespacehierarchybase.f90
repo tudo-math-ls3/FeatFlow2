@@ -39,14 +39,14 @@ module fespacehierarchybase
   use triangulation
   use meshhierarchy
   use spatialdiscretisation
-  
+
   implicit none
-  
+
   private
-  
+
   public :: t_feSpaceLevel
   public :: t_feHierarchy
-  
+
 !<constants>
 
 !<constantblock description = "Constants defining shared information">
@@ -69,27 +69,27 @@ module fespacehierarchybase
   ! A structure that specifies a FE space which can be used to create
   ! FE vectors/matrices.
   type t_feSpaceLevel
-  
+
     ! A shared flag that specifies which information in this structure
     ! is shared with information from outside and which information
     ! belongs to this structure.
     integer(I32) :: cflags = 0
-    
+
     ! Reference to the underlying domain or NULL() if no domain is attached.
     type(t_boundary), pointer :: p_rboundary => null()
-    
+
     ! Reference to the underlying triangulation.
     ! This is either a direct reference or refers to allocated memory
     ! on the heap if the triangulation had been created by refinement
     ! in the create routines.
     type(t_triangulation), pointer :: p_rtriangulation => null()
-    
+
     ! Reference to the underlying discretisation.
     ! This is either a direct reference or refers to allocated memory
     ! on the heap if the discretisation had been created by
     ! the create routines.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
-    
+
   end type
 
 !</typeblock>
@@ -98,7 +98,7 @@ module fespacehierarchybase
 
   ! A FE hierarchy that describes a hierarchy of FE spaces.
   type t_feHierarchy
-  
+
     ! A shared flag that specifies which information in this structure
     ! is shared with information from outside and which information
     ! belongs to this structure.
@@ -109,16 +109,16 @@ module fespacehierarchybase
 
     ! An underlying mesh hierarchy.
     type(t_meshHierarchy) :: rmeshHierarchy
-    
+
     ! Number of levels available in this structure.
     integer :: nlevels = 0
-    
+
     ! Maximum number of available levels available in this structure.
     integer :: nmaxLevels = 0
-    
+
     ! Level information.
     type(t_feSpaceLevel), dimension(:), pointer :: p_rfeSpaces => null()
-    
+
   end type
 
 !</typeblock>

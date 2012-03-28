@@ -44,10 +44,10 @@ module octree
 
 !<constants>
 !<constantblock description="Global flags for octree implementations">
-  
+
   ! octree for double data
   integer, parameter, public :: OCTREE_DOUBLE = ST_DOUBLE
-  
+
   ! octree for single data
   integer, parameter, public :: OCTREE_SINGLE = ST_SINGLE
 
@@ -71,7 +71,7 @@ module octree
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -94,7 +94,7 @@ contains
     type(t_octree), intent(out) :: roctree
 !</output>
 !</subroutine>
-    
+
     select case (coctreeType)    
     case (OCTREE_DOUBLE)
       allocate(roctree%p_octreeDble)
@@ -197,5 +197,5 @@ contains
     end if
 
   end subroutine octree_getbase_sngl
-  
+
 end module octree

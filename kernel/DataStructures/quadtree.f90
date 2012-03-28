@@ -45,10 +45,10 @@ module quadtree
 
 !<constants>
 !<constantblock description="Global flags for quadtree implementations">
-  
+
   ! quadtree for double data
   integer, parameter, public :: QUADTREE_DOUBLE = ST_DOUBLE
-  
+
   ! quadtree for single data
   integer, parameter, public :: QUADTREE_SINGLE = ST_SINGLE
 
@@ -72,7 +72,7 @@ module quadtree
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -95,7 +95,7 @@ contains
     type(t_quadtree), intent(out) :: rquadtree
 !</output>
 !</subroutine>
-    
+
     select case (cquadtreeType)    
     case (QUADTREE_DOUBLE)
       allocate(rquadtree%p_quadtreeDble)
@@ -198,5 +198,5 @@ contains
     end if
 
   end subroutine quadtree_getbase_sngl
-  
+
 end module quadtree

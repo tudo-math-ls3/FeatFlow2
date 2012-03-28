@@ -1,9 +1,7 @@
-  ! -*- mode: f90; -*-
-
   interface
 
 !<subroutine>
-    
+
   subroutine fcb_calcMatrixSc_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DmatrixAtEdge, rcollection)
 

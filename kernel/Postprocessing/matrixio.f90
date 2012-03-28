@@ -58,11 +58,11 @@ module matrixio
   use linearsystemscalar
   use linearsystemblock
   use globalsystem
-  
+
   implicit none
-  
+
   private
-  
+
   public :: matio_writeMatrixHR
   public :: matio_writeBlockMatrixHR
   public :: matio_spyMatrix
@@ -73,7 +73,7 @@ module matrixio
   public :: matio_writeMatrix79_Dble
   public :: matio_writeMatrix1_Sngl
   public :: matio_writeMatrix79_Sngl
-  
+
 contains
 
   ! ***************************************************************************
@@ -81,41 +81,41 @@ contains
 !<subroutine>
   subroutine matio_writeBlockMatrixHR (rmatrix, sarray,&
                                        bnoZero, ifile, sfile, sformat, dthreshold)
-  
+
   !<description>
     ! This routine writes a block matrix into a text file.
     ! The matrix is written in human readable form.
     ! Note that for this purpose, a new matrix is temporarily created in memory!
   !</description>
-    
+
   !<input>
     ! The matrix to be written out
     type(t_matrixBlock), intent(in) :: rmatrix
-    
+
     ! Name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! Suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! Format string to use for the output; e.g. '(E20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, values are not replaced (i.e. the default value is 0.0).
     real(DP), intent(in), optional :: dthreshold
   !</input>
-    
+
 !</subroutine>
 
     ! local variables
@@ -123,7 +123,7 @@ contains
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
-                              
+
     ! Write matrix to the file
     call matio_writeMatrixHR (rtempMatrix%RmatrixBlock(1,1), sarray,&
                               bnoZero, ifile, sfile, sformat,dthreshold)
@@ -138,41 +138,41 @@ contains
 !<subroutine>
   subroutine matio_writeMatrixHR (rmatrix, sarray,&
                                   bnoZero, ifile, sfile, sformat, dthreshold)
-  
+
   !<description>
     ! This routine writes a scalar matrix into a text file.
     ! The matrix is written in human readable form.
   !</description>
-    
+
   !<input>
     ! The matrix to be written out
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! Name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! Suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! Format string to use for the output; e.g. '(E20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, values are not replaced (i.e. the default value is 0.0).
     real(DP), intent(in), optional :: dthreshold
 
   !</input>
-    
+
 !</subroutine>
 
   ! local variables
@@ -214,7 +214,7 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
     call sys_halt()
   end select
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -222,56 +222,56 @@ contains
 !<subroutine>
   subroutine matio_writeMatrix1_Dble (Da, nrow, ncol, sarray, &
                                       bnoZero, ifile, sfile, sformat,dthreshold)
-  
+
   !<description>
     ! Write full double precision matrix into a text file.
     !
     ! This writes an array Da with nrow rows and ncol columns as a matrix
     ! into a text file.
   !</description>
-    
+
   !<input>
     ! number of rows
     integer, intent(in) :: nrow
-    
+
     ! number of columns
     integer, intent(in) :: ncol
-    
+
     ! matrix: array [1..nrow,1..ncol] of double
     real(DP), dimension(nrow,ncol), intent(in) :: Da
-    
+
     ! name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     real(DP), intent(in) :: dthreshold
 
   !</input>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, cf, nchar
     real(DP) :: dval
     character(len=128) :: S
     character(len=6) :: sformatChar
-    
+
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
@@ -282,19 +282,19 @@ contains
     else
       cf = ifile
     end if
-    
+
     ! Get length of output strings
     S(:) = ' '
     write (S,sformat) 0.0_DP
     nchar = len(trim(S))
-    
+
     ! Build array format string
     sformatChar = '(A'//sys_i3(nchar)//')'
-    
+
     ! Write all format strings into the file
     write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
                                 bnoZero, nchar, nrow, ncol
-    
+
     if (nrow .le. 0) return
     if (ncol .le. 0) return
 
@@ -315,68 +315,68 @@ contains
         write (cf,sformatChar) '.'
       end if
     end do
-    
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
   subroutine matio_writeMatrix79_Dble (Da, Icol, Irow, &
                                        nrow, ncol, sarray, &
                                        bnoZero, ifile, sfile, sformat,dthreshold)
-  
+
   !<description>
     ! Write sparse double precision matrix in matrix format 9 or
     ! matrix format 9 into a text file.
     !
     ! Double-precision version
   !</description>
-    
+
   !<input>
     ! number of rows
     integer, intent(in) :: nrow
-    
+
     ! number of columns; must be =nrow for structure-7 matrices
     integer, intent(in) :: ncol
-    
+
     ! matrix: array [1..na] of double
     real(DP), dimension(:), intent(in) :: Da
-    
+
     ! Column structure of the matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the matrix
     integer, dimension(nrow+1), intent(in) :: Irow
-    
+
     ! name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     real(DP), intent(in) :: dthreshold
 
   !</input>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, k, cf, nchar
     real(DP) :: dval
@@ -384,7 +384,7 @@ contains
     character(len=6) :: sformatChar
     integer :: h_DrowVec
     real(DP), dimension(:), pointer :: p_DrowVec
-    
+
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
@@ -395,28 +395,28 @@ contains
     else
       cf = ifile
     end if
-    
+
     ! Get length of output strings
     S(:) = ' '
     write (S,sformat) 0.0_DP
     nchar = len(trim(S))
-    
+
     ! Build array format string
     sformatChar = '(A'//sys_i3(nchar)//')'
-    
+
     ! Write all format strings into the file
     write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
                                 bnoZero, nchar, nrow, ncol
 
     if (nrow .le. 0) return
     if (ncol .le. 0) return
-    
+
     ! Write the matrix
     call storage_new('matio_writeMatrix79_Dble','DrowVec',ncol, &
                      ST_DOUBLE, h_DrowVec, ST_NEWBLOCK_NOINIT)
     call storage_getbase_double(h_DrowVec, p_DrowVec)
     do i=1, nrow
-      
+
       ! Extract row i
       if (bnoZero) then
         ! SYS_MAXREAL_DP is written out as '.'
@@ -428,7 +428,7 @@ contains
           p_DrowVec(j) = 0.0_DP
         end do
       end if
-      
+
       do j=0, Irow(i+1)-Irow(i)-1
         k = Irow(i)+j
         p_DrowVec(Icol(k)) = Da(k)
@@ -444,7 +444,7 @@ contains
           write (cf,sformat,ADVANCE='NO') dval
         end if
       end do
-      
+
       dval = p_DrowVec(ncol)
       if (abs(dval) .lt. dthreshold) dval = 0.0_DP
       if (bnoZero .and. (dval .eq. SYS_MAXREAL_DP)) then
@@ -453,12 +453,12 @@ contains
         write (cf,sformat,ADVANCE='YES') dval
       end if
     end do
-    
+
     call storage_free(h_DrowVec)
-    
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -466,56 +466,56 @@ contains
 !<subroutine>
   subroutine matio_writeMatrix1_Sngl (Fa, nrow, ncol, sarray, &
                                       bnoZero, ifile, sfile, sformat, fthreshold)
-  
+
   !<description>
     ! Write full single precision matrix into a text file.
     !
     ! This writes an array Da with nrow rows and ncol columns as a matrix
     ! into a text file.
   !</description>
-    
+
   !<input>
     ! number of rows
     integer, intent(in) :: nrow
-    
+
     ! number of columns
     integer, intent(in) :: ncol
-    
+
     ! matrix: array [1..nrow,1..ncol] of single
     real(SP), dimension(nrow,ncol), intent(in) :: Fa
-    
+
     ! name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! format string to use for the output; e.g. '(F20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     real(SP), intent(in) :: fthreshold
 
   !</input>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, cf, nchar
     real(SP) :: fval
     character(len=128) :: S
     character(len=6) :: sformatChar
-    
+
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
@@ -526,19 +526,19 @@ contains
     else
       cf = ifile
     end if
-    
+
     ! Get length of output strings
     S(:) = ' '
     write (S,sformat) 0.0_SP
     nchar = len(trim(S))
-    
+
     ! Build array format string
     sformatChar = '(A'//sys_i3(nchar)//')'
-    
+
     ! Write all format strings into the file
     write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
                                 bnoZero, nchar, nrow, ncol
-    
+
     if (nrow .le. 0) return
     if (ncol .le. 0) return
 
@@ -559,68 +559,68 @@ contains
         write (cf,sformatChar) '.'
       end if
     end do
-    
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
-  
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
   subroutine matio_writeMatrix79_Sngl (Fa, Icol, Irow, &
                                        nrow, ncol, sarray, &
                                        bnoZero, ifile, sfile, sformat, fthreshold)
-  
+
   !<description>
     ! Write sparse single precision matrix in matrix format 9 or
     ! matrix format 9 into a text file.
     !
     ! Double-precision version
   !</description>
-    
+
   !<input>
     ! number of rows
     integer, intent(in) :: nrow
-    
+
     ! number of columns; must be =nrow for structure-7 matrices
     integer, intent(in) :: ncol
-    
+
     ! matrix: array [1..na] of double
     real(SP), dimension(:), intent(in) :: Fa
-    
+
     ! Column structure of the matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the matrix
     integer, dimension(nrow+1), intent(in) :: Irow
-    
+
     ! name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! suppress zeroes in output: yes/no
     logical, intent(in) :: bnoZero
-    
+
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     real(SP), intent(in) :: fthreshold
 
   !</input>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, k, cf, nchar
     real(SP) :: fval
@@ -628,7 +628,7 @@ contains
     character(len=6) :: sformatChar
     integer :: h_FrowVec
     real(SP), dimension(:), pointer :: p_FrowVec
-    
+
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
@@ -639,28 +639,28 @@ contains
     else
       cf = ifile
     end if
-    
+
     ! Get length of output strings
     S(:) = ' '
     write (S,sformat) 0.0_SP
     nchar = len(trim(S))
-    
+
     ! Build array format string
     sformatChar = '(A'//sys_i3(nchar)//')'
-    
+
     ! Write all format strings into the file
     write (cf,'(3A15,L2,3I15)') sarray, sformat, sformatChar, &
                                 bnoZero, nchar, nrow, ncol
 
     if (nrow .le. 0) return
     if (ncol .le. 0) return
-    
+
     ! Write the matrix
     call storage_new('matio_writeMatrix79_Sngl','FrowVec',ncol, &
                      ST_SINGLE, h_FrowVec, ST_NEWBLOCK_NOINIT)
     call storage_getbase_single(h_FrowVec, p_FrowVec)
     do i=1, nrow
-      
+
       ! Extract row i
       if (bnoZero) then
         ! SYS_MAXREAL_SP is written out as '.'
@@ -672,7 +672,7 @@ contains
           p_FrowVec(j) = 0.0_SP
         end do
       end if
-      
+
       do j=0, Irow(i+1)-Irow(i)-1
         k = Irow(i)+j
         p_FrowVec(Icol(k)) = Fa(k)
@@ -688,7 +688,7 @@ contains
           write (cf,sformat,ADVANCE='NO') fval
         end if
       end do
-      
+
       fval = p_FrowVec(ncol)
       if (abs(fval) .lt. fthreshold) fval = 0.0_SP
       if (bnoZero .and. (fval .eq. SYS_MAXREAL_SP)) then
@@ -697,12 +697,12 @@ contains
         write (cf,sformat,ADVANCE='YES') fval
       end if
     end do
-    
+
     call storage_free(h_FrowVec)
-    
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
-  
+
   end subroutine
 
 
@@ -711,33 +711,33 @@ contains
 !<subroutine>
   subroutine matio_writeMatrixMaple (rmatrix, sarray,&
                                      ifile, sfile, sformat)
-  
+
   !<description>
     ! This routine writes a scalar matrix into a text file using the MAPLE
     ! syntax.
   !</description>
-    
+
   !<input>
     ! The matrix to be written out
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! Name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! Format string to use for the output; e.g. '(E20.10)'
     character(len=*), intent(in) :: sformat
-    
+
   !</input>
-    
+
 !</subroutine>
 
   ! local variables
@@ -773,62 +773,62 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMapleMatrix')
     call sys_halt()
   end select
-    
+
   end subroutine
 
   ! ***************************************************************************
-  
+
 !<subroutine>
   subroutine matio_writeMapleMatrix79_D (Da, Icol, Irow, &
                                         nrow, ncol, sarray, &
                                         ifile, sfile, sformat)
-  
+
   !<description>
     ! Write sparse double precision matrix in matrix format 9 or
     ! matrix format 9 into a text file using the Maple syntax.
     !
     ! Double-precision version
   !</description>
-    
+
   !<input>
     ! number of rows
     integer, intent(in) :: nrow
-    
+
     ! number of columns; must be =nrow for structure-7 matrices
     integer, intent(in) :: ncol
-    
+
     ! matrix: array [1..na] of double
     real(DP), dimension(:), intent(in) :: Da
-    
+
     ! Column structure of the matrix
     integer, dimension(:), intent(in) :: Icol
-    
+
     ! Row structure of the matrix
     integer, dimension(nrow+1), intent(in) :: Irow
-    
+
     ! name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! format string to use for the output; e.g. '(D20.10)'
     character(len=*), intent(in) :: sformat
   !</input>
-    
+
 !</subroutine>
-    
+
     !local variables
     integer :: i, j, cf, nchar
     character(len=32) :: S
     character(len=6) :: sformatChar
-    
+
     if (ifile .eq. 0) then
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
@@ -839,38 +839,38 @@ contains
     else
       cf = ifile
     end if
-    
+
     ! Get length of output strings
     S(:) = ' '
     write (S,sformat) 0.0_DP
     nchar = len(trim(S))
-    
+
     ! Build array format string
     sformatChar = '(A'//sys_i3(nchar)//')'
-    
+
     if (nrow .le. 0) return
     if (ncol .le. 0) return
-    
+
     ! Write a header to the file that declares the matrix.
     write (cf,'(6A)') sarray,' := matrix(',&
         trim(sys_siL(nrow,10)),',',trim(sys_siL(ncol,10)),',0):'
-        
+
     ! Now the entries. This is a sparse matrix, so we insert commands
     ! only for the entries.
     do i=1, nrow
-    
+
       do j=Irow(i),Irow(i+1)-1
         write (s,sformat) Da(j)
         write (cf,'(A)') &
             sarray//'['//trim(sys_siL(i,10))//','//trim(sys_siL(Icol(j),10))//']:='//&
             trim(adjustl(s))//':'
       end do
-      
+
     end do
-    
+
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
-  
+
   end subroutine
 
   ! ***************************************************************************
@@ -878,38 +878,38 @@ contains
 !<subroutine>
   subroutine matio_writeBlockMatrixMaple (rmatrix, sarray,&
                                           ifile, sfile, sformat,dthreshold)
-  
+
   !<description>
     ! This routine writes a block matrix into a text file using the MAPLE
     ! syntax.
     ! Note that for this purpose, a new matrix is temporarily created in memory!
   !</description>
-    
+
   !<input>
     ! The matrix to be written out
     type(t_matrixBlock), intent(in) :: rmatrix
-    
+
     ! Name of the matrix
     character(len=*), intent(in) :: sarray
-    
+
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
-    
+
     ! Name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
-    
+
     ! Format string to use for the output; e.g. '(E20.10)'
     character(len=*), intent(in) :: sformat
-    
+
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for beter visualisation.
     ! If not present, a default of 1E-12 is assumed.
     real(DP), intent(in), optional :: dthreshold
   !</input>
-    
+
 !</subroutine>
 
     ! local variables
@@ -919,7 +919,7 @@ contains
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
-                              
+
     ! Replace small values by zero
     dthres = 1E-12_DP
     if (present(dthreshold)) dthres = dthreshold
@@ -927,7 +927,7 @@ contains
       call lsyssc_getbase_double (rtempMatrix%RmatrixBlock(1,1),p_DA)
       where (abs(p_Da) .lt. dthres) p_Da = 0.0_DP
     end if
-    
+
     ! Write matrix to the file
     call matio_writeMatrixMaple (rtempMatrix%RmatrixBlock(1,1), sarray,&
                                      ifile, sfile, sformat)
@@ -958,14 +958,14 @@ contains
 !<input>
     ! File name of the MATLAB file without fileextension. A ".m" is appended.
     character(LEN=*), intent(in) :: sfileName
-    
+
     ! Name of the matrix in MATLAB file. This will be the name of the
     ! variable containing the matrix data when reading the file into matlab.
     character(LEN=*), intent(in) :: smatrixName
 
     ! Source matrix
     type(t_matrixBlock), intent(in) :: rmatrix
-    
+
     ! Whether to spy the real data of the matrix or only its sparsity
     ! pattern
     logical, intent(in) :: bdata
@@ -985,7 +985,7 @@ contains
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
-                              
+
     ! Write matrix to the file
     call matio_spyMatrix(sfilename,smatrixName,rtempMatrix%RmatrixBlock(1,1),&
         bdata,cstatus,dthreshold)
@@ -1015,14 +1015,14 @@ contains
 !<input>
     ! File name of the MATLAB file without fileextension. A ".m" is appended.
     character(LEN=*), intent(in) :: sfileName
-    
+
     ! Name of the matrix in MATLAB file. This will be the name of the
     ! variable containing the matrix data when reading the file into matlab.
     character(LEN=*), intent(in) :: smatrixName
 
     ! Source matrix
     type(t_matrixScalar), intent(in) :: rmatrix
-    
+
     ! Whether to spy the real data of the matrix or only its sparsity
     ! pattern
     logical, intent(in) :: bdata
@@ -1036,7 +1036,7 @@ contains
     real(DP), intent(in), optional :: dthreshold
 !</input>
 !</subroutine>
-    
+
     ! local variables
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
@@ -1064,19 +1064,19 @@ contains
     else
       cstat="UNKNOWN"; cpos="ASIS"
     end if
-    
+
     ! Open output file
     iunit=sys_getFreeUnit()
     open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
-    
+
     ! Which matrix format are we?
     select case(rmatrix%cmatrixFormat)
-      
+
     case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
-      
+
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
       call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
-      
+
       if (bdata) then
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
@@ -1096,7 +1096,7 @@ contains
             call sys_halt()
           end select
           write(UNIT=iunit,FMT=30)
-          
+
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_single(rmatrix,p_Fa)
@@ -1119,9 +1119,9 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
-        
+
       else
-        
+
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         select case(rmatrix%cinterleavematrixFormat)
@@ -1140,10 +1140,10 @@ contains
       end if
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
-      
+
       call lsyssc_getbase_Kld(rmatrix,p_Kld)
       call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
-      
+
       if (bdata) then
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
@@ -1158,7 +1158,7 @@ contains
           call lsyssc_getbase_single(rmatrix,p_Fa)
           call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,p_Fa,dthres)
           write(UNIT=iunit,FMT=30)
-          
+
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
@@ -1166,15 +1166,15 @@ contains
         end select
 
       else
-        
+
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol)
         write(UNIT=iunit,FMT=30)
       end if
-      
+
     case(LSYSSC_MATRIXD)
-      
+
       if (bdata) then
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
@@ -1203,18 +1203,18 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
-        
+
       else
-        
+
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         do ieq=1,rmatrix%NEQ
           write(UNIT=iunit,FMT=20) ieq,ieq,1
         end do
         write(UNIT=iunit,FMT=30)
-        
+
       end if
-      
+
     case(LSYSSC_MATRIX1)
 
       if (bdata) then
@@ -1237,23 +1237,23 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
-        
+
       else
-        
+
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         call do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS)
         write(UNIT=iunit,FMT=30)
 
       end if
-      
+
     case DEFAULT
       call output_line ('Unsupported matrix format!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
       call sys_halt()
-      
+
     end select
-    
+
     ! Close file
     write(UNIT=iunit,FMT=40) smatrixName, rmatrix%NEQ, rmatrix%NCOLS
     close(UNIT=iunit)
@@ -1269,7 +1269,7 @@ contains
 
     !**************************************************************
     ! SPY CSR matrix in double precision
-    
+
     subroutine do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
@@ -1279,7 +1279,7 @@ contains
       real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
       integer :: ieq,ild,ivar
-      
+
       if (present(Da)) then
         do ieq=1,neq
           do ild=Kld(ieq),Kld(ieq+1)-1
@@ -1306,7 +1306,7 @@ contains
 
     !**************************************************************
     ! SPY CSR matrix in single precision
-    
+
     subroutine do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
@@ -1343,7 +1343,7 @@ contains
 
     !**************************************************************
     ! SPY CSR matrix in double precision
-    
+
     subroutine do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
@@ -1384,7 +1384,7 @@ contains
 
     !**************************************************************
     ! SPY CSR matrix in double precision
-    
+
     subroutine do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
@@ -1425,7 +1425,7 @@ contains
 
     !**************************************************************
     ! SPY full matrix in double precision
-    
+
     subroutine do_spy_mat1_double(neq,ncols,Da,dthres)
       integer, intent(in) :: neq,ncols
       real(DP), dimension(:), intent(in), optional :: Da
@@ -1455,7 +1455,7 @@ contains
 
     !**************************************************************
     ! SPY full matrix in single precision
-    
+
     subroutine do_spy_mat1_single(neq,ncols,Fa,dthres)
       integer, intent(in) :: neq,ncols
       real(SP), dimension(:), intent(in), optional :: Fa

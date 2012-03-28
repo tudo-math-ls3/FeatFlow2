@@ -21,7 +21,7 @@ module fictitiousboundary
   use fsystem
 
   implicit none
-  
+
   private
 
 !<types>
@@ -32,29 +32,29 @@ module fictitiousboundary
   ! The content is more or less application specific. The application must
   ! fill it with as much data as necessary to be able to identify a fictitious
   ! boundary region when discretising the associated boundary conditions.
-  
+
   type t_fictBoundaryRegion
-  
+
     ! Name of the region. Application specific.
     character(LEN=SYS_NAMELEN) :: sname = ''
-    
+
     ! Integer identifier for the region. Application specific
     integer :: iidentifier = 0
-  
+
     ! Integer value containing some flags that specify additional
     ! properties of the region. Application specific.
     integer(I32) :: iflags = 0
-    
+
     ! Integer tag. Application specific
     integer :: itag = 0
-    
+
     ! Double precision tag. Application specific
     real(DP) :: dtag = 0.0_DP
-    
+
   end type
-  
+
   public :: t_fictBoundaryRegion
-  
+
 !</typeblock>
 
 ! </types>

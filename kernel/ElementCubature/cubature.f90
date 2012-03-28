@@ -197,16 +197,16 @@ module cubature
   use genoutput
 
   implicit none
-  
+
   private
-  
+
 !<constants>
 
 !<constantblock variable="ccubType" description="General values">
 
   ! Undefined cubature formula
   integer(I32), parameter, public :: CUB_UNDEFINED = 0
-  
+
 !</constantblock>
 
 !<constantblock description="Special types of cubature formulas.">
@@ -216,7 +216,7 @@ module cubature
 
   ! Standard or summed cubature formula.
   integer(I32), parameter, public :: CUB_TP_STD = 0
-  
+
   ! Automatic cubature formula.
   integer(I32), parameter, public :: CUB_TP_AUTO = ishft(1_I32,28)
 
@@ -259,14 +259,14 @@ module cubature
 
   ! Automatic cubature formula, Simpson rule
   integer(I32), parameter, public :: CUB_GEN_AUTO_SIMPSON = CUB_TP_AUTO + 109
-  
+
 !</constantblock>
 
 !<constantblock variable="ccubType" description="1D formulas">
 
   ! 1-point Gauss formula, 1D, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_1D = 101
- 
+
   ! trapezoidal rule, 1D, degree = 2, ncubp = 2
   integer(I32), parameter, public :: CUB_TRZ_1D = 102
 
@@ -355,7 +355,7 @@ module cubature
 
   ! piecewise 3x3 Gauss formula, degree = 6, ncubp = 36
   integer(I32), parameter, public :: CUB_PG3X3 = 215
-  
+
   ! Simpson rule (corners and element midpoint), degree = 3, ncubp = 9
   integer(I32), parameter, public :: CUB_SIMPSON = 216
   integer(I32), parameter, public :: CUB_SIMPSON_2D = 216
@@ -411,7 +411,7 @@ module cubature
 
   ! Vertices, midpoints, center, degree = 4, ncubp = 7
   integer(I32), parameter, public :: CUB_VMC = 254
-  
+
   ! Quadrilateral 2-point Gauss formula mapped to a triangle
   integer(I32), parameter, public :: CUB_QG2_T = 262
 
@@ -438,14 +438,14 @@ module cubature
 
   ! 2-point Gauss formula, 3D, degree = 4, ncubp = 8
   integer(I32), parameter, public :: CUB_G2_3D = 304
-  
+
   ! 3-point Gauss formula, 3D, degree = 6, ncubp = 27
   integer(I32), parameter, public :: CUB_G3_3D = 305
-  
+
   ! 4-point Gauss formula, 3D, degree = 8, ncubp = 64
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
   integer(I32), parameter, public :: CUB_G4_3D = 306
-  
+
   ! 5-point Gauss formula, 3D, degree = 10, ncubp = 125
   ! NOT SUPPORTED BY 'cub_getCubPoints' !
   integer(I32), parameter, public :: CUB_G5_3D = 307
@@ -459,42 +459,42 @@ module cubature
 !<constantblock variable="ccubType" description="3D formulas, tetra">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_3D_T = 351
-  
+
   ! trapezoidal rule, 3D, degree = 2, ncubp = 4
   integer(I32), parameter, public :: CUB_TRZ_3D_T = 352
-  
+
   ! 4-point Stroud rule, 3D, degree = 2, ncubp = 4
   integer(I32), parameter, public :: CUB_S2_3D_T = 353
-  
+
   ! 10-point Stroud rule, 3D, degree = 3, ncubp = 10
   integer(I32), parameter, public :: CUB_S3_3D_T = 354
-  
+
   ! 15-point Stroud rule, 3D, degree = 5, ncubp = 15
   integer(I32), parameter, public :: CUB_S5_3D_T = 355
-  
+
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, pyramid">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_3D_Y = 401
-  
+
   ! trapezoidal rule, 3D, degree = 2, ncubp = 5
   integer(I32), parameter, public :: CUB_TRZ_3D_Y = 402
-  
+
 !</constantblock>
 
 !<constantblock variable="ccubType" description="3D formulas, prism">
   ! 1-point Gauss formula, 3D, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_3D_R = 451
-  
+
   ! trapezoidal rule, 3D, degree = 2, ncubp = 6
   integer(I32), parameter, public :: CUB_TRZ_3D_R = 452
-  
+
   ! 3x2-point Gauss formula, 3D, degree = 3 (maybe even 4?), ncubp = 6
   ! This formula is the 'cross-product' of the 2D CUB_G3_T formula
   ! for triangles and the 1D CUB_G2_1D formula.
   integer(I32), parameter, public :: CUB_G2_3D_R = 453
-  
+
 !</constantblock>
 
   ! DEPRECATED: maximal size of cubature node field
@@ -502,10 +502,10 @@ module cubature
 
   ! DEPRECATED: maximal number of cubature points in 1D
   integer, parameter, public :: CUB_MAXCUBP_1D = 6
-  
+
   ! DEPRECATED: maximal number of cubature points in 2D
   integer, parameter, public :: CUB_MAXCUBP_2D = 36
-  
+
   ! DEPRECATED: maximal number of cubature points in 3D
   integer, parameter, public :: CUB_MAXCUBP_3D = 27
 
@@ -523,7 +523,7 @@ module cubature
   public :: cub_getName
   public :: cub_resolveGenericCubType
   public :: cub_isExtended
-  
+
 contains
 
   !****************************************************************************
@@ -531,7 +531,7 @@ contains
 !<function>
 
   integer(I32) function cub_igetID(scubName, bcheck)
-  
+
 !<description>
   ! This routine returns the cubature id to a given cubature formula name. It is
   ! case-insensitive.
@@ -551,12 +551,12 @@ contains
   logical, intent(in), optional :: bcheck
 
 !</input>
-  
+
 !</function>
 
   character(len=len(scubName)+1) :: scub
   logical :: bchk
-  
+
   ! SELECT CASE is not allowed for strings (although supported by a majority
   ! of compilers), therefore we have to use a couple of IF-commands :(
   ! select case(trim(sys_upcase(scubName)))
@@ -658,7 +658,7 @@ contains
     cub_igetID=CUB_QPW4QG5T_2D
   else if (scub .eq. "G6_2D") then
     cub_igetID=CUB_G6_2D
-    
+
   ! 2D-formulas, triangle
   else if (scub .eq. "G1_T") then
     cub_igetID=CUB_G1_T
@@ -696,7 +696,7 @@ contains
     cub_igetID=CUB_G5_3D
   else if (scub .eq. "G6_3D") then
     cub_igetID=CUB_G6_3D
-  
+
   ! 3D-formulas, tetrahedron
   else if (scub .eq. "G1_3D_T") then
     cub_igetID=CUB_G1_3D_T
@@ -708,13 +708,13 @@ contains
     cub_igetID=CUB_S3_3D_T
   else if (scub .eq. "S5_3D_T") then
     cub_igetID=CUB_S5_3D_T
-  
+
   ! 3D-formulas, pyramid
   else if (scub .eq. "G1_3D_Y") then
     cub_igetID=CUB_G1_3D_Y
   else if (scub .eq. "TRZ_3D_Y") then
     cub_igetID=CUB_TRZ_3D_Y
-  
+
   ! 3D-formulas, prism
   else if (scub .eq. "G1_3D_R") then
     cub_igetID=CUB_G1_3D_R
@@ -734,7 +734,7 @@ contains
       cub_igetID = CUB_UNDEFINED
     end if
   end if
-    
+
   end function cub_igetID
 
   ! ***************************************************************************
@@ -946,7 +946,7 @@ contains
 !<function>
 
   elemental integer(I32) function cub_getStdCubType(ccubType) result(n)
-  
+
 !<description>
   ! Returns the underlying standard cubature formula if ccubType
   ! identifies a summed cubature formula.
@@ -960,16 +960,16 @@ contains
   ! Cubature type identifier of ad adaptive cubature formula.
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
-  
+
     ! Blend out the highest 16 bit.
     if (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) then
       n = iand(ccubType,int(2**16-1,I32))
     else
       n = ccubType
     end if
-  
+
   end function
 
   !****************************************************************************
@@ -977,7 +977,7 @@ contains
 !<function>
 
   elemental integer(I32) function cub_getSummedCubType(ccubType,nlevels) result(n)
-  
+
 !<description>
   ! Creates the identifier of a summed cubature rule based on a
   ! standard cubature formula and a number of refinement levels of the
@@ -991,20 +991,20 @@ contains
 !<input>
   ! Cubature type identifier of ad adaptive cubature formula.
   integer(I32), intent(in) :: ccubType
-  
+
   ! Number of refinements of the reference element.
   integer, intent(in) :: nlevels
 !</input>
-  
+
 !</function>
-  
+
     ! Include the number of levels into ccubType.
     if (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) then
       n = ior(cub_getStdCubType(ccubType),ishft(int(max(0,nlevels),I32),16))
     else
       n = 0
     end if
-  
+
   end function
 
   !****************************************************************************
@@ -1012,7 +1012,7 @@ contains
 !<function>
 
   elemental integer function cub_getRefLevels(ccubType) result(n)
-  
+
 !<description>
   ! Returns the number of refinement levels of the reference element.
   ! This is used for summed cubature formulas to determine the refinement
@@ -1027,7 +1027,7 @@ contains
   ! Cubature type identifier of ad adaptive cubature formula.
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
     if ((iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_STD) .or. &
         (iand(ccubType,CUB_TP_MASK) .eq. CUB_TP_AUTO)) then
@@ -1037,7 +1037,7 @@ contains
     else
       n = 0
     end if
-  
+
   end function
 
   !****************************************************************************
@@ -1045,7 +1045,7 @@ contains
 !<function>
 
   integer function cub_getRefElements(ccubType) result(n)
-  
+
 !<description>
   ! Auxiliary. Returns for a given summed cubature formula the number of
   ! elements into which the reference element is subdivided in every refinement
@@ -1060,7 +1060,7 @@ contains
   ! Cubature type identifier of ad adaptive cubature formula.
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
 
     integer(I32) :: ccubStd
@@ -1077,11 +1077,11 @@ contains
     case (BGEOM_SHAPE_QUAD,BGEOM_SHAPE_TRIA)
       ! One element is refined into four subelements
       n = 4
-      
+
     case (BGEOM_SHAPE_HEXA)
       ! One element is refined into eight subelements
       n = 8
-      
+
     case default
       call output_line ('Unsupported element.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
@@ -1107,7 +1107,7 @@ contains
 !!$                          OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
 !!$        call sys_halt()
 !!$    end select
-  
+
   end function
 
   !****************************************************************************
@@ -1115,7 +1115,7 @@ contains
 !<function>
 
   integer function cub_igetNumPts(ccubType) result(n)
-  
+
 !<description>
   ! This routine returns the number of cubature points for a given cubature id.
 !</description>
@@ -1128,12 +1128,12 @@ contains
   ! Cubature type identifier
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
 
     integer(I32) :: cstdCubType
     integer :: nreflevels,k
-    
+
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
     nreflevels = cub_getRefLevels(ccubType)
@@ -1154,7 +1154,7 @@ contains
       n = 6
     case (CUB_WEDDLE_1D)
       n = 7
-    
+
     ! -= 2D Triangle Formulas =-
     case (CUB_G1_T)
       n = 1
@@ -1170,7 +1170,7 @@ contains
       n = 16
     case (CUB_QG5_T)
       n = 25
-    
+
     ! -= 2D Quadrilateral Formulas =-
     case (CUB_G1_2D)
       n = 1
@@ -1198,7 +1198,7 @@ contains
       n = 64
     case (CUB_QPW4QG5T_2D)
       n = 100
-      
+
     ! -= 3D Tetrahedron Formulas =-
     case (CUB_G1_3D_T)
       n = 1
@@ -1208,7 +1208,7 @@ contains
       n = 10
     case (CUB_S5_3D_T)
       n = 15
-      
+
     ! -= 3D Hexahedron Formulas =-
     case (CUB_G1_3D)
       n = 1
@@ -1224,25 +1224,25 @@ contains
       n = 125
     case (CUB_G6_3D)
       n = 216
-    
+
     ! -= 3D Pyramid Formulas =-
     case (CUB_G1_3D_Y)
       n = 1
     case (CUB_TRZ_3D_Y)
       n = 5
-    
+
     ! -= 3D Prism Formulas =-
     case (CUB_G1_3D_R)
       n = 1
     case (CUB_TRZ_3D_R,CUB_G2_3D_R)
       n = 6
-    
+
     case default
       call output_line('Unknown cubature type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
       call sys_halt()
     end select
-    
+
     ! Based on this information, if this is a summed cubature formula,
     ! calculate the number of cubature points.
     if (nreflevels .gt. 0) then
@@ -1260,7 +1260,7 @@ contains
           ! This is a quad element in 2D, so every refinement brings 4 new
           ! elements.
           n = n * (cub_getRefElements(ccubType))**nreflevels
-          
+
         case (CUB_G1_3D,CUB_G2_3D,CUB_G3_3D,CUB_G4_3D,CUB_G5_3D)
           ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
@@ -1271,7 +1271,7 @@ contains
         case (CUB_TRZ_1D)
           ! Points are in the corners of the elements.
           n = 2**nreflevels + 1
-          
+
         case (CUB_TRZ_2D)
           ! Points are in the corners of the elements.
           n = 4**nreflevels + 2*2**nreflevels + 1
@@ -1304,7 +1304,7 @@ contains
           ! This is a triangle in 2D, so every refinement brings 4 new
           ! elements.
           n = n * (cub_getRefElements(ccubType))**nreflevels
-          
+
         case (CUB_TRZ_T)
           ! Points are in the corners of the elements. The computation of
           ! the total number of cubature points is more complicated for
@@ -1329,7 +1329,7 @@ contains
           ! k*(k+1) - (1/2)*(k+1)^2 + (3/2)*k + 3/2
           k = 2**nreflevels
           n = k*(k+1) - ((k+1)**2)/2 + 3*k/2 + 3/2
-          
+
           ! We still have to add the number of midpoints and centers.
           ! The number of midpoints follows from the Euler formula:
           !   "vertices - edges + (elements+1) = 2"
@@ -1337,13 +1337,13 @@ contains
           n = 2*(n+4**nreflevels)-1
 
         case (CUB_QG2_T,CUB_QG3_T,CUB_QG4_T,CUB_QG5_T)
-        
+
           ! This is the Gauss formula from quads mapped to
           ! triangles. All points are inner points.
           n = n * (cub_getRefElements(ccubType))**nreflevels
 
         case default
-          
+
           call output_line ('Unsupported summed cubature formula.', &
                             OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
           call sys_halt()
@@ -1358,7 +1358,7 @@ contains
 !<function>
 
   integer(I32) function cub_igetShape(ccubType) result(ishp)
-  
+
 !<description>
   ! This function returns the element shape identifier for a given cubature id.
   ! The shape identifier is one of the BGEOM_SHAPE_XXXX constants defined in
@@ -1373,11 +1373,11 @@ contains
   ! Cubature type identifier
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
 
     integer(I32) :: cstdCubType
-    
+
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
 
@@ -1417,7 +1417,7 @@ contains
 !<function>
 
   integer(I32) function cub_resolveGenericCubType(cgeoShape,ccubType) result(ccubTypeAct)
-  
+
 !<description>
   ! Maps an automatic cubature formula to the actual cubature
   ! formula. If not possible, CUB_UNDEFINED is returned.
@@ -1443,7 +1443,7 @@ contains
   ! and thus, must be determined with the corresponding cubature
   ! determination routine which involves the underlying finite element!
 !</remark>
-  
+
 !</function>
 
     ccubTypeAct = CUB_UNDEFINED
@@ -1453,62 +1453,62 @@ contains
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_1D
-        
+
       case (CUB_GEN_AUTO_G2)
         ccubTypeAct = CUB_G2_1D
-        
+
       case (CUB_GEN_AUTO_G3)
         ccubTypeAct = CUB_G3_1D
-        
+
       case (CUB_GEN_AUTO_G4)
         ccubTypeAct = CUB_G4_1D
-        
+
       case (CUB_GEN_AUTO_G5)
         ccubTypeAct = CUB_G5_1D
-        
+
       case (CUB_GEN_AUTO_G6)
         ccubTypeAct = CUB_G6_1D
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_1D
-        
+
       case (CUB_GEN_AUTO_MID)
         ccubTypeAct = CUB_G1_1D
-        
+
       case (CUB_GEN_AUTO_SIMPSON)
         ccubTypeAct = CUB_SIMPSON_1D
-        
+
       end select
 
     case (BGEOM_SHAPE_QUAD)
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_2D
-        
+
       case (CUB_GEN_AUTO_G2)
         ccubTypeAct = CUB_G2_2D
-        
+
       case (CUB_GEN_AUTO_G3)
         ccubTypeAct = CUB_G3_2D
-        
+
       case (CUB_GEN_AUTO_G4)
         ccubTypeAct = CUB_G4_2D
-        
+
       case (CUB_GEN_AUTO_G5)
         ccubTypeAct = CUB_G5_2D
-        
+
       case (CUB_GEN_AUTO_G6)
         ccubTypeAct = CUB_G6_2D
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_2D
-        
+
       case (CUB_GEN_AUTO_MID)
         ccubTypeAct = CUB_MID_2D
-        
+
       case (CUB_GEN_AUTO_SIMPSON)
         ccubTypeAct = CUB_SIMPSON_2D
-        
+
       end select
 
     case (BGEOM_SHAPE_TRIA)
@@ -1519,86 +1519,86 @@ contains
       case (CUB_GEN_AUTO_G2)
         ! Not implemented. Take G3.
         ccubTypeAct = CUB_G3_T
-        
+
       case (CUB_GEN_AUTO_G3)
         ccubTypeAct = CUB_G3_T
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_T
-        
+
       case (CUB_GEN_AUTO_MID)
         ccubTypeAct = CUB_G3MP_T
-        
+
       case (CUB_GEN_AUTO_SIMPSON)
         ccubTypeAct = CUB_VMC
-        
+
       end select
 
     case (BGEOM_SHAPE_HEXA)
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_3D
-        
+
       case (CUB_GEN_AUTO_G2)
         ccubTypeAct = CUB_G2_3D
-        
+
       case (CUB_GEN_AUTO_G3)
         ccubTypeAct = CUB_G3_3D
-        
+
       case (CUB_GEN_AUTO_G4)
         ccubTypeAct = CUB_G4_3D
-        
+
       case (CUB_GEN_AUTO_G5)
         ccubTypeAct = CUB_G5_3D
-        
+
       case (CUB_GEN_AUTO_G6)
         ccubTypeAct = CUB_G6_3D
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_3D
-        
+
       case (CUB_GEN_AUTO_MID)
         ccubTypeAct = CUB_MIDAREA_3D
-        
+
       end select
 
     case (BGEOM_SHAPE_TETRA)
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_3D_T
-        
+
       case (CUB_GEN_AUTO_G2)
         ccubTypeAct = CUB_S2_3D_T
-        
+
       case (CUB_GEN_AUTO_G3)
         ccubTypeAct = CUB_S3_3D_T
-        
+
       case (CUB_GEN_AUTO_G5)
         ccubTypeAct = CUB_S5_3D_T
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_3D_T
-        
+
       end select
 
     case (BGEOM_SHAPE_PYRA)
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_3D_Y
-        
+
       case (CUB_GEN_AUTO_G2)
         ccubTypeAct = CUB_TRZ_3D_Y
-        
+
       end select
 
     case (BGEOM_SHAPE_PRISM)
       select case (ccubType)
       case (CUB_GEN_AUTO_G1)
         ccubTypeAct = CUB_G1_3D_R
-        
+
       case (CUB_GEN_AUTO_TRZ)
         ccubTypeAct = CUB_TRZ_3D_R
-        
+
       end select
 
     end select
@@ -1610,7 +1610,7 @@ contains
 !<function>
 
   integer function cub_isExtended(ccubType) result(igeneric)
-  
+
 !<description>
   ! Determins if ccubType refers to an extended cubature rule.
 !</description>
@@ -1651,7 +1651,7 @@ contains
 !<function>
 
   integer function cub_igetCoordDim(ccubType) result(n)
-  
+
 !<description>
   ! This routine returns the dimension of the coordinates for a given
   ! cubature type identifier.
@@ -1665,7 +1665,7 @@ contains
   ! Cubature type identifier
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !</function>
 
     ! Get the shape of the cubature id
@@ -1720,7 +1720,7 @@ contains
   ! NDIM is the dimension of a point, which is returned by cub_igetCoordDim.
   ! NPTS is the number of cubatue points, which is returned by cub_igetNumPts.
   real(DP), dimension(:,:), intent(out) :: Dpoints
-  
+
   ! For every cubature point the corresponding cubature weight.
   ! The dimension is assumed to be at least Domega(1:NPTS) (see Dpoints).
   real(DP), dimension(:), intent(out) :: Domega
@@ -1731,7 +1731,7 @@ contains
   ! local variables for wrapper
   real(DP), dimension(:,:), allocatable :: Dxi
   integer :: i,j,k,l,ncubp
-  
+
   ! Auxiliary arrays for Gauss-Legendre rules
   real(DP), dimension(6) :: Dv, Dw
   integer :: ndim, npts
@@ -1743,44 +1743,44 @@ contains
   real(DP) :: dweight,dedgelen
   real(DP), dimension(:,:), allocatable :: DpointsLocal,DpointsRef
   real(DP), dimension(:), allocatable :: DomegaLocal
-  
+
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
     nreflevels = cub_getRefLevels(ccubType)
-  
+
     if (nreflevels .le. 0) then
-    
+
       ! Standard cubature formula.
 
       ndim = 0
       npts = 0
-      
+
       ! Okay, let us see what cubature rule we have here...
       select case(cstdCubType)
-      
+
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 1D LINE CUBATURE RULES
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       case (CUB_G1_1D)
         ndim = 1
         npts = 1
-      
+
       case (CUB_G2_1D)
         ndim = 1
         npts = 2
-      
+
       case (CUB_G3_1D)
         ndim = 1
         npts = 3
-      
+
       case (CUB_G4_1D)
         ndim = 1
         npts = 4
-      
+
       case (CUB_G5_1D)
         ndim = 1
         npts = 5
-      
+
       case (CUB_G6_1D)
         ndim = 1
         npts = 6
@@ -1820,7 +1820,7 @@ contains
         Domega(3) = 12.0_DP / 45.0_DP
         Domega(4) = 32.0_DP / 45.0_DP
         Domega(5) =  7.0_DP / 45.0_DP
-        
+
       case(CUB_6POINT_1D) ! 6-point rule
         Dpoints(1,1) = -1.0_DP
         Dpoints(1,2) = -0.6_DP
@@ -1861,23 +1861,23 @@ contains
       case (CUB_G1_2D)
         ndim = 2
         npts = 1
-      
+
       case (CUB_G2_2D)
         ndim = 2
         npts = 2
-      
+
       case (CUB_G3_2D)
         ndim = 2
         npts = 3
-      
+
       case (CUB_G4_2D)
         ndim = 2
         npts = 4
-      
+
       case (CUB_G5_2D)
         ndim = 2
         npts = 5
-      
+
       case (CUB_G6_2D)
         ndim = 2
         npts = 6
@@ -1885,30 +1885,30 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 3D TETRAHEDRON CUBATURE RULES
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      
+
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! 3D HEXAHEDRON CUBATURE RULES
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       case (CUB_G1_3D)
         ndim = 3
         npts = 1
-      
+
       case (CUB_G2_3D)
         ndim = 3
         npts = 2
-      
+
       case (CUB_G3_3D)
         ndim = 3
         npts = 3
-      
+
       case (CUB_G4_3D)
         ndim = 3
         npts = 4
-      
+
       case (CUB_G5_3D)
         ndim = 3
         npts = 5
-      
+
       case (CUB_G6_3D)
         ndim = 3
         npts = 6
@@ -1931,10 +1931,10 @@ contains
 
         ! allocate Dxi array
         allocate(Dxi(ncubpts,4))
-    
+
         ! call old routine
         call cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
-        
+
         ! transpose the point array
         do i = 1, min(4,size(Dpoints,1))
           do j = 1, min(ncubp,size(Dpoints,2))
@@ -1947,15 +1947,15 @@ contains
 
         ! And get out of here
         return
-        
+
       end select
-      
+
       ! Gauss-Legendre rule ?
       if((ndim .gt. 0) .and. (npts .gt. 0)) then
-      
+
         ! Okay, get the corresponding Gauss-Legendre rule
         call cub_auxGaussLegendre(npts,Dv,Dw)
-        
+
         ! What dimension should the rule be for?
         select case(ndim)
         case (NDIM1D)
@@ -1964,7 +1964,7 @@ contains
             Dpoints(1,i) = Dv(i)
             Domega(i) = Dw(i)
           end do
-        
+
         case (NDIM2D)
           ! 2D Gauss rule for quadrilaterals
           l = 1
@@ -1976,7 +1976,7 @@ contains
               l = l+1
             end do
           end do
-        
+
         case(NDIM3D)
           ! 3D Gauss rule for hexahedra
           l = 1
@@ -1991,25 +1991,25 @@ contains
               end do
             end do
           end do
-          
+
         end select
-      
+
       end if
-  
+
     else
-    
+
       ! This is a summed cubature formula, so determining the cubature points
       ! is slightly more complicated.
       !
       ! In a first step, calculate the points on the reference element
       ! of the standard cubature formula.
       ncubpts = cub_igetNumPts(cstdCubType)
-      
+
       allocate(DpointsLocal(cub_igetCoordDim(cstdCubType),ncubpts))
       allocate(DomegaLocal(ncubpts))
-      
+
       call cub_getCubature(cstdCubType, DpointsLocal, DomegaLocal)
-      
+
       select case (cstdCubType)
         case (CUB_G1_1D,CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
           ! All points are innter points. Total number =
@@ -2025,15 +2025,15 @@ contains
               Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
             end do
           end do
-          
+
           ! Transfer the point coordinates.
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Length of the edge of every subelement.
           ! Note that the reference element is [-1,1]^2 !
           dedgelen = 2.0_DP/real(nsubelements,dp)
-          
+
           do isubx = 0,nsubelements-1
             do icubp = 1,ncubpts
               Dpoints(1,isubx*ncubpts+icubp) = &
@@ -2041,14 +2041,14 @@ contains
                   + real(isubx,dp)*dedgelen
             end do
           end do
-          
+
         case (CUB_TRZ_1D)
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Manually initialise the coordinates and weights.
           dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
           do isubx = 0,nsubelements
@@ -2059,7 +2059,7 @@ contains
           do isubx = 1,nsubelements-1
             Domega(isubx+1) = dweight*2.0_DP
           end do
-          
+
           Domega(1)              = dweight
           Domega(nsubelements+1) = dweight
 
@@ -2081,11 +2081,11 @@ contains
           ! Transfer the point coordinates.
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Length of the edge of every subelement.
           ! Note that the reference element is [-1,1]^2 !
           dedgelen = 2.0_DP/real(nsubelements,dp)
-          
+
           do isuby = 0,nsubelements-1
             do isubx = 0,nsubelements-1
               do icubp = 1,ncubpts
@@ -2099,14 +2099,14 @@ contains
               end do
             end do
           end do
-          
+
         case (CUB_TRZ_2D)
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Manually initialise the coordinates and weights.
           dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
           do isuby = 0,nsubelements
@@ -2123,7 +2123,7 @@ contains
               Domega(isuby*(nsubelements+1)+isubx+1) = dweight*4.0_DP
             end do
           end do
-          
+
           do isuby = 1,nsubelements-1
             Domega(isuby+1)                               = dweight*2.0_DP
             Domega(nsubelements*(nsubelements+1)+isuby+1) = dweight*2.0_DP
@@ -2150,15 +2150,15 @@ contains
               Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
             end do
           end do
-          
+
           ! Transfer the point coordinates.
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Length of the edge of every subelement.
           ! Note that the reference element is [-1,1]^2 !
           dedgelen = 2.0_DP/real(nsubelements,dp)
-          
+
           do isubz = 0,nsubelements-1
             do isuby = 0,nsubelements-1
               do isubx = 0,nsubelements-1
@@ -2167,7 +2167,7 @@ contains
                              isuby*nsubelements+isubx)*ncubpts+icubp) = &
                       DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
                       + real(isubx,dp)*dedgelen
-                  
+
                   Dpoints(2,(isubz*nsubelements**2+&
                              isuby*nsubelements+isubx)*ncubpts+icubp) = &
                       DpointsLocal(2,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
@@ -2206,7 +2206,7 @@ contains
               end do
             end do
           end do
-          
+
           ! all weights
           do isubz = 1,nsubelements-1
             do isuby = 1,nsubelements-1
@@ -2282,7 +2282,7 @@ contains
             Domega(nsubelements*(nsubelements+1)**2+&
                    isuby*(nsubelements+1)+nsubelements+1) = dweight*2.0_DP
           end do
-          
+
           ! boundary points at missing face in z-direction
           do isubz = 1,nsubelements-1
             Domega(isubz*(nsubelements+1)**2+1)              = dweight*2.0_DP
@@ -2293,7 +2293,7 @@ contains
                           nsubelements*(nsubelements+1)+&
                           nsubelements+1)                    = dweight*2.0_DP
           end do
-          
+
           ! corner points
           Domega(1)                                            = dweight
           Domega(nsubelements+1)                               = dweight
@@ -2337,7 +2337,7 @@ contains
             end do
           end if
         end do
-        
+
         ! Store number of cubature points on refined element
         nrefcubpts = icubp-1
 
@@ -2380,7 +2380,7 @@ contains
         ! Recursively initialise the coordinates and weights
         call cub_auxTriangle(DpointsRef, DpointsLocal, DomegaLocal,&
             dweight, ncubpts, nreflevels, Dpoints, Domega, nrefcubpts)
-        
+
         ! Deallocate temporal memory
         deallocate(DpointsRef)
 
@@ -2434,7 +2434,7 @@ contains
         ! How many subelements do we have?
         ! We have 2^nlevels elements in every barycentric dimension
         nsubelements = 2**nreflevels
-        
+
         ! Manually initialise the coordinates of the corners.
         icubp = 1
         do isubz = 0, nsubelements
@@ -2492,7 +2492,7 @@ contains
             end do
           end if
         end do
-        
+
         ! Store number of cubature points on refined element
         icubpStart = nrefcubpts;   nrefcubpts = icubp-1
 
@@ -2524,7 +2524,7 @@ contains
         DpointsRef(:,1) = (/1.0_DP, 0.0_DP, 0.0_DP/)
         DpointsRef(:,2) = (/0.0_DP, 1.0_DP, 0.0_DP/)
         DpointsRef(:,3) = (/0.0_DP, 0.0_DP, 1.0_DP/)
-        
+
         ! Initialise the local cubature point
         DpointsLocal(1,1) = 1.0_DP/3.0_DP
         DpointsLocal(2,1) = 1.0_DP/3.0_DP
@@ -2536,47 +2536,47 @@ contains
         ! Recursively initialise the coordinates and weights at the centroids
         call cub_auxTriangle(DpointsRef, DpointsLocal, DomegaLocal,&
             dweight, 1, nreflevels, Dpoints, Domega, nrefcubpts)
-      
+
         ! Deallocate temporal memory
         deallocate(DpointsRef)
-        
+
       case default
         call output_line ('Unsupported element.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubature')
         call sys_halt()
       end select
-        
+
       ! Release memory, that is it.
-      
+
       deallocate(DomegaLocal)
       deallocate(DpointsLocal)
-    
+
     end if
-    
+
     ! That is it
-    
+
   contains
-  
+
     ! -------------------------------------------------------
-  
+
     pure subroutine cub_auxGaussLegendre(n,Dv,Dw)
     integer, intent(in) :: n
     real(DP), dimension(:), intent(out) :: Dv, Dw
-    
+
     real(DP) :: daux
-    
+
       ! How many points for Gauss-formula?
       select case(n)
       case(1)
         Dv(1) =  0.0_DP
         Dw(1) =  2.0_DP
-      
+
       case(2)
         Dv(1) = -sqrt(1.0_DP / 3.0_DP)
         Dv(2) =  sqrt(1.0_DP / 3.0_DP)
         Dw(1) =  1.0_DP
         Dw(2) =  1.0_DP
-      
+
       case(3)
         Dv(1) = -sqrt(0.6_DP)
         Dv(2) =  0.0_DP
@@ -2584,7 +2584,7 @@ contains
         Dw(1) =  5.0_DP / 9.0_DP
         Dw(2) =  8.0_DP / 9.0_DP
         Dw(3) =  5.0_DP / 9.0_DP
-      
+
       case(4)
         daux = sqrt(4.8_DP)
         Dv(1) = -sqrt((3.0_DP + daux) / 7.0_DP)
@@ -2596,7 +2596,7 @@ contains
         Dw(2) = (18.0_DP + daux) / 36.0_DP
         Dw(3) = (18.0_DP + daux) / 36.0_DP
         Dw(4) = (18.0_DP - daux) / 36.0_DP
-      
+
       case(5)
         daux = 2.0_DP * sqrt(10.0_DP / 7.0_DP)
         Dv(1) = -sqrt(5.0_DP + daux) / 3.0_DP
@@ -2624,13 +2624,13 @@ contains
         Dw(4) =  0.467913934572691_DP
         Dw(5) =  0.360761573048139_DP
         Dw(6) =  0.171324492379170_DP
-    
+
       end select
-      
+
     end subroutine cub_auxGaussLegendre
 
     ! -------------------------------------------------------
-    
+
     recursive subroutine cub_auxTriangle(DpointsRef, DpointsLocal,&
         DomegaLocal, dweight, ncubpts, ireflevel, Dpoints, Domega, nrefcubpts)
       real(DP), dimension(:,:), intent(in) :: DpointsRef
@@ -2656,7 +2656,7 @@ contains
         nrefcubpts = nrefcubpts+ncubpts
 
       else
-        
+
         ! Recursively process the subelement in the center
         DpointsAux(:,1) = (DpointsRef(:,1)+DpointsRef(:,2))/2.0_DP
         DpointsAux(:,2) = (DpointsRef(:,1)+DpointsRef(:,3))/2.0_DP
@@ -2677,14 +2677,14 @@ contains
         DpointsAux(:,3) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
         call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
             dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
-        
+
         ! Recursively process the third outer subelement
         DpointsAux(:,1) =  DpointsRef(:,3)
         DpointsAux(:,2) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
         DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,2))/2.0_DP
         call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
             dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
-        
+
       end if
 
     end subroutine cub_auxTriangle
@@ -2709,11 +2709,11 @@ contains
   ! id of the cubature formula to be set
   integer(I32), intent(in) :: ccubType
 !</input>
-  
+
 !<output>
   ! number of cubature points; =0: error, unknown cubature formula
   integer , intent(out) :: ncubp
-  
+
   ! Coordinates of the cubature points.
   ! 1D: Dxi(1..ncubp,1)=coordinates,
   ! 2D: Quadrilaterals:
@@ -2733,10 +2733,10 @@ contains
   !        Dxi(1..ncubp,3)=3rd barycentric coordinate,
   !        Dxi(1..ncubp,4)=4th barycentric coordinate
   real(DP), dimension(:,:), intent(out) :: Dxi
-  
+
   ! For every cubature point the corresponding cubature weight
   real(DP), dimension(:), intent(out) :: Domega
-  
+
 !</output>
 
 !</subroutine>
@@ -2744,96 +2744,96 @@ contains
   ! local variables
   integer :: i
   real(DP), dimension(CUB_MAXCUBP,4) :: DxiAux
-  
+
   select case (ccubType)
 
   !1D cubature formulas
   case (CUB_G1_1D)
     Dxi(1,1)  = 0.0_DP
-     
+
     Domega(1) = 2.0_DP
-     
+
     ncubp     = 1
-     
+
   case(CUB_TRZ_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  =  1.0_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
-    
+
     ncubp     =  2
-     
+
   case(CUB_G2_1D)
     Dxi(1,1)  = -0.577350269189626_DP
     Dxi(2,1)  =  0.577350269189626_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
-    
+
     ncubp     =  2
-     
+
   case(CUB_G3_1D)
     Dxi(1,1)  = -0.774596669241483_DP
     Dxi(2,1)  =  0.0_DP
     Dxi(3,1)  =  0.774596669241483_DP
-    
+
     Domega(1) =  0.555555555555556_DP
     Domega(2) =  0.888888888888889_DP
     Domega(3) =  0.555555555555556_DP
-    
+
     ncubp     =  3
-    
+
   case(CUB_G4_1D)
     Dxi(1,1)  = -0.861136311594053_DP
     Dxi(2,1)  = -0.339981043584856_DP
     Dxi(3,1)  =  0.339981043584856_DP
     Dxi(4,1)  =  0.861136311594053_DP
-    
+
     Domega(1) =  0.347854845137454_DP
     Domega(2) =  0.652145154862546_DP
     Domega(3) =  0.652145154862546_DP
     Domega(4) =  0.347854845137454_DP
-    
+
     ncubp     =  4
-    
+
   case(CUB_G5_1D)
     Dxi(1,1)  = -0.906179845938664_DP
     Dxi(2,1)  = -0.538469310105683_DP
     Dxi(3,1)  =  0.0_DP
     Dxi(4,1)  =  0.538469310105683_DP
     Dxi(5,1)  =  0.906179845938664_DP
-    
+
     Domega(1) =  0.236926885056189_DP
     Domega(2) =  0.478628670499366_DP
     Domega(3) =  0.568888888888889_DP
     Domega(4) =  0.478628670499366_DP
     Domega(5) =  0.236926885056189_DP
-    
+
     ncubp = 5
-    
+
   case(CUB_SIMPSON_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  =  0.0_DP
     Dxi(3,1)  =  1.0_DP
-    
+
     Domega(1) =  0.333333333333333_DP
     Domega(2) =  1.333333333333333_DP
     Domega(3) =  0.333333333333333_DP
-    
+
     ncubp     =  3
-    
+
   case(CUB_PULCHERIMA_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  = -0.333333333333333_DP
     Dxi(3,1)  =  0.333333333333333_DP
     Dxi(4,1)  =  1.0_DP
-    
+
     Domega(1) =  0.25_DP
     Domega(2) =  0.75_DP
     Domega(3) =  0.75_DP
     Domega(4) =  0.25_DP
-    
+
     ncubp     =  4
 
   case(CUB_MILNE_1D)
@@ -2842,13 +2842,13 @@ contains
     Dxi(3,1)  =  0.0_DP
     Dxi(4,1)  =  0.5_DP
     Dxi(5,1)  =  1.0_DP
-    
+
     Domega(1) =  0.155555555555555_DP
     Domega(2) =  0.711111111111111_DP
     Domega(3) =  0.266666666666666_DP
     Domega(4) =  0.711111111111111_DP
     Domega(5) =  0.155555555555555_DP
-    
+
     ncubp     =  5
 
   case(CUB_6POINT_1D)
@@ -2858,14 +2858,14 @@ contains
     Dxi(4,1)  =  0.2_DP
     Dxi(5,1)  =  0.6_DP
     Dxi(6,1)  =  1.0_DP
-    
+
     Domega(1) =  0.131944444444444_DP
     Domega(2) =  0.520833333333333_DP
     Domega(3) =  0.347222222222222_DP
     Domega(4) =  0.347222222222222_DP
     Domega(5) =  0.520833333333333_DP
     Domega(6) =  0.131944444444444_DP
-    
+
     ncubp     =  6
 
   case(CUB_WEDDLE_1D)
@@ -2876,7 +2876,7 @@ contains
     Dxi(5,1)  =  0.333333333333333_DP
     Dxi(6,1)  =  0.666666666666666_DP
     Dxi(7,1)  =  1.0_DP
-    
+
     Domega(1) =  0.0976190476190476_DP
     Domega(2) =  0.514285714285714_DP
     Domega(3) =  0.0642857142857143_DP
@@ -2884,7 +2884,7 @@ contains
     Domega(5) =  0.0642857142857143_DP
     Domega(6) =  0.514285714285714_DP
     Domega(7) =  0.0976190476190476_DP
-    
+
     ncubp     =  7
 
   case(CUB_G6_1D)
@@ -2894,26 +2894,26 @@ contains
     Dxi(4,1)  =  0.238619186083197_DP
     Dxi(5,1)  =  0.661209386466265_DP
     Dxi(6,1)  =  0.932469514203152_DP
-    
+
     Domega(1) =  0.171324492379170_DP
     Domega(2) =  0.360761573048139_DP
     Domega(3) =  0.467913934572691_DP
     Domega(4) =  0.467913934572691_DP
     Domega(5) =  0.360761573048139_DP
     Domega(6) =  0.171324492379170_DP
-    
+
     ncubp     =  6
-    
+
   ! #################################################################
   ! 2D cubature formulas
   case (CUB_G1X1)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
-    
+
     Domega(1) =  4.0_DP
-    
+
     ncubp     =  1
-    
+
   case (CUB_TRZ)
     Dxi(1,1)  = -1.0_DP
     Dxi(1,2)  = -1.0_DP
@@ -2923,14 +2923,14 @@ contains
     Dxi(3,2)  =  1.0_DP
     Dxi(4,1)  = -1.0_DP
     Dxi(4,2)  =  1.0_DP
-    
+
     Domega(1) = 1.0_DP
     Domega(2) = 1.0_DP
     Domega(3) = 1.0_DP
     Domega(4) = 1.0_DP
-    
+
     ncubp     = 4
-    
+
   case (CUB_MID)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  = -1.0_DP
@@ -2940,14 +2940,14 @@ contains
     Dxi(3,2)  =  1.0_DP
     Dxi(4,1)  = -1.0_DP
     Dxi(4,2)  =  0.0_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
     Domega(3) =  1.0_DP
     Domega(4) =  1.0_DP
-    
+
     ncubp     =  4
-     
+
   case (CUB_G2X2)
     Dxi(1,1)  =  0.577350269189626_DP
     Dxi(1,2)  =  0.577350269189626_DP
@@ -2957,14 +2957,14 @@ contains
     Dxi(3,2)  = -0.577350269189626_DP
     Dxi(4,1)  =  0.577350269189626_DP
     Dxi(4,2)  = -0.577350269189626_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
     Domega(3) =  1.0_DP
     Domega(4) =  1.0_DP
-    
+
     ncubp     =  4
-     
+
   case (CUB_NS1)
     Dxi(1,1)  =  0.816496580927726_DP
     Dxi(1,2)  =  0.0_DP
@@ -2974,14 +2974,14 @@ contains
     Dxi(3,2)  = -0.816496580927726_DP
     Dxi(4,1)  =  0.0_DP
     Dxi(4,2)  =  0.816496580927726_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
     Domega(3) =  1.0_DP
     Domega(4) =  1.0_DP
-    
+
     ncubp     =  4
-    
+
   case (CUB_NS2)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.934172358962716_DP
@@ -2995,14 +2995,14 @@ contains
     Dxi(5,2)  = -0.852765377881771_DP
     Dxi(6,1)  = -0.774596669241483_DP
     Dxi(6,2)  = -0.852765377881771_DP
-    
+
     Domega(1) =  0.491365692888926_DP
     Domega(2) =  1.28641208488885_DP
     Domega(3) =  0.761883709085613_DP
     Domega(4) =  0.761883709085613_DP
     Domega(5) =  0.349227402025498_DP
     Domega(6) =  0.349227402025498_DP
-    
+
     ncubp     =  6
 
   case (CUB_NS3)
@@ -3020,7 +3020,7 @@ contains
     Dxi(6,2)  = -0.774596669241483_DP
     Dxi(7,1)  = -0.774596669241483_DP
     Dxi(7,2)  = -0.774596669241483_DP
-    
+
     Domega(1) =  1.142857142857143_DP
     Domega(2) =  0.317460317460317_DP
     Domega(3) =  0.317460317460317_DP
@@ -3028,7 +3028,7 @@ contains
     Domega(5) =  0.555555555555556_DP
     Domega(6) =  0.555555555555556_DP
     Domega(7) =  0.555555555555556_DP
-    
+
     ncubp     =  7
 
   case (CUB_G3X3)
@@ -3050,7 +3050,7 @@ contains
     Dxi(8,2)  = -0.774596669241483_DP
     Dxi(9,1)  =  0.0_DP
     Dxi(9,2)  =  0.0_DP
-    
+
     Domega(1) =  0.308641975308642_DP
     Domega(2) =  0.308641975308642_DP
     Domega(3) =  0.308641975308642_DP
@@ -3060,9 +3060,9 @@ contains
     Domega(7) =  0.493827160493827_DP
     Domega(8) =  0.493827160493827_DP
     Domega(9) =  0.790123456790123_DP
-    
+
     ncubp     =  9
-    
+
   case (CUB_G)
     Dxi(1,1)  =  0.92582009977255146_DP
     Dxi(1,2)  =  0.0_DP
@@ -3072,7 +3072,7 @@ contains
     Dxi(3,2)  =  0.92582009977255146_DP
     Dxi(4,1)  =  0.0_DP
     Dxi(4,2)  = -0.92582009977255146_DP
-    
+
     Dxi(5,1)  =  0.38055443320831566_DP
     Dxi(5,2)  =  0.38055443320831566_DP
     Dxi(6,1)  =  0.38055443320831566_DP
@@ -3081,7 +3081,7 @@ contains
     Dxi(7,2)  =  0.38055443320831566_DP
     Dxi(8,1)  = -0.38055443320831566_DP
     Dxi(8,2)  = -0.38055443320831566_DP
-    
+
     Dxi(9,1)  =  0.80597978291859874_DP
     Dxi(9,2)  =  0.80597978291859874_DP
     Dxi(10,1) =  0.80597978291859874_DP
@@ -3090,24 +3090,24 @@ contains
     Dxi(11,2) =  0.80597978291859874_DP
     Dxi(12,1) = -0.80597978291859874_DP
     Dxi(12,2) = -0.80597978291859874_DP
-    
+
     Domega(1) =  0.24197530864197531_DP
     Domega(2) =  0.24197530864197531_DP
     Domega(3) =  0.24197530864197531_DP
     Domega(4) =  0.24197530864197531_DP
-    
+
     Domega(5) =  0.52059291666739446_DP
     Domega(6) =  0.52059291666739446_DP
     Domega(7) =  0.52059291666739446_DP
     Domega(8) =  0.52059291666739446_DP
-    
+
     Domega(9) =  0.23743177469063023_DP
     Domega(10)=  0.23743177469063023_DP
     Domega(11)=  0.23743177469063023_DP
     Domega(12)=  0.23743177469063023_DP
-    
+
     ncubp     =  12
-    
+
   case (CUB_G4X4)
     Dxi(1,1)  =  0.861136311594053003_DP
     Dxi(1,2)  =  0.339981043584855994_DP
@@ -3125,7 +3125,7 @@ contains
     Dxi(7,2)  = -0.861136311594053003_DP
     Dxi(8,1)  = -0.339981043584855994_DP
     Dxi(8,2)  =  0.861136311594053003_DP
-    
+
     Dxi(9,1)  = -0.339981043584855994_DP
     Dxi(9,2)  =  0.339981043584855994_DP
     Dxi(10,1) =  0.339981043584855994_DP
@@ -3134,7 +3134,7 @@ contains
     Dxi(11,2) =  0.339981043584855994_DP
     Dxi(12,1) = -0.339981043584855994_DP
     Dxi(12,2) = -0.339981043584855994_DP
-    
+
     Dxi(13,1) =  0.861136311594053003_DP
     Dxi(13,2) = -0.861136311594053003_DP
     Dxi(14,1) = -0.861136311594053003_DP
@@ -3143,7 +3143,7 @@ contains
     Dxi(15,2) = -0.861136311594053003_DP
     Dxi(16,1) =  0.861136311594053003_DP
     Dxi(16,2) =  0.861136311594053003_DP
-    
+
     Domega(1) =  0.226851851851851888_DP
     Domega(2) =  0.226851851851851888_DP
     Domega(3) =  0.226851851851851888_DP
@@ -3152,7 +3152,7 @@ contains
     Domega(6) =  0.226851851851851888_DP
     Domega(7) =  0.226851851851851888_DP
     Domega(8) =  0.226851851851851888_DP
-    
+
     Domega(9) =  0.425293303010694096_DP
     Domega(10)=  0.425293303010694096_DP
     Domega(11)=  0.425293303010694096_DP
@@ -3161,7 +3161,7 @@ contains
     Domega(14)=  0.121002993285602101_DP
     Domega(15)=  0.121002993285602101_DP
     Domega(16)=  0.121002993285602101_DP
-    
+
     ncubp     =  16
 
   case (CUB_G5X5)
@@ -3173,7 +3173,7 @@ contains
     Dxi(3,2)  =  0.906179845938664005_DP
     Dxi(4,1)  = -0.906179845938664005_DP
     Dxi(4,2)  = -0.906179845938664005_DP
-    
+
     Dxi(5,1)  = -0.906179845938664005_DP
     Dxi(5,2)  = -0.538469310105682997_DP
     Dxi(6,1)  = -0.538469310105682997_DP
@@ -3190,7 +3190,7 @@ contains
     Dxi(11,2) =  0.906179845938664005_DP
     Dxi(12,1) =  0.906179845938664005_DP
     Dxi(12,2) = -0.538469310105682997_DP
-    
+
     Dxi(13,1) =  0.538469310105682997_DP
     Dxi(13,2) =  0.0_DP
     Dxi(14,1) =  0.0_DP
@@ -3199,7 +3199,7 @@ contains
     Dxi(15,2) =  0.0_DP
     Dxi(16,1) =  0.0_DP
     Dxi(16,2) = -0.538469310105682997_DP
-    
+
     Dxi(17,1) =  0.538469310105682997_DP
     Dxi(17,2) =  0.538469310105682997_DP
     Dxi(18,1) =  0.538469310105682997_DP
@@ -3208,7 +3208,7 @@ contains
     Dxi(19,2) =  0.538469310105682997_DP
     Dxi(20,1) = -0.538469310105682997_DP
     Dxi(20,2) = -0.538469310105682997_DP
-    
+
     Dxi(21,1) =  0.906179845938664005_DP
     Dxi(21,2) =  0.0_DP
     Dxi(22,1) =  0.0_DP
@@ -3217,44 +3217,44 @@ contains
     Dxi(23,2) =  0.0_DP
     Dxi(24,1) =  0.0_DP
     Dxi(24,2) = -0.906179845938664005_DP
-    
+
     Dxi(25,1) =  0.0_DP
     Dxi(25,2) =  0.0_DP
-    
+
     Domega(1) =  0.561343488624285944E-1_DP
     Domega(2) =  0.561343488624285944E-1_DP
     Domega(3) =  0.561343488624285944E-1_DP
     Domega(4) =  0.561343488624285944E-1_DP
-    
+
     Domega(5) =  0.113399999999999834_DP
     Domega(6) =  0.113399999999999834_DP
     Domega(7) =  0.113399999999999834_DP
     Domega(8) =  0.113399999999999834_DP
-    
+
     Domega(9) =  0.113399999999999834_DP
     Domega(10)=  0.113399999999999834_DP
     Domega(11)=  0.113399999999999834_DP
     Domega(12)=  0.113399999999999834_DP
-    
+
     Domega(13)=  0.272286532550750485_DP
     Domega(14)=  0.272286532550750485_DP
     Domega(15)=  0.272286532550750485_DP
     Domega(16)=  0.272286532550750485_DP
-    
+
     Domega(17)=  0.229085404223990666_DP
     Domega(18)=  0.229085404223990666_DP
     Domega(19)=  0.229085404223990666_DP
     Domega(20)=  0.229085404223990666_DP
-    
+
     Domega(21)=  0.134785072387520868_DP
     Domega(22)=  0.134785072387520868_DP
     Domega(23)=  0.134785072387520868_DP
     Domega(24)=  0.134785072387520868_DP
-    
+
     Domega(25)=  0.323634567901234682_DP
-    
+
     ncubp     =  25
-    
+
   case (CUB_PG1X1)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.5_DP
@@ -3264,12 +3264,12 @@ contains
     Dxi(3,2)  =  0.5_DP
     Dxi(4,1)  = -0.5_DP
     Dxi(4,2)  = -0.5_DP
-    
+
     Domega(1) =  1.0_DP
     Domega(2) =  1.0_DP
     Domega(3) =  1.0_DP
     Domega(4) =  1.0_DP
-    
+
     ncubp     =  4
 
   case (CUB_PTRZ)
@@ -3316,7 +3316,7 @@ contains
     Dxi(3,2)  =  0.2113248654051870_DP
     Dxi(4,1)  =  0.7886751345948130_DP
     Dxi(4,2)  =  0.2113248654051870_DP
-    
+
     Dxi(5,1)  = -0.7886751345948130_DP
     Dxi(5,2)  =  0.7886751345948130_DP
     Dxi(6,1)  = -0.2113248654051870_DP
@@ -3325,7 +3325,7 @@ contains
     Dxi(7,2)  =  0.2113248654051870_DP
     Dxi(8,1)  = -0.7886751345948130_DP
     Dxi(8,2)  =  0.2113248654051870_DP
-    
+
     Dxi(9,1)  =  0.7886751345948130_DP
     Dxi(9,2)  = -0.7886751345948130_DP
     Dxi(10,1) =  0.2113248654051870_DP
@@ -3334,7 +3334,7 @@ contains
     Dxi(11,2) = -0.2113248654051870_DP
     Dxi(12,1) =  0.7886751345948130_DP
     Dxi(12,2) = -0.2113248654051870_DP
-    
+
     Dxi(13,1) = -0.7886751345948130_DP
     Dxi(13,2) = -0.7886751345948130_DP
     Dxi(14,1) = -0.2113248654051870_DP
@@ -3343,7 +3343,7 @@ contains
     Dxi(15,2) = -0.2113248654051870_DP
     Dxi(16,1) = -0.7886751345948130_DP
     Dxi(16,2) = -0.2113248654051870_DP
-    
+
     Domega(1) =  0.25_DP
     Domega(2) =  0.25_DP
     Domega(3) =  0.25_DP
@@ -3360,9 +3360,9 @@ contains
     Domega(14)=  0.25_DP
     Domega(15)=  0.25_DP
     Domega(16)=  0.25_DP
-    
+
     ncubp     =  16
-    
+
   case (CUB_PG3X3)
     Dxi(1,1)  =  0.8872983346207415_DP
     Dxi(1,2)  =  0.8872983346207415_DP
@@ -3382,7 +3382,7 @@ contains
     Dxi(8,2)  =  0.1127016653792585_DP
     Dxi(9,1)  =  0.5_DP
     Dxi(9,2)  =  0.5_DP
-    
+
     Dxi(10,1) = -0.8872983346207415_DP
     Dxi(10,2) =  0.8872983346207415_DP
     Dxi(11,1) = -0.1127016653792585_DP
@@ -3401,7 +3401,7 @@ contains
     Dxi(17,2) =  0.1127016653792585_DP
     Dxi(18,1) = -0.5_DP
     Dxi(18,2) =  0.5_DP
-    
+
     Dxi(19,1) =  0.8872983346207415_DP
     Dxi(19,2) = -0.8872983346207415_DP
     Dxi(20,1) =  0.1127016653792585_DP
@@ -3420,7 +3420,7 @@ contains
     Dxi(26,2) = -0.1127016653792585_DP
     Dxi(27,1) =  0.5_DP
     Dxi(27,2) = -0.5_DP
-    
+
     Dxi(28,1) = -0.8872983346207415_DP
     Dxi(28,2) = -0.8872983346207415_DP
     Dxi(29,1) = -0.1127016653792585_DP
@@ -3439,28 +3439,28 @@ contains
     Dxi(35,2) = -0.1127016653792585_DP
     Dxi(36,1) = -0.5_DP
     Dxi(36,2) = -0.5_DP
-    
+
     do i=0,27,9
       Domega(1+i) = 0.7716049382716050E-1_DP
       Domega(2+i) = 0.7716049382716050E-1_DP
       Domega(3+i) = 0.7716049382716050E-1_DP
       Domega(4+i) = 0.7716049382716050E-1_DP
-      
+
       Domega(5+i) = 0.1234567901234570_DP
       Domega(6+i) = 0.1234567901234570_DP
       Domega(7+i) = 0.1234567901234570_DP
       Domega(8+i) = 0.1234567901234570_DP
     enddo
-    
+
     Domega(9) =  0.1975308641975310_DP
     Domega(18)=  0.1975308641975310_DP
     Domega(27)=  0.1975308641975310_DP
     Domega(36)=  0.1975308641975310_DP
-    
+
     ncubp     =  36
-    
+
   case (CUB_QPW4G3T_2D)
-  
+
     ! We have four triangles in the quad
     !
     ! -1,1              1,1
@@ -3476,7 +3476,7 @@ contains
     ! -1,-1             1,-1
     !
     ! On each triangle, there is an independent 3-point Gauss formula.
-    
+
 #define P1(a,b,c) 0.6666666666666667_DP*(a)+0.1666666666666667_DP*(b)+0.1666666666666667_DP*(c)
 #define P2(a,b,c) 0.1666666666666667_DP*(a)+0.6666666666666667_DP*(b)+0.1666666666666667_DP*(c)
 #define P3(a,b,c) 0.1666666666666667_DP*(a)+0.1666666666666667_DP*(b)+0.6666666666666667_DP*(c)
@@ -3520,11 +3520,11 @@ contains
 
     Dxi(12,1)  =  P3(-1.0_DP,-1.0_DP, 0.0_DP)
     Dxi(12,2)  =  P3( 1.0_DP,-1.0_DP, 0.0_DP)
-    
+
     ! Cubature weight is 1/3*area of the triangle.
     ! The triangle area is 1/4 * |[-1,1]^2| = 1/4*4 = 1.
     ! So the weight is constantly =1/3.
-    
+
     Domega(1) =  1.0_DP/3.0_DP
     Domega(2) =  1.0_DP/3.0_DP
     Domega(3) =  1.0_DP/3.0_DP
@@ -3537,9 +3537,9 @@ contains
     Domega(10) =  1.0_DP/3.0_DP
     Domega(11) =  1.0_DP/3.0_DP
     Domega(12) =  1.0_DP/3.0_DP
-  
+
     ncubp     =  12
-    
+
 #undef P1
 #undef P2
 #undef P3
@@ -3547,12 +3547,12 @@ contains
   case(CUB_QPW4QG2T_2D)
 
 #define RWCOORDS(d1,d2,d3,x1,x2,x3) (d1)*(x1) + (d2)*(x2) + (d3)*(x3)
-  
+
     ! This is a piecewise cubature formula.
     ! At first, compute the cubature formula of the corresponding
     ! triangular element
     call cub_getCubPoints(CUB_QG2_T, ncubp, DxiAux, Domega)
-        
+
     ! Next, map the cubature points onto the four sub-triangles
     ! and compute the quad coordinates
     do i=1,ncubp
@@ -3577,16 +3577,16 @@ contains
       Domega(i+0*ncubp) = Domega(i)*2.0_DP
 
     end do
-    
+
     ncubp = 4*ncubp
-    
+
   case(CUB_QPW4QG3T_2D)
-  
+
     ! This is a piecewise cubature formula.
     ! At first, compute the cubature formula of the corresponding
     ! triangular element
     call cub_getCubPoints(CUB_QG3_T, ncubp, DxiAux, Domega)
-        
+
     ! Next, map the cubature points onto the four sub-triangles
     ! and compute the quad coordinates
     do i=1,ncubp
@@ -3611,16 +3611,16 @@ contains
       Domega(i+0*ncubp) = Domega(i)*2.0_DP
 
     end do
-    
+
     ncubp = 4*ncubp
 
   case(CUB_QPW4QG4T_2D)
-  
+
     ! This is a piecewise cubature formula.
     ! At first, compute the cubature formula of the corresponding
     ! triangular element
     call cub_getCubPoints(CUB_QG4_T, ncubp, DxiAux, Domega)
-        
+
     ! Next, map the cubature points onto the four sub-triangles
     ! and compute the quad coordinates
     do i=1,ncubp
@@ -3645,16 +3645,16 @@ contains
       Domega(i+0*ncubp) = Domega(i)*2.0_DP
 
     end do
-    
+
     ncubp = 4*ncubp
 
   case(CUB_QPW4QG5T_2D)
-  
+
     ! This is a piecewise cubature formula.
     ! At first, compute the cubature formula of the corresponding
     ! triangular element
     call cub_getCubPoints(CUB_QG5_T, ncubp, DxiAux, Domega)
-        
+
     ! Next, map the cubature points onto the four sub-triangles
     ! and compute the quad coordinates
     do i=1,ncubp
@@ -3679,11 +3679,11 @@ contains
       Domega(i+0*ncubp) = Domega(i)*2.0_DP
 
     end do
-    
+
     ncubp = 4*ncubp
-    
+
 #undef RWCOORDS
-    
+
   case(CUB_SIMPSON)
     Dxi(1,1)  = -1.0_DP
     Dxi(1,2)  = -1.0_DP
@@ -3767,18 +3767,18 @@ contains
     Domega(15) = 0.1875_DP
     Domega(16) = 0.0625_DP
     ncubp     = 16
-    
+
   ! #################################################################
   ! triangle cubature formulas
   case(CUB_G1_T)
     Dxi(1,1)  =  0.3333333333333333_DP
     Dxi(1,2)  =  0.3333333333333333_DP
     Dxi(1,3)  =  0.3333333333333333_DP
-    
+
     Domega(1) =  0.5_DP
-    
+
     ncubp     =  1
-    
+
   case(CUB_TRZ_T)
     Dxi(1,1)  =  1.0_DP
     Dxi(1,2)  =  0.0_DP
@@ -3789,13 +3789,13 @@ contains
     Dxi(3,1)  =  0.0_DP
     Dxi(3,2)  =  0.0_DP
     Dxi(3,3)  =  1.0_DP
-    
+
     Domega(1) =  0.1666666666666667_DP
     Domega(2) =  0.1666666666666667_DP
     Domega(3) =  0.1666666666666667_DP
-    
+
     ncubp     =  3
-    
+
   case(CUB_G3MP_T)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.5_DP
@@ -3806,13 +3806,13 @@ contains
     Dxi(3,1)  =  0.5_DP
     Dxi(3,2)  =  0.0_DP
     Dxi(3,3)  =  0.5_DP
-    
+
     Domega(1) =  0.1666666666666667_DP
     Domega(2) =  0.1666666666666667_DP
     Domega(3) =  0.1666666666666667_DP
-    
+
     ncubp     =  3
-    
+
   case(CUB_G3_T)
     Dxi(1,1)  =  0.6666666666666667_DP
     Dxi(1,2)  =  0.1666666666666667_DP
@@ -3823,13 +3823,13 @@ contains
     Dxi(3,1)  =  0.1666666666666667_DP
     Dxi(3,2)  =  0.1666666666666667_DP
     Dxi(3,3)  =  0.6666666666666667_DP
-    
+
     Domega(1) =  0.1666666666666667_DP
     Domega(2) =  0.1666666666666667_DP
     Domega(3) =  0.1666666666666667_DP
-    
+
     ncubp     =  3
-    
+
   case(CUB_VMC)
     !center
     Dxi(1,1)  =  0.3333333333333333_DP
@@ -3872,17 +3872,17 @@ contains
     !
     ! Get the QUAD formula
     call cub_getCubPoints(CUB_G2X2, ncubp, DxiAux, Domega)
-    
+
     ! Map to the reference triangle
     call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
-    
+
   case (CUB_QG3_T)
     ! Quadrilateral 3-point Gauss formula,
     ! mapped on a triangle.
     !
     ! Get the QUAD formula
     call cub_getCubPoints(CUB_G3X3, ncubp, DxiAux, Domega)
-    
+
     ! Map to the reference triangle
     call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
 
@@ -3892,7 +3892,7 @@ contains
     !
     ! Get the QUAD formula
     call cub_getCubPoints(CUB_G4X4, ncubp, DxiAux, Domega)
-    
+
     ! Map to the reference triangle
     call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
 
@@ -3902,7 +3902,7 @@ contains
     !
     ! Get the QUAD formula
     call cub_getCubPoints(CUB_G5X5, ncubp, DxiAux, Domega)
-    
+
     ! Map to the reference triangle
     call cub_map2DQuadCub2TriCub (DxiAux,Dxi,Domega,ncubp)
 
@@ -3913,16 +3913,16 @@ contains
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  =  0.0_DP
-    
+
     Domega(1) =  8.0_DP
-    
+
     ncubp      =  1
-    
+
   case(CUB_MIDAREA_3D)
     Dxi(1,1)  =  0.0_DP
     Dxi(1,2)  =  0.0_DP
     Dxi(1,3)  = -1.0_DP
-    
+
     Dxi(2,1)  =  0.0_DP
     Dxi(2,2)  =  -1.0_DP
     Dxi(2,3)  =  0.0_DP
@@ -3995,7 +3995,7 @@ contains
     Domega(8) =  1.0_DP
 
     ncubp     =  8
-    
+
   case(CUB_G2_3D)
 
     Dxi(1,1)  =  0.577350269189626_DP
@@ -4042,112 +4042,112 @@ contains
     ncubp     =  8
 
   case(CUB_G3_3D)
-    
+
     Dxi(1,1)  =  0.774596669241483_DP
     Dxi(1,2)  =  0.774596669241483_DP
     Dxi(1,3)  = -0.774596669241483_DP
-    
+
     Dxi(2,1)  = -0.774596669241483_DP
     Dxi(2,2)  =  0.774596669241483_DP
     Dxi(2,3)  = -0.774596669241483_DP
-    
+
     Dxi(3,1)  =  0.774596669241483_DP
     Dxi(3,2)  = -0.774596669241483_DP
     Dxi(3,3)  = -0.774596669241483_DP
-    
+
     Dxi(4,1)  = -0.774596669241483_DP
     Dxi(4,2)  = -0.774596669241483_DP
     Dxi(4,3)  = -0.774596669241483_DP
-    
+
     Dxi(5,1)  =  0.774596669241483_DP
     Dxi(5,2)  =  0.0_DP
     Dxi(5,3)  = -0.774596669241483_DP
-    
+
     Dxi(6,1)  = -0.774596669241483_DP
     Dxi(6,2)  =  0.0_DP
     Dxi(6,3)  = -0.774596669241483_DP
-    
+
     Dxi(7,1)  =  0.0_DP
     Dxi(7,2)  =  0.774596669241483_DP
     Dxi(7,3)  = -0.774596669241483_DP
-    
+
     Dxi(8,1)  =  0.0_DP
     Dxi(8,2)  = -0.774596669241483_DP
     Dxi(8,3)  = -0.774596669241483_DP
-    
+
     Dxi(9,1)  =  0.0_DP
     Dxi(9,2)  =  0.0_DP
     Dxi(9,3)  = -0.774596669241483_DP
-    
+
     Dxi(10,1) =  0.774596669241483_DP
     Dxi(10,2) =  0.774596669241483_DP
     Dxi(10,3) =  0.0_DP
-    
-    
+
+
     Dxi(11,1) = -0.774596669241483_DP
     Dxi(11,2) =  0.774596669241483_DP
     Dxi(11,3) =  0.0_DP
-    
+
     Dxi(12,1) =  0.774596669241483_DP
     Dxi(12,2) = -0.774596669241483_DP
     Dxi(12,3) =  0.0_DP
-    
+
     Dxi(13,1) = -0.774596669241483_DP
     Dxi(13,2) = -0.774596669241483_DP
     Dxi(13,3) =  0.0_DP
-    
+
     Dxi(14,1) =  0.774596669241483_DP
     Dxi(14,2) =  0.0_DP
     Dxi(14,3) =  0.0_DP
-    
+
     Dxi(15,1) = -0.774596669241483_DP
     Dxi(15,2) =  0.0_DP
     Dxi(15,3) =  0.0_DP
-    
+
     Dxi(16,1) =  0.0_DP
     Dxi(16,2) =  0.774596669241483_DP
     Dxi(16,3) =  0.0_DP
-    
+
     Dxi(17,1) =  0.0_DP
     Dxi(17,2) = -0.774596669241483_DP
     Dxi(17,3) =  0.0_DP
-    
+
     Dxi(18,1) =  0.0_DP
     Dxi(18,2) =  0.0_DP
     Dxi(18,3) =  0.0_DP
-    
+
     Dxi(19,1) =  0.774596669241483_DP
     Dxi(19,2) =  0.774596669241483_DP
     Dxi(19,3) =  0.774596669241483_DP
-    
+
     Dxi(20,1) = -0.774596669241483_DP
     Dxi(20,2) =  0.774596669241483_DP
     Dxi(20,3) =  0.774596669241483_DP
-    
+
     Dxi(21,1) =  0.774596669241483_DP
     Dxi(21,2) = -0.774596669241483_DP
     Dxi(21,3) =  0.774596669241483_DP
-    
+
     Dxi(22,1) = -0.774596669241483_DP
     Dxi(22,2) = -0.774596669241483_DP
     Dxi(22,3) =  0.774596669241483_DP
-    
+
     Dxi(23,1) =  0.774596669241483_DP
     Dxi(23,2) =  0.0_DP
     Dxi(23,3) =  0.774596669241483_DP
-    
+
     Dxi(24,1) = -0.774596669241483_DP
     Dxi(24,2) =  0.0_DP
     Dxi(24,3) =  0.774596669241483_DP
-    
+
     Dxi(25,1) =  0.0_DP
     Dxi(25,2) =  0.774596669241483_DP
     Dxi(25,3) =  0.774596669241483_DP
-    
+
     Dxi(26,1) =  0.0_DP
     Dxi(26,2) = -0.774596669241483_DP
     Dxi(26,3) =  0.774596669241483_DP
-    
+
     Dxi(27,1) =  0.0_DP
     Dxi(27,2) =  0.0_DP
     Dxi(27,3) =  0.774596669241483_DP
@@ -4189,11 +4189,11 @@ contains
     Dxi(1,2)  =  0.25_DP
     Dxi(1,3)  =  0.25_DP
     Dxi(1,4)  =  0.25_DP
-    
+
     Domega(1) = 0.1666666666666667_DP
-    
+
     ncubp = 1
-    
+
   case(CUB_TRZ_3D_T)
     Dxi(1,1)  =  1.0_DP
     Dxi(1,2)  =  0.0_DP
@@ -4216,7 +4216,7 @@ contains
     Domega(2) =  0.0416666666666667_DP
     Domega(3) =  0.0416666666666667_DP
     Domega(4) =  0.0416666666666667_DP
-    
+
     ncubp     =  4
 
   case(CUB_S2_3D_T)
@@ -4236,14 +4236,14 @@ contains
     Dxi(4,2)  = 0.1381966011250105_DP
     Dxi(4,3)  = 0.1381966011250105_DP
     Dxi(4,4)  = 0.5854101966249685_DP
-    
+
     Domega(1) = 0.0416666666666667_DP
     Domega(2) = 0.0416666666666667_DP
     Domega(3) = 0.0416666666666667_DP
     Domega(4) = 0.0416666666666667_DP
-    
+
     ncubp = 4
-  
+
   case(CUB_S3_3D_T)
     Dxi( 1,1) = 0.1438564719343849_DP
     Dxi( 1,2) = 0.1438564719343849_DP
@@ -4296,9 +4296,9 @@ contains
     Domega( 8) = 0.0035816589021771_DP
     Domega( 9) = 0.0035816589021771_DP
     Domega(10) = 0.0035816589021771_DP
-    
+
     ncubp = 10
-  
+
   case(CUB_S5_3D_T)
     Dxi( 1,1)  = 0.25_DP
     Dxi( 1,2)  = 0.25_DP
@@ -4360,7 +4360,7 @@ contains
     Dxi(15,2)  = 0.4436491673103708_DP
     Dxi(15,3)  = 0.4436491673103708_DP
     Dxi(15,4)  = 0.0563508326896292_DP
-    
+
     Domega( 1) = 0.0197530864197531_DP
     Domega( 2) = 0.0119895139631698_DP
     Domega( 3) = 0.0119895139631698_DP
@@ -4376,7 +4376,7 @@ contains
     Domega(13) = 0.0088183421516755_DP
     Domega(14) = 0.0088183421516755_DP
     Domega(15) = 0.0088183421516755_DP
-    
+
     ncubp = 15
 
   ! #################################################################
@@ -4385,11 +4385,11 @@ contains
     Dxi(1,1) = 0.0_DP
     Dxi(1,2) = 0.0_DP
     Dxi(1,3) = 0.5_DP
-    
+
     Domega(1) = 1.3333333333333333_DP
-    
+
     ncubp = 1
-  
+
   case(CUB_TRZ_3D_Y)
     Dxi(1,1) = -1.0_DP
     Dxi(1,2) = -1.0_DP
@@ -4406,25 +4406,25 @@ contains
     Dxi(5,1) =  0.0_DP
     Dxi(5,2) =  0.0_DP
     Dxi(5,3) =  1.0_DP
-    
+
     Domega(1) = 0.26666666666666666_DP
     Domega(2) = 0.26666666666666666_DP
     Domega(3) = 0.26666666666666666_DP
     Domega(4) = 0.26666666666666666_DP
     Domega(5) = 0.26666666666666666_DP
-    
+
     ncubp = 5
-  
+
   ! prism
   case(CUB_G1_3D_R)
     Dxi(1,1) = 0.3333333333333333_DP
     Dxi(1,2) = 0.3333333333333333_DP
     Dxi(1,3) = 0.0_DP
-    
+
     Domega(1) = 1.0_DP
-    
+
     ncubp = 1
-  
+
   case(CUB_TRZ_3D_R)
     Dxi(1,1) =  0.0_DP
     Dxi(1,2) =  0.0_DP
@@ -4444,16 +4444,16 @@ contains
     Dxi(6,1) =  0.0_DP
     Dxi(6,2) =  1.0_DP
     Dxi(6,3) =  1.0_DP
-    
+
     Domega(1) = 0.16666666666666666_DP
     Domega(2) = 0.16666666666666666_DP
     Domega(3) = 0.16666666666666666_DP
     Domega(4) = 0.16666666666666666_DP
     Domega(5) = 0.16666666666666666_DP
     Domega(6) = 0.16666666666666666_DP
-    
+
     ncubp = 6
-  
+
   case(CUB_G2_3D_R)
     Dxi(1,1)  =  0.5_DP
     Dxi(1,2)  =  0.0_DP
@@ -4473,14 +4473,14 @@ contains
     Dxi(6,1)  =  0.0_DP
     Dxi(6,2)  =  0.5_DP
     Dxi(6,3)  =  0.577350269189626_DP
-    
+
     Domega(1) = 0.16666666666666666_DP
     Domega(2) = 0.16666666666666666_DP
     Domega(3) = 0.16666666666666666_DP
     Domega(4) = 0.16666666666666666_DP
     Domega(5) = 0.16666666666666666_DP
     Domega(6) = 0.16666666666666666_DP
-    
+
     ncubp = 6
 
   case default
@@ -4488,7 +4488,7 @@ contains
                      OU_CLASS_ERROR,OU_MODE_STD,"cub_getCubPoints")
     call sys_halt()
   end select
-   
+
   end subroutine cub_getCubPoints
 
   !****************************************************************************
@@ -4496,7 +4496,7 @@ contains
 !<subroutine>
 
   subroutine cub_map2DQuadCub2TriCub (DxiQuad,DxiTri,Domega,ncubp)
-  
+
 !<description>
   ! This subroutine maps an arbitrary 2D quadrilateral cubature
   ! formula into a triangular formular. The approach merges two points
@@ -4574,22 +4574,22 @@ contains
     ! The cubature points transform according to sigma.
     ! The cubature weights transform according to the
     ! Jacobian of sigma.
-    
+
     ! Loop over all points
     do i=1,ncubp
       ! Calculate the Jacobian of the mapping between the two
       ! reference elements
       ddet = 0.125_DP*(1.0_DP - DxiQuad(i,1))
-      
+
       ! Calculate the new weight
       Domega(i) = ddet * Domega(i)
-      
+
       ! Calculate the new x/y coordinate of the point
       dx = 0.5_DP + 0.5_DP * DxiQuad(i,1)
-          
+
       dy = 0.25_DP - 0.25_DP * DxiQuad(i,1) + 0.25_DP*DxiQuad(i,2) &
          - 0.25_DP * DxiQuad(i,1) * DxiQuad(i,2)
-          
+
       ! Calculate the barycentric coordinates of the point
       call gaux_getBarycentricCoords_tri2D(&
           DrefTri,dx,dy,DxiTri(i,1),DxiTri(i,2),DxiTri(i,3))

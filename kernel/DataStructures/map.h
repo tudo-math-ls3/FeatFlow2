@@ -1,5 +1,3 @@
-!-*- mode: f90; -*-
-
 #ifndef _MAP_H_
 #define _MAP_H_
 
@@ -187,7 +185,7 @@
   interface map_swap
     module procedure FEAT2_PP_TEMPLATE_TD(map_swap,T,D)
   end interface
-  
+
   interface map_begin
     module procedure FEAT2_PP_TEMPLATE_TD(map_begin,T,D)
   end interface
@@ -195,7 +193,7 @@
   interface map_rbegin
     module procedure FEAT2_PP_TEMPLATE_TD(map_rbegin,T,D)
   end interface
-  
+
   interface map_end
     module procedure FEAT2_PP_TEMPLATE_TD(map_end,T,D)
   end interface
@@ -226,16 +224,16 @@
     module procedure FEAT2_PP_TEMPLATE_TD(map_insert1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(map_insert2,T,D)
   end interface
-  
+
   interface map_erase
     module procedure FEAT2_PP_TEMPLATE_TD(map_erase1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(map_erase2,T,D)
   end interface
-  
+
   interface map_size
     module procedure FEAT2_PP_TEMPLATE_TD(map_size,T,D)
   end interface
-  
+
   interface map_max_size
     module procedure FEAT2_PP_TEMPLATE_TD(map_max_size,T,D)
   end interface
@@ -243,23 +241,23 @@
   interface map_empty
     module procedure FEAT2_PP_TEMPLATE_TD(map_empty,T,D)
   end interface
-  
+
   interface map_find
     module procedure FEAT2_PP_TEMPLATE_TD(map_find,T,D)
   end interface
- 
+
   interface map_print
     module procedure FEAT2_PP_TEMPLATE_TD(map_print,T,D)
   end interface
-  
+
   interface map_info
     module procedure FEAT2_PP_TEMPLATE_TD(map_info,T,D)
   end interface
-  
+
   interface map_duplicate
     module procedure FEAT2_PP_TEMPLATE_TD(map_duplicate,T,D)
   end interface
-  
+
   interface map_restore
     module procedure FEAT2_PP_TEMPLATE_TD(map_restore,T,D)
   end interface
@@ -271,8 +269,8 @@
   interface map_hasSpec
     module procedure FEAT2_PP_TEMPLATE_TD(map_hasSpec,T,D)
   end interface
-  
-  
+
+
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(map_fassign,T,D)
   end interface
@@ -281,7 +279,7 @@
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_TD(it_map_eq,T,D)
   end interface
-  
+
   interface operator(/=)
     module procedure FEAT2_PP_TEMPLATE_TD(it_map_ne,T,D)
   end interface
@@ -310,7 +308,7 @@
 
   type FEAT2_PP_TEMPLATE_TD(t_map,T,D)
     private
-    
+
     ! The map is realised as AVL-tree. This special kind of binary
     ! search trees takes special care that the tree is well balanced,
     ! that is, the hieht of no two subtrees differs by more than two.
@@ -328,7 +326,7 @@
 
     ! Total number of resize operations
     integer :: nresize = 0
-    
+
     ! Factor by which the map is enlarged if new storage is allocate
     real(DP) :: dfactor = 1.5_DP
 
@@ -351,7 +349,7 @@
     ! Handle and pointer to the children data
     integer :: h_Kchild = ST_NOHANDLE
     integer, dimension(:,:), pointer :: p_Kchild => null()
-    
+
 #ifdef D
     ! Dimension of the auxiliary data values to be stored
     integer :: isizeData = 0
@@ -365,7 +363,7 @@
 #endif
 
   end type
-  
+
 !</typeblock>
 
 !<typeblock>
@@ -411,7 +409,7 @@ contains
 !<input>
     ! Total number of items that can be stored in the map
     integer, intent(in) :: NNA
-    
+
 #ifdef D
     ! Dimension of the auxiliary data values to be stored
     integer, intent(in) :: isizeData
@@ -430,7 +428,7 @@ contains
 
     ! local variables
     integer, dimension(2) :: Isize1,Isize2
-    
+
     ! Set factor
     if (present(dfactor)) then
       if (dfactor > 1.0_DP) rmap%dfactor=dfactor
@@ -439,14 +437,14 @@ contains
     ! Initialise map
     rmap%NNA  = max(0,NNA)
     rmap%NNA0 = max(0,NNA)
-    
+
     ! Allocate memory for internal tree structure
     Isize1 = (/MLEFT, MROOT/)
     Isize2 = (/MRIGHT,rmap%NNA/)
     call storage_new('map_create', 'Kchild', Isize1, Isize2,&
                      ST_INT, rmap%h_Kchild, ST_NEWBLOCK_ZERO)
     call storage_getbase_int2D(rmap%h_Kchild, rmap%p_Kchild)
-    
+
     call storage_new('map_create', 'Kparent', MROOT, rmap%NNA,&
                      ST_INT, rmap%h_Kparent, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rmap%h_Kparent, rmap%p_Kparent)
@@ -490,7 +488,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_release,T,D)(rmap)
 
 !<description>
@@ -543,7 +541,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_resize,T,D)(rmap, NNA)
 
 !<description>
@@ -563,7 +561,7 @@ contains
 
     ! local variables
     integer :: NNAOld
-    
+
 #ifndef T_STORAGE
     FEAT2_PP_TTYPE(T_TYPE), dimension(:), pointer :: p_Key
 #endif
@@ -585,7 +583,7 @@ contains
     call storage_realloc('map_resize', rmap%NNA+1,&
                          rmap%h_Kchild, ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_int2D(rmap%h_Kchild, rmap%p_Kchild)
-    
+
     call storage_realloc('map_resize', rmap%NNA+1,&
                          rmap%h_Kparent, ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_int(rmap%h_Kparent, rmap%p_Kparent)
@@ -607,7 +605,7 @@ contains
     rmap%p_Key(1:NNAOld) = p_Key
     deallocate(p_Key)
 #endif
-    
+
 #ifdef D
     ! Reallocate auxiliary data
     if (rmap%isizeData > 0) then
@@ -631,7 +629,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_clear,T,D)(rmap)
 
 !<description>
@@ -809,7 +807,7 @@ contains
     D_TYPE, dimension(:,:), pointer :: p_DataDest
 
     if (present(h_DataDest)) then
-    
+
       ! Check key handle
       if (h_KeyDest .eq. ST_NOHANDLE) then
         call storage_new('map_cpy3', 'Key',&
@@ -822,7 +820,7 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-      
+
       if (rmap%isizeData <= 0) then
         if (h_DataDest .ne. ST_NOHANDLE) call storage_free(h_DataDest)
         call output_line('Map does not provide auxiliary data!',&
@@ -830,7 +828,7 @@ contains
 
         ! Copy key values from the tree
         call map_copy(rmap, p_KeyDest)
-        
+
         ! That`s it
         return
       end if
@@ -847,17 +845,17 @@ contains
           call output_line('Size of data array is not compatible!',&
               OU_CLASS_ERROR,OU_MODE_STD,'map_cpy3')
         end if
-        
+
         if (Isize2(2) < rmap%NA) then
           call storage_realloc('map_cpy3',&
               rmap%NA, h_DataDest, ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
       call storage_getbase(h_DataDest, p_DataDest)
-              
+
       ! Copy key and data values from the tree
       call map_copy(rmap, p_KeyDest, p_DataDest)
-      
+
     else
 
       ! Check key handle
@@ -872,10 +870,10 @@ contains
         end if
       end if
       call storage_getbase(h_KeyDest, p_KeyDest)
-      
+
       ! Copy key values from the tree
       call map_copy(rmap, p_KeyDest)
-      
+
     end if
 #else
     call output_line('Map does not support storage handles!',&
@@ -897,7 +895,7 @@ contains
       end if
     end if
     call storage_getbase(h_KeyDest, p_KeyDest)
-    
+
     ! Copy key valus from the tree
     call map_copy(rmap, p_KeyDest)
 
@@ -950,7 +948,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'map_cpy4')
       call sys_halt()
     end if
-  
+
 #ifdef D
 
     if (present(DataDest)) then
@@ -963,15 +961,15 @@ contains
       end if
 
       j = 0 ! initialise global counter
-      
+
       call copyKeyData(rmap%p_Kchild(MRIGHT, MROOT))
 
     else
 
       j = 0 ! initialise global counter
-      
+
       call copyKey(rmap%p_Kchild(MRIGHT, MROOT))
-      
+
     end if
 
 #else
@@ -983,15 +981,15 @@ contains
 #endif
 
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !**************************************************************
     ! Copy the content of the key to an array (inorder traversal)
-    
+
     recursive subroutine copyKey(i)
       integer, intent(in) :: i
-      
+
       if (rmap%p_Kchild(MLEFT,i) .ne. MNULL)&
           call copyKey(rmap%p_Kchild(MLEFT,i))
 
@@ -1002,15 +1000,15 @@ contains
           call copyKey(rmap%p_Kchild(MRIGHT,i))
 
     end subroutine copyKey
-    
+
 #ifdef D
-    
+
     !**************************************************************
     ! Copy the content of the key and data to arrays (inorder traversal)
-    
+
     recursive subroutine copyKeyData(i)
       integer, intent(in) :: i
-      
+
       if (rmap%p_Kchild(MLEFT,i) .ne. MNULL)&
           call copyKeyData(rmap%p_Kchild(MLEFT,i))
 
@@ -1036,7 +1034,7 @@ contains
 !<description>
     ! This subroutine swaps content of two maps
 !</description>
-    
+
 !<inputoutput>
     ! First map
     type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap1
@@ -1048,12 +1046,12 @@ contains
 
     ! local variables
     type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)) :: rmap
-    
+
     ! Swap maps
     rmap  = rmap1
     rmap1 = rmap2
     rmap2 = rmap
-    
+
     ! Reassociated pointers of first map
     call storage_getbase_int(rmap1%h_Kbal, rmap1%p_Kbal)
     call storage_getbase_int(rmap1%h_Kparent, rmap1%p_Kparent)
@@ -1077,13 +1075,13 @@ contains
     if (rmap2%h_Data .ne. ST_NOHANDLE) &
         call storage_getbase(rmap2%h_Data, rmap2%p_Data)
 #endif
-    
+
   end subroutine
 
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(map_begin,T,D)(rmap) result(riterator)
 
 !<description>
@@ -1102,7 +1100,7 @@ contains
 !</result>
 
 !</function>
-    
+
     ! Attach map to iterator
     riterator%p_rmap => rmap
 
@@ -1121,7 +1119,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(map_rbegin,T,D)(rmap) result(riterator)
 
 !<description>
@@ -1140,7 +1138,7 @@ contains
 !</result>
 
 !</function>
-    
+
     ! Attach map to iterator
     riterator%p_rmap => rmap
 
@@ -1159,7 +1157,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(map_end,T,D)(rmap) result(riterator)
 
 !<description>
@@ -1177,7 +1175,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
-    
+
     ! Attach map to iterator
     riterator%p_rmap => rmap
 
@@ -1190,7 +1188,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   function FEAT2_PP_TEMPLATE_TD(map_rend,T,D)(rmap) result(riterator)
 
 !<description>
@@ -1208,7 +1206,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)) :: riterator
 !</result>
 !</function>
-    
+
     ! Attach map to iterator
     riterator%p_rmap => rmap
 
@@ -1221,7 +1219,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_next,T,D)(riterator)
 
 !<description>
@@ -1233,14 +1231,14 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     integer :: iparent
 
     if (iand(riterator%iSpec, MAP_MSPEC_REVERSE).eq.0) then
 
       if (.not.map_isNull(riterator)) then
-        
+
         ! 1. If right subtree of node is not NULL, then successor lies
         ! in right subtree. Do following. Go to right subtree and return
         ! the node with minimum key value in right subtree.
@@ -1249,11 +1247,11 @@ contains
           do while (riterator%p_rmap%p_Kchild(MLEFT,riterator%ipos) .ne. MNULL)
             riterator%ipos = riterator%p_rmap%p_Kchild(MLEFT,riterator%ipos)
           end do
-          
+
           ! That`s it
           return
         end if
-        
+
         ! If right subtree of node is NULL, then successor is one of the
         ! ancestors. Do following. Travel up using the parent pointer
         ! until you see a node which is left child of it’s parent. The
@@ -1276,7 +1274,7 @@ contains
     else
 
       if (.not.map_isNull(riterator)) then
-        
+
         ! 1. If right subtree of node is not NULL, then successor lies
         ! in left subtree. Do following. Go to left subtree and return
         ! the node with maximum key value in left subtree.
@@ -1285,11 +1283,11 @@ contains
           do while (riterator%p_rmap%p_Kchild(MRIGHT,riterator%ipos) .ne. MNULL)
             riterator%ipos = riterator%p_rmap%p_Kchild(MRIGHT,riterator%ipos)
           end do
-          
+
           ! That`s it
           return
         end if
-        
+
         ! If left subtree of node is NULL, then successor is one of the
         ! ancestors. Do following. Travel up using the parent pointer
         ! until you see a node which is right child of it’s parent. The
@@ -1306,9 +1304,9 @@ contains
 
         ! Get largest key in map
         riterator = map_rbegin(riterator%p_rmap)
-        
+
       end if
-     
+
     end if
 
   end subroutine
@@ -1316,7 +1314,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_prior,T,D)(riterator)
 
 !<description>
@@ -1328,7 +1326,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(it_map,T,D)), intent(inout) :: riterator
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     integer :: iparent
 
@@ -1344,11 +1342,11 @@ contains
           do while (riterator%p_rmap%p_Kchild(MRIGHT,riterator%ipos) .ne. MNULL)
             riterator%ipos = riterator%p_rmap%p_Kchild(MRIGHT,riterator%ipos)
           end do
-          
+
           ! That`s it
           return
         end if
-        
+
         ! If left subtree of node is NULL, then successor is one of the
         ! ancestors. Do following. Travel up using the parent pointer
         ! until you see a node which is right child of it’s parent. The
@@ -1371,7 +1369,7 @@ contains
     else
 
       if (.not.map_isNull(riterator)) then
-        
+
         ! 1. If right subtree of node is not NULL, then successor lies
         ! in right subtree. Do following. Go to right subtree and return
         ! the node with minimum key value in right subtree.
@@ -1380,11 +1378,11 @@ contains
           do while (riterator%p_rmap%p_Kchild(MLEFT,riterator%ipos) .ne. MNULL)
             riterator%ipos = riterator%p_rmap%p_Kchild(MLEFT,riterator%ipos)
           end do
-          
+
           ! That`s it
           return
         end if
-        
+
         ! If right subtree of node is NULL, then successor is one of the
         ! ancestors. Do following. Travel up using the parent pointer
         ! until you see a node which is left child of it’s parent. The
@@ -1396,7 +1394,7 @@ contains
           iparent = riterator%p_rmap%p_Kparent(iparent)
         end do
         riterator%ipos = iparent
-        
+
       else
 
         ! Get smallest key in map
@@ -1405,7 +1403,7 @@ contains
       end if
 
     end if
-    
+
   end subroutine
 
   !************************************************************************
@@ -1465,12 +1463,12 @@ contains
     FEAT2_PP_TTYPE(T_TYPE) :: key
 !</result>
 !</function>
-    
+
     ! Get key
     key = rmap%p_key(rposition%ipos)
 
   end function
-  
+
   !************************************************************************
 
 !<function>
@@ -1520,15 +1518,15 @@ contains
     jpos = MROOT
     idir = MRIGHT
     ipos = rmap%p_Kchild(idir,jpos)
-    
+
     search: do
       if (ipos .eq. MNULL) exit search
-      
+
       if (rmap%p_Key(ipos) .eq. key) then
         bexists = .true.
         exit search
       end if
-      
+
       jpos = ipos
       idir = merge(MLEFT,MRIGHT,rmap%p_Key(jpos) > key)
       ipos = rmap%p_Kchild(idir,jpos)
@@ -1551,7 +1549,7 @@ contains
         end if
       end if
 #endif
-      
+
     else
 
       ! Adjust size and position
@@ -1561,7 +1559,7 @@ contains
       ! Check if memory needs to be expanded
       if (abs(ipos) > rmap%NNA) &
           call map_resize(rmap,ceiling(rmap%dfactor*rmap%NNA))
-      
+
       ! Compute next free position in memory
       if (ipos > 0) then
         rmap%p_Kchild(MFREE,MROOT) = ipos+1
@@ -1576,7 +1574,7 @@ contains
       rmap%p_Kparent(ipos)       = jpos
       rmap%p_Kchild(MLEFT, ipos) = MNULL
       rmap%p_Kchild(MRIGHT,ipos) = MNULL
-      
+
       ! Insert new node into the tree and into the search path
       rmap%p_Kchild(idir,jpos) = ipos
 
@@ -1591,11 +1589,11 @@ contains
         end if
       end if
 #endif
-      
+
       ! Invoke rebalance procedure
       if (jpos .ne. MROOT) call rebalanceAfterInsert(rmap, jpos, idir)
     end if
-    
+
     ! Initialise the iterator referring to the current element
     riterator%p_rmap => rmap
     riterator%ipos   = ipos
@@ -1640,12 +1638,12 @@ contains
 #ifdef D
     FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_data
 #endif
-    
+
     riter = rfirst
     do while(riter /= rlast)
 
       key = map_get(riter%p_rmap, riter)
-      
+
 #ifdef D
       call map_getbase_data(riter%p_rmap, riter, p_data)
       riterator = map_insert(rmap, key, p_data)
@@ -1677,7 +1675,7 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     integer :: idir,ipos,ipred
 
@@ -1689,7 +1687,7 @@ contains
 
     ! Compute new dimensions
     rmap%NA = rmap%NA-1
-    
+
     ! Check if node to be deleted has two children.
     if ((rmap%p_Kchild(MLEFT, ipos) .ne. MNULL) .and. &
         (rmap%p_Kchild(MRIGHT,ipos) .ne. MNULL)) then
@@ -1715,7 +1713,7 @@ contains
           ! That`s it
           exit descend
         end if
-        
+
         ! Proceed with right subtree
         ipred = ipos
         idir  = MRIGHT
@@ -1724,7 +1722,7 @@ contains
       ! Now, element IPOS to be deleted has less than two childen
       ipos = rmap%p_Kchild(idir,ipred)
     end if
-    
+
     if (rmap%p_Kchild(MLEFT,ipos) .eq. MNULL) then
       if (rmap%p_Kchild(MRIGHT,ipos) .eq. MNULL) then
         ! Element IPOS to be deleted is leaf
@@ -1743,7 +1741,7 @@ contains
     ! Mark element IPOS as deleted
     rmap%p_Kchild(MFREE,ipos)  = rmap%p_Kchild(MFREE,MROOT)
     rmap%p_Kchild(MFREE,MROOT) = -ipos
-    
+
     ! Invoke rebalance procedure
     if (ipred .ne. MROOT) call rebalanceAfterDeletion(rmap, ipred, idir)
 
@@ -1827,7 +1825,7 @@ contains
         riterator%ipos  = rmap%p_Kchild(MRIGHT,riterator%ipos)
       end if
     end do find
-    
+
     ! If we are here, then the element could not be found
     riterator%ipos  = MNULL
 
@@ -1836,7 +1834,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_print,T,D)(rmap)
 
 !<description>
@@ -1858,13 +1856,13 @@ contains
       write(*,*) rmap%p_Key(riterator%ipos)
       call map_next(riterator)
     end do
-    
+
   end subroutine
 
   !************************************************************************
 
 !<subroutine>
-  
+
   subroutine FEAT2_PP_TEMPLATE_TD(map_info,T,D)(rmap)
 
 !<description>
@@ -1975,7 +1973,7 @@ contains
     end if
 #endif
 #endif
-   
+
   end subroutine
 
   !************************************************************************
@@ -1998,10 +1996,10 @@ contains
     type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(inout) :: rmap
 !</inputoutput>
 !</subroutine>
-    
+
     ! Release map
     call map_release(rmap)
-    
+
     ! Duplicate the backup
     call map_duplicate(rmapBackup, rmap)
 
@@ -2112,15 +2110,15 @@ contains
 
     ! Set size
     rmapDest%NA = rmapSrc%NA
-    
+
     ! Set structure
     rmapDest%p_Kbal   = rmapSrc%p_Kbal
     rmapDest%p_Kchild = rmapSrc%p_Kchild
-    
+
 #ifdef D
     rmapDest%p_Data = rmapSrc%p_Data
 #endif
-    
+
   end subroutine
 
   !************************************************************************
@@ -2329,13 +2327,13 @@ contains
     bge = (riterator1%ipos >= riterator2%ipos)
 
   end function
-  
+
   !########################################################################
   !# Auxiliary routines private to this module
   !########################################################################
 
 !<subroutine>
-  
+
   recursive subroutine rebalanceAfterInsert(rmap, v, idir)
 
 !<description>
@@ -2360,17 +2358,17 @@ contains
 
     ! local variables
     integer :: d,r,w,x,y,z
-    
+
     ! Which rotation needs to be performed?
     select case (idir)
-      
+
     case (MLEFT)
       ! Node V has been reached from the left
       select case(rmap%p_Kbal(v))
-        
+
       case (1) ! bal(v)=1
         rmap%p_Kbal(v) = 0
-        
+
       case (0) ! bal(v)=0
         rmap%p_Kbal(v) = -1
 
@@ -2380,13 +2378,13 @@ contains
           d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
           call rebalanceAfterInsert(rmap,r,d)
         end if
-        
+
       case (-1) ! bal(v)=-1
         x = rmap%p_Kchild(MLEFT,v)
         w = rmap%p_Kchild(MRIGHT,x)
-        
+
         select case(rmap%p_Kbal(x))
-          
+
         case (-1,0) ! bal(x)=-1 or bal(x)=0
           ! Get root of subtree
           r = rmap%p_Kparent(v)
@@ -2403,7 +2401,7 @@ contains
 
           rmap%p_Kbal(x)          = rmap%p_Kbal(x)+1
           rmap%p_Kbal(v)          = -rmap%p_Kbal(x)
-          
+
         case (1) ! bal(x)=1
           ! Get root of subtree
           r = rmap%p_Kparent(v)
@@ -2428,16 +2426,16 @@ contains
           rmap%p_Kbal(x)          = -max(0,rmap%p_Kbal(w))
           rmap%p_Kbal(w)          = 0
         end select
-        
+
       end select
-      
+
     case (MRIGHT)
       ! Node V has been reached from the right
       select case(rmap%p_Kbal(v))
-        
+
       case (-1) ! bal(v)=-1
         rmap%p_Kbal(v) = 0
-        
+
       case (0) ! bal(v)=0
         rmap%p_Kbal(v) = 1
         if (v .ne. rmap%p_Kchild(MRIGHT,MROOT)) then
@@ -2446,13 +2444,13 @@ contains
           d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
           call rebalanceAfterInsert(rmap,r,d)
         end if
-        
+
       case (1) ! bal(v)=1
         x = rmap%p_Kchild(MRIGHT,v)
         w = rmap%p_Kchild(MLEFT,x)
-        
+
         select case(rmap%p_Kbal(x))
-          
+
         case (0,1) ! bal(x)=0 or bal(x)=1
           ! Get root of subtree
           r = rmap%p_Kparent(v)
@@ -2469,7 +2467,7 @@ contains
 
           rmap%p_Kbal(x)          = rmap%p_Kbal(x)-1
           rmap%p_Kbal(v)          = -rmap%p_Kbal(x)
-          
+
         case (-1) ! bal(x)=-1
           ! Get root of subtree
           r = rmap%p_Kparent(v)
@@ -2494,9 +2492,9 @@ contains
           rmap%p_Kbal(x)          = -min(0,rmap%p_Kbal(w))
           rmap%p_Kbal(w)          = 0
         end select
-        
+
       end select
-      
+
     end select
 
   end subroutine
@@ -2504,7 +2502,7 @@ contains
   !************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine rebalanceAfterDeletion(rmap, v, idir)
 
 !<description>
@@ -2530,17 +2528,17 @@ contains
 
     ! local variables
     integer :: d,r,w,x,xbal,y,z
-    
+
     ! Which rotation needs to be performed?
     select case (idir)
-      
+
     case (MLEFT)
       ! Node V has been reached from the left
       select case (rmap%p_Kbal(v))
-        
+
       case (0) ! bal(v)=0
         rmap%p_Kbal(v) = 1
-        
+
       case (-1) ! bal(v)=-1
         rmap%p_Kbal(v) = 0
 
@@ -2550,7 +2548,7 @@ contains
           d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
           call rebalanceAfterDeletion(rmap,r,d)
         end if
-        
+
       case (1) ! bal(v)=1
         x = rmap%p_Kchild(MRIGHT,v)
         w = rmap%p_Kchild(MLEFT,x)
@@ -2560,11 +2558,11 @@ contains
         d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
 
         select case(rmap%p_Kbal(x))
-          
+
         case (-1) ! bal(x)=-1
           y = rmap%p_Kchild(MLEFT,w)
           z = rmap%p_Kchild(MRIGHT,w)
-          
+
           ! Double-Right-Left-rotation
           rmap%p_Kchild(MRIGHT,v) = y
           rmap%p_Kchild(MLEFT,x)  = z
@@ -2576,18 +2574,18 @@ contains
           rmap%p_Kparent(x)       = w
           rmap%p_Kparent(y)       = v
           rmap%p_Kparent(z)       = x
-          
+
           rmap%p_Kbal(v)          = -max(0,rmap%p_Kbal(w))
           rmap%p_Kbal(x)          = -min(0,rmap%p_Kbal(w))
           rmap%p_Kbal(w)          = 0
-          
+
           if (v .eq. rmap%p_Kchild(MRIGHT,MROOT)) then
             rmap%p_Kchild(MRIGHT,MROOT) = w
           else
             rmap%p_Kchild(d,r) = w
             call rebalanceAfterDeletion(rmap,r,d)
           end if
-          
+
         case DEFAULT ! bal(x)=0 or bal(x)=1
 
           ! Single-Left-rotation
@@ -2601,25 +2599,25 @@ contains
           xbal                    = rmap%p_Kbal(x)
           rmap%p_Kbal(x)          = rmap%p_Kbal(x)-1
           rmap%p_Kbal(v)          = -rmap%p_Kbal(x)
-          
+
           if (v .eq. rmap%p_Kchild(MRIGHT,MROOT)) then
             rmap%p_Kchild(MRIGHT,MROOT) = x
           else
             rmap%p_Kchild(d,r) = x
             if (xbal .eq. 1) call rebalanceAfterDeletion(rmap,r,d)
           end if
-          
+
         end select
-        
+
       end select
-      
+
     case (MRIGHT)
       ! Node V has been reached from the right
       select case (rmap%p_Kbal(v))
-        
+
       case (0) ! bal(v)=0
         rmap%p_Kbal(v) = -1
-        
+
       case (1) ! bal(v)=1
         rmap%p_Kbal(v) = 0
 
@@ -2629,7 +2627,7 @@ contains
           d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
           call rebalanceAfterDeletion(rmap,r,d)
         end if
-        
+
       case (-1) ! bal(v)=-1
         x = rmap%p_Kchild(MLEFT,v)
         w = rmap%p_Kchild(MRIGHT,x)
@@ -2637,9 +2635,9 @@ contains
         ! Get root of subtree
         r = rmap%p_Kparent(v)
         d = merge(MLEFT, MRIGHT, rmap%p_Kchild(MLEFT,r) .eq. v)
-        
+
         select case(rmap%p_Kbal(x))
-          
+
         case (1) ! bal(x)=1
           y = rmap%p_Kchild(MLEFT,w)
           z = rmap%p_Kchild(MRIGHT,w)
@@ -2659,14 +2657,14 @@ contains
           rmap%p_Kbal(v)          = -min(0,rmap%p_Kbal(w))
           rmap%p_Kbal(x)          = -max(0,rmap%p_Kbal(w))
           rmap%p_Kbal(w)          = 0
-          
+
           if (v .eq. rmap%p_Kchild(MRIGHT,MROOT)) then
             rmap%p_Kchild(MRIGHT,MROOT) = w
           else
             rmap%p_Kchild(d,r) = w
             call rebalanceAfterDeletion(rmap,r,d)
           end if
-          
+
         case DEFAULT ! bal(x)=0 or bal(x)=-1
           ! Single-Right-rotation
           rmap%p_Kchild(MLEFT,v)  = w
@@ -2679,22 +2677,22 @@ contains
           xbal                    = rmap%p_Kbal(x)
           rmap%p_Kbal(x)          = rmap%p_Kbal(x)+1
           rmap%p_Kbal(v)          = -rmap%p_Kbal(x)
-          
+
           if (v .eq. rmap%p_Kchild(MRIGHT,MROOT)) then
             rmap%p_Kchild(MRIGHT,MROOT) = x
           else
             rmap%p_Kchild(d,r) = x
             if (xbal .eq. -1) call rebalanceAfterDeletion(rmap,r,d)
           end if
-          
+
         end select
-        
+
       end select
-      
+
     end select
 
   end subroutine
-  
+
   !************************************************************************
 
 !<function>
@@ -2721,7 +2719,7 @@ contains
     bisConsistent = .true.
     if (rmap%p_Kchild(MRIGHT,MROOT) .ne. MNULL)&
         bisConsistent = consistency(rmap%p_Kchild(MRIGHT,MROOT))
-    
+
   contains
 
     recursive function consistency(ipos) result(bisConsistent)
@@ -2730,10 +2728,10 @@ contains
 
       ! Initialisation
       bisConsistent = .true.
-      
+
       ! Left child?
       if (rmap%p_Kchild(MLEFT,ipos) .ne. MNULL) then
-        
+
         ! Check consistency between left child and parent ndoe
         bisConsistent = (bisConsistent .and.&
             rmap%p_Kparent(rmap%p_Kchild(MLEFT,ipos)) .eq. ipos)
@@ -2742,10 +2740,10 @@ contains
         bisConsistent = (bisConsistent .and.&
             consistency(rmap%p_Kchild(MLEFT,ipos)))
       end if
-      
+
       ! Right child?
       if (rmap%p_Kchild(MRIGHT,ipos) .ne. MNULL) then
-        
+
         ! Check consistency between right child and parent ndoe
         bisConsistent = (bisConsistent .and.&
             rmap%p_Kparent(rmap%p_Kchild(MRIGHT,ipos)) .eq. ipos)
@@ -2754,7 +2752,7 @@ contains
         bisConsistent = (bisConsistent .and.&
             consistency(rmap%p_Kchild(MRIGHT,ipos)))
       end if
-          
+
     end function
 
   end function
@@ -2762,7 +2760,7 @@ contains
   !************************************************************************
 
 !<function>
-  
+
   elemental function log2(i)
 
 !<description>
@@ -2779,7 +2777,7 @@ contains
     real(DP) :: log2
 !</result>
 !</function>
-        
+
     log2 = log(real(i,DP))/log(2._DP)
 
   end function
@@ -2814,19 +2812,19 @@ contains
     pure recursive function height(ipos) result(h)
       integer, intent(in) :: ipos
       integer :: h,hl,hr
-      
+
       if (rmap%p_Kchild(MLEFT,ipos) .ne. MNULL) then
         hl = height(rmap%p_Kchild(MLEFT,ipos))
       else
         hl = 0
       end if
-      
+
       if (rmap%p_Kchild(MRIGHT,ipos) .ne. MNULL) then
         hr = height(rmap%p_Kchild(MRIGHT,ipos))
       else
         hr = 0
       end if
-      
+
       h = max(hl,hr)+1
     end function height
 

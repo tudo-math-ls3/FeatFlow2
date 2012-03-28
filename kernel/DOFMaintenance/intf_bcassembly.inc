@@ -1,29 +1,26 @@
-  ! -*- mode: f90; -*-
-
-
   ! This file describes the interface for a callback routine that is called
   ! for calculating values at the boundary for boundary conditions.
-  
+
   interface
-  
+
   !<subroutine>
 
     subroutine fgetBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-    
+
     use fsystem
     use boundary
     use collection
     use spatialdiscretisation
     use discretebc
-    
+
   !<description>
     ! This subroutine is called during the discretisation of boundary
     ! conditions. It calculates a special quantity on the boundary, which is
     ! then used by the discretisation routines to generate a discrete
     ! 'snapshot' of the (actually analytic) boundary conditions.
   !</description>
-    
+
   !<input>
     ! Component specifier.
     ! For Dirichlet boundary:
@@ -36,23 +33,23 @@
     !   (usually "1 2" for x- and y-velocity while returned value musr specify
     !   the pressure at the boundary)
     integer, dimension(:), intent(in)                           :: Icomponents
-  
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-    
+
     ! Boundary region that is currently being processed.
     type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
-    
+
     ! The element number on the boundary which is currently being processed
     integer, intent(in)                                         :: ielement
-    
+
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
     integer, intent(in)                                         :: cinfoNeeded
-    
+
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
@@ -90,7 +87,7 @@
     ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
-  
+
   !<output>
     ! This array receives the calculated information. If the caller
     ! only needs one value, the computed quantity is put into Dvalues(1).
@@ -102,9 +99,9 @@
     ! node.
     real(DP), dimension(:), intent(out) :: Dvalues
   !</output>
-    
+
   !</subroutine>
-  
+
       ! To get the X/Y-coordinates of the boundary point, use:
       !
       ! real(DP) :: dx,dy
@@ -113,6 +110,6 @@
       !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
     end subroutine
-    
+
   end interface
-  
+

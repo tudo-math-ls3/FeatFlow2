@@ -65,7 +65,7 @@ module arraylist
 
 !<constants>
 !<constantblock description="Global flags for arraylist implementations">
-  
+
   ! Arraylist for integer data
   integer, parameter :: ALST_INT           = ST_INT
   integer, parameter :: ALST_INT_INT       = ST_INT + 100*ST_INT
@@ -117,7 +117,7 @@ module arraylist
 
 !</typeblock>
 !</types>
-  
+
 contains
 
   !************************************************************************
@@ -140,7 +140,7 @@ contains
     type(t_arraylist), intent(out) :: rarraylist
 !</output>
 !</subroutine>
-    
+
     select case (carraylistType)
     case (ALST_INT)
       allocate(rarraylist%p_ArraylistInt)
@@ -153,7 +153,7 @@ contains
 
     case (ALST_INT_SINGLE)
       allocate(rarraylist%p_ArraylistInt_Sngl)
-      
+
     case (ALST_DOUBLE)
       allocate(rarraylist%p_ArraylistDble)
 
@@ -165,7 +165,7 @@ contains
 
     case (ALST_DOUBLE_SINGLE)
       allocate(rarraylist%p_ArraylistDble_Sngl)
-    
+
     case (ALST_SINGLE)
       allocate(rarraylist%p_ArraylistSngl)
 
@@ -174,10 +174,10 @@ contains
 
     case (ALST_SINGLE_DOUBLE)
       allocate(rarraylist%p_ArraylistSngl_Dble)
-      
+
     case (ALST_SINGLE_SINGLE)
         allocate(rarraylist%p_ArraylistSngl_Sngl)
-  
+
     case DEFAULT
       call output_line('Invalid arraylist type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'alst_init')
@@ -625,5 +625,5 @@ contains
     end if
 
   end subroutine alst_getbase_sngl_sngl
-  
+
 end module arraylist

@@ -103,7 +103,7 @@ module hadaptivity
   public :: hadapt_checkConsistency
 
 contains
-  
+
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
@@ -218,7 +218,7 @@ contains
 
     ! Generate "elements-meeting-at-vertex" structure
     call hadapt_genElementsAtVertex(rhadapt)
-    
+
     ! Create generation array and initialise all nodes with "age" 0
     call storage_new('hadapt_initFromTriangulation','p_IvertexAge',&
                      rhadapt%NVT, ST_INT, rhadapt%h_IvertexAge, ST_NEWBLOCK_ZERO)
@@ -240,7 +240,7 @@ contains
 !<inputoutput>
     ! adaptivity structure
     type(t_hadapt), intent(inout) :: rhadapt
-    
+
     ! triangulation structure
     type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
@@ -297,9 +297,9 @@ contains
     ! Generate extended raw mesh information for edge (and face)
     ! numbering.
     call tria_initExtendedRawMesh (rtriangulation)
-    
+
   end subroutine hadapt_generateRawMesh
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -333,7 +333,7 @@ contains
 
       case(NDIM2D)
         call qtree_release(rhadapt%rVertexCoordinates2D)
-        
+
       case(NDIM3D)
         call otree_release(rhadapt%rVertexCoordinates3D)
 
@@ -363,14 +363,14 @@ contains
                          rhadapt%h_IvertexAge)
     call checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
                          rhadapt%h_ImidneighboursAtElement)
-    
+
     ! Nullify "performance-pointers"
     nullify(rhadapt%p_IvertexAge)
     nullify(rhadapt%p_InodalProperty)
     nullify(rhadapt%p_IverticesAtElement)
     nullify(rhadapt%p_IneighboursAtElement)
     nullify(rhadapt%p_ImidneighboursAtElement)
-    
+
     ! Clear parameters
     rhadapt%iadaptationStrategy  = HADAPT_NOADAPTATION
     rhadapt%drefinementTolerance = 0._DP
@@ -396,7 +396,7 @@ contains
     rhadapt%InelOfType0      = 0
 
   contains
-    
+
     subroutine checkAndRelease (idupFlag, ibitfield, ihandle)
 
       ! Checks if idupFlag has all bits ibitfield set.
@@ -406,13 +406,13 @@ contains
       integer(I32), intent(in) :: ibitfield
       integer(I32), intent(in) :: idupFlag
       integer, intent(inout) :: ihandle
-      
+
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (ihandle .ne. ST_NOHANDLE) call storage_free(ihandle)
       else
         ihandle = ST_NOHANDLE
       end if
-      
+
     end subroutine checkAndRelease
 
   end subroutine hadapt_releaseAdaptation
@@ -451,7 +451,7 @@ contains
     ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between
     ! rhadapt and rhadaptBackup.
     integer(I32), intent(in) :: iduplicationFlag
-  
+
     ! OPTIONAL. Defines how to create the backup.
     ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary,
     !    information in rhadaptBackup is released. rhadaptBackup is rebuild
@@ -487,7 +487,7 @@ contains
 
     bupd = .false.
     if (present(bupdate)) bupd = bupdate
-    
+
     if (.not. bupd) then
       ! Release any old data.
       call hadapt_releaseAdaptation(rhadaptBackup)
@@ -571,7 +571,7 @@ contains
     ! Bit   6: rVertexCoordinates
     if (iand(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .ne.&
                        HADAPT_SHARE_RVERTEXCOORDINATES) then
-      
+
       select case(rhadaptBackup%ndim)
       case (NDIM1D)
         call storage_copy(rhadapt%h_DvertexCoords1D,&
@@ -590,11 +590,11 @@ contains
         call sys_halt()
       end select
     end if
-        
+
     ! Bit   7: rBoundary
     if (iand(idupFlag, HADAPT_SHARE_RBOUNDARY) .ne.&
                        HADAPT_SHARE_RBOUNDARY) then
-      
+
       if (associated(rhadaptBackup%rBoundary)) then
         do ibct = 1, size(rhadaptBackup%rBoundary,1)
           call map_release(rhadaptBackup%rBoundary(ibct))
@@ -608,7 +608,7 @@ contains
                            rhadaptBackup%rBoundary(ibct))
       end do
     end if
-    
+
     ! Bit   8: rElementsAtVertex
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
                        HADAPT_SHARE_RELEMENTSATVERTEX) then
@@ -617,19 +617,19 @@ contains
     end if
 
   contains
-    
+
     subroutine checkAndCopy (idupFlag, ibitfield, isourcehandle, idesthandle)
-      
+
       ! Checks if idupFlag has all bits ibitfield set.
       ! If yes, idesthandle is set to isourcehandle.
       ! Otherwise, the memory behind isourcehandle is duplicated in memory
       ! and idesthandle receives the handle to the new memory block.
-      
+
       integer(I32), intent(in) :: ibitfield
       integer(I32), intent(in) :: idupFlag
       integer, intent(in) :: isourcehandle
       integer, intent(inout) :: idesthandle
-      
+
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
           call storage_copy(isourcehandle, idesthandle)
@@ -637,7 +637,7 @@ contains
       else
         idesthandle = isourcehandle
       end if
-      
+
     end subroutine checkAndCopy
 
   end subroutine hadapt_duplicateAdaptation
@@ -645,7 +645,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine hadapt_restoreAdaptation(rhadaptBackup, rhadapt)
 
 !<description>
@@ -671,7 +671,7 @@ contains
     ! local variables
     integer(I32) :: idupFlag
     integer :: ibct
-  
+
     idupFlag = rhadapt%iduplicationFlag
 
     rhadapt%iSpec                = rhadaptBackup%iSpec
@@ -698,11 +698,11 @@ contains
 
     ! Call checkAndCopy for all components. This will either copy the handle
     ! or allocate new memory and copy the content of the component.
-    
+
     ! Bit   0: Imarker
     call checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
                       rhadapt%h_Imarker, rhadaptBackup%h_Imarker)
-   
+
     ! Bit   1: IvertexAge
     call checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
                       rhadapt%h_IvertexAge, rhadaptBackup%h_IvertexAge)
@@ -739,7 +739,7 @@ contains
     ! Bit   6: rVertexCoordinates
     if (iand(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .ne.&
                        HADAPT_SHARE_RVERTEXCOORDINATES) then
-      
+
       select case(rhadaptBackup%ndim)
       case (NDIM1D)
         call storage_copy(rhadaptBackup%h_DvertexCoords1D,&
@@ -773,7 +773,7 @@ contains
                          rhadapt%rBoundary(ibct))
       end do
     end if
-    
+
 
     ! Bit   8: rElementsAtVertex
     if (iand(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .ne.&
@@ -781,26 +781,26 @@ contains
       call alst_restore(rhadaptBackup%rElementsAtVertex,&
                         rhadapt%rElementsAtVertex)
     end if
-  
+
   contains
-    
+
     subroutine checkAndCopy (idupFlag, ibitfield, idesthandle, isourcehandle)
-      
+
       ! Checks if idupFlag has all bits ibitfield set.
       ! If not, the memory behind isourcehandle is copied to idesthandle
       ! overwriting all previous information.
-      
+
       integer(I32), intent(in) :: ibitfield
       integer(I32), intent(in) :: idupFlag
       integer, intent(in) :: isourcehandle
       integer, intent(inout) :: idesthandle
-      
+
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
           call storage_copy(isourcehandle, idesthandle)
         end if
       end if
-      
+
     end subroutine checkAndCopy
 
   end subroutine hadapt_restoreAdaptation
@@ -808,7 +808,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine hadapt_refreshAdaptation(rhadapt, rtriangulation)
 
 !<description>
@@ -951,7 +951,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
         call sys_halt()
       end if
-      
+
     case (NDIM2D)
       if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA2D) .ne.&
                               HADAPT_HAS_DYNAMICDATA2D) then
@@ -986,13 +986,13 @@ contains
     rhadapt%NEL0        = rhadapt%NEL
     rhadapt%NVBD0       = rhadapt%NVBD
     rhadapt%increaseNVT = 0
-    
+
     ! What kind of grid refinement should be performed
     select case(rhadapt%iadaptationStrategy)
 
     ! No grid refinement
     case (HADAPT_NOADAPTATION)
-      
+
     ! Red-green grid refinement
     case (HADAPT_REDGREEN)
 
@@ -1001,7 +1001,7 @@ contains
       case (NDIM1D)
         ! Mark elements for refinement based on indicator function
         call hadapt_markRefinement1D(rhadapt, rindicator)
-        
+
         ! Mark element for recoarsening based on indicator function
         call hadapt_markCoarsening1D(rhadapt, rindicator)
 
@@ -1017,14 +1017,14 @@ contains
       case (NDIM2D)
         ! Mark elements for refinement based on indicator function
         call hadapt_markRefinement2D(rhadapt, rindicator)
-        
+
         ! Mark additional elements to restore conformity
         call hadapt_markRedgreenRefinement2D(rhadapt, rcollection,&
                                              fcb_hadaptCallback)
-        
+
         ! Mark element for recoarsening based on indicator function
         call hadapt_markRedgreenCoarsening2D(rhadapt, rindicator)
-        
+
         ! Compute new dimensions
         nvt = rhadapt%NVT+rhadapt%increaseNVT
         nel = hadapt_CalcNumberOfElements2D(rhadapt)
@@ -1034,8 +1034,8 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
         call sys_halt()
       end select
-      
-      
+
+
       ! Adjust array IvertexAge
       call storage_realloc('hadapt_performAdaptation', nvt,&
                            rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .true.)
@@ -1048,7 +1048,7 @@ contains
                              rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
         call storage_getbase_int(rhadapt%h_InodalProperty, rhadapt%p_InodalProperty)
       end if
-    
+
       ! Adjust array IverticesAtElement
       if (iand(rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .eq.&
                               HADAPT_HAS_VERTATELEM) then
@@ -1116,19 +1116,19 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
         call sys_halt()
       end select
-            
+
     case DEFAULT
       call output_line('Unsupported refinement strategy!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
       call sys_halt()
     end select
-    
+
   end subroutine hadapt_performAdaptation
 
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine hadapt_infoStatistics(rhadapt)
 
 !<description>
@@ -1144,7 +1144,7 @@ contains
     ! local variables
     integer, dimension(2) :: Isize
     integer :: ibct
-    
+
     call output_line('Adaptivity statistics:')
     call output_line('----------------------')
     call output_line('Total number of grid refinement steps:           '//&
@@ -1195,7 +1195,7 @@ contains
       call otree_info(rhadapt%rVertexCoordinates3D)
     end select
     call output_lbrk
-    
+
     call output_line('Boundary:')
     call output_line('---------')
     do ibct=1,rhadapt%NBCT
@@ -1232,7 +1232,7 @@ contains
     type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
-    
+
     ! local parameters
     integer,  dimension(:), pointer :: p_Imarker
     integer :: ivt,iel,iunit,nve
@@ -1247,7 +1247,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
         call sys_halt()
       end if
-      
+
     case (NDIM2D)
       if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA2D) .ne.&
                               HADAPT_HAS_DYNAMICDATA2D) then
@@ -1269,7 +1269,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
       call sys_halt()
     end select
-        
+
     ! Set pointers
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
 
@@ -1294,7 +1294,7 @@ contains
       do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
         write(UNIT=iunit,FMT=10) 0._DP
       end do
-      
+
     case (NDIM2D)
       write(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
       do ivt = 1, qtree_getSize(rhadapt%rVertexCoordinates2D)
@@ -1324,7 +1324,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
       call sys_halt()
     end select
-      
+
 
     ! Write cells to output file
     write(UNIT=iunit,FMT=*) 'cells ', rhadapt%NEL
@@ -1342,7 +1342,7 @@ contains
       case(TRIA_NVEQUAD2D)
         write(UNIT=iunit,FMT=*) 'quad 4'
         write(UNIT=iunit,FMT=30) rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D, iel)
-        
+
       case DEFAULT
         call output_line('Invalid element type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
@@ -1439,7 +1439,7 @@ contains
 
       ! Get number of vertices per element
       nve = hadapt_getNVE(rhadapt, iel)
-      
+
       ! Loop over all adjacent elements
       do ive = 1, nve
         jel    = rhadapt%p_IneighboursAtElement(ive, iel)
@@ -1453,13 +1453,13 @@ contains
 
         ! Do nothing if we are adjacent to the boundary
         if (jel .eq. 0 .or. jelmid .eq. 0) cycle
-        
+
         ! Is neighboring element subdivided?
         if (jel .eq. jelmid) then
-          
+
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt,jel)
-          
+
           ! Find element IEL in adjacency list of JEL
           bfound = .false.
           do jve = 1, mve
@@ -1476,12 +1476,12 @@ contains
             end if
           end do
           btest = btest .and. bfound
-          
+
         else
 
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt, jel)
-          
+
           ! Find element IEL in adjacency list of JEL
           bfound = .false.
           do jve = 1, mve
@@ -1501,7 +1501,7 @@ contains
 
           ! Get number of vertices per element
           mve = hadapt_getNVE(rhadapt, jelmid)
-          
+
           ! Find element IEL in adjacency list of JELMID
           bfound = .false.
           do jve = 1, mve
@@ -1531,12 +1531,12 @@ contains
 
       ! Get number of vertices per element
       nve = hadapt_getNVE(rhadapt, iel)
-      
+
       ! Loop over all adjacent elements
       do ive = 1, nve
         jel    = rhadapt%p_IneighboursAtElement(ive, iel)
         jelmid = rhadapt%p_ImidneighboursAtElement(ive, iel)
-        
+
         ! Check that adjacent element number is not larger than the
         ! total number of elements present in the triangulation
         if (jel > rhadapt%NEL .or. jelmid > rhadapt%NEL) then
@@ -1545,7 +1545,7 @@ contains
 
         ! Do nothing if we are adjacent to the boundary
         if (jel .eq. 0 .or. jelmid .eq. 0) cycle
-        
+
         ! Do nothing if there exists a temporal hanging node
         if (jel .ne. jelmid) cycle
 
@@ -1565,7 +1565,7 @@ contains
             cycle
           end if
         end do
-        
+
         ! If the common edge has been found, check the two endpoints
         if (bfound) then
           bfound = ((rhadapt%p_IverticesAtElement(ive, iel) .eq. &
@@ -1582,7 +1582,7 @@ contains
     ! Test #5: Check consistency of element-meeting-at-vertex lists
     btest = (alst_ntable(rhadapt%rElementsAtVertex) .eq. rhadapt%NVT)
     if (btest) then
-      
+
       ! Create index array
       call storage_new('hadapt_checkConsistency', 'IelementAtVertexIdx', rhadapt%NVT+1,&
                        ST_INT, h_IelementsAtVertexIdx, ST_NEWBLOCK_ZERO)
@@ -1628,7 +1628,7 @@ contains
           p_IelementsAtVertex(idx)    = iel
         end do
       end do
-      
+
       ! Restore index array
       do ivt = rhadapt%NVT+1, 2, -1
         p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt-1)
@@ -1638,13 +1638,13 @@ contains
       ! Start to compare the temporal elements-meeting-at-vertex list
       ! and the dynamic data structure from the adaptivity structure
       do ivt = 1, rhadapt%NVT
-        
+
         ! Get first entry in array list
         ralstIter = alst_begin(rhadapt%rElementsAtVertex, ivt)
-        
+
         ! Repeat until there is no entry left in the array list
         do while (.not.alst_isNull(ralstIter))
-          
+
           ! Get element number IEL
           iel = alst_get(rhadapt%rElementsAtVertex, ralstIter)
 
@@ -1680,5 +1680,5 @@ contains
     end if
 
   end subroutine hadapt_checkConsistency
-    
+
 end module hadaptivity

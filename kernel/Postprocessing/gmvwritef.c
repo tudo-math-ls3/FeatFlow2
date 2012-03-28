@@ -467,7 +467,7 @@ void fgmvwrite_general_cell_type__(char cell_type[], int nverts[], int *nfaces, 
 {
   gmvwrite_general_cell_type(fortchartocfield(cell_type,8), nverts, *nfaces, nodeids);
 } 
-                 
+
 
 /* ---------------------------------------------------------------- */
 
@@ -1167,7 +1167,7 @@ void fgmvwrite_tracers_endtrace_()
 {
   gmvwrite_tracers_endtrace();
 }
-  
+
 void fgmvwrite_tracers_endtrace__()
 {
   gmvwrite_tracers_endtrace();
@@ -1328,7 +1328,7 @@ void fgmvwrite_cellids__(char *cellids)
 {
   gmvwrite_cellids(cellids);
 }  
-   
+
 
 /* ---------------------------------------------------------------- */
 
@@ -1397,7 +1397,7 @@ void fgmvwrite_surface_data__(int *nverts, char *nodeids)
 {
   gmvwrite_surface_data(*nverts, nodeids);
 }   
- 
+
 
 /* ---------------------------------------------------------------- */
 

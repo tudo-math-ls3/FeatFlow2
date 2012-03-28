@@ -1,5 +1,3 @@
-! -*- mode: f90; -*-
-  
   interface
 
 !<subroutine>
@@ -7,7 +5,7 @@
   subroutine fcb_calcFailsafe(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, ndim1, ndim2, ioperationSpec, dscale, dtol,&
       ML, Dx, Dalpha, Dflux, bisAccepted, Dbeta, rcollection)
-      
+
 !<description>
     ! This subroutine calculates the failsafe correction factors
 !</description>
@@ -38,7 +36,7 @@
     ! OR combination of different AFCSTAB_FAILSAFE_xxxx constants and
     ! specifies which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
-    
+
     ! Lumped mass matrix
     real(DP), dimension(:), intent(in) :: ML
 
