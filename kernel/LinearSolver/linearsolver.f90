@@ -652,6 +652,7 @@ module linearsolver
   use genoutput
   use iluk
   use spsor
+  use mprimitives
   
   use matrixio
   
@@ -692,7 +693,8 @@ module linearsolver
   public :: linsol_initMultigrid2
   public :: linsol_initSchur
   public :: linsol_initSPSOR
-  
+  public :: linsol_initBlockJac
+    
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
   
   public :: linsol_getMultigrid2Level,linsol_getMultigrid2LevelCount
@@ -775,6 +777,9 @@ module linearsolver
   
   ! SP-SOR iteration
   integer, parameter, public :: LINSOL_ALG_SPSOR         = 56
+  
+  ! Block Jacobi iteration
+  integer, parameter, public :: LINSOL_ALG_BLOCKJAC      = 57
   
 !</constantblock>
 
@@ -3172,6 +3177,8 @@ contains
       call linsol_precMultigrid2 (rsolverNode,rd)
     case (LINSOL_ALG_SCHUR)
       call linsol_precSchur (rsolverNode,rd)
+    case (LINSOL_ALG_BLOCKJAC)
+      call linsol_precBlockJac (rsolverNode,rd)
     end select
 
   end subroutine
@@ -16212,6 +16219,349 @@ contains
       rsolverNode%dconvergenceRate = 1.0_DP
       rsolverNode%dasymptoticConvergenceRate = 1.0_DP
     end if
+  
+  end subroutine
+
+! *****************************************************************************
+! Routines for the Block-Jacobi solver (for DG discretisations)
+! *****************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initBlockJac (p_rsolverNode)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the Block-Jacobi solver. The
+  ! node can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  ! It is a special solver taking advantage of the block-structure stemming
+  ! from a discontinuous Galerkin discretisation.
+
+!</description>
+  
+!<input>
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_BLOCKJAC
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                                LINSOL_ABIL_DIRECT
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_matCompatBlockJac (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+  integer :: i,n
+  type(t_matrixScalar), pointer :: p_rblock => null()
+
+    ! Normally we are compatible.
+    ccompatible = LINSOL_COMP_OK
+    
+    ! Get the index of the top-level matrix
+    n = ubound(Rmatrices,1)
+    
+    ! Let us make sure the matrix is not rectangular.
+    if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
+      
+      ! Rectangular block matrix
+      ccompatible = LINSOL_COMP_ERRMATRECT
+      
+    else
+    
+      ! Okay, let us loop through all main diagonal blocks.
+      do i = 1, Rmatrices(n)%nblocksPerRow
+      
+        ! Get the diagonal block
+        p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
+        
+        ! Is the matrix empty?
+        if(p_rblock%NEQ .eq. 0) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! Is the scaling factor zero?
+        if(p_rblock%dscaleFactor .eq. 0.0_DP) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! What about the matrix type?
+        if((p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+           (p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+          ! Matrix type not supported
+          ccompatible = LINSOL_COMP_ERRMATTYPE
+          exit
+        end if
+        
+        ! This block is okay, continue with next one
+      
+      end do
+    
+    end if
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    if (present(CcompatibleDetail)) &
+        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  subroutine linsol_precBlockJac (rsolverNode,rd)
+  
+  use triangulation
+  use spatialdiscretisation
+  use element
+  use dofmapping
+  
+!<description>
+  ! Applies the Jacobi preconditioner <tex>$ D \in A $<tex> to the defect
+  ! vector rd and solves <tex>$ Dd_{new} = d $<tex>.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Jacobi solver
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: ieq, iblock
+    
+    type(t_matrixScalar), pointer :: p_rmatrix
+    integer, dimension(:), pointer :: p_KCOL, p_KLD
+    integer, dimension(:), pointer :: p_IelementList
+    integer :: NEL, iel, igel, iFESpace, indof, i, ig, j, jg,iloc
+    integer(I32) :: celement
+    real(DP) :: dlocOmega
+    real(SP) :: flocOmega
+    real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
+    real(SP), dimension(:), pointer :: p_Fvector, p_Fmatrix
+    real(dp), dimension(:,:), allocatable :: DlocMat
+    real(dp), dimension(:), allocatable :: DlocVec, DlocSol
+    integer, dimension(:), allocatable :: IdofGlob
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_elementDistribution), pointer :: p_relemDist
+    logical :: bsuccess
+    
+      ! Status reset
+      rsolverNode%iresult = 0
+
+      ! Loop through all blocks. Each block corresponds to one
+      ! diagonal block in the matrix.
+      do iblock = 1, rd%nblocks
+        
+        ! Get the matrix
+        p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
+        
+        ! Now we have to make some decisions. At first, which matrix
+        ! structure do we have?
+        select case (p_rmatrix%cmatrixFormat)
+        case (LSYSSC_MATRIX9)
+        
+          ! Get the omega parameter for the matrix. Do not forget the scaling
+          ! factor in the matrix!
+          dlocomega = rsolverNode%domega / p_rmatrix%dScaleFactor
+
+          ! Now, which data format do we have? Single or double?
+          select case (p_rmatrix%cdataType)
+          case (ST_DOUBLE)
+            ! Get pointers to the matrix data
+            call lsyssc_getbase_Kcol (p_rmatrix,p_KCOL)
+            call lsyssc_getbase_Kld (p_rmatrix,p_KLD)
+            call lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
+            
+            ! Take care of the accuracy of the vector
+            select case (rd%RvectorBlock(iblock)%cdataType)
+            case (ST_DOUBLE)
+              ! Get the data array
+              call lsyssc_getbase_double (rd%RvectorBlock(iblock),p_Dvector)
+              
+              ! Get pointers for quicker access
+              p_rspatialDiscr => p_rmatrix%p_rspatialDiscrTest
+              p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+
+              ! Get number of elements
+              NEL = p_rtriangulation%NEL
+
+              ! Loop over all element distributions
+              do iFESpace = 1, p_rspatialDiscr%inumFESpaces
+
+                ! Get the element distribution from the spatial discretisation
+                p_relemDist => p_rspatialDiscr%RelementDistr(iFESpace)
+
+                ! Get type of element in this distribution
+                celement =  p_relemDist%celement
+
+                ! Get number of local DOF
+                indof = elem_igetNDofLoc(celement)
+                
+                ! Allocate space for global DOFs
+                allocate(IdofGlob(indof))
+
+                ! Get list of all elements in this distribution
+                call storage_getbase_int(p_relemDist%h_IelementList, p_IelementList)
+
+                ! Allocate local matrix and vector
+                allocate(DlocMat(indof,indof), DlocVec(indof), DlocSol(indof))
+
+                ! Loop over all elements in this element distribution
+                do iel = 1, p_relemDist%NEL
+
+                  ! Get global element number
+                  igel = p_IelementList(iel)
+
+                  ! Map local to global DOFs
+                  call dof_locGlobMapping(p_rspatialDiscr, igel, IdofGlob)
+
+                  !!! Get entries from the global into the local matrix
+                  ! Loop over all local lines
+                  do i = 1, indof
+                    ! Get global line
+                    ig = IdofGlob(i)
+
+                    ! Loop over all local columns
+                    do j = 1, indof
+                      ! Get global columns
+                      jg = IdofGlob(j)
+
+                      do iloc = p_KLD(ig), p_KLD(ig+1)-1
+                        if (jg.eq.p_KCOL(iloc)) exit
+                      end do
+
+                      DlocMat(i,j) = p_Dmatrix(iloc)
+
+                    end do
+                  end do
+
+                  !!! Now get local vector
+                  do i = 1, indof
+                    ! Get global line
+                    ig = IdofGlob(i)
+                     
+                    ! Get global entry in local vector
+                    DlocVec(i) = p_Dvector(ig)
+                  end do
+
+                  !!! Now solve local linear system
+                  call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
+                                              indof, 2, bsuccess)
+
+                  ! Test if local system could be solved
+                  if (.not.bsuccess) then
+                    call output_line ( &
+                      'Local matricx singular.', &
+                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+                      do i = 1,size(DlocMat,1)
+                        write(*,*) DlocMat(i,:)
+                      end do
+                    call sys_halt()
+                  end if
+
+                  !!! Distribute local solution to global solution
+                  do i = 1, indof
+                    ! Get global line
+                    ig = IdofGlob(i)
+                     
+                    ! Get local entry in global vector
+                    p_Dvector(ig) = dlocOmega * DlocSol(i)
+                  end do
+                  
+                end do ! iel
+                  
+                ! Deallocate local matrix and vector
+                deallocate(DlocMat, DlocVec, DlocSol)
+                
+                ! Deallocate space for global DOFs
+                deallocate(IdofGlob)
+                  
+              end do ! iFESpace
+              
+            case default
+              call output_line ('Unsupported vector precision.', &
+                                OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+              call sys_halt()
+            end select
+         
+         
+          case default
+            call output_line ('Unsupported matrix precision.', &
+                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+            call sys_halt()
+          end select
+        
+        case default
+          call output_line ('Unsupported matrix format.', &
+                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+          call sys_halt()
+        end select
+        
+      end do
   
   end subroutine
   
