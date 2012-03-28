@@ -621,6 +621,8 @@ contains
       ifirstNode = 1
       i = rvector%nblocks
       allocate (p_RdiscrNodes(i))
+
+      ndiscrNodes = 0
       
     end if
 
