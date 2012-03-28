@@ -73,18 +73,52 @@ module blockmatassemblybase
     integer, dimension(:,:), pointer :: p_IdofsTest => null()
     integer, dimension(:,:), pointer :: p_IdofsTrial => null()
     
+    ! Specifies whether the corresponding matrix is interleaved.
+    ! =.FALSE.: Matrix is not interleaved. The local matrix entries
+    !           must be saved to p_Dentry. p_DentryIntl is undefined.
+    ! =.TRUE.:  Matrix is interleaved. The local matrix entries
+    !           must be saved to p_DentryIntl. p_Dentry is undefined.
+    logical :: bisInterleaved = .false.
+    
     ! Arrays saving the entries of the local matrices.
-    ! => NULL() if the matrix data is shared with another block.
+    !
+    !       p_DentryIntl(ndofTrial,ndofTest,nelements).
+    !
+    ! NOTE: Only for non-interleaved matrices; there is p_Dentry=>null for
+    ! interleaved vectors. In this case, p_DentryIntl defines the matrix data.
+    !
+    ! NOTE: If the matrix data is shared with another block, p_Dentry=>null.
+    !
     ! WARNING: All local matrices are saved transposed, i.e. we have
-    !     p_Dentry(column,row,element) = p_Dentry(ndofTrial,ndofTest,nelements)
+    !     p_Dentry(column,row,element) = p_Dentry(ndofTrial,ndofTest,nelements).
     ! This has to be taken care of during the assembly and was 
     ! introduced to gain higher speed as it avoids extensive 
     ! jumps in the memory access.
     real(DP), dimension(:,:,:), pointer :: p_Dentry => null()
+
+    ! Arrays saving the entries of the local matrices.
+    !
+    !       p_DentryIntl(nvar,ndofTrial,ndofTest,nelements).
+    !
+    ! NOTE: Only for interleaved matrices; there is p_DentryIntl=>null for
+    ! non-interleaved vectors. In this case, p_Dentry defines the matrix data.
+    !
+    ! NOTE: If the matrix data is shared with another block, p_DentryIntl=>null.
+    !
+    ! WARNING: All local matrices are saved transposed, i.e. we have
+    !     p_DentryIntl(var,column,row,element) = p_Dentry(nvar,ndofTrial,ndofTest,nelements).
+    ! This has to be taken care of during the assembly and was 
+    ! introduced to gain higher speed as it avoids extensive 
+    ! jumps in the memory access.
+    real(DP), dimension(:,:,:,:), pointer :: p_DentryIntl => null()
     
     ! Number of local DOF`s in the trial/test space
     integer :: ndofTrial = 0
     integer :: ndofTest = 0
+    
+    ! Number of variables per matrix entry. Only for interleaved
+    ! matrices. =1 for non-interleaved matrices.
+    integer :: nvar = 1
     
     !<!--
     ! ##############################################
@@ -247,13 +281,36 @@ module blockmatassemblybase
     !   p_IdofsTest(ndofTest,nelements)
     integer, dimension(:,:), pointer :: p_IdofsTest => null()
     
+    ! Specifies whether the corresponding matrix is interleaved.
+    ! =.FALSE.: Vector is not interleaved. The local vector entries
+    !           must be saved to p_Dentry. p_DentryIntl is undefined.
+    ! =.TRUE.:  Vector is interleaved. The local vector entries
+    !           must be saved to p_DentryIntl. p_Dentry is undefined.
+    logical :: bisInterleaved = .false.
+    
     ! Arrays saving the entries of the local vectors.
-    !     p_Dentry(ndofTest,nelements)
+    !
+    !     p_Dentry(ndofTest,nelements).
+    !
+    ! NOTE: Only for non-Interleaved vectors, there is p_Dentry=>null for
+    ! interleaved vectors. In this case, p_DentryIntl defines the vector data.
     real(DP), dimension(:,:), pointer :: p_Dentry => null()
+
+    ! Arrays saving the entries of the local vectors.
+    !
+    !     p_Dentry(nvar,ndofTest,nelements)
+    !
+    ! NOTE: Only for interleaved vectors, there is p_DentryIntl=>null for
+    ! non-interleaved vectors. In this case, p_Dentry defines the vector data.
+    real(DP), dimension(:,:,:), pointer :: p_DentryIntl => null()
     
     ! Number of local DOF`s in the test space
     integer :: ndofTest = 0
     
+    ! Number of variables per matrix entry. Only for interleaved
+    ! matrices. =1 for non-interleaved matrices.
+    integer :: nvar = 1
+
     !<!--
     ! ##############################################
     ! Internal data from the assembly routines.
