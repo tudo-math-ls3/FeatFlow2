@@ -4527,7 +4527,7 @@ contains
     integer :: i
     real(DP) :: ddet,dx,dy
     real(DP), dimension(2,3), parameter :: DrefTri = &
-        (/0.0_DP,0.0_DP,1.0_DP,0.0_DP,0.0_DP,1.0_DP/)
+        reshape((/0.0_DP,0.0_DP,1.0_DP,0.0_DP,0.0_DP,1.0_DP/), (/2,3/))
 
 
     ! The approach is very simple.
