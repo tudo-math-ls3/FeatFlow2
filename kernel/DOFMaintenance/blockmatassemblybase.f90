@@ -281,7 +281,7 @@ module blockmatassemblybase
     !   p_IdofsTest(ndofTest,nelements)
     integer, dimension(:,:), pointer :: p_IdofsTest => null()
     
-    ! Specifies whether the corresponding matrix is interleaved.
+    ! Specifies whether the corresponding vector is interleaved.
     ! =.FALSE.: Vector is not interleaved. The local vector entries
     !           must be saved to p_Dentry. p_DentryIntl is undefined.
     ! =.TRUE.:  Vector is interleaved. The local vector entries
