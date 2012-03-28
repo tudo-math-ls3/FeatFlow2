@@ -916,6 +916,7 @@ module storage
   public :: storage_clearMemoryOnDevice
   public :: storage_getMemPtrOnDevice
   public :: storage_isAssociated
+  public :: storage_nullify
 
   !************************************************************************
 
@@ -2043,7 +2044,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2155,7 +2156,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
-    p_rnode%chostMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%chostMemPtr)
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new1Dfixed')
 #endif
@@ -2200,7 +2201,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2395,7 +2396,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2508,7 +2509,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
-    p_rnode%chostMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%chostMemPtr)
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new2Dfixed')
 #endif
@@ -2553,7 +2554,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2768,7 +2769,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2881,7 +2882,7 @@ contains
     p_rnode%sname = snameBackup
 
 #ifdef USE_C_PTR_STORAGE
-    p_rnode%chostMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%chostMemPtr)
     call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                       OU_CLASS_MSG,OU_MODE_STD,'storage_new3Dfixed')
 #endif
@@ -2946,7 +2947,7 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Unassign pointer in device memory
-    p_rnode%cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(p_rnode%cdeviceMemPtr)
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -15013,7 +15014,7 @@ contains
         ! Nasty trick but quick!
         goto 100
       else
-        rstorageNode%chostMemPtr = C_NULL_PTR
+        call storage_nullify(rstorageNode%chostMemPtr)
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
@@ -15211,7 +15212,7 @@ contains
         ! Nasty trick but quick
         goto 200
       else
-        rstorageNode%chostMemPtr = C_NULL_PTR
+        call storage_nullify(rstorageNode%chostMemPtr)
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
@@ -15452,7 +15453,7 @@ contains
         ! Nasty trick but quick
         goto 300
       else
-        rstorageNode%chostMemPtr = C_NULL_PTR
+        call storage_nullify(rstorageNode%chostMemPtr)
         call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
                           OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
       end if
@@ -18024,7 +18025,7 @@ contains
       end select
 
       ! Manually remove memory address from handle ihandleTmp
-      p_rnodeTmp%cdeviceMemPtr = C_NULL_PTR
+      call storage_nullify(p_rnodeTmp%cdeviceMemPtr)
 
       ! Release temporal handle ihandleTmp
       call storage_free(ihandleTmp)
@@ -18856,7 +18857,7 @@ contains
     ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
     ! however, this supresses the following warning from the IFC v12 compiler:
     ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
-    cdeviceMemPtr = C_NULL_PTR
+    call storage_nullify(cdeviceMemPtr)
 
 #endif
 
@@ -18888,5 +18889,24 @@ contains
     storage_isAssociated = (int(cmemPtr%imemAddress,I64) .gt. 0_I64)
 #endif
   end function storage_isAssociated
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_nullify(cmemPtr)
+
+!<description>
+    ! This subroutine nullifies the memory pointer
+!</description>
+
+!<inputoutput>
+    ! Memory pointer
+    type(C_PTR), intent(inout) :: cmemPtr
+!</inputoutput>
+
+    cmemPtr = C_NULL_PTR
+
+  end subroutine storage_nullify
 
 end module storage
