@@ -926,7 +926,7 @@ module storage
   interface
     ! Define iso_c_binding Fortran: c_allocate -> C: storageHostAlloc
     integer(C_INT) function c_allocate(buffer, size) bind(C,name="storage_malloc")
-      __external_use__(iso_c_binding)
+      FEAT2_PP_EXTERNAL_USE(iso_c_binding)
       implicit none
       type (C_PTR) :: buffer
       integer (C_SIZE_T), value :: size
@@ -936,7 +936,7 @@ module storage
   interface
     ! Define iso_c_binding Fortran: c_deallocate -> C: storageFreeHost
     integer(C_INT) function c_deallocate(buffer) bind(C,name="storage_free")
-      __external_use__(iso_c_binding)
+      FEAT2_PP_EXTERNAL_USE(iso_c_binding)
       implicit none
       type (C_PTR) :: buffer
     end function c_deallocate
@@ -947,7 +947,7 @@ module storage
   interface
     ! Define iso_c_binding Fortran: c_allocate -> C: coproc_newMemoryOnHost
     integer(C_INT) function c_allocate(buffer, size) bind(C,name="coproc_malloc")
-      __external_use__(iso_c_binding)
+      FEAT2_PP_EXTERNAL_USE(iso_c_binding)
       implicit none
       type (C_PTR) :: buffer
       integer (C_SIZE_T), value :: size
@@ -957,7 +957,7 @@ module storage
   interface
     ! Define iso_c_binding Fortran: c_deallocate -> C: coproc_FreeMemoryOnHost
     integer(C_INT) function c_deallocate(buffer) bind(C,name="coproc_free")
-      __external_use__(iso_c_binding)
+      FEAT2_PP_EXTERNAL_USE(iso_c_binding)
       implicit none
       type (C_PTR) :: buffer
     end function c_deallocate
