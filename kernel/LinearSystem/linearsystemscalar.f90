@@ -281,6 +281,10 @@
 !# 81.) lsyssc_calcDeterminant
 !#      -> Calculates the determinant of a square matrix
 !#
+!# 82.) lsyssc_calcGerschgorin
+!#      -> Apply the theorem of Gerschgorin to get approximations
+!#         for the min/max eigenvalues of a matrix
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -978,6 +982,7 @@ module linearsystemscalar
   public :: lsyssc_createMatrixSymmPart
   public :: lsyssc_createMatrixAsymmPart
   public :: lsyssc_calcDeterminant
+  public :: lsyssc_calcGerschgorin
 
   public :: lsyssc_rebuildKdiagonal
   public :: lsyssc_infoMatrix
@@ -8689,7 +8694,7 @@ contains
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
       integer, intent(in) :: NEQ,NCOLS
 
-      real(DP), dimension(:), intent(inout), pointer :: p_DaSub
+      real(DP), dimension(:), pointer :: p_DaSub
       integer, intent(out) :: NEQSub,NCOLSSub
 
       ! local variables
@@ -8758,7 +8763,7 @@ contains
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
       integer, intent(in) :: NEQ,NCOLS
 
-      real(SP), dimension(:), intent(inout), pointer :: p_FaSub
+      real(SP), dimension(:), pointer :: p_FaSub
       integer, intent(out) :: NEQSub,NCOLSSub
 
       ! local variables
@@ -8827,7 +8832,7 @@ contains
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
 
-      real(DP), dimension(:), intent(inout), pointer :: p_DaSub
+      real(DP), dimension(:), pointer :: p_DaSub
       integer, intent(out) :: NEQSub,NCOLSSub
 
       ! local variables
@@ -8904,7 +8909,7 @@ contains
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
 
-      real(SP), dimension(:), intent(inout), pointer :: p_FaSub
+      real(SP), dimension(:), pointer :: p_FaSub
       integer, intent(out) :: NEQSub,NCOLSSub
 
       ! local variables
@@ -26453,5 +26458,83 @@ contains
     end if
 
   end subroutine lsyssc_calcDimsFromMatrix
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine lsyssc_calcGerschgorin (rmatrix,dminEigenval,dmaxEigenval)
+  
+!<description>
+  ! Applies the theorem of Gerschgorin to compute an approximation
+  ! of the minimum and maximum eigenvalue of a matrix.
+!</description>
+  
+!<input>
+  ! A matrix
+  type(t_matrixScalar), intent(in) :: rmatrix
+!</input>
+
+!<output>
+  ! Approximation for the real part of the minimum eigenvalue
+  real(DP), intent(out) :: dminEigenval
+
+  ! Approximation for the real part of the maximum eigenvalue
+  real(DP), intent(out) :: dmaxEigenval
+!</output>
+  
+!</subroutine>
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da
+    integer, dimension(:), pointer :: p_Kld
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: i,j
+    real(DP) :: drad,da
+
+    ! At the moment, we only support format-9 matrices, double
+    ! precision.
+    
+    dminEigenval = SYS_MAXREAL_DP
+    dmaxEigenval = 0.0_DP
+
+    if (rmatrix%cdataType .ne. ST_DOUBLE) then
+      call output_line("Data type not supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_calcGerschgorin")
+      call sys_halt()
+    end if
+    
+    select case (rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX9)
+      
+      ! Get the data arrays
+      call lsyssc_getbase_double (rmatrix,p_Da)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld)
+      call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+      
+      ! Loop through the rows
+      do i=1,rmatrix%neq
+      
+        ! Calculate the Gerschgorin radius
+        drad = 0
+        do j=p_Kld(i),p_Kld(i+1)-1
+          drad = drad + abs(p_Da(j))
+        end do
+        ! Subtract the diagonal, it does not belong to the radius
+        da = abs(p_Da(p_Kdiagonal(i)))
+        drad = drad - da
+        
+        ! Calculate the approximation for the eigenvalues
+        dminEigenval = min(dminEigenval,da-drad)
+        dmaxEigenval = max(dmaxEigenval,da-drad)
+      
+      end do
+      
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_calcGerschgorin")
+      call sys_halt()
+    end select
+
+  end subroutine
 
 end module

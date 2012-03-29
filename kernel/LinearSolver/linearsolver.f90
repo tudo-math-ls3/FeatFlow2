@@ -694,6 +694,7 @@ module linearsolver
   public :: linsol_initSchur
   public :: linsol_initSPSOR
   public :: linsol_initBlockJac
+  public :: linsol_initSpecDefl
     
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
   
@@ -780,6 +781,9 @@ module linearsolver
   
   ! Block Jacobi iteration
   integer, parameter, public :: LINSOL_ALG_BLOCKJAC      = 57
+  
+  ! Spectral deflation iteration
+  integer, parameter, public :: LINSOL_ALG_SPECDEFL      = 58
   
 !</constantblock>
 
@@ -1343,6 +1347,9 @@ module linearsolver
     
     ! Pointer to a structure for the Schur-complement solver; NULL() if not set
     type (t_linsolSubnodeSchur), pointer          :: p_rsubnodeSchur       => null()
+
+    ! Pointer to a structure for the spectral deflation preconditioner; NULL() if not set
+    type (t_linsolSubnodeSpecDefl), pointer       :: p_rsubnodeSpecDefl    => null()
 
   end type
   
@@ -2117,6 +2124,36 @@ module linearsolver
 
 !</typeblock>
 
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the spectral deflation preconditioner.
+  type t_linsolSubnodeSpecDefl
+  
+    ! Relaxation parameter.
+    real(DP) :: drelax = 1.0_DP
+    
+    ! Guess for the maximum eigenvalue
+    real(DP) :: dmaxEigenvalue = 0.0_DP
+    
+    ! Pointer to a preconditioner. => null if not used.
+    type(t_linsolNode), pointer :: p_rpreconditioner => null()
+    
+    ! Temporary vector
+    type(t_vectorBlock) :: rvectorTemp
+  
+    ! Pointer to a filter chain (i.e. an array of t_filterChain
+    ! structures) if filtering should be applied to the vector during the
+    ! iteration. =>null if no filter is to be applied.
+    type(t_filterChain), dimension(:), pointer :: p_Rfilter => null()
+
+  end type
+  
+  public :: t_linsolSubnodeSpecDefl
+
+!</typeblock>
+
 !</types>
 
 ! *****************************************************************************
@@ -2204,6 +2241,8 @@ contains
       call linsol_setMatrixMultigrid2 (rsolverNode, Rmatrices)
     case (LINSOL_ALG_SCHUR)
       call linsol_setMatrixSchur (rsolverNode, Rmatrices)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_setMatrixSpecDefl (rsolverNode, Rmatrices)
     end select
 
   end subroutine
@@ -2450,6 +2489,8 @@ contains
       call linsol_initStructureMultigrid2 (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_initStructureSchur (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_initStructureSpecDefl (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2531,6 +2572,8 @@ contains
       call linsol_initDataMultigrid2 (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_initDataSchur (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_initDataSpecDefl (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2705,6 +2748,8 @@ contains
       call linsol_doneDataMultigrid2 (rsolverNode,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneDataSchur (rsolverNode,isubgroup)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_doneDataSpecDefl (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -2771,6 +2816,8 @@ contains
       call linsol_doneStructureMultigrid2 (rsolverNode,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneStructureSchur (rsolverNode,isubgroup)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_doneStructureSpecDefl (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -2845,6 +2892,8 @@ contains
       call linsol_doneMultigrid2 (p_rsolverNode)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneSchur (p_rsolverNode)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_doneSpecDefl (p_rsolverNode)
     end select
     
     ! Clean up the associated matrix structure.
@@ -3179,6 +3228,8 @@ contains
       call linsol_precSchur (rsolverNode,rd)
     case (LINSOL_ALG_BLOCKJAC)
       call linsol_precBlockJac (rsolverNode,rd)
+    case (LINSOL_ALG_SPECDEFL)
+      call linsol_precSpecDefl (rsolverNode,rd)
     end select
 
   end subroutine
@@ -16390,7 +16441,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieq, iblock
+    integer :: iblock
     
     type(t_matrixScalar), pointer :: p_rmatrix
     integer, dimension(:), pointer :: p_KCOL, p_KLD
@@ -16398,9 +16449,7 @@ contains
     integer :: NEL, iel, igel, iFESpace, indof, i, ig, j, jg,iloc
     integer(I32) :: celement
     real(DP) :: dlocOmega
-    real(SP) :: flocOmega
     real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
-    real(SP), dimension(:), pointer :: p_Fvector, p_Fmatrix
     real(dp), dimension(:,:), allocatable :: DlocMat
     real(dp), dimension(:), allocatable :: DlocVec, DlocSol
     integer, dimension(:), allocatable :: IdofGlob
@@ -16563,6 +16612,427 @@ contains
         
       end do
   
+  end subroutine
+
+! *****************************************************************************
+! Routines for the spectral deflation preconditioner
+! *****************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initSpecDefl (p_rsolverNode, drelax, &
+          p_rpreconditioner,Rfilter)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the spectral deflation
+  ! preconditioner.
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! Relaxation parameter for the deflation process.
+  real(DP), optional :: drelax
+  
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning
+  ! will be used.
+  type(t_linsolNode), pointer, optional   :: p_rpreconditioner
+
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
+  ! structures) if filtering should be applied to the vector during the
+  ! iteration. If not present, no filtering will be used.
+  ! The filter chain (i.e. the array) must exist until the system is solved!
+  ! The filter chain must be configured for being applied to defect vectors.
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_SPECDEFL
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT
+    
+    ! Prepare the subnode
+    allocate (p_rsolverNode%p_rsubnodeSpecDefl)
+    p_rsolverNode%p_rsubnodeSpecDefl%drelax = drelax
+    if (present(p_rpreconditioner)) then
+        p_rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner => p_rpreconditioner
+    end if
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeSpecDefl%p_Rfilter => Rfilter
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_setMatrixSpecDefl (rsolverNode,Rmatrices)
+  
+!<description>
+  
+  ! This routine is called if the system matrix changes.
+  
+!</description>
+  
+!<input>
+  ! An array of system matrices which is simply passed to the initialisation
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Pass the matrix to the preconditioner
+    if (associated(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)) then
+      call linsol_setMatrices(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner,&
+          Rmatrices)
+    end if
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_initStructureSpecDefl (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Call the initStructure for the subsolver if present
+    if (associated(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)) then
+      call linsol_initStructure(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner,&
+          ierror,isolverSubgroup)
+    end if
+    
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Allocate memory for the temp vector
+    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+        rsolverNode%p_rsubnodeSpecDefl%rvectorTemp,.false.,.false.,&
+        rsolverNode%cdefaultDataType)
+    
+  end subroutine
+    
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneStructureSpecDefl (rsolverNode,isolverSubgroup)
+  
+!<description>
+  ! Releases the memory.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Call the initStructure for the subsolver if present
+    if (associated(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)) then
+      call linsol_doneStructure(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner,&
+          isolverSubgroup)
+    end if
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Release temp vector if still there
+    if (rsolverNode%p_rsubnodeSpecDefl%rvectorTemp%neq .ne. 0) then
+      call lsysbl_releaseVector(rsolverNode%p_rsubnodeSpecDefl%rvectorTemp)
+    end if
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initDataSpecDefl (rsolverNode, ierror, isolverSubgroup)
+  
+!<description>
+  ! Performs final preparation of the spectral deflation solver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the VANKA solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+!</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  real(DP) :: dmin,dmax
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Call the initData for the subsolver if present
+    if (associated(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)) then
+      call linsol_initData(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner,&
+          ierror,isolverSubgroup)
+    end if
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Figure out an approximation for the maximum eigenvalue
+    call lsyssc_calcGerschgorin (rsolverNode%rsystemMatrix%RmatrixBlock(1,1),&
+            dmin,dmax)
+            
+    rsolverNode%p_rsubnodeSpecDefl%dmaxEigenvalue = dmax
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneDataSpecDefl (rsolverNode,isolverSubgroup)
+  
+!<description>
+  ! Releases the memory.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Call the doneData for the subsolver if present
+    if (associated(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)) then
+      call linsol_doneData(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner,&
+          isolverSubgroup)
+    end if
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneSpecDefl (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the solver from
+  ! the heap. In particular, if a preconditioner is attached to the solver
+  ! structure, it is also released from the heap by calling
+  ! linsol_releaseSolver for it.
+  ! This DONE routine is declared as RECURSIVE to permit a clean
+  ! interaction with linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! A pointer to a t_linsolNode structure of the solver.
+  type(t_linsolNode), pointer         :: rsolverNode
+!</input>
+  
+!</subroutine>
+
+    ! Release memory if still associated
+    call linsol_doneDataSpecDefl (rsolverNode, rsolverNode%isolverSubgroup)
+    call linsol_doneStructureSpecDefl (rsolverNode, rsolverNode%isolverSubgroup)
+    
+    ! Release the subsolvers
+    call linsol_releaseSolver(rsolverNode%p_rsubnodeSpecDefl%p_rpreconditioner)
+    
+    ! Release the subnode itself
+    deallocate(rsolverNode%p_rsubnodeSpecDefl)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  subroutine linsol_precSpecDefl (rsolverNode,rd)
+  
+!<description>
+  ! Applies the spectral deflation preconditioner to the defect
+  ! vector rd.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! The spectral deflation algorithm applies the following
+    ! modifications:
+    !
+    !    d  :=  d - (A d  -  drelax lambda_max d)
+    !        =  d + (drelax lambda_max d  -  A d)
+    !
+    ! If a preconditioner P is specified, it is applied to the defect,
+    ! which results in the fomula
+    !
+    !    d  :=  d - P(A d  -  drelax lambda_max d)
+
+    ! local variables
+    type (t_linsolSubnodeSpecDefl), pointer :: p_rsubnode
+    type(t_vectorBlock), pointer :: p_rtempVec
+    
+    ! Temp vector
+    p_rsubnode => rsolverNode%p_rsubnodeSpecDefl
+    p_rtempVec => p_rsubnode%rvectorTemp
+    
+    ! Calculate (A d  -  drelax lambda_max d)
+    ! in the temp vector
+    call lsysbl_copyVector (rd,p_rtempVec)
+    call lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rd, p_rtempVec, &
+        1.0_DP, -p_rsubnode%drelax*p_rsubnode%dmaxEigenvalue)
+
+    if (associated(p_rsubnode%p_Rfilter)) then
+      call filter_applyFilterChainVec (p_rtempVec, p_rsubnode%p_Rfilter)
+    end if
+    
+    ! Preconditioning
+    if (associated(p_rsubnode%p_rpreconditioner)) then
+      call linsol_precondDefect (p_rsubnode%p_rpreconditioner,p_rtempVec)
+    end if
+
+    ! Correction
+    call lsysbl_vectorLinearComb (p_rtempVec,rd,-1.0_DP,1.0_DP)
+      
   end subroutine
   
 end module
