@@ -46,6 +46,8 @@ module stokes2d_method2_sv
   use coarsegridcorrection
   use linearsolver
   use ucd
+  use pprocerror
+  use genoutput
   
   use collection
     
@@ -994,9 +996,9 @@ contains
 
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing.
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(sucddir)//'/u2d_2_sv.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+                       trim(sucddir)//'/u2d_2_sv.vtk')
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
@@ -1028,6 +1030,55 @@ contains
     ! Throw away the discrete BC`s - not used anymore.
     call bcasm_releaseDiscreteBC (rdiscreteBC)
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine st1_calcErrors (rproblem)
+  
+!<description>
+  ! Calculates L2- and H1-errors against analytic solution
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+  ! Error data structures for post-processing
+  type(t_errorScVec) :: rerrorU, rerrorP
+
+  ! Error arrays for post-processing
+  real(DP), dimension(2), target :: DerrorUL2, DerrorUH1
+  real(DP), dimension(1), target :: DerrorPL2
+
+    ! Store the viscosity parameter nu in the collection's quick access array
+    rproblem%rcollection%DquickAccess(1) = rproblem%dnu
+
+    ! Set up the error structure for velocity
+    rerrorU%p_RvecCoeff => rproblem%rvector%RvectorBlock(1:2)
+    rerrorU%p_DerrorL2 => DerrorUL2
+    rerrorU%p_DerrorH1 => DerrorUH1
+
+    ! Set up the error structure for pressure
+    rerrorP%p_RvecCoeff => rproblem%rvector%RvectorBlock(3:3)
+    rerrorP%p_DerrorL2 => DerrorPL2
+
+    ! Calculate errors of velocity and pressure against analytic solutions.
+    call pperr_scalarVec(rerrorU, funcVelocity2D, rproblem%rcollection);
+    call pperr_scalarVec(rerrorP, funcPressure2D, rproblem%rcollection);
+
+    ! Print the errors.
+    call output_lbrk()
+    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(DerrorUL2(1), 10)) &
+                                // ' ' // trim(sys_sdEL(DerrorUL2(2), 10)))
+    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(DerrorUH1(1), 10)) &
+                                // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
+    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
+
   end subroutine
 
   ! ***************************************************************************
@@ -1237,6 +1288,7 @@ contains
     
     ! Postprocessing
     call st1_postprocessing (rproblem)
+    call st1_calcErrors (rproblem)
     
     ! Cleanup
     call st1_doneMatVec (rproblem)

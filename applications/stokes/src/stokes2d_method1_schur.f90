@@ -61,6 +61,9 @@ module stokes2d_method1_schur
   use linearsolver
   use ucd
   use stdoperators
+  use collection, only: t_collection
+  use pprocerror
+  use genoutput
   
   use stokes2d_callback
   
@@ -182,7 +185,17 @@ contains
 
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
-    
+
+    ! A collection structure for post-processing
+    type(t_collection) :: rcollection
+
+    ! Error data structures for post-processing
+    type(t_errorScVec) :: rerrorU, rerrorP
+
+    ! Error arrays for post-processing
+    real(DP), dimension(2), target :: DerrorUL2, DerrorUH1
+    real(DP), dimension(1), target :: DerrorPL2
+
     ! Ok, let us start.
     !
     ! We want to solve our Stokes problem on level...
@@ -469,9 +482,9 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Write velocity and pressure to GMV file
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_schur.gmv')
+    ! Write velocity and pressure to VTK file
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_schur.vtk')
     
     call ucd_addVarVertBasedVec(rexport, 'velocity', p_Du1, p_Du2)
     call ucd_addVariableElementBased(rexport, 'pressure', UCD_VAR_STANDARD, p_Dp)
@@ -482,6 +495,30 @@ contains
     deallocate(p_Dp)
     deallocate(p_Du2)
     deallocate(p_Du1)
+
+    ! Store the viscosity parameter nu in the collection's quick access array
+    rcollection%DquickAccess(1) = 1.0_DP
+
+    ! Set up the error structure for velocity
+    rerrorU%p_RvecCoeff => rvector%RvectorBlock(1:2)
+    rerrorU%p_DerrorL2 => DerrorUL2
+    rerrorU%p_DerrorH1 => DerrorUH1
+
+    ! Set up the error structure for pressure
+    rerrorP%p_RvecCoeff => rvector%RvectorBlock(3:3)
+    rerrorP%p_DerrorL2 => DerrorPL2
+
+    ! Calculate errors of velocity and pressure against analytic solutions.
+    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection);
+    call pperr_scalarVec(rerrorP, funcPressure2D, rcollection);
+
+    ! Print the errors.
+    call output_lbrk()
+    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(DerrorUL2(1), 10)) &
+                                // ' ' // trim(sys_sdEL(DerrorUL2(2), 10)))
+    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(DerrorUH1(1), 10)) &
+                                // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
+    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
 
     ! Clean up the mess
     call linsol_doneData (p_rsolverNode)

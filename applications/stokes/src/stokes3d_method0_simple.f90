@@ -539,9 +539,9 @@ contains
 
     ! Now we have a Q1/Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing.
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        trim(sucddir)//'/u3d_0_simple.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+        trim(sucddir)//'/u3d_0_simple.vtk')
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
