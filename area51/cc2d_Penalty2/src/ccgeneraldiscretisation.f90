@@ -1233,12 +1233,8 @@ contains
 
         call lsyssc_clearMatrix (rasmTempl%rmatrixPenalty)         
         call lsyssc_copyMatrix (rmatrixTemp,rasmTempl%rmatrixPenalty)
-        call lsyssc_releaseMatrix (rmatrixTemp)
+        call spdiscr_releaseCubStructure (rcubatureInfoPenaltyAdapt)
         call storage_free (h_IelementList)       
-
-        ! Copy the temp matrix to Penalty matrix
- !       call lsyssc_matrixLinearComb (rmatrixTemp,1,0_dp,rasmTempl%rmatrixPenalty,0.0_dp,rasmTempl%rmatrixPenalty,&
- !                                    .false.,.false.,.true.,.true.)
     end select
 
     ! Calculate areea of penalty object using the matrix entries.
@@ -1307,6 +1303,7 @@ contains
       call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
     end if
 
+    call lsyssc_releaseMatrix (rmatrixTemp)
     call spdiscr_releaseCubStructure (rcubatureInfoPenalty)
     end if ! (iParticle)
        
