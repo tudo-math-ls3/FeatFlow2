@@ -10534,7 +10534,7 @@ contains
 
 !</subroutine>
 
-  call bilf_dg_initAssembly_reverseCubPoints(rmatrixAssembly,rform,celementTest,&
+  call bilf_dg_initAssembly_revCubPts(rmatrixAssembly,rform,celementTest,&
        celementTrial,ccubType,nelementsPerBlock,rperfconfig)
   
 !    ! local variables

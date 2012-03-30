@@ -543,7 +543,7 @@ contains
     type(t_linearForm) :: rlinformIC
     type(t_bilinearForm) :: rform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    integer :: ivar
+    integer :: ivar, ilevel
     type(t_linsolNode), pointer :: p_rsolverNode1
     
     
@@ -583,7 +583,7 @@ contains
     
     
     
-    
+
     
     
     
@@ -651,6 +651,29 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
+    
+    
+    
+    
+    
+    
+    
+    
+      
+!    ! Loop through all levels. Whereever the projection structure
+!    ! is missing, create it
+!    do ilevel = 2,p_rsolverNode%p_rsubnodeMultigrid2%nlevels
+!      ! Initialise the projection structure
+!      call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
+!
+!    end do
+    
+    
+    
+    
+    
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
@@ -734,9 +757,11 @@ contains
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
+    !p_rsolverNode%depsRel = 1.0e-12
+    p_rsolverNode%depsAbs = 1.0e-12
     
-    ! Set to W-cycle
-    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
+!    ! Set to W-cycle
+!    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
 
     ! Attach the system matrices to the solver.
     !
@@ -1066,6 +1091,18 @@ contains
 
     ! Output solution to vtk file
     call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+    
+    write(*,*) ''
+    
+    !rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L1ERROR,derror,&
+         dgmpd_getRefFunc)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L2ERROR,derror,&
+         dgmpd_getRefFunc)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
     
     

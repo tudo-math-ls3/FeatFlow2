@@ -10197,17 +10197,42 @@ end subroutine
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
     !</output>
+    
+    real(dp) :: x,x2,x3,x4,y,y2,y3,y4
+    integer  :: i, j
 
     !</subroutine>
 
-!    !    u(x,y) = 16*x*(1-x)*y*(1-y)
-!    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-!    Dcoefficients (1,:,:) = 32.0_DP * &
-!         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
-!         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+    !    u(x,y) = 16*x*(1-x)*y*(1-y)
+    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
+    Dcoefficients (1,:,:) = 32.0_DP * &
+         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
     
-    Dcoefficients (1,:,:) = 1.0_dp
+
+     
+
+
     
+
+    do j = 1, size(Dcoefficients,3)
+      do i = 1, size(Dcoefficients,2)
+        x = Dpoints(1,i,j)
+        x2 = x*x
+        x3 = x2*x
+        x4 = x3*x
+        y = Dpoints(2,i,j)
+        y2 = y*y
+        y3 = y2*y
+        y4 = y3*y
+        
+        Dcoefficients (1,i,j) = &
+          -512.0_dp*(x2+y2+x4+y4)&
+          +1024.0_dp*(x3+y3)&
+          +3072.0_dp*(x*y2+x2*y+x*y4-x2*y4+x4*y-x4*y2)&
+          +6144.0_dp*(-x2*y2-x*y3+x2*y3-x3*y+x3*y2)
+      end do
+    end do
 
   end subroutine 
   
@@ -10308,6 +10333,98 @@ end subroutine
   end do
   
   end subroutine
+
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine dgmpd_getRefFunc (cderivative,rdiscretisation, &
+       nelements,npointsPerElement,Dpoints, &
+       IdofsTest,rdomainIntSubset,&
+       Dvalues,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+    !<description>
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the (analytical) values of a function in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+    !</description>
+
+    !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in)                                         :: cderivative
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional      :: rcollection
+
+    !</input>
+
+    !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out)                      :: Dvalues
+    !</output>
+
+    !</subroutine>
+
+    integer :: i, j
+    real(dp) :: dx,dy
+
+
+    Dvalues(:,:) = 0.0_dp
+
+    do i = 1, size(Dvalues,1)
+      do j = 1, size(Dvalues,2)
+        dx = Dpoints(1,i,j)
+        dy = Dpoints(2,i,j)
+        Dvalues(i,j) = 16.0_dp*dx*(1.0_dp-dx)*dy*(1.0_dp-dy)
+        Dvalues(i,j) = Dvalues(i,j)*Dvalues(i,j)
+      end do
+    end do
+
+  end subroutine 
   
 
 
