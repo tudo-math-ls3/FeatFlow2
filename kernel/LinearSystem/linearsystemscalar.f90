@@ -5994,7 +5994,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_releaseVector (rvector)
+  subroutine lsyssc_releaseVector (rvector, bquiet)
 
 !<description>
   ! Releases a vector from memory. The vector structure is cleaned up.
@@ -6009,11 +6009,30 @@ contains
 
 !</inputoutput>
 
+!<input>
+  ! OPTIONAL: Specifies whether a warning should be printed when released an
+  ! empty vector (bquiet = .false.) or whether to remain silent in this case.
+  ! If not specified, bquiet = .false. is used.
+  logical, optional, intent(in) :: bquiet
+!</input>
+
 !</subroutine>
 
+  ! local variables
+  logical :: bwarn
+
+  ! Check whether the vector is empty or not
   if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-    call output_line('Releasing unused vector!',&
-        OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_releaseVector')
+
+    ! Shout or shut up?
+    bwarn = .true.
+    if(present(bquiet)) bwarn = .not. bquiet
+
+    if(bwarn) then
+      call output_line('Releasing unused vector!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_releaseVector')
+    end if
+
   end if
 
   ! Clean up the data structure.
