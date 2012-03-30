@@ -1916,7 +1916,8 @@ contains
 !</subroutine>
 
 !<local variables>
-  integer :: iel,ielreal,icup,ive,nve,iin,ipart,ivert,in,icount,i,ipenalty
+  integer :: iel,ielreal,icup,ive,nve,iin,ipart,ivert,in,icount,i,ipenalty, &
+             itypePenaltyAssem
   real(dp) :: dxcenter, dycenter, dradius, ddist,dlambda,dx,dy,dLocAreea,dElAreea
   real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
   integer, dimension(:,:), pointer :: p_iverticesatelement
@@ -1947,7 +1948,6 @@ contains
 
   ! For multiple objects, we need to treat them in the same way, so loop over the number of 
   ! particles. If we have only 1 particle, the loop has no effect.
-
   do ipart=1,p_rparticlecollection%nparticles
 
     ! Find the geometry of the object   
@@ -1957,7 +1957,7 @@ contains
     ! Loop over all elements and calculate the corresponding Lambda value
     select case(ipenalty)
     case (1) ! "Full Lambda" method
-
+    
     do iel=1,nelements
       do icup=1,npointsperelement 
         ! get the distance to the center
@@ -1970,7 +1970,7 @@ contains
           end if
       end do
     end do !(loop over elements)
-          
+
     case (2) ! "Fractional Lambda" method
 
     do iel=1,nelements

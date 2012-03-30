@@ -875,7 +875,6 @@ contains
      integer :: h_IelementList, h_elListOld
      ! temporary matrix
      type(t_matrixScalar) :: rmatrixTemp
-
      h_IelementList = ST_NOHANDLE
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
@@ -1149,6 +1148,8 @@ contains
     ! our template FEM matrix, so we can take that.
     call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
                 rasmTempl%rmatrixPenalty,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
                 
     ! No mass lumping. Just set up the penalty matrix.
     call parlst_getvalue_int (rproblem%rparamList, 'CC-PENALTY','itypePenaltyAssem',itypePenaltyAssem,1)
@@ -1197,35 +1198,42 @@ contains
         call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                      rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
       case (2)
-        call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
-                                     rmatrixTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-        ! Calculate all entries with the standard cubature formula
-        call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
-                                     rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
         listsize = 0
         ! First evaluate the entries for the DOFs inside the element which are totally inside the object
         ! or totally outside the object. This elements will be linked with the simple cubature formula
-        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
-        ! Extract the entries which intersects with the interface of penalty object
+        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,1)
         if (listsize .gt. 0) then
           h_elListOld = rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList
           rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_IelementList
           rcubatureInfoPenalty%p_RinfoBlocks(1)%NEL = listsize
+
           call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                        rcubatureInfoPenalty,cc_Lambda,rproblem%rcollection)
           call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 0.0_DP, &
-                                        .false.,.false.,.true.,.true.)
+                                        .false.,.false.,.true.,.true.,rmatrixTemp)
+          rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
+        end if
+        call storage_free (h_IelementList)       
+
+        listsize = 0
+        call cc_cutoff(p_rgeometryObject,rasmTempl%rmatrixPenalty,h_IelementList,listsize,0)
+        if (listsize .ne. 0) then
           rcubatureInfoPenalty%p_RinfoBlocks(1)%h_IelementList = h_elListOld
-  
           h_elListOld = rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList
           rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_IelementList
           rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%NEL = listsize
+
           call bilf_buildMatrixScalar (rform,.true.,rasmTempl%rmatrixPenalty, &
                                        rcubatureInfoPenaltyAdapt,cc_Lambda,rproblem%rcollection)
+  
+          call lsyssc_matrixLinearComb (rasmTempl%rmatrixPenalty,rmatrixTemp,1.0_DP, 1.0_DP, &
+                                        .false.,.false.,.true.,.true.,rmatrixTemp)
           rcubatureInfoPenaltyAdapt%p_RinfoBlocks(1)%h_IelementList = h_elListOld
-!          call lsyssc_matrixLinearComb (rmatrixTemp,rasmTempl%rmatrixPenalty,1.0_dp,1,0_dp, &
-!                                        rmatrixTemp,1.0_DP,.false.,.false.,.true.,.true.)  
         end if
+
+        call lsyssc_clearMatrix (rasmTempl%rmatrixPenalty)         
+        call lsyssc_copyMatrix (rmatrixTemp,rasmTempl%rmatrixPenalty)
+        call lsyssc_releaseMatrix (rmatrixTemp)
         call storage_free (h_IelementList)       
 
         ! Copy the temp matrix to Penalty matrix
@@ -1244,7 +1252,7 @@ contains
       call io_openFileForWriting(sfilenamePenaltyMatrix, iunit, cflag, bfileExists, .true.)
 
       dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
-               rproblem%RLEVELINFO(2)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
+               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL  
 
       if (dlevel .lt. 4.0_dp) then
         i = 0
@@ -1281,8 +1289,21 @@ contains
     if (ipenmat .ne. 0) then
       ! Open file for output
       call parlst_getvalue_string(rproblem%rparamList,'CC-PENALTY','sfilenamePenaltyMatrix',sfilenamePenaltyMatrix,'''''')
-      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
-      stemp = sfilenamePenaltyMatrix // '.txt'
+      dlevel = rasmTempl%rmatrixPenalty%P_RSPATIALDISCRTRIAL%RELEMENTDISTR(1)%NEL / &
+               rproblem%RLEVELINFO(nlmin)%RDISCRETISATIONPENALTY%P_RTRIANGULATION%NEL
+      i=0
+      if (dlevel .gt. 4.0_dp) then
+        i = 0
+        dtemp = dlevel
+        do while (dtemp .ge. 4.0_dp)
+          dtemp = dtemp / 4.0_dp
+          i = i+1
+        end do
+      end if
+      dlevel = nlmin + i
+
+!      read(sfilenamePenaltyMatrix,*) sfilenamePenaltyMatrix
+      stemp = trim(sfilenamePenaltyMatrix) // '_' // trim(SYS_sdL(dlevel,2)) // '.txt'
       call matio_writeMatrixHR (rasmTempl%rmatrixPenalty, 'Penalty2',.false., 0, trim(stemp), '(E10.2)')            
     end if
 

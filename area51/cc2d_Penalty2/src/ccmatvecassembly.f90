@@ -1070,7 +1070,6 @@ contains
               rnonlinearCCMatrix%p_rasmTempl%rmatrixPenalty,rmatrix%RmatrixBlock(2,2),&
               rnonlinearCCMatrix%dpenalty,0.0_DP,.false.,.false.,.true.,.true.)
         end if
-       
       end if
       
       ! If the submatrices A12 and A21 exist, fill them with zero.

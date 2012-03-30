@@ -83,7 +83,7 @@ contains
   allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
   drad = 0.05_dp
-  drho = 1.25_dp
+  drho = 1.5_dp
   dx = 0.2_dp
   dy = 0.2_dp
   
