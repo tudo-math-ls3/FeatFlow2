@@ -384,7 +384,7 @@ contains
 
     ! Assure thath the element spaces are compatible
     if (elem_igetShape(p_relementDistribution%celement) .ne. &
-        (rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
+        elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
       call sys_halt()
