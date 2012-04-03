@@ -856,7 +856,7 @@ contains
     ioperation = SPDISC_OPTP_MASS
     if (present(iopertype)) ioperation = iopertype
 
-    if (celement .eq. EL_QPW4P1_2D) then
+    if (celement .eq. EL_QPW4P1_2D .or. celement .eq. EL_QPW4DCP1_2D) then
       ! Piecewise linear cubature on sub-triangles on a quad
       ccubType = CUB_QPW4G3T_2D
       return
@@ -1000,7 +1000,7 @@ contains
           ccubType = CUB_G3X3
         end select
 
-      case (EL_Q3)
+      case (EL_Q3,EL_Q3T_2D)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -1022,7 +1022,7 @@ contains
           ccubType = CUB_G2X2
         end select
 
-      case (EL_QP1)
+      case (EL_QP1, EL_DCQP1_2D, EL_DCQP2_2D)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
