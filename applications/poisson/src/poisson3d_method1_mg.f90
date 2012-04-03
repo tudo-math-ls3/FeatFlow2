@@ -485,11 +485,11 @@ contains
     
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,rvectorBlock%RvectorBlock(1),&
-                       getReferenceFunction_3D)
+        getReferenceFunction_3D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,rvectorBlock%RvectorBlock(1),&
-                       getReferenceFunction_3D)
+        getReferenceFunction_3D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
