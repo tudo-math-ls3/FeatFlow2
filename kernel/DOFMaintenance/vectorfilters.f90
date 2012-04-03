@@ -151,6 +151,9 @@ module vectorfilters
   use discretefbc
   use dofmapping
   use spatialdiscretisation
+  use triangulation
+  use derivatives
+  use transformation
 
   implicit none
 
@@ -661,7 +664,12 @@ contains
           p_Ddata(iel) = p_Ddata(iel) - C
         end do
 
-      case DEFAULT
+      case (EL_QPW4DCP1_2D)
+        ! piecewise discontinuous P1 on quads; including a fancy constraint
+        ! we'll call a separate subroutine for the dirty work here
+        call vecfil_zim_QPW4DCP1_2D(rx)
+
+      case default
 
         call output_line('Unsupported discretisation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
@@ -676,6 +684,115 @@ contains
       call sys_halt()
 
     end if
+
+  end subroutine
+
+! *****************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_zim_QPW4DCP1_2D (rx)
+
+!<description>
+  ! AUXILIARY ROUTINE:
+  ! This routine imposes the zero-integral-mean constraint onto a QPW4DCP1_2D FE vector.
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be normalised.
+  type(t_vectorScalar), intent(inout), target :: rx
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dmean, dvolume
+  type(t_triangulation), pointer :: p_rtria
+  integer(I32) :: ctrafo
+  integer :: iel, j, idx
+  real(DP), dimension(:), pointer :: p_Dx
+  integer, dimension(:,:), pointer :: p_IvertAtElem
+  real(DP), dimension(:,:), pointer :: p_Dvtx
+  real(DP), dimension(2,5) :: Dpoints, Dcoords
+  real(DP), dimension(4,4) :: Djac
+  real(DP), dimension(4) :: Ddetj
+
+  real(DP), parameter :: d13 = 1.0_DP / 3.0_DP
+  real(DP), parameter :: d23 = 2.0_DP / 3.0_DP
+
+    dmean = 0.0_DP
+    dvolume = 0.0_DP
+
+    ! fetch the vector's data array
+    call lsyssc_getbase_double(rx, p_Dx)
+
+    ! fetch the triangulation from the vector
+    p_rtria => rx%p_rspatialDiscr%p_rtriangulation
+
+    ! fetch the vertex coordinates and vertices-at-element array
+    call storage_getbase_double2D(p_rtria%h_DvertexCoords, p_Dvtx)
+    call storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertAtElem)
+
+    ! fetch the trafo type
+    ctrafo = elem_igetTrafoType(EL_QPW4DCP1_2D)
+
+    ! set up the points array; these correspond to the barycenters of the four sub-triangles
+    Dpoints(1,1) = 0.0_DP
+    Dpoints(2,1) = -d23
+    Dpoints(1,1) = d23
+    Dpoints(2,1) = 0.0_DP
+    Dpoints(1,1) = 0.0_DP
+    Dpoints(2,1) = d23
+    Dpoints(1,1) = -d23
+    Dpoints(2,1) = 0.0_DP
+
+    ! loop over all elements of the triangulation
+    do iel = 1, p_rtria%NEL
+
+      ! fetch the vertex corner coords; someone came up with the fantastic idea that the
+      ! piecewise affine trafo has to have 5 vertices, so we'll need to calculate the
+      ! midpoint as the fifth vertice, too...
+      Dcoords(:, 5) = 0.0_DP
+      do j = 1, 4
+        Dcoords(1:2, j) = p_Dvtx(1:2, p_IvertAtElem(j, iel))
+        Dcoords(:,5) = Dcoords(:,5) + Dcoords(:,j)
+      end do
+      Dcoords(:,5) = 0.25_DP * Dcoords(:,5)
+
+      ! call the trafo to calculate the jacobian determinants
+      call trafo_calctrafoabs_mult (ctrafo, 4, Dcoords, Dpoints, Djac, Ddetj)
+
+      ! update domain volume
+      dvolume = dvolume + Ddetj(1) + Ddetj(2) + Ddetj(3) + Ddetj(4)
+
+      ! update the integral mean
+      ! The following lines correspond to integration using a piecewise 1-Gauss cubature rule.
+      ! The cubature points are the barycenters of the four sub-triangles, therefore by definition
+      ! of the QPW4DCP1 basis functions, each basis function has a value of +/- 1/3 or 0 in each
+      ! of the cubtaute points.
+      j = 11*(iel-1)
+      dmean = dmean + Ddetj(1)*d13*(p_Dx(j+1) + p_Dx(j+2) + p_Dx(j+9) + p_Dx(j+10) + p_Dx(j+11))
+      dmean = dmean + Ddetj(2)*d13*(p_Dx(j+3) + p_Dx(j+4) + p_Dx(j+9) + p_Dx(j+10) - p_Dx(j+11))
+      dmean = dmean + Ddetj(3)*d13*(p_Dx(j+5) + p_Dx(j+6) + p_Dx(j+9) - p_Dx(j+10) - p_Dx(j+11))
+      dmean = dmean + Ddetj(4)*d13*(p_Dx(j+7) + p_Dx(j+8) + p_Dx(j+9) - p_Dx(j+10) + p_Dx(j+11))
+
+    end do
+
+    ! divide mean by domain volume
+    dmean = dmean / dvolume
+
+    ! loop over all elements
+    do iel = 1, p_rtria%NEL
+
+      ! and correct the first 9 basis functions per element
+      ! The basis functions 10 and 11 have a zero coefficient for the constant one function,
+      ! therefore we do not correct the coefficients corresponding to those basis functions.
+      do j = 1, 9
+        idx = 11*(iel-1) + j
+        p_Dx(idx) = p_Dx(idx) - dmean
+      end do
+
+    end do
 
   end subroutine
 
@@ -1237,7 +1354,7 @@ contains
       case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
@@ -1323,7 +1440,7 @@ contains
         call vecfil_imposeFeastMirrorBC (rx,&
             p_rdiscreteBC%p_RdiscBCList(i)%rfeastMirrorBCs)
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
@@ -1493,7 +1610,7 @@ contains
         ! Routine is on purpose not commented in! Not used for now!
         ! CALL vecfil_imposeFeastMirrorDefBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
@@ -1645,7 +1762,7 @@ contains
       case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
@@ -1732,7 +1849,7 @@ contains
       case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCrhs')
@@ -1820,7 +1937,7 @@ contains
       case (DISCBC_TPFEASTMIRROR)
         ! Nothing to do
 
-      case DEFAULT
+      case default
         call output_line(&
             'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCdef')
