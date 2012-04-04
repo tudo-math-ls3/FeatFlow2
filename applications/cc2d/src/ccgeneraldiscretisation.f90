@@ -66,6 +66,7 @@ module ccgeneraldiscretisation
   use bcassembly
   use triangulation
   use element
+  use basicgeometry
   use spatialdiscretisation
   use bilinearformevaluation
   use linearformevaluation
@@ -365,97 +366,84 @@ contains
   
   ! local variables
   integer(I32) :: ieltypeUV, ieltypeP
-  logical :: btriallowed, bquadallowed
-  
-    btriallowed  = .false.
-    bquadallowed = .false.
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
     case (0)
       ieltypeUV = EL_E031
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (1)
       ieltypeUV = EL_E030
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (2)
       ieltypeUV = EL_EM31
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (3)
       ieltypeUV = EL_EM30
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (4)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1
-      bquadallowed = .true.
                   
     case (5)
       ieltypeUV = EL_EM30_UNPIVOTED
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (6)
       ieltypeUV = EL_EM30_UNSCALED
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (7)
       ieltypeUV = EL_EM30_NEW
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (8)
       ieltypeUV = EL_EB30
       ieltypeP = EL_Q0
-      bquadallowed = .true.
 
     case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
-      bquadallowed = .true.
 
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
-      bquadallowed = .true.
 
     case (12)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NP
-      bquadallowed = .true.
 
     case (13)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1NPD
-      bquadallowed = .true.
 
     case (14)
       ieltypeUV = EL_Q1TB_2D
       ieltypeP = EL_QP1
-      bquadallowed = .true.
 
     case (15)
       ieltypeUV = EL_Q1TBNP_2D
       ieltypeP = EL_QP1NPD
-      bquadallowed = .true.
 
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
-      bquadallowed = .true.
 
     case (30)
       ieltypeUV = EL_P1T
       ieltypeP = EL_P0
-      btriallowed  = .true.
+
+    case (50)
+      ieltypeUV = EL_EN50_2D
+      ieltypeP  = EL_DCQP1_2D
+
+    case (51)
+      ieltypeUV = EL_EN51_2D
+      ieltypeP  = EL_DCQP2_2D
 
     case default
       call output_line (&
@@ -491,14 +479,27 @@ contains
       end if
     
       ! Check the mesh to ensure that the discretisation is compatible.
-      if ( ((rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) .and. .not. btriallowed) .or. &
-          ((rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) .and. .not. bquadallowed)) then
-        call output_line (&
-            "Discretisation does not support the current mesh!", &
-            OU_CLASS_ERROR,OU_MODE_STD,"cc_getDiscretisation")
-        call sys_halt()
-      end if
-    
+      select case(elem_igetShape(ieltypeUV))
+      case (BGEOM_SHAPE_TRIA)
+        ! Triangular element; ensure that we don't have quads in the mesh
+        if(rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) then
+          call output_line (&
+              "Discretisation does not support the current mesh!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDiscretisation")
+          call sys_halt()
+        end if
+
+      case (BGEOM_SHAPE_QUAD)
+        ! Quadrilateral element; ensure that we don't have triangles in the mesh
+        if(rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) then
+          call output_line (&
+              "Discretisation does not support the current mesh!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDiscretisation")
+          call sys_halt()
+        end if
+
+      end select
+
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector.
