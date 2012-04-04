@@ -247,7 +247,7 @@ drhsMultiplyY = 1.0
 #  4 = Q2 (E013) / Q2 (E013) / QP1
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 #  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-#  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+#  7 = Q1~(EN30) / Q1~(EN30) / Q0 (nonparametric, new interface implementation of 3)
 #  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
@@ -256,7 +256,10 @@ drhsMultiplyY = 1.0
 # 14 = Q1~(EB30) / Q1~(EB30) / QP1 (parametric, experimental)
 # 15 = Q1~(EB30) / Q1~(EB30) / QP1 (nonparametric, experimental)
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
-# 30 = P1~(E020) / P1~(E020) / P0 
+# 30 = P1~(E020) / P1~(E020) / P0
+# 50 = Q2~(EN50) / Q2~(EN50) / QP1 (nonparametric velocity + pressure)
+# 51 = Q3~(EN51) / Q3~(EN51) / QP2 (nonparametric velocity + pressure)
+
 
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
