@@ -48,7 +48,7 @@ triname = ./pre/QUAD.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 4
+FEkind = 3
 
 
 [TIMESTEPPING]

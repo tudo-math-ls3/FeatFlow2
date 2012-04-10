@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> dg2d_mgscpoissonde </name>
+!# <name> dg2d_mgscconvdiff </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -34,7 +34,7 @@
 !# </purpose>
 !##############################################################################
 
-module dg2d_mgscpoissonde
+module dg2d_mgscconvdiff
 
   use fsystem
   use stdoperators
@@ -151,7 +151,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_initParlist (rproblem)
+  subroutine dgmcd_initParlist (rproblem)
   
 !<description>
   ! This routine reads in the parameter file.
@@ -189,7 +189,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_initParamTriang (rproblem)
+  subroutine dgmcd_initParamTriang (rproblem)
   
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
@@ -266,7 +266,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_initDiscretisation (rproblem)
+  subroutine dgmcd_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -345,7 +345,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_initMatVec (rproblem)
+  subroutine dgmcd_initMatVec (rproblem)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -423,7 +423,7 @@ contains
        
        if (ielementtype.ne.0) then
           call bilf_buildMatrixScalar (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
-               dgmpd_fcoeff_MatrixScalarMgCell)
+               dgmcd_fcoeff_MatrixScalarMgCell)
        else
           call output_line('Cannot calculate Poisson problem with constant elements!',&
             OU_CLASS_ERROR,OU_MODE_STD,'')
@@ -449,7 +449,7 @@ contains
        rproblem%rcollection%Iquickaccess(1) = rproblem%ipolDeg
        call bilf_dg_buildMatrixScEdge2D_de (rform, CUB_G5_1D, .false., p_rmatrix%RmatrixBlock(1,1),&
             rproblem%RlevelInfo(i)%raddTriaData,&
-            dgmpd_flux_dg_MatrixScalarMgEdge,&
+            dgmcd_flux_dg_MatrixScalarMgEdge,&
             rproblem%rcollection)!, cconstrType)
 
 !       call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1), '',&
@@ -482,7 +482,7 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC2D
     call linf_buildVectorScalar2 (rlinform, .true.,&
                                   p_rrhs%RvectorBlock(1),&
-                                  dgmpd_VectorScalarMg)!,&
+                                  dgmcd_VectorScalarMg)!,&
                                   !rcollection)
 
     ! The edge term (which will only be nonzero at boundary)
@@ -498,7 +498,7 @@ contains
     call linf_dg_buildVectorScalarEdge2d_de (rlinformedge, CUB_G5_1D, .false.,&
          p_rrhs%RvectorBlock(1),&
          rproblem%RlevelInfo(rproblem%ilvmax)%raddTriaData,&
-         dgmpd_flux_dg_VectorScalarMgEdge,&
+         dgmcd_flux_dg_VectorScalarMgEdge,&
          rproblem%rcollection)
     
   end subroutine
@@ -509,7 +509,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_solve (rproblem)
+  subroutine dgmcd_solve (rproblem)
   
 !<description>
   ! Solves the given problem by applying a linear solver.
@@ -1041,7 +1041,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_postprocessing (rproblem)
+  subroutine dgmcd_postprocessing (rproblem)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -1083,15 +1083,15 @@ contains
     
     write(*,*) ''
     
-    !rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L1ERROR,derror,&
-         dgmpd_getRefFunc)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L2ERROR,derror,&
-         dgmpd_getRefFunc)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+!    !rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+!    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!         dgmcd_getRefFunc)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!         dgmcd_getRefFunc)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
     
     
@@ -1107,7 +1107,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_doneMatVec (rproblem)
+  subroutine dgmcd_doneMatVec (rproblem)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -1140,7 +1140,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_doneDiscretisation (rproblem)
+  subroutine dgmcd_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -1188,7 +1188,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_doneParamTriang (rproblem)
+  subroutine dgmcd_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -1220,7 +1220,7 @@ contains
 
 !<subroutine>
 
-  subroutine dgmpd_doneParlist (rproblem)
+  subroutine dgmcd_doneParlist (rproblem)
   
 !<description>
   ! Releases the parameter list.
@@ -1244,7 +1244,7 @@ contains
 
   !<subroutine>
 
-  subroutine dg2d_dgmpd_run
+  subroutine dg2d_dgmcd_run
 
     !<description>
     ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -1286,31 +1286,31 @@ contains
     allocate(p_rproblem)
     
     ! Initialise triangulation and parametrisation
-    call dgmpd_initParlist (p_rproblem)
+    call dgmcd_initParlist (p_rproblem)
    
     ! Initialise triangulation and parametrisation
-    call dgmpd_initParamTriang (p_rproblem)
+    call dgmcd_initParamTriang (p_rproblem)
     
     ! Initialise discretisation
-    call dgmpd_initDiscretisation (p_rproblem)
+    call dgmcd_initDiscretisation (p_rproblem)
     
     ! Calculate matrix and vectors
-    call dgmpd_initMatVec (p_rproblem)
+    call dgmcd_initMatVec (p_rproblem)
     
     ! Solve
     call cpu_time(dtime1)
-    call dgmpd_solve (p_rproblem)
+    call dgmcd_solve (p_rproblem)
     call cpu_time(dtime2)
     write(*,*) 'Solver took: ', dtime2-dtime1
     
     ! Write solution to file
-    call dgmpd_postprocessing (p_rproblem)
+    call dgmcd_postprocessing (p_rproblem)
     
     ! Release memory
-    call dgmpd_doneMatVec (p_rproblem)
-    call dgmpd_doneDiscretisation (p_rproblem)
-    call dgmpd_doneParamTriang (p_rproblem)
-    call dgmpd_doneParList (p_rproblem)
+    call dgmcd_doneMatVec (p_rproblem)
+    call dgmcd_doneDiscretisation (p_rproblem)
+    call dgmcd_doneParamTriang (p_rproblem)
+    call dgmcd_doneParList (p_rproblem)
     
     ! Deallocate the problem structure
     deallocate(p_rproblem)

@@ -414,6 +414,7 @@ contains
        end if
 
        call lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(1,1),-1.0_DP)
+       
 
 
        ! Create temporary empty solution vector which is needed to build the matrices
@@ -438,6 +439,12 @@ contains
        
        ! Deallocate temporary solution vector
        call lsyssc_releaseVector (rvectorSolTemp)
+       
+       
+       
+!       ! Output matrix 
+!       call matio_writeMatrixHR (p_rmatrix%RmatrixBlock(1,1), '',&
+!                                  .true., 0, './test.txt','(F6.1)')
 
     end do
     
@@ -665,24 +672,24 @@ contains
         
         
 !        nullify(p_rpreconditioner)
-        call linsol_initBlockJac (p_rpreconditioner)
+!        call linsol_initBlockJac (p_rpreconditioner)
 !        call linsol_initJacobi (p_rpreconditioner)
-        CALL linsol_initDefCorr (p_rcoarseGridSolver,p_rpreconditioner)
-        p_rcoarseGridSolver%domega = 1.0
-        p_rcoarseGridSolver%nmaxIterations = 5000
-        p_rcoarseGridSolver%nminIterations = 0
+!        CALL linsol_initDefCorr (p_rcoarseGridSolver,p_rpreconditioner)
+!        p_rcoarseGridSolver%domega = 1.0
+!        p_rcoarseGridSolver%nmaxIterations = 5000
+!        p_rcoarseGridSolver%nminIterations = 0
         
-        ! The linear solver stops, when this relative or absolut norm of
-        ! the residual is reached.
-        p_rcoarseGridSolver%depsRel = 1.0e-12
-        p_rcoarseGridSolver%depsAbs = 1.0e-12
+!        ! The linear solver stops, when this relative or absolut norm of
+!        ! the residual is reached.
+!        p_rcoarseGridSolver%depsRel = 1.0e-12
+!        p_rcoarseGridSolver%depsAbs = 1.0e-12
         
 !        ! Set the output level of the solver to 2 for some output
 !        p_rcoarseGridSolver%ioutputLevel = 2
         
 
-!        ! Set up UMFPACK coarse grid solver.
-!        call linsol_initUMFPACK4 (p_rcoarseGridSolver)
+        ! Set up UMFPACK coarse grid solver.
+        call linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
       else
         ! Setting up Jacobi smoother for multigrid would be:
@@ -706,6 +713,7 @@ contains
         call linsol_initBlockJac (p_rsmoother)
 !        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
 !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
+!        call linsol_initSOR(p_rsmoother)
         call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
         
       end if

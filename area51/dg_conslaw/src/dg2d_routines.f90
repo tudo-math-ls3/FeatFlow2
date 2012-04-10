@@ -63,6 +63,8 @@ module dg2d_routines
      real(dp), dimension(:,:), pointer :: p_DmidPoints
      ! Pointer to dx/dy
      real(DP), dimension(:,:), pointer:: p_Ddxdy
+     ! Upwind located neighbour elements (nneighbours,nelements)
+     integer, dimension(:,:), pointer :: p_IupwindNeighbours
   end type t_additionalTriaData
 
   type t_profiler
@@ -2712,7 +2714,8 @@ contains
     ! local variables
     integer :: nedge, iedge, IglobalEdgeNumber, ImaxedgePerElement, ilocal
     integer :: iel1, iel2, iel, NEL
-    integer, dimension(:,:), pointer :: p_IelementsAtEdge, p_IedgesAtElement, p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge, p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement , p_IverticesAtElement
     ! Pointer to the vertex coordinates
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(dp) :: dxl1, dxl2, dyl1, dyl2
@@ -2720,6 +2723,9 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     real(dp) :: dedgeLength
     integer :: ncorners
+    real(dp), dimension(2) :: dv
+    real(dp) :: dvn, dxm, dym
+    integer :: ineigh
 
 
     ! Get pointers to the needed arrays from the triangulation
@@ -2845,8 +2851,62 @@ contains
             maxval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel))) - &
             minval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel)))
     end do
+    
+    
+    
+    
+    ! *** Calculate the upwind located neighbous to one element ***
+     
+    ! Get pointer to element neighbours
+    call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
+                                  p_IneighboursAtElement)
 
-
+    ! Allocate space for upwind information
+    allocate(raddTriaData%p_IupwindNeighbours(size(p_IneighboursAtElement,1),&
+                                              size(p_IneighboursAtElement,2)))
+    
+    ! Loop over all elements
+    do iel = 1, size(p_IneighboursAtElement,2)
+    
+      ! Loop over all neighbours
+      do ineigh = 1, size(p_IneighboursAtElement,1)
+        
+        ! Get edge
+        iedge = p_IedgesAtElement(ineigh,iel)
+        
+        ! Get midpoint of edge
+        dxm=0.5_dp*(p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))+&
+                    p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)))
+        dym=0.5_dp*(p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))+&
+                    p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)))
+        
+        ! Calculate velocity
+        dv(1) = 1.0_dp
+        dv(2) = 1.0_dp
+        
+        ! Calculate normal*velocity
+        dvn = dv(1)*raddTriaData%p_Dnormals(1,iedge) &
+            + dv(2)*raddTriaData%p_Dnormals(2,iedge)
+        
+        ! Test if up-/downwind
+        if (dvn<0.0_dp) then
+          ! If neighbour is located upwind
+          raddTriaData%p_IupwindNeighbours(ineigh,iel)=1
+        else
+          ! If neighbour is located downwind
+          raddTriaData%p_IupwindNeighbours(ineigh,iel)=0
+        end if
+        
+        ! Test if we are at a boundary
+        if (iedge.eq.0) then
+          ! We  are on the boundary and the neighbour element does not exist
+          raddTriaData%p_IupwindNeighbours(ineigh,iel)=0
+        end if
+      
+      end do !ineigh
+    
+    end do !iel
+     
   end subroutine addTriaData
 
 
@@ -2885,6 +2945,9 @@ contains
 
     ! Deallocate dx and dy
     deallocate(raddTriaData%p_Ddxdy)
+    
+    ! Deallocate upwind neighbours
+    deallocate(raddTriaData%p_IupwindNeighbours)
 
   end subroutine releaseTriaData
 
