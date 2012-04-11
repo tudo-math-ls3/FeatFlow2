@@ -10547,10 +10547,14 @@ end subroutine
           dx = rdomainIntSubset%p_DcubPtsReal(1,ipoint,iel)
           dy = rdomainIntSubset%p_DcubPtsReal(2,ipoint,iel)
 
-          ! Set coefficients (the velocity vector)
-          Dcoefficients(1,ipoint,iel) = 1.0_dp
-          Dcoefficients(2,ipoint,iel) = 1.0_dp
-
+          ! Set coefficients
+          ! First for the diffusion part (\nu)
+          Dcoefficients(1,ipoint,iel) = rcollection%DquickAccess(1)
+          Dcoefficients(2,ipoint,iel) = rcollection%DquickAccess(1)
+          ! Now for the convection part (-\beta)
+          Dcoefficients(3,ipoint,iel) = -rcollection%DquickAccess(2)
+          Dcoefficients(4,ipoint,iel) = -rcollection%DquickAccess(3)
+          
        end do
     end do
 
@@ -10612,7 +10616,7 @@ end subroutine
   !</subroutine>
   
   integer :: nterms, ncubaturepoints, nedges, iedge, ipoint
-  real(dp) :: dsigmaf, dpolgrad
+  real(dp) :: dsigmaf, dpolgrad, dcoeffi, dcoeffa, dbetan
   
   ! Get size of Dcoeffitients
   nterms = size(DCoefficients,3)
@@ -10631,6 +10635,8 @@ end subroutine
       if (IelementList(iedge).ne.0) then
         ! Inner edge
         
+        ! First the diffusion part
+        
         ! Term 1: u,v
         DCoefficients(1,1,1,ipoint,iedge) = 1.0_dp
         DCoefficients(2,1,1,ipoint,iedge) = -1.0_dp
@@ -10639,7 +10645,7 @@ end subroutine
         
         dpolgrad = real(rcollection%Iquickaccess(1))
         dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
-        DCoefficients(:,:,1,ipoint,iedge) = & 
+        DCoefficients(:,:,1,ipoint,iedge) = rcollection%DquickAccess(1)*& 
                    DCoefficients(:,:,1,ipoint,iedge) * dsigmaf
         
         ! Term 2: u_x,v
@@ -10648,7 +10654,7 @@ end subroutine
         DCoefficients(1,2,2,ipoint,iedge) = -normal(1,iedge)
         DCoefficients(2,2,2,ipoint,iedge) = -normal(1,iedge)
         
-        DCoefficients(:,:,2,ipoint,iedge) = & 
+        DCoefficients(:,:,2,ipoint,iedge) = rcollection%DquickAccess(1)*& 
                    DCoefficients(:,:,2,ipoint,iedge) * (-0.5_dp)
         
         ! Term 3: u_y,v
@@ -10657,7 +10663,7 @@ end subroutine
         DCoefficients(1,2,3,ipoint,iedge) = -normal(2,iedge)
         DCoefficients(2,2,3,ipoint,iedge) = -normal(2,iedge)
         
-        DCoefficients(:,:,3,ipoint,iedge) = & 
+        DCoefficients(:,:,3,ipoint,iedge) = rcollection%DquickAccess(1)*& 
                    DCoefficients(:,:,3,ipoint,iedge) * (-0.5_dp)
         
         ! Term 4: u,v_x
@@ -10666,7 +10672,7 @@ end subroutine
         DCoefficients(1,2,4,ipoint,iedge) = normal(1,iedge)
         DCoefficients(2,2,4,ipoint,iedge) = -normal(1,iedge)
         
-        DCoefficients(:,:,4,ipoint,iedge) = & 
+        DCoefficients(:,:,4,ipoint,iedge) = rcollection%DquickAccess(1)*& 
                    DCoefficients(:,:,4,ipoint,iedge) * (-0.5_dp)
         
         ! Term 5: u,v_y
@@ -10675,28 +10681,80 @@ end subroutine
         DCoefficients(1,2,5,ipoint,iedge) = normal(2,iedge)
         DCoefficients(2,2,5,ipoint,iedge) = -normal(2,iedge)
         
-        DCoefficients(:,:,5,ipoint,iedge) = & 
+        DCoefficients(:,:,5,ipoint,iedge) = rcollection%DquickAccess(1)*& 
                    DCoefficients(:,:,5,ipoint,iedge) * (-0.5_dp)
+        
+        
+        ! Now add the convection part
+        ! Term 1: u,v
+        
+        ! Calculate beta*n
+        dbetan = normal(1,iedge)*rcollection%DquickAccess(2) +&
+                 normal(2,iedge)*rcollection%DquickAccess(3)
+        
+        ! Get upwind direction
+        if (dbetan.ge.0.0_dp) then
+          dcoeffi = 1.0_dp
+          dcoeffa = 0.0_dp
+        else
+          dcoeffi = 0.0_dp
+          dcoeffa = 1.0_dp
+        end if
+        
+        DCoefficients(1,1,1,ipoint,iedge) = DCoefficients(1,1,1,ipoint,iedge)+&
+                                            dbetan*dcoeffi
+        DCoefficients(2,1,1,ipoint,iedge) = DCoefficients(2,1,1,ipoint,iedge)+&
+                                            dbetan*dcoeffa
+        DCoefficients(1,2,1,ipoint,iedge) = DCoefficients(1,2,1,ipoint,iedge)+&
+                                            -dbetan*dcoeffi
+        DCoefficients(2,2,1,ipoint,iedge) = DCoefficients(2,2,1,ipoint,iedge)+&
+                                            -dbetan*dcoeffa
+     
 
       else
         ! Boundary edge
+        
+        ! First the diffusion part
 
         ! Term 1: u,v
         dpolgrad = real(rcollection%Iquickaccess(1))
         dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
-        DCoefficients(1,1,1,ipoint,iedge) = 2.0_dp * dsigmaf
+        DCoefficients(1,1,1,ipoint,iedge) = rcollection%DquickAccess(1)*2.0_dp * dsigmaf
         
         ! Term 2: u_x,v
-        DCoefficients(1,1,2,ipoint,iedge) = -normal(1,iedge)
+        DCoefficients(1,1,2,ipoint,iedge) = -normal(1,iedge)*rcollection%DquickAccess(1)
         
         ! Term 3: u_y,v
-        DCoefficients(1,1,3,ipoint,iedge) = -normal(2,iedge)
+        DCoefficients(1,1,3,ipoint,iedge) = -normal(2,iedge)*rcollection%DquickAccess(1)
         
         ! Term 4: u,v_x
-        DCoefficients(1,1,4,ipoint,iedge) = -normal(1,iedge)
+        DCoefficients(1,1,4,ipoint,iedge) = -normal(1,iedge)*rcollection%DquickAccess(1)
         
         ! Term 5: u,v_y
-        DCoefficients(1,1,5,ipoint,iedge) = -normal(2,iedge)     
+        DCoefficients(1,1,5,ipoint,iedge) = -normal(2,iedge)*rcollection%DquickAccess(1)
+        
+        
+        ! Now add the convection part
+        ! Term 1: u,v
+        
+        ! Calculate beta*n
+        dbetan = normal(1,iedge)*rcollection%DquickAccess(2) +&
+                 normal(2,iedge)*rcollection%DquickAccess(3)
+        
+        ! Get upwind direction
+        if (dbetan.ge.0.0_dp) then
+          dcoeffi = 1.0_dp
+          dcoeffa = 0.0_dp
+        else
+          dcoeffi = 0.0_dp
+          dcoeffa = 1.0_dp
+        end if
+        
+        DCoefficients(1,1,1,ipoint,iedge) = DCoefficients(1,1,1,ipoint,iedge)+&
+                                            dbetan*dcoeffi
+
+       
+        
       
       end if
       
@@ -10789,12 +10847,12 @@ end subroutine
 
     !    u(x,y) = 16*x*(1-x)*y*(1-y)
     ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-    Dcoefficients (1,:,:) = 32.0_DP * &
-         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
-         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+!    Dcoefficients (1,:,:) = 32.0_DP * &
+!         ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+!         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
     
-
-     
+     ! RHS f = 1
+     Dcoefficients (1,:,:) = 1.0_dp
 
 
 !    ! u=u^2    
@@ -10872,7 +10930,7 @@ end subroutine
   
   
   integer :: nterms, ncubaturepoints, nedges, iedge, ipoint
-  real(dp) :: dsigmaf, dpolgrad, g
+  real(dp) :: dsigmaf, dpolgrad, g, dbetan
   
   ! Get size of Dcoeffitients
   nterms = size(DCoefficients,2)
@@ -10895,21 +10953,40 @@ end subroutine
         
       else
         ! Boundary edge
+        
+        ! First the diffusion terms
 
         ! Term 1: v
         dpolgrad = real(rcollection%Iquickaccess(1))
         dsigmaf = dpolgrad*(dpolgrad+1.0_dp)/DedgeLength(iedge)
         g = 0.0_dp ! value on boundary
-        DCoefficients(1,1,ipoint,iedge) = 2.0_dp * dsigmaf * g
+        DCoefficients(1,1,ipoint,iedge) = 2.0_dp * dsigmaf * g &
+                                          * rcollection%Dquickaccess(1)
         
         ! Term 2: v_x
         g = 0.0_dp
-        DCoefficients(1,2,ipoint,iedge) = -Dnormal(1,iedge) * g
+        DCoefficients(1,2,ipoint,iedge) = -Dnormal(1,iedge) * g &
+                                          * rcollection%Dquickaccess(1)
         
         ! Term 3: v_y
         g = 0.0_dp
-        DCoefficients(1,3,ipoint,iedge) = -Dnormal(2,iedge) * g
-      
+        DCoefficients(1,3,ipoint,iedge) = -Dnormal(2,iedge) * g &
+                                          * rcollection%Dquickaccess(1)
+        
+        
+        ! Now add the convection term
+        g = 0.0_dp
+        
+        ! Calculate beta*n
+        dbetan = Dnormal(1,iedge)*rcollection%DquickAccess(2) +&
+                 Dnormal(2,iedge)*rcollection%DquickAccess(3)
+        
+        ! Get negative part
+        dbetan = min(dbetan,0.0_dp)
+        
+        DCoefficients(1,1,ipoint,iedge) = DCoefficients(1,1,ipoint,iedge) &
+                                          - g * dbetan
+        
       end if
       
     end do

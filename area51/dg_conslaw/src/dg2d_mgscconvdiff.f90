@@ -4,33 +4,44 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module solves the poisson problem
+!# This module solves the confection diffusion problem
 !# 
-!#   -\laplace u = f
+!#   -\nu \laplace u + \beta \cdot (\nabla u) = f
 !#   u = g on the boundary
 !#    
 !# using a dg discretisation with multigrid solver.
 !# 
-!# It is to be compared to the Dead II package.
-!# It is discretised by
-!# (where {{u}} := 1/2 (u_1+u_2) )
+!# The Poisson part is discretised by the symmetric
+!# interior penalty method
+
+!# (where {{u}} := 1/2 (u^+ + u^-), [[un]] := u^+n^+ + u^-n^- )
 !# 
-!# -\sum_{T}   (\nabla u,\nabla v)_T
-!# +\sum_{F^i}   4 \sigma_F <{{u \vec n}},{{v \vec n}}>_F^i 
-!#             - 2 <{{\nabla u}},{{v \vec n}}>_F^i 
-!#             - 2 <{{u \vec n}},{{\nabla v}}>_F^i 
-!# +\sum_{F^b}   2 \sigma_F <u,v>_F^b
-!#             -   <\del_n u,v>_F^b 
-!#             -   <u,\del_n  v>_F^b
+!# -\nu \sum_{T}   (\nabla u,\nabla v)_T
+!# +\nu \sum_{F^i}   \sigma_F <[[u \vec n]],[v \vec n]>_F^i 
+!#                - <{{\nabla u}},[[v \vec n]]>_F^i 
+!#                - <[[u \vec n]],{{\nabla v}}>_F^i 
+!# +\nu \sum_{F^b}   2 \sigma_F <u,v>_F^b
+!#                -   <\del_n u,v>_F^b 
+!#                -   <u,\del_n  v>_F^b
 !# =
-!# -\sum_{T}   (f,v)_T
-!# +\sum_{F^b}   2 \sigma_F <g,v>_F^b
-!#             -   <g,\del_n v>_F^b 
-!# 
+!# -\nu \sum_{T}   (f,v)_T
+!# +\nu \sum_{F^b}  2 \sigma_F <g,v>_F^b
+!#                -   <g,\del_n v>_F^b
+!#
 !# where \sigma_{F,K} = p(p+1) |F|_{d-1}/|T|_d
 !# with p = polynomial degree, |.|_{d/d-1} the d(-1) dimensional
 !# Hausdorff measure. On the boundary \sigma_F=\sigma_{F,T} and
-!# on an interior face we take the average.
+!# on an interior face we take the average.!#
+!#
+!# 
+!# Adding the terms for the convection part 
+!# 
+!#  \sum_{T} (-u, \beta \cdot (\nabla v))_T
+!# +\sum_{F} <u^{upw}, \beta \cdot [[vn]]>_F
+!# =
+!# -\sum_{F^b} <[\beta \cdot n]_- g, v>_{F^b}
+!# where [\beta \cdot n]_- is the negative part of \beta \cdot n.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -108,7 +119,7 @@ module dg2d_mgscconvdiff
 
   type t_problem
   
-    ! Minimum refinement level; = Level i in RlevelInfo
+    ! Minimum refinement level; = Level 1 in RlevelInfo
     integer :: ilvmin
     
     ! Maximum refinement level
@@ -116,6 +127,12 @@ module dg2d_mgscconvdiff
     
     ! Polynomial degree of ansatz functions
     integer :: ipolDeg
+    
+    ! The diffusion constant
+    real(dp) :: dnu
+    
+    ! The velocity vector
+    real(dp), dimension(2) :: Dbeta
 
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
@@ -181,6 +198,11 @@ contains
     ! Read parameter file
     call parlst_init(rproblem%rparlist)
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
+    
+    ! Set convection and diffusion parameters
+    rproblem%dnu = 1.0_dp/256.0_dp
+    rproblem%Dbeta(1) = 1.0_dp
+    rproblem%Dbeta(2) = 1.0_dp
 
   end subroutine
 
@@ -395,35 +417,30 @@ contains
                 p_rdiscretisation%RspatialDiscr(1),&
                 BILF_MATC_EDGEBASED)
 
-
-
-!       ! Build mass matrix
-!       rform%itermCount = 1
-!       rform%Idescriptors(1,1) = DER_FUNC
-!       rform%Idescriptors(2,1) = DER_FUNC
-!       rform%ballCoeffConstant = .true.
-!       rform%BconstantCoeff = .true.
-!       rform%Dcoefficients(1)  = 1.0
-!       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))
-                
-                
        
        ! First calculate the matrix for the cell terms
-       rform%itermCount = 2
+       rform%itermCount = 4
        rform%Idescriptors(1,1) = DER_DERIV_X
        rform%Idescriptors(2,1) = DER_DERIV_X
        rform%Idescriptors(1,2) = DER_DERIV_Y
        rform%Idescriptors(2,2) = DER_DERIV_Y
+       rform%Idescriptors(1,3) = DER_FUNC
+       rform%Idescriptors(2,3) = DER_DERIV_X
+       rform%Idescriptors(1,4) = DER_FUNC
+       rform%Idescriptors(2,4) = DER_DERIV_Y
        rform%ballCoeffConstant = .false.
        rform%BconstantCoeff = .false.
-       !rcollection%p_rvectorQuickAccess1 => rsolBlock
+       ! Convection and diffusion coeffs
+       rproblem%rcollection%DquickAccess(1) = rproblem%dnu
+       rproblem%rcollection%DquickAccess(2) = rproblem%Dbeta(1)
+       rproblem%rcollection%DquickAccess(3) = rproblem%Dbeta(2)
        
        ! Type of finite element to use
        call parlst_getvalue_int(rproblem%rparlist, 'TRIANGULATION', 'FEkind', ielementType)
        
        if (ielementtype.ne.0) then
           call bilf_buildMatrixScalar (rform, .true., p_rmatrix%RmatrixBlock(1,1),&
-               dgmcd_fcoeff_MatrixScalarMgCell)
+               dgmcd_fcoeff_MatrixScalarMgCell,rproblem%rcollection)
        else
           call output_line('Cannot calculate Poisson problem with constant elements!',&
             OU_CLASS_ERROR,OU_MODE_STD,'')
@@ -447,6 +464,10 @@ contains
        !rcollection%p_rvectorQuickAccess1 => rsolBlock
        !rcollection%Dquickaccess(1) = 
        rproblem%rcollection%Iquickaccess(1) = rproblem%ipolDeg
+       ! Convection and diffusion coeffs
+       rproblem%rcollection%DquickAccess(1) = rproblem%dnu
+       rproblem%rcollection%DquickAccess(2) = rproblem%Dbeta(1)
+       rproblem%rcollection%DquickAccess(3) = rproblem%Dbeta(2)
        call bilf_dg_buildMatrixScEdge2D_de (rform, CUB_G5_1D, .false., p_rmatrix%RmatrixBlock(1,1),&
             rproblem%RlevelInfo(i)%raddTriaData,&
             dgmcd_flux_dg_MatrixScalarMgEdge,&
@@ -493,6 +514,9 @@ contains
     rlinformedge%Idescriptors(3) = DER_DERIV_Y
     rproblem%rcollection%p_rvectorQuickAccess1 => rproblem%rvector
     rproblem%rcollection%Iquickaccess(1) = rproblem%ipolDeg
+    rproblem%rcollection%DquickAccess(1) = rproblem%dnu
+    rproblem%rcollection%DquickAccess(2) = rproblem%Dbeta(1)
+    rproblem%rcollection%DquickAccess(3) = rproblem%Dbeta(2)
     
     ! Now use the dg-function for the edge terms
     call linf_dg_buildVectorScalarEdge2d_de (rlinformedge, CUB_G5_1D, .false.,&
@@ -724,7 +748,8 @@ contains
 !         call linsol_initBlockJac (p_rpreconditioner)
         
 !        call linsol_initJacobi (p_rsmoother)
-        call linsol_initBlockJac (p_rsmoother)
+        call linsol_initSOR (p_rsmoother, 1.0_dp)
+!        call linsol_initBlockJac (p_rsmoother)
 !        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
 !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
         call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)

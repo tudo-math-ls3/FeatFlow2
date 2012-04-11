@@ -2,7 +2,7 @@
 
 # We want to solve our problem on level ...
 nlmin = 1
-nlmax = 8
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
