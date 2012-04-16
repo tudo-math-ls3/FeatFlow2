@@ -18648,7 +18648,7 @@ contains
         ! Apply deflation preconditioning to z(i)
         if (associated(p_rlevelInfoBelow)) then
         
-          ! Calculate z = (P A z  -  drelax lambda_max v(i))
+          ! Calculate z = (A P z  -  drelax lambda_max v(i))
           ! in the temp vector
           call lsysbl_copyVector (p_rv(i),p_rtempVector)
           call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
@@ -18680,7 +18680,7 @@ contains
           
           ! Preconditioning on the lower level
           call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
-          call linsol_precDeflGMRES_recleft (rsolverNode,ilevel-1,&
+          call linsol_precDeflGMRES_recright (rsolverNode,ilevel-1,&
               p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
 
           ! Prolongation to our current level: t = I(...)
@@ -18699,16 +18699,17 @@ contains
           call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
         end if
         
-        
         ! Step I.2:
-        ! Calculate v(i+1) = P * A * z(i)
-        call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+        ! Calculate v(i+1) = A * P * z(i)
         
-        ! Preconditioning + filtering
+        call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+
         if (bprec) then
           call linsol_precondDefect (&
-              p_rlevelInfo%p_rpreconditioner,p_rv(i+1))
+              p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
         end if
+        
+        call lsysbl_blockMatVec (p_rmatrix, p_rdefTempVector, p_rv(i+1), 1.0_DP, 0.0_DP)
 
         if (bfilter) then
           call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
@@ -18846,6 +18847,7 @@ contains
         
         ! Okay, next inner loop iteration, please
       end do
+      
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
       ! -= End of Inner Loop
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -18869,7 +18871,7 @@ contains
       
       ! Step O.6:
       ! Calculate 'real' residual
-      ! v(1) = b - (A * x)
+      ! v(1) = b - (A * P * x)
       call lsysbl_copyVector (rb, p_rv(1))
       call lsysbl_copyVector (rx, p_rdefTempVector)
       
@@ -18960,6 +18962,12 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     ! -= End of Outer Loop
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+    ! On the highest level, calculate the actual solution by applying 
+    ! the preconditioner
+    if (bprec .and. (ilevel .eq. nlmax)) then
+      call linsol_precondDefect (p_rlevelInfo%p_rpreconditioner,rx)
+    end if
 
     if (ilevel .eq. nlmax) then
       ! Set ite to rsolverNode%nmaxIterations to prevent printing of
