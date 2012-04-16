@@ -45,7 +45,9 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
-		<File RelativePath="..\src\stokes_vortex.f90"/>
+		<File RelativePath="..\src\stokes2d_aux.f90"/>
+		<File RelativePath="..\src\stokes2d_no_flow.f90"/>
 		<File RelativePath="..\src\stokes2d_vortex_noslip.f90"/>
-		<File RelativePath="..\src\stokes2d_vortex_slip.f90"/></Files>
+		<File RelativePath="..\src\stokes2d_vortex_slip.f90"/>
+		<File RelativePath="..\src\stokes_vortex.f90"/></Files>
 	<Globals/></VisualStudioProject>

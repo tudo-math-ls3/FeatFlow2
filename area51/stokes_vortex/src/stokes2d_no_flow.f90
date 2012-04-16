@@ -1,21 +1,21 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> stokes2d_vortex_slip </name>
+!# <name> stokes2d_no_flow </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains a multigrid solver for the 2D steady Stokes equation
-!# with slip boundary conditions on a simple square domain.
+!# This module contains a multigrid solver for the 2D no-flow Stokes equation
+!# with pressure integral-mean filtering on a simple square domain.
 !#
 !# The analytical solution of the problem solved in this module is given by
-!#   u_1(x,y) = sin(pi*x) * cos(pi*y)
-!#   u_2(x,y) = cos(pi*x) * sin(pi*y)
-!#     p(x,y) = cos(pi*x) * cos(pi*y)
+!#   u_1(x,y) = 0
+!#   u_2(x,y) = 0
+!#     p(x,y) = c * (sin(pi*x) * sin(pi*y) - 4/pi^2)
 !#
 !# </purpose>
 !##############################################################################
 
-module stokes2d_vortex_slip
+module stokes2d_no_flow
 
   use fsystem
   use storage
@@ -53,7 +53,7 @@ module stokes2d_vortex_slip
   implicit none
 
   private
-  public :: stokes2d_vtx_slip
+  public :: stokes2d_noflow
 
 !<types>
 
@@ -71,8 +71,7 @@ module stokes2d_vortex_slip
     ! Cubature info structure which encapsules the cubature formula
     type(t_scalarCubatureInfo) :: rcubInfo
     
-    ! A system matrix for that specific level. The matrix will receive the
-    ! discrete Laplace operator.
+    ! A system matrix for that specific level.
     type(t_matrixBlock) :: rmatSys
 
     ! Prolongation matrix for velocity
@@ -99,18 +98,18 @@ contains
 
 !<subroutine>
 
-  subroutine stokes2d_vtx_slip
+  subroutine stokes2d_noflow
   
 !<description>
-  ! This is the main routine of the 2D steady Stokes solver with slip boundary
-  ! conditions.
+  ! This is the main routine of the 2D no-flow Stokes solver with pressure
+  ! integral-mean filtering.
 !</description>
 
 !</subroutine>
 
   ! Definitions of variables.
-  type(t_level), dimension(:), pointer :: Rlevels
   type(t_boundary) :: rboundary
+  type(t_level), dimension(:), pointer :: Rlevels
   type(t_vectorBlock) :: rvecSol, rvecRhs, rvecTmp
   type(t_boundaryRegion) :: rrgn
   type(t_linearForm) :: rform
@@ -119,7 +118,7 @@ contains
   type(t_filterChain), dimension(2), target :: RfilterChain
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer :: NLMIN, NLMAX, ierror, i
-  real(DP) :: dnu, dL2, dH1, ddiv
+  real(DP) :: dc,dnu, dL2, dH1, ddiv
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: spredir, sucddir
   real(DP), dimension(:), pointer :: p_Du, p_Dv, p_Dp
@@ -132,9 +131,12 @@ contains
     ! We want to solve our Stokes problem on level...
     NLMIN = 2
     NLMAX = 5
-    
+
     ! Viscosity parameter:
-    dnu = 1.0_DP
+    dnu = 1E+0_DP
+
+    ! pressure constant
+    dc = 1E+0_DP
 
     ! FE spaces
     celemVelocity = EL_Q2_2D
@@ -261,34 +263,36 @@ contains
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! We are going to assemble slip boundary conditions for this example, i.e.
-      ! the flow shall be orthogonal to the boundary's normal vector field.
-      ! On our simple square domain this results in homogene Dirichlet boundary
-      ! conditions on vertical boundary edges for the X-velocity and on 
-      ! horizontal boundary edges for the Y-velocity.
-
-      ! Bottom edge: u2 = 0
+      ! Bottom edge: (u1,u2) = 0
       call boundary_createRegion(rboundary,1,1,rrgn)
-      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      rrgn%iproperties = BDR_PROP_WITHSTART
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,1,rrgn,&
+          Rlevels(i)%rdiscreteBC, funcZeroBC2D)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,2,rrgn,&
           Rlevels(i)%rdiscreteBC, funcZeroBC2D)
 
-      ! Right edge: u1 = 0
+      ! Right edge: (u1,u2) = 0
       call boundary_createRegion(rboundary,1,2,rrgn)
-      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      rrgn%iproperties = BDR_PROP_WITHSTART
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,1,rrgn,&
           Rlevels(i)%rdiscreteBC, funcZeroBC2D)
-
-      ! Top edge: u2 = 0
-      call boundary_createRegion(rboundary,1,3,rrgn)
-      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,2,rrgn,&
           Rlevels(i)%rdiscreteBC, funcZeroBC2D)
 
-      ! Left edge: u1 = 0
-      call boundary_createRegion(rboundary,1,4,rrgn)
-      rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+      ! Top edge: (u1,u2) = 0
+      call boundary_createRegion(rboundary,1,3,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,1,rrgn,&
+          Rlevels(i)%rdiscreteBC, funcZeroBC2D)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,2,rrgn,&
+          Rlevels(i)%rdiscreteBC, funcZeroBC2D)
+
+      ! Left edge: (u1,u2) = 0
+      call boundary_createRegion(rboundary,1,4,rrgn)
+      rrgn%iproperties = BDR_PROP_WITHSTART
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,1,rrgn,&
+          Rlevels(i)%rdiscreteBC, funcZeroBC2D)
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscr,2,rrgn,&
           Rlevels(i)%rdiscreteBC, funcZeroBC2D)
 
       ! Assign BCs to system matrix
@@ -300,6 +304,7 @@ contains
     end do
 
     call output_line('Discretising right-hand-side...')
+
     ! Create three vectors
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatSys, rvecSol, .true.)
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatSys, rvecRhs, .true.)
@@ -309,6 +314,7 @@ contains
     rform%itermCount = 1
     rform%Idescriptors(1) = DER_FUNC
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(1), &
         Rlevels(NLMAX)%rcubInfo, funcRhsX2D, rcollection)
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(2), &
@@ -446,6 +452,7 @@ contains
 
     ! Store the viscosity parameter nu in the collection's quick access array
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
 
     ! Set up the error structure for velocity
     rerrorU%p_RvecCoeff => rvecSol%RvectorBlock(1:2)
@@ -457,7 +464,7 @@ contains
     rerrorP%p_DerrorL2 => DerrorPL2
 
     ! Calculate errors of velocity and pressure against analytic solutions.
-    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection);
+    call pperr_scalarVec(rerrorU);
     call pperr_scalarVec(rerrorP, funcPressure2D, rcollection);
 
     ! Calculate errors of velocity field
@@ -490,7 +497,7 @@ contains
     ! Start UCD export to VTK file:
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './ucd'
     call ucd_startVTK (rexport, UCD_FLAG_STANDARD, Rlevels(NLMAX)%rtria, &
-        trim(sucddir)//'/u2d_vortex_slip.vtk')
+        trim(sucddir)//'/u2d_noflow.vtk')
 
     ! Allocate temporary memory for projection
     allocate(p_Du(Rlevels(NLMAX)%rtria%NVT))
@@ -580,16 +587,15 @@ contains
   integer, dimension(:,:), intent(in) :: IdofsTest
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
   type(t_collection), intent(inout), optional      :: rcollection
-  real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dc
 
-    ! fetch nu from collection
-    dnu = rcollection%DquickAccess(1)
+    ! fetch pressure multiplier from collection
+    dc = rcollection%DquickAccess(2)
 
-    ! f_1(x,y) = -pi * (1 - 2*nu*pi) * sin(pi*x) * cos(pi*y)
-    Dcoefficients(1,:,:) = -SYS_PI * (1.0_DP - 2.0_DP * dnu * SYS_PI) * &
-      sin(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
+    ! f_1(x,y) = c * pi * cos(pi*x) * sin(pi*y)
+    Dcoefficients(1,:,:) = dc * SYS_PI * cos(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
 
   end subroutine
 
@@ -605,70 +611,15 @@ contains
   integer, dimension(:,:), intent(in) :: IdofsTest
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
   type(t_collection), intent(inout), optional      :: rcollection
-  real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dc
 
-    ! fetch nu from collection
-    dnu = rcollection%DquickAccess(1)
+    ! fetch pressure multiplier from collection
+    dc = rcollection%DquickAccess(2)
 
-    ! f_2(x,y) = -pi * (1 + 2*nu*pi) * cos(pi*x) * sin(pi*y)
-    Dcoefficients(1,:,:) = -SYS_PI * (1.0_DP + 2.0_DP * dnu * SYS_PI) * &
-      cos(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
-
-  end subroutine
-
-  ! ***********************************************************************************************
-
-  subroutine funcVelocity2D (icomponent, cderivative, rdiscretisation, &
-                nelements, npointsPerElement, Dpoints, rdomainIntSubset, &
-                Dvalues, rcollection)
-  integer, intent(in)                          :: icomponent
-  integer, intent(in)                          :: cderivative
-  type(t_spatialDiscretisation), intent(in)    :: rdiscretisation
-  integer, intent(in)                          :: nelements
-  integer, intent(in)                          :: npointsPerElement
-  real(DP), dimension(:,:,:), intent(in)       :: Dpoints
-  type(t_domainIntSubset), intent(in)          :: rdomainIntSubset
-  type(t_collection), intent(inout), optional  :: rcollection
-  real(DP), dimension(:,:), intent(out)        :: Dvalues
-
-    select case(icomponent)
-    case (1)
-      ! X-velocity
-      select case(cderivative)
-      case (DER_FUNC2D)
-        ! u_1(x,y) = sin(pi*x) * cos(pi*y)
-        Dvalues(:,:) = sin(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
-
-      case (DER_DERIV2D_X)
-        ! d_x u_1(x,y) = pi * cos(pi*x) * cos(pi*y)
-        Dvalues(:,:) = SYS_PI * cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
-
-      case (DER_DERIV2D_Y)
-        ! d_y u_1(x,y) = -pi * sin(pi*x) * sin(pi*y)
-        Dvalues(:,:) = -SYS_PI * sin(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
-
-      end select
-
-    case (2)
-      ! Y-velocity
-      select case(cderivative)
-      case (DER_FUNC2D)
-        ! u_2(x,y) = -cos(pi*x) * sin(pi*y)
-        Dvalues(:,:) = -cos(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
-
-      case (DER_DERIV2D_X)
-        ! d_x u_2(x,y) = pi * sin(pi*x) * sin(pi*y)
-        Dvalues(:,:) = SYS_PI * sin(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
-
-      case (DER_DERIV2D_Y)
-        ! d_y u_2(x,y) = -pi * cos(pi*x) * cos(pi*y)
-        Dvalues(:,:) = -SYS_PI * cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
-
-      end select
-
-    end select
+    ! f_2(x,y) = c * pi * sin(pi*x) * cos(pi*y)
+    Dcoefficients(1,:,:) = dc * SYS_PI * sin(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
 
   end subroutine
 
@@ -687,8 +638,13 @@ contains
   type(t_collection), intent(inout), optional  :: rcollection
   real(DP), dimension(:,:), intent(out)        :: Dvalues
 
-    ! p(x,y) = cos(pi*x) * cos(pi*y)
-    Dvalues(:,:) = cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
+  real(DP) :: dc
+
+    ! fetch pressure multiplier from collection
+    dc = rcollection%DquickAccess(2)
+
+    ! p(x,y) = c * (sin(pi*x) * sin(pi*y) - 4/pi^2)
+    Dvalues(:,:) = dc * (sin(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:)) - (4.0_DP / SYS_PI**2))
 
   end subroutine
 

@@ -16,6 +16,7 @@ use genoutput
 use storage
 use stokes2d_vortex_slip
 use stokes2d_vortex_noslip
+use stokes2d_no_flow
 
 implicit none
 
@@ -36,18 +37,25 @@ character(len=SYS_STRLEN) :: slogdir,slogfile
   ! Initialise FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-
+  ! Run Slip-BC driver
   call output_separator(OU_SEP_STAR)
-  call output_line('2D Stokes-Vortex: Slip BCs')
+  call output_line('2D Stokes: Vortex Slip BCs')
   call output_line('--------------------------')
   call stokes2d_vtx_slip
   call output_lbrk()
 
-
+  ! Run No-Slip-BC driver
   call output_separator(OU_SEP_STAR)
-  call output_line('2D Stokes-Vortex: No-Slip BCs')
+  call output_line('2D Stokes: Vortex No-Slip BCs')
   call output_line('-----------------------------')
   call stokes2d_vtx_noslip
+  call output_lbrk()
+
+  ! Run No-Flow driver
+  call output_separator(OU_SEP_STAR)
+  call output_line('2D Stokes: No-Flow')
+  call output_line('------------------')
+  call stokes2d_noflow
   call output_lbrk()
 
   ! Print out heap statistics

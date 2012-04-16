@@ -49,6 +49,8 @@ module stokes2d_vortex_noslip
   use bilinearformevaluation
   use stdoperators
   
+  use stokes2d_aux
+
   implicit none
 
   private
@@ -117,7 +119,7 @@ contains
   type(t_filterChain), dimension(2), target :: RfilterChain
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer :: NLMIN, NLMAX, ierror, i
-  real(DP) :: dnu, dL2, dH1
+  real(DP) :: dnu, dL2, dH1, ddiv
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: spredir, sucddir
   real(DP), dimension(:), pointer :: p_Du, p_Dv, p_Dp
@@ -465,6 +467,9 @@ contains
     dL2 = sqrt(DerrorUL2(1)**2 + DerrorUL2(2)**2)
     dH1 = sqrt(DerrorUH1(1)**2 + DerrorUH1(2)**2)
 
+    ! Calculate divergence of velocity field
+    call aux_calcDiv2D(ddiv, rvecSol%RvectorBlock(1:2))
+
     ! Print the errors.
     call output_lbrk()
     call output_line('Error Analysis')
@@ -475,6 +480,7 @@ contains
     call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(dH1, 10)) // ' ( ' &
                                        // trim(sys_sdEL(DerrorUH1(1), 10)) // ' , ' &
                                        // trim(sys_sdEL(DerrorUH1(2), 10)) // ' )')
+    call output_line('|div u_h|_L2 = ' // trim(sys_sdEL(ddiv, 10)))
     call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
