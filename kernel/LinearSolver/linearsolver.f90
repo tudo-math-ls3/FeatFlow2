@@ -695,10 +695,13 @@ module linearsolver
   public :: linsol_initSPSOR
   public :: linsol_initBlockJac
   public :: linsol_initSpecDefl
+  public :: linsol_initDeflGMRES
     
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
   
   public :: linsol_getMultigrid2Level,linsol_getMultigrid2LevelCount
+  
+  public :: linsol_getDeflGMRESLevel,linsol_getDeflGMRESLevelCount
   
 !  interface linsol_addMultigridLevel
 !    module procedure linsol_addMultigridLevel1
@@ -709,9 +712,17 @@ module linearsolver
     module procedure linsol_initProjMG2LvByPrj
     module procedure linsol_initProjMG2LvByDiscr
   end interface
+
+  interface linsol_initProjDeflGMRESLevel
+    module procedure linsol_initPrjDGMLvByPrj
+    module procedure linsol_initPrjDGMLvByDiscr
+  end interface
   
   public :: linsol_initProjMultigrid2Level
   public :: linsol_initProjMultigrid2
+
+  public :: linsol_initProjDeflGMRESLevel
+  public :: linsol_initProjDeflGMRES
 
 ! *****************************************************************************
 ! *****************************************************************************
@@ -784,6 +795,9 @@ module linearsolver
   
   ! Spectral deflation iteration
   integer, parameter, public :: LINSOL_ALG_SPECDEFL      = 58
+
+  ! Deflaged MG GMRES
+  integer, parameter, public :: LINSOL_ALG_DEFLGMRES     = 59
   
 !</constantblock>
 
@@ -1351,6 +1365,9 @@ module linearsolver
     ! Pointer to a structure for the spectral deflation preconditioner; NULL() if not set
     type (t_linsolSubnodeSpecDefl), pointer       :: p_rsubnodeSpecDefl    => null()
 
+    ! Pointer to a structure for the deflation GMRES preconditioner; NULL() if not set
+    type (t_linsolSubnodeDeflGMRES), pointer      :: p_rsubnodeDeflGMRES    => null()
+
   end type
   
   public :: t_linsolNode
@@ -1587,9 +1604,6 @@ module linearsolver
   
   type t_linsolSubnodeGMRES
   
-    ! Maximum Restarts
-    integer :: imaxRestarts
-
     ! Dimension of Krylov Subspace
     integer :: ikrylovDim
     
@@ -2154,6 +2168,166 @@ module linearsolver
 
 !</typeblock>
 
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! Level data for multigrid. This structure forms an entry in a linked list
+  ! of levels which multigrid uses for solving the given problem.
+  ! The solver subnode t_linsolSubnodeMultigrid holds pointers to the head
+  ! and the tail of the list.
+  
+  type t_linsolDeflGMRESLevelInfo
+  
+    ! A level identifier. Can be set to identify the global number of the
+    ! level, this structure refers to. Only for output purposes.
+    integer                        :: ilevel                 = 0
+    
+    !<!-- ----------------------------------------------------------------------
+    ! Deflated MG GMRES parameters
+    ! --------------------------------------------------------------------- -->
+    
+    ! Guess for the maximum eigenvalue
+    real(DP) :: dmaxEigenvalue = 1.0_DP
+
+    ! Number of solver iterations applied on this level.
+    ! Applies to all levels except for the maximum level
+    integer :: niterations = 5
+    
+    !<!-- ----------------------------------------------------------------------
+    ! OPTIONAL parameters.
+    ! May be initialised by the user in case of special situations
+    ! --------------------------------------------------------------------- -->
+    
+    ! OPTIONAL: An interlevel projection structure that configures the transport
+    ! of defect/solution vectors from one level to another.
+    ! For the coarse grid, this structure is ignored.
+    ! For a finer grid (e.g. level 4), this defines the grid transfer
+    ! between the current and the lower level (so here between level 3 and
+    ! level 4).
+    !
+    ! If the user needs a special projection strategy, he/she can either
+    ! set a pointer to a user defined projection strategy here or
+    ! modify the strategy after doing linsol_initStructure().
+    type(t_interlevelProjectionBlock), pointer   :: p_rprojection => null()
+    
+    ! <!-- ----------------------------------------------------------------------
+    ! INTERNAL VARIABLES.
+    ! These variables are internally maintained by the MG solver and do not have
+    ! to be modified in any sense.
+    ! ---------------------------------------------------------------------- -->
+    
+    ! Specifies if we use the standard interlevel projection strategy.
+    ! If this is set to FALSE, the user set the p_rprojection to
+    ! a user defined projection strategy, so we do not have to touch it.
+    logical :: bstandardProjection = .false.
+    
+    ! t_matrixBlock structure that holds the system matrix on this level.
+    type(t_matrixBlock)                :: rsystemMatrix
+
+    ! STATUS/INTERNAL: MG cycle information.
+    ! Number of cycles to perform on this level.
+    integer                        :: ncycles
+
+    ! STATUS/INTERNAL: MG cycle information.
+    ! Number of remaining cycles to perform on this level.
+    integer                        :: ncyclesRemaining
+    
+    ! STATUS/INTERNAL: Number of current cycle on that level.
+    ! Only used if adaptive cycles are activated by setting
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    integer                        :: icycleCount   = 0
+    
+    !<!-- ----------------------------------------------------------------------
+    ! General GMRES parameters
+    ! --------------------------------------------------------------------- -->
+
+    ! Dimension of Krylov Subspace
+    integer :: ikrylovDim = 5
+    
+    ! Some temporary 1D/2D arrays
+    real(DP), dimension(:),   pointer :: Dc, Ds, Dq
+    real(DP), dimension(:,:), pointer :: Dh
+
+    ! The handles of the arrays
+    integer :: hDc, hDs, hDq, hDh
+    
+    ! Some temporary vectors
+    type(t_vectorBlock), dimension(:), pointer :: p_rv => null()
+    type(t_vectorBlock), dimension(:), pointer :: p_rz => null()
+    type(t_vectorBlock) :: rx
+
+    type(t_vectorBlock) :: rtempVector
+    type(t_vectorBlock) :: rsolutionVector
+    type(t_vectorBlock) :: rrhsVector
+    type(t_vectorBlock) :: rdefTempVector
+    type(t_vectorBlock) :: ractualRHS
+  
+    ! A pointer to the solver node for preconditioning or NULL(),
+    ! if no preconditioner is used.
+    type(t_linsolNode), pointer :: p_rpreconditioner => null()
+
+  end type
+
+  public :: t_linsolDeflGMRESLevelInfo
+  
+!</typeblock>
+
+  ! ***************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the Multigrid solver.
+  ! There are pointers to the head and the tail of a linked list of
+  ! t_mgLevelInfo structures which hold the data of all levels.
+  ! The tail of the list corresponds to the maximum level where
+  ! multigrid solves the problem.
+  
+  type t_linsolSubnodeDeflGMRES
+  
+    ! INPUT PARAMETER: Cycle identifier.
+    !  0=F-cycle,
+    !  1=V-cycle,
+    !  2=W-cycle.
+    integer :: icycle                   = 0
+    
+    ! Number of levels level.
+    integer :: nlevels = 1
+    
+    ! Maybe we should apply Gram-Schmidt twice?
+    logical :: btwiceGS
+    
+    ! Scale factor for pseudo-residuals
+    real(DP) :: dpseudoResScale
+    
+    ! Relaxation parameter.
+    real(DP) :: drelax = 1.0_DP
+    
+    ! A pointer to the level info structures for all the levels in multigrid
+    type(t_linsolDeflGMRESLevelInfo), dimension(:), pointer :: p_RlevelInfo
+    
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    type(t_filterChain), dimension(:),pointer :: p_RfilterChain     => null()
+  
+    ! A temp vector for the prolongation/restriction.
+    ! Memory for this vector is allocated in initStructure and released
+    ! in doneStructure.
+    type(t_vectorScalar) :: rprjTempVector
+    
+    ! Defines whether a preconditioner is used as left or right
+    ! preconditioner.
+    ! =false: The preconditoner is uzsed as left preconditioner. This is
+    !    the default setting.
+    ! =true: The preconditioner is used as right preconditioner.
+    logical :: brightprec = .false.
+
+  end type
+  
+  public :: t_linsolSubnodeDeflGMRES
+  
+!</typeblock>
+
 !</types>
 
 ! *****************************************************************************
@@ -2243,6 +2417,8 @@ contains
       call linsol_setMatrixSchur (rsolverNode, Rmatrices)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_setMatrixSpecDefl (rsolverNode, Rmatrices)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_setMatrixDeflGMRES (rsolverNode, Rmatrices)
     end select
 
   end subroutine
@@ -2491,6 +2667,8 @@ contains
       call linsol_initStructureSchur (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_initStructureSpecDefl (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_initStructureDeflGMRES (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2574,6 +2752,8 @@ contains
       call linsol_initDataSchur (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_initDataSpecDefl (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_initDataDeflGMRES (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2750,6 +2930,8 @@ contains
       call linsol_doneDataSchur (rsolverNode,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_doneDataSpecDefl (rsolverNode,isubgroup)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_doneDataDeflGMRES (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -2818,6 +3000,8 @@ contains
       call linsol_doneStructureSchur (rsolverNode,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_doneStructureSpecDefl (rsolverNode,isubgroup)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_doneStructureDeflGMRES (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -2894,6 +3078,8 @@ contains
       call linsol_doneSchur (p_rsolverNode)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_doneSpecDefl (p_rsolverNode)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_doneDeflGMRES (p_rsolverNode)
     end select
     
     ! Clean up the associated matrix structure.
@@ -3230,6 +3416,8 @@ contains
       call linsol_precBlockJac (rsolverNode,rd)
     case (LINSOL_ALG_SPECDEFL)
       call linsol_precSpecDefl (rsolverNode,rd)
+    case (LINSOL_ALG_DEFLGMRES)
+      call linsol_precDeflGMRES (rsolverNode,rd)
     end select
 
   end subroutine
@@ -15354,7 +15542,7 @@ contains
         ! Release the temp vector for the coarse grid correction.
         ! The vector shares its memory with the 'global' projection
         ! vector, so only release it if the other vector exists.
-        if (rsolverNode%p_rsubnodeMultigrid2%rprjTempVector%NEQ .gt. 0) then
+        if (p_rcurrentLevel%rcgcorrTempVector%NEQ .gt. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
         end if
 
@@ -17035,4 +17223,2573 @@ contains
       
   end subroutine
   
+  ! ***************************************************************************
+  ! Deflated MG GMRES algorithm
+  ! ***************************************************************************
+
+!<function>
+  
+  integer function linsol_getDeflGMRESLevelCount (rsolverNode)
+                    
+!<description>
+  ! Returns the number of levels currently attached to the deflated GMRES solver.
+!</description>
+  
+!<input>
+  ! The solver structure of the deflated GMRES solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</input>
+
+!<result>
+  ! The number of levels in the MG solver.
+!</result>
+  
+!</function>
+
+    linsol_getDeflGMRESLevelCount = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+
+  end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_getDeflGMRESLevel (rsolverNode,ilevel,p_rlevelInfo)
+                    
+!<description>
+  ! Searches inside of the deflated GMRES structure for level ilevel and returns
+  ! a pointer to the corresponding p_rlevelInfo structure-
+  ! If the level does not exist, an error is thrown.
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the deflated GMRES solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+
+!<input>
+  ! Number of the level to fetch.
+  integer, intent(in) :: ilevel
+!</input>
+  
+!<output>
+  ! A pointer to the corresponding t_levelInfo structure.
+  type(t_linsolDeflGMRESLevelInfo), pointer     :: p_rlevelInfo
+!</output>
+  
+!</subroutine>
+
+    nullify(p_rlevelInfo)
+
+    ! Do we have the level?
+    if ((ilevel .gt. 0) .and. &
+        (ilevel .le. rsolverNode%p_rsubnodeDeflGMRES%nlevels)) then
+      ! Get it.
+      p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    else
+      call output_line('Level out of range!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'linsol_getDeflGMRESLevel')
+      call sys_halt()
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneDeflGMRESLevel (rlevelInfo)
+                    
+!<description>
+  ! Cleans up the deflated GMRES level structure rlevelInfo. All memory allocated
+  ! in this structure is released.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to clean up.
+  type(t_linsolDeflGMRESLevelInfo), intent(inout)     :: rlevelInfo
+!</inputoutput>
+
+!</subroutine>
+  
+    ! Release the temporary vectors of this level.
+    ! The vector may not exist - if the application has not called
+    ! initStructure!
+    if (rlevelInfo%rrhsVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rrhsVector)
+
+    if (rlevelInfo%rtempVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rtempVector)
+
+    if (rlevelInfo%rsolutionVector%NEQ .ne. 0) &
+      call lsysbl_releaseVector(rlevelInfo%rsolutionVector)
+
+    ! Release sub-solvers if associated.
+    if (associated(rlevelInfo%p_rpreconditioner)) then
+      call linsol_releaseSolver(rlevelInfo%p_rpreconditioner)
+    end if
+    
+    ! Clean up the associated matrix if there is one.
+    ! Of course, the memory of the matrices will not be deallocated
+    ! because the matrices belong to the application, not to the solver!
+    call lsysbl_releaseMatrix(rlevelInfo%rsystemMatrix)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_cleanDeflGMRESLevels (rsolverNode)
+                    
+!<description>
+  ! This routine removes all level information from the MG solver and releases
+  ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
+  ! ...).
+  !
+  ! The level info array is not released.
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the deflated GMRES solver.
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+  integer :: ilevel
+
+    ! Make sure the solver node is configured for deflated GMRES
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DeflGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_cleanDeflGMRESLevels")
+      call sys_halt()
+    end if
+
+    ! Remove all the levels
+    do ilevel = 1,rsolverNode%p_rsubnodeDeflGMRES%nlevels
+      call linsol_doneDeflGMRESLevel (&
+          rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel))
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initPrjDGMLvByPrj (rlevelInfo,rinterlevelProjection)
+  
+!<description>
+  ! Initialises the interlevel projection structure for one level.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to set up.
+  type(t_linsolDeflGMRESLevelInfo), intent(inout)     :: rlevelInfo
+  
+  ! User-specified interlevel projection structure.
+  ! Deflated GMRES will use the given projection structure for doing prolongation/
+  ! restriction.
+  type(t_interlevelProjectionBlock), intent(in), target  :: rinterlevelProjection
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if the pointer to the projection structure is already assigned.
+    ! If that is the case, release it.
+    if (rlevelInfo%bstandardProjection) then
+      ! Release the old standard projection structure.
+      if (associated(rlevelInfo%p_rprojection)) then
+        call mlprj_doneProjection (rlevelInfo%p_rprojection)
+        deallocate (rlevelInfo%p_rprojection)
+      end if
+    end if
+    
+    ! Remember the user specified projection
+    rlevelInfo%p_rprojection => rinterlevelProjection
+    rlevelInfo%bstandardProjection = .false.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initPrjDGMLvByDiscr (rlevelInfo,rdiscrCoarse,rdiscrFine)
+  
+!<description>
+  ! Initialises the interlevel projection structure for one level
+  ! based on coarse/fine grid discretisation structures.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to set up.
+  type(t_linsolDeflGMRESLevelInfo), intent(inout)     :: rlevelInfo
+!</inputoutput>
+
+!</input>
+  ! Discretisation structure of the coarse level.
+  type(t_blockDiscretisation), intent(in), target   :: rdiscrCoarse
+
+  ! Discretisation structure of the fine level.
+  type(t_blockDiscretisation), intent(in), target   :: rdiscrFine
+!</input>
+
+!</subroutine>
+
+    ! Check if the pointer to the projection structure is already assigned.
+    ! If that is the case, release it.
+    if (rlevelInfo%bstandardProjection) then
+      ! Release the old standard projection structure.
+      if (associated(rlevelInfo%p_rprojection)) then
+        call mlprj_doneProjection (rlevelInfo%p_rprojection)
+      else
+        ! Allocate a new projection structure
+        allocate(rlevelInfo%p_rprojection)
+      end if
+    else
+      ! Allocate a new projection structure
+      rlevelInfo%bstandardProjection = .true.
+      allocate(rlevelInfo%p_rprojection)
+    end if
+    
+    ! Initialise the projection structure with standard parameters.
+    call mlprj_initProjectionDiscr (rlevelInfo%p_rprojection,rdiscrCoarse)
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initProjDeflGMRES (rsolverNode)
+  
+!<description>
+  ! Initialises the interlevel projection structure for all levels
+  ! using the standard parameters for prolongation/restriction.
+  !
+  ! The routine can be called only after the matrices are attached to
+  ! the solver with the setMatrices routine. It will automatically detect
+  ! if the caller already specified user defined projection structures
+  ! by a call to linsol_initProjDeflGMRESLvByPrj().
+  !
+  ! The routine is called during initStructure but can also be called
+  ! manually in advance after setMatrices() if the caller wants to
+  ! alter the projection structures manually.
+!</description>
+  
+!<inputoutput>
+  ! A t_linsolNode structure. defining the solver.
+  type(t_linsolNode), intent(inout)             :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel, nlmax
+    type(t_blockDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
+    
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    
+    ! Loop through all levels. Whereever the projection structure
+    ! is missing, create it.
+    do ilevel = 2,nlmax
+      if (.not. associated( &
+          rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)% &
+          p_rprojection)) then
+        
+        ! Initialise the projection structure.
+        p_rdiscrCoarse => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)%rsystemmatrix%&
+          p_rblockDiscrTrial
+        p_rdiscrFine => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)%rsystemmatrix%&
+          p_rblockDiscrTrial
+        call linsol_initPrjDGMLvByDiscr (rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel),&
+            p_rdiscrCoarse,p_rdiscrFine)
+        
+      end if
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneProjDeflGMRES (rsolverNode)
+  
+!<description>
+  ! Releases all automatically allocated interlevel projection structures
+  ! for all levels in the MG solver.
+!</description>
+  
+!<inputoutput>
+  ! A  t_linsolNode structure. defining the solver.
+  type(t_linsolNode), intent(inout)             :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel, nlmax
+    
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    
+    ! Loop through all levels. Whereever the projection structure
+    ! is missing, create it.
+    do ilevel = 2,nlmax
+      if (associated(rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)% &
+          p_rprojection)) then
+        if (rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)% &
+            bstandardProjection) then
+          call mlprj_doneProjection (rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)%&
+              p_rprojection)
+          deallocate (rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)%p_rprojection)
+        else
+          ! Just nullify the pointer, the structure does not belong to us.
+          nullify (rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)%p_rprojection)
+        end if
+        
+        rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)% &
+            bstandardProjection = .false.
+        
+      end if
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initDeflGMRES (p_rsolverNode,nlevels,btwiceGS,dpseudoResScale,&
+      Rfilter)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the deflates GMRES solver. The
+  ! node can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  ! Before the solver can used for solving the problem, the caller must add
+  ! information about all levels (matrices,...) to the solver.
+  ! This can be done by linsol_setMultigridLevel.
+  
+!</description>
+  
+!<input>
+
+  ! Number of levels supported by this solver.
+  integer, intent(in) :: nlevels
+  
+  ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! structures) if filtering should be applied to the vector during the
+  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! The filter chain (i.e. the array) must exist until the system is solved!
+  ! The filter chain must be configured for being applied to defect vectors.
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
+  
+  ! OPTIONAL: A boolean which specifies whether we should apply the Gram-Schmidt
+  ! process once or twice per GMRES iteration.
+  ! Since the Gram-Schmidt algorithm suffers under numerical instability, we
+  ! have a chance to improve its stability by applying the Gram-Schmidt process
+  ! twice. If btwiceGS is given and it is .TRUE., then the Gram-Schmidt process
+  ! will be applied twice per GMRES iteration, otherwise only once.
+  logical, optional :: btwiceGS
+
+  ! OPTIONAL: Scale factor for the pseudo-residual-norms to test against the
+  ! stopping criterion in the inner GMRES loop. Since the pseudo-residual-norms
+  ! may be highly inaccurate, this scale factor can be used to scale the
+  ! pseudo-residual-norms before testing against the stopping criterion.
+  ! It is recommended to use a scale factor > 1, a factor of 2 should be usually
+  ! okay. If dpseudoresscale is not given or set to < 1, it is automatically
+  ! set to 2.
+  ! Setting dpseudoresscale to 0 will disable the pseudo-resirudal norm check.
+  real(DP), optional :: dpseudoResScale
+!</input>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer             :: p_rsolverNode
+   
+!</output>
+  
+!</subroutine>
+
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_DEFLGMRES
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR     + LINSOL_ABIL_BLOCK        + &
+                                LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKDEF     + &
+                                LINSOL_ABIL_USESUBSOLVER + &
+                                LINSOL_ABIL_USEFILTER
+    
+    ! Allocate the subnode for Multigrid.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    allocate(p_rsolverNode%p_rsubnodeDeflGMRES)
+    
+    ! Allocate level information data
+    allocate(p_rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(nlevels))
+    p_rsolverNode%p_rsubnodeDeflGMRES%nlevels = nlevels
+    
+    ! Save if the Gram-Schmidt process should be applied twice or not.
+    if (present(btwiceGS)) then
+      p_rsolverNode%p_rsubNodeDeflGMRES%btwiceGS = btwiceGS
+    else
+      p_rsolverNode%p_rsubNodeDeflGMRES%btwiceGS = LINSOL_GMRES_DEF_TWICE_GS
+    end if
+    
+    ! Save the pseudo-residual-norm scale factor if given, or set
+    ! to default scale factor if not given or invalid (i.e. < 1)
+    if (present(dpseudoResScale)) then
+      if (dpseudoResScale .ge. 0.0_DP) then
+        p_rsolverNode%p_rsubNodeDeflGMRES%dpseudoResScale = dpseudoResScale
+      else
+        p_rsolverNode%p_rsubNodeDeflGMRES%dpseudoResScale = 0.0_DP
+      endif
+    else
+      p_rsolverNode%p_rsubNodeDeflGMRES%dpseudoResScale = 0.0_DP
+    endif
+
+    ! Attach the filter if given.
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeDeflGMRES%p_RfilterChain => Rfilter
+    end if
+  
+  end subroutine
+  
+! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_setMatrixDeflGMRES (rsolverNode,Rmatrices)
+  
+!<description>
+  
+  ! Assigns the system matrix rsystemMatrix to the Multigrid solver on
+  ! all levels.
+  
+!</description>
+  
+!<input>
+  
+  ! An array of system matrices on all levels.
+  ! Each level in multigrid is initialised separately.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+
+!</input>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+   
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel
+  integer                       :: ilevel,nlmax
+  
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixDeflGMRES")
+      call sys_halt()
+    end if
+    
+    ! Make sure we have the right amount of matrices
+    if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeDeflGMRES%nlevels) then
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixDeflGMRES")
+      call sys_halt()
+    end if
+
+    ! Check for every level, if there is a preconditioner structure 
+    ! attached. If yes, attach the matrix to it.
+    ! For this purpose, call the general initialisation routine, but
+    ! pass only that part of the Rmatrices array that belongs
+    ! to the range of levels between the coarse grid and the current grid.
+    
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    do ilevel = 1,nlmax
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+        call linsol_setMatrices (p_rcurrentLevel%p_rpreconditioner, &
+                                  Rmatrices(1:ilevel))
+      end if
+      
+      ! Write a link to the matrix into the level-structure.
+      call lsysbl_duplicateMatrix (Rmatrices(ilevel), &
+          p_rcurrentLevel%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_matCompatDeflGMRES (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  ! More precisely, ccompatible returns always the status of the highest
+  ! level where there is an error -- or LINSOL_COMP_OK if there is no error.
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel
+  integer                       :: ilevel,ccompatLevel
+    
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+    
+    ! Reset all compatibility flags
+    if (present(CcompatibleDetail)) CcompatibleDetail (:) = ccompatible
+
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatDeflGMRES")
+      call sys_halt()
+    end if
+    
+    ! Make sure we have the right amount of matrices
+    if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeDeflGMRES%nlevels) then
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatDeflGMRES")
+      call sys_halt()
+    end if
+
+    ! Check for every level, if there is a presmoother, postsmoother or
+    ! coarse grid solver structure attached. If yes, it must check
+    ! the matrices!
+    ! For this purpose, call the general check routine, but
+    ! pass only that part of the Rmatrices array that belongs
+    ! to the range of levels between the coarse grid and the current grid.
+    
+    do ilevel = 1,rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    
+      ! Compatibility flag for that level
+      ccompatLevel = LINSOL_COMP_OK
+    
+      ! Check presmoother
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+      
+        if (present(CcompatibleDetail)) then
+          call linsol_matricesCompatible (p_rcurrentLevel%p_rpreconditioner, &
+              Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
+        end if
+      
+        if (ccompatLevel .ne. LINSOL_COMP_OK) then
+          ccompatible = ccompatLevel
+          cycle
+        end if
+        
+      end if
+      
+    end do
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_initStructureDeflGMRES (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel,p_rprevLevel
+  integer :: isubgroup,nlmax,ilevel
+  integer :: imemmax,i
+  type(t_matrixBlock), pointer :: p_rmatrix
+  type(t_vectorBlock), pointer :: p_rtemplVect
+  integer :: idim
+  integer , dimension(2) :: idim2
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureDeflGMRES")
+      call sys_halt()
+    end if
+    
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+
+    ! Check for every level, if there is a presmoother, postsmoother or
+    ! coarse grid solver structure attached.
+    
+    do ilevel = 1,nlmax
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+        call linsol_initStructure(p_rcurrentLevel%p_rpreconditioner,ierror,isubgroup)
+      end if
+      
+      ! Cancel in case of an error
+      if (ierror .ne. LINSOL_ERR_NOERROR) return
+      
+    end do
+    
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Initialise the interlevel projection as far as it is not already initialised
+    call linsol_initProjDeflGMRES (rsolverNode)
+
+    imemmax = 0
+
+    ! Multigrid needs temporary vectors for the RHS, solution and general
+    ! data. Memory for that is allocated on all levels for temporary, RHS and
+    ! solution vectors.
+    do ilevel = 1,nlmax
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+
+      p_rmatrix => p_rcurrentLevel%rsystemMatrix
+      nullify(p_rtemplVect)
+
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rsolutionVector,.false.,.false.,&
+            rsolverNode%cdefaultDataType)
+      p_rtemplVect => p_rcurrentLevel%rsolutionVector
+      
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rrhsVector,.false.,.false.,&
+            rsolverNode%cdefaultDataType)
+            
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rtempVector,.false.,.false.,&
+            rsolverNode%cdefaultDataType)
+
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rdefTempVector,.false.,.false.,&
+            rsolverNode%cdefaultDataType)
+
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%ractualRHS,.false.,.false.,&
+            rsolverNode%cdefaultDataType)
+
+      ! Calculate the memory that is probably necessary for resorting
+      ! vectors during the iteration.
+      if (associated(p_rtemplVect)) then
+        imemmax = max(imemmax,p_rtemplVect%NEQ)
+      end if
+         
+      ! Ask the prolongation/restriction routines how much memory is necessary
+      ! for prolongation/restriction on that level.
+      if (ilevel .gt. 1) then ! otherwise coarse grid
+        p_rprevLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
+     
+        ! Calculate the memory that is necessary for prolongation/restriction -
+        ! in case there is temporary memory needed.
+        ! The system matrix on the fine/coarse grid specifies the discretisation.
+        imemmax = max(imemmax,mlprj_getTempMemoryMat ( &
+                      p_rcurrentLevel%p_rprojection, &
+                      p_rprevLevel%rsystemMatrix,&
+                      p_rcurrentLevel%rsystemMatrix))
+      end if
+
+      ! All temporary vectors are marked as "unsorted". We can set the
+      ! sorting flag directly here without using the resorting routines
+      ! as the vectors have just been created.
+      !
+      ! Do not do anything to the RHS/temp vectors on the coarse grid
+      ! and the solution vector on the fine grid -- they do not exist!
+      if (ilevel .gt. 1) then
+        p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
+          -abs(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
+
+        p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
+          -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
+
+        p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
+          -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+      end if
+      
+      ! We now need to check if the dimension of the Krylov subspace is
+      ! positive. If it is not, we need to cancel the initialization here.
+      if (p_rcurrentLevel%ikrylovDim .le. 0) then
+        call output_line ('imension of Krylov subspace for GMRES(m) is <= 0 !', &
+            OU_CLASS_ERROR, OU_MODE_STD, 'mysubroutine')
+        ierror = LINSOL_ERR_INITERROR
+        call sys_halt()
+      end if
+      
+      ! Get the stuff out of our solver node
+      idim = p_rcurrentLevel%ikrylovDim
+      idim2(1) = idim
+      idim2(2) = idim
+  
+      ! Now comes the intersting part - we need to allocate a lot of arrays
+      ! and vectors for the Krylov subspace for GMRES here.
+      
+      ! Call our storage to allocate the 1D/2D arrays
+      call storage_new('linsol_initStructureGMRES', 'Dh', idim2, &
+          ST_DOUBLE, p_rcurrentLevel%hDh, ST_NEWBLOCK_NOINIT)
+      call storage_new('linsol_initStructureGMRES', 'Dc', idim, &
+          ST_DOUBLE, p_rcurrentLevel%hDs, ST_NEWBLOCK_NOINIT)
+      call storage_new('linsol_initStructureGMRES', 'Ds', idim, &
+          ST_DOUBLE, p_rcurrentLevel%hDc, ST_NEWBLOCK_NOINIT)
+      call storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
+          ST_DOUBLE,  p_rcurrentLevel%hDq, ST_NEWBLOCK_NOINIT)
+      
+      ! Get the pointers
+      call storage_getbase_double2D(p_rcurrentLevel%hDh, p_rcurrentLevel%Dh)
+      call storage_getbase_double(p_rcurrentLevel%hDc, p_rcurrentLevel%Dc)
+      call storage_getbase_double(p_rcurrentLevel%hDs, p_rcurrentLevel%Ds)
+      call storage_getbase_double(p_rcurrentLevel%hDq, p_rcurrentLevel%Dq)
+      
+      ! Allocate space for our auxiliary vectors
+      allocate(p_rcurrentLevel%p_rv(idim+1))
+      allocate(p_rcurrentLevel%p_rz(idim))
+      
+      ! Create them
+      do i=1, idim+1
+        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%p_rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
+      end do
+      do i=1, idim
+        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
+      end do
+      
+      ! Create an iteration vector x
+      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+          p_rcurrentLevel%rx,.false.,.false.,rsolverNode%cdefaultDataType)
+      
+      ! And the next level...
+    end do
+    
+    ! Do we have to allocate memory for prolongation/restriction/resorting?
+    if (imemmax .gt. 0) then
+      call lsyssc_createVector (rsolverNode%p_rsubnodeDeflGMRES%rprjTempVector,&
+                                imemmax,.false.,rsolverNode%cdefaultDataType)
+    else
+      rsolverNode%p_rsubnodeDeflGMRES%rprjTempVector%NEQ = 0
+    end if
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_initDataDeflGMRES (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel
+  integer :: isubgroup,ilevel
+  
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataDeflGMRES")
+      call sys_halt()
+    end if
+
+    ! Check for every level, if there is a presmoother, postsmoother or
+    ! coarse grid solver structure attached.
+    
+    do ilevel = 1,rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+        call linsol_initData(p_rcurrentLevel%p_rpreconditioner,ierror,isubgroup)
+
+        ! Cancel in case of an error
+        if (ierror .ne. LINSOL_ERR_NOERROR) return
+      end if
+      
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneDataDeflGMRES (rsolverNode,isolverSubgroup)
+  
+!<description>
+  
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneData.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel
+  integer :: isubgroup,ilevel
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneDataDeflGMRES")
+      call sys_halt()
+    end if
+
+    ! Check for every level, if there is a preconditioner attached.
+    
+    do ilevel = rsolverNode%p_rsubnodeDeflGMRES%nlevels,1,-1
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+      
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+        call linsol_doneData(p_rcurrentLevel%p_rpreconditioner,isubgroup)
+      end if
+      
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneStructureDeflGMRES (rsolverNode,isolverSubgroup)
+  
+!<description>
+  
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  type(t_linsolDeflGMRESLevelInfo), pointer :: p_rcurrentLevel
+  integer :: isubgroup,ilevel,nlmax,idim,i
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneStructureDeflGMRES")
+      call sys_halt()
+    end if
+    
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+
+    ! Check for every level, if there is a presmoother, postsmoother or
+    ! coarse grid solver structure attached.
+    
+    do ilevel = 1,nlmax
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    
+      ! Release the presmoother
+      if (associated(p_rcurrentLevel%p_rpreconditioner)) then
+        call linsol_doneStructure(p_rcurrentLevel%p_rpreconditioner,isubgroup)
+      end if
+      
+    end do
+
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Release temporary memory.
+    do ilevel = 1,nlmax
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    
+      if (p_rcurrentLevel%rtempVector%NEQ .ne. 0) then
+        call lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
+      end if
+      
+      if (p_rcurrentLevel%rrhsVector%NEQ .ne. 0) then
+        call lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
+      end if
+
+      if (p_rcurrentLevel%rsolutionVector%NEQ .ne. 0) then
+        call lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
+      end if
+
+      if (p_rcurrentLevel%rdefTempVector%NEQ .ne. 0) then
+        call lsysbl_releaseVector (p_rcurrentLevel%rdefTempVector)
+      end if
+
+      if (p_rcurrentLevel%ractualRHS%NEQ .ne. 0) then
+        call lsysbl_releaseVector (p_rcurrentLevel%ractualRHS)
+      end if
+
+      idim = p_rcurrentLevel%ikrylovDim
+      
+      ! Release auxiliary vectors
+      if (associated(p_rcurrentLevel%p_rz)) then
+        do i=1, idim
+          call lsysbl_releaseVector(p_rcurrentLevel%p_rz(i))
+        end do
+        do i=1, idim+1
+          call lsysbl_releaseVector(p_rcurrentLevel%p_rv(i))
+        end do
+      
+        ! Destroy them
+        deallocate(p_rcurrentLevel%p_rz)
+        deallocate(p_rcurrentLevel%p_rv)
+      endif
+  
+      ! Release iteration vector
+      if (p_rcurrentLevel%rx%NEQ > 0) then
+        call lsysbl_releaseVector(p_rcurrentLevel%rx)
+      end if
+      
+      ! Destroy our 1D/2D arrays
+      if (p_rcurrentLevel%hDq .ne. ST_NOHANDLE) then
+        call storage_free(p_rcurrentLevel%hDq)
+        call storage_free(p_rcurrentLevel%hDs)
+        call storage_free(p_rcurrentLevel%hDc)
+        call storage_free(p_rcurrentLevel%hDh)
+      end if
+
+    end do
+
+    ! Check if we have to release our temporary vector for prolongation/
+    ! restriction.
+    ! Do we have to allocate memory for prolongation/restriction?
+    if (rsolverNode%p_rsubnodeDeflGMRES%rprjTempVector%NEQ .gt. 0) then
+      call lsyssc_releaseVector (rsolverNode%p_rsubnodeDeflGMRES%rprjTempVector)
+    end if
+
+    ! Release the interlevel projection structures as far as they were
+    ! automatically created.
+    call linsol_doneProjDeflGMRES (rsolverNode)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneDeflGMRES (rsolverNode)
+  
+!<description>
+  
+  ! This routine releases all temporary memory for the multigrid solver from
+  ! the heap. In particular, this releases the solver structures of all
+  ! subsolvers (smoother, coarse grid solver).
+  ! This DONE routine is declared as RECURSIVE to permit a clean
+  ! interaction with linsol_releaseSolver.
+  
+!</description>
+  
+!<inputoutput>
+  ! A pointer to a t_linsolNode structure of the Multigrid solver.
+  type(t_linsolNode), intent(inout)                :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! Make sure the solver node is configured for multigrid
+    if ((rsolverNode%calgorithm .ne. LINSOL_ALG_DEFLGMRES) .or. &
+        (.not. associated(rsolverNode%p_rsubnodeDeflGMRES))) then
+      call output_line ("Deflated GMRES structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneDeflGMRES")
+      call sys_halt()
+    end if
+
+    ! Release data and structure if this has not happened yet.
+    call linsol_doneDataDeflGMRES(rsolverNode)
+    call linsol_doneStructureDeflGMRES(rsolverNode)
+    
+    ! Remove all the levels
+    call linsol_cleanDeflGMRESLevels (rsolverNode)
+    deallocate(rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo)
+    
+    ! Release MG substructure, that is it.
+    deallocate(rsolverNode%p_rsubnodeDeflGMRES)
+
+  end subroutine
+    
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_precDeflGMRES_recright (rsolverNode,ilevel,rx,rb)
+  
+!<description>
+  ! Actual working routine for the deflated multilevel GMRES solver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the deflaged GMRES solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+  
+  ! Current level.
+  integer, intent(in) :: ilevel
+   
+  ! Solution vector on level iilevel.
+  ! Is replaced by a new approximation to the solution
+  type(t_vectorBlock), intent(inout)        :: rx
+
+  ! Right hand side vector on level ilevel
+  type(t_vectorBlock), intent(inout)        :: rb
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoBelow
+    type(t_linsolSubnodeDeflGMRES), pointer :: p_rsubnode
+    type(t_linsolNode), pointer :: p_rprecSubnode
+    integer :: nminIterations,nmaxIterations,nlmax
+    
+    real(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
+    integer :: ite,i,j,k,niteAsymptoticCVR
+    
+    ! Here come our 1D/2D arrays
+    real(DP), dimension(:), pointer :: p_Dc, p_Ds, p_Dq
+    real(DP), dimension(:,:), pointer :: p_Dh
+  
+    ! The queue saves the current residual and the two previous residuals.
+    real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
+    
+    ! The system matrix
+    type(t_matrixBlock), pointer :: p_rmatrix
+    
+    ! Minimum number of iterations, print-sequence for residuals, dimension
+    ! of krylov subspace
+    integer :: niteResOutput, idim, hDq
+    
+    ! Whether to filter/precondition, apply Gram-Schmidt twice
+    logical bprec,bfilter,btwiceGS
+    
+    ! Pointers to temporary vectors - named for easier access
+    type(t_vectorBlock), pointer :: p_rtempVector
+    type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    
+    ! Get pointers to the current level and the GMRES parameters
+    p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
+    p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    
+    nullify(p_rlevelInfoBelow)
+    if (ilevel .gt. 1) then
+      ! The lower level
+      p_rlevelInfoBelow => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
+    end if
+    
+    ! On the maximum level, apply as many iterations as configured in the
+    ! solver node. On the other levels, apply as many as configured in the
+    ! level structure
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+
+    if (ilevel .eq. nlmax) then
+      nminIterations = max(rsolverNode%nminIterations,0)
+      nmaxIterations = max(rsolverNode%nmaxIterations,0)
+
+      ! Length of the queue of last residuals for the computation of
+      ! the asymptotic convergence rate
+      niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
+  
+      ! Iteration when the residuum is printed:
+      niteResOutput = max(1,rsolverNode%niteResOutput)
+      
+    else
+      nminIterations = max(p_rlevelInfo%niterations,0)
+      nmaxIterations = max(p_rlevelInfo%niterations,0)
+      
+      niteAsymptoticCVR = 0
+      niteResOutput = 0
+      
+    end if
+
+    ! Use preconditioning? Filtering?
+    bprec = associated(p_rlevelInfo%p_rpreconditioner)
+    bfilter = associated(p_rsubnode%p_RfilterChain)
+    
+    ! Apply Gram-Schmidt twice?
+    btwiceGS = p_rsubnode%btwiceGS
+    
+    ! Get the dimension of Krylov subspace
+    idim = p_rlevelInfo%ikrylovdim
+    
+    ! Get our pseudo-residual-norm scale factor
+    dprnsf = p_rsubnode%dpseudoResScale
+    
+    ! Now we need to check the pseudo-residual scale factor.
+    ! If it is non-positive, we set it to 0.
+    if (dprnsf .le. 0.0_DP) then
+      dprnsf = 0.0_DP
+    end if
+
+    ! Current matrix and other parameters
+    p_rmatrix => p_rlevelInfo%rsystemMatrix
+    
+    ! Set pointers to the temporary vectors
+    ! defect vectors
+    p_rz => p_rlevelInfo%p_rz
+    ! basis vectors
+    p_rv => p_rlevelInfo%p_rv
+    ! temp vector
+    p_rtempVector => p_rlevelInfo%rtempVector
+
+    ! All vectors share the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    do i=1, idim+1
+      call lsysbl_assignDiscrIndirect (rb,p_rv(i))
+    end do
+    do i=1, idim
+      call lsysbl_assignDiscrIndirect (rb,p_rz(i))
+    end do
+    
+    ! Set pointers to the 1D/2D arrays
+    p_Dh => p_rlevelInfo%Dh
+    p_Dc => p_rlevelInfo%Dc
+    p_Ds => p_rlevelInfo%Ds
+    p_Dq => p_rlevelInfo%Dq
+    
+    ! And get the handle of Dq, since we need to call
+    ! storage_clear during the iteration
+    hDq = p_rlevelInfo%hDq
+    
+    ! All vectors share the same boundary conditions as rb!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    do i=1,idim
+      call lsysbl_assignDiscrIndirect (rb, p_rz(i))
+    end do
+    do i=1,idim+1
+      call lsysbl_assignDiscrIndirect (rb, p_rv(i))
+    end do
+    
+    if (bprec) then
+      p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
+    end if
+    
+    if (bfilter) then
+      p_RfilterChain => p_rsubnode%p_RfilterChain
+    end if
+    
+    ! Copy our RHS rb to p_rv(1). As the iteration vector is 0, this
+    ! is also our initial defect.
+    call lsysbl_copyVector(rb,p_rv(1))
+
+    if (bfilter) then
+      call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+    end if
+    
+    ! Get the norm of the residuum
+    ! We need to calculate the norm twice, since we need one for
+    ! the stopping criterion (selected by the user) and the
+    ! euclidian norm for the internal GMRES algorithm
+    dfr = lsysbl_vectorNorm (rb,rsolverNode%iresNorm)
+    dres = lsysbl_vectorNorm (p_rv(1),LINALG_NORMEUCLID)
+    if (.not.((dfr .ge. 1E-99_DP) .and. &
+              (dfr .le. 1E99_DP))) dfr = 0.0_DP
+
+    ! initialise the queue of the last residuals with RES
+    Dresqueue = dfr
+
+    if (ilevel .eq. nlmax) then
+      ! Initialise starting residuum
+      rsolverNode%dinitialDefect = dfr
+      rsolverNode%dlastDefect = 0.0_DP
+
+      ! Check if out initial defect is zero. This may happen if the filtering
+      ! routine filters "everything out"!
+      ! In that case we can directly stop our computation.
+  
+      if (rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero) then
+        ! final defect is 0, as initialised in the output variable above
+        call lsysbl_clearVector(rx)
+        ite = 0
+        rsolverNode%dfinalDefect = dfr
+        return
+      end if
+
+      if (rsolverNode%ioutputLevel .ge. 2) then
+        call output_line ('GMRES('//&
+             trim(sys_siL(idim,10))//'): Iteration '//&
+             trim(sys_siL(0,10))//',  !!RES!! = '//&
+             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+      end if
+
+    end if
+
+    ite = 0
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    ! -= Outer Loop
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    do while (ite < nmaxIterations)
+      
+      ! Step O.1:
+      ! Create elementary vector e_1 scaled by the euclid norm of the
+      ! defect, i.e.: q = ( ||v(1)||_2, 0, ..., 0 )
+      call storage_clear (hDq)
+      p_Dq(1) = dres
+      
+      ! Step O.2:
+      ! Now scale the defect by the inverse of its norm
+      call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= Inner Loop (GMRES iterations)
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      do i = 1, idim
+        ! Another iteration
+        ite = ite + 1
+      
+        ! Step I.1:
+        ! Solve P * z(i) = v(i), where P is the preconditioner matrix
+        call lsysbl_copyVector (p_rv(i), p_rz(i))
+        
+        ! Preconditioning: z(i) = P v(i)
+        if (bprec) then
+          call linsol_precondDefect (&
+              p_rlevelInfo%p_rpreconditioner,p_rz(i))
+        end if
+
+        ! Apply deflation preconditioning to z(i)
+        if (associated(p_rlevelInfoBelow)) then
+        
+          ! Calculate z = (A z  -  drelax lambda_max v(i))
+          ! in the temp vector
+          call lsysbl_copyVector (p_rv(i),p_rtempVector)
+          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rz(i), p_rtempVector, &
+              1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
+
+          ! Apply the filter chain
+          if (bfilter) then
+            call filter_applyFilterChainVec (p_rtempVector, p_rsubnode%p_RfilterChain)
+          end if
+          
+          ! Restriction to the RHS of the lower level
+          call mlprj_performRestriction (p_rlevelInfo%p_rprojection,&
+                p_rlevelInfoBelow%rrhsVector, &
+                p_rtempVector, &
+                p_rsubnode%rprjTempVector)
+
+          ! Apply the filter chain to the new RHS
+          if (bfilter) then
+            call filter_applyFilterChainVec (p_rlevelInfoBelow%rrhsVector, p_rsubnode%p_RfilterChain)
+          end if
+          
+          ! Preconditioning on the lower level
+          call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
+          call linsol_precDeflGMRES_recright (rsolverNode,ilevel-1,&
+              p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
+
+          ! Prolongation to our current level: t = I(...)
+          call mlprj_performProlongation (p_rlevelInfo%p_rprojection,&
+                p_rlevelInfoBelow%rsolutionVector, &
+                p_rtempVector, &
+                p_rsubnode%rprjTempVector)
+
+          ! Final preconditioning
+          if (bprec) then
+            call linsol_precondDefect (&
+                p_rlevelInfo%p_rpreconditioner,p_rtempVector)
+          end if
+          
+          ! Correction: z(i) = P v(i) - P t = P(v(i)-t)
+          call lsysbl_vectorLinearComb (p_rtempVector,p_rz(i),-1.0_DP,1.0_DP)
+        
+        end if
+        
+        ! Apply filter chain to z(i)
+        if (bfilter) then
+          call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
+        end if
+        
+        
+        ! Step I.2:
+        ! Calculate v(i+1) = A * z(i)
+        call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+        
+        if (bfilter) then
+          call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
+        end if
+        
+        
+        ! Step I.3:
+        ! Perfom Gram-Schmidt process (1st time)
+        do k = 1, i
+          p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
+        end do
+        
+        ! If the user wishes, perform Gram-Schmidt one more time
+        ! to improve numerical stability.
+        if (btwiceGS) then
+          do k = 1, i
+            dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+            p_Dh(k,i) = p_Dh(k,i) + dtmp;
+            call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
+          end do
+        end if
+        
+        ! Step I.4:
+        ! Calculate alpha = ||v(i+1)||_2
+        dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
+        
+        ! Step I.5:
+        ! Scale v(i+1) by the inverse of its euclid norm
+        if (dalpha > SYS_EPSREAL_DP) then
+          call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
+        else
+          ! Well, let us just print a warning here...
+          if(rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+              '): Warning: !!v(i+1)!! < EPS !')
+          end if
+        end if
+        
+        
+        ! Step I.6:
+        ! Apply Givens rotations to the i-th column of h which
+        ! renders the Householder matrix an upper triangular matrix
+        do k = 1, i-1
+          dtmp = p_Dh(k,i)
+          p_Dh(k,i)   = p_Dc(k) * dtmp + p_Ds(k) * p_Dh(k+1,i)
+          p_Dh(k+1,i) = p_Ds(k) * dtmp - p_Dc(k) * p_Dh(k+1,i)
+        end do
+        
+        
+        ! Step I.7:
+        ! Calculate Beta
+        ! Beta = (h(i,i)^2 + alpha^2) ^ (1/2)
+        dbeta = sqrt(p_Dh(i,i)**2 + dalpha**2)
+        if (dbeta < SYS_EPSREAL_DP) then
+          dbeta = SYS_EPSREAL_DP
+          if(rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+              '): Warning: beta < EPS !')
+          end if
+        end if
+        
+        ! Step I.8:
+        ! Calculate next plane rotation
+        p_Ds(i) = dalpha / dbeta
+        p_Dc(i) = p_Dh(i,i) / dbeta
+        
+        ! Step I.9
+        ! Set h(i,i) = beta
+        p_Dh(i,i) = dbeta
+        
+        ! Step I.10:
+        ! Update q(i) and calculate q(i+1)
+        p_Dq(i+1) = p_Ds(i) * p_Dq(i)
+        p_Dq(i)   = p_Dc(i) * p_Dq(i)
+        
+        ! Step I.11
+        ! Check pseudo-residual-norm and do all the other stuff we
+        ! need to do before starting a new GMRES iteration
+        
+        ! Get pseudo-residual-norm
+        dpseudores = abs(p_Dq(i+1))
+        
+        if (ilevel .eq. nlmax) then
+          ! Print our current pseudo-residual-norm
+          if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+            (mod(ite,niteResOutput).eq.0)) then
+            call output_line ('GMRES('//&
+              trim(sys_siL(idim,10))//'): Iteration '//&
+              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
+              trim(sys_sdEL(dpseudores,15)) )
+          end if
+        end if
+
+        ! The euclid norm of our current defect is implicitly given by
+        ! |q(i+1)|, however, it may be inaccurate, therefore, checking if
+        ! |q(i+1)| fulfills the stopping criterion would not be very wise,
+        ! as it may result in a lot of unnecessary restarts.
+        ! We will therefore check (|q(i+1)| * dprnsf) against the tolerances
+        ! instead, that should *hopefully* be okay.
+        ! If dprnsf is 0, we will check |q(i+1)| against EPS to avoid NaNs
+        ! or Infs during the next GMRES iteration.
+        dtmp = dpseudores * dprnsf
+        
+        ! Is |q(i+1)| smaller than our machine`s exactness?
+        ! If yes, then exit the inner GMRES loop.
+        if (dpseudores .le. SYS_EPSREAL_DP) then
+          exit
+        
+        ! Check if (|q(i+1)| * dprnsf) is greater than the machine`s
+        ! exactness (this can only happen if dprnsf is positive).
+        ! If yes, call linsol_testConvergence to test against the
+        ! stopping criterions.
+        else if (dtmp > SYS_EPSREAL_DP) then
+          
+          ! If (|q(i+1)| * dprnsf) fulfills the stopping criterion
+          ! then exit the inner GMRES loop
+          if (linsol_testConvergence(rsolverNode,dtmp)) exit
+        
+          ! We also want to check if our solution is diverging.
+          if (linsol_testDivergence(rsolverNode,dpseudores)) then
+            if(rsolverNode%ioutputLevel .ge. 2) then
+              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+                '): Warning: Pseudo-residuals diverging!')
+            end if
+            
+            ! Instead of exiting the subroutine, we just exit the inner loop
+            exit
+          end if
+        
+        end if
+        
+        ! Maybe we have already done enough iterations?
+        if (ite .ge. rsolverNode%nmaxIterations) exit
+        
+        ! Okay, next inner loop iteration, please
+      end do
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= End of Inner Loop
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      
+      ! Step O.3:
+      ! Get the dimension of the current basis of the krylov subspace
+      i = min(i, idim)
+      
+      ! Step O.4:
+      ! Solve H' * q = q , where H' is the upper triangular matrix of
+      ! the upper left (i x i)-block of H.
+      ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
+      call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
+      
+      ! Step O.5:
+      ! Update our solution vector
+      ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
+      do k = 1, i
+        call lsysbl_vectorLinearComb(p_rz(k), rx, p_Dq(k), 1.0_DP)
+      end do
+      
+      ! Step O.6:
+      ! Calculate 'real' residual
+      ! v(1) = b - (A * x)
+      call lsysbl_copyVector (rb, p_rv(1))
+      call lsysbl_blockMatVec(p_rmatrix, rx, p_rv(1), -1.0_DP, 1.0_DP)
+
+      ! Step O.8:
+      ! Calculate euclid norm of the residual (needed for next q)
+      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      
+      ! Call filter chain if given.
+      if (bfilter) then
+        call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+      end if
+      
+      ! Calculate residual norm for stopping criterion
+      ! TODO: try to avoid calculating the norm twice
+      dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
+      
+      ! Step O.9:
+      ! Test for convergence, divergence and write some output now
+      
+      ! Shift the queue with the last residuals and add the new
+      ! residual to it.
+      Dresqueue = eoshift(Dresqueue,1,dfr)
+
+      rsolverNode%dlastDefect = rsolverNode%dfinalDefect
+      rsolverNode%dfinalDefect = dfr
+
+      if (ilevel .eq. nlmax) then
+        ! Test if the iteration is diverged
+        if (linsol_testDivergence(rsolverNode,dfr)) then
+          if (rsolverNode%ioutputLevel .lt. 2) then
+            do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
+              call output_line ('GMRES: Iteration '// &
+                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+                  trim(sys_sdEL(Dresqueue(i),15)) )
+            end do
+          end if
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Solution diverging!')
+          rsolverNode%iresult = 1
+          exit
+        end if
+   
+        ! At least perform nminIterations iterations
+        if (ite .ge. nminIterations) then
+        
+          ! Check if the iteration converged
+          if (linsol_testConvergence(rsolverNode,dfr)) exit
+          
+        end if
+      
+        ! We need to check if the euclidian norm of the
+        ! residual is maybe < EPS - if this is true,
+        ! then starting another GMRES iteration would
+        ! result in NaNs / Infs!!!
+        if (dres .le. SYS_EPSREAL_DP) exit
+
+        ! print out the current residuum
+  
+        if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+            (mod(ite,niteResOutput).eq.0)) then
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Iteration '//&
+            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+            trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        end if
+
+      else
+      
+        ! We need to check if the euclidian norm of the
+        ! residual is maybe < EPS - if this is true,
+        ! then starting another GMRES iteration would
+        ! result in NaNs / Infs!!!
+        if (dres .le. SYS_EPSREAL_DP) exit
+
+      end if
+
+    end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    ! -= End of Outer Loop
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+    if (ilevel .eq. nlmax) then
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing of
+      ! "rsolverNode%nmaxIterations+1" of the loop was completed
+      if (ite .gt. nmaxIterations) then
+        ! Warning if we did not reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        if ((rsolverNode%ioutputLevel .ge. 0) .and. &
+            (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
+          call output_line ('GMRES: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        end if
+  
+        ite = rsolverNode%nmaxIterations
+      end if
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
+          (rsolverNode%iresult .ge. 0)) then
+        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+          '): Iteration '//&
+          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+          trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+      end if
+  
+      rsolverNode%iiterations = ite
+    
+      ! Do not calculate anything if the final residuum is out of bounds -
+      ! would result in NaN`s,...
+      if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
+      
+        ! Calculate asymptotic convergence rate
+        if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+          i = min(rsolverNode%iiterations,niteAsymptoticCVR)
+          rsolverNode%dasymptoticConvergenceRate = &
+            (rsolverNode%dfinalDefect / &
+              dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
+        end if
+  
+        ! If the initial defect was zero, the solver immediately
+        ! exits - and so the final residuum is zero and we performed
+        ! no steps; so the resulting convergence rate stays zero.
+        ! In the other case the convergence rate computes as
+        ! (final defect/initial defect) ** 1/nit :
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
+          rsolverNode%dconvergenceRate = &
+                      (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                      (1.0_DP/real(rsolverNode%iiterations,DP))
+        else
+          rsolverNode%dconvergenceRate = 0.0_DP
+        end if
+  
+        if (rsolverNode%ioutputLevel .ge. 2) then
+          call output_lbrk()
+          call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
+          call output_lbrk()
+          call output_line ('Iterations              : '//&
+               trim(sys_siL(rsolverNode%iiterations,10)) )
+          call output_line ('!!INITIAL RES!!         : '//&
+               trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+          call output_line ('!!RES!!                 : '//&
+               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
+            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+          else
+            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+                 trim(sys_sdEL(0.0_DP,15)) )
+          end if
+          call output_lbrk ()
+          call output_line ('Rate of convergence     : '//&
+               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+  
+        end if
+  
+        if (rsolverNode%ioutputLevel .eq. 1) then
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Iterations/Rate of convergence: ' //&
+                trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+                trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+        end if
+  
+      else
+        ! DEF=Infinity; RHO=Infinity, set to 1
+        rsolverNode%dconvergenceRate = 1.0_DP
+        rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+      end if
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_precDeflGMRES_recleft (rsolverNode,ilevel,rx,rb)
+  
+!<description>
+  ! Actual working routine for the deflated multilevel GMRES solver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the deflaged GMRES solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+  
+  ! Current level.
+  integer, intent(in) :: ilevel
+   
+  ! Solution vector on level iilevel.
+  ! Is replaced by a new approximation to the solution
+  type(t_vectorBlock), intent(inout)        :: rx
+
+  ! Right hand side vector on level ilevel
+  type(t_vectorBlock), intent(inout), target :: rb
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoBelow
+    type(t_linsolSubnodeDeflGMRES), pointer :: p_rsubnode
+    type(t_linsolNode), pointer :: p_rprecSubnode
+    integer :: nminIterations,nmaxIterations,nlmax
+    
+    real(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
+    integer :: ite,i,j,k,niteAsymptoticCVR
+    
+    ! Here come our 1D/2D arrays
+    real(DP), dimension(:), pointer :: p_Dc, p_Ds, p_Dq
+    real(DP), dimension(:,:), pointer :: p_Dh
+  
+    ! The queue saves the current residual and the two previous residuals.
+    real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
+    
+    ! The system matrix
+    type(t_matrixBlock), pointer :: p_rmatrix
+    
+    ! Minimum number of iterations, print-sequence for residuals, dimension
+    ! of krylov subspace
+    integer :: niteResOutput, idim, hDq
+    
+    ! Whether to filter/precondition, apply Gram-Schmidt twice
+    logical bprec,bfilter,btwiceGS
+    
+    ! Pointers to temporary vectors - named for easier access
+    type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector,p_ractualRHS
+    type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    
+    ! Get pointers to the current level and the GMRES parameters
+    p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
+    p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
+    
+    nullify(p_rlevelInfoBelow)
+    if (ilevel .gt. 1) then
+      ! The lower level
+      p_rlevelInfoBelow => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
+    end if
+    
+    ! On the maximum level, apply as many iterations as configured in the
+    ! solver node. On the other levels, apply as many as configured in the
+    ! level structure
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+
+    if (ilevel .eq. nlmax) then
+      nminIterations = max(rsolverNode%nminIterations,0)
+      nmaxIterations = max(rsolverNode%nmaxIterations,0)
+
+      ! Length of the queue of last residuals for the computation of
+      ! the asymptotic convergence rate
+      niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
+  
+      ! Iteration when the residuum is printed:
+      niteResOutput = max(1,rsolverNode%niteResOutput)
+      
+    else
+      nminIterations = max(p_rlevelInfo%niterations,0)
+      nmaxIterations = max(p_rlevelInfo%niterations,0)
+      
+      niteAsymptoticCVR = 0
+      niteResOutput = 0
+      
+    end if
+
+    ! Use preconditioning? Filtering?
+    bprec = associated(p_rlevelInfo%p_rpreconditioner)
+    bfilter = associated(p_rsubnode%p_RfilterChain)
+    
+    ! Apply Gram-Schmidt twice?
+    btwiceGS = p_rsubnode%btwiceGS
+    
+    ! Get the dimension of Krylov subspace
+    idim = p_rlevelInfo%ikrylovdim
+    
+    ! Get our pseudo-residual-norm scale factor
+    dprnsf = p_rsubnode%dpseudoResScale
+    
+    ! Now we need to check the pseudo-residual scale factor.
+    ! If it is non-positive, we set it to 0.
+    if (dprnsf .le. 0.0_DP) then
+      dprnsf = 0.0_DP
+    end if
+
+    ! Current matrix and other parameters
+    p_rmatrix => p_rlevelInfo%rsystemMatrix
+    
+    ! Set pointers to the temporary vectors
+    ! defect vectors
+    p_rz => p_rlevelInfo%p_rz
+    ! basis vectors
+    p_rv => p_rlevelInfo%p_rv
+    ! temp vector
+    p_rtempVector => p_rlevelInfo%rtempVector
+    
+    ! temp vector for defect creation with preconditioning
+    p_rdefTempVector => p_rlevelInfo%rdefTempVector
+
+    ! All vectors share the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    do i=1, idim+1
+      call lsysbl_assignDiscrIndirect (rb,p_rv(i))
+    end do
+    do i=1, idim
+      call lsysbl_assignDiscrIndirect (rb,p_rz(i))
+    end do
+    
+    ! Set pointers to the 1D/2D arrays
+    p_Dh => p_rlevelInfo%Dh
+    p_Dc => p_rlevelInfo%Dc
+    p_Ds => p_rlevelInfo%Ds
+    p_Dq => p_rlevelInfo%Dq
+    
+    ! And get the handle of Dq, since we need to call
+    ! storage_clear during the iteration
+    hDq = p_rlevelInfo%hDq
+    
+    ! All vectors share the same boundary conditions as rb!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    do i=1,idim
+      call lsysbl_assignDiscrIndirect (rb, p_rz(i))
+    end do
+    do i=1,idim+1
+      call lsysbl_assignDiscrIndirect (rb, p_rv(i))
+    end do
+    
+    if (bprec) then
+      p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
+    end if
+    
+    if (bfilter) then
+      p_RfilterChain => p_rsubnode%p_RfilterChain
+    end if
+    
+    ! ---------------------------------------------------------------
+    ! Create the actual RHS vector
+    ! ---------------------------------------------------------------
+    ! We apply left preconditioning.
+    ! On the maximum level, apply the precodnitioner to the RHS
+    ! to create the actual RHS.
+    ! On the lower levels, the RHS contains already the preconditioner,
+    ! so no preconditioning has to be applied.
+    
+    p_ractualRHS => rb
+    if (bprec) then
+    
+      if (ilevel .eq. nlmax) then
+        ! Maximum level. Apply the preconditioner to the RHS.
+        p_ractualRHS => p_rlevelInfo%ractualRHS
+        
+        call lsysbl_copyVector (rb,p_ractualRHS)
+
+        call linsol_precondDefect (&
+            p_rlevelInfo%p_rpreconditioner,p_ractualRHS)
+
+      end if
+      
+    end if
+    
+    ! Copy our RHS to p_rv(1). As the iteration vector is 0, this
+    ! is also our initial defect.
+    call lsysbl_copyVector(p_ractualRHS,p_rv(1))
+
+    if (bfilter) then
+      call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+    end if
+    
+    ! Get the norm of the residuum.
+    ! We need to calculate the norm twice, since we need one for
+    ! the stopping criterion (selected by the user) and the
+    ! euclidian norm for the internal GMRES algorithm
+    dfr = lsysbl_vectorNorm (p_ractualRHS,rsolverNode%iresNorm)
+    dres = lsysbl_vectorNorm (p_rv(1),LINALG_NORMEUCLID)
+    if (.not.((dfr .ge. 1E-99_DP) .and. &
+              (dfr .le. 1E99_DP))) dfr = 0.0_DP
+
+    ! initialise the queue of the last residuals with RES
+    Dresqueue = dfr
+
+    if (ilevel .eq. nlmax) then
+      ! Initialise starting residuum
+      rsolverNode%dinitialDefect = dfr
+      rsolverNode%dlastDefect = 0.0_DP
+
+      ! Check if out initial defect is zero. This may happen if the filtering
+      ! routine filters "everything out"!
+      ! In that case we can directly stop our computation.
+  
+      if (rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero) then
+        ! final defect is 0, as initialised in the output variable above
+        call lsysbl_clearVector(rx)
+        ite = 0
+        rsolverNode%dfinalDefect = dfr
+        return
+      end if
+
+      if (rsolverNode%ioutputLevel .ge. 2) then
+        call output_line ('GMRES('//&
+             trim(sys_siL(idim,10))//'): Iteration '//&
+             trim(sys_siL(0,10))//',  !!RES!! = '//&
+             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+      end if
+
+    end if
+
+    ite = 0
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    ! -= Outer Loop
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    do while (ite < nmaxIterations)
+      
+      ! Step O.1:
+      ! Create elementary vector e_1 scaled by the euclid norm of the
+      ! defect, i.e.: q = ( ||v(1)||_2, 0, ..., 0 )
+      call storage_clear (hDq)
+      p_Dq(1) = dres
+      
+      ! Step O.2:
+      ! Now scale the defect by the inverse of its norm
+      call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= Inner Loop (GMRES iterations)
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      do i = 1, idim
+        ! Another iteration
+        ite = ite + 1
+      
+        ! Step I.1:
+        ! Solve P * z(i) = v(i), where P is the preconditioner matrix
+        call lsysbl_copyVector (p_rv(i), p_rz(i))
+        
+        ! Apply deflation preconditioning to z(i)
+        if (associated(p_rlevelInfoBelow)) then
+        
+          ! Calculate z = (P A z  -  drelax lambda_max v(i))
+          ! in the temp vector
+          call lsysbl_copyVector (p_rv(i),p_rtempVector)
+          call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+          
+          ! Preconditioning
+          if (bprec) then
+            call linsol_precondDefect (&
+                p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
+          end if
+
+          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rdefTempVector, p_rtempVector, &
+              1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
+
+          ! Apply the filter chain
+          if (bfilter) then
+            call filter_applyFilterChainVec (p_rtempVector, p_rsubnode%p_RfilterChain)
+          end if
+          
+          ! Restriction to the RHS of the lower level
+          call mlprj_performRestriction (p_rlevelInfo%p_rprojection,&
+                p_rlevelInfoBelow%rrhsVector, &
+                p_rtempVector, &
+                p_rsubnode%rprjTempVector)
+
+          ! Apply the filter chain to the new RHS
+          if (bfilter) then
+            call filter_applyFilterChainVec (p_rlevelInfoBelow%rrhsVector, p_rsubnode%p_RfilterChain)
+          end if
+          
+          ! Preconditioning on the lower level
+          call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
+          call linsol_precDeflGMRES_recleft (rsolverNode,ilevel-1,&
+              p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
+
+          ! Prolongation to our current level: t = I(...)
+          call mlprj_performProlongation (p_rlevelInfo%p_rprojection,&
+                p_rlevelInfoBelow%rsolutionVector, &
+                p_rtempVector, &
+                p_rsubnode%rprjTempVector)
+
+          ! Correction: z(i) = v(i) - t
+          call lsysbl_vectorLinearComb (p_rtempVector,p_rz(i),-1.0_DP,1.0_DP)
+        
+        end if
+        
+        ! Apply filter chain to z(i)
+        if (bfilter) then
+          call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
+        end if
+        
+        
+        ! Step I.2:
+        ! Calculate v(i+1) = P * A * z(i)
+        call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+        
+        ! Preconditioning + filtering
+        if (bprec) then
+          call linsol_precondDefect (&
+              p_rlevelInfo%p_rpreconditioner,p_rv(i+1))
+        end if
+
+        if (bfilter) then
+          call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
+        end if
+        
+        
+        ! Step I.3:
+        ! Perfom Gram-Schmidt process (1st time)
+        do k = 1, i
+          p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
+        end do
+        
+        ! If the user wishes, perform Gram-Schmidt one more time
+        ! to improve numerical stability.
+        if (btwiceGS) then
+          do k = 1, i
+            dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+            p_Dh(k,i) = p_Dh(k,i) + dtmp
+            call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
+          end do
+        end if
+        
+        ! Step I.4:
+        ! Calculate alpha = ||v(i+1)||_2
+        dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
+        
+        ! Step I.5:
+        ! Scale v(i+1) by the inverse of its euclid norm
+        if (dalpha > SYS_EPSREAL_DP) then
+          call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
+        else
+          ! Well, let us just print a warning here...
+          if(rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+              '): Warning: !!v(i+1)!! < EPS !')
+          end if
+        end if
+        
+        
+        ! Step I.6:
+        ! Apply Givens rotations to the i-th column of h which
+        ! renders the Householder matrix an upper triangular matrix
+        do k = 1, i-1
+          dtmp = p_Dh(k,i)
+          p_Dh(k,i)   = p_Dc(k) * dtmp + p_Ds(k) * p_Dh(k+1,i)
+          p_Dh(k+1,i) = p_Ds(k) * dtmp - p_Dc(k) * p_Dh(k+1,i)
+        end do
+        
+        
+        ! Step I.7:
+        ! Calculate Beta
+        ! Beta = (h(i,i)^2 + alpha^2) ^ (1/2)
+        dbeta = sqrt(p_Dh(i,i)**2 + dalpha**2)
+        if (dbeta < SYS_EPSREAL_DP) then
+          dbeta = SYS_EPSREAL_DP
+          if(rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+              '): Warning: beta < EPS !')
+          end if
+        end if
+        
+        ! Step I.8:
+        ! Calculate next plane rotation
+        p_Ds(i) = dalpha / dbeta
+        p_Dc(i) = p_Dh(i,i) / dbeta
+        
+        ! Step I.9
+        ! Set h(i,i) = beta
+        p_Dh(i,i) = dbeta
+        
+        ! Step I.10:
+        ! Update q(i) and calculate q(i+1)
+        p_Dq(i+1) = p_Ds(i) * p_Dq(i)
+        p_Dq(i)   = p_Dc(i) * p_Dq(i)
+        
+        ! Step I.11
+        ! Check pseudo-residual-norm and do all the other stuff we
+        ! need to do before starting a new GMRES iteration
+        
+        ! Get pseudo-residual-norm
+        dpseudores = abs(p_Dq(i+1))
+        
+        if (ilevel .eq. nlmax) then
+          ! Print our current pseudo-residual-norm
+          if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+            (mod(ite,niteResOutput).eq.0)) then
+            call output_line ('GMRES('//&
+              trim(sys_siL(idim,10))//'): Iteration '//&
+              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
+              trim(sys_sdEL(dpseudores,15)) )
+          end if
+        end if
+
+        ! The euclid norm of our current defect is implicitly given by
+        ! |q(i+1)|, however, it may be inaccurate, therefore, checking if
+        ! |q(i+1)| fulfills the stopping criterion would not be very wise,
+        ! as it may result in a lot of unnecessary restarts.
+        ! We will therefore check (|q(i+1)| * dprnsf) against the tolerances
+        ! instead, that should *hopefully* be okay.
+        ! If dprnsf is 0, we will check |q(i+1)| against EPS to avoid NaNs
+        ! or Infs during the next GMRES iteration.
+        dtmp = dpseudores * dprnsf
+        
+        ! Is |q(i+1)| smaller than our machine`s exactness?
+        ! If yes, then exit the inner GMRES loop.
+        if (dpseudores .le. SYS_EPSREAL_DP) then
+          exit
+        
+        ! Check if (|q(i+1)| * dprnsf) is greater than the machine`s
+        ! exactness (this can only happen if dprnsf is positive).
+        ! If yes, call linsol_testConvergence to test against the
+        ! stopping criterions.
+        else if (dtmp > SYS_EPSREAL_DP) then
+          
+          ! If (|q(i+1)| * dprnsf) fulfills the stopping criterion
+          ! then exit the inner GMRES loop
+          if (linsol_testConvergence(rsolverNode,dtmp)) exit
+        
+          ! We also want to check if our solution is diverging.
+          if (linsol_testDivergence(rsolverNode,dpseudores)) then
+            if(rsolverNode%ioutputLevel .ge. 2) then
+              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+                '): Warning: Pseudo-residuals diverging!')
+            end if
+            
+            ! Instead of exiting the subroutine, we just exit the inner loop
+            exit
+          end if
+        
+        end if
+        
+        ! Maybe we have already done enough iterations?
+        if (ite .ge. rsolverNode%nmaxIterations) exit
+        
+        ! Okay, next inner loop iteration, please
+      end do
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= End of Inner Loop
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      
+      ! Step O.3:
+      ! Get the dimension of the current basis of the krylov subspace
+      i = min(i, idim)
+      
+      ! Step O.4:
+      ! Solve H' * q = q , where H' is the upper triangular matrix of
+      ! the upper left (i x i)-block of H.
+      ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
+      call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
+      
+      ! Step O.5:
+      ! Update our solution vector
+      ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
+      do k = 1, i
+        call lsysbl_vectorLinearComb(p_rz(k), rx, p_Dq(k), 1.0_DP)
+      end do
+      
+      ! Step O.6:
+      ! Calculate 'real' residual
+      ! v(1) = b - (A * x)
+      call lsysbl_copyVector (p_ractualRHS, p_rv(1))
+      call lsysbl_copyVector (rx, p_rdefTempVector)
+      
+      ! Preconditioning
+      if (bprec) then
+        call linsol_precondDefect (&
+            p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
+      end if
+
+      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
+
+      ! Call filter chain if given.
+      if (bfilter) then
+        call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+      end if
+      
+      ! Step O.7:
+      ! Calculate euclid norm of the residual (needed for next q)
+      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      
+      ! Calculate residual norm for stopping criterion
+      ! TODO: try to avoid calculating the norm twice
+      dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
+      
+      ! Step O.8:
+      ! Test for convergence, divergence and write some output now
+      
+      ! Shift the queue with the last residuals and add the new
+      ! residual to it.
+      Dresqueue = eoshift(Dresqueue,1,dfr)
+
+      rsolverNode%dlastDefect = rsolverNode%dfinalDefect
+      rsolverNode%dfinalDefect = dfr
+
+      if (ilevel .eq. nlmax) then
+        ! Test if the iteration is diverged
+        if (linsol_testDivergence(rsolverNode,dfr)) then
+          if (rsolverNode%ioutputLevel .lt. 2) then
+            do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
+              call output_line ('GMRES: Iteration '// &
+                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+                  trim(sys_sdEL(Dresqueue(i),15)) )
+            end do
+          end if
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Solution diverging!')
+          rsolverNode%iresult = 1
+          exit
+        end if
+   
+        ! At least perform nminIterations iterations
+        if (ite .ge. nminIterations) then
+        
+          ! Check if the iteration converged
+          if (linsol_testConvergence(rsolverNode,dfr)) exit
+          
+        end if
+      
+        ! We need to check if the euclidian norm of the
+        ! residual is maybe < EPS - if this is true,
+        ! then starting another GMRES iteration would
+        ! result in NaNs / Infs!!!
+        if (dres .le. SYS_EPSREAL_DP) exit
+
+        ! print out the current residuum
+  
+        if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+            (mod(ite,niteResOutput).eq.0)) then
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Iteration '//&
+            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+            trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        end if
+
+      else
+      
+        ! We need to check if the euclidian norm of the
+        ! residual is maybe < EPS - if this is true,
+        ! then starting another GMRES iteration would
+        ! result in NaNs / Infs!!!
+        if (dres .le. SYS_EPSREAL_DP) exit
+
+      end if
+
+    end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    ! -= End of Outer Loop
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+    if (ilevel .eq. nlmax) then
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing of
+      ! "rsolverNode%nmaxIterations+1" of the loop was completed
+      if (ite .gt. nmaxIterations) then
+        ! Warning if we did not reach the convergence criterion.
+        ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
+        if ((rsolverNode%ioutputLevel .ge. 0) .and. &
+            (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
+          call output_line ('GMRES: Accuracy warning: '//&
+              'Solver did not reach the convergence criterion')
+        end if
+  
+        ite = rsolverNode%nmaxIterations
+      end if
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
+          (rsolverNode%iresult .ge. 0)) then
+        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+          '): Iteration '//&
+          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+          trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+      end if
+  
+      rsolverNode%iiterations = ite
+    
+      ! Do not calculate anything if the final residuum is out of bounds -
+      ! would result in NaN`s,...
+      if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
+      
+        ! Calculate asymptotic convergence rate
+        if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+          i = min(rsolverNode%iiterations,niteAsymptoticCVR)
+          rsolverNode%dasymptoticConvergenceRate = &
+            (rsolverNode%dfinalDefect / &
+              dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
+        end if
+  
+        ! If the initial defect was zero, the solver immediately
+        ! exits - and so the final residuum is zero and we performed
+        ! no steps; so the resulting convergence rate stays zero.
+        ! In the other case the convergence rate computes as
+        ! (final defect/initial defect) ** 1/nit :
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
+          rsolverNode%dconvergenceRate = &
+                      (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                      (1.0_DP/real(rsolverNode%iiterations,DP))
+        else
+          rsolverNode%dconvergenceRate = 0.0_DP
+        end if
+  
+        if (rsolverNode%ioutputLevel .ge. 2) then
+          call output_lbrk()
+          call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
+          call output_lbrk()
+          call output_line ('Iterations              : '//&
+               trim(sys_siL(rsolverNode%iiterations,10)) )
+          call output_line ('!!INITIAL RES!!         : '//&
+               trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+          call output_line ('!!RES!!                 : '//&
+               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
+            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+          else
+            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+                 trim(sys_sdEL(0.0_DP,15)) )
+          end if
+          call output_lbrk ()
+          call output_line ('Rate of convergence     : '//&
+               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+  
+        end if
+  
+        if (rsolverNode%ioutputLevel .eq. 1) then
+          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
+            '): Iterations/Rate of convergence: ' //&
+                trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+                trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+        end if
+  
+      else
+        ! DEF=Infinity; RHO=Infinity, set to 1
+        rsolverNode%dconvergenceRate = 1.0_DP
+        rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+      end if
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_precDeflGMRES (rsolverNode,rd)
+  
+!<description>
+  ! Applies Multigrid preconditioner <tex>$ P \approx A $</tex> to the defect
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The structure of the levels (pre/postsmoothers, interlevel projection
+  ! structures) must have been prepared by setting the level parameters
+  ! before calling this routine. (The parameters of a specific level
+  ! can be get by calling linsol_getMultigridLevel2).
+  ! The matrices <tex>$ A $</tex> on all levels must be attached to the solver previously
+  ! by linsol_setMatrices.
+  
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+   
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: nlmax
+    
+    ! Our MG structure
+    type(t_linsolSubnodeDeflGMRES), pointer :: p_rsubnode
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfo
+  
+    ! Solve the system!
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
+    
+    if (p_rsubnode%icycle .lt. 0) then
+      ! Wrong cycle
+      call output_line ("Invalid cycle!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precDeflGMRES")
+      rsolverNode%iresult = 2
+      return
+    end if
+    
+    if (.not. associated(rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo)) then
+      call output_line ("No levels attached!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precDeflGMRES")
+      rsolverNode%iresult = 2
+      return
+    end if
+
+    ! Call GMRES on the maximum level
+    nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
+    p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(nlmax)
+    
+    call lsysbl_clearVector (p_rlevelInfo%rsolutionVector)
+    
+    if (rsolverNode%p_rsubnodeDeflGMRES%brightprec) then
+      ! Right preconditioning
+      call linsol_precDeflGMRES_recright (&
+          rsolverNode,nlmax,p_rlevelInfo%rsolutionVector,rd)
+    else
+      ! Left preconditioning
+      call linsol_precDeflGMRES_recleft (&
+          rsolverNode,nlmax,p_rlevelInfo%rsolutionVector,rd)
+    end if
+        
+    ! Overwrite our previous RHS by the new correction vector.
+    ! This completes the preconditioning. Scale the vector by the damping parameter
+    ! in the solver structure.
+    call lsysbl_vectorLinearComb (p_rlevelInfo%rsolutionVector,rd,rsolverNode%domega,0.0_DP)
+  
+  end subroutine
+
 end module
