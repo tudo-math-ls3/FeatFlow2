@@ -18462,7 +18462,7 @@ contains
     logical bprec,bfilter,btwiceGS
     
     ! Pointers to temporary vectors - named for easier access
-    type(t_vectorBlock), pointer :: p_rtempVector
+    type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector
     type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
@@ -18530,6 +18530,9 @@ contains
     p_rv => p_rlevelInfo%p_rv
     ! temp vector
     p_rtempVector => p_rlevelInfo%rtempVector
+    
+    ! temp vector for defect creation with preconditioning
+    p_rdefTempVector => p_rlevelInfo%rdefTempVector
 
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
@@ -18569,7 +18572,7 @@ contains
       p_RfilterChain => p_rsubnode%p_RfilterChain
     end if
     
-    ! Copy our RHS rb to p_rv(1). As the iteration vector is 0, this
+    ! Copy our RHS to p_rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
     call lsysbl_copyVector(rb,p_rv(1))
 
@@ -18577,7 +18580,7 @@ contains
       call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
     end if
     
-    ! Get the norm of the residuum
+    ! Get the norm of the residuum.
     ! We need to calculate the norm twice, since we need one for
     ! the stopping criterion (selected by the user) and the
     ! euclidian norm for the internal GMRES algorithm
@@ -18642,19 +18645,21 @@ contains
         ! Solve P * z(i) = v(i), where P is the preconditioner matrix
         call lsysbl_copyVector (p_rv(i), p_rz(i))
         
-        ! Preconditioning: z(i) = P v(i)
-        if (bprec) then
-          call linsol_precondDefect (&
-              p_rlevelInfo%p_rpreconditioner,p_rz(i))
-        end if
-
         ! Apply deflation preconditioning to z(i)
         if (associated(p_rlevelInfoBelow)) then
         
-          ! Calculate z = (A z  -  drelax lambda_max v(i))
+          ! Calculate z = (P A z  -  drelax lambda_max v(i))
           ! in the temp vector
           call lsysbl_copyVector (p_rv(i),p_rtempVector)
-          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rz(i), p_rtempVector, &
+          call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+          
+          ! Preconditioning
+          if (bprec) then
+            call linsol_precondDefect (&
+                p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
+          end if
+
+          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rdefTempVector, p_rtempVector, &
               1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
 
           ! Apply the filter chain
@@ -18675,7 +18680,7 @@ contains
           
           ! Preconditioning on the lower level
           call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
-          call linsol_precDeflGMRES_recright (rsolverNode,ilevel-1,&
+          call linsol_precDeflGMRES_recleft (rsolverNode,ilevel-1,&
               p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
 
           ! Prolongation to our current level: t = I(...)
@@ -18684,13 +18689,7 @@ contains
                 p_rtempVector, &
                 p_rsubnode%rprjTempVector)
 
-          ! Final preconditioning
-          if (bprec) then
-            call linsol_precondDefect (&
-                p_rlevelInfo%p_rpreconditioner,p_rtempVector)
-          end if
-          
-          ! Correction: z(i) = P v(i) - P t = P(v(i)-t)
+          ! Correction: z(i) = v(i) - t
           call lsysbl_vectorLinearComb (p_rtempVector,p_rz(i),-1.0_DP,1.0_DP)
         
         end if
@@ -18702,9 +18701,15 @@ contains
         
         
         ! Step I.2:
-        ! Calculate v(i+1) = A * z(i)
+        ! Calculate v(i+1) = P * A * z(i)
         call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
         
+        ! Preconditioning + filtering
+        if (bprec) then
+          call linsol_precondDefect (&
+              p_rlevelInfo%p_rpreconditioner,p_rv(i+1))
+        end if
+
         if (bfilter) then
           call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
         end if
@@ -18722,7 +18727,7 @@ contains
         if (btwiceGS) then
           do k = 1, i
             dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
-            p_Dh(k,i) = p_Dh(k,i) + dtmp;
+            p_Dh(k,i) = p_Dh(k,i) + dtmp
             call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
           end do
         end if
@@ -18866,22 +18871,30 @@ contains
       ! Calculate 'real' residual
       ! v(1) = b - (A * x)
       call lsysbl_copyVector (rb, p_rv(1))
-      call lsysbl_blockMatVec(p_rmatrix, rx, p_rv(1), -1.0_DP, 1.0_DP)
-
-      ! Step O.8:
-      ! Calculate euclid norm of the residual (needed for next q)
-      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      call lsysbl_copyVector (rx, p_rdefTempVector)
       
+      ! Preconditioning
+      if (bprec) then
+        call linsol_precondDefect (&
+            p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
+      end if
+
+      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
+
       ! Call filter chain if given.
       if (bfilter) then
         call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
       end if
       
+      ! Step O.7:
+      ! Calculate euclid norm of the residual (needed for next q)
+      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      
       ! Calculate residual norm for stopping criterion
       ! TODO: try to avoid calculating the norm twice
       dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
       
-      ! Step O.9:
+      ! Step O.8:
       ! Test for convergence, divergence and write some output now
       
       ! Shift the queue with the last residuals and add the new
@@ -19309,15 +19322,17 @@ contains
           ! Calculate z = (P A z  -  drelax lambda_max v(i))
           ! in the temp vector
           call lsysbl_copyVector (p_rv(i),p_rtempVector)
-          call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+          
+          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rz(i),p_rdefTempVector, &
+              1.0_DP, 0.0_DP)
           
           ! Preconditioning
           if (bprec) then
             call linsol_precondDefect (&
                 p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
           end if
-
-          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rdefTempVector, p_rtempVector, &
+          
+          call lsysbl_vectorLinearComb (p_rdefTempVector, p_rtempVector, &
               1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
 
           ! Apply the filter chain
@@ -19529,7 +19544,8 @@ contains
       ! Calculate 'real' residual
       ! v(1) = b - (A * x)
       call lsysbl_copyVector (p_ractualRHS, p_rv(1))
-      call lsysbl_copyVector (rx, p_rdefTempVector)
+      
+      call lsysbl_blockMatVec(p_rmatrix, rx, p_rdefTempVector, 1.0_DP, 0.0_DP)
       
       ! Preconditioning
       if (bprec) then
@@ -19537,7 +19553,7 @@ contains
             p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
       end if
 
-      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
+      call lsysbl_vectorLinearComb(p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
       if (bfilter) then
