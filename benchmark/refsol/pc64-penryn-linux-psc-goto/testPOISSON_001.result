@@ -178,8 +178,8 @@ Calculating Poisson-2D-Problem with method 1 - EM30
 ---------------------------------------------------
 UMFPACK: !!Initial RES!! = 2.098843860710978E-02
 UMFPACK: !!solution!!    = 5.182340172412555E-01 Status = 0
-L2-error: 2.1398981416E-03
-H1-error: 1.9711900753E-01
+L2-error: 1.8029470064E-03
+H1-error: 1.9708230651E-01
 
 Calculating Poisson-2D-Problem with method 1 - Robin BC
 -------------------------------------------------------
@@ -338,8 +338,8 @@ UMFPACK: !!solution!!    = 3.995749722726681E-01 Status = 0
 !!gradient error!! = 7.8899132925E-02
 UMFPACK: !!Initial RES!! = 3.677002818110972E-03
 UMFPACK: !!solution!!    = 5.722770067468086E-01 Status = 0
-L2-error: 3.7812936755E-04
-H1-error: 5.3840521880E-02
+L2-error: 3.3082066249E-04
+H1-error: 5.3831837988E-02
 
 Calculating Poisson-2D-Problem with method 1 - L2-projection
 ------------------------------------------------------------
@@ -387,8 +387,8 @@ Iterations              : 3
 !!RES!!/!!INITIAL RES!! : 6.311362568091550E-06
 
 Rate of convergence     : 1.848024437789755E-02
-L2-error: 3.3184460598E-04
-H1-error: 5.6541451395E-02
+L2-error: 3.0758720660E-04
+H1-error: 5.6542124815E-02
 
 Calculating Poisson-2D-Problem with method 2
 --------------------------------------------
@@ -513,8 +513,8 @@ Iterations              : 3
 !!RES!!/!!INITIAL RES!! : 3.087355344330563E-07
 
 Rate of convergence     : 6.758685002908997E-03
-L2-error: 1.4801818748E-04
-H1-error: 3.7269151316E-02
+L2-error: 1.2750678608E-04
+H1-error: 3.7268393121E-02
 
 Remaining collection statistics:
 --------------------------------
