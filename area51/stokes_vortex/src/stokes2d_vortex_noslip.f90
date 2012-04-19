@@ -11,7 +11,7 @@
 !# The analytical solution of the problem solved in this module is given by
 !#   u_1(x,y) =  (1 - cos(2*pi*x)) * sin(2*pi*y)
 !#   u_2(x,y) = -(1 - cos(2*pi*y)) * sin(2*pi*x)
-!#     p(x,y) = 4/pi - sin(pi*x) - sin(pi*y)
+!#     p(x,y) = c * (4/pi - sin(pi*x) - sin(pi*y))
 !#
 !# </purpose>
 !##############################################################################
@@ -119,7 +119,7 @@ contains
   type(t_filterChain), dimension(2), target :: RfilterChain
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer :: NLMIN, NLMAX, ierror, i
-  real(DP) :: dnu, dL2, dH1, ddiv
+  real(DP) :: dnu, dc, dL2, dH1, ddiv
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: spredir, sucddir
   real(DP), dimension(:), pointer :: p_Du, p_Dv, p_Dp
@@ -135,6 +135,9 @@ contains
     
     ! Viscosity parameter:
     dnu = 1.0_DP
+
+    ! Pressure multiplier
+    dc = 1.0_DP
 
     ! FE spaces
     celemVelocity = EL_Q2_2D
@@ -312,6 +315,7 @@ contains
     rform%itermCount = 1
     rform%Idescriptors(1) = DER_FUNC
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(1), &
         Rlevels(NLMAX)%rcubInfo, funcRhsX2D, rcollection)
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(2), &
@@ -449,6 +453,7 @@ contains
 
     ! Store the viscosity parameter nu in the collection's quick access array
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
 
     ! Set up the error structure for velocity
     rerrorU%p_RvecCoeff => rvecSol%RvectorBlock(1:2)
@@ -585,13 +590,14 @@ contains
   type(t_collection), intent(inout), optional      :: rcollection
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dnu,dc
 
-    ! fetch nu from collection
+    ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
+    dc = rcollection%DquickAccess(2)
 
-    ! f_1(x,y) = -pi * (cos(pi*x) - 4*pi*nu*sin(2*pi*y) * (1 - 2*cos(2*pi*x)))
-    Dcoefficients(1,:,:) = -SYS_PI * (cos(SYS_PI * Dpoints(1,:,:)) - &
+    ! f_1(x,y) = -pi * (c*cos(pi*x) - 4*pi*nu*sin(2*pi*y) * (1 - 2*cos(2*pi*x)))
+    Dcoefficients(1,:,:) = -SYS_PI * (dc*cos(SYS_PI * Dpoints(1,:,:)) - &
       4.0_DP * SYS_PI * dnu * sin(2.0_DP * SYS_PI * Dpoints(2,:,:)) * &
       (1.0_DP - 2.0_DP * cos(2.0_DP * SYS_PI * Dpoints(1,:,:))))
 
@@ -611,13 +617,14 @@ contains
   type(t_collection), intent(inout), optional      :: rcollection
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dnu,dc
 
-    ! fetch nu from collection
+    ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
+    dc = rcollection%DquickAccess(2)
 
-    ! f_2(x,y) = -pi * (cos(pi*y) + 4*pi*nu*sin(2*pi*x) * (1 - 2*cos(2*pi*y)))
-    Dcoefficients(1,:,:) = -SYS_PI * (cos(SYS_PI * Dpoints(2,:,:)) + &
+    ! f_2(x,y) = -pi * (c*cos(pi*y) + 4*pi*nu*sin(2*pi*x) * (1 - 2*cos(2*pi*y)))
+    Dcoefficients(1,:,:) = -SYS_PI * (dc * cos(SYS_PI * Dpoints(2,:,:)) + &
       4.0_DP * SYS_PI * dnu * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * &
       (1.0_DP - 2.0_DP * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))))
 
@@ -697,8 +704,12 @@ contains
   type(t_collection), intent(inout), optional  :: rcollection
   real(DP), dimension(:,:), intent(out)        :: Dvalues
 
-    ! p(x,y) = 4/pi - sin(pi*x) - sin(pi*y)
-    Dvalues(:,:) = 4.0_DP / SYS_PI - sin(SYS_PI * Dpoints(1,:,:)) - sin(SYS_PI * Dpoints(2,:,:))
+  real(DP) :: dc
+
+    dc = rcollection%DquickAccess(2)
+
+    ! p(x,y) = c*(4/pi - sin(pi*x) - sin(pi*y))
+    Dvalues(:,:) = dc*(4.0_DP / SYS_PI - sin(SYS_PI * Dpoints(1,:,:)) - sin(SYS_PI * Dpoints(2,:,:)))
 
   end subroutine
 

@@ -10,7 +10,7 @@
 !# The analytical solution of the problem solved in this module is given by
 !#   u_1(x,y) = sin(pi*x) * cos(pi*y)
 !#   u_2(x,y) = cos(pi*x) * sin(pi*y)
-!#     p(x,y) = cos(pi*x) * cos(pi*y)
+!#     p(x,y) = c * cos(pi*x) * cos(pi*y)
 !#
 !# </purpose>
 !##############################################################################
@@ -119,7 +119,7 @@ contains
   type(t_filterChain), dimension(2), target :: RfilterChain
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer :: NLMIN, NLMAX, ierror, i
-  real(DP) :: dnu, dL2, dH1, ddiv
+  real(DP) :: dnu, dc, dL2, dH1, ddiv
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: spredir, sucddir
   real(DP), dimension(:), pointer :: p_Du, p_Dv, p_Dp
@@ -135,6 +135,9 @@ contains
     
     ! Viscosity parameter:
     dnu = 1.0_DP
+
+    ! Pressure multiplier:
+    dc = 1.0_DP
 
     ! FE spaces
     celemVelocity = EL_Q2_2D
@@ -309,6 +312,7 @@ contains
     rform%itermCount = 1
     rform%Idescriptors(1) = DER_FUNC
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(1), &
         Rlevels(NLMAX)%rcubInfo, funcRhsX2D, rcollection)
     call linf_buildVectorScalar (rform,.true., rvecRhs%RvectorBlock(2), &
@@ -446,6 +450,7 @@ contains
 
     ! Store the viscosity parameter nu in the collection's quick access array
     rcollection%DquickAccess(1) = dnu
+    rcollection%DquickAccess(2) = dc
 
     ! Set up the error structure for velocity
     rerrorU%p_RvecCoeff => rvecSol%RvectorBlock(1:2)
@@ -582,13 +587,14 @@ contains
   type(t_collection), intent(inout), optional      :: rcollection
   real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dnu, dc
 
-    ! fetch nu from collection
+    ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
+    dc = rcollection%DquickAccess(2)
 
-    ! f_1(x,y) = -pi * (1 - 2*nu*pi) * sin(pi*x) * cos(pi*y)
-    Dcoefficients(1,:,:) = -SYS_PI * (1.0_DP - 2.0_DP * dnu * SYS_PI) * &
+    ! f_1(x,y) = -pi * (c - 2*nu*pi) * sin(pi*x) * cos(pi*y)
+    Dcoefficients(1,:,:) = -SYS_PI * (dc - 2.0_DP * dnu * SYS_PI) * &
       sin(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
 
   end subroutine
@@ -607,13 +613,14 @@ contains
   type(t_collection), intent(inout), optional      :: rcollection
   real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
 
-  real(DP) :: dnu
+  real(DP) :: dnu, dc
 
-    ! fetch nu from collection
+    ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
+    dc = rcollection%DquickAccess(2)
 
-    ! f_2(x,y) = -pi * (1 + 2*nu*pi) * cos(pi*x) * sin(pi*y)
-    Dcoefficients(1,:,:) = -SYS_PI * (1.0_DP + 2.0_DP * dnu * SYS_PI) * &
+    ! f_2(x,y) = -pi * (c + 2*nu*pi) * cos(pi*x) * sin(pi*y)
+    Dcoefficients(1,:,:) = -SYS_PI * (dc + 2.0_DP * dnu * SYS_PI) * &
       cos(SYS_PI * Dpoints(1,:,:)) * sin(SYS_PI * Dpoints(2,:,:))
 
   end subroutine
@@ -687,8 +694,13 @@ contains
   type(t_collection), intent(inout), optional  :: rcollection
   real(DP), dimension(:,:), intent(out)        :: Dvalues
 
-    ! p(x,y) = cos(pi*x) * cos(pi*y)
-    Dvalues(:,:) = cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
+  real(DP) :: dc
+
+    ! fetch pressure multiplier from collection
+    dc = rcollection%DquickAccess(2)
+
+    ! p(x,y) = c * cos(pi*x) * cos(pi*y)
+    Dvalues(:,:) = dc * cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
 
   end subroutine
 

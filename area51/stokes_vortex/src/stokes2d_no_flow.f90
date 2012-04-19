@@ -133,10 +133,10 @@ contains
     NLMAX = 5
 
     ! Viscosity parameter:
-    dnu = 1E+0_DP
+    dnu = 1.0_DP
 
-    ! pressure constant
-    dc = 1E+0_DP
+    ! Pressure multiplier:
+    dc = 1.0_DP
 
     ! FE spaces
     celemVelocity = EL_Q2_2D
@@ -558,7 +558,7 @@ contains
   end subroutine
 
   ! ***********************************************************************************************
-
+  
   subroutine funcZeroBC2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                            cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   integer, dimension(:), intent(in)                           :: Icomponents
