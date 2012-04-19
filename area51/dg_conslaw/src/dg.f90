@@ -89,13 +89,13 @@ program dg
 !  call output_line ('--------------------------------------------')
 !  call dg2d_multigridscalaradvectiondeal_run
 
-!  ! Call the problem to solve. Poisson equation, as in DealII:
+!  ! Call the problem to solve. Poisson equation, as in DealII (SIPG):
 !  call output_lbrk ()
 !  call output_line ('Poisson equation, multigrid solver')
-!  call output_line ('--------------------------------------------')
+!  call output_line ('----------------------------------')
 !  call dg2d_dgmpd_run
 
-  ! Call the problem to solve. Poisson equation, as in DealII:
+  ! Call the problem to solve. Convection diffusion:
   call output_lbrk ()
   call output_line ('Convection diffusion equation, multigrid solver')
   call output_line ('-----------------------------------------------')

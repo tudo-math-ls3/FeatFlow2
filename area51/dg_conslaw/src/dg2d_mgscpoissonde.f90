@@ -239,6 +239,9 @@ contains
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
         rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%rboundary)
+        
+!    ! Disturb the grid points
+!    call disturbGrid(rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation)
 
     ! Create information about adjacencies and everything one needs from
     ! a triangulation. Afterwards, we have the coarse mesh.
@@ -305,10 +308,10 @@ contains
        rproblem%ipolDeg = 2
     case (3)
        ielementType = EL_DG_Q1_2D
-       rproblem%ipolDeg = 1
+       rproblem%ipolDeg = 2
     case (4)
        ielementType = EL_DG_Q2_2D
-       rproblem%ipolDeg = 2
+       rproblem%ipolDeg = 4
     end select
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -575,44 +578,44 @@ contains
     
     
     
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    ! Set up prolongation matrices for Multigrid
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    
-!    ! Loop over all levels except for the coarse-most one
-!    do i = ilvmin+1,ilvmax
-!    
-!      ! Create the matrix structure of the prolongation matrix.
-!      call mlop_create2LvlMatrixStruct(&
-!          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
-!          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
-!          LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl)
-!      
-!      ! And assemble the entries of the prolongation matrix.
-!      call mlop_build2LvlProlMatrix (&
-!          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
-!          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
-!          .true., rproblem%RlevelInfo(i)%rmatProl)
-!      
-!      ! Now set up an interlevel projecton structure for this level
-!      ! based on the Laplace matrix on this level.
-!      call mlprj_initProjectionMat (rproblem%RlevelInfo(i)%rprojection,&
-!                                    rproblem%RlevelInfo(i)%rmatrix)
-!      
-!      ! And initialise the matrix-based projection
-!      call mlprj_initMatrixProjection(&
-!          rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,1),&
-!          rproblem%RlevelInfo(i)%rmatProl)
-!      
-!    end do
-!
-!    ! And set up an interlevel projecton structure for the coarse-most level.
-!    call mlprj_initProjectionMat (rproblem%RlevelInfo(ilvmin)%rprojection,&
-!                                  rproblem%RlevelInfo(ilvmin)%rmatrix)
-!    
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    ! Prolongation matrices for Multigrid are set up now
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up prolongation matrices for Multigrid
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! Loop over all levels except for the coarse-most one
+    do i = ilvmin+1,ilvmax
+    
+      ! Create the matrix structure of the prolongation matrix.
+      call mlop_create2LvlMatrixStruct(&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! And assemble the entries of the prolongation matrix.
+      call mlop_build2LvlProlMatrix (&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          .true., rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! Now set up an interlevel projecton structure for this level
+      ! based on the Laplace matrix on this level.
+      call mlprj_initProjectionMat (rproblem%RlevelInfo(i)%rprojection,&
+                                    rproblem%RlevelInfo(i)%rmatrix)
+      
+      ! And initialise the matrix-based projection
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,1),&
+          rproblem%RlevelInfo(i)%rmatProl)
+      
+    end do
+
+    ! And set up an interlevel projecton structure for the coarse-most level.
+    call mlprj_initProjectionMat (rproblem%RlevelInfo(ilvmin)%rprojection,&
+                                  rproblem%RlevelInfo(ilvmin)%rmatrix)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Prolongation matrices for Multigrid are set up now
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
  
     
@@ -648,16 +651,16 @@ contains
     
     
     
-      
-    ! Loop through all levels. Whereever the projection structure
-    ! is missing, create it
-    do ilevel = 2,p_rsolverNode%p_rsubnodeMultigrid2%nlevels
-      ! Initialise the projection structure
-      call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
-                                           rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
-                                           rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
-
-    end do
+!    ! Projection by user defined routines 
+!    ! Loop through all levels. Whereever the projection structure
+!    ! is missing, create it
+!    do ilevel = 2,p_rsolverNode%p_rsubnodeMultigrid2%nlevels
+!      ! Initialise the projection structure
+!      call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
+!
+!    end do
     
     
     
@@ -738,9 +741,10 @@ contains
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
-!      ! Attach our user-defined projection to the level.
-!      call linsol_initProjMultigrid2Level(p_rlevelInfo, &
-!                                          rproblem%RlevelInfo(i)%rprojection)
+      ! Set projection matrices
+      ! Attach our user-defined projection to the level.
+      call linsol_initProjMultigrid2Level(p_rlevelInfo, &
+                                          rproblem%RlevelInfo(i)%rprojection)
       
     end do
     
@@ -748,6 +752,8 @@ contains
     p_rsolverNode%ioutputLevel = 2
 !    p_rsolverNode%depsRel = 1.0e-12
     p_rsolverNode%depsAbs = 1.0e-12
+    p_rsolverNode%nmaxIterations = 5000
+    p_rsolverNode%nminIterations = 0
     
 !    ! Set to W-cycle
 !    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2

@@ -2784,5 +2784,20 @@ function Euler_buildlambda(Qll, Qrr, a, b) result(dlambda)
     
     
   end function
+  
+  
+  
+  function calculatePenalty(dpolgrad, dedgeLength) result(dpenalty)
+  
+  real(dp), intent(in) :: dpolgrad, dedgeLength
+  
+  real(dp) :: dPenalty
+  
+  
+  dPenalty = (dpolgrad)*(dpolgrad+1.0_dp)/dedgeLength
+  
+  
+  
+  end function
 
 end module dg2d_problem

@@ -16426,6 +16426,7 @@ contains
     real(DP), dimension(:,:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
+    integer :: idet, jdet
 
     integer(i32) :: icoordSystem
     integer :: NEL
@@ -16836,6 +16837,14 @@ contains
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
             rlocalMatrixAssembly(1)%p_DbasTest)
+            
+       do jdet = 1, size(rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj,2)
+         do idet = 1, size(rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj,1)
+            if (rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj(idet,jdet)<10.0_DP*SYS_EPSREAL_DP)&
+                rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj(idet,jdet) = 1.0_dp
+         end do
+       end do
+            
        call elem_generic_sim2 (rlocalMatrixAssembly(2)%celementTest, &
             rlocalMatrixAssembly(2)%revalElementSet,&
             rlocalMatrixAssembly(2)%BderTest, &
@@ -17549,6 +17558,8 @@ contains
     ! 2 testfunctions (1 for each side of the edge),
     ! ialbet,ncubp,nedges
     real(DP), dimension(:,:,:,:), allocatable :: Dcoefficients
+    
+    integer :: idet, jdet
 
 
     ! Copy the assembly data to the local assembly data,
@@ -17761,6 +17772,16 @@ contains
             rlocalVectorAssembly(1)%revalElementSet,&
             rlocalVectorAssembly(1)%Bder, &
             rlocalVectorAssembly(1)%p_Dbas)
+       
+       
+       do jdet = 1, size(rlocalVectorAssembly(2)%revalElementSet%p_Ddetj,2)
+         do idet = 1, size(rlocalVectorAssembly(2)%revalElementSet%p_Ddetj,1)
+            if (rlocalVectorAssembly(2)%revalElementSet%p_Ddetj(idet,jdet)<10.0_DP*SYS_EPSREAL_DP)&
+                rlocalVectorAssembly(2)%revalElementSet%p_Ddetj(idet,jdet) = 1.0_dp
+         end do
+       end do
+       
+       
        call elem_generic_sim2 (rlocalVectorAssembly(2)%celement, &
             rlocalVectorAssembly(2)%revalElementSet,&
             rlocalVectorAssembly(2)%Bder, &
@@ -18018,5 +18039,65 @@ contains
     deallocate(Dcoefficients)
 
   end subroutine 
+
+
+
+
+
+
+
+
+!****************************************************************************
+
+  !<subroutine>
+
+  subroutine disturbGrid(rtriangulation)
+
+    !<description>
+
+    ! Disturbs the position of all vertices by 5%
+
+    !</description>
+
+    !<inputoutput>
+
+    ! The triangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
+    
+    !</inputoutput>
+
+    ! local variables
+
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer :: ivt, idim
+    real(dp) :: drnd
+    
+    
+    
+    ! Get pointer to the vertex coordinates
+    call storage_getbase_double2D(rtriangulation%h_DvertexCoords,&
+                                  p_DvertexCoords)
+
+    call storage_getbase_int(rtriangulation%h_InodalProperty,&
+                                  p_InodalProperty)
+
+    ! Loop over all vertices
+    do ivt = 1, size(p_DvertexCoords,2)
+      ! Annd all dimensions
+      do idim = 1, size(p_DvertexCoords,1)
+      
+        ! Random number
+        call random_number(drnd)
+        
+        ! Disturb grid point
+        if (p_InodalProperty(ivt)>0) then
+          p_DvertexCoords(idim,ivt) = p_DvertexCoords(idim,ivt) * (1.0_dp-0.05_dp+drnd/10.0_dp)
+        end if
+        
+      end do ! idim
+    end do ! ivt
+
+  end subroutine
 
 end module dg2d_routines

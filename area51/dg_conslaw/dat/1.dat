@@ -2,12 +2,12 @@
 
 # We want to solve our problem on level ...
 nlmin = 1
-nlmax = 7
+nlmax = 4
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
+#prmname = ./pre/QUAD.prm
 #prmname = ./pre/QUADROT.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
@@ -17,16 +17,18 @@ prmname = ./pre/QUAD.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 #prmname = ./pre/bartsimpson.prm
-#prmname = ./pre/dedeobstacle.prm
+prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
 #prmname = ./pre/ramp_5deg_quads.prm
 #prmname = ./pre/gammchannel_quads.prm
+#prmname = ./pre/hole3.prm
+#prmname = ./pre/roundhole3.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
+#triname = ./pre/QUAD.tri
 #triname = ./pre/QUADROT.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
@@ -36,11 +38,13 @@ triname = ./pre/QUAD.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 #triname = ./pre/bartsimpson.tri
-#triname = ./pre/dedeobstacle.tri
+triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/ramp_5deg_inlet_quads.tri
 #triname = ./pre/ramp_5deg_quads.tri
 #triname = ./pre/gammchannel_quads.tri
+#triname = ./pre/hole3.tri
+#triname = ./pre/roundhole3.tri
 
 # What kind of finite elements do we use?
 # 0: DG T0

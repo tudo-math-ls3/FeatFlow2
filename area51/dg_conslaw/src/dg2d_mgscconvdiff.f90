@@ -200,7 +200,7 @@ contains
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
     
     ! Set convection and diffusion parameters
-    rproblem%dnu = 1.0_dp/256.0_dp
+    rproblem%dnu = 1.0_dp/16.0_dp
     rproblem%Dbeta(1) = 1.0_dp
     rproblem%Dbeta(2) = 1.0_dp
 
@@ -327,10 +327,10 @@ contains
        rproblem%ipolDeg = 2
     case (3)
        ielementType = EL_DG_Q1_2D
-       rproblem%ipolDeg = 1
+       rproblem%ipolDeg = 2
     case (4)
        ielementType = EL_DG_Q2_2D
-       rproblem%ipolDeg = 2
+       rproblem%ipolDeg = 4
     end select
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -501,10 +501,13 @@ contains
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC2D
+    rproblem%rcollection%DquickAccess(1) = rproblem%dnu
+    rproblem%rcollection%DquickAccess(2) = rproblem%Dbeta(1)
+    rproblem%rcollection%DquickAccess(3) = rproblem%Dbeta(2)
     call linf_buildVectorScalar2 (rlinform, .true.,&
                                   p_rrhs%RvectorBlock(1),&
-                                  dgmcd_VectorScalarMg)!,&
-                                  !rcollection)
+                                  dgmcd_VectorScalarMg,&
+                                  rproblem%rcollection)
 
     ! The edge term (which will only be nonzero at boundary)
     ! At first set up the corresponding linear form:
@@ -1107,16 +1110,16 @@ contains
     call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
     
     write(*,*) ''
-    
-!    !rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-!    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!         dgmcd_getRefFunc)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!         dgmcd_getRefFunc)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+   
+    !rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L1ERROR,derror,&
+         dgmcd_getRefFunc)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (p_rvector%Rvectorblock(1),PPERR_L2ERROR,derror,&
+         dgmcd_getRefFunc)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
     
     
