@@ -1921,7 +1921,7 @@ contains
 
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
-              dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3W3
+              dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3G3
 
               ! Save the computed value
               DdofValue(ilocalEdge+nve,ielidx) = dval
