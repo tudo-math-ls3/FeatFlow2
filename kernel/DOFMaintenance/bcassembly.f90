@@ -1917,14 +1917,14 @@ contains
               dval = Q3W1*dval1 + Q3W2*dval2 + Q3W3*dval3
 
               ! Save the computed value
-              DdofValue(ilocalEdge,ielidx) = dval
+              DdofValue(ilocalEdge,ielidx) = 0.5_DP * dval
 
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
               dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3G3
 
               ! Save the computed value
-              DdofValue(ilocalEdge+nve,ielidx) = dval
+              DdofValue(ilocalEdge+nve,ielidx) = 0.5_DP * dval
 
               ! Calculate the integral mean value of the 2nd moment:
               dval = (Q3W1*dval1*(Q3G1**2 - 1.0_DP) &
@@ -1932,7 +1932,7 @@ contains
                    +  Q3W3*dval3*(Q3G3**2 - 1.0_DP)) * 0.5_DP
 
               ! Save the computed value
-              DdofValue(ilocalEdge+2*nve,ielidx) = dval
+              DdofValue(ilocalEdge+2*nve,ielidx) = 0.5_DP * dval
 
             end if
 
