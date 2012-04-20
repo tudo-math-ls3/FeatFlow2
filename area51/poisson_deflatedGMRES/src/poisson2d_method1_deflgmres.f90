@@ -464,6 +464,9 @@ contains
             p_rlevelInfo%ikrylovDim = 2
           end if
           
+          ! Use 5 iterations. This should also be testet with =1 !
+          p_rlevelInfo%niterations = 5
+          
         end do
         p_rsolverNode%p_rsubnodeDeflGMRES%drelax = 1.0_DP
         !p_rsolverNode%p_rsubnodeDeflGMRES%brightPrec = .true.
@@ -1106,6 +1109,9 @@ contains
           else
             p_rlevelInfo%ikrylovDim = 2
           end if
+
+          ! Use 5 iterations. This should also be testet with =1 !
+          p_rlevelInfo%niterations = 5
           
         end do
         p_rsolverNode%p_rsubnodeDeflGMRES%drelax = 1.0_DP
