@@ -77,10 +77,10 @@ program poisson
   call storage_init(999, 100)
 
   ! Comment in/out here what to test!
-  call poisson2d_1_deflgmres_quad
-  call poisson2d_1_mg_quad
+  !call poisson2d_1_deflgmres_quad
+  !call poisson2d_1_mg_quad
   call poisson2d_1_deflgmres_bench1
-  call poisson2d_1_mg_bench1
+  !call poisson2d_1_mg_bench1
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

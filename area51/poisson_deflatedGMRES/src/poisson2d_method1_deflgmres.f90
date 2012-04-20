@@ -443,9 +443,9 @@ contains
           ! for pre- and post-smoothing.
           call linsol_getDeflGMRESLevel (p_rsolverNode,i-NLMIN+1,p_rlevelInfo)
           
-          !call linsol_initJacobi (p_rlevelInfo%p_rpreconditioner)
+          call linsol_initJacobi (p_rlevelInfo%p_rpreconditioner)
           !call linsol_initSOR (p_rlevelInfo%p_rpreconditioner,1.0_DP)
-          call linsol_initMILUs1x1 (p_rlevelInfo%p_rpreconditioner,0,0.0_DP)
+          !call linsol_initMILUs1x1 (p_rlevelInfo%p_rpreconditioner,0,0.0_DP)
           
     !      call lsyssc_calcGerschgorin (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
     !          dtemp,p_rlevelInfo%dmaxEigenvalue)
@@ -457,14 +457,14 @@ contains
     !      p_rlevelInfo%dmaxEigenvalue = p_rlevelInfo%dmaxEigenvalue / dtemp
               
           p_rlevelInfo%dmaxEigenvalue = 1.0_DP
-          !p_rlevelInfo%niterations = 100
           if (i .eq. NLMIN) then
-            p_rlevelInfo%ikrylovDim = 4
+            p_rlevelInfo%ikrylowDim = 4
           else
-            p_rlevelInfo%ikrylovDim = 2
+            p_rlevelInfo%ikrylowDim = 2
           end if
           
-          ! Use 5 iterations. This should also be testet with =1 !
+          ! Use 5 iterations. This should actually be testet with =1 !
+          ! Use =5 for getting the reference results from the first test!
           p_rlevelInfo%niterations = 5
           
         end do
@@ -1103,14 +1103,14 @@ contains
     !      p_rlevelInfo%dmaxEigenvalue = p_rlevelInfo%dmaxEigenvalue / dtemp
               
           p_rlevelInfo%dmaxEigenvalue = 1.0_DP
-          !p_rlevelInfo%niterations = 100
           if (i .eq. NLMIN) then
-            p_rlevelInfo%ikrylovDim = 4
+            p_rlevelInfo%ikrylowDim = 4
           else
-            p_rlevelInfo%ikrylovDim = 2
+            p_rlevelInfo%ikrylowDim = 2
           end if
 
-          ! Use 5 iterations. This should also be testet with =1 !
+          ! Use 5 iterations. This should actually be testet with =1 !!!
+          ! Use =5 for getting the reference results from the first test!
           p_rlevelInfo%niterations = 5
           
         end do
