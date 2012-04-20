@@ -2191,8 +2191,9 @@ module linearsolver
     real(DP) :: dmaxEigenvalue = 1.0_DP
 
     ! Number of solver iterations applied on this level.
-    ! Applies to all levels except for the maximum level
-    integer :: niterations = 5
+    ! Applies to all levels except for the maximum level.
+    ! =-1: niterations equals to ikrylowDim, the dimension of the Krylow space.
+    integer :: niterations = -1
     
     !<!-- ----------------------------------------------------------------------
     ! OPTIONAL parameters.
@@ -2225,25 +2226,12 @@ module linearsolver
     ! t_matrixBlock structure that holds the system matrix on this level.
     type(t_matrixBlock)                :: rsystemMatrix
 
-    ! STATUS/INTERNAL: MG cycle information.
-    ! Number of cycles to perform on this level.
-    integer                        :: ncycles
-
-    ! STATUS/INTERNAL: MG cycle information.
-    ! Number of remaining cycles to perform on this level.
-    integer                        :: ncyclesRemaining
-    
-    ! STATUS/INTERNAL: Number of current cycle on that level.
-    ! Only used if adaptive cycles are activated by setting
-    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
-    integer                        :: icycleCount   = 0
-    
     !<!-- ----------------------------------------------------------------------
     ! General GMRES parameters
     ! --------------------------------------------------------------------- -->
 
-    ! Dimension of Krylov Subspace
-    integer :: ikrylovDim = 5
+    ! Dimension of Krylow Subspace
+    integer :: ikrylowDim = 5
     
     ! Some temporary 1D/2D arrays
     real(DP), dimension(:),   pointer :: Dc, Ds, Dq
@@ -2285,30 +2273,29 @@ module linearsolver
   
   type t_linsolSubnodeDeflGMRES
   
-    ! INPUT PARAMETER: Cycle identifier.
-    !  0=F-cycle,
-    !  1=V-cycle,
-    !  2=W-cycle.
-    integer :: icycle                   = 0
-    
     ! Number of levels level.
     integer :: nlevels = 1
     
     ! Maybe we should apply Gram-Schmidt twice?
-    logical :: btwiceGS
+    logical :: btwiceGS = LINSOL_GMRES_DEF_TWICE_GS
     
     ! Scale factor for pseudo-residuals
-    real(DP) :: dpseudoResScale
+    real(DP) :: dpseudoResScale = 0.0_DP
     
     ! Relaxation parameter.
     real(DP) :: drelax = 1.0_DP
     
+    ! Method how to determine the maximum eigenvalue.
+    ! =0: Use a fixed maximum eigenvalue defined by dmaxEigenvalue
+    ! on each level.
+    integer :: cmaxEigenvalMethod = 0
+  
     ! A pointer to the level info structures for all the levels in multigrid
-    type(t_linsolDeflGMRESLevelInfo), dimension(:), pointer :: p_RlevelInfo
+    type(t_linsolDeflGMRESLevelInfo), dimension(:), pointer :: p_RlevelInfo => null()
     
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
-    type(t_filterChain), dimension(:),pointer :: p_RfilterChain     => null()
+    type(t_filterChain), dimension(:),pointer :: p_RfilterChain => null()
   
     ! A temp vector for the prolongation/restriction.
     ! Memory for this vector is allocated in initStructure and released
@@ -17997,7 +17984,7 @@ contains
       
       ! We now need to check if the dimension of the Krylov subspace is
       ! positive. If it is not, we need to cancel the initialization here.
-      if (p_rcurrentLevel%ikrylovDim .le. 0) then
+      if (p_rcurrentLevel%ikrylowDim .le. 0) then
         call output_line ('imension of Krylov subspace for GMRES(m) is <= 0 !', &
             OU_CLASS_ERROR, OU_MODE_STD, 'mysubroutine')
         ierror = LINSOL_ERR_INITERROR
@@ -18005,7 +17992,7 @@ contains
       end if
       
       ! Get the stuff out of our solver node
-      idim = p_rcurrentLevel%ikrylovDim
+      idim = p_rcurrentLevel%ikrylowDim
       idim2(1) = idim
       idim2(2) = idim
   
@@ -18319,7 +18306,7 @@ contains
         call lsysbl_releaseVector (p_rcurrentLevel%ractualRHS)
       end if
 
-      idim = p_rcurrentLevel%ikrylovDim
+      idim = p_rcurrentLevel%ikrylowDim
       
       ! Release auxiliary vectors
       if (associated(p_rcurrentLevel%p_rz)) then
@@ -18493,8 +18480,13 @@ contains
       niteResOutput = max(1,rsolverNode%niteResOutput)
       
     else
-      nminIterations = max(p_rlevelInfo%niterations,0)
-      nmaxIterations = max(p_rlevelInfo%niterations,0)
+      if (p_rlevelInfo%niterations .eq. -1) then
+        nminIterations = max(p_rlevelInfo%ikrylowDim,0)
+        nmaxIterations = max(p_rlevelInfo%ikrylowDim,0)
+      else
+        nminIterations = max(p_rlevelInfo%niterations,0)
+        nmaxIterations = max(p_rlevelInfo%niterations,0)
+      end if
       
       niteAsymptoticCVR = 0
       niteResOutput = 0
@@ -18509,7 +18501,7 @@ contains
     btwiceGS = p_rsubnode%btwiceGS
     
     ! Get the dimension of Krylov subspace
-    idim = p_rlevelInfo%ikrylovdim
+    idim = p_rlevelInfo%ikrylowDim
     
     ! Get our pseudo-residual-norm scale factor
     dprnsf = p_rsubnode%dpseudoResScale
@@ -19147,8 +19139,13 @@ contains
       niteResOutput = max(1,rsolverNode%niteResOutput)
       
     else
-      nminIterations = max(p_rlevelInfo%niterations,0)
-      nmaxIterations = max(p_rlevelInfo%niterations,0)
+      if (p_rlevelInfo%niterations .eq. -1) then
+        nminIterations = max(p_rlevelInfo%ikrylowDim,0)
+        nmaxIterations = max(p_rlevelInfo%ikrylowDim,0)
+      else
+        nminIterations = max(p_rlevelInfo%niterations,0)
+        nmaxIterations = max(p_rlevelInfo%niterations,0)
+      end if
       
       niteAsymptoticCVR = 0
       niteResOutput = 0
@@ -19163,7 +19160,7 @@ contains
     btwiceGS = p_rsubnode%btwiceGS
     
     ! Get the dimension of Krylov subspace
-    idim = p_rlevelInfo%ikrylovdim
+    idim = p_rlevelInfo%ikrylowDim
     
     ! Get our pseudo-residual-norm scale factor
     dprnsf = p_rsubnode%dpseudoResScale
@@ -19777,14 +19774,6 @@ contains
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
-    
-    if (p_rsubnode%icycle .lt. 0) then
-      ! Wrong cycle
-      call output_line ("Invalid cycle!", &
-          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precDeflGMRES")
-      rsolverNode%iresult = 2
-      return
-    end if
     
     if (.not. associated(rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo)) then
       call output_line ("No levels attached!", &
