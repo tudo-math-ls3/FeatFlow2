@@ -1461,7 +1461,8 @@ contains
                 rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner,3,Irows)
           end if
           
-          if (rnonlinearIteration%rprecSpecials%isolverType .eq. 1) then
+          if ((rnonlinearIteration%rprecSpecials%isolverType .eq. 1) .or. &
+              (rnonlinearIteration%rprecSpecials%isolverType .eq. 2)) then
           
             ! If we have a MG solver, We also check the coarse grid solver for
             ! the same thing!

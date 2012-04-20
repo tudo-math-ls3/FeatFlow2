@@ -438,10 +438,12 @@ contains
     type(t_parlist), pointer :: p_rparamList
     integer :: nlevels, ilev, nsm
     
-    integer :: isolverType,ismootherType,icoarseGridSolverType
+    integer :: isolverType,ismootherType,icoarseGridSolverType,cpreconditionerMK
     character(LEN=SYS_STRLEN) :: sstring,ssolverSection,ssmootherSection
     character(LEN=SYS_STRLEN) :: scoarseGridSolverSection,spreconditionerSection
+    character(LEN=SYS_STRLEN) :: ssectionPreconditionerMK
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoMK
     type(t_linsolNode), pointer :: p_rpreconditioner, p_rsmoother
     type(t_linsolNode), pointer :: p_rsolverNode
 
@@ -464,6 +466,8 @@ contains
     call parlst_getvalue_int (p_rsection, 'ismootherType', ismootherType, 3)
     call parlst_getvalue_int (p_rsection, 'icoarseGridSolverType', &
         icoarseGridSolverType, 1)
+    call parlst_getvalue_int (p_rsection, 'cpreconditionerMK', &
+        cpreconditionerMK, 0)
         
     rnonlinearIteration%rprecSpecials%isolverType = isolverType
     rnonlinearIteration%rprecSpecials%ismootherType = ismootherType
@@ -475,6 +479,8 @@ contains
     read (sstring,*) ssmootherSection
     call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', sstring,'')
     read (sstring,*) scoarseGridSolverSection
+    call parlst_getvalue_string (p_rsection, 'ssectionPreconditionerMK', sstring,'')
+    read (sstring,*) ssectionPreconditionerMK
     
     ! Which type of solver do we have?
     
@@ -620,6 +626,27 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
 
+      case (5)
+        ! CG without preconditioning
+        
+        call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,Rfilter=&
+            rnonlinearIteration%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+
+      case (6)
+        ! BiCGStab without preconditioning
+        
+        call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,Rfilter=&
+            rnonlinearIteration%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
       case default
       
         call output_line ('Unknown coarse grid solver!', &
@@ -743,6 +770,74 @@ contains
 
         end select
       
+      end do
+
+      ! Get information about adaptive matrix generation from INI/DAT files
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+          'iAdaptiveMatrix', rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
+                                
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
+          'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
+
+    case (2)
+    
+      ! Multilevel Krylow method, deflated GMRES.
+      ! This is a bit similar to multigrid, but simpler.
+      !
+      ! In a first step, initialise the main solver node for all our levels.
+      nlevels = rnonlinearIteration%NLMAX - rnonlinearIteration%NLMIN + 1
+      
+      call linsol_initDeflGMRes (p_rsolverNode,nlevels,&
+          Rfilter=rnonlinearIteration%p_RfilterChain)
+      
+      ! Init standard solver parameters and extended multigrid parameters
+      ! from the DAT file.
+      call linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
+          LINSOL_ALG_UNDEFINED)
+      call linsolinit_initParams (p_rsolverNode,p_rparamList,ssolverSection,&
+          LINSOL_ALG_DEFLGMRES)
+          
+      ! Ok, now we have to initialise all levels. 
+      do ilev = 1,nlevels
+
+        ! Get the level.
+        call linsol_getDeflGMRESLevel (p_rsolverNode,ilev,p_rlevelInfoMK)
+
+        select case (cpreconditionerMK)
+        case (0)
+          ! No preconditioner.
+          
+        case (1)
+          ! General Vanka
+          call linsol_initVANKA (p_rlevelInfoMK%p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+
+        case (2)
+          ! General diagonal Vanka
+          call linsol_initVANKA (p_rlevelInfoMK%p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+
+        case default
+        
+          call output_line ("Unknown preconditioner for deflated GMRES", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
+          call sys_halt()
+
+        end select
+        
+        if (associated(p_rlevelInfoMK%p_rpreconditioner)) then
+          ! Initialise the parameters of the preconditioner
+          call linsolinit_initParams (p_rlevelInfoMK%p_rpreconditioner,p_rparamList,&
+              ssectionPreconditionerMK,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfoMK%p_rpreconditioner,p_rparamList,&
+              ssectionPreconditionerMK,p_rlevelInfoMK%p_rpreconditioner%calgorithm)
+        end if
+
+        if (ilev .ge. 2) then
+          ! Set up the interlevel projection structure on all levels
+          call linsol_initProjDeflGMRESLevel(p_rlevelInfoMK,&
+              rnonlinearIteration%RcoreEquation(ilev+rnonlinearIteration%NLMIN-1)%&
+              p_rprojection)
+        end if
+          
       end do
 
       ! Get information about adaptive matrix generation from INI/DAT files
