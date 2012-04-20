@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioUserFile ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}">
-	<Configurations>
-		<Configuration Name="Debug|Win32" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\.."/>
-		<Configuration Name="Release|Win32" WorkingDirectory="$(ProjectDir)\.."/>
-		<Configuration Name="Debug Parallel|Win32" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\.."/>
-		<Configuration Name="Release ohne IPO|Win32" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\.."/></Configurations></VisualStudioUserFile>
