@@ -122,6 +122,12 @@
 !# 29.) spdiscr_getElementCubMapping
 !#      -> Calculate for every element its cubature formula
 !#
+!# 30.) spdiscr_initBlockDiscr_free
+!#      -> Initialise a "free" block discretisation.
+!#
+!# 31.) spdiscr_initDiscr_free
+!#      -> Initialise a "free" scalar discretisation
+!#
 !#
 !#   The cubature information structure \\
 !# -------------------------------------- \\
@@ -204,6 +210,10 @@ module spatialdiscretisation
 !<constants>
 
 !<constantblock description="Constants defining the complexity of the discretisation">
+
+  ! Free discretisation. No FEM space associated. No elements associated.
+  ! Just a set of DOFs.
+  integer, parameter, public :: SPDISC_FREE      = -1
 
   ! Uniform discretisation: All elements are of the same type.
   integer, parameter, public :: SPDISC_UNIFORM   = 0
@@ -334,6 +344,7 @@ module spatialdiscretisation
 
     ! Dimension of the discretisation. 0=not initialised,
     ! 1=1D discretisation, 2=2D discretisation, 3=3D discretisation
+    ! -1=arbitrary (used for free discretisations)
     integer                          :: ndimension             = 0
 
     ! Whether the discretisation structure is a copy of another discretisation
@@ -390,7 +401,9 @@ module spatialdiscretisation
     ! Specifies whether the DOF-mapping is precomputed.
     logical                          :: bprecompiledDofMapping = .false.
 
-    ! Number of DOF`s total. Only available if bprecompiledDofMapping=true.
+    ! Number of DOF`s total. Only available if bprecompiledDofMapping=true
+    ! or ccomplexity = SPDISC_FREE. A "free" discretisation just contains
+    ! ndof degrees of freedom, not associated with any element or whatever.
     integer                          :: ndof = 0
 
     ! Specifies for every element a list of DOF`s how to map a local DOF
@@ -551,7 +564,9 @@ module spatialdiscretisation
 !</types>
 
   public :: spdiscr_initBlockDiscr
+  public :: spdiscr_initBlockDiscr_free
   public :: spdiscr_initDiscr_simple
+  public :: spdiscr_initDiscr_free
   public :: spdiscr_initDiscr_triquad
   public :: spdiscr_deriveBlockDiscr
   public :: spdiscr_deriveSimpleDiscrSc
@@ -1127,11 +1142,11 @@ contains
 
 !<input>
 
-  ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(in), target    :: rtriangulation
-
-  ! Number of solution components maintained by the block structure
+  ! OPTIONAL: Number of solution components maintained by the block structure
   integer, intent(in), optional                :: ncomponents
+
+  ! OPTIONAL: The triangulation structure underlying to the discretisation.
+  type(t_triangulation), intent(in), optional, target :: rtriangulation
 
   ! OPTIONAL: The underlying domain.
   type(t_boundary), intent(in), target, optional :: rboundary
@@ -1148,9 +1163,17 @@ contains
 !</subroutine>
 
   ! Initialise the variables of the structure for the simple discretisation
-  rblockDiscr%ndimension       = rtriangulation%ndim
   rblockDiscr%ccomplexity      = SPDISC_UNIFORM
-  rblockDiscr%p_rtriangulation => rtriangulation
+  
+  if (present(rtriangulation)) then
+    rblockDiscr%ndimension       = rtriangulation%ndim
+    rblockDiscr%p_rtriangulation => rtriangulation
+  else
+    ! Unknown dimension
+    rblockDiscr%ndimension       = -1
+    nullify(rblockDiscr%p_rtriangulation)
+  end if
+  
   if (present(rboundary)) then
     rblockDiscr%p_rboundary    => rboundary
   else
@@ -1161,6 +1184,39 @@ contains
   allocate(rblockDiscr%RspatialDiscr(ncomponents))
 
   ! That is it.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_initBlockDiscr_free (rblockDiscr,ndof)
+
+!<description>
+  ! Initialises a "free" block discretisation with one component and ndof
+  ! degrees of freedom. This is a general purpose discretisation without
+  ! any triangulation/boundary/FEM space attached.
+  !
+  ! This routine is a replacement for creating a block discretisation
+  ! with one component by spdiscr_initBlockDiscr and creating one
+  ! component with a "free" scalar discretisation using spdiscr_initDiscr_free.
+!</description>
+
+!<input>
+  ! Number of degrees of freedom in the space.
+  integer, intent(in) :: ndof
+!</input>
+
+!<output>
+  ! The block discretisation structure to be initialised.
+  type(t_blockDiscretisation), intent(out) :: rblockDiscr
+!</output>
+
+!</subroutine>
+
+    call spdiscr_initBlockDiscr (rblockDiscr,1)
+    call spdiscr_initDiscr_free (rblockDiscr%RspatialDiscr(1),ndof)
 
   end subroutine
 
@@ -1572,6 +1628,47 @@ contains
 
     ! Save the number of elements in that element list.
     p_relementDistr%NEL = rtriangulation%NEL
+
+    ! This is a complete new structure, everything 'belongs' to this.
+    rspatialDiscr%bisCopy = .false.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_initDiscr_free (rspatialDiscr,ndof)
+
+!<description>
+  ! Initialises a "free" discretisation. A "free" discretisation is a
+  ! discretisation which creates a solution space with ndof degrees of
+  ! freedom without any domain/triangulation/FEM space attached.
+  ! This can be used as a "general purpose" discretisation.
+!</description>
+
+!<input>
+  ! Number of degrees of freedom
+  integer(I32), intent(in) :: ndof
+!</input>
+
+!<output>
+  ! The discretisation structure to be initialised.
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
+!</output>
+
+!</subroutine>
+
+    ! Do we have a structure?
+    if (rspatialDiscr%ndimension .ne. 0) then
+      ! Release the old structure.
+      call spdiscr_releaseDiscr(rspatialDiscr)
+    end if
+
+    ! Initialise the variables of the structure for the simple discretisation
+    rspatialDiscr%ndimension  = -1
+    rspatialDiscr%ccomplexity = SPDISC_FREE
+    rspatialDiscr%ndof        = ndof
 
     ! This is a complete new structure, everything 'belongs' to this.
     rspatialDiscr%bisCopy = .false.
@@ -2546,7 +2643,9 @@ contains
     end if
 
     ! No FE-spaces in here anymore...
-    deallocate(rspatialDiscr%RelementDistr)
+    if (associated(rspatialDiscr%RelementDistr)) then
+      deallocate(rspatialDiscr%RelementDistr)
+    end if
     rspatialDiscr%inumFESpaces = 0
 
     ! Release the DOF-Mapping if necessary

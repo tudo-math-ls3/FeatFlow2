@@ -107,10 +107,15 @@ contains
   end if
 
   select case(rdiscretisation%ndimension)
+  case (-1)
+    ! General purpose free discretisation. No FEM space attached.
+    ! The number of global DOFs is directly taken from the discretisation structure
+    dof_igetNDofGlob = rdiscretisation%ndof
+    
   case (NDIM1D)
 
-      celement = rdiscretisation%RelementDistr(1)%celement
-      dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
+    celement = rdiscretisation%RelementDistr(1)%celement
+    dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
 
   case (NDIM2D)
     if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
