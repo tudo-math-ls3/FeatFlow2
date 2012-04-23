@@ -473,14 +473,14 @@ contains
     rnonlinearIteration%rprecSpecials%ismootherType = ismootherType
     rnonlinearIteration%rprecSpecials%icoarseGridSolverType = icoarseGridSolverType
 
-    call parlst_getvalue_string (p_rsection, 'ssolverSection', sstring,'')
-    read (sstring,*) ssolverSection
-    call parlst_getvalue_string (p_rsection, 'ssmootherSection', sstring,'')
-    read (sstring,*) ssmootherSection
-    call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', sstring,'')
-    read (sstring,*) scoarseGridSolverSection
-    call parlst_getvalue_string (p_rsection, 'ssectionPreconditionerMK', sstring,'')
-    read (sstring,*) ssectionPreconditionerMK
+    call parlst_getvalue_string (p_rsection, 'ssolverSection', &
+        ssolverSection,"",bdequote=.true.)
+    call parlst_getvalue_string (p_rsection, 'ssmootherSection', &
+        ssmootherSection,"",bdequote=.true.)
+    call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', &
+        scoarseGridSolverSection,"",bdequote=.true.)
+    call parlst_getvalue_string (p_rsection, 'ssectionPreconditionerMK', &
+        ssectionPreconditionerMK,"",bdequote=.true.)
     
     ! Which type of solver do we have?
     
