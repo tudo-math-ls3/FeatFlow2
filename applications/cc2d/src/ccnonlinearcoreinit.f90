@@ -536,8 +536,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+            'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -561,8 +560,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -586,8 +584,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -611,8 +608,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -949,9 +945,7 @@ contains
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file
       ! for the 'slinearSolver' value
       call parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                  'slinearSolver', sstring, '')
-      ssolverName = ''
-      if (sstring .ne. '') read (sstring,*) ssolverName
+                                  'slinearSolver', ssolverName, "", bdequote=.true.)
       if (ssolverName .eq. '') then
         call output_line ('No linear subsolver!', &
             OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
@@ -1158,9 +1152,7 @@ contains
           ! into the Adaptive-Newton configuration block.
           
           call parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                      'spreconditionerAdaptiveNewton', sstring, '')
-          snewton = ''
-          if (sstring .ne. '') read (sstring,*) snewton
+              'spreconditionerAdaptiveNewton', snewton, "", bdequote=.true.)
           if (snewton .ne. '') then
             ! Initialise the parameters of the adaptive Newton
             call parlst_getvalue_int (rproblem%rparamList, snewton, &

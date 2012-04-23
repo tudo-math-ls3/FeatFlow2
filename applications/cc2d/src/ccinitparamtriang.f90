@@ -90,16 +90,11 @@ contains
                               'NLMAX',ilvmax,4)
     
     ! Get the .prm and the .tri file from the parameter list.
-    ! note that parlst_getvalue_string returns us exactly what stands
-    ! in the parameter file, so we have to apply READ to get rid of
-    ! probable ''!
     call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sParametrisation',sString)
-    read (sString,*) sPRMFile
+                                 'sParametrisation',sPRMFile,bdequote=.true.)
                               
     call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sMesh',sString)
-    read (sString,*) sTRIFile
+                                 'sMesh',sTRIFile,bdequote=.true.)
     
     call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
                               'iconvertToTriangleMesh',iconvertToTriangleMesh,0)
@@ -108,7 +103,7 @@ contains
                                  'ddisturbMeshFactor',ddisturbMeshFactor,0.0_DP)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, sPrmFile)
+    call boundary_read_prm(rproblem%rboundary, sPRMFile)
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &

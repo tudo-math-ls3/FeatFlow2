@@ -1750,7 +1750,7 @@ contains
     integer :: iinitialSolutionLevel,ctypeInitialSolution,ielementTypeInitialSolution
     type(t_vectorBlock), target :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
-    character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
+    character(LEN=SYS_STRLEN) :: sarray,sfile
     integer :: ilev,ierror
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection
@@ -1768,8 +1768,10 @@ contains
         'ctypeInitialSolution',ctypeInitialSolution,0)
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
         'iinitialSolutionLevel',iinitialSolutionLevel,0)
+
+    ! Remove possible ''-characters in the filename
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-        'sinitialSolutionFilename',sfileString,'')
+        'sinitialSolutionFilename',sfile,"",bdequote=.true.)
 
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
         'ielementTypeInitialSolution',ielementTypeInitialSolution,-1)
@@ -1804,9 +1806,6 @@ contains
         ilev = rproblem%NLMAX
       end if
       
-      ! Remove possible ''-characters
-      read(sfileString,*) sfile
-
       ! Create a basic block vector that takes our solution.
       call lsysbl_createVectorBlock (&
           rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.false.)
@@ -2132,13 +2131,12 @@ contains
                               'cwriteFinalSolution',cwriteFinalSolution,0)
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iwriteSolutionLevel',iwriteSolutionLevel,0)
+                              
+    ! Remove possible ''-characters in the filename
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'swriteSolutionFilename',sfileString,'')
+                                 'swriteSolutionFilename',sfile,"",bdequote=.true.)
 
     if (cwriteFinalSolution .eq. 0) return ! nothing to do.
-    
-    ! Remove possible ''-characters
-    read(sfileString,*) sfile
     
     bformatted = (cwriteFinalSolution .eq. 1) .or. (cwriteFinalSolution .eq. 3)
     ! level where to write out; correct if negative.

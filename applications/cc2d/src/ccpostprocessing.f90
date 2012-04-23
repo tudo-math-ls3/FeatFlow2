@@ -500,20 +500,17 @@ contains
         'IWRITEKINETICENERGY', iwriteKineticEnergy, 0)
 
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEERRORANALYSISL2', stemp, '''''')
-    read(stemp,*) sfilenameErrorAnalysisL2
+        'SFILENAMEERRORANALYSISL2', sfilenameErrorAnalysisL2, "", bdequote=.true.)
     if (sfilenameErrorAnalysisL2 .eq. '') &
       iwriteErrorAnalysisL2 = 0
     
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEERRORANALYSISH1', stemp, '''''')
-    read(stemp,*) sfilenameErrorAnalysisH1
+        'SFILENAMEERRORANALYSISH1', sfilenameErrorAnalysisH1, "", bdequote=.true.)
     if (sfilenameErrorAnalysisH1 .eq. '') &
       iwriteErrorAnalysisH1 = 0
     
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEKINETICENERGY', stemp, '''''')
-    read(stemp,*) sfilenameKineticEnergy
+        'SFILENAMEKINETICENERGY', sfilenameKineticEnergy, "", bdequote=.true.)
     if (sfilenameKineticEnergy .eq. '') &
       iwriteKineticEnergy = 0
       
@@ -840,8 +837,7 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IWRITEBODYFORCES', iwriteBodyForces, 0)
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEBODYFORCES', stemp, '''''')
-    read(stemp,*) sfilenameBodyForces
+        'SFILENAMEBODYFORCES', sfilenameBodyForces, "", bdequote=.true.)
     if (sfilenameBodyForces .eq. '') &
       iwriteBodyForces = 0
 
@@ -1441,11 +1437,8 @@ contains
     
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                 'SFILENAMEUCD', sfile, '')
+                                 'SFILENAMEUCD', sfilename, "", bdequote=.true.)
                                  
-    ! Remove possible ''-characters
-    read(sfile,*) sfilename
-    
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
                                  
@@ -1668,11 +1661,8 @@ contains
 
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                 'SFILENAMEFILM', sfile, '')
+                                 'SFILENAMEFILM', sfilename, "", bdequote=.true.)
                                  
-    ! Remove possible ''-characters
-    read(sfile,*) sfilename
-    
     ! Create the actual filename
     sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixFilm,5)
                                  
