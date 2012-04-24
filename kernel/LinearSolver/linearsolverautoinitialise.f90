@@ -722,8 +722,10 @@ contains
     ! local variables
     integer :: csolver
     type(t_parlstSection), pointer :: p_rsection
-    integer :: i1,ikrylowDim
+    integer :: i1,ikrylowDim,nlevels
     character(LEN=SYS_STRLEN) :: sstring
+    integer, dimension(3) :: Ikdim
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoMK
 
     csolver = LINSOL_ALG_UNDEFINED
     if (present(csolverType)) csolver = csolverType
@@ -862,6 +864,35 @@ contains
       call parlst_getvalue_double (p_rsection, 'dalphaMax', &
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
            rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
+
+    case (LINSOL_ALG_DEFLGMRES)
+      
+      ! Deflated GMRES method.
+      
+      ! Get the relaxation parameter
+      call parlst_getvalue_double (p_rsection, 'dkrylowRelax', &
+           rsolverNode%p_rsubnodeDeflGMRES%drelax,&
+           rsolverNode%p_rsubnodeDeflGMRES%drelax)
+           
+      ! Get the Krylow space dimension for the different levels.
+      call parlst_getvalue_string (p_rsection, "NkrylowDimension", sstring, "4 2 2")
+      read (sstring,*) Ikdim(1), Ikdim(2), Ikdim(3)
+      
+      ! Method how to determine the maximum eigenvalue
+      call parlst_getvalue_int (p_rsection, 'cmaxEigenvalMethod', &
+           rsolverNode%p_rsubnodeDeflGMRES%cmaxEigenvalMethod,&
+           rsolverNode%p_rsubnodeDeflGMRES%cmaxEigenvalMethod)
+      
+      ! Impose the number of preconditioning steps
+      nlevels = linsol_getDeflGMRESLevelCount(rsolverNode)
+      
+      do i1 = 1,nlevels
+        ! Get the level
+        call linsol_getDeflGMRESLevel(rsolverNode,i1,p_rlevelInfoMK)
+        
+        ! Dimension of the Krylow space
+        p_rlevelInfoMK%ikrylowDim = Ikdim(min(3,i1))
+      end do
 
     case default
 
