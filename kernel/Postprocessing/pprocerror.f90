@@ -252,7 +252,8 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalarVec(rerror, frefFunction, rcollection, rperfconfig)
+  subroutine pperr_scalarVec(rerror, frefFunction, rcollection, rcubatureInfo, &
+      rperfconfig)
 
 !<description>
   ! This routine calculates the errors of a set of given FE functions given
@@ -271,6 +272,10 @@ contains
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -306,11 +311,11 @@ contains
   integer :: ifirstDer, ilastDer
 
   ! Arrays concerning the cubature formula
-  real(DP), dimension(:,:), allocatable :: DcubPts
-  real(DP), dimension(:), allocatable :: Domega
+  real(DP), dimension(:,:), pointer :: p_DcubPts
+  real(DP), dimension(:), pointer :: p_Domega
 
   ! An array needed for the DOF-mapping
-  integer, dimension(:,:), target, allocatable :: Idofs
+  integer, dimension(:,:), pointer :: p_Idofs
 
   ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
@@ -323,7 +328,7 @@ contains
 
   ! Two arrays for the element evaluation
   logical, dimension(EL_MAXNDER) :: Bder
-  real(DP), dimension(:,:,:,:), allocatable :: Dbas
+  real(DP), dimension(:,:,:,:), pointer :: p_Dbas
 
   ! A pointer to the data array of the currently active coefficient vector
   real(DP), dimension(:), pointer :: p_Dcoeff
@@ -333,7 +338,7 @@ contains
 
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
-  integer :: nelementsPerBlock
+  integer :: nelementsPerBlock,ielementdistr
 
   ! Some other local variables
   integer :: i,j,k,ndofs,ncubp,iel,ider
@@ -342,6 +347,12 @@ contains
   integer(I32) :: cevalTag, celement
   real(DP) :: derrL1, derrL2, derrH1, derrMean, dom, daux, daux2
   real(DP), dimension(:,:), pointer :: p_Ddetj
+  integer :: icubatureBlock
+
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+  type(t_stdCubatureData) :: rcubatureData
+  type(t_stdFEBasisEvalData) :: rfeBasisEvalData
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -561,30 +572,39 @@ contains
     Bder(DER_FUNC) = bcalcL2 .or. bcalcL1 .or. bcalcMean
     if(bcalcH1) Bder(ifirstDer:ilastDer) = .true.
 
-    ! For saving some memory in smaller discretisations, we calculate
-    ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it is at most
-    ! NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(p_rperfconfig%NELEMSIM, NEL)
+    ! Do we have an assembly structure?
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(p_rdiscr,rtempCubatureInfo,CUB_GEN_DEPR_EVAL)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
 
-    ! Okay, let us loop over all element distributions
-    do icurrentElementDistr = 1, p_rdiscr%inumFEspaces
+    ! Loop over the cubature blocks. Each defines a separate cubature formula.
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
-      ! Get a pointer to the element distribution
-      p_relementDistribution => p_rdiscr%RelementDistr(icurrentElementDistr)
+      ! Get typical information: Number of elements, element list,...
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfo,p_rdiscr,&
+          ielementDistr,celement,ccubature,NEL,p_IelementList)
 
-      ! Cancel if this element distribution is empty.
-      if(p_relementDistribution%NEL .le. 0) cycle
+      ! Cancel if this element list is empty.
+      if (NEL .le. 0) cycle
 
-      ! Get a pointer to the element list
-      call storage_getbase_int(p_relementDistribution%h_IelementList,&
-                               p_IelementList)
+      ! For saving some memory in smaller discretisations, we calculate
+      ! the number of elements per block. For smaller triangulations,
+      ! this is NEL. If there are too many elements, it is at most
+      ! NELEMSIM. This is only used for allocating some arrays.
+      nelementsPerBlock = min(p_rperfconfig%NELEMSIM, NEL)
 
-      ! Get the element
-      celement = p_relementDistribution%celement
+      ! Initialise cubature and evaluation of the FE basis
+      call easminfo_initStdCubature(ccubature,rcubatureData)
 
-      ! Get the number of dofs per element
-      ndofs = elem_igetNDofLoc(celement)
+      ! Get the pointers for faster access
+      p_DcubPts => rcubatureData%p_DcubPtsRef
+      p_Domega => rcubatureData%p_Domega
+      ncubp = rcubatureData%ncubp
 
       ! Get the trafo
       ctrafoType = elem_igetTrafoType(celement)
@@ -599,39 +619,23 @@ contains
       ! And we definately need jacobian determinants for integration.
       cevalTag = ior(cevalTag, EL_EVLTAG_DETJ)
 
-      ! Get the cubature rule
-      ccubature = p_relementDistribution%ccubTypeEval
-
-      ! Get the number of cubature points for the cubature formula
-      ncubp = cub_igetNumPts(ccubature)
-
-      ! Allocate the arrays for the cubature formula
-      allocate(Domega(ncubp))
-      allocate(DcubPts(trafo_igetReferenceDimension(ctrafoType),ncubp))
-
-      ! Get the cubature formula
-      call cub_getCubature(ccubature,DcubPts, Domega)
-
       ! OpenMP-Extension: Open threads here.
       ! Each thread will allocate its own local memory...
       !
-      !$omp parallel default(shared) &
-      !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
-      !$omp         derrH1,derrL1,derrL2,derrMean,dom,i,icomp,ider,iel,j,k,&
-      !$omp         p_Dcoeff,p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,p_DerrMean,&
-      !$omp         revalElementSet,rintSubset)&
-      !$omp         firstprivate(cevalTag)&
-      !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
 
-      ! Allocate an array for the DOF-mapping
-      allocate(Idofs(ndofs,nelementsPerBlock))
+      ! Initialise the evaluation structure for the FE basis
+      call easminfo_initStdFEBasisEval(celement,&
+          elem_getMaxDerivative(celement),ncubp,nelementsPerBlock,rfeBasisEvalData)
 
-      ! Allocate an array that recieves the evaluated basis functions
-      allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,nelementsPerBlock))
+      ! Quick reference to the values of the basis functions
+      p_Dbas => rfeBasisEvalData%p_Dbas
+      p_Idofs => rfeBasisEvalData%p_Idofs
+      ndofs = rfeBasisEvalData%ndofLocal
 
       ! Allocate two arrays for the evaluation
       if(bcalcL2 .or. bcalcL1 .or. bcalcMean) &
         allocate(DvalFunc(ncubp,nelementsPerBlock))
+        
       if(bcalcH1) &
         allocate(DvalDer(ncubp,nelementsPerBlock,ifirstDer:ilastDer))
 
@@ -650,11 +654,11 @@ contains
         IELmax = min(p_relementDistribution%NEL,IELset-1+nelementsPerBlock)
 
         ! First, let us perform the DOF-mapping
-        call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), Idofs)
+        call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), p_Idofs)
 
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
-            p_IelementList(IELset:IELmax), ctrafoType, DcubPts, rperfconfig=rperfconfig)
+            p_IelementList(IELset:IELmax), ctrafoType, p_DcubPts, rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! Remove the ref-points eval tag for the next loop iteration
@@ -665,11 +669,11 @@ contains
         !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => Idofs
+        rintSubset%p_IdofsTrial => p_Idofs
         rintSubset%celement = celement
 
         ! Evaluate the element
-        call elem_generic_sim2(celement, revalElementSet, Bder, Dbas)
+        call elem_generic_sim2(celement, revalElementSet, Bder, p_Dbas)
 
         ! Now loop over all vector components
         do icomp = 1, ncomp
@@ -723,7 +727,7 @@ contains
               do i = 1, ncubp
                 daux = 0.0_DP
                 do k = 1, ndofs
-                  daux = daux + Dbas(k,DER_FUNC,i,j)*p_Dcoeff(Idofs(k,j))
+                  daux = daux + p_Dbas(k,DER_FUNC,i,j)*p_Dcoeff(p_Idofs(k,j))
                 end do ! k
                 DvalFunc(i,j) = DvalFunc(i,j) - daux
               end do ! i
@@ -752,7 +756,7 @@ contains
                 do ider = ifirstDer, ilastDer
                   daux = 0.0_DP
                   do k = 1, ndofs
-                    daux = daux + Dbas(k,ider,i,j)*p_Dcoeff(Idofs(k,j))
+                    daux = daux + p_Dbas(k,ider,i,j)*p_Dcoeff(p_Idofs(k,j))
                   end do ! k
                   DvalDer(i,j,ider) = DvalDer(i,j,ider) - daux
                 end do ! ider
@@ -767,7 +771,7 @@ contains
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)**2
               end do ! i
               p_DerrL2(iel) = sqrt(daux)
@@ -777,7 +781,7 @@ contains
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)**2
               end do ! i
               derrL2 = derrL2 + daux
@@ -790,7 +794,7 @@ contains
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux2 = 0.0_DP
                 do ider = ifirstDer, ilastDer
                   daux2 = daux2 + DvalDer(i,j,ider)**2
@@ -804,7 +808,7 @@ contains
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux2 = 0.0_DP
                 do ider = ifirstDer, ilastDer
                   daux2 = daux2 + DvalDer(i,j,ider)**2
@@ -821,7 +825,7 @@ contains
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*abs(DvalFunc(i,j))
               end do ! i
               p_DerrL1(iel) = daux
@@ -831,7 +835,7 @@ contains
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*abs(DvalFunc(i,j))
               end do ! i
               derrL1 = derrL1 + daux
@@ -844,7 +848,7 @@ contains
               iel = p_IelementList(IELset+j-1)
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)
               end do ! i
               p_DerrMean(iel) = daux
@@ -854,7 +858,7 @@ contains
             do j = 1,IELmax-IELset+1
               daux = 0.0_DP
               do i = 1, ncubp
-                dom = Domega(i) * abs(p_Ddetj(i,j))
+                dom = p_Domega(i) * abs(p_Ddetj(i,j))
                 daux = daux + dom*DvalFunc(i,j)
               end do ! i
               derrMean = derrMean + daux
@@ -878,20 +882,20 @@ contains
         call domint_doneIntegration (rintSubset)
 
       end do ! IELset
-      !$omp end do
 
       ! Release the element evaluation set
       call elprep_releaseElementSet(revalElementSet)
 
+      ! Release FE evaluation
+      call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
+
       ! Deallocate all arrays
       if(allocated(DvalDer)) deallocate(DvalDer)
       if(allocated(DvalFunc)) deallocate(DvalFunc)
-      deallocate(Dbas)
-      deallocate(Idofs)
       !$omp end parallel
 
-      deallocate(DcubPts)
-      deallocate(Domega)
+      ! Release cubature information
+      call easminfo_doneStdCubature(rcubatureData)
 
     end do ! icurrentElementDistr
 

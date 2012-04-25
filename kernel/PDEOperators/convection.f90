@@ -2881,10 +2881,24 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
 
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags
@@ -2954,14 +2968,14 @@ contains
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature,p_DcubPtsRef, Domega)
 
     ! Allocate an array saving the coordinates of corner vertices of elements
 
@@ -3628,6 +3642,11 @@ contains
     deallocate(Idofs)
     deallocate(DbasALE)
     deallocate(Dbas)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
   end subroutine
 
@@ -6291,7 +6310,7 @@ contains
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
-                           IvelocityComp, rperfconfig)
+                           IvelocityComp, rcubatureInfo, rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -6371,6 +6390,10 @@ contains
   !  IvelocityComp(3) gives the number of the Z-velocity (usually = 3).
   ! If not present, IvelocityComp=(/1,2,3/) is assumed.
   integer, dimension(3), intent(in), optional :: IvelocityComp
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -6528,7 +6551,7 @@ contains
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,p_DsolX,p_DsolY,&
                     p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity,&
-                    rperfconfig)
+                    rcubatureInfo,rperfconfig)
 
     else
 
@@ -6537,7 +6560,8 @@ contains
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,&
-                    DmeshVelocity=DmeshVelocity,rperfconfig=rperfconfig)
+                    DmeshVelocity=DmeshVelocity,rcubatureInfo=rcubatureInfo,&
+                    rperfconfig=rperfconfig)
 
     end if
 
@@ -6550,7 +6574,8 @@ contains
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                   dweight1,dweight2,rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta,ddelta,clocalH,bALE, &
-                  Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity,rperfconfig)
+                  Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity,rcubatureInfo,&
+                  rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -6697,6 +6722,10 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
 
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -6797,11 +6826,25 @@ contains
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
+  
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
       p_rperfconfig => conv_perfconfig
+    end if
+
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_createDefCubStructure(rmatrix%p_rspatialDiscrTrial,&
+          rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
     end if
 
     ! Initialise the derivative flags
@@ -6873,14 +6916,14 @@ contains
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
     ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeBilForm)
+    ncubp = cub_igetNumPts(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature)
 
     ! Allocate two arrays for the points and the weights
     allocate(Domega(ncubp))
     allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp))
 
     ! Get the cubature formula
-    call cub_getCubature(p_relementDistribution%ccubTypeBilForm,p_DcubPtsRef, Domega)
+    call cub_getCubature(p_rcubatureInfo%p_RinfoBlocks(1)%ccubature,p_DcubPtsRef, Domega)
 
     ! Allocate an array saving the coordinates of corner vertices of elements
 
@@ -7574,6 +7617,11 @@ contains
     deallocate(Idofs)
     deallocate(DbasALE)
     deallocate(Dbas)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
 
   end subroutine
 

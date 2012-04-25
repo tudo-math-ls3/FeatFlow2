@@ -458,26 +458,26 @@ module linearsystemblock
 
   interface lsysbl_createVectorBlock
     module procedure lsysbl_createVecBlockDirect
-    module procedure lsysbl_createVecBlockDirectIntl
-    module procedure lsysbl_createVecBlockDirectIntl2
-    module procedure lsysbl_createVecBlockDirectDims
-    module procedure lsysbl_createVecBlockDirectDims2
+    module procedure lsysbl_createVecBlockDirIntl
+    module procedure lsysbl_createVecBlockDirIntl2
+    module procedure lsysbl_createVecBlockDirDims
+    module procedure lsysbl_createVecBlockDirDims2
     module procedure lsysbl_createVecBlockIndirect
     module procedure lsysbl_createVecBlockIndMat
     module procedure lsysbl_createVecBlockByDiscr
-    module procedure lsysbl_createVecBlockByDiscrIntl
-    module procedure lsysbl_createVecBlockByDiscrIntl2
+    module procedure lsysbl_createVecBlkByDiscrIntl
+    module procedure lsysbl_createVecBlkByDiscrIntl2
   end interface
 
   public :: lsysbl_createVectorBlock
   public :: lsysbl_createVecBlockDirect
-  public :: lsysbl_createVecBlockDirectIntl
-  public :: lsysbl_createVecBlockDirectIntl2
-  public :: lsysbl_createVecBlockDirectDims
+  public :: lsysbl_createVecBlockDirIntl
+  public :: lsysbl_createVecBlockDirIntl2
+  public :: lsysbl_createVecBlockDirDims
   public :: lsysbl_createVecBlockIndirect
   public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createVecBlockByDiscr
-  public :: lsysbl_createVecBlockByDiscrIntl
+  public :: lsysbl_createVecBlkByDiscrIntl
 
   interface lsysbl_resizeVectorBlock
     module procedure lsysbl_resizeVecBlockDirect
@@ -1321,7 +1321,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectIntl (rx, Isize, Invar, bclear,&
+  subroutine lsysbl_createVecBlockDirIntl (rx, Isize, Invar, bclear,&
                                               cdataType, NEQMAX)
 
 !<description>
@@ -1377,7 +1377,7 @@ contains
   ! Both length arrays must have the same dimension
   if (size(Isize) .ne. size(Invar)) then
     call output_line('Length arrays must have the same size!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createVecBlockDirectIntl')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createVecBlockDirIntl')
     call sys_halt()
   end if
 
@@ -1390,7 +1390,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', iisize,&
+  call storage_new ('lsysbl_createVecBlockDirIntl', 'Vector', iisize,&
                     cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
 
@@ -1438,7 +1438,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectIntl2 (rx, Isize, NVAR, bclear,&
+  subroutine lsysbl_createVecBlockDirIntl2 (rx, Isize, NVAR, bclear,&
                                                cdataType, NEQMAX)
 
 !<description>
@@ -1500,7 +1500,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', iisize,&
+  call storage_new ('lsysbl_createVecBlockDirIntl', 'Vector', iisize,&
                     cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
 
@@ -1548,7 +1548,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectDims (rx, isize, iblocks, bclear,&
+  subroutine lsysbl_createVecBlockDirDims (rx, isize, iblocks, bclear,&
                                               cdataType, NEQMAX)
 
 !<description>
@@ -1657,7 +1657,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectDims2 (rx, isize, iblocks, NVAR, bclear,&
+  subroutine lsysbl_createVecBlockDirDims2 (rx, isize, iblocks, NVAR, bclear,&
                                                cdataType, NEQMAX)
 
 !<description>
@@ -1958,7 +1958,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockByDiscrIntl (rblockDiscretisation, Invar, rx,&
+  subroutine lsysbl_createVecBlkByDiscrIntl (rblockDiscretisation, Invar, rx,&
                                                bclear, cdataType, NEQMAX)
 
 !<description>
@@ -2022,7 +2022,7 @@ contains
   end do
 
   ! Create a new vector with that block structure
-  call lsysbl_createVecBlockDirectIntl (rx, Isize(:), Invar, bclear, cdataType, NEQMAX)
+  call lsysbl_createVecBlockDirIntl (rx, Isize(:), Invar, bclear, cdataType, NEQMAX)
 
   ! Initialise further data of the block vector
   rx%p_rblockDiscr => rblockDiscretisation
@@ -2041,7 +2041,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockByDiscrIntl2 (rblockDiscretisation, NVAR, rx,&
+  subroutine lsysbl_createVecBlkByDiscrIntl2 (rblockDiscretisation, NVAR, rx,&
                                                 bclear, cdataType, NEQMAX)
 
 !<description>
@@ -2105,7 +2105,7 @@ contains
   end do
 
   ! Create a new vector with that block structure
-  call lsysbl_createVecBlockDirectIntl2 (rx, Isize(:), NVAR, bclear, cdataType, NEQMAX)
+  call lsysbl_createVecBlockDirIntl2 (rx, Isize(:), NVAR, bclear, cdataType, NEQMAX)
 
   ! Initialise further data of the block vector
   rx%p_rblockDiscr => rblockDiscretisation
