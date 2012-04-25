@@ -154,11 +154,11 @@ contains
 
       ! Set up the discretisation
       call output_line('Setting up discretisation...')
-      call spdiscr_initDiscr_simple (rdisc, EL_Q1, rtria, rbnd)
+      call spdiscr_initDiscr_simple (rdisc, celement, rtria, rbnd)
 
       ! Set up cubature
       call output_line('Setting up cubature rule...')
-      call spdiscr_createDefCubStructure(rdisc, rcub, CUB_GEN_AUTO_G3)
+      call spdiscr_createDefCubStructure(rdisc, rcub, ccubature)
 
       ! Assemble matrix structure
       call output_line('Assembling matrix structure...')
