@@ -855,8 +855,8 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
-    ! Hang the pointer into the vector.
-    rprjVector%p_rdiscreteBC => rprjDiscreteBC
+    ! Assign the BCs to the vector
+    call lsysbl_assignDiscreteBC(rprjVector,rprjDiscreteBC)
 
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the discrete boundary

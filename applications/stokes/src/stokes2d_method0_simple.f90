@@ -86,6 +86,9 @@ contains
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation,rprjDiscretisation
     
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
     type(t_linearForm) :: rlinform
@@ -153,6 +156,10 @@ contains
     ! Viscosity parameter:
     dnu = 1.0_DP
 
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Read the the mesh, refine
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
@@ -171,6 +178,11 @@ contains
     ! a triangulation. Afterwards, we have the coarse mesh.
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a discretisation structure which tells the code which
+    ! finite element to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
     ! solution vector.
@@ -186,7 +198,7 @@ contains
     ! For simplicity, we set up one discretisation structure for the
     ! velocity...
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1),&
-                EL_EM30, CUB_G2X2, rtriangulation, rboundary)
+                EL_EM30, rtriangulation, rboundary)
                 
     ! ...and copy this structure also to the discretisation structure
     ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -198,7 +210,21 @@ contains
     ! structure, as this uses different finite elements for trial and test
     ! functions.
     call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
-        EL_Q0, CUB_G2X2, rdiscretisation%RspatialDiscr(3))
+        EL_Q0, rdiscretisation%RspatialDiscr(3))
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                 
+    ! Create an assembly information structure which tells the code
+    ! the cubature formula to use. Standard: Gauss 3x3.
+    call spdiscr_createDefCubStructure(&  
+        rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_GEN_AUTO_G2)
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create a 3x3 block matrix with the operator
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
@@ -285,7 +311,7 @@ contains
     ! so this is not really necessary - we do this for sure...
     call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
         rdiscretisation%RspatialDiscr(2))
-    
+
     ! Build the first pressure matrix B1.
     ! Again first set up the bilinear form, then call the matrix assembly.
     rform%itermCount = 1
@@ -331,11 +357,15 @@ contains
     call lsyssc_transposeMatrix (rmatrixB2, rmatrix%RmatrixBlock(3,2),&
                                  LSYSSC_TR_VIRTUAL)
 
-    ! Although we could manually create the solution/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (rmatrix,rrhs, .false.)
-    call lsysbl_createVecBlockIndMat (rmatrix,rvector, .false.)
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create RHS and solution vectors
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! Next step: Create a RHS vector, a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (rdiscretisation,rrhs,.true.)
+    call lsysbl_createVectorBlock (rdiscretisation,rvector,.true.)
+    call lsysbl_createVectorBlock (rdiscretisation,rtempBlock,.true.)
 
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
@@ -359,8 +389,11 @@ contains
     ! the equation "div(u) = 0".
     call lsyssc_clearVector(rrhs%RvectorBlock(3))
                                 
-    ! Clear the solution vector on the finest level.
-    call lsysbl_clearVector(rvector)
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Assembly of matrices/vectors finished
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! For implementing boundary conditions, we use a `filter technique with
     ! discretised boundary conditions`. This means, we first have to calculate
@@ -452,12 +485,13 @@ contains
 
     ! The pressure does not need boundary conditions.
 
-    ! Hang the pointer into the vector and matrix. That way, these
+    ! Assign the BC`s to the vectors and the matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    rmatrix%p_rdiscreteBC => rdiscreteBC
-    rrhs%p_rdiscreteBC => rdiscreteBC
-    rvector%p_rdiscreteBC => rdiscreteBC
+    call lsysbl_assignDiscreteBC(rmatrix,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rrhs,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvector,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rtempBlock,rdiscreteBC)
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -469,6 +503,10 @@ contains
     call vecfil_discreteBCsol (rvector)
     call matfil_discreteBC (rmatrix)
 
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a linear solver
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
     ! a filter chain. As the linear solver does not work with
@@ -479,7 +517,7 @@ contains
     ! which implements Dirichlet-conditions into a defect vector.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
-    ! Create a BiCGStab-solver with VANCA preconditioner.
+    ! Create a BiCGStab-solver with VANKA preconditioner.
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process.
     nullify(p_rpreconditioner)
@@ -507,9 +545,22 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Solve the system
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -518,11 +569,15 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
 
-    ! The solution vector is probably not in the way GMV likes it!
-    ! GMV for example does not understand Q1~ vectors!
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Postprocessing of the solution
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! The solution vector is probably not in the way Paraview likes it!
+    ! Paraview for example does not understand Q1~ vectors!
     ! Therefore, we first have to convert the vector to a form that
-    ! GMV understands.
-    ! GMV understands only Q1 solutions! So the task is now to create
+    ! Paraview understands.
+    ! Paraview understands only Q1 solutions! So the task is now to create
     ! a Q1 solution from p_rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
@@ -533,10 +588,10 @@ contains
     call spdiscr_duplicateBlockDiscr (rdiscretisation,rprjDiscretisation)
     
     call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
-                 EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(1))
+                 EL_Q1, rprjDiscretisation%RspatialDiscr(1))
 
     call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-                 EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscr(2))
+                 EL_Q1, rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -664,8 +719,8 @@ contains
     rerrorP%p_DerrorL2 => DerrorPL2
 
     ! Calculate errors of velocity and pressure against analytic solutions.
-    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection);
-    call pperr_scalarVec(rerrorP, funcPressure2D, rcollection);
+    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection, rcubatureInfo)
+    call pperr_scalarVec(rerrorP, funcPressure2D, rcollection, rcubatureInfo)
 
     ! Print the errors.
     call output_lbrk()
@@ -674,6 +729,10 @@ contains
     call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(DerrorUH1(1), 10)) &
                                 // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
     call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Clean up
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
@@ -696,6 +755,9 @@ contains
     call lsyssc_releaseMatrix (rmatrixB2)
     call lsyssc_releaseMatrix (rmatrixB1)
     
+    ! Release the cubature info structure.
+    call spdiscr_releaseCubStructure(rcubatureInfo)
+
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC (rprjDiscreteBC)
     call bcasm_releaseDiscreteBC (rdiscreteBC)

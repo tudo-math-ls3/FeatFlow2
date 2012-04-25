@@ -67,6 +67,9 @@ module stokes2d_method2_sv
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
     
     ! A system matrix for that specific level.
     type(t_matrixBlock) :: rmatrix
@@ -85,7 +88,7 @@ module stokes2d_method2_sv
 !</typeblock>
 
 
-!<typeblock description="Application-specific type block for stokes problem">
+!<typeblock description="Application-specific type block for Stokes problem">
 
   type t_problem
   
@@ -222,12 +225,18 @@ contains
     
     ! An object for the block discretisation on one level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
-
+    
+    ! A cubature information structure on one level
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
+      
+      ! Get the cubature information structure
+      p_rcubatureInfo => rproblem%RlevelInfo(i)%rcubatureInfo
       
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies 3 blocks in the
@@ -250,8 +259,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   p_rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30,CUB_G2X2, &
-                  p_rtriangulation, p_rboundary)
+                  EL_EM30, p_rtriangulation, p_rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -263,7 +271,15 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1), &
-          EL_Q0, CUB_G2X2, p_rdiscretisation%RspatialDiscr(3))
+          EL_Q0, p_rdiscretisation%RspatialDiscr(3))
+      
+      ! Set up an cubature info structure to tell the code which cubature
+      ! formula to use
+      ! Create an assembly information structure which tells the code
+      ! the cubature formula to use. Standard: Gauss 3x3.
+      call spdiscr_createDefCubStructure(&  
+          p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
+          CUB_GEN_AUTO_G3)
     end do
                                    
   end subroutine
@@ -302,12 +318,17 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
+    ! A cubature information structure
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
       
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
       
+      ! Get the cubature information structure
+      p_rcubatureInfo => rproblem%RlevelInfo(i)%rcubatureInfo
+            
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
@@ -460,11 +481,10 @@ contains
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
-    ! Although we could manually create the solution/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rvector, .false.)
+    ! Next step: Create a RHS vector and a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
+    call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
@@ -489,11 +509,13 @@ contains
     ! Note that the vector is unsorted after calling this routine!
     call linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS_X_2D,rproblem%rcollection)
+              p_rrhs%RvectorBlock(1),coeff_RHS_X_2D,&
+              rproblem%rcollection)
 
     call linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(2),coeff_RHS_Y_2D,rproblem%rcollection)
+              p_rrhs%RvectorBlock(2),coeff_RHS_Y_2D,&
+              rproblem%rcollection)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
@@ -665,12 +687,12 @@ contains
       ! Discretise the boundary conditions.
       call st1_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%rdiscreteBC)
                                
-      ! Hang the pointer into the the matrix. That way, these
+      ! Assign the BC`s to the vectors and the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
       p_rdiscreteBC => rproblem%RlevelInfo(i)%rdiscreteBC
-      
-      p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
+
+      call lsysbl_assignDiscreteBC(p_rmatrix,p_rdiscreteBC)
       
     end do
 
@@ -682,8 +704,8 @@ contains
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
-    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
-    p_rvector%p_rdiscreteBC => p_rdiscreteBC
+    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
+    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
                 
   end subroutine
 
@@ -871,10 +893,19 @@ contains
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    call linsol_initStructure (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-    call linsol_initData (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initStructure (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -953,13 +984,11 @@ contains
     
     call spdiscr_deriveSimpleDiscrSc (&
                  p_rvector%p_rblockDiscr%RspatialDiscr(1), &
-                 EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscr(1))
+                 EL_Q1, rprjDiscretisation%RspatialDiscr(1))
 
     call spdiscr_deriveSimpleDiscrSc (&
                  p_rvector%p_rblockDiscr%RspatialDiscr(2), &
-                 EL_Q1, CUB_G2X2, &
-                 rprjDiscretisation%RspatialDiscr(2))
+                 EL_Q1, rprjDiscretisation%RspatialDiscr(2))
                  
     ! The pressure discretisation substructure stays the old.
     !
@@ -1051,10 +1080,16 @@ contains
   ! Error data structures for post-processing
   type(t_errorScVec) :: rerrorU, rerrorP
 
+  ! A cubature information structure
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+
   ! Error arrays for post-processing
   real(DP), dimension(2), target :: DerrorUL2, DerrorUH1
   real(DP), dimension(1), target :: DerrorPL2
 
+    ! Get the cubature information structure
+    p_rcubatureInfo => rproblem%RlevelInfo(rproblem%ilvmax)%rcubatureInfo
+    
     ! Store the viscosity parameter nu in the collection's quick access array
     rproblem%rcollection%DquickAccess(1) = rproblem%dnu
 
@@ -1068,8 +1103,8 @@ contains
     rerrorP%p_DerrorL2 => DerrorPL2
 
     ! Calculate errors of velocity and pressure against analytic solutions.
-    call pperr_scalarVec(rerrorU, funcVelocity2D, rproblem%rcollection);
-    call pperr_scalarVec(rerrorP, funcPressure2D, rproblem%rcollection);
+    call pperr_scalarVec(rerrorU, funcVelocity2D, rproblem%rcollection, rcubatureInfo=p_rcubatureInfo)
+    call pperr_scalarVec(rerrorP, funcPressure2D, rproblem%rcollection, rcubatureInfo=p_rcubatureInfo)
 
     ! Print the errors.
     call output_lbrk()
@@ -1173,6 +1208,9 @@ contains
   integer :: i
 
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Release the cubature info structure.
+      call spdiscr_releaseCubStructure(rproblem%RlevelInfo(i)%rcubatureInfo)
+
       ! Remove the block discretisation structure and all substructures.
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
       

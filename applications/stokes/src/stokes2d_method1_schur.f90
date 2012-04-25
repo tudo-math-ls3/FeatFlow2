@@ -78,6 +78,9 @@ module stokes2d_method1_schur
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
@@ -172,6 +175,9 @@ contains
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
+    ! Viscosity parameter nu = 1/Re
+    real(DP) :: dnu
+    
     ! Error indicator during initialisation of the solver
     integer :: ierror
     
@@ -202,6 +208,13 @@ contains
     NLMIN = 2
     NLMAX = 7
     
+    ! Viscosity parameter:
+    dnu = 1.0_DP
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Read the domain, read the mesh, refine
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
@@ -213,7 +226,7 @@ contains
     ! it to rboundary.
     call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
-    ! Now read in the basic triangulation.
+    ! Now read in the basic triangulation into our coarse level.
     call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
                              trim(spredir)//'/QUAD.tri', rboundary)
     
@@ -221,8 +234,8 @@ contains
     call tria_quickRefine2LevelOrdering (NLMIN-1,&
         Rlevels(NLMIN)%rtriangulation,rboundary)
     
-    ! And create information about adjacencies and everything one needs from
-    ! a triangulation.
+    ! And create information about adjacencies and everything one needs
+    ! from a triangulation.
     call tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
         rboundary)
     
@@ -235,9 +248,14 @@ contains
       
       ! Create a standard mesh
       call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
-        rboundary)
+          rboundary)
     
     end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a discretisation structure which tells the code which
+    ! finite element to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
@@ -251,14 +269,31 @@ contains
     do i = NLMIN, NLMAX
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          EL_EM30_NEW, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
+          EL_EM30_NEW, Rlevels(i)%rtriangulation, rboundary)
       call spdiscr_duplicateDiscrSc (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_Q0, CUB_G2X2, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
+          EL_Q0, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
     
     end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                 
+    do i = NLMIN, NLMAX
+      ! Create an cubature information structure which tells the code
+      ! the cubature formula to use. Standard: Gauss 3x3.
+      call spdiscr_createDefCubStructure(&  
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rcubatureInfo,CUB_GEN_AUTO_G2)
+    end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create a 3x3 block matrix with the operator
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     do i = NLMIN, NLMAX
     
@@ -282,7 +317,7 @@ contains
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
       
       ! Assemble a Laplace matrix for A1
-      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1))
+      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,dnu)
       
       ! Create A2 as a shared copy of A1
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
@@ -335,15 +370,25 @@ contains
     call stdop_assembleSimpleMatrix (RmatrixS(1)%RmatrixBlock(1,1),&
                                      DER_FUNC2D, DER_FUNC2D)
     
-    ! -------------------------------------------------------------------------
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create RHS and solution vectors
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ! Create two vectors and clear them
-    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhs,.true.)
-    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvector,.true.)
+    ! Next step: Create a RHS vector, a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rrhs,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvector,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rtempBlock,.true.)
 
     ! Remark:
     ! As in this case the right-hand-side is zero everywhere, we will not call
     ! the linearformevaluation here to compress the code a bit.
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Assembly of matrices/vectors finished
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Now implement the boundary conditions
     do i = NLMIN, NLMAX
@@ -369,17 +414,34 @@ contains
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
           rboundaryRegion,Rlevels(i)%rdiscreteBC,getBoundaryValues_2D)
 
-      ! Hang in the BC into the matrix and filter it
-      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
+      ! The pressure does not need boundary conditions.
+      ! Assign the BC`s to the vectors and the matrix. That way, these
+      ! boundary conditions are always connected to that matrix and that
+      ! vector.
+      call lsysbl_assignDiscreteBC(Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
+
+      
+      ! Next step is to implement boundary conditions into the matrix.
+      ! This is done using a matrix filter for discrete boundary conditions.
+      ! The discrete boundary conditions are already attached to the
+      ! matrix. Call the appropriate matrix filter that modifies the matrix
+      ! according to the boundary conditions.
       call matfil_discreteBC (Rlevels(i)%rmatrix)
     
     end do
 
-    ! Filter rhs and solution vectors.
-    rrhs%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
-    rvector%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
+    ! Also implement the discrete boundary conditions on the finest level
+    ! onto our right-hand-side and solution vectors.
+
+    call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvector,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rtempBlock,Rlevels(NLMAX)%rdiscreteBC)
     call vecfil_discreteBCrhs (rrhs)
     call vecfil_discreteBCsol (rvector)
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a linear solver
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Create a filter chain
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
@@ -449,7 +511,7 @@ contains
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
-    ! Attach the system matrix to the solver.
+    ! Attach the system matrices to the solver.
     allocate(Rmatrices(NLMIN:NLMAX))
     do i = NLMIN, NLMAX
       call lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
@@ -460,15 +522,34 @@ contains
       call lsysbl_releaseMatrix (Rmatrices(i))
     end do
     deallocate(Rmatrices)
-    
-    ! Initialise structure/data of the solver.
+
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Solve the system
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Finally solve the system.
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Postprocessing of the solution
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     ! Project the solution sub-vectors for the output
     nullify(p_Du1)
@@ -497,7 +578,7 @@ contains
     deallocate(p_Du1)
 
     ! Store the viscosity parameter nu in the collection's quick access array
-    rcollection%DquickAccess(1) = 1.0_DP
+    rcollection%DquickAccess(1) = dnu
 
     ! Set up the error structure for velocity
     rerrorU%p_RvecCoeff => rvector%RvectorBlock(1:2)
@@ -509,8 +590,8 @@ contains
     rerrorP%p_DerrorL2 => DerrorPL2
 
     ! Calculate errors of velocity and pressure against analytic solutions.
-    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection);
-    call pperr_scalarVec(rerrorP, funcPressure2D, rcollection);
+    call pperr_scalarVec(rerrorU, funcVelocity2D, rcollection, Rlevels(NLMAX)%rcubatureInfo)
+    call pperr_scalarVec(rerrorP, funcPressure2D, rcollection, Rlevels(NLMAX)%rcubatureInfo)
 
     ! Print the errors.
     call output_lbrk()
@@ -520,7 +601,14 @@ contains
                                 // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
     call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
 
-    ! Clean up the mess
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Clean up
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! We are finished - but not completely!
+    ! Now, clean up so that all the memory is available again.
+    !
+    ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)
     call linsol_releaseSolver (p_rsolverNode)
@@ -538,6 +626,7 @@ contains
       call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
       call lsyssc_releaseMatrix (Rlevels(i)%rmatrixB2)
       call lsyssc_releaseMatrix (Rlevels(i)%rmatrixB1)
+      call spdiscr_releaseCubStructure(Rlevels(i)%rcubatureInfo)
       call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
       call tria_done (Rlevels(i)%rtriangulation)

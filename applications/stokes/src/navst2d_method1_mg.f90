@@ -63,6 +63,9 @@ module navst2d_method1_mg
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Cubature info structure which encapsules the cubature formula
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
@@ -227,6 +230,10 @@ contains
     ! Fixed damping parameter for non-linear loop
     dnlDamping = 1.0_DP
     
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Read the domain, read the mesh, refine
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
@@ -246,8 +253,8 @@ contains
     call tria_quickRefine2LevelOrdering (NLMIN-1,&
         Rlevels(NLMIN)%rtriangulation,rboundary)
     
-    ! And create information about adjacencies and everything one needs from
-    ! a triangulation.
+    ! And create information about adjacencies and everything one needs
+    ! from a triangulation.
     call tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
         rboundary)
     
@@ -260,9 +267,14 @@ contains
       
       ! Create a standard mesh
       call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
-        rboundary)
+          rboundary)
     
     end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a discretisation structure which tells the code which
+    ! finite element to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
@@ -283,7 +295,7 @@ contains
       ! velocity...
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          EL_EM30, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
+          EL_EM30, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory,
@@ -296,9 +308,26 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_Q0, CUB_G3X3, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
+          EL_Q0, Rlevels(i)%rdiscretisation%RspatialDiscr(3))
     
     end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up an cubature info structure to tell the code which cubature
+    ! formula to use
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                 
+    do i = NLMIN, NLMAX
+      ! Create an cubature information structure which tells the code
+      ! the cubature formula to use. Standard: Gauss 3x3.
+      call spdiscr_createDefCubStructure(&  
+          Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+          Rlevels(i)%rcubatureInfo,CUB_GEN_AUTO_G3)
+    end do
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Create a 3x3 block matrix with the operator
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     do i = NLMIN, NLMAX
     
@@ -452,7 +481,7 @@ contains
           Rlevels(i)%rmatrix%RmatrixBlock(3,2),LSYSSC_TR_ALL)
 
       ! Create the solution vector for this level
-      call lsysbl_createVecBlockIndMat (Rlevels(i)%rmatrix,Rlevels(i)%rvecSol,.false.)
+      call lsysbl_createVectorBlock (Rlevels(i)%rdiscretisation,Rlevels(i)%rvecSol,.true.)
     
     end do
 
@@ -484,11 +513,11 @@ contains
     rupwind%dnu = dnu
     rupwind%dupsam = dupsam
 
-    ! Although we could manually create the defect/RHS vector,
-    ! the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhs,.false.)
-    call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvecDef,.false.)
+    ! Next step: Create a RHS vector, a solution vector and a temporary
+    ! vector. All are filled with zero.
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rrhs,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecDef,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rtempBlock,.true.)
 
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
@@ -516,6 +545,12 @@ contains
                                 
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(Rlevels(NLMAX)%rvecSol)
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Assembly of matrices/vectors finished
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     do i = NLMIN, NLMAX
 
@@ -623,8 +658,8 @@ contains
       ! Hang the pointer into the vector and matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
-      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
-      Rlevels(i)%rvecSol%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
+      call lsysbl_assignDiscreteBC(Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
+      call lsysbl_assignDiscreteBC(Rlevels(i)%rvecSol,Rlevels(i)%rdiscreteBC)
 
       ! Next step is to implement boundary conditions into the matrix.
       ! This is done using a matrix filter for discrete boundary conditions.
@@ -637,13 +672,14 @@ contains
 
     ! Also implement the discrete boundary conditions on the finest level
     ! onto our right-hand-side and solution vector.
-    rrhs%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
-    rvecDef%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
+    call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecDef,Rlevels(NLMAX)%rdiscreteBC)
     call vecfil_discreteBCrhs (rrhs)
     call vecfil_discreteBCsol (Rlevels(NLMAX)%rvecSol)
 
-    ! Create a temporary vector we need that for some preparation.
-    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .false.)
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up a linear solver
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -729,12 +765,19 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     if(.not. bNavier) then
       ! Initialise solver data
       call linsol_initData (p_rsolverNode, ierror)
-      if (ierror .ne. LINSOL_ERR_NOERROR) stop
+      if (ierror .ne. LINSOL_ERR_NOERROR) then
+        call output_line("Matrix singular!",OU_CLASS_ERROR)
+        call sys_halt()
+      end if
     end if
 
     ! Okay, everything is set up - so we can start our nonlinear iteration
@@ -768,6 +811,10 @@ contains
         if (ierror .ne. LINSOL_ERR_NOERROR) stop
         
       end if
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Solve the linear sussystem
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! Call the preconditioner - which is our linear solver
       call linsol_precondDefect(p_rsolverNode, rvecDef)
@@ -827,7 +874,8 @@ contains
             ! Use streamline-diffusion
             call conv_streamlineDiffusion2d(Rlevels(i)%rvecSol, &
                  Rlevels(i)%rvecSol, 1.0_DP, 0.0_DP, rsd, CONV_MODMATRIX, &
-                 Rlevels(i)%rmatrix%RmatrixBlock(1,1))
+                 Rlevels(i)%rmatrix%RmatrixBlock(1,1), &
+                 rcubatureInfo=Rlevels(i)%rcubatureInfo)
           
           case (2)
             ! Use upwind
@@ -879,6 +927,10 @@ contains
       ! Proceed with next non-linear iteration
       
     end do ! nl
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Postprocessing of the solution
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Project the velocity onto the mesh`s vertices and the pressure onto the
     ! mesh`s cells.
@@ -893,9 +945,9 @@ contains
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_navst_mg.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_navst_mg.vtk')
 
     ! Write velocity field
     call ucd_addVarVertBasedVec(rexport,'velocity',p_Du1,p_Du2)
@@ -906,6 +958,10 @@ contains
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Clean up
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     ! And release the memory
     deallocate(p_Dp)
@@ -948,6 +1004,11 @@ contains
       call lsyssc_releaseMatrix (Rlevels(i)%rmatrixStokes)
     end do
     
+    ! Release the cubature info structures.
+    do i = NLMAX, NLMIN, -1
+      call spdiscr_releaseCubStructure(Rlevels(i)%rcubatureInfo)
+    end do
+
     ! Release our discrete version of the boundary conditions
     do i = NLMAX, NLMIN, -1
       call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
