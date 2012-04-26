@@ -1,151 +1,153 @@
 
 Calculating 2D Stokes-Problem 0 - simple
 ----------------------------------------
-BiCGStab: Iteration 0,  !!RES!! = 8.571182566547977E-01
-BiCGStab: Iteration 1,  !!RES!! = 5.224453886606242E-01
-BiCGStab: Iteration 2,  !!RES!! = 3.949502289030725E-01
-BiCGStab: Iteration 3,  !!RES!! = 3.549195907223497E-01
-BiCGStab: Iteration 4,  !!RES!! = 6.660679731529222E-01
-BiCGStab: Iteration 5,  !!RES!! = 2.507841159732844E-01
-BiCGStab: Iteration 6,  !!RES!! = 2.352367627855577E-01
-BiCGStab: Iteration 7,  !!RES!! = 2.017762546306356E-01
-BiCGStab: Iteration 8,  !!RES!! = 3.439538131825641E+00
-BiCGStab: Iteration 9,  !!RES!! = 2.172236655430782E-01
-BiCGStab: Iteration 10,  !!RES!! = 1.370276132626617E-01
-BiCGStab: Iteration 11,  !!RES!! = 3.533458429062685E-01
-BiCGStab: Iteration 12,  !!RES!! = 2.890253841816470E-01
-BiCGStab: Iteration 13,  !!RES!! = 1.408387079184749E-01
-BiCGStab: Iteration 14,  !!RES!! = 1.191338961828592E-01
-BiCGStab: Iteration 15,  !!RES!! = 1.188954594899900E-01
-BiCGStab: Iteration 16,  !!RES!! = 1.253293142671978E-01
-BiCGStab: Iteration 17,  !!RES!! = 1.161131768918365E-01
-BiCGStab: Iteration 18,  !!RES!! = 1.163691848971308E-01
-BiCGStab: Iteration 19,  !!RES!! = 2.124438407000506E-01
-BiCGStab: Iteration 20,  !!RES!! = 1.490670760930773E-01
-BiCGStab: Iteration 21,  !!RES!! = 1.133269009510842E-01
-BiCGStab: Iteration 22,  !!RES!! = 8.734597880707531E-02
-BiCGStab: Iteration 23,  !!RES!! = 9.468234646224566E-02
-BiCGStab: Iteration 24,  !!RES!! = 2.101797828214940E-02
-BiCGStab: Iteration 25,  !!RES!! = 1.851218056317878E-02
-BiCGStab: Iteration 26,  !!RES!! = 3.131129248681090E-02
-BiCGStab: Iteration 27,  !!RES!! = 2.836949317272013E-02
-BiCGStab: Iteration 28,  !!RES!! = 1.830700808464064E-01
-BiCGStab: Iteration 29,  !!RES!! = 1.023331266261105E+00
-BiCGStab: Iteration 30,  !!RES!! = 1.168590437325088E-01
-BiCGStab: Iteration 31,  !!RES!! = 6.279614803774105E-03
-BiCGStab: Iteration 32,  !!RES!! = 8.536584867021217E-03
-BiCGStab: Iteration 33,  !!RES!! = 5.809480388975947E-03
-BiCGStab: Iteration 34,  !!RES!! = 3.775565018443088E-03
-BiCGStab: Iteration 35,  !!RES!! = 3.632651823063780E-03
-BiCGStab: Iteration 36,  !!RES!! = 6.475721928799865E-03
-BiCGStab: Iteration 37,  !!RES!! = 6.015397333363618E-03
-BiCGStab: Iteration 38,  !!RES!! = 5.226679195949240E-03
-BiCGStab: Iteration 39,  !!RES!! = 6.326525222702804E-03
-BiCGStab: Iteration 40,  !!RES!! = 5.044963676147964E-03
-BiCGStab: Iteration 41,  !!RES!! = 1.678114738992523E-03
-BiCGStab: Iteration 42,  !!RES!! = 1.501780634698384E-03
-BiCGStab: Iteration 43,  !!RES!! = 9.194832603295101E-04
-BiCGStab: Iteration 44,  !!RES!! = 8.940504253687909E-04
-BiCGStab: Iteration 45,  !!RES!! = 8.168177750293959E-04
-BiCGStab: Iteration 46,  !!RES!! = 1.026621692663917E-03
-BiCGStab: Iteration 47,  !!RES!! = 1.082804882155618E-02
-BiCGStab: Iteration 48,  !!RES!! = 1.384376105827279E-03
-BiCGStab: Iteration 49,  !!RES!! = 1.392347299177240E-03
-BiCGStab: Iteration 50,  !!RES!! = 2.707219510547945E-03
-BiCGStab: Iteration 51,  !!RES!! = 1.530151211105237E-03
-BiCGStab: Iteration 52,  !!RES!! = 9.978956781050799E-03
-BiCGStab: Iteration 53,  !!RES!! = 2.883459750438697E-03
-BiCGStab: Iteration 54,  !!RES!! = 1.505518714806044E-03
-BiCGStab: Iteration 55,  !!RES!! = 1.490968587999836E-03
-BiCGStab: Iteration 56,  !!RES!! = 1.502732922745982E-03
-BiCGStab: Iteration 57,  !!RES!! = 1.530359895243572E-03
-BiCGStab: Iteration 58,  !!RES!! = 1.781678425600498E+00
-BiCGStab: Iteration 59,  !!RES!! = 4.232227488229634E-03
-BiCGStab: Iteration 60,  !!RES!! = 2.466510042565063E-03
-BiCGStab: Iteration 61,  !!RES!! = 2.802408962088569E-03
-BiCGStab: Iteration 62,  !!RES!! = 2.552053703311204E-03
-BiCGStab: Iteration 63,  !!RES!! = 3.467105026850758E-03
-BiCGStab: Iteration 64,  !!RES!! = 2.757259993445851E-03
-BiCGStab: Iteration 65,  !!RES!! = 4.570565957928727E-02
-BiCGStab: Iteration 66,  !!RES!! = 5.753609828212302E-02
-BiCGStab: Iteration 67,  !!RES!! = 2.849120921930955E-03
-BiCGStab: Iteration 68,  !!RES!! = 2.492866995764667E-03
-BiCGStab: Iteration 69,  !!RES!! = 1.771400544063395E-02
-BiCGStab: Iteration 70,  !!RES!! = 1.981543780602578E-02
-BiCGStab: Iteration 71,  !!RES!! = 4.679905662185323E-04
-BiCGStab: Iteration 72,  !!RES!! = 6.486837673422038E-04
-BiCGStab: Iteration 73,  !!RES!! = 6.325011797240724E-04
-BiCGStab: Iteration 74,  !!RES!! = 5.261621166973738E-04
-BiCGStab: Iteration 75,  !!RES!! = 4.674747053348651E-03
-BiCGStab: Iteration 76,  !!RES!! = 4.375941056522908E-04
-BiCGStab: Iteration 77,  !!RES!! = 1.685282587018430E-03
-BiCGStab: Iteration 78,  !!RES!! = 4.559943327853239E-04
-BiCGStab: Iteration 79,  !!RES!! = 1.554800482099474E-03
-BiCGStab: Iteration 80,  !!RES!! = 6.400257806596887E-04
-BiCGStab: Iteration 81,  !!RES!! = 1.480349893379180E-03
-BiCGStab: Iteration 82,  !!RES!! = 5.510193747937581E-04
-BiCGStab: Iteration 83,  !!RES!! = 3.010591095290740E-03
-BiCGStab: Iteration 84,  !!RES!! = 1.782927691986760E-04
-BiCGStab: Iteration 85,  !!RES!! = 1.551145817486309E-03
-BiCGStab: Iteration 86,  !!RES!! = 6.638718495890246E-04
-BiCGStab: Iteration 87,  !!RES!! = 7.788850613269453E-04
-BiCGStab: Iteration 88,  !!RES!! = 4.503366503485275E-04
-BiCGStab: Iteration 89,  !!RES!! = 5.671640123857699E-04
-BiCGStab: Iteration 90,  !!RES!! = 2.102458438108996E-04
-BiCGStab: Iteration 91,  !!RES!! = 2.043421045713286E-04
-BiCGStab: Iteration 92,  !!RES!! = 1.821929527241829E-04
-BiCGStab: Iteration 93,  !!RES!! = 2.494869098074762E-03
-BiCGStab: Iteration 94,  !!RES!! = 1.421733890102299E-04
-BiCGStab: Iteration 95,  !!RES!! = 9.297718112088659E-05
-BiCGStab: Iteration 96,  !!RES!! = 9.990978038130948E-05
-BiCGStab: Iteration 97,  !!RES!! = 9.741410809772898E-05
-BiCGStab: Iteration 98,  !!RES!! = 9.364576654894169E-05
-BiCGStab: Iteration 99,  !!RES!! = 1.479936122142059E-04
-BiCGStab: Iteration 100,  !!RES!! = 5.438348316887263E-05
-BiCGStab: Iteration 101,  !!RES!! = 3.322741349650753E-05
-BiCGStab: Iteration 102,  !!RES!! = 3.168667928396250E-05
-BiCGStab: Iteration 103,  !!RES!! = 2.111028502300323E-05
-BiCGStab: Iteration 104,  !!RES!! = 5.961474805688386E-05
-BiCGStab: Iteration 105,  !!RES!! = 5.844099797231310E-05
-BiCGStab: Iteration 106,  !!RES!! = 6.727512224763546E-05
-BiCGStab: Iteration 107,  !!RES!! = 8.430007573324951E-05
-BiCGStab: Iteration 108,  !!RES!! = 7.686686213136132E-05
-BiCGStab: Iteration 109,  !!RES!! = 1.257430336869965E-04
-BiCGStab: Iteration 110,  !!RES!! = 6.841725415050365E-06
+BiCGStab: Iteration 0,  !!RES!! = 8.571182566547959E-01
+BiCGStab: Iteration 1,  !!RES!! = 5.224453886606231E-01
+BiCGStab: Iteration 2,  !!RES!! = 3.949502289030712E-01
+BiCGStab: Iteration 3,  !!RES!! = 3.549195907223489E-01
+BiCGStab: Iteration 4,  !!RES!! = 6.660679731529324E-01
+BiCGStab: Iteration 5,  !!RES!! = 2.507841159732839E-01
+BiCGStab: Iteration 6,  !!RES!! = 2.352367627855483E-01
+BiCGStab: Iteration 7,  !!RES!! = 2.017762546306325E-01
+BiCGStab: Iteration 8,  !!RES!! = 3.439538131877640E+00
+BiCGStab: Iteration 9,  !!RES!! = 2.172236655426139E-01
+BiCGStab: Iteration 10,  !!RES!! = 1.370276132626520E-01
+BiCGStab: Iteration 11,  !!RES!! = 3.533458429204469E-01
+BiCGStab: Iteration 12,  !!RES!! = 2.890253841994753E-01
+BiCGStab: Iteration 13,  !!RES!! = 1.408387079149517E-01
+BiCGStab: Iteration 14,  !!RES!! = 1.191338961828676E-01
+BiCGStab: Iteration 15,  !!RES!! = 1.188954594900627E-01
+BiCGStab: Iteration 16,  !!RES!! = 1.253293142682636E-01
+BiCGStab: Iteration 17,  !!RES!! = 1.161131767025103E-01
+BiCGStab: Iteration 18,  !!RES!! = 1.163691861513268E-01
+BiCGStab: Iteration 19,  !!RES!! = 2.124303771703098E-01
+BiCGStab: Iteration 20,  !!RES!! = 1.493771521354288E-01
+BiCGStab: Iteration 21,  !!RES!! = 3.305465859404018E-01
+BiCGStab: Iteration 22,  !!RES!! = 9.264981886185948E-02
+BiCGStab: Iteration 23,  !!RES!! = 9.882928710493767E-02
+BiCGStab: Iteration 24,  !!RES!! = 2.174914254858329E-02
+BiCGStab: Iteration 25,  !!RES!! = 1.871549525214358E-02
+BiCGStab: Iteration 26,  !!RES!! = 2.681166608570916E-02
+BiCGStab: Iteration 27,  !!RES!! = 3.507969480104578E-02
+BiCGStab: Iteration 28,  !!RES!! = 1.871381122688612E-01
+BiCGStab: Iteration 29,  !!RES!! = 1.269505476134551E+00
+BiCGStab: Iteration 30,  !!RES!! = 3.508952837078991E+00
+BiCGStab: Iteration 31,  !!RES!! = 1.610735042743643E-02
+BiCGStab: Iteration 32,  !!RES!! = 6.945307163651700E-03
+BiCGStab: Iteration 33,  !!RES!! = 6.453098393128749E-03
+BiCGStab: Iteration 34,  !!RES!! = 7.942613903840831E-03
+BiCGStab: Iteration 35,  !!RES!! = 5.369782821142221E-03
+BiCGStab: Iteration 36,  !!RES!! = 5.640014849753766E-03
+BiCGStab: Iteration 37,  !!RES!! = 1.124590978126087E-02
+BiCGStab: Iteration 38,  !!RES!! = 7.206975409856040E-03
+BiCGStab: Iteration 39,  !!RES!! = 8.829281057241449E-03
+BiCGStab: Iteration 40,  !!RES!! = 4.096022308306352E-03
+BiCGStab: Iteration 41,  !!RES!! = 1.685266738806409E-03
+BiCGStab: Iteration 42,  !!RES!! = 1.639247418049922E-03
+BiCGStab: Iteration 43,  !!RES!! = 1.864928217959677E-03
+BiCGStab: Iteration 44,  !!RES!! = 3.851729799954383E-03
+BiCGStab: Iteration 45,  !!RES!! = 3.312067607377233E-03
+BiCGStab: Iteration 46,  !!RES!! = 3.062965960587711E-03
+BiCGStab: Iteration 47,  !!RES!! = 1.804201897236719E-03
+BiCGStab: Iteration 48,  !!RES!! = 1.610427266625450E-03
+BiCGStab: Iteration 49,  !!RES!! = 1.545390193143747E-03
+BiCGStab: Iteration 50,  !!RES!! = 1.560368532249504E-03
+BiCGStab: Iteration 51,  !!RES!! = 1.566476346811851E-03
+BiCGStab: Iteration 52,  !!RES!! = 1.572802731605932E-03
+BiCGStab: Iteration 53,  !!RES!! = 1.654359565011213E-03
+BiCGStab: Iteration 54,  !!RES!! = 3.884572611579614E-03
+BiCGStab: Iteration 55,  !!RES!! = 1.435890108459581E-03
+BiCGStab: Iteration 56,  !!RES!! = 1.362746186497725E-03
+BiCGStab: Iteration 57,  !!RES!! = 2.651845671699995E-03
+BiCGStab: Iteration 58,  !!RES!! = 3.986455827044350E-02
+BiCGStab: Iteration 59,  !!RES!! = 4.553019221485488E-03
+BiCGStab: Iteration 60,  !!RES!! = 1.454260076763917E-02
+BiCGStab: Iteration 61,  !!RES!! = 9.446259504998625E-03
+BiCGStab: Iteration 62,  !!RES!! = 1.451369064244319E-02
+BiCGStab: Iteration 63,  !!RES!! = 1.526762169791881E-03
+BiCGStab: Iteration 64,  !!RES!! = 1.815641124066855E-03
+BiCGStab: Iteration 65,  !!RES!! = 1.656814535366267E-03
+BiCGStab: Iteration 66,  !!RES!! = 5.551048788533024E-04
+BiCGStab: Iteration 67,  !!RES!! = 5.222319826583228E-04
+BiCGStab: Iteration 68,  !!RES!! = 4.473849059101854E-04
+BiCGStab: Iteration 69,  !!RES!! = 4.086376643738690E-04
+BiCGStab: Iteration 70,  !!RES!! = 2.486471155620487E-04
+BiCGStab: Iteration 71,  !!RES!! = 3.009356102262680E-04
+BiCGStab: Iteration 72,  !!RES!! = 3.341583115989658E-04
+BiCGStab: Iteration 73,  !!RES!! = 3.334838309856090E-04
+BiCGStab: Iteration 74,  !!RES!! = 4.657115752412867E-04
+BiCGStab: Iteration 75,  !!RES!! = 4.515298988636188E-04
+BiCGStab: Iteration 76,  !!RES!! = 1.215360918787088E-02
+BiCGStab: Iteration 77,  !!RES!! = 6.092239648136762E-03
+BiCGStab: Iteration 78,  !!RES!! = 7.256665012367983E-04
+BiCGStab: Iteration 79,  !!RES!! = 9.059293486009907E-04
+BiCGStab: Iteration 80,  !!RES!! = 6.831419548380781E-04
+BiCGStab: Iteration 81,  !!RES!! = 1.326992298211648E-03
+BiCGStab: Iteration 82,  !!RES!! = 6.027816022874467E-04
+BiCGStab: Iteration 83,  !!RES!! = 2.648938892182406E-04
+BiCGStab: Iteration 84,  !!RES!! = 1.348725539190732E-04
+BiCGStab: Iteration 85,  !!RES!! = 1.636164785415646E-04
+BiCGStab: Iteration 86,  !!RES!! = 1.970205053186476E-04
+BiCGStab: Iteration 87,  !!RES!! = 1.431844022652650E-04
+BiCGStab: Iteration 88,  !!RES!! = 2.000934928410593E-04
+BiCGStab: Iteration 89,  !!RES!! = 6.384651963616106E-05
+BiCGStab: Iteration 90,  !!RES!! = 5.244152430408671E-05
+BiCGStab: Iteration 91,  !!RES!! = 5.026605199470089E-05
+BiCGStab: Iteration 92,  !!RES!! = 7.658651691380741E-05
+BiCGStab: Iteration 93,  !!RES!! = 6.634699313247024E-05
+BiCGStab: Iteration 94,  !!RES!! = 6.240958688244747E-05
+BiCGStab: Iteration 95,  !!RES!! = 5.668919355665016E-05
+BiCGStab: Iteration 96,  !!RES!! = 5.156847596219138E-05
+BiCGStab: Iteration 97,  !!RES!! = 4.576558861839194E-05
+BiCGStab: Iteration 98,  !!RES!! = 3.309681396774708E-05
+BiCGStab: Iteration 99,  !!RES!! = 3.223689476181717E-05
+BiCGStab: Iteration 100,  !!RES!! = 1.476355769116672E-04
+BiCGStab: Iteration 101,  !!RES!! = 5.569857666632749E-05
+BiCGStab: Iteration 102,  !!RES!! = 1.158095435111869E-04
+BiCGStab: Iteration 103,  !!RES!! = 4.990329089752667E-05
+BiCGStab: Iteration 104,  !!RES!! = 4.053793688474454E-05
+BiCGStab: Iteration 105,  !!RES!! = 4.084865127370646E-05
+BiCGStab: Iteration 106,  !!RES!! = 3.980484449828261E-05
+BiCGStab: Iteration 107,  !!RES!! = 7.724427850848523E-05
+BiCGStab: Iteration 108,  !!RES!! = 1.868269356240507E-04
+BiCGStab: Iteration 109,  !!RES!! = 6.354975245337033E-05
+BiCGStab: Iteration 110,  !!RES!! = 5.203571879975986E-05
+BiCGStab: Iteration 111,  !!RES!! = 2.336924906256501E-05
+BiCGStab: Iteration 112,  !!RES!! = 5.789540217599180E-06
 
 BiCGStab statistics:
 
-Iterations              : 110
-!!INITIAL RES!!         : 8.571182566547977E-01
-!!RES!!                 : 6.841725415050365E-06
-!!RES!!/!!INITIAL RES!! : 7.982242079118206E-06
+Iterations              : 112
+!!INITIAL RES!!         : 8.571182566547959E-01
+!!RES!!                 : 5.789540217599180E-06
+!!RES!!/!!INITIAL RES!! : 6.754657449713984E-06
 
-Rate of convergence     : 8.987847207761132E-01
+Rate of convergence     : 8.991574438293708E-01
 
-|u - u_h|_L2 = 6.9510540099E-04 6.7457264265E-05
-|u - u_h|_H1 = 3.5960874225E-02 9.1306165421E-04
-|p - p_h|_L2 = 3.6530769467E-02
+|u - u_h|_L2 = 6.9512058654E-04 6.7638860908E-05
+|u - u_h|_H1 = 3.5960584842E-02 9.1514043963E-04
+|p - p_h|_L2 = 3.6533478216E-02
 
 Calculating 2D Stokes-Problem 1 - multigrid
 -------------------------------------------
-Multigrid: Iteration 0,  !!RES!! = 3.083687338939604E-02
-Multigrid: Iteration 1,  !!RES!! = 1.620875182718104E-03
-Multigrid: Iteration 2,  !!RES!! = 1.463635819396162E-04
-Multigrid: Iteration 3,  !!RES!! = 1.568083908692462E-05
-Multigrid: Iteration 4,  !!RES!! = 1.792863182975219E-06
-Multigrid: Iteration 5,  !!RES!! = 2.107387370114894E-07
+Multigrid: Iteration 0,  !!RES!! = 3.083687338939637E-02
+Multigrid: Iteration 1,  !!RES!! = 1.620875182717310E-03
+Multigrid: Iteration 2,  !!RES!! = 1.463635819397921E-04
+Multigrid: Iteration 3,  !!RES!! = 1.568083908693812E-05
+Multigrid: Iteration 4,  !!RES!! = 1.792863182974904E-06
+Multigrid: Iteration 5,  !!RES!! = 2.107387370107517E-07
 
 Multigrid statistics:
 
 Iterations              : 5
-!!INITIAL RES!!         : 3.083687338939604E-02
-!!RES!!                 : 2.107387370114894E-07
-!!RES!!/!!INITIAL RES!! : 6.833985221211067E-06
+!!INITIAL RES!!         : 3.083687338939637E-02
+!!RES!!                 : 2.107387370107517E-07
+!!RES!!/!!INITIAL RES!! : 6.833985221187072E-06
 
-Rate of convergence     : 9.266907052651760E-02
+Rate of convergence     : 9.266907052645253E-02
 
-|u - u_h|_L2 = 4.3609349222E-05 4.4496108534E-06
-|u - u_h|_H1 = 9.0180957284E-03 7.5608914319E-05
+|u - u_h|_L2 = 4.3609349223E-05 4.4496108540E-06
+|u - u_h|_H1 = 9.0180957284E-03 7.5608914323E-05
 |p - p_h|_L2 = 9.0305891584E-03
 
 Calculating 2D Stokes-Problem 1 - Schur-Complement
@@ -170,52 +172,52 @@ Iterations              : 9
 
 Rate of convergence     : 2.717414466760035E-01
 
-|u - u_h|_L2 = 4.5789895352E-05 4.3862634579E-06
+|u - u_h|_L2 = 4.2022600686E-05 4.3859276305E-06
 |u - u_h|_H1 = 9.0184758039E-03 7.7301988750E-05
 |p - p_h|_L2 = 9.0299884909E-03
 
 Calculating 2D Stokes-Problem 2 - simple VANKA
 ----------------------------------------------
-Multigrid: Iteration 0,  !!RES!! = 3.083687338939604E-02
-Multigrid: Iteration 1,  !!RES!! = 1.620875182718104E-03
-Multigrid: Iteration 2,  !!RES!! = 1.463635819396162E-04
-Multigrid: Iteration 3,  !!RES!! = 1.568083908692462E-05
-Multigrid: Iteration 4,  !!RES!! = 1.792863182975219E-06
-Multigrid: Iteration 5,  !!RES!! = 2.107387370114894E-07
+Multigrid: Iteration 0,  !!RES!! = 3.083687338939637E-02
+Multigrid: Iteration 1,  !!RES!! = 1.620875182717310E-03
+Multigrid: Iteration 2,  !!RES!! = 1.463635819397921E-04
+Multigrid: Iteration 3,  !!RES!! = 1.568083908693812E-05
+Multigrid: Iteration 4,  !!RES!! = 1.792863182974904E-06
+Multigrid: Iteration 5,  !!RES!! = 2.107387370107517E-07
 
 Multigrid statistics:
 
 Iterations              : 5
-!!INITIAL RES!!         : 3.083687338939604E-02
-!!RES!!                 : 2.107387370114894E-07
-!!RES!!/!!INITIAL RES!! : 6.833985221211067E-06
+!!INITIAL RES!!         : 3.083687338939637E-02
+!!RES!!                 : 2.107387370107517E-07
+!!RES!!/!!INITIAL RES!! : 6.833985221187072E-06
 
-Rate of convergence     : 9.266907052651760E-02
+Rate of convergence     : 9.266907052645253E-02
 
-|u - u_h|_L2 = 4.3609349222E-05 4.4496108534E-06
-|u - u_h|_H1 = 9.0180957284E-03 7.5608914319E-05
+|u - u_h|_L2 = 4.7249945644E-05 4.4499135998E-06
+|u - u_h|_H1 = 9.0180957284E-03 7.5608914323E-05
 |p - p_h|_L2 = 9.0305891584E-03
 []
 
 Calculating 2D Stokes-Problem 2 - general VANKA
 -----------------------------------------------
-Multigrid: Iteration 0,  !!RES!! = 3.083687338939604E-02
-Multigrid: Iteration 1,  !!RES!! = 6.248299680865317E-04
-Multigrid: Iteration 2,  !!RES!! = 3.100052046014531E-05
-Multigrid: Iteration 3,  !!RES!! = 1.844662318746603E-06
-Multigrid: Iteration 4,  !!RES!! = 1.173308584156884E-07
+Multigrid: Iteration 0,  !!RES!! = 3.083687338939637E-02
+Multigrid: Iteration 1,  !!RES!! = 6.248299680865354E-04
+Multigrid: Iteration 2,  !!RES!! = 3.100052046014300E-05
+Multigrid: Iteration 3,  !!RES!! = 1.844662318745411E-06
+Multigrid: Iteration 4,  !!RES!! = 1.173308584154946E-07
 
 Multigrid statistics:
 
 Iterations              : 4
-!!INITIAL RES!!         : 3.083687338939604E-02
-!!RES!!                 : 1.173308584156884E-07
-!!RES!!/!!INITIAL RES!! : 3.804888288578414E-06
+!!INITIAL RES!!         : 3.083687338939637E-02
+!!RES!!                 : 1.173308584154946E-07
+!!RES!!/!!INITIAL RES!! : 3.804888288572092E-06
 
-Rate of convergence     : 4.416573655629675E-02
+Rate of convergence     : 4.416573655627840E-02
 
-|u - u_h|_L2 = 4.3687127828E-05 4.4599499632E-06
-|u - u_h|_H1 = 9.0187033808E-03 7.5737806658E-05
+|u - u_h|_L2 = 4.7322224017E-05 4.4602537653E-06
+|u - u_h|_H1 = 9.0187033808E-03 7.5737806662E-05
 |p - p_h|_L2 = 9.0303237695E-03
 []
 
@@ -289,77 +291,79 @@ Rate of convergence     : 8.017298382811785E-01
 Calculating 3D Stokes-Problem 0 - simple
 ----------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 6.461722231139451E-02
-BiCGStab: Iteration 1,  !!RES!! = 4.336740369611888E-02
-BiCGStab: Iteration 2,  !!RES!! = 3.424716861491068E-02
-BiCGStab: Iteration 3,  !!RES!! = 2.735384773753027E-02
+BiCGStab: Iteration 1,  !!RES!! = 4.336740369611889E-02
+BiCGStab: Iteration 2,  !!RES!! = 3.424716861491080E-02
+BiCGStab: Iteration 3,  !!RES!! = 2.735384773753031E-02
 BiCGStab: Iteration 4,  !!RES!! = 3.572029641548389E-02
-BiCGStab: Iteration 5,  !!RES!! = 2.690306495417016E-02
-BiCGStab: Iteration 6,  !!RES!! = 1.378868246643377E-02
-BiCGStab: Iteration 7,  !!RES!! = 7.982915046494246E-03
-BiCGStab: Iteration 8,  !!RES!! = 8.203008292186465E-03
-BiCGStab: Iteration 9,  !!RES!! = 3.560317795169028E-03
+BiCGStab: Iteration 5,  !!RES!! = 2.690306495417018E-02
+BiCGStab: Iteration 6,  !!RES!! = 1.378868246643382E-02
+BiCGStab: Iteration 7,  !!RES!! = 7.982915046494260E-03
+BiCGStab: Iteration 8,  !!RES!! = 8.203008292186504E-03
+BiCGStab: Iteration 9,  !!RES!! = 3.560317795169033E-03
 BiCGStab: Iteration 10,  !!RES!! = 2.995805704620747E-03
-BiCGStab: Iteration 11,  !!RES!! = 5.735421222606293E-03
-BiCGStab: Iteration 12,  !!RES!! = 4.416071156562727E-03
-BiCGStab: Iteration 13,  !!RES!! = 3.959131023972872E-03
-BiCGStab: Iteration 14,  !!RES!! = 2.641585880324790E-03
-BiCGStab: Iteration 15,  !!RES!! = 1.069328953745449E-02
-BiCGStab: Iteration 16,  !!RES!! = 1.100404087459913E-03
-BiCGStab: Iteration 17,  !!RES!! = 5.638460325660457E-04
-BiCGStab: Iteration 18,  !!RES!! = 5.076401086375350E-04
-BiCGStab: Iteration 19,  !!RES!! = 8.055706378773200E-03
-BiCGStab: Iteration 20,  !!RES!! = 4.279358068248465E-04
-BiCGStab: Iteration 21,  !!RES!! = 3.542515278432284E-04
-BiCGStab: Iteration 22,  !!RES!! = 3.957383348739213E-04
-BiCGStab: Iteration 23,  !!RES!! = 5.333741508779245E-05
-BiCGStab: Iteration 24,  !!RES!! = 3.896289379308881E-05
-BiCGStab: Iteration 25,  !!RES!! = 3.897790044423707E-05
-BiCGStab: Iteration 26,  !!RES!! = 3.945751163941418E-05
-BiCGStab: Iteration 27,  !!RES!! = 7.040405911019170E-05
-BiCGStab: Iteration 28,  !!RES!! = 3.637173731168264E-05
-BiCGStab: Iteration 29,  !!RES!! = 3.150421263053700E-05
-BiCGStab: Iteration 30,  !!RES!! = 2.707291048624712E-05
-BiCGStab: Iteration 31,  !!RES!! = 2.844019847200598E-05
-BiCGStab: Iteration 32,  !!RES!! = 8.559067097394173E-06
-BiCGStab: Iteration 33,  !!RES!! = 1.377664422070494E-05
-BiCGStab: Iteration 34,  !!RES!! = 1.147633932597498E-05
-BiCGStab: Iteration 35,  !!RES!! = 9.319290944837909E-06
-BiCGStab: Iteration 36,  !!RES!! = 2.440449567473013E-06
-BiCGStab: Iteration 37,  !!RES!! = 2.190204883573844E-06
-BiCGStab: Iteration 38,  !!RES!! = 9.358269877787968E-06
-BiCGStab: Iteration 39,  !!RES!! = 1.270250270036743E-06
-BiCGStab: Iteration 40,  !!RES!! = 2.096450327664416E-06
-BiCGStab: Iteration 41,  !!RES!! = 2.903796771548001E-06
-BiCGStab: Iteration 42,  !!RES!! = 2.533549202885907E-07
+BiCGStab: Iteration 11,  !!RES!! = 5.735421222607144E-03
+BiCGStab: Iteration 12,  !!RES!! = 4.416071156562277E-03
+BiCGStab: Iteration 13,  !!RES!! = 3.959131023987913E-03
+BiCGStab: Iteration 14,  !!RES!! = 2.641585884262171E-03
+BiCGStab: Iteration 15,  !!RES!! = 1.069294519332441E-02
+BiCGStab: Iteration 16,  !!RES!! = 1.100546513287756E-03
+BiCGStab: Iteration 17,  !!RES!! = 1.348875675633290E-03
+BiCGStab: Iteration 18,  !!RES!! = 4.729612079766062E-04
+BiCGStab: Iteration 19,  !!RES!! = 6.998350746506623E-03
+BiCGStab: Iteration 20,  !!RES!! = 2.462503558173837E-04
+BiCGStab: Iteration 21,  !!RES!! = 4.142568048744928E-04
+BiCGStab: Iteration 22,  !!RES!! = 4.309173121069165E-04
+BiCGStab: Iteration 23,  !!RES!! = 7.367895392707528E-05
+BiCGStab: Iteration 24,  !!RES!! = 4.799957438497971E-05
+BiCGStab: Iteration 25,  !!RES!! = 4.805310333699002E-05
+BiCGStab: Iteration 26,  !!RES!! = 4.865809728804030E-05
+BiCGStab: Iteration 27,  !!RES!! = 4.627245419516053E-05
+BiCGStab: Iteration 28,  !!RES!! = 8.472981663892377E-05
+BiCGStab: Iteration 29,  !!RES!! = 1.233437278245722E-04
+BiCGStab: Iteration 30,  !!RES!! = 7.650782339962580E-05
+BiCGStab: Iteration 31,  !!RES!! = 6.742050799511679E-05
+BiCGStab: Iteration 32,  !!RES!! = 4.976459961847782E-05
+BiCGStab: Iteration 33,  !!RES!! = 4.570077994226508E-05
+BiCGStab: Iteration 34,  !!RES!! = 1.575213163803928E-05
+BiCGStab: Iteration 35,  !!RES!! = 2.860961012778603E-05
+BiCGStab: Iteration 36,  !!RES!! = 1.072875649151941E-05
+BiCGStab: Iteration 37,  !!RES!! = 4.177584897644530E-06
+BiCGStab: Iteration 38,  !!RES!! = 3.344351823191951E-06
+BiCGStab: Iteration 39,  !!RES!! = 3.798666623222708E-06
+BiCGStab: Iteration 40,  !!RES!! = 2.718178478025989E-05
+BiCGStab: Iteration 41,  !!RES!! = 2.779971696760234E-06
+BiCGStab: Iteration 42,  !!RES!! = 5.432418697841660E-06
+BiCGStab: Iteration 43,  !!RES!! = 4.509567977346122E-06
+BiCGStab: Iteration 44,  !!RES!! = 3.766475237394817E-07
 
 BiCGStab statistics:
 
-Iterations              : 42
+Iterations              : 44
 !!INITIAL RES!!         : 6.461722231139451E-02
-!!RES!!                 : 2.533549202885907E-07
-!!RES!!/!!INITIAL RES!! : 3.920857493187453E-06
+!!RES!!                 : 3.766475237394817E-07
+!!RES!!/!!INITIAL RES!! : 5.828903042665518E-06
 
-Rate of convergence     : 7.434828885376705E-01
+Rate of convergence     : 7.603894179935258E-01
 
 Calculating 3D Stokes-Problem 1 - multigrid
 -------------------------------------------
-Multigrid: Iteration 0,  !!RES!! = 1.303575384003088E-03
-Multigrid: Iteration 1,  !!RES!! = 1.429238190396267E-04
-Multigrid: Iteration 2,  !!RES!! = 1.961517608209442E-05
-Multigrid: Iteration 3,  !!RES!! = 3.680948703044615E-06
-Multigrid: Iteration 4,  !!RES!! = 7.089069895558141E-07
-Multigrid: Iteration 5,  !!RES!! = 1.410468010221269E-07
-Multigrid: Iteration 6,  !!RES!! = 2.821583927561458E-08
-Multigrid: Iteration 7,  !!RES!! = 5.681163274954794E-09
+Multigrid: Iteration 0,  !!RES!! = 1.303575384003087E-03
+Multigrid: Iteration 1,  !!RES!! = 1.429238190396223E-04
+Multigrid: Iteration 2,  !!RES!! = 1.961517608209083E-05
+Multigrid: Iteration 3,  !!RES!! = 3.680948703044330E-06
+Multigrid: Iteration 4,  !!RES!! = 7.089069895558284E-07
+Multigrid: Iteration 5,  !!RES!! = 1.410468010220660E-07
+Multigrid: Iteration 6,  !!RES!! = 2.821583927559242E-08
+Multigrid: Iteration 7,  !!RES!! = 5.681163391320834E-09
 
 Multigrid statistics:
 
 Iterations              : 7
-!!INITIAL RES!!         : 1.303575384003088E-03
-!!RES!!                 : 5.681163274954794E-09
-!!RES!!/!!INITIAL RES!! : 4.358139425361637E-06
+!!INITIAL RES!!         : 1.303575384003087E-03
+!!RES!!                 : 5.681163391320834E-09
+!!RES!!/!!INITIAL RES!! : 4.358139514628469E-06
 
-Rate of convergence     : 1.714691023460152E-01
+Rate of convergence     : 1.714691028477530E-01
 
 Heap statistics:
 ----------------
