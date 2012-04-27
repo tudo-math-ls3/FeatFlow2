@@ -33,6 +33,7 @@ module octree
   implicit none
 
   private
+  public :: t_octree
   public :: octree_init
   public :: octree_done
   public :: octree_getbase

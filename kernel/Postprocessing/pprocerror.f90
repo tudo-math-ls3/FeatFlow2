@@ -342,7 +342,7 @@ contains
 
   ! Some other local variables
   integer :: i,j,k,ndofs,ncubp,iel,ider
-  integer :: IELset,IELmax,NEL,icurrentElementDistr
+  integer :: IELset,IELmax,NEL
   integer(I32) :: ctrafoType,ccubature
   integer(I32) :: cevalTag, celement
   real(DP) :: derrL1, derrL2, derrH1, derrMean, dom, daux, daux2
@@ -622,6 +622,14 @@ contains
       ! OpenMP-Extension: Open threads here.
       ! Each thread will allocate its own local memory...
       !
+      !$omp parallel default(shared)&
+      !$omp private(DvalDer,DvalFunc,IELmax,daux,daux2,dom,&
+      !$omp         i,ider,iel,j,k,ndofs,p_Dbas,p_Ddetj,p_Idofs,revalElementSet,&
+      !$omp         rfeBasisEvalData,rintSubset,&
+      !$omp         icomp,p_Dcoeff,p_DerrL2,p_DerrH1,p_DerrL1,p_DerrMean)&
+      !$omp         firstprivate(cevalTag)&
+      !$omp         reduction(+:derrL1,derrL2,derrH1,derrMean)&
+      !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
 
       ! Initialise the evaluation structure for the FE basis
       call easminfo_initStdFEBasisEval(celement,&
@@ -644,22 +652,23 @@ contains
 
       ! Loop over the elements - blockwise.
       !$omp do schedule(static,1)
-      do IELset = 1, p_relementDistribution%NEL, nelementsPerBlock
+      do IELset = 1, NEL, nelementsPerBlock
 
         ! We always handle nelementsPerBlock elements simultaneously.
         ! How many elements have we actually here?
         ! Get the maximum element number, such that we handle at most
         ! nelementsPerBlock elements simultaneously.
 
-        IELmax = min(p_relementDistribution%NEL,IELset-1+nelementsPerBlock)
+        IELmax = min(NEL,IELset-1+nelementsPerBlock)
 
         ! First, let us perform the DOF-mapping
         call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), p_Idofs)
 
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
-            p_IelementList(IELset:IELmax), ctrafoType, p_DcubPts, rperfconfig=rperfconfig)
-        p_Ddetj => revalElementSet%p_Ddetj
+            p_IelementList(IELset:IELmax), ctrafoType, p_DcubPts, &
+            rperfconfig=p_rperfconfig)
+        p_Ddetj => revalElementSet%p_Ddetj(:,1:IELmax-IELset+1)
 
         ! Remove the ref-points eval tag for the next loop iteration
         cevalTag = iand(cevalTag,not(EL_EVLTAG_REFPOINTS))
@@ -669,7 +678,7 @@ contains
         !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        rintSubset%p_IdofsTrial => p_Idofs
+        rintSubset%p_IdofsTrial => p_Idofs(:,1:IELmax-IELset+1)
         rintSubset%celement = celement
 
         ! Evaluate the element
@@ -882,6 +891,7 @@ contains
         call domint_doneIntegration (rintSubset)
 
       end do ! IELset
+      !$omp end do
 
       ! Release the element evaluation set
       call elprep_releaseElementSet(revalElementSet)
@@ -1352,8 +1362,7 @@ contains
         IELmax = min(NEL,IELset-1+nelementsPerBlock)
 
         ! First, let us perform the DOF-mapping
-        call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), &
-            rfeBasisEvalData%p_Idofs)
+        call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), p_Idofs)
 
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &

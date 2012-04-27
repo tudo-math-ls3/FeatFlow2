@@ -14,11 +14,14 @@
 
 #ifdef __NVAR__
 
+  ! REMARK: OpenMP does not work for transposed matrix-vector multiplication
+  ! in the way it is realised below!!!
+
   ! Perform the multiplication.
   if (cx .ne. __MatOne__) then
 
-    !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-    !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
+    !DOES NOT WORK: omp parallel do private(ia,icol,Ddtmp) default(shared) &
+    !DOES NOT WORK: omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
       do ivar = 1, __NVAR__
         Ddtmp(ivar) = cx*Dx(__NVAR__*(irow-1)+ivar)
@@ -31,12 +34,12 @@
         end do
       end do
     end do
-    !$omp end parallel do
+    !DOES NOT WORK: omp end parallel do
 
   else   ! cx = 1.0
 
-    !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-    !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
+    !DOES NOT WORK: omp parallel do private(ia,icol,Ddtmp) default(shared) &
+    !DOES NOT WORK: omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
       do ia = Kld(irow), Kld(irow+1)-1
         icol = Kcol(ia)
@@ -46,7 +49,7 @@
         end do
       end do
     end do
-    !$omp end parallel do
+    !DOES NOT WORK: omp end parallel do
 
   end if
 
@@ -55,8 +58,8 @@
   ! Perform the multiplication.
   if (cx .ne. __MatOne__) then
 
-    !$omp parallel do private(ia,icol,dtmp) default(shared) &
-    !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
+    !DOES NOT WORK: omp parallel do private(ia,icol,dtmp) default(shared) &
+    !DOES NOT WORK: omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
       dtmp = cx*Dx(irow)
       do ia = Kld(irow), Kld(irow+1)-1
@@ -64,19 +67,19 @@
         Dy(icol) = Dy(icol) + Da(ia)*dtmp
       end do
     end do
-    !$omp end parallel do
+    !DOES NOT WORK: omp end parallel do
 
   else   ! cx = 1.0
 
-    !$omp parallel do private(ia,icol,dtmp) default(shared) &
-    !$omp if(NEQ > rperfconfig%NEQMIN_OMP)
+    !DOES NOT WORK: omp parallel do private(ia,icol,dtmp) default(shared) &
+    !DOES NOT WORK: omp if(NEQ > rperfconfig%NEQMIN_OMP)
     do irow = 1, NEQ
       do ia = Kld(irow), Kld(irow+1)-1
         icol = Kcol(ia)
         Dy(icol) = Dy(icol) + Da(ia)*Dx(irow)
       end do
     end do
-    !$omp end parallel do
+    !DOES NOT WORK: omp end parallel do
 
   end if
 

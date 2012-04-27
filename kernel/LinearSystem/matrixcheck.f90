@@ -586,7 +586,7 @@ contains
           if (abs(Da(Kdiagonal(ieq))) .le. dtreshold) cycle
           bresult = (bresult .and. Da(Kdiagonal(ieq)) .gt. 0.0_DP)
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -594,7 +594,7 @@ contains
           if (abs(dscale*Da(Kdiagonal(ieq))) .le. dtreshold) cycle
           bresult = (bresult .and. dscale*Da(Kdiagonal(ieq)) .gt. 0.0_DP)
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat79Dble
@@ -624,7 +624,7 @@ contains
           if (abs(Fa(Kdiagonal(ieq))) .le. ftreshold) cycle
           bresult = (bresult .and. Fa(Kdiagonal(ieq)) .gt. 0.0_SP)
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -632,7 +632,7 @@ contains
           if (abs(fscale*Fa(Kdiagonal(ieq))) .le. ftreshold) cycle
           bresult = (bresult .and. fscale*Fa(Kdiagonal(ieq)) .gt. 0.0_SP)
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat79Sngl
@@ -1017,7 +1017,7 @@ contains
             bresult = (bresult .and. Da(ia) .le. 0.0_DP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -1027,7 +1027,7 @@ contains
             bresult = (bresult .and. dscale*Da(ia) .le. 0.0_DP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat7Dble
@@ -1059,7 +1059,7 @@ contains
             bresult = (bresult .and. Fa(ia) .le. 0.0_SP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -1069,7 +1069,7 @@ contains
             bresult = (bresult .and. fscale*Fa(ia) .le. 0.0_SP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat7Sngl
@@ -1105,7 +1105,7 @@ contains
             bresult = (bresult .and. Da(ia) .le. 0.0_DP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -1119,7 +1119,7 @@ contains
             bresult = (bresult .and. dscale*Da(ia) .le. 0.0_DP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat9Dble
@@ -1155,7 +1155,7 @@ contains
             bresult = (bresult .and. Fa(ia) .le. 0.0_SP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       else
         !$omp parallel do default(shared) private(ia) reduction(.and. : bresult)
         do ieq = 1,NEQ
@@ -1169,7 +1169,7 @@ contains
             bresult = (bresult .and. fscale*Fa(ia) .le. 0.0_SP)
           end do
         end do
-        !$omp end paralle do
+        !$omp end parallel do
       end if
 
     end subroutine check_signMat9Sngl
