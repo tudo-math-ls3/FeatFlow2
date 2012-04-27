@@ -549,6 +549,11 @@
 !#      16.) linsol_initBlockSOR
 !#           -> SOR preconditioner using the block structure of dG discretisations
 !#
+!#      17.) linsol_initDeflGMRES
+!#           -> Deflated GMRES algorithm
+!#           -> see [Erlangga, Y.; Nabben, R.; Algrbraic Multilevel Krylov Methods;
+!#                   SIAM J. Sci. Comput. 2009, Vol 31, Nr. 5, pp. 3417-3437]
+!#
 !# 9.) What is this linsol_matricesCompatible?
 !#
 !#     This allows to check a set of system matrices against a solver node.
