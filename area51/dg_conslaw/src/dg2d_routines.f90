@@ -18100,4 +18100,373 @@ contains
 
   end subroutine
 
+
+
+!****************************************************************************
+
+  !<subroutine>  
+
+  subroutine SortAndSweep(rtriangulation, raddTriaData, rmatrix, rrhs, rsol, rcollection)
+
+    !<description>
+
+    ! Sorting of Elements depending on transport-vector
+    ! Then solve directly the linear transport-problem
+
+    !</description>
+
+    !<input>
+
+    ! The underlying triangulation
+    type(t_triangulation), intent(in) :: rtriangulation
+    ! The additional triangulation data
+    type(t_additionalTriaData), intent(in):: raddTriaData
+    
+    !The scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+   
+    ! The right-hand-side vector of the system
+    !type(t_vectorBlock), intent(in)         :: rrhs
+    type(t_vectorScalar), intent(in) :: rrhs
+   
+   
+    ! The right-hand-side vector of the system
+    !type(t_vectorBlock), intent(in)         :: rsol
+    type(t_vectorScalar), intent(in)        :: rsol
+   
+    type(t_collection), intent(inout), target, optional :: rcollection
+    
+    !</input>
+
+    !</subroutine>
+    ! local variables for sorting
+    integer:: i,j
+    integer :: Ifirst, Ilater, NEL, NELinqueue, Iv, Iv1, Iv2,Iv3
+    real(dp) :: DX, DY, DNX,DNY
+    
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge    
+    integer, dimension(:,:), allocatable :: Adjazenz, Inzidenz
+    integer, dimension(:), allocatable :: Ioutdeg, Iqueue
+    
+    
+    !!! Local variables for sweep-routine
+
+    ! The underlying spatial discretisation
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    
+    integer :: indof, iel, ielREF, ig, jg, iloc, iBlock, iouter
+
+    integer, dimension(9) :: IdofGlob, IdofGlobREF
+    integer, dimension(9) :: Ipiv
+    integer :: iinfo    
+
+    
+    real(dp), dimension(:,:), allocatable :: DlocMat
+    real(DP), dimension(:), allocatable  :: Dtemp
+
+    INTEGER, DIMENSION(:), POINTER :: p_KLD, p_KCOL
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+
+    real(DP), dimension(:), pointer :: p_Drhs, p_Dsol
+    
+    real(dp) :: DNV
+    
+    
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! FIRST PART: Sorting
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    !Ifirst=0
+    !Ilater=0
+    
+    NEL = rtriangulation%NEL
+    !write(*,*) '#############################################', NEL    
+    ! Allocate space for Inzidenz"matrix", Outdegree, and Resultqueue
+    allocate(Inzidenz(3,NEL))
+    allocate(Adjazenz(3,NEL))
+    allocate(Ioutdeg(NEL))
+    allocate(Iqueue(NEL))
+    
+    call storage_getbase_int2D(rtriangulation%h_IelementsAtEdge,&
+         p_IelementsAtEdge)
+    
+    ! Nullen reinschreiben, muss sein offensichlich!!
+    do i=1, NEL
+      Ioutdeg(i)=0
+      Inzidenz(1,i)=0
+      Inzidenz(2,i)=0
+      Inzidenz(3,i)=0
+      Adjazenz(1,i)=0
+      Adjazenz(2,i)=0
+      Adjazenz(3,i)=0
+      
+      Iqueue(i)=0
+    end do
+    
+    !AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    ! A. First Initialisation, go through all Edges and write Neighbouring-Information    
+    ! Transportrichtung:
+    DX=rcollection%Dquickaccess(2*(rcollection%Iquickaccess(1))-1)
+    DY=rcollection%Dquickaccess(2*rcollection%Iquickaccess(1))
+    
+    
+    do j = 1, rtriangulation%NMT
+      
+      DNX=raddTriaData%p_Dnormals(1,j)
+      DNY=raddTriaData%p_Dnormals(2,j)
+      
+      ! Normal * transport direction v
+      DNV = DX*DNX+DY*DNY
+      
+      ! Reihenfolge der Elemente abh. von Normalenvektor und Transportrichtung
+      if ((DNV).lt.0.0_DP) then
+        Ifirst=p_IelementsAtEdge(2,j)
+        Ilater=p_IelementsAtEdge(1,j)
+      elseif ((DNV).gt.0.0_DP) then
+        Ifirst=p_IelementsAtEdge(1,j)
+        Ilater=p_IelementsAtEdge(2,j)
+       else !Elemente sind parallel in Transportrichtung, do nothing
+      endif
+      
+      
+      ! Dieser Wert ist kritisch, bei orthogonalem Normalenvektor Wert ist ca. 1d-9
+      ! if (abs(DX*DNX+DY*DNY).lt.1E-4_DP) then
+      !   if (abs(DX*DNX+DY*DNY).gt.1E-10_DP) then         
+      !     write(*,*) 'kritisch v*n=', DX*DNX+DY*DNY
+      !   endif
+      ! endif
+       
+      if (abs(DNV).gt.1E-10_DP) then
+      
+        !write(*,*) 'Kante', j
+        !write(*,*) 'Elemente', Ifirst, Ilater
+        !write(*,*) 'v*n=', DX*DNX+DY*DNY
+        !write(*,*), Ioutdeg(Ilater)
+        if((Ifirst*Ilater).gt.0) then
+          Ioutdeg(Ilater)=Ioutdeg(Ilater)+1
+        
+          ! Inzidenzinfo an erste freie Stelle schreiben
+          if (Inzidenz(1,Ifirst).eq.0) then
+            Inzidenz(1,Ifirst)=Ilater
+          elseif (Inzidenz(2,Ifirst).eq.0) then
+            Inzidenz(2,Ifirst)=Ilater
+          else
+            Inzidenz(3,Ifirst)=Ilater
+          endif
+          
+          ! Adjazenzinfo an erste freie Stelle schreiben
+          if (Adjazenz(1,Ilater).eq.0) then
+            Adjazenz(1,Ilater)=Ifirst
+          elseif (Adjazenz(2,Ilater).eq.0) then
+            Adjazenz(2,Ilater)=Ifirst
+          else
+            Adjazenz(3,Ilater)=Ifirst
+          endif
+          
+        endif
+      
+      endif
+      
+    end do
+    
+    !BBBBBBBBBBBBBBBBBBBBBBB
+    !B. Second Initialisation, write all Boundaryelements (deg=0) into Resultqueue
+    NELinqueue=0
+    do i = 1, NEL
+      !write(*,*) 'Outgrad', i, Ioutdeg(i)
+      if (Ioutdeg(i).eq.0) then
+        NELinqueue=NELinqueue+1
+        Iqueue(NELinqueue)=i
+        !write(*,*) 'Randelement', i         
+      endif
+    end do
+    
+    !CCCCCCCCCCCCCCCCCCCCCCC
+    !C. Now we do the Resorting, go through the Elements starting at the Boundary
+    ! NELinqueue wird weiter benutzt
+    !write(*,*) 'Randelemente zu Beginn', NELinqueue
+    do i = 1, NEL
+      
+      Iv=Iqueue(i)
+      
+      if (Iv.eq.0) then
+        write(*,*) 'Fehler, Elemente können nicht zu ende sortiert werden, Position' , i, ' von', NEL
+        call sys_halt()
+      endif
+      
+      Iv1=Inzidenz(1,Iv)
+      Iv2=Inzidenz(2,Iv)
+      Iv3=Inzidenz(3,Iv)
+      
+      if (Iv1.gt.0) then
+        Ioutdeg(Iv1)=Ioutdeg(Iv1)-1
+        if(Ioutdeg(Iv1).eq.0) then
+          NELinqueue=NELinqueue+1
+          !write(*,*) 'Elemente in Queue', NELinqueue
+          Iqueue(NELinqueue)=Iv1
+        endif
+      endif
+      
+      if (Iv2.gt.0) then
+        Ioutdeg(Iv2)=Ioutdeg(Iv2)-1
+        if(Ioutdeg(Iv2).eq.0) then
+          NELinqueue=NELinqueue+1
+          !write(*,*) 'Elemente in Queue', NELinqueue
+          Iqueue(NELinqueue)=Iv2
+        endif
+      endif
+      
+      if (Iv3.gt.0) then
+        Ioutdeg(Iv3)=Ioutdeg(Iv3)-1
+        if(Ioutdeg(Iv3).eq.0) then
+          NELinqueue=NELinqueue+1
+          !write(*,*) 'Elemente in Queue', NELinqueue
+          Iqueue(NELinqueue)=Iv3
+        endif
+      endif
+      
+    end do
+    
+    
+
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! SECOND PART: Solving
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+    ! Get pointers of the matrix
+    call lsyssc_getbase_Kcol (rmatrix,p_KCOL)
+    call lsyssc_getbase_Kld (rmatrix,p_KLD)
+    call lsyssc_getbase_double (rmatrix,p_DA)
+    
+    ! Get pointers of the vectors
+    call lsyssc_getbase_double (rrhs,p_Drhs)
+    call lsyssc_getbase_double (rsol,p_Dsol)
+    
+    ! Get pointers for quicker access
+    p_rspatialDiscr => rmatrix%p_rspatialDiscrTest
+    
+    ! Get number of local unknowns    
+    indof = elem_igetNDofLoc(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement)
+        
+
+    ! Allocate local matrix
+    allocate(DlocMat(indof,indof))
+    ! Allocate local vector
+    allocate(Dtemp(indof))
+    
+          
+      
+      
+      
+     !write(*,*) 'Solving transportproblem directly, yippieeeeeeee'  
+
+    !Outer loop over all elements
+    do iouter=1,NEL
+      !Get number from sorting algorithm
+      iel=Iqueue(iouter)
+      call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+      
+      
+      !write(*,*) iouter, iel
+      
+      
+      !AAAAAAAAAAAAAAAAAAAAAAAAAA
+      !A. Diagonalblock speichern
+      ! Loop over all local lines
+          do i = 1, indof
+             ! Get global line
+             ig = IdofGlob(i)
+
+             ! Loop over all local columns
+             do j = 1, indof
+                ! Get global columns
+                jg = IdofGlob(j)
+
+                do iloc = p_KLD(ig), p_KLD(ig+1)-1
+                   if (jg.eq.p_KCOL(iloc)) exit
+                end do
+
+                DlocMat(i,j) = p_DA(iloc)
+        
+             end do
+          end do  
+      
+      
+      !XXXXXXXXXXXXXXXXXXXXXXXX
+      !X: Dtemp auf Null setzen?
+      do i=1,indof
+        Dtemp(i)=0.0_DP
+      end do
+      
+      !BBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+      !B. Nach Art von Gausseidel update mit berechneten Lösungsblöcken  
+      ! Loop over all blocks left of the blockdiagonal
+      do iblock=1,3
+        
+        !get referenced Element from Adjazenz-Matrix (otherwise Matrixblock(i,j) has no entries)
+        ielREF=Adjazenz(iblock,iel)
+        if (ielREF.ne.0) then
+        
+        !write(*,*) 'process Matrix Block', iel,ielREF
+         
+        call dof_locGlobMapping(p_rspatialDiscr, ielREF, IdofGlobREF)
+        
+        ! Loop over all local lines
+        do i=1,indof
+            ig = IdofGlob(i)
+          ! Loop over all (referenced) columns
+          do j= 1,indof
+            jg=IdofGlobREF(j)
+            
+        do iloc = p_KLD(ig), p_KLD(ig+1)-1
+           if (jg.eq.p_KCOL(iloc)) then
+             exit ! was passiert wenn ich ihn nicht finde?
+           endif  
+           if ((iloc.eq.p_KLD(ig+1)-1).and.(jg.ne.p_KCOL(iloc))) then
+             write(*,*) 'nicht gefunden, iel, ielREF', iel, ielREF
+           endif
+        end do
+
+                Dtemp(i) = Dtemp(i)+p_DA(iloc)*p_Dsol(jg)
+        
+          end do !i lines in Element
+             
+        end do !j columns in REFelement
+         
+        endif !check Adjazenz
+      
+      end do !iblock
+      
+      !CCCCCCCCCCCCCCCCCCCCCCCCCCCC
+      !C. Auf die rechte Seite bringen
+      do i=1,indof
+        Dtemp(i) = p_Drhs(IdofGlob(i)) - Dtemp(i)
+      end do    
+      
+      !DDDDDDDDDDDDDDDDDDDDDDDDDDDD
+      !D. Inverse des Diagonalblocks anwenden für die Lösung, nutze LAPACK
+      call DGETRF( indof, indof, DlocMat, indof, &
+                   Ipiv, iinfo )
+
+      call DGETRS('N', indof, 1, DlocMat, indof, &
+                    Ipiv, Dtemp, indof, iinfo )
+      
+      
+      !EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+      !E. Write result into solution vector
+      do i=1,indof
+        p_Dsol(IdofGlob(i)) = Dtemp(i)
+      end do
+    
+    end do ! iouter
+    
+  end subroutine SortAndSweep
+
 end module dg2d_routines

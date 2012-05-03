@@ -200,9 +200,9 @@ contains
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
     
     ! Set convection and diffusion parameters
-    rproblem%dnu = 1.0_dp/16.0_dp
-    rproblem%Dbeta(1) = 1.0_dp
-    rproblem%Dbeta(2) = 1.0_dp
+    rproblem%dnu = 1.0_dp ! /1024.0_dp
+    rproblem%Dbeta(1) = 0.0_dp
+    rproblem%Dbeta(2) = 0.0_dp
 
   end subroutine
 
@@ -538,6 +538,11 @@ contains
 
   subroutine dgmcd_solve (rproblem)
   
+  
+!  type t_linsolPointer
+!    type(t_linsolNode), pointer :: p_ptr
+!  end type
+  
 !<description>
   ! Solves the given problem by applying a linear solver.
 !</description>
@@ -576,7 +581,8 @@ contains
     
 
     ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode , p_rsmoother
+!    type(t_linsolPointer), dimension(:), allocatable :: p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -688,7 +694,7 @@ contains
     
     
     
-    
+!    allocate(p_rsmoother(ilvmax-ilvmin+1))
     
     
     ! Then set up smoothers / coarse grid solver:
@@ -707,15 +713,17 @@ contains
         nullify(p_rpreconditioner)
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
-        !CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-        !CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
-        !p_rcoarseGridSolver%nmaxIterations = 5000
+!        CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+!        CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
+!        p_rcoarseGridSolver%nmaxIterations = 5000
         
         
 !        nullify(p_rpreconditioner)
 !        call linsol_initBlockJac (p_rpreconditioner)
 !        call linsol_initJacobi (p_rpreconditioner)
 !        CALL linsol_initDefCorr (p_rcoarseGridSolver,p_rpreconditioner)
+
+
 !        p_rcoarseGridSolver%domega = 1.0
 !        p_rcoarseGridSolver%nmaxIterations = 5000
 !        p_rcoarseGridSolver%nminIterations = 0
@@ -751,11 +759,20 @@ contains
 !         call linsol_initBlockJac (p_rpreconditioner)
         
 !        call linsol_initJacobi (p_rsmoother)
-        call linsol_initSOR (p_rsmoother, 1.0_dp)
+!        call linsol_initSOR (p_rsmoother, 1.0_dp)
 !        call linsol_initBlockJac (p_rsmoother)
+!        call linsol_initBlockSOR (p_rsmoother, 1.0_dp)
 !        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
 !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
-        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+
+!        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+
+
+        call linsol_initBlockUpwGS (p_rsmoother, rproblem%Dbeta, &
+                rproblem%RlevelInfo(i)%p_rdiscretisation%p_rtriangulation, &
+                rproblem%RlevelInfo(i)%raddTriaData%p_Dnormals)
+
+        call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
         
       end if
     
@@ -776,6 +793,7 @@ contains
     p_rsolverNode%ioutputLevel = 2
 !    p_rsolverNode%depsRel = 1.0e-12
     p_rsolverNode%depsAbs = 1.0e-12
+    p_rsolverNode%nmaxIterations = 5000
     
 !    ! Set to W-cycle
 !    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
