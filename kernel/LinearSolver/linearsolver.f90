@@ -554,6 +554,9 @@
 !#           -> see [Erlangga, Y.; Nabben, R.; Algrbraic Multilevel Krylov Methods;
 !#                   SIAM J. Sci. Comput. 2009, Vol 31, Nr. 5, pp. 3417-3437]
 !#
+!#      18.) linsol_initBlockUpwGS
+!#           -> Block GS using upwind numbering of elements (for DG discretisations)
+!#
 !# 9.) What is this linsol_matricesCompatible?
 !#
 !#     This allows to check a set of system matrices against a solver node.
@@ -664,6 +667,7 @@ module linearsolver
   use iluk
   use spsor
   use mprimitives
+  use triangulation
   
   use matrixio
   
@@ -706,6 +710,7 @@ module linearsolver
   public :: linsol_initSPSOR
   public :: linsol_initBlockJac
   public :: linsol_initBlockSOR
+  public :: linsol_initBlockUpwGS
   public :: linsol_initSpecDefl
   public :: linsol_initDeflGMRES
     
@@ -813,6 +818,9 @@ module linearsolver
 
   ! Block SOR iteration
   integer, parameter, public :: LINSOL_ALG_BLOCKSOR      = 60
+  
+  ! Block Upwind GS iteration
+  integer, parameter, public :: LINSOL_ALG_BLOCKUPWGS    = 61
   
 !</constantblock>
 
@@ -1382,6 +1390,9 @@ module linearsolver
 
     ! Pointer to a structure for the deflation GMRES preconditioner; NULL() if not set
     type (t_linsolSubnodeDeflGMRES), pointer      :: p_rsubnodeDeflGMRES    => null()
+    
+    ! Pointer to a structure for the block upwind GS preconditioner; NULL() if not set
+    type (t_linsolSubnodeBlockUpwGS), pointer     :: p_rsubnodeBlockUpwGS   => null()
 
   end type
   
@@ -2330,6 +2341,35 @@ module linearsolver
   
 !</typeblock>
 
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the SOR solver.
+  type t_linsolSubnodeBlockUpwGS
+  
+    ! Velocity vector
+    real(DP), dimension(2) :: Dvel
+    
+    ! Pointer to the normals of the edges in the triangulation
+    real(dp), dimension(:,:), pointer :: p_Dnormals
+    
+    ! Number of elements in the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! List of elements in sorted in downwind direction
+    integer, dimension(:), pointer :: p_Iqueue
+    
+    ! List of elements upwind to one element
+    integer, dimension(:,:), pointer :: p_IupwElems
+    
+    
+  end type
+  
+  public :: t_linsolSubnodeBlockUpwGS
+
+!</typeblock>
+
 !</types>
 
 ! *****************************************************************************
@@ -2671,6 +2711,8 @@ contains
       call linsol_initStructureSpecDefl (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_initStructureDeflGMRES (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_BLOCKUPWGS)
+      call linsol_initStructureBlockUpwGS (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2756,6 +2798,8 @@ contains
       call linsol_initDataSpecDefl (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_initDataDeflGMRES (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_BLOCKUPWGS)
+      call linsol_initDataBlockUpwGS (rsolverNode,ierror,isubgroup)
     end select
   
   end subroutine
@@ -2934,6 +2978,8 @@ contains
       call linsol_doneDataSpecDefl (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_doneDataDeflGMRES (rsolverNode,isubgroup)
+    case (LINSOL_ALG_BLOCKUPWGS)
+      call linsol_doneDataBlockUpwGS (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -3004,6 +3050,8 @@ contains
       call linsol_doneStructureSpecDefl (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_doneStructureDeflGMRES (rsolverNode,isubgroup)
+    case (LINSOL_ALG_BLOCKUPWGS)
+      call linsol_doneStructureBlockUpwGS (rsolverNode,isubgroup)
     end select
 
   end subroutine
@@ -3424,6 +3472,8 @@ contains
       call linsol_precSpecDefl (rsolverNode,rd)
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_precDeflGMRES (rsolverNode,rd)
+    case (LINSOL_ALG_BLOCKUPWGS)
+      call linsol_precDefBlockUpwGS (rsolverNode,rd)
     end select
 
   end subroutine
@@ -20313,6 +20363,829 @@ contains
   
     deallocate(rsolverNode%p_rsubnodeSOR)
   
+  end subroutine
+  
+  
+! *****************************************************************************
+! Routines for the Block Upwind GS solver (for DG discretisations)
+! *****************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initBlockUpwGS (p_rsolverNode,Dvelocity,p_rtriangulation,&
+                                    p_DNormals)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the Block-UpwGS solver. The
+  ! node can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  ! It is a special solver taking advantage of the block-structure stemming
+  ! from a discontinuous Galerkin discretisation.
+
+!</description>
+  
+!<input>
+  ! Velocity vector
+  real(dp), dimension(2), intent(in) :: Dvelocity
+  ! Pointer to the normals of the triangulation for each edge
+  real(dp), dimension(:,:), pointer :: p_DNormals
+  ! Corresponding triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_BLOCKUPWGS
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT ! &
+                                ! + LINSOL_ABIL_BLOCK 
+
+    ! Allocate the subnode for BlockUpwGS
+    allocate(p_rsolverNode%p_rsubnodeBlockUpwGS)
+    
+    ! Set velocity vector
+    p_rsolverNode%p_rsubnodeBlockUpwGS%Dvel = Dvelocity
+    
+    ! Set normals
+    p_rsolverNode%p_rsubnodeBlockUpwGS%p_Dnormals => p_Dnormals
+    
+    ! Set number of elements
+    p_rsolverNode%p_rsubnodeBlockUpwGS%p_rtriangulation => p_rtriangulation
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_matCompatBlockUpwGS (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+  integer :: i,n
+  type(t_matrixScalar), pointer :: p_rblock => null()
+
+    ! Normally we are compatible.
+    ccompatible = LINSOL_COMP_OK
+    
+    ! Get the index of the top-level matrix
+    n = ubound(Rmatrices,1)
+    
+    ! Let us make sure the matrix is not rectangular.
+    if(Rmatrices(n)%nblocksPerRow .ne. Rmatrices(n)%nblocksPerCol) then
+      
+      ! Rectangular block matrix
+      ccompatible = LINSOL_COMP_ERRMATRECT
+      
+    else
+    
+      ! Okay, let us loop through all main diagonal blocks.
+      do i = 1, Rmatrices(n)%nblocksPerRow
+      
+        ! Get the diagonal block
+        p_rblock => Rmatrices(n)%RmatrixBlock(i,i)
+        
+        ! Is the matrix empty?
+        if(p_rblock%NEQ .eq. 0) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! Is the scaling factor zero?
+        if(p_rblock%dscaleFactor .eq. 0.0_DP) then
+          ! Zero pivot
+          ccompatible = LINSOL_COMP_ERRZEROPIVOT
+          exit
+        end if
+        
+        ! What about the matrix type?
+        if((p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+           (p_rblock%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+          ! Matrix type not supported
+          ccompatible = LINSOL_COMP_ERRMATTYPE
+          exit
+        end if
+        
+        ! This block is okay, continue with next one
+      
+      end do
+    
+    end if
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    if (present(CcompatibleDetail)) &
+        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  subroutine linsol_precDefBlockUpwGS (rsolverNode,rd)
+  
+  use triangulation
+  use spatialdiscretisation
+  use element
+  use dofmapping
+  
+!<description>
+  ! Applies the Jacobi preconditioner <tex>$ D \in A $<tex> to the defect
+  ! vector rd and solves <tex>$ Dd_{new} = d $<tex>.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Jacobi solver
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rmatrix
+    integer, dimension(:), pointer :: p_KCOL, p_KLD
+    integer :: NEL, iel, indof, i, ig, j, jg, iloc, iouter, iblock, ielRef
+    integer(I32) :: celement
+    real(DP) :: dlocOmega
+    real(DP), dimension(:), pointer :: p_Dvector, p_Dmatrix
+    real(dp), dimension(:,:), allocatable :: DlocMat
+    real(dp), dimension(:), allocatable :: DlocVec, DlocSol
+    integer, dimension(:), allocatable :: IdofGlob, IdofGlobRef
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_elementDistribution), pointer :: p_relemDist
+    logical :: bsuccess
+    real(dp) :: domega
+    
+      ! Status reset
+      rsolverNode%iresult = 0
+      
+      ! Get omega and the relaxation parameter
+      domega = rsolverNode%domega
+
+      ! Get the matrix
+      p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(1,1)
+      
+      ! Now we have to make some decisions. At first, which matrix
+      ! structure do we have?
+      select case (p_rmatrix%cmatrixFormat)
+      case (LSYSSC_MATRIX9)
+      
+        ! Get the omega parameter for the matrix. Do not forget the scaling
+        ! factor in the matrix!
+        dlocomega = rsolverNode%domega / p_rmatrix%dScaleFactor
+
+        ! Now, which data format do we have? Single or double?
+        select case (p_rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Get pointers to the matrix data
+          call lsyssc_getbase_Kcol (p_rmatrix,p_KCOL)
+          call lsyssc_getbase_Kld (p_rmatrix,p_KLD)
+          call lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
+          
+          ! Take care of the accuracy of the vector
+          select case (rd%RvectorBlock(1)%cdataType)
+          case (ST_DOUBLE)
+            ! Get the data array of the vector
+            call lsyssc_getbase_double (rd%RvectorBlock(1),p_Dvector)
+            
+            ! Get pointers for quicker access
+            p_rspatialDiscr => p_rmatrix%p_rspatialDiscrTest
+            p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+            
+            ! Get number of elements
+            NEL = p_rtriangulation%NEL
+            
+            ! Check if we have a uniform discretisation (simplifies a lot)
+            if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+            
+              ! Get the element distribution from the spatial discretisation
+              p_relemDist => p_rspatialDiscr%RelementDistr(1)
+
+              ! Get type of element in this distribution
+              celement =  p_relemDist%celement
+
+              ! Get number of local DOF
+              indof = elem_igetNDofLoc(celement)
+              
+              ! Allocate space for global DOFs
+              allocate(IdofGlob(indof),IdofGlobRef(indof))
+
+              ! Allocate local matrix and vector
+              allocate(DlocMat(indof,indof), DlocVec(indof), DlocSol(indof))
+            
+              ! Loop over all elements in this element distribution
+              do iouter = 1, p_relemDist%NEL
+
+                ! Get next element in the queue (the "most upwind" one)
+                iel = rsolverNode%p_rsubnodeBlockUpwGS%p_Iqueue(iouter)
+
+                ! Map local to global DOFs
+                call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+
+                !!! Get entries from the global into the local matrix
+                ! Loop over all local lines
+                do i = 1, indof
+                  ! Get global line
+                  ig = IdofGlob(i)
+
+                  ! Loop over all local columns
+                  do j = 1, indof
+                    ! Get global columns
+                    jg = IdofGlob(j)
+
+                    do iloc = p_KLD(ig), p_KLD(ig+1)-1
+                      if (jg.eq.p_KCOL(iloc)) exit
+                    end do
+
+                    DlocMat(i,j) = p_Dmatrix(iloc)
+
+                  end do
+                end do
+
+                !!! Now get local vector
+                do i = 1, indof
+                  ! Get global line
+                  ig = IdofGlob(i)
+                   
+                  ! Get global entry in local vector
+                  DlocVec(i) = dlocOmega * p_Dvector(ig)
+                  
+                  ! Loop over all blocks left of the blockdiagonal
+                  ! That is loop over all upwind elements
+                  do iblock = 1, 3
+                    
+                    ! Get upwind element
+                    ielRef = rsolverNode%p_rsubnodeBlockUpwGS%p_IupwElems(iblock,iel)
+                    
+                    ! If it exists
+                    if (ielRef.ne.0) then
+
+                      ! Get global DOFs of upwind element
+                      call dof_locGlobMapping(p_rspatialDiscr, ielRef, IdofGlobRef)
+                      
+!                      ! Loop over all local lines
+!                      do i = 1, indof
+                          ig = IdofGlob(i)
+                        ! Loop over all (upwind) columns
+                        do j = 1, indof
+                          jg = IdofGlobRef(j)
+                          
+                          do iloc = p_KLD(ig), p_KLD(ig+1)-1
+                             if (jg.eq.p_KCOL(iloc)) then
+                               exit
+                             endif  
+!                             if ((iloc.eq.p_KLD(ig+1)-1).and.(jg.ne.p_KCOL(iloc))) then
+!                               write(*,*) 'nicht gefunden, iel, ielREF', iel, ielREF
+!                             endif
+                          end do
+
+!                          Dtemp(i) = Dtemp(i)+p_DA(iloc)*p_Dsol(jg)
+                          DlocVec(i) = DlocVec(i) - p_Dmatrix(iloc)*p_Dvector(jg)
+                      
+!                        end do ! i lines in element
+                           
+                      end do ! j columns in RefElement
+                     
+                    endif ! check if upwind element exists
+                  
+                  end do ! iblock
+                  
+!                  ! Substract product with lower diagonal
+!                  do jg = p_KLD(ig), p_KLD(ig+1)-1
+!                    if (p_KCOL(jg).ge.IdofGlob(1)) exit
+!                    DlocVec(i) = DlocVec(i) - p_Dmatrix(jg)*p_Dvector(p_KCOL(jg))
+!                  end do
+                  
+                end do
+
+                !!! Now solve local linear system
+                call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
+                                            indof, 2, bsuccess)
+
+                ! Test if local system could be solved
+                if (.not.bsuccess) then
+                  call output_line ( &
+                    'Local matricx singular.', &
+                    OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+                    do i = 1,size(DlocMat,1)
+                      write(*,*) DlocMat(i,:)
+                    end do
+                  call sys_halt()
+                end if
+
+                !!! Distribute local solution to global solution
+                do i = 1, indof
+                  ! Get global line
+                  ig = IdofGlob(i)
+                   
+                  ! Get local entry in global vector
+                  p_Dvector(ig) = DlocSol(i)
+                end do
+                
+              end do !iel
+              
+              ! Deallocate space for global DOFs
+              deallocate(IdofGlob, IdofGlobRef)
+
+              ! Deallocate local matrix and vector
+              deallocate(DlocMat, DlocVec, DlocSol)
+            
+            else ! No uniform distribution
+            
+              call output_line ('Discretisation not uniform - not supported.', &
+                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+              call sys_halt()
+            
+            end if ! Type of discretisation
+            
+          case default
+            call output_line ('Unsupported vector precision.', &
+                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+            call sys_halt()
+          end select
+       
+       
+        case default
+          call output_line ('Unsupported matrix precision.', &
+                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+          call sys_halt()
+        end select
+      
+      case default
+        call output_line ('Unsupported matrix format.', &
+                          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+        call sys_halt()
+      end select
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneBlockUpwGS (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the Block-SOR solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of SOR which is to be cleaned up.
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+    deallocate(rsolverNode%p_rsubnodeBlockUpwGS)
+  
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_initStructureBlockUpwGS (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Allocate list of elements (to be sorted in downwind direction)
+    allocate(rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue &
+             (rsolverNode%p_rsubNodeBlockUpwGS%p_rtriangulation%NEL))
+    
+    ! Allocate list of upwind elements to one element
+    allocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems(3, &
+              rsolverNode%p_rsubNodeBlockUpwGS%p_rtriangulation%NEL))
+    
+  
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_initDataBlockUpwGS (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  
+  ! local variables for sorting
+  integer:: i,j
+  integer :: iupwind, idownwind, NEL, NELinqueue, iv, iv1, iv2, iv3
+  real(dp) :: dvx, dvy, dnx, dny, dnv
+
+  integer, dimension(:,:), pointer :: p_IelementsAtEdge    
+  integer, dimension(:,:), allocatable :: IdownwElems
+  integer, dimension(:), allocatable :: Ioutdeg
+
+  integer, dimension(:,:), pointer :: p_IupwElems
+  integer, dimension(:), pointer :: p_Iqueue
+  type(t_triangulation), pointer :: p_rtriangulation
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+
+    ! Now sort the elements in downwind direction
+    
+    ! Get pointer to triangulation
+    p_rtriangulation => rsolverNode%p_rsubNodeBlockUpwGS%p_rtriangulation
+    
+    ! Get pointer to upwind array
+    p_IupwElems => rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems
+    
+    ! Get pointer to (soon to be sorted) element list
+    p_Iqueue => rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue
+    
+    ! Get number of elements
+    NEL = p_rtriangulation%NEL
+    
+    ! Allocate space for array with information which elements are
+    ! located downwind and their degree
+    allocate(IdownwElems(3,NEL))
+    allocate(Ioutdeg(NEL))
+    
+    ! Get pointer to elements at edge
+    call storage_getbase_int2D(p_rtriangulation%h_IelementsAtEdge,&
+                               p_IelementsAtEdge)
+    
+    ! Initialize arrays
+    Ioutdeg(:)       = 0
+    IdownwElems(:,:) = 0
+    p_IupwElems(:,:) = 0
+    p_Iqueue(:)      = 0
+
+    ! Get velocity vector
+    dvx = rsolverNode%p_rsubNodeBlockUpwGS%Dvel(1)
+    dvy = rsolverNode%p_rsubNodeBlockUpwGS%Dvel(2)
+    
+    ! If velocity = 0, then numbering is arbitrary, but the solver needs
+    ! a numbering, so we take an arbitrary velocity
+    if (dvx*dvx+dvy*dvy<10.0_dp*SYS_EPSREAL_DP) then
+      dvx = 1.0_dp
+      dvy = 1.0_dp
+    end if
+    
+    ! Give each element a degree by looping over all edges and increasing the
+    ! degree of the downwind element
+    do j = 1, p_rtriangulation%NMT
+      
+      ! Get normal vector
+      dnx = rsolverNode%p_rsubNodeBlockUpwGS%p_Dnormals(1,j)
+      dny = rsolverNode%p_rsubNodeBlockUpwGS%p_Dnormals(2,j)
+      
+      ! Normal * velocity vector
+      dnv = dvx*dnx + dvy*dny
+      
+      ! get upwind and downwind element
+      if ((dnv).lt.0.0_DP) then
+        iupwind   = p_IelementsAtEdge(2,j)
+        idownwind = p_IelementsAtEdge(1,j)
+      elseif ((dnv).gt.0.0_DP) then
+        iupwind   = p_IelementsAtEdge(1,j)
+        idownwind = p_IelementsAtEdge(2,j)
+      else ! Elements parallel in transport direction
+      endif
+       
+      ! Increase degrees and get upwind/downwind information
+      if (abs(dnv).gt.1E-10_DP) then
+        
+        ! Check if both elements exist
+        if((iupwind*idownwind).gt.0) then
+        
+          ! Increase degree of downwind element
+          Ioutdeg(idownwind) = Ioutdeg(idownwind) + 1
+        
+          ! Write downwind information to free space
+          if (IdownwElems(1,iupwind).eq.0) then
+            IdownwElems(1,iupwind) = idownwind
+          elseif (IdownwElems(2,iupwind).eq.0) then
+            IdownwElems(2,iupwind) = idownwind
+          else
+            IdownwElems(3,iupwind) = idownwind
+          endif
+          
+          ! Write upwind information to free space
+          if (p_IupwElems(1,idownwind).eq.0) then
+            p_IupwElems(1,idownwind) = iupwind
+          elseif (p_IupwElems(2,idownwind).eq.0) then
+            p_IupwElems(2,idownwind) = iupwind
+          else
+            p_IupwElems(3,idownwind) = iupwind
+          endif
+          
+        endif
+      
+      endif
+      
+    end do
+    
+    ! Write all Boundaryelements (deg=0) into Resultqueue
+    NELinqueue = 0
+    do i = 1, NEL
+      ! If degree of element = 0 (downwind to no element = at boundary here)
+      if (Ioutdeg(i).eq.0) then
+        NELinqueue = NELinqueue + 1
+        p_Iqueue(NELinqueue) = i
+      endif
+    end do
+    
+    ! Now we do the Resorting, go through the Elements starting at the Boundary
+    ! NELinqueue is NOT reset
+    do i = 1, NEL
+      
+      ! Get next element in queue
+      iv = p_Iqueue(i)
+      
+      ! If there is no next element - error
+      ! Maybe later add another element with lowest order to includevortex-like situations
+      if (iv.eq.0) then
+        call output_line ( &
+                      'Elements could not be sorted.', &
+                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataBlockUpwGS')
+        call sys_halt()
+      endif
+      
+      ! Get all downwind neighbours
+      iv1 = IdownwElems(1,Iv)
+      iv2 = IdownwElems(2,Iv)
+      iv3 = IdownwElems(3,Iv)
+      
+      ! Now - for all downwind neighbours:
+      ! 1. Decrease their degree
+      ! 2. If their degree is == 0
+      !    That is all upwind neighbours of the element are alreadvy in the queue
+      !    Add it to the queue
+      if (iv1.gt.0) then
+        Ioutdeg(iv1) = Ioutdeg(iv1)-1
+        if(Ioutdeg(iv1).eq.0) then
+          NELinqueue = NELinqueue + 1
+          p_Iqueue(NELinqueue) = iv1
+        endif
+      endif
+      
+      if (iv2.gt.0) then
+        Ioutdeg(iv2) = Ioutdeg(iv2)-1
+        if(Ioutdeg(iv2).eq.0) then
+          NELinqueue = NELinqueue + 1
+          p_Iqueue(NELinqueue) = Iv2
+        endif
+      endif
+      
+      if (iv3.gt.0) then
+        Ioutdeg(iv3)=Ioutdeg(iv3)-1
+        if (Ioutdeg(iv3).eq.0) then
+          NELinqueue = NELinqueue + 1
+          p_Iqueue(NELinqueue) = iv3
+        endif
+      endif
+      
+    end do
+    
+    ! Deallocate arrays
+    deallocate(IdownwElems,Ioutdeg)
+    
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneDataBlockUpwGS (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneStructureBlockUpwGS (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there is not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Deallocate list of elements (to be sorted in downwind direction)
+    if (associated(rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue)) then
+      deallocate(rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue)
+      nullify(rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue)
+    end if
+    
+    ! Deallocate list of upwind elements to one element
+    if (associated(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems)) then
+      deallocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems)
+      nullify(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems)
+    end if
+      
   end subroutine
 
 end module
