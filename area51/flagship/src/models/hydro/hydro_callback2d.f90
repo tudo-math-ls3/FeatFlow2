@@ -310,12 +310,12 @@ module hydro_callback2d
 
   public :: hydro_calcDivMatGalMatD2d_cuda
   public :: hydro_calcDivMatGalerkin2d_cuda
-!!$  public :: hydro_calcDivMatScDissMatD2d_cuda
-!!$  public :: hydro_calcDivMatScDiss2d_cuda
-!!$  public :: hydro_calcDivMatRoeDissMatD2d_cuda
-!!$  public :: hydro_calcDivMatRoeDiss2d_cuda
-!!$  public :: hydro_calcDivMatRusDissMatD2d_cuda
-!!$  public :: hydro_calcDivMatRusDiss2d_cuda
+  public :: hydro_calcDivMatScDissMatD2d_cuda
+  public :: hydro_calcDivMatScDiss2d_cuda
+  public :: hydro_calcDivMatRoeDissMatD2d_cuda
+  public :: hydro_calcDivMatRoeDiss2d_cuda
+  public :: hydro_calcDivMatRusDissMatD2d_cuda
+  public :: hydro_calcDivMatRusDiss2d_cuda
 
 contains
 
@@ -5214,26 +5214,26 @@ contains
     call hydro_calcMatDiagMatD2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
         cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
         rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
-    
-!!$    ! Loop over the edge groups and process all edges of one group
-!!$    ! in parallel without the need to synchronise memory access
-!!$    do igroup = 1, size(p_IedgeListIdx)-1
-!!$      
-!!$      ! Do nothing for empty groups
-!!$      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
-!!$      
-!!$      ! Get position of first edge in group
-!!$      IEDGEset = p_IedgeListIdx(igroup)
-!!$      
-!!$      ! Get position of last edge in group
-!!$      IEDGEmax = p_IedgeListIdx(igroup+1)-1
-!!$      
-!!$      ! Use callback function to compute off-diagonal matrix entries
-!!$      call hydro_calcMatGalMatD2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-!!$          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
-!!$          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
-!!$          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
-!!$    end do
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatGalMatD2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
     
     deallocate(cptr_Da)
 
@@ -5245,7 +5245,7 @@ contains
     ! Ensure data consistency
     call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
-    stop
+
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5355,26 +5355,26 @@ contains
     call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
         cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
         rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
-    
-!!$    ! Loop over the edge groups and process all edges of one group
-!!$    ! in parallel without the need to synchronise memory access
-!!$    do igroup = 1, size(p_IedgeListIdx)-1
-!!$      
-!!$      ! Do nothing for empty groups
-!!$      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
-!!$      
-!!$      ! Get position of first edge in group
-!!$      IEDGEset = p_IedgeListIdx(igroup)
-!!$      
-!!$      ! Get position of last edge in group
-!!$      IEDGEmax = p_IedgeListIdx(igroup+1)-1
-!!$      
-!!$      ! Use callback function to compute off-diagonal matrix entries
-!!$      call hydro_calcMatGalerkin2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-!!$          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
-!!$          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
-!!$          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
-!!$    end do
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatGalerkin2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
 
     deallocate(cptr_Da)
     
@@ -5386,7 +5386,6 @@ contains
     ! Ensure data consistency
     call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
-    stop
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5397,7 +5396,151 @@ contains
     
   end subroutine hydro_calcDivMatGalerkin2d_cuda
 
-!*****************************************************************************
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatScDissMatD2d_cuda(rgroupFEMSet, rx, rmatrix,&
+      dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
+      cconstrType, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the block-diagonal part of the
+    ! discrete low-order operator in 2D using scalar artificial
+    ! viscosities proportional to the spectral radius (largest
+    ! eigenvalue) of the Roe-matrix.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiagMatD2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDissMatD2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatScDissMatD2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatScDissMatD2d_cuda
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -5458,6 +5601,78 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
 
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatScDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5468,7 +5683,150 @@ contains
     
   end subroutine hydro_calcDivMatScDiss2d_cuda
 
-!*****************************************************************************
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRoeDissMatD2d_cuda(rgroupFEMSet, rx, rmatrix,&
+      dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
+      cconstrType, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the block-diagonal part of the
+    ! discrete low-order operator in 2D using tensorial artificial
+    ! viscosities of Roe-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiagMatD2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatRoeDissMatD2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRoeDissMatD2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRoeDissMatD2d_cuda
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -5528,6 +5886,78 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatRoeDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5537,6 +5967,149 @@ contains
 #endif
     
   end subroutine hydro_calcDivMatRoeDiss2d_cuda
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivMatRusDissMatD2d_cuda(rgroupFEMSet, rx, rmatrix,&
+      dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
+      cconstrType, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine assembles the block-diagonal part of the
+    ! discrete low-order operator in 2D using scalar artificial
+    ! viscosities of Rusanov-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FLASE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: callback function to compute local matrices
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixDiagSys_sim.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcMatrixSys_sim.inc'
+    optional :: fcb_calcMatrixDiagSys_sim
+    optional :: fcb_calcMatrixSys_sim
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiagMatD2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatRusDissMatD2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
+
+#else
+    
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivMatRusDissMatD2d_cuda')
+    call sys_halt()
+    
+#endif
+    
+  end subroutine hydro_calcDivMatRusDissMatD2d_cuda
 
 !*****************************************************************************
 
@@ -5597,6 +6170,78 @@ contains
 !</subroutine>
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup,ccType
+    type(C_PTR), dimension(:,:), pointer :: cptr_Da
+    type(C_PTR) :: cptr_DcoeffsAtEdge, cptr_DcoeffsAtDiag
+    type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
+    type(C_PTR) :: cptr_Dx
+    integer(I64) :: istream
+
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
+
+    ! Get pointers to memory blocks on device
+    cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    cptr_DcoeffsAtDiag = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtDiag)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination matrix rmatrix exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Matrix(rmatrix, .true., .false., istream, cptr_Da)
+    
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+
+    ! Use callback function to compute diagonal matrix entries
+    call hydro_calcMatDiag2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
+        cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+        rgroupFEMSet%NA, rgroupFEMSet%ncoeffsAtDiag, istream)
+
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronise memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+      
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute off-diagonal matrix entries
+      call hydro_calcMatRusDiss2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
+    end do
+    
+    deallocate(cptr_Da)
+
+    ! Transfer destination matrix back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Matrix(rmatrix, bclear, .false., istream)
+       
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
     

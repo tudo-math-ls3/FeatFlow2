@@ -10,212 +10,1166 @@
  *############################################################################
  */
 
-#include "coproc_core.h"
-#include "coproc_storage_cuda.h"
+#include <coproc_core.h>
+#include <coproc_storage_cuda.h>
 #include "cudaDMA.h"
 
 #define LANGUAGE LANGUAGE_C
-#include "../../../kernel/System/idxmanager.h"
+#include "flagship.h"
 
 /*******************************************************************************
  * VectorBase - one-dimensional array (basic facilities and specialisations)
+ *
+ * Template parameter nelem denotes the number of elements per vector
+ * entry. By default, a vector is stored as an array-of-structures:
+ *
+ * <1,2,...,nelem>_1, <1,2,...,nelem>_2, ..., <1,2,...,nelem>_neq
+ *
+ * If the template parameter soa is true, then the vector is
+ * assumed to be stored as structure-of-arrays:
+ *
+ * <1,2,...,neq>_1, <1,2,...,neq>_2, ..., <1,2,...neq>_nelem
  ******************************************************************************/
-template <int nelem, int isystemformat>
+template <int nelem, bool soa>
   struct VectorBase
   {
   };
 
 /*******************************************************************************
- * VectorBase: Vector is stored in interleaved format.
+ * VectorBase: Vector is stored as array-of-structures
  ******************************************************************************/
 template <int nelem>
-  struct VectorBase<nelem,SYSTEM_SCALAR>
+  struct VectorBase<nelem,false>
 { 
   /*****************************************************************************
-   * Gather nodal data for neqsim nodes with nelem elements per node
+   * Gather nodal data for node ieq and store it at position ipos in
+   * local data array DataAtNode
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void gatherNodeData (Td *DataAtNode,
 				Tv *vec,
+				Ti ipos,
 				Ti ieq, 
-				Ti neq,
-				Ti tid)
+				Ti neq)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2(DataAtNode,i,tid,nelem,neqsim) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2T(DataAtNode,i,ipos,nelem,datalen) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		} 
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2(DataAtNode,i,ipos,nelem,datalen) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2T(DataAtNode,i,ipos,nelem,datalen) += IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		} 
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2(DataAtNode,i,ipos,nelem,datalen) += IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		}
+	      }
 	    }
   
   /*****************************************************************************
-   * Scatter nodal data for neqsim nodes with nelem elements per node
+   * Scatter nodal data stored at position ipos in local data array
+   * DataAtNode to node ieq into global vector
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tv *vec,
 				 Td *DataAtNode,
+				 Ti ipos,
 				 Ti ieq, 
-				 Ti neq,
-				 Ti tid)
+				 Ti neq)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,tid,nelem,neqsim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2(DataAtNode,i,ipos,nelem,datalen);
+		} 
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,ipos,nelem,datalen);
+		} 
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
 	    }
-
+  
   /*****************************************************************************
-   * Gather edge-wise data for nedgesim edges with nelem elements per node
+   * Gather nodal data for all nodes in IeqList and store it at
+   * positions 1...datalen in local data array DataAtNode.
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void gatherNodeData (Td *DataAtNode,
+				Tv *vec,
+				Ti *IeqList,
+				Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2T(DataAtNode,i,ipos+1,nelem,datalen) =
+			  IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		} 
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2(DataAtNode,i,ipos+1,nelem,datalen) =
+			  IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2T(DataAtNode,i,ipos+1,nelem,datalen) +=
+			  IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		} 
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2(DataAtNode,i,ipos+1,nelem,datalen) +=
+			  IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+	      }
+	    }
+  
+  /*****************************************************************************
+   * Scatter all nodal data stored at positions 1...datalen in local
+   * data array DataAtNode to all nodes in IeqList into global vector
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void scatterNodeData (Tv *vec,
+				 Td *DataAtNode,
+				 Ti *IeqList, 
+				 Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq) =
+			  IDX2T(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		} 
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq) =
+			  IDX2(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq) +=
+			  IDX2T(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		} 
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IeqList[ipos*incr],nelem,neq) +=
+			  IDX2(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+	      }
+	    }
+  
+  /*****************************************************************************
+   * Gather edge-wise data for edge (ieq,jeq) and store it at position
+   * ipos in local data array DataAtEdge
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void gatherEdgeData (Td *DataAtEdge, 
 				Tv *vec,
+				Ti ipos,
 				Ti ieq, 
 				Ti jeq, 
-				Ti neq,
-				Ti tid)
+				Ti neq)
 	    {
-	      // Gather data at first end point ieq
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  // Gather data at first end point ieq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
-	      
-	      // Gather data at second end point jeq
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		  
+		  // Gather data at second end point jeq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim) = IDX2_REVERSE(vec,i,jeq,nelem,neq);
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen) = IDX2_REVERSE(vec,i,jeq,nelem,neq);
+		} 
+		else {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen) = IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		  
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen) = IDX2_REVERSE(vec,i,jeq,nelem,neq);
+		}
+	      }
+	      else {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen) += IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		  
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen) += IDX2_REVERSE(vec,i,jeq,nelem,neq);
+		} 
+		else {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen) += IDX2_REVERSE(vec,i,ieq,nelem,neq);
+		  
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen) += IDX2_REVERSE(vec,i,jeq,nelem,neq);
+		}
+	      }
 	    }
 
   /*****************************************************************************
-   * Scatter edge-wise data for nedgesim edges with nelem elements per node
+   * Scatter edge-wise data stored at position ipos in local data
+   * array DataAtEdge to edge (ieq,jeq) into global vector
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void scatterEdgeData (Tv *vec,
 				 Td *DataAtEdge,
+				 Ti ipos,
 				 Ti ieq,
 				 Ti jeq,
-				 Ti neq,
-				 Ti tid)
+				 Ti neq)
 	    {
-	      // Scatter data to first end point ieq
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  // Scatter data to first end point ieq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-	      
-	      // Scatter data to second end point jeq
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+		  
+		  // Scatter data to second end point jeq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_REVERSE(vec,i,jeq,nelem,neq) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,jeq,nelem,neq) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+		else {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+		  
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,jeq,nelem,neq) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+		  
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,jeq,nelem,neq) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+		else {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+		  
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(vec,i,jeq,nelem,neq) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+	      }
 	    }  
-};
 
+  /*****************************************************************************
+   * Gather edge-wise data for all edges in IedgeList and store it at
+   * positions 1...datalen in local data array DataAtEdge
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void gatherEdgeData (Td *DataAtEdge, 
+				Tv *vec,
+				Ti *IedgeList, 
+				Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen) =
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq);
+		      
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen) =
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen) =
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq);
+		      
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen) =
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen) +=
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq);
+		      
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen) +=
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen) +=
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq);
+		      
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen) +=
+			  IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+	      }
+	    }
+
+  /*****************************************************************************
+   * Scatter all edge-wise data stored at positions 1...datalen in local data
+   * array DataAtEdge to all edges in IedgeList into global vector
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void scatterEdgeData (Tv *vec,
+				 Td *DataAtEdge,
+				 Ti *IedgeList,
+				 Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq) =
+			  IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		      
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq) =
+			  IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+	      }
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq) =
+			  IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		      
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq) =
+			  IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq) +=
+			  IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		      
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq) +=
+			  IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+	      }
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr],nelem,neq) +=
+			  IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		      
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_REVERSE(vec,i,IedgeList[ipos*incr+1],nelem,neq) +=
+			  IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+	      }
+	    }
+};
+  
 /*****************************************************************************
- * VectorBase: Vector is stored in block format.
+ * VectorBase: Vector is stored as structure-of-arrays
  ****************************************************************************/
 template <int nelem>
-  struct VectorBase<nelem,SYSTEM_BLOCK>
+  struct VectorBase<nelem,true>
 {
   /*****************************************************************************
-   * Gather nodal data for neqsim nodes with nelem elements per node
+   * Gather nodal data for node ieq and store it at position ipos in
+   * local data array DataAtNode
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void gatherNodeData (Td *DataAtNode,
 				Tv *vec,
+				Ti ipos,
 				Ti ieq, 
-				Ti neq,
-				Ti tid)
+				Ti neq)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2(DataAtNode,i,tid,nelem,neqsim) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2T(DataAtNode,i,ipos,nelem,datalen) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2(DataAtNode,i,ipos,nelem,datalen) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2T(DataAtNode,i,ipos,nelem,datalen) += IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2(DataAtNode,i,ipos,nelem,datalen) += IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		}
+	      }
 	    }
 
   /*****************************************************************************
-   * Scatter nodal data for neqsim nodes with nelem elements per node
+   * Scatter nodal data stored at position ipos in local data array
+   * DataAtNode to node ieq into global vector
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tv *vec,
 				 Td *DataAtNode,
+				 Ti ipos,
 				 Ti ieq, 
-				 Ti neq,
-				 Ti tid)
+				 Ti neq)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,tid,nelem,neqsim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
 	    }
   
   /*****************************************************************************
-   * Gather edge-wise data for nedgesim edges with nelem elements per node
+   * Gather nodal data for all nodes in IeqList and store it at
+   * positions 1...datalen in local data array DataAtNode
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void gatherNodeData (Td *DataAtNode,
+				Tv *vec,
+				Ti *IeqList, 
+				Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2T(DataAtNode,i,ipos+1,nelem,datalen) =
+			  IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2(DataAtNode,i,ipos+1,nelem,datalen) =
+			  IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2T(DataAtNode,i,ipos+1,nelem,datalen) +=
+			  IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2(DataAtNode,i,ipos+1,nelem,datalen) +=
+			  IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq);
+		    }
+		}
+	      }
+	    }
+
+  /*****************************************************************************
+   * Scatter nodal data stored at positions 1...datalen in local data
+   * array DataAtNode to all nodes in IeqList into global vector
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void scatterNodeData (Tv *vec,
+				 Td *DataAtNode,
+				 Ti *IeqList, 
+				 Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq) =
+			  IDX2T(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq) =
+			  IDX2(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq) +=
+			  IDX2T(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IeqList[ipos*incr],nelem,neq) +=
+			  IDX2(DataAtNode,i,ipos+1,nelem,datalen);
+		    }
+		}
+	      }
+	    }
+  
+  /*****************************************************************************
+   * Gather edge-wise data for edge (ieq,jeq) and store it at position
+   * ipos in local data array DataAtEdge
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tv,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void gatherEdgeData (Td *DataAtEdge,
 				Tv *vec,
+				Ti ipos,
 				Ti ieq, 
 				Ti jeq, 
-				Ti neq,
-				Ti tid)
+				Ti neq)
 	    {
-	      // Gather data at first end point ieq
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  // Gather data at first end point ieq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
-	      
-	      // Gather data at second end point jeq
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		
+		  // Gather data at second end point jeq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim) = IDX2_FORWARD(vec,i,jeq,nelem,neq);
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen) = IDX2_FORWARD(vec,i,jeq,nelem,neq);
+		}
+		else {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen) = IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen) = IDX2_FORWARD(vec,i,jeq,nelem,neq);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen) += IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen) += IDX2_FORWARD(vec,i,jeq,nelem,neq);
+		}
+		else {
+		  // Gather data at first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen) += IDX2_FORWARD(vec,i,ieq,nelem,neq);
+		
+		  // Gather data at second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen) += IDX2_FORWARD(vec,i,jeq,nelem,neq);
+		}
+	      }
 	    }
 
   /*****************************************************************************
-   * Scatter edge-wise data for nedgesim edges with nelem elements per node
+   * Scatter edge-wise data stored at position ipos in local data
+   * array DataAtEdge to edge (ieq,jeq) into global vector
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Td,
             typename Tv,
             typename Ti>
     __device__ __forceinline__
     static void scatterEdgeData (Tv *vec,
 				 Td *DataAtEdge,
+				 Ti ipos,
 				 Ti ieq, 
 				 Ti jeq, 
-				 Ti neq,
-				 Ti tid)
+				 Ti neq)
 	    {
-	      // Scatter data to first end point ieq
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  // Scatter data to first end point ieq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,1,i,tid,nelem,2,nedgesim);
-	      
-	      // Scatter data to second end point jeq
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3T(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		
+		  // Scatter data to second end point jeq
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_FORWARD(vec,i,jeq,nelem,neq) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,jeq,nelem,neq) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+		else {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,jeq,nelem,neq) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3T(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,jeq,nelem,neq) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+		else {
+		  // Scatter data to first end point ieq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		
+		  // Scatter data to second end point jeq
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_FORWARD(vec,i,jeq,nelem,neq) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		}
+	      }
+	    }
+
+  /*****************************************************************************
+   * Gather edge-wise data for all edges in IedgeList and store it at
+   * positions 1...datalen in local data array DataAtEdge
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void gatherEdgeData (Td *DataAtEdge, 
+				Tv *vec,
+				Ti *IedgeList, 
+				Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen) =
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq);
+		    
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen) =
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen) =
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq);
+		    
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen) =
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen) +=
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq);
+		    
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen) +=
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Gather data at first end point
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen) +=
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq);
+		    
+		      // Gather data at second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen) +=
+			  IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq);
+		    }
+		}
+	      }
+	    }
+
+  /*****************************************************************************
+   * Scatter all edge-wise data stored at positions 1...datalen in local data
+   * array DataAtEdge to all edges in IedgeList into global vector
+   ****************************************************************************/
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
+            int incr,
+            typename Tv,
+            typename Td,
+            typename Ti>
+    __device__ __forceinline__
+    static void scatterEdgeData (Tv *vec,
+				 Td *DataAtEdge,
+				 Ti *IedgeList,
+				 Ti neq)
+	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq) =
+			  IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		    
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq) =
+			  IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq) =
+			  IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		    
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq) =
+			  IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq) +=
+			  IDX3T(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		    
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq) +=
+			  IDX3T(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+		else {
+		  for (int ipos=0; ipos<datalen; ipos++)
+		    {
+		      // Scatter data to first end point ieq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr],nelem,neq) +=
+			  IDX3(DataAtEdge,i,1,ipos+1,nelem,2,datalen);
+		    
+		      // Scatter data to second end point jeq
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			IDX2_FORWARD(vec,i,IedgeList[ipos*incr+1],nelem,neq) +=
+			  IDX3(DataAtEdge,i,2,ipos+1,nelem,2,datalen);
+		    }  
+		}
+	      }
 	    }
 };
 
@@ -223,114 +1177,158 @@ template <int nelem>
 /*******************************************************************************
  * Vector - one-dimensional array
  ******************************************************************************/
-template <int nelem, int isystemformat>
-  struct Vector : public VectorBase<nelem,isystemformat>
+template <int nelem, bool soa>
+  struct Vector : public VectorBase<nelem,soa>
 {
   // Enable use of inherited functions
-  using VectorBase<nelem,isystemformat>::gatherNodeData;
-  using VectorBase<nelem,isystemformat>::scatterNodeData;
-  using VectorBase<nelem,isystemformat>::gatherEdgeData;
-  using VectorBase<nelem,isystemformat>::scatterEdgeData;
-
+  using VectorBase<nelem,soa>::gatherNodeData;
+  using VectorBase<nelem,soa>::scatterNodeData;
+  using VectorBase<nelem,soa>::gatherEdgeData;
+  using VectorBase<nelem,soa>::scatterEdgeData;
+  
   /*****************************************************************************
-   * Gather nodal data for a single nodes with nelem elements per node
+   * Gather nodal data for node ieq and store it at position ipos in
+   * local data array DataAtNode
    ****************************************************************************/
-  template <typename Tv, typename Td, typename Ti>
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
     __device__ __forceinline__
     static void gatherNodeData (Td *DataAtNode,
 				Tv *vec,
 				Ti ieq,
 				Ti neq)
-	    {
-	      VectorBase<nelem,isystemformat>::gatherNodeData<1>
-		(DataAtNode,vec,ieq,neq,1);
-	    }
+  {
+    VectorBase<nelem,soa>::gatherNodeData<1,false,boverwrite>
+      (DataAtNode,vec,1,ieq,neq);
+  }
   
   /*****************************************************************************
-   * Scatter nodal data for a single nodes with nelem elements per node
+   * Scatter nodal data stored at position ipos in local data array
+   * DataAtNode to node ieq into global vector
    ****************************************************************************/
-  template <typename Tv, typename Td, typename Ti>
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tv *vec,
 				 Td *DataAtNode,
 				 Ti ieq,
 				 Ti neq)
-	    {
-	      VectorBase<nelem,isystemformat>::scatterNodeData<1>
-		(vec,DataAtNode,ieq,neq,1);
-	    }
+  {
+    VectorBase<nelem,soa>::scatterNodeData<1,false,boverwrite>
+      (vec,DataAtNode,1,ieq,neq);
+  }
   
   /*****************************************************************************
-   * Gather nodal data for a single edge with nelem elements per edge
+   * Gather edge-wise data for edge (ieq,jeq) and store it at position
+   * ipos in local data array DataAtEdge
    ****************************************************************************/
-  template <typename Tv, typename Td, typename Ti>
-     __device__ __forceinline__
-     static void gatherEdgeData (Td *DataAtEdge,
-				 Tv *vec,
-				 Ti ieq,
-				 Ti jeq,
-				 Ti neq)
-	    {
-	      VectorBase<nelem,isystemformat>::gatherEdgeData<1>
-		(DataAtEdge,vec,ieq,jeq,neq,1);
-	    }
-
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
+    __device__ __forceinline__
+    static void gatherEdgeData (Td *DataAtEdge,
+				Tv *vec,
+				Ti ieq,
+				Ti jeq,
+				Ti neq)
+  {
+    VectorBase<nelem,soa>::gatherEdgeData<1,false,boverwrite>
+      (DataAtEdge,vec,1,ieq,jeq,neq);
+  }
+  
   /*****************************************************************************
-   * Scatter nodal data for a single edge with nelem elements per edge
+   * Scatter edge-wise data stored at position ipos in local data
+   * array DataAtEdge to edge (ieq,jeq) into global vector
    ****************************************************************************/
-  template <typename Tv, typename Td, typename Ti>
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
     __device__ __forceinline__
     static void scatterEdgeData (Tv *vec,
 				 Td *DataAtEdge,
 				 Ti ieq,
 				 Ti jeq,
 				 Ti neq)
-	    {
-	      VectorBase<nelem,isystemformat>::scatterEdgeData<1>
-		(vec,DataAtEdge,ieq,jeq,neq,1);
-	    }
+  {
+    VectorBase<nelem,soa>::scatterEdgeData<1,false,boverwrite>
+      (vec,DataAtEdge,1,ieq,jeq,neq);
+  }
 };
 
 /*******************************************************************************
  * MatrixBase - two dimensional array (basic facilities and specialisations)
- ******************************************************************************/
+ *
+ * Template parameter nelem denotes the number of elements per matrix
+ * entry. By default, a matrix is stored as an array-of-structures:
+ *
+ * <1,2,...,nelem>_1, <1,2,...,nelem>_2, ..., <1,2,...,nelem>_na
+ *
+ * If the template parameter soa is true, then the matrix is
+ * assumed to be stored as structure-of-arrays:
+ *
+ * <1,2,...,na>_1, <1,2,...,na>_2, ..., <1,2,...na>_nelem
 
-template <int nelem, int isystemformat>
+ ******************************************************************************/
+template <int nelem, bool soa>
   struct MatrixBase
   { 
   };
 
 /*******************************************************************************
- * MatrixBase: Matrix is stored in interleaved format.
+ * MatrixBase: Matrix is stored as array-of-structures
  ******************************************************************************/
-
 template <int nelem>
-  struct MatrixBase<nelem,SYSTEM_SCALAR>
+  struct MatrixBase<nelem,false>
 {
   /*****************************************************************************
-   * Scatter data for neqsim nodes with nelem elements per node
+   * Scatter data for datalen nodes with nelem elements per node
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tm,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tm *mat,
 				 Td *DataAtNode,
+				 Ti ipos,
 				 Ti ia,
-				 Ti na,
-				 Ti tid)
+				 Ti na)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX2_REVERSE(mat,i,ia,nelem,na) += IDX2(DataAtNode,i,tid,nelem,neqsim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(mat,i,ia,nelem,na) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(mat,i,ia,nelem,na) = IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(mat,i,ia,nelem,na) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX2_REVERSE(mat,i,ia,nelem,na) += IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
 	    }
   
   /*****************************************************************************
-   * Scatter data for nedgesim edges with nelem elements per node;
+   * Scatter data for datalen edges with nelem elements per node;
    * off-diagonal matrix positions are given explicitly
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             bool bstabilise,
             bool blumping,
             typename Tm,
@@ -339,68 +1337,173 @@ template <int nelem>
     __device__ __forceinline__
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
+				 Ti ipos,
 				 Ti ii,
 				 Ti ij,
 				 Ti ji,
 				 Ti jj,
-				 Ti na,
-				 Ti tid)
+				 Ti na)
 	    {
-	      if (bstabilise)
-		{
-		  if (blumping)
-		    {
-		      // perform lumping and apply stabilisation
+	      if (bstabilise) {
+		if (blumping) {
+		  // perform lumping and apply stabilisation
+		  if (btranspose) {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim);
-			}
-		      
-		    } else
-		    {
-		      // perform no lumping but apply stabilisation
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		    
+		  }
+		  else {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim)+
-			                                     IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim)+
-			                                     IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			}
-		    }
-		} else
-		{
-		  if (blumping)
-		    {
-		      // perform lumping but do not apply stabilisation
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    } else
-		    {
-		      // perform no lumping and do not apply stabilisation
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    }
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		  }
 		}
+		else {
+		  // perform no lumping but apply stabilisation
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+  			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+  			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		}
+	      }
+	      else {
+		if (blumping) {
+		  // perform lumping but do not apply stabilisation
+		  if (btranspose) {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		  else {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		}
+		else {
+		  // perform no lumping and do not apply stabilisation
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    
+		    // perform no lumping and do not apply stabilisation
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		}
+	      }
 	    }
   
   /*****************************************************************************
-   * Scatter data for nedgesim edges with nelem elements per node;
+   * Scatter data for datalen edges with nelem elements per node;
    * matrix positions are retrieved from edge list
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             bool bstabilise,
             bool blumping,
             typename Tm,
@@ -410,103 +1513,237 @@ template <int nelem>
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
 				 Ti *IedgeList,
+				 Ti ipos,
 				 Ti iedge,
-				 Ti na,
 				 Ti nedge,
-				 Ti tid)
+				 Ti na)
 	    {
-	      if (bstabilise)
-		{
-		  if (blumping)
-		    {
-		      // perform lumping and apply stabilisation
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+	      if (bstabilise) {
+		if (blumping) {
+		  // perform lumping and apply stabilisation
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+		  if (btranspose) {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim);
-			}
-		      
-		    } else
-		    {
-		      // perform no lumping but apply stabilisation
-		      Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
-		      Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		  }
+		  else {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim)+
-			                                     IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim)+
-			                                     IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			}
-		    }
-		} else
-		{
-		  if (blumping)
-		    {
-		      // perform lumping but do not apply stabilisation
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    } else
-		    {
-		      // perform no lumping and do not apply stabilisation
-		      Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
-		      Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    }
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		  }
 		}
+		else {
+		  // perform no lumping but apply stabilisation
+		  Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
+		  Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na)  = IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na)  = IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ii,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,jj,nelem,na) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                     IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		}
+	      }
+	      else {
+		if (blumping) {
+		  // perform lumping but do not apply stabilisation
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+
+		  if (btranspose) {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		  else {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX2_REVERSE(mat,i,ii,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX2_REVERSE(mat,i,jj,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		}
+		else {
+		  // perform no lumping and do not apply stabilisation
+		  Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
+		  Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
+
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX2_REVERSE(mat,i,ij,nelem,na) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX2_REVERSE(mat,i,ji,nelem,na) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		}
+	      }
 	    }
 };
 
 /*******************************************************************************
- * MatrixBase: Matrix is stored in block format.
+ * MatrixBase: Matrix is stored structure-of-arrays
  ******************************************************************************/
 
 template <int nelem>
-  struct MatrixBase<nelem,SYSTEM_BLOCK>
+  struct MatrixBase<nelem,true>
 {
   /*****************************************************************************
-   * Scatter data for neqsim node with nelem elements per node
+   * Scatter data for datalen node with nelem elements per node
    ****************************************************************************/
-  template <int neqsim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             typename Tm,
             typename Td,
             typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tm *mat,
 				 Td *DataAtNode,
+				 Ti ipos,
 				 Ti ia,
-				 Ti na,
-				 Ti tid)
+				 Ti na)
 	    {
+	      if (boverwrite) {
+		//
+		// Overwrite existing data
+		//
+		if (btranspose) {
 #pragma unroll
-	      for (int i=1; i<=nelem; i++)
-		IDX1((((Tm**)mat)[i-1]),ia) += IDX2(DataAtNode,i,tid,nelem,neqsim);
+		  for (int i=1; i<=nelem; i++)
+		    IDX1((((Tm**)mat)[i-1]),ia) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX1((((Tm**)mat)[i-1]),ia) = IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
+	      else {
+		//
+		// Keep existing data
+		//
+		if (btranspose) {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX1((((Tm**)mat)[i-1]),ia) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		}
+		else {
+#pragma unroll
+		  for (int i=1; i<=nelem; i++)
+		    IDX1((((Tm**)mat)[i-1]),ia) += IDX2(DataAtNode,i,ipos,nelem,datalen);
+		}
+	      }
 	    }
-
+  
   /*****************************************************************************
-   * Scatter data for nedgesim edges with nelem elements per node;
+   * Scatter data for datalen edges with nelem elements per node;
    * off-diagonal matrix positions are given explicitly
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             bool bstabilise,
             bool blumping,
             typename Tm,
@@ -515,68 +1752,170 @@ template <int nelem>
     __device__ __forceinline__
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
+				 Ti ipos,
 				 Ti ii,
 				 Ti ij,
 				 Ti ji,
 				 Ti jj,
-				 Ti na,
-				 Ti tid)
+				 Ti na)
 	    {
-	      if (bstabilise)
-		{
-		  if (blumping)
-		    {
-		      // perform lumping and apply stabilisation
+	      if (bstabilise) {
+		if (blumping) {
+		  // perform lumping and apply stabilisation
+		  if (btranspose) {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim);
-			}
-		      
-		    } else
-		    {
-		      // perform no lumping but apply stabilisation
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		  }
+		  else {
 #pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim)+
-			                                 IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim)+
-			                                 IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			}
-		    }
-		} else
-		{
-		  if (blumping)
-		    {
-		      // perform lumping but do not apply stabilisation
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    } else
-		    {
-		      // perform no lumping and do not apply stabilisation
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    }
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		    
+		  }
 		}
+		else {
+		  // perform no lumping but apply stabilisation
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		}
+	      } else {
+		if (blumping) {
+		  // perform lumping but do not apply stabilisation
+		  if (btranspose) {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		  else {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		}
+		else {
+		  // perform no lumping and do not apply stabilisation
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		}
+	      }
 	    }
   
   /*****************************************************************************
-   * Scatter data for nedgesim edges with nelem elements per node;
+   * Scatter data for datalen edges with nelem elements per node;
    * matrix positions are retrieved from edge list
    ****************************************************************************/
-  template <int nedgesim,
+  template <int datalen,
+            bool btranspose,
+            bool boverwrite,
             bool bstabilise,
             bool blumping,
             typename Tm,
@@ -586,101 +1925,206 @@ template <int nelem>
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
 				 Ti *IedgeList,
+				 Ti ipos,
 				 Ti iedge,
-				 Ti na,
 				 Ti nedge,
-				 Ti tid)
+				 Ti na)
 	    {
-	      if (bstabilise)
-		{
-		  if (blumping)
-		    {
-		      // perform lumping and apply stabilisation
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+	      if (bstabilise) {
+		if (blumping) {
+		  // perform lumping and apply stabilisation
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+
+		  if (btranspose) {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		  }
+		  else {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen);
+		      }
+		    
+		  }
+		} 
+		else {
+		  // perform no lumping but apply stabilisation
+		  Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
+		  Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
 #pragma unroll
 		      for (int i=1; i<=nelem; i++)
 			{
-			  IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim);
-			}
-		      
-		    } else
-		    {
-		      // perform no lumping but apply stabilisation
-		      Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
-		      Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3(DataAtEdge,i,1,tid,nelem,3,nedgesim)+
-			                                 IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3(DataAtEdge,i,2,tid,nelem,3,nedgesim)+
-			                                 IDX3(DataAtEdge,i,3,tid,nelem,3,nedgesim);
-			}
-		    }
-		} else
-		{
-		  if (blumping)
-		    {
-		      // perform lumping but do not apply stabilisation
-		      Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
-		      Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
-			}
-		    } else
-		    {
-		      // perform no lumping and do not apply stabilisation
-		      Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
-		      Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
-#pragma unroll
-		      for (int i=1; i<=nelem; i++)
-			{
-			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3(DataAtEdge,i,1,tid,nelem,2,nedgesim);
-			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3(DataAtEdge,i,2,tid,nelem,2,nedgesim);
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
 			}
 		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij)  = IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji)  = IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3T(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3T(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3T(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ii) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),jj) -= IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3(DataAtEdge,i,1,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3(DataAtEdge,i,2,ipos,nelem,3,datalen)+
+			                                 IDX3(DataAtEdge,i,3,ipos,nelem,3,datalen);
+			}
+		    }
+		  }
 		}
+	      }
+	      else {
+		if (blumping) {
+		  // perform lumping but do not apply stabilisation
+		  Ti ii = IDX2(IedgeList,5,iedge,6,nedge);
+		  Ti jj = IDX2(IedgeList,6,iedge,6,nedge);
+
+		  if (btranspose) {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  }
+		  else {
+#pragma unroll
+		    for (int i=1; i<=nelem; i++)
+		      {
+			IDX1((((Tm**)mat)[i-1]),ii) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			IDX1((((Tm**)mat)[i-1]),jj) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+		      }
+		  } 
+		}
+		else {
+		  // perform no lumping and do not apply stabilisation
+		  Ti ij = IDX2(IedgeList,3,iedge,6,nedge);
+		  Ti ji = IDX2(IedgeList,4,iedge,6,nedge);
+		  
+		  if (boverwrite) {
+		    //
+		    // Overwrite existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) = IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		  else {
+		    //
+		    // Keep existing data
+		    //
+		    if (btranspose) {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3T(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		    else {
+#pragma unroll
+		      for (int i=1; i<=nelem; i++)
+			{
+			  IDX1((((Tm**)mat)[i-1]),ij) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
+			  IDX1((((Tm**)mat)[i-1]),ji) += IDX3(DataAtEdge,i,2,ipos,nelem,2,datalen);
+			}
+		    }
+		  }
+		}
+	      }
 	    }
 };
 
 /*******************************************************************************
  * Matrix - two-dimensional array
  ******************************************************************************/
-template <int nelem, int isystemformat>
-  struct Matrix : public MatrixBase<nelem,isystemformat>
+template <int nelem, int soa>
+  struct Matrix : public MatrixBase<nelem,soa>
 {
   // Enable use of inherited functions
-  using MatrixBase<nelem,isystemformat>::scatterNodeData;
-  using MatrixBase<nelem,isystemformat>::scatterEdgeData;
+  using MatrixBase<nelem,soa>::scatterNodeData;
+  using MatrixBase<nelem,soa>::scatterEdgeData;
   
   /*****************************************************************************
    * Scatter nodal data for a single nodes with nelem elements per node
    ****************************************************************************/
-  template <typename Tm, typename Td, typename Ti>
+  template <bool boverwrite, typename Tm, typename Td, typename Ti>
     __device__ __forceinline__
     static void scatterNodeData (Tm *mat,
 				 Td *DataAtNode,
 				 Ti ieq,
 				 Ti neq)
   {
-    MatrixBase<nelem,isystemformat>::scatterNodeData<1>
-      (mat,DataAtNode,ieq,neq,1);
+    MatrixBase<nelem,soa>::scatterNodeData<1,false,boverwrite>
+      (mat,DataAtNode,1,ieq,neq);
   }
 
   /*****************************************************************************
    * Scatter data for a single edges with nelem elements per node;
    * off-diagonal matrix positions are given explicitly
    ****************************************************************************/
-  template <bool bstabilise, bool blumping, typename Tm, typename Td, typename Ti>
+  template <bool boverwrite, bool bstabilise, bool blumping, typename Tm, typename Td, typename Ti>
     __device__ __forceinline__
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
@@ -690,24 +2134,24 @@ template <int nelem, int isystemformat>
 				 Ti jj,
 				 Ti na)
   {
-    MatrixBase<nelem,isystemformat>::scatterEdgeData<1,bstabilise,blumping>
-      (mat,DataAtEdge,ii,ij,ji,jj,na,1);
+    MatrixBase<nelem,soa>::scatterEdgeData<1,false,boverwrite,bstabilise,blumping>
+      (mat,DataAtEdge,1,ii,ij,ji,jj,na);
   }
 
   /*****************************************************************************
    * Scatter data for a single edges with nelem elements per node;
    * matrix positions are retrieved from edge list
    ****************************************************************************/
-  template <bool bstabilise, bool blumping, typename Tm, typename Td, typename Ti>
+  template <bool boverwrite, bool bstabilise, bool blumping, typename Tm, typename Td, typename Ti>
     __device__ __forceinline__
     static void scatterEdgeData (Tm *mat,
 				 Td *DataAtEdge,
 				 Ti *IedgeList,
 				 Ti iedge,
-				 Ti na,
-				 Ti nedge)
+				 Ti nedge,
+				 Ti na)
   {
-    MatrixBase<nelem,isystemformat>::scatterEdgeData<1,bstabilise,blumping>
-      (mat,DataAtEdge,IedgeList,iedge,na,nedge,1);
+    MatrixBase<nelem,soa>::scatterEdgeData<1,false,boverwrite,bstabilise,blumping>
+      (mat,DataAtEdge,IedgeList,1,iedge,na,nedge);
   }
 };

@@ -100,6 +100,7 @@
 
 module hydro_callback
 
+#include "../../flagship.h"
 #ifdef HYDRO_NDIM
 #undef HYDRO_NDIM
 #endif
@@ -509,6 +510,8 @@ contains
 
       case (DISSIPATION_ZERO)
 
+        call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
+
         ! Assemble divergence operator without dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -568,7 +571,8 @@ contains
               rsolution, hydro_calcMatScDissMatD3d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiagMatD3d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatScDissMatD2d_cuda))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -596,7 +600,8 @@ contains
               rsolution, hydro_calcMatRoeDissMatD2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatRoeDissMatD2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -632,7 +637,8 @@ contains
               rsolution, hydro_calcMatRusDissMatD2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatRusDissMatD2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -690,7 +696,7 @@ contains
               rsolution, hydro_calcMatGalerkin3d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiag3d_sim, rcollection=rcollection)
-
+      
         case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
@@ -717,7 +723,8 @@ contains
               rsolution, hydro_calcMatScDiss2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiag2d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatScDiss2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -753,7 +760,8 @@ contains
               rsolution, hydro_calcMatRoeDiss2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiag2d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatRoeDiss2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -789,7 +797,8 @@ contains
               rsolution, hydro_calcMatRusDiss2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiag2d_sim, rcollection=rcollection,&
-              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC)&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatRusDiss2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -4006,16 +4015,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,0,0)
-          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,_,_)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,ieq,_,_)
 
           ! Overwrite the geometric source term
           DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_)
           DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4035,16 +4044,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,0,0)
-          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,_,_)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,ieq,_,_)
 
           ! Update the geometric source term
           DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_)
           DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4113,16 +4122,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,0,0)
-          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,_,_)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,ieq,_,_)
 
           ! Overwrite the geometric source term
           DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_)
           DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4142,16 +4151,16 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,0,0)
-          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,_,_)
+          dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,ieq,_,_)
 
           ! Update the geometric source term
           DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_)
           DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4233,16 +4242,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,0,0)
-            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,_,_)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -4275,16 +4284,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,0,0)
-            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,_,_)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_FORWARD,jeq,_,_)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -4370,16 +4379,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,0,0)
-            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,_,_)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -4412,16 +4421,16 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,0,0)
-            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,_,_)
+            dpre = PRESSURE2_1D(DdataSolution,IDX2_REVERSE,jeq,_,_)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -4493,18 +4502,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,0,0)
-          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,_,_)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,ieq,_,_)
 
           ! Overwrite the geometric source term
           DdataSource(1,ieq) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_)
           DdataSource(2,ieq) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(3,ieq) = daux * DdataMassMatrix(ieq) *&
-                               YMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(4,ieq) = daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4524,18 +4533,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,0,0)
-          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,ieq,_,_)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,ieq,_,_)
 
           ! Update the geometric source term
           DdataSource(1,ieq) = DdataSource(1,ieq) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_)
           DdataSource(2,ieq) = DdataSource(2,ieq) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(3,ieq) = DdataSource(3,ieq) + daux * DdataMassMatrix(ieq) *&
-                               YMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,0,0) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_FORWARD,ieq,_,_) * dvel
           DdataSource(4,ieq) = DdataSource(4,ieq) + daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_FORWARD,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4603,18 +4612,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,0,0)
-          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,_,_)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,ieq,_,_)
 
           ! Overwrite the geometric source term
           DdataSource(ieq,1) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_)
           DdataSource(ieq,2) = daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,3) = daux * DdataMassMatrix(ieq) *&
-                               YMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,4) = daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4634,18 +4643,18 @@ contains
           daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
 
           ! Compute the radial velocity and pressure
-          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,0,0)
-          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,ieq,0,0)
+          dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,ieq,_,_)
+          dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,ieq,_,_)
 
           ! Update the geometric source term
           DdataSource(ieq,1) = DdataSource(ieq,1) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0)
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_)
           DdataSource(ieq,2) = DdataSource(ieq,2) + daux * DdataMassMatrix(ieq) *&
-                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               XMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,3) = DdataSource(ieq,3) + daux * DdataMassMatrix(ieq) *&
-                               YMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,0,0) * dvel
+                               YMOMENTUM2(DdataSolution,IDX2_REVERSE,ieq,_,_) * dvel
           DdataSource(ieq,4) = DdataSource(ieq,4) + daux * DdataMassMatrix(ieq) *&
-                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,0,0)+dpre)*dvel
+                               (TOTALENERGY2(DdataSolution,IDX2_REVERSE,ieq,_,_)+dpre)*dvel
         end do
         !$omp end parallel do
 
@@ -4726,18 +4735,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,0,0)
-            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,_,_)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       YMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -4770,18 +4779,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,0,0)
-            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_FORWARD,jeq,_,_)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_FORWARD,jeq,_,_)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       YMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,0,0) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_FORWARD,jeq,_,_) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_FORWARD,jeq,_,_)+dpre)*dvel
           end do
           
           ! Update the geometric source term
@@ -4866,18 +4875,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
             
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,0,0)
-            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,_,_)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
 
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       YMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
           
           ! Overwrite the geometric source term
@@ -4910,18 +4919,18 @@ contains
             daux = -sign(1.0_DP, daux) * deffectiveScale / dradius
            
             ! Compute the radial velocity and pressure
-            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,0,0)
-            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,0,0)
+            dvel = XVELOCITY2(DdataSolution,IDX2_REVERSE,jeq,_,_)
+            dpre = PRESSURE2_2D(DdataSolution,IDX2_REVERSE,jeq,_,_)
  
             ! Update the geometric source term
             Ddata(1) = Ddata(1) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0)
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_)
             Ddata(2) = Ddata(2) + daux * DdataMassMatrix(ia) *&
-                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       XMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(3) = Ddata(3) + daux * DdataMassMatrix(ia) *&
-                       YMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,0,0) * dvel
+                       YMOMENTUM2(DdataSolution,IDX2_REVERSE,jeq,_,_) * dvel
             Ddata(4) = Ddata(4) + daux * DdataMassMatrix(ia) *&
-                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,0,0)+dpre)*dvel
+                       (TOTALENERGY2(DdataSolution,IDX2_REVERSE,jeq,_,_)+dpre)*dvel
           end do
           
           ! Update the geometric source term

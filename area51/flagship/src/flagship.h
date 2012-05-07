@@ -16,7 +16,7 @@
 
 #if 0
 !##############################################################################
-! Default configuration: Fortran programming language
+! Default configuration: Fortran programming language and index mapping style
 !##############################################################################
 #endif
 
@@ -68,19 +68,23 @@
 #define SOA  1
 
 #if 0
-! DO NOT EDIT THESE SETTINGS SINCE ALL KERNEL ROUTINES ARE HARD-CODED TO AOS !!!
+! !!! DO NOT EDIT THESE SETTINGS !!!
+! All kernel/application host routines rely on these settings.
+! !!! DO NOT EDIT THESE SETTINGS !!!
 #endif
-#define IDIAGLIST_HOST    AOS
-#define IEDGELIST_HOST    AOS
+#define DIAGLIST_HOST     AOS
+#define EDGELIST_HOST     AOS
 #define COEFFSATDIAG_HOST AOS
 #define COEFFSATEDGE_HOST AOS
 
 #if 0
-! THESE SETTINGS AFFECT THE DEVICE IMPLEMENTATION ONLY
+! These settings can be used to switch between different memory layouts in
+! device memory. Note that memory transfer automatically performs array
+! transformation if memory layout on host and device are different.
 #endif
-#define IDIAGLIST_DEVICE    AOS
-#define IEDGELIST_DEVICE    AOS
-#define COEFFSATDIAG_DEVICE AOS
+#define DIAGLIST_DEVICE     SOA
+#define EDGELIST_DEVICE     AOS
+#define COEFFSATDIAG_DEVICE SOA
 #define COEFFSATEDGE_DEVICE AOS
 
 #if 0

@@ -973,9 +973,9 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
         ! Copy diagonal and edge structure to device memory
         call gfem_copyH2D_IdiagList(p_rgroupFEMSet,&
-            (IDIAGLIST_HOST.ne.IDIAGLIST_DEVICE), 0_I64)
+            (DIAGLIST_HOST.ne.DIAGLIST_DEVICE), 0_I64)
         call gfem_copyH2D_IedgeList(p_rgroupFEMSet,&
-            (IEDGELIST_HOST.ne.IEDGELIST_DEVICE), 0_I64)
+            (EDGELIST_HOST.ne.EDGELIST_DEVICE), 0_I64)
 #endif
 
       else
