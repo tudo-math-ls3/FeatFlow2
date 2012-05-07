@@ -35,8 +35,10 @@ namespace hydro2d_cuda
 {
   
   /*****************************************************************************
-   * CUDA kernels for hydrydynamic model in 2D
+   * CUDA kernels for hydrodynamic model in 2D
    ****************************************************************************/
+
+  using namespace std;
 
   /*****************************************************************************
    * This CUDA kernel collects the nodal solution data at the two

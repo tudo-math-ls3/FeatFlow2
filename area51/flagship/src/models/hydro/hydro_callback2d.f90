@@ -5206,7 +5206,7 @@ contains
     
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
-    
+
     ! Use callback function to compute diagonal matrix entries
     call hydro_calcMatDiagMatD2d_cuda(cptr_DcoeffsAtDiag, cptr_IdiagList,&
         cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
@@ -5243,8 +5243,6 @@ contains
     call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
     
-    print *, "hydro_calcDivMatGalMatD2d_cuda"
-
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5370,8 +5368,8 @@ contains
       
       ! Use callback function to compute off-diagonal matrix entries
       call hydro_calcMatGalerkin2d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NA,&
-          rgroupFEMSet%NEQ, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
+          cptr_Dx, cptr_Da, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
+          rgroupFEMSet%NA, rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge,&
           IEDGEmax-IEDGEset+1, IEDGEset, ccType, istream)
     end do
 
@@ -5386,8 +5384,6 @@ contains
     call coproc_synchronizeStream(istream)
     call coproc_destroyStream(istream)
     
-    print *, "hydro_calcDivMatGalerkin2d_cuda"
-
 #else
     
     call output_line('Coprocessor support is disabled!',&
@@ -5467,9 +5463,6 @@ contains
     type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
     type(C_PTR) :: cptr_Dx
 
-    print *, "Hello, here we are!"
-    stop
-        
     ! Check if diagonal structure is available on device and copy it otherwise
     cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
     if (.not.storage_isAssociated(cptr_IdiagList)) then
@@ -5623,9 +5616,6 @@ contains
     type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
     type(C_PTR) :: cptr_Dx
 
-    print *, "Hello, here we are!"
-    stop
-        
     ! Check if diagonal structure is available on device and copy it otherwise
     cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
     if (.not.storage_isAssociated(cptr_IdiagList)) then
@@ -5779,9 +5769,6 @@ contains
     type(C_PTR) :: cptr_IedgeList, cptr_IdiagList
     type(C_PTR) :: cptr_Dx
 
-    print *, "Hello, here we are!"
-    stop
-        
     ! Check if diagonal structure is available on device and copy it otherwise
     cptr_IdiagList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IdiagList)
     if (.not.storage_isAssociated(cptr_IdiagList)) then
