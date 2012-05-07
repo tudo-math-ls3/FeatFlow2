@@ -24,27 +24,16 @@
 
 #if 0
 !##############################################################################
-! Supported programming languages: C or Fortran
-!
-! Default programming language is Fortran
+! Check for prerequisites
 !##############################################################################
 #endif
 
 #ifndef LANGUAGE
-#define LANGUAGE LANGUAGE_F
-#endif
-
-
-#if 0
-!##############################################################################
-! Supported array index addressing: C- or Fortran-style
-!
-! Default array index addressing is Fortran
-!##############################################################################
+#eror "Constant LANGUAGE must be defined!"
 #endif
 
 #ifndef IDXADDR
-#define IDXADDR IDXADDR_F
+#error "Constant IDXADDR must be defined!"
 #endif
 
 
@@ -76,13 +65,12 @@
 ! Supported memory layouts: Column/Row Major Ordering
 !
 ! Default memory layout for Fortran programming language is Column Major
-! Ordering and Row Major Ordering for C. If no programming language is defined
-! then Row Major Ordering is used as default memory layout.
+! Ordering and Row Major Ordering for C.
 !##############################################################################
 #endif
 
 #ifndef MEMORY_LAYOUT
-#ifdef LANGUAGE
+
 #if LANGUAGE == LANGUAGE_F
 #define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
 #elif LANGUAGE == LANGUAGE_C
@@ -90,9 +78,7 @@
 #else
 #error "Unsupported programming language"
 #endif
-#else
-#define MEMORY_LAYOUT COLUMN_MAJOR_ORDER
-#endif
+
 #endif
 
 
