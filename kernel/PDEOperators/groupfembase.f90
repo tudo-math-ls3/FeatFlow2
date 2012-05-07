@@ -464,7 +464,7 @@ module groupfembase
     ! IdiagList(2,1:NEQ) : the position of the diagonal entry ii that
     !                      corresponds to the equation ieq
     !
-    ! Example: If there is no restriction to s selected subset of
+    ! Example: If there is no restriction to a selected subset of
     ! degrees of freedom then IdiagList(:,ieq) -> (/ ieq, ii /)
     ! such that ii corresponds to the diagonal entry A(ieq,ieq).
     ! If only a restricted subset of degrees of freedom is considered
