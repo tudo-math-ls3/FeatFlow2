@@ -12,8 +12,8 @@
  *#############################################################################
  */
 
-#include <stdio.h>
-#include <math.h>
+#include <cmath>
+#include <iostream>
 #include "coproc_core.h"
 #include "coproc_storage_cuda.h"
 

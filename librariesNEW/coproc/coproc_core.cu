@@ -11,10 +11,11 @@
  *#############################################################################
  */
 
-#include <stdio.h>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include "coproc_core.h"
+
+using namespace std;
 
 /*******************************************************************************
  * Check for CUDA errors
@@ -29,14 +30,14 @@ void coproc_checkErrors(__CHAR *label)
   if (err != cudaSuccess)
     {
       char *e = (__CHAR*) cudaGetErrorString(err);
-      printf("CUDA Error: %s (at %s)\n", e, label);
+      cout << "CUDA Error: " << e << "(at " << label << ")" << endl;
     }
   
   err = cudaGetLastError();
   if (err != cudaSuccess)
     {
       char *e = (__CHAR*) cudaGetErrorString(err);
-      printf("CUDA Error: %s (at %s)\n", e, label);
+      cout << "CUDA Error: " << e << "(at " << label << ")" << endl;
     }
   #endif
 }
@@ -63,34 +64,88 @@ int coproc_init(int deviceNumber=0)
       return 1;
     }
 
-  int i = 0;
-  printf("Available devices:\n");
-  for (i=0 ; i < deviceCount ; ++i)
+  cout << "Available devices:" << endl;
+  for (int i=0 ; i < deviceCount ; ++i)
     {
       cudaDeviceProp prop;
       cudaGetDeviceProperties(&prop, i);
-      printf("%d: %s\n", i, prop.name);
-      printf("   Total global memory:     %ld bytes\n", (long)prop.totalGlobalMem);
-      printf("   Total constant memory:   %ld bytes\n", (long)prop.totalConstMem);
-      printf("   Shared memory per block: %ld bytes\n", (long)prop.sharedMemPerBlock);
-      printf("   Clock frequency:         %d khz\n",    prop.clockRate);
-      printf("   Compute capability;      %d.%d\n",     prop.major,prop.minor);
-      printf("   Concurrent memory copy:  %s\n",        prop.deviceOverlap == 1 ?
-	                                                "supported" : "not supported");
-      printf("   Mapping of host memory:  %s\n",        prop.canMapHostMemory == 1 ?
-	                                                "supported" : "not supported");
+      cout << i << ": " << prop.name << endl;
+      cout << "   Compute capability;      " << prop.major << "." << prop.minor << endl;
+      cout << "   Total global memory:     " << prop.totalGlobalMem << " bytes" << endl;
+      cout << "   Total constant memory:   " << prop.totalConstMem << " bytes" << endl;
+      cout << "   Shared memory per block: " << prop.sharedMemPerBlock << " bytes" << endl;
+      cout << "   Multiprocessors:         " << prop.multiProcessorCount << endl;
+      cout << "   Blocks per grid:         "
+	   << prop.maxGridSize[0]*prop.maxGridSize[1]*prop.maxGridSize[2]
+	   << " (" << prop.maxGridSize[0]
+	   << "," << prop.maxGridSize[1]
+	   << "," << prop.maxGridSize[2] << ")" << endl;
+      cout << "   Registers per block:     " << prop.regsPerBlock << endl;
+      cout << "   Threads per block:       "
+	   << prop.maxThreadsPerBlock
+	   << " (" << prop.maxThreadsDim[0]
+	   << "," << prop.maxThreadsDim[1]
+	   << "," << prop.maxThreadsDim[2] << ")" << endl;
+      cout << "   Threads per warp:        " << prop.warpSize << endl;
+      cout << "   Clock frequency:         " << prop.clockRate << " kHz" << endl;
+      cout << "   Concurrent memory copy:  "
+	   << (prop.deviceOverlap == 1 ? "supported" : "not supported") << endl;
+      cout << "   Mapping of host memory:  "
+	<< (prop.canMapHostMemory == 1 ? "supported" : "not supported") << endl;
+      cout << "   Concurrent kernels:      "
+	   << (prop.concurrentKernels == 1 ? "supported" : "not supported") << endl;
     }
   
-  deviceNumber = max(deviceNumber,0);
-  if (deviceNumber >= deviceCount)
-    {
-      fprintf(stderr, "Choose device ID between 0 and %d!\n", deviceCount-1);
-      return 1;
-    }
-  else
+  // Autoselect device?
+  if (deviceNumber < 0) {
+    cudaDeviceProp prop;
+    memset(&prop, 0, sizeof(cudaDeviceProp));
+    
+    // Set major compute capability
+#if defined(HAS_CUDA10) || defined(HAS_CUDA11) || defined(HAS_CUDA12) || defined(HAS_CUDA13)
+    prop.major = 1;
+#endif
+
+#if defined(HAS_CUDA20) || defined(HAS_CUDA21)
+    prop.major = 2;
+#endif
+
+#if defined(HAS_CUDA30)
+    prop.major = 3;
+#endif
+
+    // Set minor compute capability
+#if defined(HAS_CUDA10) || defined(HAS_CUDA20) || defined(HAS_CUDA30)
+    prop.minor = 0;
+#endif
+
+#if defined(HAS_CUDA11) || defined(HAS_CUDA21)
+    prop.minor = 1;
+#endif
+
+#if defined(HAS_CUDA12)
+    prop.minor = 2;
+#endif
+
+#if defined(HAS_CUDA13)
+    prop.minor = 3;
+#endif
+
+    // Choose device according to compute capability
+    int dev;
+    cudaChooseDevice(&dev, &prop);
+    cudaSetDevice(dev);
+    cout << "Selected device: " << dev << endl;
+  } 
+  else if (deviceNumber >= deviceCount) {
+    cerr << "Choose device ID between 0 and " << deviceCount-1 << "!" << endl;
+    return 1;
+  }
+  else {
     cudaSetDevice(deviceNumber);
+    cout << "Selected device: " << deviceNumber << endl;
+  }
   
-  printf("Selected device: %d\n", deviceNumber);
   coproc_checkErrors("coproc_init");
   return 0;
 }

@@ -13,6 +13,8 @@
  *#############################################################################
  */
 
+using namespace std;
+
 /*******************************************************************************
  * The macro FNAME converts a C function name to the form that is
  * required when it is called by a FORTRAN program. On many UNIX
@@ -79,7 +81,7 @@
 /*******************************************************************************/
 
 #define __coproc__error__(label)							\
-  fprintf(stderr, "CUDA Error: %s (at %d of %s)\n", label, __LINE__, __FILE__)
+  cerr << "CUDA Error: " << label << "(at " << __LINE__ << " of " __FILE__ << ")" << endl;
 
 /*******************************************************************************/
 
