@@ -99,6 +99,7 @@
 
 module mhd_callback
 
+#include "../../flagship.h"
 #ifdef MHD_NDIM
 #undef MHD_NDIM
 #endif

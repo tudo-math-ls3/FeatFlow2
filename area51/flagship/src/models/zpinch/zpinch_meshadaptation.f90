@@ -29,6 +29,7 @@
 
 module zpinch_meshadaptation
 
+#include "../../flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

@@ -36,6 +36,7 @@
 
 module mhd_preprocessing
 
+#include "../../flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

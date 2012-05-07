@@ -36,6 +36,7 @@
 
 module hydro_preprocessing
 
+#include "../../flagship.h"
 #include "hydro.h"
 
 !$use omp_lib
@@ -971,8 +972,10 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
         ! Copy diagonal and edge structure to device memory
-        call gfem_copyH2D_IdiagList(p_rgroupFEMSet, .false., 0_I64)
-        call gfem_copyH2D_IedgeList(p_rgroupFEMSet, .false., 0_I64)
+        call gfem_copyH2D_IdiagList(p_rgroupFEMSet,&
+            (IDIAGLIST_HOST.ne.IDIAGLIST_DEVICE), 0_I64)
+        call gfem_copyH2D_IedgeList(p_rgroupFEMSet,&
+            (IEDGELIST_HOST.ne.IEDGELIST_DEVICE), 0_I64)
 #endif
 
       else
@@ -1044,8 +1047,10 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
         ! Copy constant coefficient structures to device memory
-        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet, .true., 0_I64)
-        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet, .true., 0_I64)
+        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet,&
+            (COEFFSATDIAG_HOST.ne.COEFFSATDIAG_DEVICE), 0_I64)
+        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet,&
+            (COEFFSATEDGE_HOST.ne.COEFFSATEDGE_DEVICE), 0_I64)
 #endif
       end if
       
@@ -1179,8 +1184,10 @@ contains
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
         ! Copy constant coefficient structures to device memory
-        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet, .true., 0_I64)
-        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet, .true., 0_I64)
+        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet,&
+            (COEFFSATDIAG_HOST.ne.COEFFSATDIAG_DEVICE), 0_I64)
+        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet,&
+            (COEFFSATEDGE_HOST.ne.COEFFSATEDGE_DEVICE), 0_I64)
 #endif
       end if
       

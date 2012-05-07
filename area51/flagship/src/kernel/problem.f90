@@ -69,6 +69,8 @@
 
 module problem
 
+#include "../flagship.h"
+
 !$use omp_lib
   use afcstabbase
   use basicgeometry

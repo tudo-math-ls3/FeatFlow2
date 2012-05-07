@@ -20,6 +20,8 @@
 
 module transport_basic
 
+#include "../../flagship.h"
+
 !$use omp_lib
   use fparser
   use fsystem

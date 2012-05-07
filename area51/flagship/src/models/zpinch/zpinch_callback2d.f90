@@ -58,6 +58,7 @@
 
 module zpinch_callback2d
 
+#include "../../flagship.h"
 #define HYDRO_NDIM 2
 #include "../hydro/hydro.h"
 

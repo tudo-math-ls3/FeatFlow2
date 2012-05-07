@@ -1,5 +1,3 @@
-
-
 #ifndef _MHD_H_
 #define _MHD_H_
 
@@ -16,9 +14,7 @@
 !##############################################################################
 #endif
 
-
 #include "../../flagship.h"
-#include "../../../../../kernel/System/idxmanager.h"
 
 
 #if 0

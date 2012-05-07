@@ -43,6 +43,7 @@
 
 module mhd_meshadaptation
 
+#include "../../flagship.h"
 #include "mhd.h"
 
 !$use omp_lib

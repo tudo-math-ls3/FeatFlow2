@@ -16,9 +16,6 @@
 !##############################################################################
 #endif
 
-#include "../../../../kernel/feat2constants.h"
-#include "../../../../kernel/feat2macros.h"
-#include "../../../../kernel/System/fmath.h"
 #include "../flagship.h"
 
 

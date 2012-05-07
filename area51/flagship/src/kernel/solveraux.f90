@@ -122,6 +122,8 @@
 
 module solveraux
 
+#include "../flagship.h"
+
 !$use omp_lib
   use boundarycondaux
   use boundaryfilter

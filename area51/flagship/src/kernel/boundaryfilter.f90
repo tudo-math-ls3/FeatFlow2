@@ -46,6 +46,8 @@
 
 module boundaryfilter
 
+#include "../flagship.h"
+
 !$use omp_lib
   use basicgeometry
   use boundary

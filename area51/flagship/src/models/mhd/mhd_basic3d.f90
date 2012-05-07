@@ -22,6 +22,7 @@
 
 module mhd_basic3d
 
+#include "../../flagship.h"
 #define MHD_NDIM 3
 #include "mhd.h"
 
@@ -84,11 +85,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
       
@@ -96,11 +97,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -108,11 +109,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -120,11 +121,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -132,11 +133,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -144,11 +145,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -156,11 +157,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -168,11 +169,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -180,11 +181,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -192,11 +193,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -204,11 +205,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -216,11 +217,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -228,11 +229,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -240,11 +241,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
       
@@ -252,11 +253,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -264,11 +265,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
       
@@ -276,11 +277,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -288,11 +289,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -300,11 +301,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -312,11 +313,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,0,0)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,_,_)
         end do
       end if
 
@@ -374,11 +375,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
       
@@ -386,11 +387,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -398,11 +399,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -410,11 +411,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -422,11 +423,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -434,11 +435,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -446,11 +447,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -458,11 +459,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -470,11 +471,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -482,11 +483,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -494,11 +495,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -506,11 +507,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
       
@@ -518,11 +519,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -530,11 +531,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
       
@@ -542,11 +543,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -554,11 +555,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -566,11 +567,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -578,11 +579,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -590,11 +591,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
 
@@ -602,11 +603,11 @@ contains
       if (present(Imask)) then
         do idx = 1, size(Imask)
           ieq = Imask(idx)
-          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       else
         do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,0,0)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,_,_)
         end do
       end if
       

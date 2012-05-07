@@ -1,7 +1,7 @@
 
 
-#ifndef _MAGNETOHYDRODYNAMICS_OLD_H_
-#define _MAGNETOHYDRODYNAMICS_OLD_H_
+#ifndef _MAGNETOHYDRODYNAMICS_H_
+#define _MAGNETOHYDRODYNAMICS_H_
 
 #if 0
 !##############################################################################
@@ -16,9 +16,6 @@
 !##############################################################################
 #endif
 
-#include "../../../../kernel/feat2constants.h"
-#include "../../../../kernel/feat2macros.h"
-#include "../../../../kernel/System/fmath.h"
 #include "../flagship.h"
 
 

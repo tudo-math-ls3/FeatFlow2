@@ -30,6 +30,8 @@
 
 module transport_errorestimation
 
+#include "../../flagship.h"
+
 !$use omp_lib
   use afcstabbase
   use collection

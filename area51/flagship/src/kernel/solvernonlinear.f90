@@ -74,6 +74,8 @@
 
 module solvernonlinear
 
+#include "../flagship.h"
+
 !$use omp_lib
   use boundaryfilter
   use collection

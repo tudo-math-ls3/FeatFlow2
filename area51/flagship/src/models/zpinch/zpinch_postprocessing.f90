@@ -25,6 +25,7 @@
 
 module zpinch_postprocessing
 
+#include "../../flagship.h"
 #include "hydro.h"
 
 !$use omp_lib

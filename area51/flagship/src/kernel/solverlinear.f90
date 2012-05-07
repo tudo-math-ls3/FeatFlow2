@@ -69,6 +69,8 @@
 
 module solverlinear
 
+#include "../flagship.h"
+
 !$use omp_lib
   use boundaryfilter
   use fsystem

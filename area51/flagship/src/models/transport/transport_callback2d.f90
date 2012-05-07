@@ -175,6 +175,8 @@
 
 module transport_callback2d
 
+#include "../../flagship.h"
+
 !$use omp_lib
   use basicgeometry
   use bilinearformevaluation

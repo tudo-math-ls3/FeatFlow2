@@ -62,6 +62,8 @@
 
 module timestep
 
+#include "../flagship.h"
+
 !$use omp_lib
   use collection
   use fsystem
