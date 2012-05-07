@@ -1460,11 +1460,11 @@ contains
     end select
 
     ! Close file
-    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ
+    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ*rvector%NVAR
     close(UNIT=iunit)
 
 10  format("data=[...")
-20  format(I10,1X,I10,1X,E15.8,";")
+20  format(I10,1X,I10,1X,E15.8,";...")
 30  format("];")
 40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
 
@@ -1515,139 +1515,37 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Da
-    real(SP), dimension(:), pointer :: p_Fa
-    integer, dimension(:), pointer :: p_Ipermutation
-    integer :: iunit,i,ieq,neq
-    real(DP) :: dthres
-    character(LEN=10) :: cstat,cpos
-
-    ! Replace small values by zero
-    dthres = 1E-12_DP
-    if (present(dthreshold)) dthres = dthreshold
-
-    ! Set file status if required
-    if (present(cstatus)) then
-      select case(cstatus)
-      case (IO_NEW)
-        cstat="NEW"; cpos="ASIS"
-      case (IO_REPLACE)
-        cstat="REPLACE"; cpos="ASIS"
-      case (IO_OLD)
-        cstat="OLD"; cpos="APPEND"
-      case DEFAULT
-        cstat="UNKNOWN"; cpos ="ASIS"
-      end select
-    else
-      cstat="UNKNOWN"; cpos="ASIS"
-    end if
+    integer :: iunit,i
+    
+    ! Spy scalar subvectors
+    do i = 1, rvector%nblocks
+      if (i .eq. 1) then
+        call vecio_spyVector(sfilename,&
+            svectorName//"_"//trim(adjustl(sys_si(i,8))),&
+            rvector%RvectorBlock(i), bunsort, cstatus, dthreshold)
+      else
+        call vecio_spyVector(sfilename,&
+            svectorName//"_"//trim(adjustl(sys_si(i,8))),&
+            rvector%RvectorBlock(i), bunsort, IO_OLD, dthreshold)
+      end if
+    end do
 
     ! Open output file
     iunit=sys_getFreeUnit()
-    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
+    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename))//'.m')
 
-    ! Which vector type are we?
-    select case(rvector%cdataType)
-    case (ST_DOUBLE)
-      write(UNIT=iunit,FMT=10)
-
-      ! Initialise number of equations
-      neq = 0
-
-      do i=1,rvector%nblocks
-
-        ! Permuted?
-        nullify(p_Ipermutation)
-        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
-          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
-          ! We must use the inverse permutation
-          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
-        end if
-
-        call lsyssc_getbase_double(rvector%RvectorBlock(i),p_Da)
-
-        if (.not. associated(p_Ipermutation)) then
-
-          do ieq=1,rvector%RvectorBlock(i)%NEQ
-            if (abs(p_Da(ieq)) .ge. dthres) then
-              write(UNIT=iunit,FMT=20) 1,neq+ieq,p_Da(ieq)
-            end if
-          end do
-
-        else
-
-          do ieq=1,rvector%RvectorBlock(i)%NEQ
-            if (abs(p_Da(ieq)) .ge. dthres) then
-              write(UNIT=iunit,FMT=20) 1,neq+p_Ipermutation(ieq),p_Da(p_Ipermutation(ieq))
-            end if
-          end do
-
-        end if
-
-        ! Update number of equations
-        neq = neq+rvector%RvectorBlock(i)%NEQ
-
-      end do
-
-      write(UNIT=iunit,FMT=30)
-
-    case (ST_SINGLE)
-      write(UNIT=iunit,FMT=10)
-
-      ! Initialise number of equations
-      neq = 0
-
-      do i=1,rvector%nblocks
-
-        ! Permuted?
-        nullify(p_Ipermutation)
-        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
-          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
-          ! We must use the inverse permutation
-          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
-        end if
-
-        call lsyssc_getbase_single(rvector%RvectorBlock(i),p_Fa)
-
-        if (.not. associated(p_Ipermutation)) then
-
-          do ieq=1,rvector%RvectorBlock(i)%NEQ
-            if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
-              write(UNIT=iunit,FMT=20) 1,neq+ieq,p_Fa(ieq)
-            end if
-          end do
-
-        else
-
-          do ieq=1,rvector%RvectorBlock(i)%NEQ
-            if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
-              write(UNIT=iunit,FMT=20) 1,neq+p_Ipermutation(ieq),p_Fa(p_Ipermutation(ieq))
-            end if
-          end do
-
-        end if
-
-        ! Update number of equations
-        neq = neq+rvector%RvectorBlock(i)%NEQ
-
-      end do
-
-      write(UNIT=iunit,FMT=30)
-
-    case DEFAULT
-      call output_line ('Unsupported vector precision!', &
-                         OU_CLASS_ERROR,OU_MODE_STD,'vecio_spyBlockVector')
-      call sys_halt()
-    end select
-
+    write(UNIT=iunit,FMT=10) svectorName
+    do i = 1,rvector%nblocks
+      write(UNIT=iunit,FMT=20) svectorName//"_"//trim(adjustl(sys_si(i,8)))
+    end do
+    write(UNIT=iunit,FMT=30)
+    
     ! Close file
-    write(UNIT=iunit,FMT=40) svectorName, 1, rvector%NEQ
     close(UNIT=iunit)
-
-10  format("data=[...")
-20  format(I10,1X,I10,1X,E15.8,";")
+    
+10  format(A,"=[...")
+20  format(A,";...")
 30  format("];")
-40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
 
   end subroutine vecio_spyBlockVector
 

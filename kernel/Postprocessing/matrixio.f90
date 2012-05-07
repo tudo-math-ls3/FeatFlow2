@@ -974,24 +974,82 @@ contains
     integer, intent(in), optional :: cstatus
 
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
-    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, a default of 1E-12 is assumed.
     real(DP), intent(in), optional :: dthreshold
 !</input>
 !</subroutine>
 
     ! local variables
-    type(t_matrixBlock) :: rtempMatrix
+    integer :: iunit,i,j
+    logical :: bfirst
+    
+    ! Initialisation
+    bfirst = .true.
 
-    ! We have to create a global matrix first!
-    call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
+    ! Spy all other scalar submatrices
+    do j = 1, rmatrix%nblocksPerCol
+      do i = 1, rmatrix%nblocksPerRow
+        if (bfirst) then
+          call matio_spyMatrix(sfilename,&
+              smatrixName//"_"//trim(adjustl(sys_si(i,8)))//&
+                           "_"//trim(adjustl(sys_si(j,8))),&
+              rmatrix%RmatrixBlock(i,j),&
+              bdata, cstatus, dthreshold)
+          bfirst = .false.
+        else
+          call matio_spyMatrix(sfilename,&
+              smatrixName//"_"//trim(adjustl(sys_si(i,8)))//&
+                           "_"//trim(adjustl(sys_si(j,8))),&
+              rmatrix%RmatrixBlock(i,j),&
+              bdata, IO_OLD, dthreshold)
+        end if
+      end do
+    end do
+    
+    ! Open output file
+    iunit=sys_getFreeUnit()
+    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename))//'.m')  
+    write(UNIT=iunit,FMT=10) rmatrix%nblocksPerRow,rmatrix%nblocksPerRow
+    write(UNIT=iunit,FMT=20,ADVANCE="NO")
 
-    ! Write matrix to the file
-    call matio_spyMatrix(sfilename,smatrixName,rtempMatrix%RmatrixBlock(1,1),&
-        bdata,cstatus,dthreshold)
-
-    ! Release the temporary matrix
-    call lsysbl_releaseMatrix (rtempMatrix)
+    ! Initialisation
+    bfirst = .true.
+    
+    do j = 1, rmatrix%nblocksPerCol
+      do i = 1, rmatrix%nblocksPerRow
+        
+        if (.not.bfirst) write(UNIT=iunit,FMT='(A)',ADVANCE="NO") ","
+        write(UNIT=iunit,FMT='(A)',ADVANCE="NO")&
+            smatrixName//"_"//trim(adjustl(sys_si(i,8)))//&
+                         "_"//trim(adjustl(sys_si(j,8)))
+        bfirst=.false.
+      end do
+    end do
+    write(UNIT=iunit,FMT=30)
+    
+    ! Close file
+    write(UNIT=iunit,FMT=40)
+    write(UNIT=iunit,FMT=41)
+    write(UNIT=iunit,FMT=42)
+    write(UNIT=iunit,FMT=43)
+    write(UNIT=iunit,FMT=44)
+    write(UNIT=iunit,FMT=45)
+    write(UNIT=iunit,FMT=46)
+    write(UNIT=iunit,FMT=50) smatrixName
+    close(UNIT=iunit)
+    
+10  format("C=cell(",I10,",",I10,");")
+20  format("[C{:,:}]=deal(")
+30  format(");")
+40  format("[nr,nc]=cellfun(@size,C);")
+41  format("for i=1:size(C,2), nr(i,:) = max(nr(i,:)); end;")
+42  format("for j=1:size(C,1), nc(:,j) = max(nc(:,j)); end;")
+43  format("idx=cellfun(@isempty,C);")
+44  format("for i=1:size(C,1),for j=1:size(C,2),")
+45  format("if isempty(C{i,j}), C{i,j}=sparse(nr(i,j),nc(i,j)); end;")
+46  format("end, end;")
+50  format(A,"=cell2mat(C); clear C;")
 
   end subroutine
 
@@ -1041,7 +1099,7 @@ contains
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
     integer, dimension(:), pointer :: p_Kld,p_Kcol
-    integer :: iunit,ieq
+    integer :: iunit,ieq,nnz
     real(DP) :: dthres
     character(LEN=10) :: cstat,cpos
 
@@ -1069,6 +1127,22 @@ contains
     iunit=sys_getFreeUnit()
     open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
 
+    ! Let`s check if the matrix has structure
+    if (.not.lsyssc_hasMatrixStructure(rmatrix)) then
+      write(UNIT=iunit,FMT=50) smatrixName,&
+          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+      close(UNIT=iunit)
+      return
+    end if
+
+    ! Let`s check if the matrix has content
+    if (bdata .and. .not.lsyssc_hasMatrixContent(rmatrix)) then
+      write(UNIT=iunit,FMT=50) smatrixName,&
+          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+      close(UNIT=iunit)
+      return
+    end if
+
     ! Which matrix format are we?
     select case(rmatrix%cmatrixFormat)
 
@@ -1086,10 +1160,10 @@ contains
           select case(rmatrix%cinterleavematrixFormat)
           case (LSYSSC_MATRIXD)
             call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                p_Kld,p_Kcol,p_Da,dthres)
+                p_Kld,p_Kcol,p_Da,dthres,nnz)
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                rmatrix%NVAR,p_Kld,p_Kcol,p_Da,dthres)
+                rmatrix%NVAR,p_Kld,p_Kcol,p_Da,dthres,nnz)
           case DEFAULT
             call output_line ('Unsupported interleave matrix type!', &
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
@@ -1103,10 +1177,10 @@ contains
           select case(rmatrix%cinterleavematrixFormat)
           case (LSYSSC_MATRIXD)
             call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                p_Kld,p_Kcol,p_Fa,dthres)
+                p_Kld,p_Kcol,p_Fa,dthres,nnz)
           case (LSYSSC_MATRIX1)
             call do_spy_mat79mat1_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
-                rmatrix%NVAR,p_Kld,p_Kcol,p_Fa,dthres)
+                rmatrix%NVAR,p_Kld,p_Kcol,p_Fa,dthres,nnz)
           case DEFAULT
             call output_line ('Unsupported interleave matrix type!', &
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
@@ -1121,6 +1195,9 @@ contains
         end select
 
       else
+
+        ! Set number of nonzero entries
+        nnz = rmatrix%NA
 
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
@@ -1150,13 +1227,15 @@ contains
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_double(rmatrix,p_Da)
-          call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,p_Da,dthres)
+          call do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,&
+              p_Kld,p_Kcol,p_Da,dthres,nnz)
           write(UNIT=iunit,FMT=30)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_single(rmatrix,p_Fa)
-          call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,p_Fa,dthres)
+          call do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,&
+              p_Kld,p_Kcol,p_Fa,dthres,nnz)
           write(UNIT=iunit,FMT=30)
 
         case DEFAULT
@@ -1166,6 +1245,9 @@ contains
         end select
 
       else
+
+        ! Set number of nonzero entries
+        nnz = rmatrix%NA
 
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
@@ -1176,6 +1258,9 @@ contains
     case(LSYSSC_MATRIXD)
 
       if (bdata) then
+        ! Initializse number of nonzero entries
+        nnz = 0
+
         ! Which matrix type are we?
         select case(rmatrix%cdataType)
         case (ST_DOUBLE)
@@ -1184,6 +1269,7 @@ contains
           do ieq=1,rmatrix%NEQ
             if (abs(p_Da(ieq)) .ge. dthres) then
               write(UNIT=iunit,FMT=20) ieq,ieq,p_Da(ieq)
+              nnz = nnz+1
             end if
           end do
           write(UNIT=iunit,FMT=30)
@@ -1194,6 +1280,7 @@ contains
           do ieq=1,rmatrix%NEQ
             if (abs(p_Fa(ieq)) .ge. dthres) then
               write(UNIT=iunit,FMT=20) ieq,ieq,p_Fa(ieq)
+              nnz = nnz+1
             end if
           end do
           write(UNIT=iunit,FMT=30)
@@ -1205,6 +1292,9 @@ contains
         end select
 
       else
+        
+        ! Set number of nonzero entries
+        nnz = rmatrix%NA
 
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
@@ -1223,13 +1313,13 @@ contains
         case (ST_DOUBLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_double(rmatrix,p_Da)
-          call do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,p_Da,dthres)
+          call do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,p_Da,dthres,nnz)
           write(UNIT=iunit,FMT=30)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_single(rmatrix,p_Fa)
-          call do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,p_Fa,dthres)
+          call do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,p_Fa,dthres,nnz)
           write(UNIT=iunit,FMT=30)
 
         case DEFAULT
@@ -1239,6 +1329,9 @@ contains
         end select
 
       else
+
+        ! Set number of nonzero entries
+        nnz = rmatrix%NA
 
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
@@ -1255,13 +1348,22 @@ contains
     end select
 
     ! Close file
-    write(UNIT=iunit,FMT=40) smatrixName, rmatrix%NEQ, rmatrix%NCOLS
+    if (nnz .gt. 0) then
+      write(UNIT=iunit,FMT=40) smatrixName,&
+          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+    else
+      write(UNIT=iunit,FMT=60)
+      write(UNIT=iunit,FMT=50) smatrixName,&
+          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
+    end if
     close(UNIT=iunit)
-
+      
 10  format("data=[...")
-20  format(I10,1X,I10,1X,E15.8,";")
+20  format(I10,1X,I10,1X,E15.8,";...")
 30  format("];")
 40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
+50  format(A,"=sparse(",I10,",",I10,");")
+60  format("clear data;")
 
   contains
 
@@ -1270,15 +1372,17 @@ contains
     !**************************************************************
     ! SPY CSR matrix in double precision
 
-    subroutine do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres)
+    subroutine do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres,nnz)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
-      integer, intent(in)                :: neq,ncols
-      integer, intent(in)                             :: nvar
+      integer, intent(in)                :: neq,ncols,nvar
+      integer, intent(out), optional     :: nnz
       real(DP), dimension(nvar,*), intent(in), optional :: Da
       real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
-      integer :: ieq,ild,ivar
+      integer :: ieq,ild,ivar,na
+
+      na=0
 
       if (present(Da)) then
         do ieq=1,neq
@@ -1288,6 +1392,7 @@ contains
               if (abs(ddata) .ge. dthres) then
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                     (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),ddata
+                na = na+1
               end if
             end do
           end do
@@ -1298,24 +1403,30 @@ contains
             do ivar=1,nvar
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                   (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild)
+              na = na+1
             end do
           end do
         end do
       end if
+
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat79matD_double
 
     !**************************************************************
     ! SPY CSR matrix in single precision
 
-    subroutine do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres)
+    subroutine do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres,nnz)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
-      integer, intent(in)                :: neq,ncols
-      integer, intent(in)                             :: nvar
+      integer, intent(in)                :: neq,ncols,nvar
+      integer, intent(out), optional     :: nnz
       real(SP), dimension(nvar,*), intent(in), optional :: Fa
       real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
-      integer :: ieq,ild,ivar
+      integer :: ieq,ild,ivar,na
+
+      na=0
 
       if (present(Fa)) then
         do ieq=1,neq
@@ -1325,6 +1436,7 @@ contains
               if (abs(fdata) .ge. dthres) then
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                     (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),fdata
+                na = na+1
               end if
             end do
           end do
@@ -1335,24 +1447,30 @@ contains
             do ivar=1,nvar
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                   (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild)
+              na = na+1
             end do
           end do
         end do
       end if
+
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat79matD_single
 
     !**************************************************************
     ! SPY CSR matrix in double precision
 
-    subroutine do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres)
+    subroutine do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres,nnz)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
-      integer, intent(in)                :: neq,ncols
-      integer, intent(in)                             :: nvar,mvar
+      integer, intent(in)                :: neq,ncols,nvar,mvar
+      integer, intent(out), optional     :: nnz
       real(DP), dimension(nvar,mvar,*), intent(in), optional :: Da
       real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
-      integer :: ieq,ild,ivar,jvar
+      integer :: ieq,ild,ivar,jvar,na
+
+      na=0
 
       if (present(Da)) then
         do ieq=1,neq
@@ -1363,6 +1481,7 @@ contains
                 if (abs(ddata) .ge. dthres) then
                   write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                       (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),ddata
+                  na=na+1
                 end if
               end do
             end do
@@ -1375,25 +1494,31 @@ contains
               do ivar=1,mvar ! local row index
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                     (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild)
+                na=na+1
               end do
             end do
           end do
         end do
       end if
+
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat79mat1_double
 
     !**************************************************************
     ! SPY CSR matrix in double precision
 
-    subroutine do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres)
+    subroutine do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres,nnz)
       integer, dimension(:), intent(in)  :: Kld
       integer, dimension(:), intent(in)  :: Kcol
-      integer, intent(in)                :: neq,ncols
-      integer, intent(in)                             :: nvar,mvar
+      integer, intent(in)                :: neq,ncols,nvar,mvar
+      integer, intent(out), optional     :: nnz
       real(SP), dimension(nvar,mvar,*), intent(in), optional :: Fa
       real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
-      integer :: ieq,ild,ivar,jvar
+      integer :: ieq,ild,ivar,jvar,na
+
+      na=0
 
       if (present(Fa)) then
         do ieq=1,neq
@@ -1404,6 +1529,7 @@ contains
                 if (abs(fdata) .ge. dthres) then
                   write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                       (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),fdata
+                  na=na+1
                 end if
               end do
             end do
@@ -1416,22 +1542,29 @@ contains
               do ivar=1,mvar ! local row index
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                     (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild)
+                na=na+1
               end do
             end do
           end do
         end do
       end if
+      
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat79mat1_single
 
     !**************************************************************
     ! SPY full matrix in double precision
 
-    subroutine do_spy_mat1_double(neq,ncols,Da,dthres)
+    subroutine do_spy_mat1_double(neq,ncols,Da,dthres,nnz)
       integer, intent(in) :: neq,ncols
+      integer, intent(out), optional :: nnz
       real(DP), dimension(:), intent(in), optional :: Da
       real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
-      integer :: ieq,icol
+      integer :: ieq,icol,na
+
+      na=0
 
       if (present(Da)) then
         do ieq=1,neq
@@ -1440,6 +1573,7 @@ contains
             if (abs(ddata) .ge. dthres) then
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                   ieq,icol,ddata
+              na=na+1
             end if
           end do
         end do
@@ -1448,20 +1582,27 @@ contains
           do icol=1,ncols
             write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                 ieq,icol,Da((icol-1)*neq+ieq)
+            na=na+1
           end do
         end do
       end if
+      
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat1_double
 
     !**************************************************************
     ! SPY full matrix in single precision
 
-    subroutine do_spy_mat1_single(neq,ncols,Fa,dthres)
+    subroutine do_spy_mat1_single(neq,ncols,Fa,dthres,nnz)
       integer, intent(in) :: neq,ncols
+      integer, intent(out), optional :: nnz
       real(SP), dimension(:), intent(in), optional :: Fa
       real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
-      integer :: ieq,icol
+      integer :: ieq,icol,na
+
+      na=0
 
       if (present(Fa)) then
         do ieq=1,neq
@@ -1470,6 +1611,7 @@ contains
             if (abs(fdata) .ge. dthres) then
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
                   ieq,icol,fdata
+              na=na+1
             end if
           end do
         end do
@@ -1478,9 +1620,13 @@ contains
           do icol=1,ncols
             write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
                 ieq,icol,Fa((icol-1)*neq+ieq)
+            na=na+1
           end do
         end do
       end if
+      
+      if (present(nnz)) nnz=na
+
     end subroutine do_spy_mat1_single
   end subroutine matio_spyMatrix
 
