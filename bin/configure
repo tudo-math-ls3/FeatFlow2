@@ -4351,7 +4351,7 @@ sub get_dependency {
         # Parse for C Preprocessor and Fortran includes:
         # i.e. parse for "include '...'", "include "..."" and  "include <...>"
         # and add the include file to the list (with keyword prefix 'include:')
-        if ($line =~ m/^[#\s]*include\s+['"<](\S+)['">]/) { #" (comment only to fix syntax highlighting)
+        if ($line =~ m/^[#\s]*include\s+['"](\S+)['"]/) { #" (comment only to fix syntax highlighting)
             $aux = $1;
 
             # Check whether current include file is already on the list
