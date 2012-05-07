@@ -968,6 +968,13 @@ contains
             p_rgroupFEMSet)
         call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
             p_rgroupFEMSet)
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+        ! Copy diagonal and edge structure to device memory
+        call gfem_copyH2D_IdiagList(p_rgroupFEMSet, .false., 0_I64)
+        call gfem_copyH2D_IedgeList(p_rgroupFEMSet, .false., 0_I64)
+#endif
+
       else
         inviscidGFEM = 0
         viscousGFEM  = 0
@@ -1034,6 +1041,12 @@ contains
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
               rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
         end if
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+        ! Copy constant coefficient structures to device memory
+        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet, .true., 0_I64)
+        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet, .true., 0_I64)
+#endif
       end if
       
       !-------------------------------------------------------------------------
@@ -1163,6 +1176,12 @@ contains
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
               rproblemLevel%Rmatrix(coeffMatrix_CYZ), nmatrices)
         end if
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+        ! Copy constant coefficient structures to device memory
+        call gfem_copyH2D_CoeffsAtDiag(p_rgroupFEMSet, .true., 0_I64)
+        call gfem_copyH2D_CoeffsAtEdge(p_rgroupFEMSet, .true., 0_I64)
+#endif
       end if
       
       !-------------------------------------------------------------------------

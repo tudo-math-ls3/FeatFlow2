@@ -918,7 +918,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxGalerkin3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -1051,7 +1051,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxScDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -1412,7 +1412,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxScDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -1943,7 +1943,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRoeDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -2559,7 +2559,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRoeDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -2936,7 +2936,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRusDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do
@@ -3316,7 +3316,7 @@ contains
       
       ! Use callback function to compute internodal fluxes
       call hydro_calcFluxRusDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
-          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
           IEDGEset, istream)
     end do

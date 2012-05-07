@@ -525,7 +525,7 @@ contains
               rsolution, hydro_calcMatGalMatD2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               hydro_calcMatDiagMatD2d_sim, rcollection=rcollection&
-              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatGalerkin2d_cuda))
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatGalMatD2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
@@ -681,7 +681,8 @@ contains
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rsolution, hydro_calcMatGalerkin2d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
-              hydro_calcMatDiag2d_sim, rcollection=rcollection)
+              hydro_calcMatDiag2d_sim, rcollection=rcollection&
+              COPROC_FCB_CALCOPERATOREDGESYS(hydro_calcDivMatGalerkin2d_cuda))
 
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&

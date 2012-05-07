@@ -2,8 +2,9 @@
 
 !<subroutine>
 
-  subroutine fcb_calcOperatorEdgeSys(rgroupFEMSet, rx, rmatrix, dscale, bclear,&
-      fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection, rafcstab)
+  subroutine fcb_calcOperatorEdgeSys(rgroupFEMSet, rx, rmatrix,&
+      dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
+      cconstrType, rcollection, rafcstab)
 
     use afcstabbase
     use collection
@@ -31,6 +32,11 @@
     ! FLASE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+    
     ! OPTIONAL: callback function to compute local matrices
     include 'intf_calcMatrixDiagSys_sim.inc'
     include 'intf_calcMatrixSys_sim.inc'

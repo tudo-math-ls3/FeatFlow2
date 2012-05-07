@@ -2150,7 +2150,7 @@ contains
 
       call fcb_calcOperatorEdgeSys(rgroupFEMSet, rx, rmatrix,&
           dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
-          rcollection, rafcstab)
+          cconstrType, rcollection, rafcstab)
       ! That`s it
       return
 
@@ -3050,7 +3050,7 @@ contains
 
       call fcb_calcOperatorEdgeSys(rgroupFEMSet, rxBlock, rmatrix,&
           dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
-          rcollection, rafcstab)
+          cconstrType, rcollection, rafcstab)
 
       ! Release auxiliary 1-block vector
       call lsysbl_releaseVector(rxBlock)
@@ -3162,7 +3162,7 @@ contains
 
       call fcb_calcOperatorEdgeSys(rgroupFEMSet, rx, rmatrixBlock,&
           dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
-          rcollection, rafcstab)
+          cconstrType, rcollection, rafcstab)
 
       ! Release auxiliary 1-block matrix
       call lsysbl_releaseMatrix(rmatrixBlock)
@@ -3282,7 +3282,7 @@ contains
       ! Call user-defined assembly
       call fcb_calcOperatorEdgeSys(rgroupFEMSet, rxBlock, rmatrixBlock,&
           dscale, bclear, fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
-          rcollection, rafcstab)
+          cconstrType, rcollection, rafcstab)
 
       ! Release auxiliary 1-block vector and matrix
       call lsysbl_releaseVector(rxBlock)
