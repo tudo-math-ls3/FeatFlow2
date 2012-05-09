@@ -100,6 +100,7 @@ module blockmatassembly
 
   public :: bma_fcalc_Mass
   public :: bma_fcalc_Laplace
+  public :: bma_fcalc_rhsOne
 
   public :: bma_initMatAssembly
   public :: bma_doneMatAssembly
@@ -680,6 +681,101 @@ contains
 
     end do
 
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_rhsOne(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates a right-hand side vector according to the right-hand
+    ! side function f=1 in all components.
+!</description>
+
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+    
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+    
+    ! Number of elements
+    integer, intent(in) :: nelements
+    
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+    
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dbasI, dval
+    integer :: icomp
+    integer :: iel, icubp, idofe
+    real(DP), dimension(:,:), pointer :: p_DlocalVector
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaVectorData), pointer :: p_rvectorData
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Loop over the components
+    do icomp = 1,size(rvectorData)
+
+      ! Get the data arrays of the subvector
+      p_rvectorData => RvectorData(icomp)
+      p_DlocalVector => RvectorData(icomp)%p_Dentry
+      p_DbasTest => RvectorData(icomp)%p_DbasTest
+    
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Outer loop over the DOF's i=1..ndof on our current element,
+          ! which corresponds to the (test) basis functions Phi_i:
+          do idofe=1,p_rvectorData%ndofTest
+          
+            ! Fetch the contributions of the (test) basis functions Phi_i
+            ! into dbasI
+            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+            
+            ! The value of the RHS is just the 1.0-function here
+            dval = 1.0_DP
+            
+            ! Multiply the values of the basis functions
+            ! (1st derivatives) by the cubature weight and sum up
+            ! into the local vectors.
+            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                p_DcubWeight(icubp,iel) * dval * dbasI
+            
+          end do ! jdofe
+
+        end do ! icubp
+      
+      end do ! iel
+      
+    end do ! icomp
+    
   end subroutine
 
   !****************************************************************************
