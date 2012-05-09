@@ -22,7 +22,7 @@
 !#     -> Assembles a block matrix
 !#
 !# 2.) bma_buildVector
-!#     -> Assembles a block matrix
+!#     -> Assembles a block vector
 !#
 !# Furthermore, there are a set of auxiliary routines which can be used
 !# to customize the matrix assembly:
