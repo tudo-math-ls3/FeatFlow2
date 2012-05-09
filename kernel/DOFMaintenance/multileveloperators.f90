@@ -284,7 +284,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlMassMatrix (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level mass matrix.
@@ -304,6 +305,14 @@ contains
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
   logical, intent(in) :: bclear
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -356,7 +365,8 @@ contains
     select case (rmatrixScalar%cmatrixFormat)
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
+          rdiscretisationFine,bclear,rmatrixScalar,&
+          rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -369,7 +379,8 @@ contains
 
       ! Create the matrix in structure 9
       call mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
+          rdiscretisationFine,bclear,rmatrixScalar,&
+          rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -396,7 +407,7 @@ contains
 
   subroutine mlop_build2LvlProlMatrix (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      cavrgType,rperfconfig)
+                      cavrgType,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level prolongation matrix.
@@ -421,6 +432,14 @@ contains
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
   integer, optional, intent(in) :: cavrgType
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -477,7 +496,7 @@ contains
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      caverage,rperfconfig)
+                      caverage,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -491,7 +510,7 @@ contains
       ! Create the matrix in structure 9
       call mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      caverage,rperfconfig)
+                      caverage,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -517,7 +536,7 @@ contains
 
   subroutine mlop_build2LvlInterpMatrix (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      cavrgType,rperfconfig)
+                      cavrgType,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level interpolation matrix.
@@ -542,6 +561,14 @@ contains
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
   integer, optional, intent(in) :: cavrgType
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -598,7 +625,7 @@ contains
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      caverage,rperfconfig)
+                      caverage,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -612,7 +639,7 @@ contains
       ! Create the matrix in structure 9
       call mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      caverage,rperfconfig)
+                      caverage,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -1402,7 +1429,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
+      rdiscretisationFine,bclear,rmatrixScalar,&
+      rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level mass matrix.
@@ -1422,6 +1450,14 @@ contains
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
   logical, intent(in) :: bclear
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1511,7 +1547,8 @@ contains
   type(t_evalElementSet) :: relementSetCoarse, relementSetFine
 
   ! Cubature information structure defining the cubature rule
-  type(t_scalarCubatureInfo) :: rcubatureInfoCoarse,rcubatureInfoFine
+  type(t_scalarCubatureInfo), target :: rtempcubatureInfoCoarse,rtempcubatureInfoFine
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfoCoarse,p_rcubatureInfoFine
   integer :: icubatureBlock
   integer(I32) :: celementCoarse, celementFine
 
@@ -1572,13 +1609,23 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
 
-    ! Create default assembly structures with the default cubature
-    ! formula for the coarse grid discretisation.
-    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
-        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+          rtempCubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoCoarse => rtempCubatureInfoCoarse
+    else
+      p_rcubatureInfoCoarse => rcubatureInfoCoarse
+    end if
 
-    call spdiscr_createDefCubStructure(rdiscretisationFine,&
-        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_createDefCubStructure(rdiscretisationFine,&
+          rtempCubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoFine => rtempCubatureInfoFine
+    else
+      p_rcubatureInfoFine => rcubatureInfoFine
+    end if
 
     ! Let us loop over all element distributions and determine the
     ! maximum values.
@@ -1594,13 +1641,13 @@ contains
     nmaxRefDimFine = 0
 
     ! Let us run through the info blocks specifying the cubature
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
 
       ! Get from the trial element space the type of coordinate system
@@ -1680,13 +1727,13 @@ contains
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
 
     ! Let us run through the element distributions
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine,NEL=NELF)
 
       if (NELF .eq. 0) cycle
@@ -1985,8 +2032,6 @@ contains
     end do ! icubatureBlock
 
     ! Release memory
-    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
-    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(Domega)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
@@ -1998,6 +2043,15 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoCoarse)
+    end if
+
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoFine)
+    end if
+
     ! That is it
 
   end subroutine
@@ -2008,7 +2062,7 @@ contains
 
   subroutine mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      cavrgType,rperfconfig)
+                      cavrgType,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level prolongation matrix.
@@ -2032,6 +2086,14 @@ contains
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
   integer, intent(in) :: cavrgType
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2135,7 +2197,8 @@ contains
   ! Current assembly block, cubature formula, element type,...
   integer :: icubatureBlock
   integer(I32) :: celementFine, celementCoarse, ccubFine,ccubCoarse
-  type(t_scalarCubatureInfo), target :: rcubatureInfoFine,rcubatureInfoCoarse
+  type(t_scalarCubatureInfo), target :: rtempcubatureInfoCoarse,rtempcubatureInfoFine
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfoCoarse,p_rcubatureInfoFine
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -2183,13 +2246,23 @@ contains
 
     end if
 
-    ! Create default assembly structures with the default cubature
-    ! formula for the coarse grid discretisation.
-    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
-        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+          rtempCubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoCoarse => rtempCubatureInfoCoarse
+    else
+      p_rcubatureInfoCoarse => rcubatureInfoCoarse
+    end if
 
-    call spdiscr_createDefCubStructure(rdiscretisationFine,&
-        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_createDefCubStructure(rdiscretisationFine,&
+          rtempCubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoFine => rtempCubatureInfoFine
+    else
+      p_rcubatureInfoFine => rcubatureInfoFine
+    end if
 
     ! Get a pointer to the triangulation - for easier access.
     p_rtriaCoarse => rdiscretisationCoarse%p_rtriangulation
@@ -2213,13 +2286,13 @@ contains
     nmaxRefDimFine = 0
 
     ! Let us run through the info blocks specifying the cubature
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
 
       ! Get from the trial element space the type of coordinate system
@@ -2313,13 +2386,13 @@ contains
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
     ! Let us run through the info blocks specifying the cubature
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
 
       if (NELC .eq. 0) cycle
@@ -2674,8 +2747,6 @@ contains
     end do ! i
 
     ! Release memory
-    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
-    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(DlocWeights)
     deallocate(DglobWeights)
     deallocate(Ipivot)
@@ -2691,6 +2762,15 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoCoarse)
+    end if
+
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoFine)
+    end if
+
     ! That is it
 
   end subroutine
@@ -2701,7 +2781,7 @@ contains
 
   subroutine mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
-                      cavrgType,rperfconfig)
+                      cavrgType,rcubatureInfoCoarse,rcubatureInfoFine,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a 2-Level interpolation matrix.
@@ -2725,6 +2805,14 @@ contains
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
   integer, intent(in) :: cavrgType
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the coarse mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoCoarse
+
+  ! (OPTIONAL:) A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use on the fine mesh. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfoFine
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2827,7 +2915,8 @@ contains
   ! Current assembly block, cubature formula, element type,...
   integer :: icubatureBlock
   integer(I32) :: celementFine, celementCoarse, ccubFine,ccubCoarse
-  type(t_scalarCubatureInfo), target :: rcubatureInfoFine,rcubatureInfoCoarse
+  type(t_scalarCubatureInfo), target :: rtempcubatureInfoCoarse,rtempcubatureInfoFine
+  type(t_scalarCubatureInfo), pointer :: p_rcubatureInfoCoarse,p_rcubatureInfoFine
 
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
@@ -2876,13 +2965,23 @@ contains
 
     end if
 
-    ! Create default assembly structures with the default cubature
-    ! formula for the coarse grid discretisation.
-    call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
-        rcubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_createDefCubStructure(rdiscretisationCoarse,&
+          rtempCubatureInfoCoarse,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoCoarse => rtempCubatureInfoCoarse
+    else
+      p_rcubatureInfoCoarse => rcubatureInfoCoarse
+    end if
 
-    call spdiscr_createDefCubStructure(rdiscretisationFine,&
-        rcubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_createDefCubStructure(rdiscretisationFine,&
+          rtempCubatureInfoFine,CUB_GEN_DEPR_BILFORM)
+      p_rcubatureInfoFine => rtempCubatureInfoFine
+    else
+      p_rcubatureInfoFine => rcubatureInfoFine
+    end if
 
     ! Get a pointer to the triangulation - for easier access.
     p_rtriaCoarse => rdiscretisationCoarse%p_rtriangulation
@@ -2906,13 +3005,13 @@ contains
     nmaxRefDimFine = 0
 
     ! Let us run through the info blocks specifying the cubature
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           i,celementCoarse,ccubCoarse,NELC)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
 
       ! Get from the trial element space the type of coordinate system
@@ -3003,13 +3102,13 @@ contains
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
     ! Let us run through the info blocks specifying the cubature
-    do icubatureBlock = 1,rcubatureInfoCoarse%ninfoBlockCount
+    do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
 
       ! Get the element distribution, element id, number of elements,...
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoCoarse,rdiscretisationCoarse,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoCoarse,rdiscretisationCoarse,&
           IELDIST,celementCoarse,ccubCoarse,NELC,p_IelementList)
 
-      call spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfoFine,rdiscretisationFine,&
+      call spdiscr_getStdDiscrInfo (icubatureBlock,p_rcubatureInfoFine,rdiscretisationFine,&
           celement=celementFine,ccubature=ccubFine)
 
       if (NELC .eq. 0) cycle
@@ -3407,8 +3506,6 @@ contains
     end do ! i
 
     ! Release memory
-    call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
-    call spdiscr_releaseCubStructure (rcubatureInfoFine)
     deallocate(DlocWeights)
     deallocate(DglobWeights)
     deallocate(Ipivot)
@@ -3423,6 +3520,15 @@ contains
     deallocate(Kentry)
     deallocate(Dentry)
     deallocate(p_IelementRef)
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfoCoarse)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoCoarse)
+    end if
+
+    if (.not. present(rcubatureInfoFine)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfoFine)
+    end if
 
     ! That is it
 
