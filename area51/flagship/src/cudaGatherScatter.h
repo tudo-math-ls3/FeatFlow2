@@ -1217,6 +1217,36 @@ template <int nelem, bool soa>
   }
   
   /*****************************************************************************
+   * Gather nodal data for first node in IeqList and store it at
+   * position ipos in local data array DataAtNode
+   ****************************************************************************/
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
+    __device__ __forceinline__
+    static void gatherNodeData (Td *DataAtNode,
+				Tv *vec,
+				Ti *IeqList,
+				Ti neq)
+  {
+    VectorBase<nelem,soa>::gatherNodeData<1,false,boverwrite,1>
+      (DataAtNode,vec,IeqList,neq);
+  }
+
+  /*****************************************************************************
+   * Scatter nodal data stored at position ipos in local data array
+   * DataAtNode to first node in IeqList into global vector
+   ****************************************************************************/
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
+    __device__ __forceinline__
+    static void scatterNodeData (Tv *vec,
+				 Td *DataAtNode,
+				 Ti *IeqList,
+				 Ti neq)
+  {
+    VectorBase<nelem,soa>::scatterNodeData<1,false,boverwrite,1>
+      (vec,DataAtNode,1,IeqList,neq);
+  }
+  
+  /*****************************************************************************
    * Gather edge-wise data for edge (ieq,jeq) and store it at position
    * ipos in local data array DataAtEdge
    ****************************************************************************/
@@ -1231,7 +1261,7 @@ template <int nelem, bool soa>
     VectorBase<nelem,soa>::gatherEdgeData<1,false,boverwrite>
       (DataAtEdge,vec,1,ieq,jeq,neq);
   }
-  
+ 
   /*****************************************************************************
    * Scatter edge-wise data stored at position ipos in local data
    * array DataAtEdge to edge (ieq,jeq) into global vector
@@ -1246,6 +1276,36 @@ template <int nelem, bool soa>
   {
     VectorBase<nelem,soa>::scatterEdgeData<1,false,boverwrite>
       (vec,DataAtEdge,1,ieq,jeq,neq);
+  }
+
+  /*****************************************************************************
+   * Gather edge-wise data for first edge in IedgeList and store it at
+   * position ipos in local data array DataAtEdge
+   ****************************************************************************/
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
+    __device__ __forceinline__
+    static void gatherEdgeData (Td *DataAtEdge,
+				Tv *vec,
+				Ti *IedgeList,
+				Ti neq)
+  {
+    VectorBase<nelem,soa>::gatherEdgeData<1,false,boverwrite,1>
+      (DataAtEdge,vec,1,IedgeList,neq);
+  }
+
+  /*****************************************************************************
+   * Scatter edge-wise data stored at position ipos in local data
+   * array DataAtEdge to first edge in IedgeList into global vector
+   ****************************************************************************/
+  template <bool boverwrite, typename Tv, typename Td, typename Ti>
+    __device__ __forceinline__
+    static void scatterEdgeData (Tv *vec,
+				 Td *DataAtEdge,
+				 Ti *IedgeList,
+				 Ti neq)
+  {
+    VectorBase<nelem,soa>::scatterEdgeData<1,false,boverwrite>
+      (vec,DataAtEdge,1,IedgeList,neq);
   }
 };
 

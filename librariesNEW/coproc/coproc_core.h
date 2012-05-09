@@ -88,13 +88,12 @@ using namespace std;
 extern "C"
 {
   void coproc_checkErrors(__CHAR *label);
-
   int coproc_init(int deviceNumber);
-  
-  int coproc_getSizeOf(int cdatatype,
-		       size_t isize);
-
+  int coproc_done();
+  int coproc_getSizeOf(int cdatatype, size_t isize);
   int coproc_createStream(cudaStream_t *pStream);
+  const cudaDeviceProp* coproc_getDeviceProp(int deviceNumber);
+  const cudaDeviceProp* coproc_getCurrentDeviceProp();
 }
 
 #endif

@@ -17,10 +17,11 @@
 
 using namespace std;
 
+static cudaDeviceProp *DeviceProp;
+
 /*******************************************************************************
  * Check for CUDA errors
- *******************************************************************************
- */
+ ******************************************************************************/
 void coproc_checkErrors(__CHAR *label)
 {
   #ifdef ENABLE_PARAMETER_CHECK
@@ -52,8 +53,7 @@ extern "C" {
 
 /*******************************************************************************
  * Initialisation of the CUDA subsystem
- *******************************************************************************
- */
+ ******************************************************************************/
 int coproc_init(int deviceNumber=0)
 {
   int deviceCount;
@@ -63,37 +63,39 @@ int coproc_init(int deviceNumber=0)
       __coproc__error__("No CUDA device found");
       return 1;
     }
+  
+  // Initialise device property array
+  DeviceProp = new cudaDeviceProp[deviceCount];
 
   cout << "Available devices:" << endl;
   for (int i=0 ; i < deviceCount ; ++i)
     {
-      cudaDeviceProp prop;
-      cudaGetDeviceProperties(&prop, i);
-      cout << i << ": " << prop.name << endl;
-      cout << "   Compute capability;      " << prop.major << "." << prop.minor << endl;
-      cout << "   Total global memory:     " << prop.totalGlobalMem << " bytes" << endl;
-      cout << "   Total constant memory:   " << prop.totalConstMem << " bytes" << endl;
-      cout << "   Shared memory per block: " << prop.sharedMemPerBlock << " bytes" << endl;
-      cout << "   Multiprocessors:         " << prop.multiProcessorCount << endl;
+      cudaGetDeviceProperties(&DeviceProp[i], i);
+      cout << i << ": " << DeviceProp[i].name << endl;
+      cout << "   Compute capability;      " << DeviceProp[i].major << "." << DeviceProp[i].minor << endl;
+      cout << "   Total global memory:     " << DeviceProp[i].totalGlobalMem << " bytes" << endl;
+      cout << "   Total constant memory:   " << DeviceProp[i].totalConstMem << " bytes" << endl;
+      cout << "   Shared memory per block: " << DeviceProp[i].sharedMemPerBlock << " bytes" << endl;
+      cout << "   Multiprocessors:         " << DeviceProp[i].multiProcessorCount << endl;
       cout << "   Blocks per grid:         "
-	   << prop.maxGridSize[0]*prop.maxGridSize[1]*prop.maxGridSize[2]
-	   << " (" << prop.maxGridSize[0]
-	   << "," << prop.maxGridSize[1]
-	   << "," << prop.maxGridSize[2] << ")" << endl;
-      cout << "   Registers per block:     " << prop.regsPerBlock << endl;
+	   << DeviceProp[i].maxGridSize[0]*DeviceProp[i].maxGridSize[1]*DeviceProp[i].maxGridSize[2]
+	   << " (" << DeviceProp[i].maxGridSize[0]
+	   << "," << DeviceProp[i].maxGridSize[1]
+	   << "," << DeviceProp[i].maxGridSize[2] << ")" << endl;
+      cout << "   Registers per block:     " << DeviceProp[i].regsPerBlock << endl;
       cout << "   Threads per block:       "
-	   << prop.maxThreadsPerBlock
-	   << " (" << prop.maxThreadsDim[0]
-	   << "," << prop.maxThreadsDim[1]
-	   << "," << prop.maxThreadsDim[2] << ")" << endl;
-      cout << "   Threads per warp:        " << prop.warpSize << endl;
-      cout << "   Clock frequency:         " << prop.clockRate << " kHz" << endl;
+	   << DeviceProp[i].maxThreadsPerBlock
+	   << " (" << DeviceProp[i].maxThreadsDim[0]
+	   << "," << DeviceProp[i].maxThreadsDim[1]
+	   << "," << DeviceProp[i].maxThreadsDim[2] << ")" << endl;
+      cout << "   Threads per warp:        " << DeviceProp[i].warpSize << endl;
+      cout << "   Clock frequency:         " << DeviceProp[i].clockRate << " kHz" << endl;
       cout << "   Concurrent memory copy:  "
-	   << (prop.deviceOverlap == 1 ? "supported" : "not supported") << endl;
+	   << (DeviceProp[i].deviceOverlap == 1 ? "supported" : "not supported") << endl;
       cout << "   Mapping of host memory:  "
-	<< (prop.canMapHostMemory == 1 ? "supported" : "not supported") << endl;
+	<< (DeviceProp[i].canMapHostMemory == 1 ? "supported" : "not supported") << endl;
       cout << "   Concurrent kernels:      "
-	   << (prop.concurrentKernels == 1 ? "supported" : "not supported") << endl;
+	   << (DeviceProp[i].concurrentKernels == 1 ? "supported" : "not supported") << endl;
     }
   
   // Autoselect device?
@@ -159,9 +161,47 @@ extern "C" {
 }
 
 /*******************************************************************************
+ * Finalisation of the CUDA subsystem
+ ******************************************************************************/
+int coproc_done()
+{
+  delete[] DeviceProp;
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_done)()
+  {
+    return (__INT) coproc_done();
+  }
+}
+
+/*******************************************************************************
+ * Get property list of device deviceNumber
+ ******************************************************************************/
+extern "C" {
+  const cudaDeviceProp* coproc_getDeviceProp(int deviceNumber)
+  {
+    return &DeviceProp[deviceNumber];
+  }
+}
+
+/*******************************************************************************
+ * Get property list of current device
+ ******************************************************************************/
+extern "C" {
+  const cudaDeviceProp* coproc_getCurrentDeviceProp()
+  {
+    int deviceNumber;
+    cudaGetDevice(&deviceNumber);
+    return &DeviceProp[deviceNumber];
+  }
+}
+
+/*******************************************************************************
  * Check for Fortran <-> C interoperability
- *******************************************************************************
- */
+ ******************************************************************************/
 size_t coproc_getSizeOf(int cdatatype)
 {
   // Check if __SIZET and size_t coincide
@@ -209,8 +249,7 @@ extern "C" {
 
 /*******************************************************************************
  * Create asynchroneous stream
- *******************************************************************************
- */
+ ******************************************************************************/
 int coproc_createStream(cudaStream_t *stream)
 {
   if (cudaStreamCreate(stream) != cudaSuccess) {
@@ -231,8 +270,7 @@ extern "C" {
 
 /*******************************************************************************
  * Destroy asynchroneous stream
- *******************************************************************************
- */
+ ******************************************************************************/
 int coproc_destroyStream(cudaStream_t stream)
 {
   if (cudaStreamDestroy(stream) != cudaSuccess) {
@@ -253,8 +291,7 @@ extern "C" {
 
 /*******************************************************************************
  * Synchronize asynchroneous stream
- *******************************************************************************
- */
+ ******************************************************************************/
 int coproc_synchronizeStream(cudaStream_t stream)
 {
   if (cudaStreamSynchronize(stream) != cudaSuccess) {

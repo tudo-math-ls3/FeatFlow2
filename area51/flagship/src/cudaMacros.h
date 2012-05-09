@@ -59,7 +59,8 @@
 #endif
 
 inline
-static void prepare_baseline(int nitems,
+static void prepare_baseline(const cudaDeviceProp *devProp,
+			     int nitems,
 			     int nitems_per_thread,
 			     int threads_per_cta,
 			     int *blocks,
@@ -72,7 +73,7 @@ static void prepare_baseline(int nitems,
     
     // Compute number of items per kernel
     const int n_per_thread = MAX(nitems_per_thread,
-				 nitems/(threads_per_cta*(65535))+1);
+				 nitems/(threads_per_cta*devProp->maxGridSize[0])+1);
     
     // Compute number of items per kernel
     *blocks =(nitems/nitems_per_thread+(*threads)-1)/(*threads);
@@ -88,7 +89,8 @@ static void prepare_baseline(int nitems,
 };
 
 inline
-static void prepare_cudaDMA(int nitems,
+static void prepare_cudaDMA(const cudaDeviceProp *devProp,
+			    int nitems,
 			    int nitems_per_thread,
 			    int compute_threads_per_cta,
 			    int dma_threads_per_ld,
@@ -103,7 +105,7 @@ static void prepare_cudaDMA(int nitems,
     
     // Compute number of items per kernel
     int n_per_thread = MAX(nitems_per_thread,
-			   nitems/(compute_threads_per_cta*(65535))+1);
+			   nitems/(compute_threads_per_cta*devProp->maxGridSize[0])+1);
     
     // Compute total number of threads
     *blocks = (nitems/n_per_thread)/compute_threads_per_cta;
