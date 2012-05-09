@@ -408,7 +408,9 @@ contains
       call mlop_build2LvlProlMatrix (&
           Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          .true., Rlevels(i)%rmatProl)
+          .true., Rlevels(i)%rmatProl,&
+          rcubatureInfoCoarse=Rlevels(i-1)%rcubatureInfo,&
+          rcubatureInfoFine=Rlevels(i)%rcubatureInfo)
       
       ! Now set up an interlevel projecton structure for this level
       ! based on the Laplace matrix on this level.
