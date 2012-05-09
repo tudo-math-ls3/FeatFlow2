@@ -1355,7 +1355,7 @@ contains
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_Fa
      integer, dimension(:), pointer :: p_Ipermutation
-    integer :: iunit,ieq
+    integer :: iunit,ieq,ivar
     real(DP) :: dthres
     character(LEN=10) :: cstat,cpos
 
@@ -1403,17 +1403,23 @@ contains
       if (.not. associated(p_Ipermutation)) then
 
         do ieq=1,rvector%NEQ
-          if (abs(p_Da(ieq)) .ge. dthres) then
-            write(UNIT=iunit,FMT=20) 1,ieq,p_Da(ieq)
-          end if
+          do ivar=1,rvector%NVAR
+            if (abs(p_Da(rvector%NVAR*(ieq-1)+ivar)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) 1,rvector%NVAR*(ieq-1)+ivar,&
+                  p_Da(rvector%NVAR*(ieq-1)+ivar)
+            end if
+          end do
         end do
 
       else
 
         do ieq=1,rvector%NEQ
-          if (abs(p_Da(ieq)) .ge. dthres) then
-            write(UNIT=iunit,FMT=20) 1,p_Ipermutation(ieq),p_Da(p_Ipermutation(ieq))
-          end if
+          do ivar=1,rvector%NVAR
+            if (abs(p_Da(rvector%NVAR*(ieq-1)+ivar)) .ge. dthres) then
+              write(UNIT=iunit,FMT=20) 1,rvector%NVAR*(p_Ipermutation(ieq)-1)+ivar,&
+                  p_Da(rvector%NVAR*(p_Ipermutation(ieq)-1)+ivar)
+            end if
+          end do
         end do
 
       end if
@@ -1436,17 +1442,23 @@ contains
       if (.not. associated(p_Ipermutation)) then
 
         do ieq=1,rvector%NEQ
-          if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
-            write(UNIT=iunit,FMT=20) 1,ieq,p_Fa(ieq)
-          end if
+          do ivar=1,rvector%NVAR
+            if (abs(p_Fa(rvector%NVAR*(ieq-1)+ivar)) .ge. real(dthres,SP)) then
+              write(UNIT=iunit,FMT=20) 1,rvector%NVAR*(ieq-1)+ivar,&
+                  p_Fa(rvector%NVAR*(ieq-1)+ivar)
+            end if
+          end do
         end do
 
       else
 
         do ieq=1,rvector%NEQ
-          if (abs(p_Fa(ieq)) .ge. real(dthres,SP)) then
-            write(UNIT=iunit,FMT=20) 1,p_Ipermutation(ieq),p_Fa(p_Ipermutation(ieq))
-          end if
+          do ivar=1,rvector%NVAR
+            if (abs(p_Fa(rvector%NVAR*(ieq-1)+ivar)) .ge. real(dthres,SP)) then
+              write(UNIT=iunit,FMT=20) 1,rvector%NVAR*(p_Ipermutation(ieq)-1)+ivar,&
+                  p_Fa(rvector%NVAR*(p_Ipermutation(ieq)-1)+ivar)
+            end if
+          end do
         end do
 
       end if

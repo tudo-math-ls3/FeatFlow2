@@ -1405,7 +1405,7 @@ contains
               ddata = Da(ivar,ild)
               if (abs(ddata) .ge. dthres) then
                 write(UNIT=iunit,FMT=sformat) &
-                    (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),ddata
+                    (ieq-1)*nvar+ivar, (Kcol(ild)-1)*nvar+ivar,ddata
                 na = na+1
               end if
             end do
@@ -1416,7 +1416,7 @@ contains
           do ild=Kld(ieq),Kld(ieq+1)-1
             do ivar=1,nvar
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                  (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild)
+                  (ieq-1)*nvar+ivar, (Kcol(ild)-1)*nvar+ivar
               na = na+1
             end do
           end do
@@ -1451,7 +1451,7 @@ contains
               fdata = Fa(ivar,ild)
               if (abs(fdata) .ge. dthres) then
                 write(UNIT=iunit,FMT=sformat) &
-                    (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),fdata
+                    (ieq-1)*nvar+ivar, (Kcol(ild)-1)*nvar+ivar,fdata
                 na = na+1
               end if
             end do
@@ -1462,7 +1462,7 @@ contains
           do ild=Kld(ieq),Kld(ieq+1)-1
             do ivar=1,nvar
               write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                  (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild)
+                  (ieq-1)*nvar+ivar, (Kcol(ild)-1)*nvar+ivar
               na = na+1
             end do
           end do
@@ -1498,7 +1498,7 @@ contains
                 ddata = Da(ivar,jvar,ild)
                 if (abs(ddata) .ge. dthres) then
                   write(UNIT=iunit,FMT=sformat) &
-                      (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),ddata
+                      (ieq-1)*nvar+ivar, (Kcol(ild)-1)*mvar+jvar,ddata
                   na=na+1
                 end if
               end do
@@ -1511,7 +1511,7 @@ contains
             do jvar=1,nvar ! local column index
               do ivar=1,mvar ! local row index
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                    (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild)
+                    (ieq-1)*nvar+ivar, (Kcol(ild)-1)*mvar+jvar
                 na=na+1
               end do
             end do
@@ -1548,7 +1548,7 @@ contains
                 fdata = Fa(ivar,jvar,ild)
                 if (abs(fdata) .ge. dthres) then
                   write(UNIT=iunit,FMT=sformat) &
-                      (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),fdata
+                      (ieq-1)*nvar+ivar, (Kcol(ild)-1)*mvar+jvar,fdata
                   na=na+1
                 end if
               end do
@@ -1561,7 +1561,7 @@ contains
             do jvar=1,nvar ! local column index
               do ivar=1,mvar ! local row index
                 write(UNIT=iunit,FMT='(I10,1X,I10,1X,"1.0;")') &
-                    (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild)
+                    (ieq-1)*nvar+ivar, (Kcol(ild)-1)*mvar+jvar
                 na=na+1
               end do
             end do
