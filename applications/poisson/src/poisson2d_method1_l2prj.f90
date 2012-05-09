@@ -439,7 +439,8 @@ contains
       call mlop_build2LvlMassMatrix (&
           Rlevels(i-1)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          .true., Rlevels(i)%rmatrix2Lvl)
+          .true., Rlevels(i)%rmatrix2Lvl,&
+          Rlevels(i-1)%rcubatureInfo,Rlevels(i)%rcubatureInfo)
       
       ! Now set up an interlevel projecton structure for this level
       ! based on the Laplace matrix on this level.
