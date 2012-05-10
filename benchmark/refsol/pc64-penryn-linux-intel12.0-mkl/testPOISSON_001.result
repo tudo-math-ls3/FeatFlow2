@@ -384,18 +384,18 @@ L2prj: Iteration 8,  !!RES!! = 8.358738981476880E-08
 Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
 -----------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 2.676838528903989E-03
-Multigrid: Iteration 1,  !!RES!! = 5.577552805755318E-05
-Multigrid: Iteration 2,  !!RES!! = 7.138149147989227E-07
-Multigrid: Iteration 3,  !!RES!! = 1.689449848738715E-08
+Multigrid: Iteration 1,  !!RES!! = 5.577552805755582E-05
+Multigrid: Iteration 2,  !!RES!! = 7.138149147908976E-07
+Multigrid: Iteration 3,  !!RES!! = 1.689449848787556E-08
 
 Multigrid statistics:
 
 Iterations              : 3
 !!INITIAL RES!!         : 2.676838528903989E-03
-!!RES!!                 : 1.689449848738715E-08
-!!RES!!/!!INITIAL RES!! : 6.311362566312313E-06
+!!RES!!                 : 1.689449848787556E-08
+!!RES!!/!!INITIAL RES!! : 6.311362566494771E-06
 
-Rate of convergence     : 1.848024437616096E-02
+Rate of convergence     : 1.848024437633905E-02
 L2-error: 3.0758720660E-04
 H1-error: 5.6542124815E-02
 
