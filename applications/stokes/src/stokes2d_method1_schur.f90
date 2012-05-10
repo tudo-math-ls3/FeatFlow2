@@ -288,7 +288,7 @@ contains
       ! the cubature formula to use. Standard: Gauss 3x3.
       call spdiscr_createDefCubStructure(&  
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-          Rlevels(i)%rcubatureInfo,CUB_GEN_AUTO_G2)
+          Rlevels(i)%rcubatureInfo,CUB_GEN_AUTO_G3)
     end do
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -314,10 +314,11 @@ contains
           Rlevels(i)%rdiscretisation%RspatialDiscr(1))
 
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
-                                   LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
+          LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
       
       ! Assemble a Laplace matrix for A1
-      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,dnu)
+      call stdop_assembleLaplaceMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,dnu,&
+          rcubatureInfo=Rlevels(i)%rcubatureInfo)
       
       ! Create A2 as a shared copy of A1
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
@@ -329,9 +330,9 @@ contains
       
       ! Assemble B1/B2 matrices
       call stdop_assembleSimpleMatrix (Rlevels(i)%rmatrixB1,&
-                                       DER_FUNC2D, DER_DERIV2D_X, -1.0_DP)
+          DER_FUNC2D, DER_DERIV2D_X, -1.0_DP, rcubatureInfo=Rlevels(i)%rcubatureInfo)
       call stdop_assembleSimpleMatrix (Rlevels(i)%rmatrixB2,&
-                                       DER_FUNC2D, DER_DERIV2D_Y, -1.0_DP)
+          DER_FUNC2D, DER_DERIV2D_Y, -1.0_DP, rcubatureInfo=Rlevels(i)%rcubatureInfo)
       
       ! Copy B1/B2 into the block matrix
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, &
@@ -368,7 +369,7 @@ contains
     ! Assemble a mass matrix as an approximation of the Schur-complement
     ! of the Laplace matrix blocks of the system matrix.
     call stdop_assembleSimpleMatrix (RmatrixS(1)%RmatrixBlock(1,1),&
-                                     DER_FUNC2D, DER_FUNC2D)
+        DER_FUNC2D, DER_FUNC2D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create RHS and solution vectors

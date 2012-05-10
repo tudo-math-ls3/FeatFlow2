@@ -428,7 +428,7 @@ contains
       !
       ! Build the Laplace matrix:
       call bilf_buildMatrixScalar (rform,.true.,&
-          Rlevels(i)%rmatrixStokes, coeff_Stokes_3D)
+          Rlevels(i)%rmatrixStokes, Rlevels(i)%rcubatureInfo, coeff_Stokes_3D)
       
       ! Duplicate the Laplace matrix to the X-velocity matrix and share
       ! the structure. If we want to assemble a Stokes system, we can also
@@ -471,7 +471,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB1,&
-                                   coeff_Pressure_3D)
+          Rlevels(i)%rcubatureInfo,coeff_Pressure_3D)
 
       ! Build the second pressure matrix B2.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -485,7 +485,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB2,&
-                                   coeff_Pressure_3D)
+          Rlevels(i)%rcubatureInfo,coeff_Pressure_3D)
                                   
       ! Build the third pressure matrix B3.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -499,7 +499,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB3,&
-                                   coeff_Pressure_3D)
+          Rlevels(i)%rcubatureInfo,coeff_Pressure_3D)
 
       ! The B1/B2/B3 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -584,16 +584,13 @@ contains
     !
     ! Note that the vector is unsorted after calling this routine!
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-        rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_X_3D)
 
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2),&
-        rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(2),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_Y_3D)
 
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(3),&
-        rlinform,.true.,rrhs%RvectorBlock(3),coeff_RHS_X_3D)
+        rlinform,.true.,rrhs%RvectorBlock(3),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_Z_3D)
                                 
     ! The fourth subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".

@@ -239,7 +239,7 @@ contains
       p_rcubatureInfo => rproblem%RlevelInfo(i)%rcubatureInfo
       
       ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies 3 blocks in the
+      ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this simple problem, we only have one block.
       allocate(p_rdiscretisation)
       call spdiscr_initBlockDiscr (p_rdiscretisation,3,&
@@ -320,6 +320,7 @@ contains
   
     ! A cubature information structure
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
@@ -408,12 +409,12 @@ contains
       !
       ! Build the X-velocity matrix:
       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1),&
-                                   coeff_Stokes_2D,rproblem%rcollection)
+          p_rcubatureInfo,coeff_Stokes_2D,rproblem%rcollection)
       
       ! Duplicate the matrix to the Y-velocity matrix, share structure and
       ! content between them (as the matrices are the same).
       call lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
-                  p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Manually change the discretisation structure of the Y-velocity
       ! matrix to the Y-discretisation structure.
@@ -434,7 +435,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,rproblem%RlevelInfo(i)%rmatrixB1,&
-                                   coeff_Pressure_2D,rproblem%rcollection)
+          p_rcubatureInfo,coeff_Pressure_2D,rproblem%rcollection)
 
       ! Build the second pressure matrix B2.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -448,7 +449,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,rproblem%RlevelInfo(i)%rmatrixB2,&
-                                   coeff_Pressure_2D,rproblem%rcollection)
+          p_rcubatureInfo,coeff_Pressure_2D,rproblem%rcollection)
                                   
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -507,15 +508,16 @@ contains
     ! in the collection.
     !
     ! Note that the vector is unsorted after calling this routine!
+    
+    p_rcubatureInfo => rproblem%RlevelInfo(rproblem%ilvmax)%rcubatureInfo
+    
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS_X_2D,&
-              rproblem%rcollection)
+        rlinform,.true.,p_rrhs%RvectorBlock(1),&
+        p_rcubatureInfo,coeff_RHS_X_2D,rproblem%rcollection)
 
     call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              p_rrhs%RvectorBlock(2),coeff_RHS_Y_2D,&
-              rproblem%rcollection)
+        rlinform,.true.,p_rrhs%RvectorBlock(2),&
+        p_rcubatureInfo,coeff_RHS_Y_2D,rproblem%rcollection)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".

@@ -206,7 +206,7 @@ contains
     ! Create an assembly information structure which tells the code
     ! the cubature formula to use. Standard: Gauss 3x3.
     call spdiscr_createDefCubStructure(&  
-        rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_GEN_AUTO_G2)
+        rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create a 3x3 block matrix with the operator
@@ -228,7 +228,7 @@ contains
     !
     ! Create the matrix structure of the X-velocity.
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,1))
+        LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,1))
 
     ! In the Stokes problem, the matrices for the Y-/Z-velocity are identical
     ! to the matrix for the X-velocity; all are Laplace-matrices!
@@ -246,18 +246,17 @@ contains
     ! Create the matrices structure of the pressure using the 4th
     ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(4),&
-                                     LSYSSC_MATRIX9, rmatrixB1,&
-                                     rdiscretisation%RspatialDiscr(1))
+        LSYSSC_MATRIX9, rmatrixB1,rdiscretisation%RspatialDiscr(1))
               
     ! Duplicate the B1 matrix structure to the B2/B3 matrix, so use
     ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix
     ! structure between B1, B2 and B3 (B1 is the parent and B2/B3 the child).
     ! Do not create a content array yet, it will be created by
     ! the assembly routines later.
-    call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB2, LSYSSC_DUP_COPY,&
-                                 LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB3, LSYSSC_DUP_COPY,&
-                                 LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB2, &
+        LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB3, &
+        LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
                                      
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -290,15 +289,15 @@ contains
     !
     ! Build the X-velocity matrix:
     call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                                 coeff_Stokes_3D)
+        rcubatureInfo,coeff_Stokes_3D)
     
     ! Duplicate the matrix to the Y-/Z-velocity matrix, share structure and
     ! content between them (as the matrices are the same).
     call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
-             rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
-             rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     
     ! Manually change the discretisation structure of the Y-/Z-velocity
     ! matrix to the Y-/Z-discretisation structure.
@@ -320,7 +319,8 @@ contains
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
-    call bilf_buildMatrixScalar (rform,.true.,rmatrixB1,coeff_Pressure_3D)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixB1,&
+        rcubatureInfo,coeff_Pressure_3D)
 
     ! Build the second pressure matrix B2.
     ! Again first set up the bilinear form, then call the matrix assembly.
@@ -333,7 +333,8 @@ contains
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
-    call bilf_buildMatrixScalar (rform,.true.,rmatrixB2,coeff_Pressure_3D)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixB2,&
+        rcubatureInfo,coeff_Pressure_3D)
                                 
     ! Build the second pressure matrix B3.
     ! Again first set up the bilinear form, then call the matrix assembly.
@@ -346,7 +347,8 @@ contains
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
-    call bilf_buildMatrixScalar (rform,.true.,rmatrixB3,coeff_Pressure_3D)
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixB3,&
+        rcubatureInfo,coeff_Pressure_3D)
 
     ! The B1/B2 matrices exist up to now only in our local problem structure.
     ! Put a copy of them into the block matrix.
@@ -393,14 +395,14 @@ contains
     ! ... and then discretise the RHS to the first three subvectors of
     ! the block vector using the discretisation structure of the
     ! corresponding block.
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                  rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_3D)
+    call linf_buildVectorScalar (&
+        rlinform,.true.,rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_X_3D)
                   
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
-                  rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Y_3D)
+    call linf_buildVectorScalar (&
+        rlinform,.true.,rrhs%RvectorBlock(2),rcubatureInfo,coeff_RHS_Y_3D)
                   
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(3),&
-                  rlinform,.true.,rrhs%RvectorBlock(3),coeff_RHS_Z_3D)
+    call linf_buildVectorScalar (&
+        rlinform,.true.,rrhs%RvectorBlock(3),rcubatureInfo,coeff_RHS_Z_3D)
                                 
     ! The fourth subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".

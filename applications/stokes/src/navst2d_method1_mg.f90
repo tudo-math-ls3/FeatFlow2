@@ -406,7 +406,7 @@ contains
       !
       ! Build the X-velocity matrix:
       call bilf_buildMatrixScalar (rform,.true.,&
-          Rlevels(i)%rmatrixStokes, coeff_Stokes_2D)
+          Rlevels(i)%rmatrixStokes, Rlevels(i)%rcubatureInfo, coeff_Stokes_2D)
 
       ! Duplicate the Laplace matrix to the X-velocity matrix and share
       ! the structure. If we want to assemble a Stokes system, we can also
@@ -445,7 +445,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB1,&
-                                   coeff_Pressure_2D)
+          Rlevels(i)%rcubatureInfo,coeff_Pressure_2D)
 
       ! Build the second pressure matrix B2.
       ! Again first set up the bilinear form, then call the matrix assembly.
@@ -459,7 +459,7 @@ contains
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB2,&
-                                   coeff_Pressure_2D)
+          Rlevels(i)%rcubatureInfo,coeff_Pressure_2D)
                                   
       ! The B1/B2 matrices exist up to now only in our local problem structure.
       ! Put a copy of them into the block matrix.
@@ -532,12 +532,10 @@ contains
     !
     ! Note that the vector is unsorted after calling this routine!
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-        rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
+        rlinform,.true.,rrhs%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_X_2D)
 
     call linf_buildVectorScalar (&
-        Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(2),&
-        rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
+        rlinform,.true.,rrhs%RvectorBlock(2),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_Y_2D)
                                 
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
