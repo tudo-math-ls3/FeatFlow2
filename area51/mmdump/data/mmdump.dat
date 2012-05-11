@@ -15,6 +15,13 @@ cDumpMesh = 0
 # Number of vertex coordinate digits for text dump
 nDigVertex = 8
 
+# Specifies whether to dump the color partition table
+# 0: no
+# 1: text dump only
+# 2: binary dump only
+# 3: both text and binary dump
+cDumpColor = 0
+
 # Specifies what matrix to assemble
 # 0: do not assemble any matrix
 # 1: assemble Mass matrix

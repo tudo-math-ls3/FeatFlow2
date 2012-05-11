@@ -123,6 +123,57 @@ void mmaux_dumpmatrix(
   free(tmp);
 }
 
+void mmaux_dumpcolor(
+  char *filename,  /* filename (not null terminated!) */
+  int *ncol,       /* number of colors */
+  int *nadj,       /* number of adjacencies in the graph */
+  int *row_ptr,    /* row-pointer array; size: *ncol + 1 */
+  int *col_idx,    /* column-index array; size: *nadj */
+  int num_chars)   /* length of 'filename' parameter */
+{
+  /* binary matrix magic: "BCPT" in little endian */
+  static const int magic_matrix = 0x54504342;
+  char name[512];
+  FILE* file;
+  int i,n,*tmp;
+
+  /* copy filename and append null terminator */
+  for(i = 0; i < num_chars; ++i)
+    name[i] = filename[i];
+  name[num_chars] = 0;
+
+  /* allocate temporary buffer */
+  n = (*ncol >= *nadj) ? (*ncol) + 1 : (*nadj);
+  tmp = (int*)malloc(4*n);
+
+  /* try to open the file */
+  if(file = fopen(name, "wb"))
+  {
+    /* write magic */
+    fwrite(&magic_matrix, 4, 1, file);
+
+    /* write counts */
+    fwrite(ncol, 4, 1, file);
+    fwrite(nadj, 4, 1, file);
+
+    /* write row pointer */
+    for(i = 0; i <= *ncol; ++i)
+      tmp[i] = row_ptr[i] - 1;
+    fwrite(tmp, 4, (*ncol) + 1, file);
+
+    /* write column indices */
+    for(i = 0; i < *nadj; ++i)
+      tmp[i] = col_idx[i] - 1;
+    fwrite(tmp, 4, *nadj, file);
+
+    /* close file */
+    fclose(file);
+  }
+
+  /* free temporary buffer */
+  free(tmp);
+}
+
 /* Fortran wrappers with trailing underscores */
 void mmaux_dumpmesh_(
   char *filename,
@@ -168,4 +219,20 @@ void mmaux_dumpmatrix_(
     num_chars);
 }
 
+void mmaux_dumpcolor_(
+  char *filename,
+  int *ncol,
+  int *nadj,
+  int *row_ptr,
+  int *col_idx,
+  int num_chars)
+{
+  mmaux_dumpcolor(
+    filename,
+    ncol,
+    nadj,
+    row_ptr,
+    col_idx,
+    num_chars);
+}
 

@@ -16,6 +16,7 @@ module mmdump2d
   use paramlist
   use io
   use statistics
+  use adjacency
   
   implicit none
 
@@ -33,10 +34,11 @@ contains
   type(t_scalarCubatureInfo) :: rcub
   type(t_matrixScalar) :: rmat
   type(t_timer) :: rtimer
-  integer :: i, nlevel, casmMatrix, cdumpMesh, cdumpMatrix, ndigVertex, ndigMatrix
+  integer :: i, nlevel, casmMatrix, cdumpMesh, cdumpMatrix, cdumpColor, ndigVertex, ndigMatrix
+  integer :: h_Icpt, h_Iprm
   integer(I32) :: celement, ccubature
   character(LEN=64) :: smesh, selement, scubature, sopName, selName, scuName
-  character(LEN=256) :: smeshName, smatName
+  character(LEN=256) :: smeshName, smatName, scptName
   real(DP) :: dasmTime
 
     ! read in the parameters
@@ -47,6 +49,7 @@ contains
     call parlst_getvalue_int(rparam, '', 'CASMMATRIX', casmMatrix, 0)
     call parlst_getvalue_int(rparam, '', 'CDUMPMESH', cdumpMesh, 0)
     call parlst_getvalue_int(rparam, '', 'CDUMPMATRIX', cdumpMatrix, 0)
+    call parlst_getvalue_int(rparam, '', 'CDUMPCOLOR', cdumpColor, 0)
     call parlst_getvalue_int(rparam, '', 'NDIGVERTEX', ndigVertex, 8)
     call parlst_getvalue_int(rparam, '', 'NDIGMATRIX', ndigMatrix, 8)
 
@@ -98,6 +101,7 @@ contains
     smeshName = trim(smesh) // '_lvl' // trim(sys_sil(nlevel,4)) // '_mesh'
     smatName = trim(smesh) // '_lvl' //  trim(sys_sil(nlevel,4)) // '_' // &
       trim(sopName) // '_' // trim(selName) // '_' // trim(scuName)
+    scptName = trim(smesh) // '_lvl' //  trim(sys_sil(nlevel,4)) // '_cpt'
 
     ! print what we have parsed onto the output stream
     call output_line('Parsed input from data file:')
@@ -109,6 +113,7 @@ contains
     call output_line('cAmsMatrix  = ' // trim(sys_sil(casmMatrix,4)))
     call output_line('cDumpMesh   = ' // trim(sys_sil(cdumpMesh,4)))
     call output_line('cDumpMatrix = ' // trim(sys_sil(cdumpMatrix,4)))
+    call output_line('cDumpColor  = ' // trim(sys_sil(cdumpColor,4)))
     call output_line('nDigVertex  = ' // trim(sys_sil(ndigVertex,4)))
     call output_line('nDigMatrix  = ' // trim(sys_sil(ndigMatrix,4)))
     call output_separator(OU_SEP_STAR)
@@ -147,6 +152,29 @@ contains
     if(iand(cdumpMesh,2) .ne. 0) then
       call output_line('Dumping mesh to "' // trim(smeshName) // '.bin" in binary format...')
       call dumpMeshBinary(rtria, './out/' // trim(smeshName) // '.bin')
+    end if
+
+    ! Assemble color partition table?
+    if(cdumpColor .gt. 0) then
+
+      ! calculate cpt
+      call output_line('Calculating color partition table...')
+      call calcColorPart(rtria, rbnd, h_Icpt, h_Iprm)
+
+      ! Dump cpt if desired
+      if(iand(cdumpColor,1) .ne. 0) then
+        call output_line('Dumping coloring to "' // trim(scptName) // '.txt" in text format...')
+        call dumpColorText(h_Icpt, h_Iprm, './out/' // trim(scptName) // '.txt')
+      end if
+      if(iand(cdumpColor,2) .ne. 0) then
+        call output_line('Dumping coloring to "' // trim(scptName) // '.bin" in binary format...')
+        call dumpColorBinary(h_Icpt, h_Iprm, './out/' // trim(scptName) // '.bin')
+      end if
+
+      ! free cpt
+      call storage_free(h_Iprm)
+      call storage_free(h_Icpt)
+
     end if
 
     ! Assemble matrix?
@@ -211,6 +239,43 @@ contains
     call tria_done (rtria)
     call boundary_release (rbnd)
     
+  end subroutine
+
+ ! ****************************************************************************
+
+  subroutine calcColorPart(rtria, rbnd, h_Icpt, h_Iperm)
+  type(t_triangulation), intent(in) :: rtria
+  type(t_boundary), intent(in) :: rbnd
+  integer, intent(out) :: h_Icpt, h_Iperm
+
+  type(t_spatialDiscretisation) :: rdiscQ0, rdiscQ1
+  type(t_matrixScalar) :: rmatA, rmatB
+  integer :: h_Iptr, h_Iidx
+
+    ! create a Q0/Q1 discretisation
+    call spdiscr_initDiscr_simple (rdiscQ0, EL_Q0_2D, rtria, rbnd)
+    call spdiscr_initDiscr_simple (rdiscQ1, EL_Q1_2D, rtria, rbnd)
+
+    ! assemble a Q0/Q1 matrix structure
+    call bilf_createMatrixStructure (rdiscQ1, LSYSSC_MATRIX9, rmatA, rdiscQ0)
+
+    ! transose it
+    call lsyssc_transposeMatrix (rmatA, rmatB, LSYSSC_TR_STRUCTURE)
+
+    ! compose adjacency graphs
+    call adj_compose(rmatA%h_Kld, rmatA%h_Kcol, rmatB%h_Kld, rmatB%h_Kcol, h_Iptr, h_Iidx)
+
+    ! calculate color partitioning
+    call adj_calcColouring(h_Iptr, h_Iidx, h_Icpt, h_Iperm)
+
+    ! clean up
+    call storage_free(h_Iidx)
+    call storage_free(h_Iptr)
+    call lsyssc_releaseMatrix(rmatB)
+    call lsyssc_releaseMatrix(rmatA)
+    call spdiscr_releaseDiscr(rdiscQ1)
+    call spdiscr_releaseDiscr(rdiscQ0)
+
   end subroutine
 
  ! ****************************************************************************
@@ -401,6 +466,80 @@ contains
     ! dump matrix
     call mmaux_dumpmatrix(sfilename, rmatrix%NEQ, rmatrix%NA, fasmTime, &
         p_IrowPtr, p_IcolIdx, p_DA)
+
+  end subroutine
+
+
+  ! ****************************************************************************
+
+  subroutine dumpColorText(h_Icpt, h_Iperm, sfilename)
+  integer, intent(in) :: h_Icpt, h_Iperm
+  character(len=*), intent(in) :: sfilename
+
+  integer :: iunit,i,ncol,nadj
+  integer, dimension(:), pointer :: p_Icpt, p_Iperm
+
+    ! open file for writing
+    call io_openFileForWriting(sfilename, iunit, SYS_REPLACE, bformatted=.true.)
+
+    ! Fail?
+    if(iunit .le. 0) then
+      call output_line('Failed to open "' // trim(sfilename) // '" for writing!', &
+          OU_CLASS_ERROR, OU_MODE_STD)
+      call sys_halt()
+    end if
+
+    ! fetch arrays
+    call storage_getbase_int(h_Icpt, p_Icpt)
+    call storage_getbase_int(h_Iperm, p_Iperm)
+
+    ! fetch lengths
+    ncol = ubound(p_Icpt, 1) - 1
+    nadj = ubound(p_Iperm, 1)
+
+    ! write header
+    write(iunit, '(A)') 'TCPT'
+    write(iunit, '(A)') &
+      trim(sys_sil(ncol,16)) !// ' ' // &
+      !trim(sys_sil(radj,16))
+
+    ! dump colot pointer
+    write(iunit,'(A)') 'COLOR'
+    do i = 1, ncol+1
+      write(iunit,'(A)') trim(sys_sil(p_Icpt(i)-1,16))
+    end do
+
+    ! dump element index array
+    write(iunit,'(A)') 'ELEM_IDX'
+    do i = 1, nadj
+      write(iunit,'(A)') trim(sys_sil(p_Iperm(i)-1,16))
+    end do
+
+    ! close file
+    write(iunit,'(A)') 'END_OF_FILE'
+    close(iunit)
+
+  end subroutine
+
+  ! ****************************************************************************
+
+  subroutine dumpColorBinary(h_Icpt, h_Iperm, sfilename)
+  integer, intent(in) :: h_Icpt, h_Iperm
+  character(len=*), intent(in) :: sfilename
+
+  integer :: ncol, nadj
+  integer, dimension(:), pointer :: p_Icpt, p_Iperm
+
+    ! fetch arrays
+    call storage_getbase_int(h_Icpt, p_Icpt)
+    call storage_getbase_int(h_Iperm, p_Iperm)
+
+    ! fetch lengths
+    ncol = ubound(p_Icpt, 1) - 1
+    nadj = ubound(p_Iperm, 1)
+
+    ! dump matrix
+    call mmaux_dumpcolor(sfilename, ncol, nadj, p_Icpt, p_Iperm)
 
   end subroutine
 
