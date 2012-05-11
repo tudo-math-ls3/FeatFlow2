@@ -42,6 +42,10 @@
 !# 4.) adj_calcCuthillMcKee
 !#     -> Calculates a (reverse) Cuthill-McKee ordering for the nodes of
 !#        the adjacency graph.
+!#
+!# 5.) adj_compose
+!#     -> Calculates the composition of two adjacency graphs.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -94,6 +98,7 @@ module adjacency
   public :: adj_sortAdjacencies
   public :: adj_calcColouring
   public :: adj_calcCuthillMcKee
+  public :: adj_compose
 
 contains
 
@@ -722,7 +727,7 @@ contains
           end if
         end do
 
-      case DEFAULT
+      case default
         ! Choose the first free node as 'root'
         do i = 1, NNODE
           if(Iaux(i) .gt. 0) then
@@ -879,5 +884,148 @@ contains
     end subroutine ! adj_cmk_aux_sort_max
 
   end subroutine ! adj_calcCuthillMcKee
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine adj_compose(h_IptrA,h_IidxA, h_IptrB, h_IidxB, h_IptrC, h_IidxC)
+
+!<description>
+  ! This routine calculates the composition C of two adjacency graphs A and B.
+  ! The index array of the graph C is not sorted.
+!</description>
+
+!<input>
+  ! A storage handle to the pointer-array of the adjacency graph A.
+  integer, intent(in) :: h_IptrA
+
+  ! A storage handle to the index-array of the adjacency graph A.
+  integer, intent(in) :: h_IidxA
+
+  ! A storage handle to the pointer-array of the adjacency graph B.
+  integer, intent(in) :: h_IptrB
+
+  ! A storage handle to the index-array of the adjacency graph B.
+  integer, intent(in) :: h_IidxB
+!</input>
+
+!<output>
+  ! A storage handle to the pointer-array of the adjacency graph C.
+  integer, intent(out) :: h_IptrC
+
+  ! A storage handle to the index-array of the adjacency graph C.
+  integer, intent(out) :: h_IidxC
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer, dimension(:), pointer :: p_Iaux, &
+      p_IptrA, p_IptrB, p_IptrC, p_IidxA, p_IidxB, p_IidxC
+  integer :: nA, nB, ia,ib,ic,ja,jb,jc,nadj
+
+    ! fetch the input arrays from the storage
+    call storage_getbase_int(h_IptrA, p_IptrA)
+    call storage_getbase_int(h_IptrB, p_IptrB)
+    call storage_getbase_int(h_IidxA, p_IidxA)
+    call storage_getbase_int(h_IidxB, p_IidxB)
+
+    ! get the lengths of the arrays
+    nA = ubound(p_IptrA,1)-1
+    nB = ubound(p_IptrB,1)-1
+
+    ! allocate a pointer array for C
+    call storage_new ('adj_compose', 'p_IptrC', nA+1, ST_INT,&
+                      h_IptrC, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int(h_IptrC, p_IptrC)
+
+    ! allocate auxiliary array
+    allocate(p_Iaux(nB))
+
+    ! loop over graph A
+    p_IptrC(1) = 1
+    do ia = 1, nA
+
+      ! clear counter for this node
+      nadj = 0
+
+      ! loop over all adjacent nodes of node ia
+      do ja = p_IptrA(ia), p_IptrA(ia+1)-1
+
+        ! fetch index of adjacent node 
+        ib = p_IidxA(ja)
+
+        ! loop over all adjacent node of node ib
+        do jb = p_IptrB(ib), p_IptrB(ib+1)-1
+
+          ! fetch index of adjacent node
+          ic = p_IidxB(jb)
+
+          ! loop over all saved nodes
+          do jc = 1, nadj
+            if(p_Iaux(jc) .eq. ic) exit
+          end do ! jc
+
+          ! if we did not find the node, save it
+          if(jc .gt. nadj) then
+            p_Iaux(jc) = ic
+            nadj = jc
+          end if
+
+        end do ! jb
+
+      end do ! ja
+
+      ! set next pointer
+      p_IptrC(ia+1) = p_IptrC(ia) + nadj
+
+    end do ! ia
+
+    ! deallocate auxiliary array
+    deallocate(p_Iaux)
+
+    ! allocate a index array for C
+    nadj = p_iptrC(nA+1)
+    call storage_new ('adj_compose', 'p_IidxC', nadj, ST_INT,&
+                      h_IidxC, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_int(h_IidxC, p_IidxC)
+
+    ! loop over graph A
+    do ia = 1, nA
+
+      ! clear counter for this node
+      nadj = 0
+
+      ! loop over all adjacent nodes of node ia
+      do ja = p_IptrA(ia), p_IptrA(ia+1)-1
+
+        ! fetch index of adjacent node 
+        ib = p_IidxA(ja)
+
+        ! loop over all adjacent node of node ib
+        do jb = p_IptrB(ib), p_IptrB(ib+1)-1
+
+          ! fetch index of adjacent node
+          ic = p_IidxB(jb)
+
+          ! loop over all saved nodes
+          do jc = 1, nadj
+            if(p_IidxC(p_IptrC(ia) + jc - 1) .eq. ic) exit
+          end do ! jc
+
+          ! if we did not find the node, save it
+          if(jc .gt. nadj) then
+            p_IidxC(p_IptrC(ia) + jc - 1) = ic
+            nadj = jc
+          end if
+
+        end do ! jb
+
+      end do ! ja
+
+    end do ! ia
+
+  end subroutine
 
 end module
