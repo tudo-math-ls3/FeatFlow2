@@ -38,17 +38,21 @@
 !#     -> Add a vector to a list of vectors to be evaluated simultaneously
 !#        in a set of points on a set of elements
 !#
-!# 10.) fev2_releaseVectorList
+!# 10.) fev2_addDummyVectorToEvalList
+!#      -> Adds a scalar dummy entry to the list of vectors to be evaluated.
+!#         Can be used as temporary memory during the evaluation.
+!#
+!# 11.) fev2_releaseVectorList
 !#      -> Release a vector evaluation list
 !#
-!# 11.) fev2_initVectorEval
+!# 12.) fev2_initVectorEval
 !#      -> Initialise a vector evaluation list for the evaluation
 !#         of vectors
 !#
-!# 12.) fev2_doneVectorEval
+!# 13.) fev2_doneVectorEval
 !#      -> Release a vector evaluation list
 !#
-!# 13.) fev2_evaluateVectors
+!# 14.) fev2_evaluateVectors
 !#      -> Evaluate all vectors in a vector evaluation list in a set of points
 !#         on a set of elements
 !# </purpose>
@@ -228,6 +232,7 @@ module feevaluation2
   public :: fev2_evaluateFemData
   
   public :: fev2_addVectorToEvalList
+  public :: fev2_addDummyVectorToEvalList
   public :: fev2_releaseVectorList
   public :: fev2_initVectorEval
   public :: fev2_doneVectorEval
