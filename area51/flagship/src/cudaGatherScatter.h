@@ -2159,7 +2159,7 @@ template <int nelem>
 /*******************************************************************************
  * Matrix - two-dimensional array
  ******************************************************************************/
-template <int nelem, int soa>
+template <int nelem, bool soa>
   struct Matrix : public MatrixBase<nelem,soa>
 {
   // Enable use of inherited functions
@@ -2173,11 +2173,11 @@ template <int nelem, int soa>
     __device__ __forceinline__
     static void scatterNodeData (Tm *mat,
 				 Td *DataAtNode,
-				 Ti ieq,
-				 Ti neq)
+				 Ti ia,
+				 Ti na)
   {
     MatrixBase<nelem,soa>::scatterNodeData<1,false,boverwrite>
-      (mat,DataAtNode,1,ieq,neq);
+      (mat,DataAtNode,1,ia,na);
   }
 
   /*****************************************************************************
