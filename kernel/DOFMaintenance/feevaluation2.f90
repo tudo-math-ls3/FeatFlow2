@@ -1229,7 +1229,7 @@ contains
 
 !<input>
   ! OPTIONAL: Number of subarrays.
-  ! If not specified, there is exactly on e subarray allocated.
+  ! If not specified, there is exactly one subarray allocated.
   ! If specified, there are nsubarray memory blocks allocated in memory
   ! and associated to this dummy vector.
   integer, intent(in), optional :: nsubarrays
