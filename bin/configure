@@ -3567,7 +3567,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
         "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
         "\t\@echo \"                   compilation attempts\"\n" .
-        "\t\@echo \"  MODE=<PARALLEL|SERIAL>\" (deprecated, use MPI=<YES|NO>)\n" .
+        "\t\@echo \"  MODE=<PARALLEL|SERIAL> (deprecated, use MPI=<YES|NO>)\"\n" .
         "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
         "\t\@echo \"  MPI=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to build a MPI or serial version of the application\"\n" .
