@@ -2266,7 +2266,7 @@ contains
     reval%p_Dcoords => Dcoords2
     reval%p_Djac => Djac2
     reval%p_Ddetj => Ddetj2
-    if(iand(celement,EL_NONPARAMETRIC) .ne. 0) then
+    if(elem_isNonparametric(celement)) then
       reval%p_DpointsReal => Dpoints2
     else
       reval%p_DpointsRef => Dpoints2
