@@ -31,7 +31,6 @@ module poisson1d_method0_simple
   use ucd
   use element
   use pprocerror
-  use genoutput
   use matrixio
   use vectorio
   use meshregion
@@ -133,7 +132,7 @@ contains
     ! As the tria_createRawTria1D routine always generates a grid
     ! with sub-intervals of equal length, we can optionally disturb
     ! the mesh.
-    !CALL meshmod_disturbMesh(rtriangulation, 0.2_DP)
+    !call meshmod_disturbMesh(rtriangulation, 0.2_DP)
 
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -159,7 +158,7 @@ contains
                                    EL_P1_1D,rtriangulation)
     ! Setting up a quadratic element would be...
                                    !EL_P2_1D,rtriangulation)
-    ! Setting up a cubic spline element would be...
+    ! Setting up a cubic Hermite element would be...
                                    !EL_S31_1D,rtriangulation)
                                    
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -264,7 +263,7 @@ contains
     ! ends. One possibility is to use the bcasm_initDirichletBC_1D routine.
     ! The following call would prescribe 0 on both interval ends:
     !
-    ! CALL bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
+    ! call bcasm_newDirichletBC_1D(rdiscretisation, rdiscreteBC, 0.0_DP, 0.0_DP)
     !
     ! The second possibility is using mesh regions:
     !
@@ -329,15 +328,13 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     nullify(p_rpreconditioner)
     ! Setting up a Jacobi-Preconditioner would be..
-    !CALL linsol_initJacobi (p_rpreconditioner)
-    ! Setting up a Jin-Wei-Tam-Preconditioner would be...
-    !CALL linsol_initJinWeiTam (p_rpreconditioner)
+    !call linsol_initJacobi (p_rpreconditioner)
     ! Setting up a SOR[1.2]-Preconditioner would be...
-    !CALL linsol_initSOR (p_rpreconditioner, 1.2_DP)
+    !call linsol_initSOR (p_rpreconditioner, 1.2_DP)
     ! Setting up a SSOR[1.2]-Preconditioner would be...
-    !CALL linsol_initSSOR (p_rpreconditioner, 1.2_DP)
+    !call linsol_initSSOR (p_rpreconditioner, 1.2_DP)
     ! Setting up a ILU(0)-Preconditioner would be...
-    !CALL linsol_initMILUs1x1(p_rpreconditioner, 0, 0.0_DP)
+    !call linsol_initMILUs1x1(p_rpreconditioner, 0, 0.0_DP)
     
     ! We now need to create a solver for the linear system.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -348,13 +345,13 @@ contains
     ! SOR or (M)ILU(s).
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Setting up a Defect-Correction-Solver would be...
-    !CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    !call linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,RfilterChain)
     ! Setting up a PCG-Solver would be...
-    !CALL linsol_initCG (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    !call linsol_initCG (p_rsolverNode,p_rpreconditioner,RfilterChain)
     ! Setting up a BiCGStab-Solver would be...
     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
-    ! Setting up a GMRES(17)-Solver would be...
-    !CALL linsol_initGMRES (p_rsolverNode,17,p_rpreconditioner,RfilterChain)
+    ! Setting up a GMRES(16)-Solver would be...
+    !call linsol_initGMRES (p_rsolverNode,16,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -364,7 +361,7 @@ contains
     ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    !    call linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
     ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrixBlock/)
