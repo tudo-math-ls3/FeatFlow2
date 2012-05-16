@@ -39,9 +39,9 @@ module adaptivetimestep
   use paramlist
   use timestepping
   use collection
-    
+
   implicit none
-  
+
 !<constants>
 
 !<constantblock description="Identifiers for the type of the adaptive time stepping.">
@@ -52,16 +52,16 @@ module adaptivetimestep
 
   ! Fixed time step size, no adaptive time stepping.
   integer, parameter :: TADTS_FIXED = 0
-  
+
   ! Adaptive time stepping with prediction,
   ! no repetition except for when the solver breaks down.
   integer, parameter :: TADTS_PREDICTION = 1
-  
+
   ! Adaptive time stepping with prediction,
   ! repetition of the time step if nonlinear stopping
   ! criterion is too large or the solver breaks down.
   integer, parameter :: TADTS_PREDICTREPEAT = 2
-  
+
   ! Adaptive time stepping with prediction,
   ! repetition of the time step if nonlinear stopping
   ! criterion is too large or the time error is too large
@@ -78,7 +78,7 @@ module adaptivetimestep
   ! Use linear blending between dadTimeStepEpsDuringInit and dadTimeStepEpsAfterInit
   ! to control the error in the start phase.
   integer, parameter :: TADTS_START_LINEAR      = 1
-  
+
   ! Use logarithmic blending between dadTimeStepEpsDuringInit and dadTimeStepEpsAfterInit
   ! to control the error in the start phase.
   integer, parameter :: TADTS_START_LOGARITHMIC = 2
@@ -90,19 +90,19 @@ module adaptivetimestep
 
   ! Nonlinear solver failed
   integer(I32), parameter :: TADTS_SST_NLFAIL          = 2**0
-  
+
   ! Nonlinear solver failed because preconditioner did not work
   integer(I32), parameter :: TADTS_SST_NLPRECFAIL      = 2**1
-  
+
   ! Nonlinear solver converged but has not reached the convergence criterion
   integer(I32), parameter :: TADTS_SST_NLINCOMPLETE    = 2**2
 
   ! Nonlinear solver in the predictor step failed
   integer(I32), parameter :: TADTS_SST_NLPREDFAIL      = 2**3
-  
+
   ! Nonlinear solver in the predictor step failed because preconditioner did not work
   integer(I32), parameter :: TADTS_SST_NLPREDPRECFAIL  = 2**4
-  
+
   ! Nonlinear solverin the predictor step converged but has not reached
   ! the convergence criterion
   integer(I32), parameter :: TADTS_SST_NLPREDINCOMPLETE = 2**5
@@ -112,7 +112,7 @@ module adaptivetimestep
 
 !</constants>
 
-  
+
 !<types>
 
 !<typeblock>
@@ -121,21 +121,21 @@ module adaptivetimestep
   ! and during the simulation, as well as configuring how to estimate the time
   ! error.
   type t_adaptimeTimeStepping
-  
+
     ! Type of adaptive time stepping. One of the TADTS_xxxx constants.
     ! Standard is TADTS_FIXED = No adaptive time stepping.
     integer :: ctype                          = TADTS_FIXED
-    
+
     ! Maximum number of repetitions if ctype=TADTS_PREDICTREPEAT or
     ! ctype=TADTS_PREDREPTIMECONTROL.
     integer  :: nrepetitions                  = 3
-    
+
     ! Minimum time step.
     real(DP) :: dtimeStepMin                  = 0.000001_DP
-    
+
     ! Maximum time step.
     real(DP) :: dtimeStepMax                  = 1.000000001_DP
-    
+
     ! Factor for modifying time step size.
     ! Only if ctype != TADTS_FIXED.
     ! Time step size is reduced by sqrt(DTFACT) upon broke down
@@ -147,14 +147,14 @@ module adaptivetimestep
     ! estimated in the range
     !  (old time step size) .. (old time step size) * dtimeStepFactor**(1/#performed repetitions)
     real(DP) :: dtimeStepFactor               = 9.000000001_DP
-  
+
     ! Max. rel. change of time step such that the step is not repeated.
     ! This parameter affects the simulation only if ctype=TADTS_PREDREPTIMECONTROL!
     ! If
     !  (new time step size)/(old time step size) < depsAdaptiveRelTimeStep,
     ! the time step is repeated.
     real(DP) :: depsAdaptiveRelTimeStep       = 0.5_DP
-    
+
     ! Type of start procedure (IADIN) when starting a nonstationary
     ! simulation if cadaptiveTimeStepping<>0 (to prevent time step to be reduced to 0.0).
     ! One of the TADTS_START_xxxx constants.
@@ -180,13 +180,13 @@ module adaptivetimestep
     ! Low accuracy for acceptance after start procedure (EPSADL);
     ! if time error is larger, the step is repeated
     real(DP) :: dadTimeStepEpsAfterInit       = 1.25E-3_DP
-  
+
   end type
 
 !</typeblock>
 
 !</types>
-  
+
 contains
 
 !******************************************************************************
@@ -194,17 +194,17 @@ contains
 !<subroutine>
 
   subroutine adtstp_init (rparams,ssection,radTimeStepping)
-  
+
 !<description>
   ! Initialises the adaptive time stepping scheme using the parameter block
   ! rparams. The parameters of the scheme are read from the paremeter
   ! section ssection.
 !</description>
-  
+
 !<input>
   ! The parameter block with the parameters.
   type(t_parlist), intent(in) :: rparams
-  
+
   ! The name of the section containing the parameters of the adaptive time
   ! stepping.
   character(LEN=*), intent(in) :: ssection
@@ -215,28 +215,28 @@ contains
   ! Is filled with the parameters from rparams.
   type(t_adaptimeTimeStepping), intent(out) :: radTimeStepping
 !</output>
-  
+
 !</subroutine>
 
     ! local variables
     type(t_parlstSection), pointer :: p_rsection
-  
+
     ! Get the section containing our parameters
     call parlst_querysection(rparams, ssection, p_rsection)
-    
+
     if (.not. associated(p_rsection)) then
       call output_line (&
           'Cannot configure adaptive time stepping! Parameter section not found!', &
           OU_CLASS_ERROR,OU_MODE_STD,'adtstp_init')
       call sys_halt()
     end if
-    
+
     ! Get the paramters and fill our structure. Use the standard parameters
     ! from the Fortran initialisation (by INTENT(out)) for those who do not exist.
     call parlst_getvalue_int(p_rsection,'cadaptiveTimeStepping',&
                             radTimeStepping%ctype,&
                             radTimeStepping%ctype)
-               
+
     call parlst_getvalue_int(p_rsection,'nrepetitions',&
                             radTimeStepping%nrepetitions,&
                             radTimeStepping%nrepetitions)
@@ -248,19 +248,19 @@ contains
     call parlst_getvalue_double(p_rsection,'dtimeStepMax',&
                             radTimeStepping%dtimeStepMax,&
                             radTimeStepping%dtimeStepMax)
-            
+
     call parlst_getvalue_double(p_rsection,'dtimeStepFactor',&
                             radTimeStepping%dtimeStepFactor,&
                             radTimeStepping%dtimeStepFactor)
-    
+
     call parlst_getvalue_double(p_rsection,'depsAdaptiveRelTimeStep',&
                             radTimeStepping%depsAdaptiveRelTimeStep,&
                             radTimeStepping%depsAdaptiveRelTimeStep)
-                          
+
     call parlst_getvalue_int(p_rsection,'cadTimeStepInit',&
                             radTimeStepping%cadTimeStepInit,&
                             radTimeStepping%cadTimeStepInit)
-     
+
     call parlst_getvalue_double(p_rsection,'dadTimeStepInitDuration',&
                             radTimeStepping%dadTimeStepInitDuration,&
                             radTimeStepping%dadTimeStepInitDuration)
@@ -278,14 +278,14 @@ contains
                             radTimeStepping%dadTimeStepEpsAfterInit)
 
   end subroutine
-  
+
 !******************************************************************************
 
 !<function>
 
   pure real(DP) function adtstp_getTolerance (radTimeStepping,dtimeInit,dtime) &
                 result(depsad)
-  
+
 !<description>
   ! Based on the configuration of the adaptive time stepping, this function
   ! computes a bound that can be used in the adaptive time stepping as
@@ -295,10 +295,10 @@ contains
 !<input>
   ! Configuration block of the adaptive time stepping.
   type(t_adaptimeTimeStepping), intent(in) :: radTimeStepping
-  
+
   ! Initial simulation time.
   real(DP), intent(in)                     :: dtimeInit
-  
+
   ! Current simulation time.
   real(DP), intent(in)                     :: dtime
 !</input>
@@ -317,7 +317,7 @@ contains
     real(DP) :: dtdiff
 
     ! Standard result: dadTimeStepEpsAfterInit
-           
+
     depsad = radTimeStepping%dadTimeStepEpsAfterInit
 
     ! Do we have a startup phase at all? Would be better, otherwise
@@ -328,17 +328,17 @@ contains
 
     if ((radTimeStepping%dadTimeStepInitDuration .gt. 0.0_DP) .and. &
        (dtdiff .le. radTimeStepping%dadTimeStepInitDuration)) then
-    
+
       ! Calculate the "current position" of the simulation time in
       ! the interval TIMEST..TIMEST+TIMEIN
-    
+
       select case (radTimeStepping%cadTimeStepInit)
       case (TADTS_START_STANDARD)
         ! Standard error control during the startup phase
         ! Use dadTimeStepEpsDuringInit or dadTimeStepEpsAfterInit, depending on
         ! whether we left the start phase or not.
         depsad = radTimeStepping%dadTimeStepEpsDuringInit
-      
+
       case (TADTS_START_LINEAR)
         ! Linear blending as control in the startup phase.
         ! Blend linearly between dadTimeStepEpsDuringInit and dadTimeStepEpsAfterInit
@@ -360,7 +360,7 @@ contains
                     (1.0_DP-dtdiff/radTimeStepping%dadTimeStepInitDuration) * &
                   radTimeStepping%dadTimeStepEpsAfterInit** &
                     (dtdiff/radTimeStepping%dadTimeStepInitDuration)
-      
+
       end select
 
     endif
@@ -375,7 +375,7 @@ contains
                            dtimeInit,dtime,dtimeStep, itimeApproximationOrder, &
                            isolverStatus,irepetitionCounter,fcalcTimestep,rcollection) &
                 result(dnewTimeStep)
-  
+
 !<description>
   ! Calculates a new time step size based on a time error indicator derrorIndicator.
   ! The implementation follows p. 160ff, Turek`s CFD-book.
@@ -391,7 +391,7 @@ contains
 
   ! Initial simulation time.
   real(DP), intent(in)                     :: dtimeInit
-  
+
   ! Current simulation time.
   real(DP), intent(in)                     :: dtime
 
@@ -399,13 +399,13 @@ contains
   ! Can vary from the actual time step size, depending on
   ! the time stepping scheme.
   real(DP), intent(in)                     :: dtimeStep
-  
+
   ! Order of the time approximation
   ! =1: time approximation is of 1st order(Euler)
   ! =2: time approximation is of 2nd order
   !     (Crank Nicolson, Fractional Step)
   integer, intent(in)                      :: itimeApproximationOrder
-  
+
   ! Status of the solver. Indicates whether any of the solvers broke down during
   ! the solution process. Bitfield, combination of TADTS_SSL_xxxx constante.
   ! Standard value = 0 = all solvers worked fine.
@@ -426,13 +426,13 @@ contains
   ! If TADTS_SST_NLFAIL or TADTS_SST_NLPRECFAIL is set, the value of
   ! derrorIndicator is ignored.
   integer(I32), intent(in)                 :: isolverStatus
-  
+
   ! Repetition counter.
   ! =0, if the current time step is calculated for the first time; standard.
   ! >0: if the current time step is calculated more than once because
   !     it had to be repeated.
   integer, intent(in)                      :: irepetitionCounter
-  
+
   ! OPTIONAL: Callback routine that calculates the timestep size.
   ! Has to be provided for user defined time stepping.
   interface
@@ -448,7 +448,7 @@ contains
     end subroutine
   end interface
   optional :: fcalcTimestep
-  
+
   ! OPTIONAL: Collection structure. Passed to the callback routine.
   type(t_collection), intent(in), optional :: rcollection
 !</input>
@@ -465,18 +465,18 @@ contains
 
     ! As standard, take the old stepsize as the new
     dnewTimeStep = dtimeStep
-    
+
     if (radTimeStepping%ctype .eq. TADTS_FIXED) return
-    
+
     if (radTimeStepping%ctype .eq. TADTS_USERDEF) then
       ! Call the user defined routine and return
       call fcalcTimestep (dnewTimeStep,dtimeInit,dtime,isolverStatus,rcollection)
       return
     end if
-    
+
     ! Check if we can use time analysis...
-    if (iand(isolverStatus,3_I32) .ne. 0) then
-    
+    if (iand(isolverStatus, TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL) .ne. 0) then
+
       ! A critical solver component broke down, we cannot do time analysis.
       ! we really do not have much information in this case.
       ! We can just "guess" a new time step - if we are at all allowed
@@ -484,35 +484,46 @@ contains
 
       if (iand(isolverStatus,&
                TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL + TADTS_SST_NLPREDFAIL) .ne. 0) then
-      
+
         ! If the linear solvers of the predictor step or
         ! the nonlinear solver of the correction step broke down,
         ! broke down, reduce the time step by sqrt(dtimeStepFactor)
-      
+
         dnewTimeStep = dtimeStep / sqrt(radTimeStepping%dtimeStepFactor)
-      
+
       else if (iand(isolverStatus,TADTS_SST_NLPREDPRECFAIL).ne.0) then
 
         ! If the linear solvers of the correction step broke down,
         ! broke down, reduce the time step by DTFACT
-      
+
         dnewTimeStep = dtimeStep / radTimeStepping%dtimeStepFactor
-      
+
       end if
-        
+
       ! Otherwise we leave the time step as it is...
-      
+
+    else if (iand(isolverStatus, TADTS_SST_NLINCOMPLETE) .ne. 0) then
+
+      ! The nonlinear solver did not reach the convergence criterion. In this case we can
+      ! only guess how good the solution really is. It might be completely off, it might
+      ! close to the correct one.
+      ! We can just "guess" a new time step - within the given time step size frame.
+      ! Heuristic: reduce the time step size as this should ease the nonlinearity of the
+      ! problem and hence improve nonlinear convergence.
+
+      dnewTimeStep = dtimeStep / sqrt(radTimeStepping%dtimeStepFactor)
+
     else
-   
+
       ! All critical solvers worked fine, we can now calculate a new time step
       ! depending on our error indicator.
       !
       ! At first, calculate the time tolerance.
       depsTime = adtstp_getTolerance (radTimeStepping,dtimeInit,dtime)
-      
+
       ! Depending on the order of the time stepping algorithm, calculate an initial
       ! guess for the time step.
-      
+
       if (itimeApproximationOrder .le. 1) then
 
         ! Time approximation of 1st order; used for all one-step
@@ -520,16 +531,16 @@ contains
         !   J(v_k) - J(v) = k e(v) + O(k^2)
 
         dnewTimeStep = dtimeStep*2.0_DP*depsTime/derrorIndicator
-        
+
       else
-      
+
         ! Time approximation of 2st order; used for Fractional
         ! step Theta scheme. The error can be represented as:
         !   J(v_k) - J(v) = k^2 e(v) + O(k^4)
         ! see equation (3.154) of (print version of) Turek`s CFD book.
 
         dnewTimeStep = dtimeStep*sqrt(8.0_DP*depsTime/derrorIndicator)
-        
+
       endif
 
       ! The nonlinear solver in the predictor step might break
@@ -557,13 +568,13 @@ contains
       else
         dnewTimeStep = min(dnewTimeStep,dtimeStep*radTimeStepping%dtimeStepFactor)
       endif
-      
+
     end if
 
     ! Bound the time step to the interval DTMIN..DTMAX - for sure
-          
+
     dnewTimeStep = min(radTimeStepping%dtimeStepMax, &
                        max(dnewTimeStep, radTimeStepping%dtimeStepMin))
   end function
-  
+
 end module
