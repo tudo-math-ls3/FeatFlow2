@@ -146,6 +146,8 @@ module feevaluation2
     ! The last index specifies the type of the derivative,
     ! so Ddata(:,:,DER_DERIV2D_X) specifies the first X-derivative.
     !
+    ! NOTE: For (non-interleaved) dummy vectors, the memory is not initialised.
+    !
     ! NOTE: Only for non-Interleaved vectors, there is p_Ddata=>null for
     ! interleaved vectors. In this case, p_DentryIntl defines the vector data.
     real(DP), dimension(:,:,:), pointer :: p_Ddata => null()
@@ -156,7 +158,9 @@ module feevaluation2
     ! The last index specifies the type of the derivative,
     ! so p_DdataIntl(:,:,:,DER_DERIV2D_X) specifies the first X-derivative.
     !
-    ! NOTE: Only for Interleaved vectors, there is p_DdataIntl=>null for
+    ! NOTE: For (interleaved) dummy vectors, the memory is not initialised.
+    !
+    ! NOTE: Only for interleaved vectors, there is p_DdataIntl=>null for
     ! non-interleaved vectors. In this case, p_Dentry defines the vector data.
     real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl => null()
     
@@ -1437,6 +1441,8 @@ contains
 !<description>
   ! Evaluates the vectors in revalVectors in all points
   ! specified in the element evaluation set.
+  !
+  ! The data for dummy vectors is not initialised.
 !</description>
 
 !<input>
@@ -1473,73 +1479,79 @@ contains
     
       ! Vector data
       p_rvectorData => revalVectors%p_RvectorData(ivector)
+      
+      ! Is this a vector to be evaluated or is it a
+      ! dummy vector which data can be left uninitialised?
+      if (associated(p_rvectorData%p_rvector)) then
     
-      ! Corresponding FEM data
-      p_rfemData => RfemData(p_rvectorData%iidxFemData)
-      
-      ! Get data arrays and array size
-      ndof = p_rfemData%ndof
-      p_Dbas => p_rfemData%p_Dbas
-      p_Idofs => p_rfemData%p_Idofs
-      nderiv = p_rvectorData%nmaxDerivativeIdx
-      call lsyssc_getbase_double (p_rvectorData%p_rvector,p_DvecData)
-      
-      if (.not. p_rvectorData%bisInterleaved) then
+        ! Corresponding FEM data
+        p_rfemData => RfemData(p_rvectorData%iidxFemData)
+        
+        ! Get data arrays and array size
+        ndof = p_rfemData%ndof
+        p_Dbas => p_rfemData%p_Dbas
+        p_Idofs => p_rfemData%p_Idofs
+        nderiv = p_rvectorData%nmaxDerivativeIdx
+        call lsyssc_getbase_double (p_rvectorData%p_rvector,p_DvecData)
+        
+        if (.not. p_rvectorData%bisInterleaved) then
 
-        p_Ddata => p_rvectorData%p_Ddata
-      
-        ! Loop over the derivatives, basis functions, sum up to the point value
-        ! in every cubature point.
-        do iel = 1,nelements
-          do ideriv = 1,nderiv
-            do ipt = 1,npoints
-            
-              dval = 0.0_DP
-              do ibas = 1,ndof
-                dval = dval + &
-                    p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
-              end do
+          p_Ddata => p_rvectorData%p_Ddata
+        
+          ! Loop over the derivatives, basis functions, sum up to the point value
+          ! in every cubature point.
+          do iel = 1,nelements
+            do ideriv = 1,nderiv
+              do ipt = 1,npoints
               
-              ! Save the value
-              p_Ddata(ipt,iel,ideriv) = dval
-            
-            end do
-          end do
-        end do
-        
-      else
-        
-        ! Interleaved specification
-        nvar = p_rvectorData%nvar
-
-        p_DdataIntl => p_rvectorData%p_DdataIntl
-      
-        ! Loop over the derivatives, basis functions, sum up to the point value
-        ! in every cubature point.
-        do iel = 1,nelements
-          do ideriv = 1,nderiv
-            do ipt = 1,npoints
-              do ivar = 1,nvar
-            
                 dval = 0.0_DP
                 do ibas = 1,ndof
                   dval = dval + &
-                      p_DvecData(nvar*(p_Idofs(ibas,iel)-1)+ivar)*p_Dbas(ibas,ideriv,ipt,iel)
+                      p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
                 end do
                 
                 ! Save the value
-                p_DdataIntl(ivar,ipt,iel,ideriv) = dval
-                
+                p_Ddata(ipt,iel,ideriv) = dval
+              
               end do
-            
             end do
           end do
-        end do
-      
-      end if
-      
-    end do
+          
+        else
+          
+          ! Interleaved specification
+          nvar = p_rvectorData%nvar
+
+          p_DdataIntl => p_rvectorData%p_DdataIntl
         
+          ! Loop over the derivatives, basis functions, sum up to the point value
+          ! in every cubature point.
+          do iel = 1,nelements
+            do ideriv = 1,nderiv
+              do ipt = 1,npoints
+                do ivar = 1,nvar
+              
+                  dval = 0.0_DP
+                  do ibas = 1,ndof
+                    dval = dval + &
+                        p_DvecData(nvar*(p_Idofs(ibas,iel)-1)+ivar)*p_Dbas(ibas,ideriv,ipt,iel)
+                  end do
+                  
+                  ! Save the value
+                  p_DdataIntl(ivar,ipt,iel,ideriv) = dval
+                  
+                end do
+              
+              end do
+            end do
+          end do
+        
+        end if
+        
+      end if
+        
+    end do
+      
   end subroutine
   
 end module
