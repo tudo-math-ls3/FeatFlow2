@@ -445,16 +445,16 @@ $(AMD_TARBALL):
 # Automatically extract UFconfig tarball when required.
 #-------------------------------------------------------------------------------
 
-UFCONFIG_TARBALL = ../UFconfig-3.5.0.tar.gz
+UFCONFIG_TARBALL = ../UFconfig-3.7.1.tar.gz
 
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
 SRC_UFCONFIG = $(UFCONFIG)
 
-$(UFCONFIG):  NAME      = "UFconfig 3.5.0 sources"
+$(UFCONFIG):  NAME      = "UFconfig 3.7.1 sources"
 $(UFCONFIG):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG):  LOCKFILE  = ../LOCK.unpack.ufconfig-3.5.0.tar.gz
+$(UFCONFIG):  LOCKFILE  = ../LOCK.unpack.ufconfig-3.7.1.tar.gz
 $(UFCONFIG):  WAITTIME  = 15
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
@@ -462,9 +462,9 @@ $(UFCONFIG): | $(UFCONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.5.0.tar.gz
+$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.7.1.tar.gz
 $(UFCONFIG_TARBALL):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.5.0.tar.gz
+$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.7.1.tar.gz
 $(UFCONFIG_TARBALL):  WAITTIME = 15
 $(UFCONFIG_TARBALL):  RETRIES  = 24
 $(UFCONFIG_TARBALL):
@@ -475,7 +475,7 @@ $(UFCONFIG_TARBALL):
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-UMFPACK_TARBALL = ../UMFPACK-5.5.0.tar.gz
+UMFPACK_TARBALL = ../UMFPACK-5.5.2.tar.gz
 
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -499,9 +499,9 @@ SRC_UMFPACK = Include/umfpack.h \
 LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Makefile
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.5.0 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.5.2 sources"
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.5.0.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.5.2.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
@@ -515,9 +515,9 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.5.0.tar.gz
+$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.5.2.tar.gz
 $(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
-$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.5.0.tar.gz
+$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.5.2.tar.gz
 $(UMFPACK_TARBALL):  WAITTIME = 15
 $(UMFPACK_TARBALL):  RETRIES  = 24
 $(UMFPACK_TARBALL):
