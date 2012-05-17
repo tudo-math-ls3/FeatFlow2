@@ -1909,7 +1909,6 @@ namespace hydro2d_cuda
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
     
-      cudaThreadSynchronize();
       cudaEventRecord(start,stream);
       
       if (grid_cudaDMA.x>0)
@@ -1953,7 +1952,6 @@ namespace hydro2d_cuda
       Tm *mat;
       cudaGetSymbolAddress(((void**)&mat), "constMemPool");
       
-      cudaThreadSynchronize();
       cudaEventRecord(start,stream);
 
       if (grid_cudaDMA.x>0)
@@ -2070,7 +2068,6 @@ namespace hydro2d_cuda
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
       
-      cudaThreadSynchronize();
       cudaEventRecord(start,stream);
 
       if (grid_cudaDMA.x>0)
@@ -2098,7 +2095,6 @@ namespace hydro2d_cuda
       cudaEventRecord(stop,stream);
       cudaEventSynchronize(stop);
     } else {
-      cudaThreadSynchronize();
       cudaEventRecord(start,stream);
       
       // Matrix is stored in block format, that is, the data of each
