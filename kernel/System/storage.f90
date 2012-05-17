@@ -18797,9 +18797,9 @@ contains
 
 !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function storage_getMemPtrOnDevice (ihandle, rheap) result(cdeviceMemPtr)
+  subroutine storage_getMemPtrOnDevice (ihandle, cdeviceMemPtr, rheap)
 
 !<description>
   ! Returns the memory address of the memory block associated with
@@ -18815,12 +18815,12 @@ contains
   type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
-!<result>
+!<output>
   ! Memory address of the memory block in device memory
-  type(C_PTR) :: cdeviceMemPtr
-!</result>
+  type(C_PTR), intent(out) :: cdeviceMemPtr
+!</output>
 
-!</function>
+!</subroutine>
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
 
@@ -18854,14 +18854,14 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemPtrOnDevice')
     call sys_halt()
 
-    ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
-    ! however, this supresses the following warning from the IFC v12 compiler:
-    ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
-    call storage_nullify(cdeviceMemPtr)
+!!$    ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
+!!$    ! however, this supresses the following warning from the IFC v12 compiler:
+!!$    ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
+!!$    call storage_nullify(cdeviceMemPtr)
 
 #endif
 
-  end function storage_getMemPtrOnDevice
+  end subroutine storage_getMemPtrOnDevice
 
 !************************************************************************
 

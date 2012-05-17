@@ -8795,7 +8795,7 @@ contains
           if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE) then
             call storage_clearMemoryOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
             if (present(p_MemPtr))&
-                p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+                call storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da, p_MemPtr(i,j))
           elseif (present(p_MemPtr)) then
             call storage_nullify(p_MemPtr(i,j))
           end if
@@ -8809,7 +8809,7 @@ contains
             call storage_syncMemoryHostDevice(rmatrix%RmatrixBlock(i,j)%h_Da,&
                 ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
             if (present(p_MemPtr))&
-                p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+                call storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da, p_MemPtr(i,j))
           elseif (present(p_MemPtr)) then
             call storage_nullify(p_MemPtr(i,j))
           end if

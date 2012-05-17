@@ -875,21 +875,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -998,21 +998,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -1349,21 +1349,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -1870,21 +1870,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -2476,21 +2476,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -2844,21 +2844,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
-    
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
+
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -3214,21 +3214,21 @@ contains
     call coproc_createStream(istream)
     
     ! Get pointers to memory blocks on device
-    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
-    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList, cptr_IedgeList)
+    call storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge, cptr_DcoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     if (.not.storage_isAssociated(cptr_Dx)) then
       call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
-      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+      call storage_getMemPtrOnDevice(rx%h_Ddata, cptr_Dx)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
     call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
-    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
+    call storage_getMemPtrOnDevice(ry%h_Ddata, cptr_Dy)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
