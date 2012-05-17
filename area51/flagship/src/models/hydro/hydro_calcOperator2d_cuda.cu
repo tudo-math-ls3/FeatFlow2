@@ -167,7 +167,7 @@ namespace hydro2d_cuda
 	INVISCIDFLUXJACOBIMATRIX11(-scale,
 				   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
 				   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,_);
-      IDX3(MatrixAtEdge,2,1,ipos,NVAR2D,2,1,) =
+      IDX3(MatrixAtEdge,2,1,ipos,NVAR2D,(bstabilise ? 3 : 2),nedgesim) =
 	INVISCIDFLUXJACOBIMATRIX22(-scale,
 				   IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),
 				   IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),uj,vj,_);

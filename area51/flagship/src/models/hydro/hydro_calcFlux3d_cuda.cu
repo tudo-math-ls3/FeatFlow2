@@ -864,7 +864,7 @@ namespace hydro3d_cuda
       // Compute scalar dissipation
       Td d_ij = max( abs(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge)*uj+
 			 IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge)*vj+
-			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*j)+
+			 IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge)*wj)+
 		     sqrt(POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,1,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
 			  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,2,1,iedge,HYDRO_NDIM,ncoeff,nedge),2)+
 			  POW(IDX3_COEFFSATEDGE(CoeffsAtEdge,3,1,iedge,HYDRO_NDIM,ncoeff,nedge),2))*cj,
@@ -1070,7 +1070,7 @@ namespace hydro3d_cuda
       }
     }
     
-    template <bool boverwrite, typename Tc, typename Td, typename Ti>
+    template <int nedgesim, bool boverwrite, typename Tc, typename Td, typename Ti>
     __device__ __forceinline__
     static void combineEdgeData(Td *FluxesAtEdge,
 				Tc *CoeffsAtEdge,
