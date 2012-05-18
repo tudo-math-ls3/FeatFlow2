@@ -77,9 +77,9 @@ purge:
 	-$(foreach file, $(OBJ) $(LAPACKLIB), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf BLAS INSTALL LICENSE Makefile README SRC TESTING make.inc.example \
-	 CMakeLists.txt CTestConfig.cmake CheckTimeFunction.cmake \
-	 lapack-config-version.cmake.in lapack-config.cmake.in lapack_build.cmake \
-	 lapack-config-install.cmake.in
+	 CMAKE CMakeLists.txt CTestConfig.cmake CTestCustom.cmake.in CheckTimeFunction.cmake \
+	 DOCS lapack-config-version.cmake.in lapack-config.cmake.in lapack_build.cmake \
+	 lapack-config-install.cmake.in lapack.pc.in lapack_testing.py lapacke
 
 #-------------------------------------------------------------------------------
 # Before creating any object file, first create the object directory.
