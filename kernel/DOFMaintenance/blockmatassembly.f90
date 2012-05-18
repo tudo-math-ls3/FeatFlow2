@@ -697,7 +697,8 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates a convection operator "(u grad) u".
+    ! Calculates a convection operator "(u grad) ." into the top/left position
+    ! of a block matrix (position 1/1).
     !
     ! Note: If rcollection is not specified, the matrix is calculated
     ! in all diagonal blocks with a multiplier of 1.
@@ -716,10 +717,6 @@ contains
     !                                  bma_buildMatrix. The first vector must be the
     !                                  X-velocity, the 2nd the Y-velocity and 
     !                                  the third the Z-velocity.
-    ! rcollection%IquickAccess(2:3) = top/left position of the convection operator
-    !                                 in the matrix. Default value is (1,1) which
-    !                                 calculates the convection to top/left position
-    !                                 in the matrix.
 !</description>
 
 !<remarks>
@@ -842,7 +839,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dbasJx, dbasJy, dbasJz
-    integer :: iel, icubp, idofe, jdofe, ipos1, ipos2
+    integer :: iel, icubp, idofe, jdofe
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22,p_DlocalMatrix33
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
@@ -863,8 +860,6 @@ contains
     dvelY = 0.0_DP
     dvelZ = 0.0_DP
     bvelConst = .true.
-    ipos1 = 1
-    ipos2 = 1
     
     if (present(rcollection)) then
       dscale = rcollection%DquickAccess(1)
@@ -873,20 +868,13 @@ contains
       bvelConst = (rcollection%IquickAccess(1) .eq. 0)
       
       if (bvelConst) then
-        ! Get the velocity
+        ! Get the constant velocity
         dvelX = rcollection%DquickAccess(2)
         if (ndim .ge. 2) dvelY = rcollection%DquickAccess(3)
         if (ndim .ge. 3) dvelZ = rcollection%DquickAccess(4)
       end if
       
-      ! Top/left position
-      if (rcollection%IquickAccess(2) .ne. 0) ipos1 = rcollection%IquickAccess(2)
-      if (rcollection%IquickAccess(3) .ne. 0) ipos2 = rcollection%IquickAccess(3)
     end if
-    
-    ! Subtract 1 from the position -- easier to read
-    ipos1 = ipos1 - 1
-    ipos2 = ipos2 - 1
     
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -899,7 +887,7 @@ contains
     select case (ndim)
     case (NDIM1D)
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1+ipos1,1+ipos2)
+      p_rmatrixData11 => RmatrixData(1,1)
       
       p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
       
@@ -941,7 +929,7 @@ contains
                 ! into the local matrices.
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , phi )
+                    ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , psi )
 
               end do ! idofe
 
@@ -988,7 +976,7 @@ contains
                 ! into the local matrices.
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , phi )
+                    ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , psi )
 
               end do ! idofe
 
@@ -1003,11 +991,11 @@ contains
     case (NDIM2D)
 
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1+ipos1,1+ipos2)
-      p_rmatrixData22 => RmatrixData(2+ipos1,2+ipos2)
+      p_rmatrixData11 => RmatrixData(1,1)
+      p_rmatrixData22 => RmatrixData(2,2)
       
-      p_DlocalMatrix11 => RmatrixData(1+ipos1,1+ipos2)%p_Dentry
-      p_DlocalMatrix22 => RmatrixData(2+ipos1,2+ipos2)%p_Dentry
+      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
@@ -1124,13 +1112,13 @@ contains
     case (NDIM3D)
 
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1+ipos1,1+ipos2)
-      p_rmatrixData22 => RmatrixData(2+ipos1,2+ipos2)
-      p_rmatrixData33 => RmatrixData(3+ipos1,3+ipos2)
+      p_rmatrixData11 => RmatrixData(1,1)
+      p_rmatrixData22 => RmatrixData(2,2)
+      p_rmatrixData33 => RmatrixData(3,3)
 
-      p_DlocalMatrix11 => RmatrixData(1+ipos1,1+ipos2)%p_Dentry
-      p_DlocalMatrix22 => RmatrixData(2+ipos1,2+ipos2)%p_Dentry
-      p_DlocalMatrix33 => RmatrixData(3+ipos1,3+ipos2)%p_Dentry
+      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
+      p_DlocalMatrix33 => RmatrixData(3,3)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
