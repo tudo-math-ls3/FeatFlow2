@@ -1927,9 +1927,9 @@ contains
               DdofValue(ilocalEdge+nve,ielidx) = 0.5_DP * dval
 
               ! Calculate the integral mean value of the 2nd moment:
-              dval = (Q3W1*dval1*(Q3G1**2 - 1.0_DP) &
-                   +  Q3W2*dval2*(Q3G2**2 - 1.0_DP) &
-                   +  Q3W3*dval3*(Q3G3**2 - 1.0_DP)) * 0.5_DP
+              dval = (Q3W1*dval1*(3.0_DP*Q3G1**2 - 1.0_DP) &
+                   +  Q3W2*dval2*(3.0_DP*Q3G2**2 - 1.0_DP) &
+                   +  Q3W3*dval3*(3.0_DP*Q3G3**2 - 1.0_DP)) * 0.5_DP
 
               ! Save the computed value
               DdofValue(ilocalEdge+2*nve,ielidx) = 0.5_DP * dval
