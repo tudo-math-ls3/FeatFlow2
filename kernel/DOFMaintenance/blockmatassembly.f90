@@ -725,6 +725,10 @@ contains
     ! a nonconstant velocity field. The corresponding code looks as follows:
     !
     ! <verb>
+    !     use feevaluation2
+    !
+    !     ...
+    !
     !     type(t_collection) :: rcollection
     !     type(t_scalarCubatureInfo) :: rcubatureInfo   ! Cubature formula
     !     type(t_matrixBlock) :: rmatrix                ! Matrix to be calculated
