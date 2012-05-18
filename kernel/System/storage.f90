@@ -18854,10 +18854,10 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemPtrOnDevice')
     call sys_halt()
 
-!!$    ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
-!!$    ! however, this supresses the following warning from the IFC v12 compiler:
-!!$    ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
-!!$    call storage_nullify(cdeviceMemPtr)
+    ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
+    ! however, this supresses the following warning from the IFC v12 compiler:
+    ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
+    call storage_nullify(cdeviceMemPtr)
 
 #endif
 
