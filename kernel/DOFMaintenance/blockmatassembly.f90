@@ -1062,6 +1062,7 @@ contains
         !
         ! Get the velocity field from the parameters
         p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+        p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
       
         ! Loop over the elements in the current set.
         do iel = 1,nelements
@@ -1194,6 +1195,8 @@ contains
         !
         ! Get the velocity field from the parameters
         p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+        p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
+        p_Du3 => revalVectors%p_RvectorData(3)%p_Ddata
       
         ! Loop over the elements in the current set.
         do iel = 1,nelements
