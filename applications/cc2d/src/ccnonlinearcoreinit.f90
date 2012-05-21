@@ -664,7 +664,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:7,101:102,201:202)
+        case (0:8,101:102,201:202)
 
           nullify(p_rsmoother)
         
