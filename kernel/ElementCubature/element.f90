@@ -57,12 +57,14 @@
 !#        any subtype information, which identifies an element family.
 !#
 !# 8.) elem_generic
+!#     => DEPRECATED: Use elem_generic_sim instead.
 !#     -> Realises a generic element which can be used to evaluate a finite
 !#        element depending on its element identifier - in contrast to the
 !#        standard evaluation routines, which ignore the element quantifier
 !#        as they 'know' what they are...
 !#
 !# 9.) elem_generic_mult
+!#     => DEPRECATED: Use elem_generic_sim instead.
 !#     -> The multiple-point-evaluation routine for a generic element.
 !#
 !# 10.) elem_generic_sim
@@ -2025,7 +2027,8 @@ contains
                             Dpoint, Dbas, ItwistIndex)
 
 !<description>
-  ! DEPRECATED!!!
+  ! DEPRECATED: Use elem_generic_sim2 instead.
+  !
   ! This subroutine calculates the values of the basic functions of the
   ! finite element at the given point on the reference element.
   ! celement defines the element type that is used. Depending on
@@ -2292,6 +2295,8 @@ contains
   subroutine elem_generic2 (celement, revalElement, Bder, Dbas)
 
 !<description>
+  ! DEPRECATED: Use elem_generic_sim2 instead.
+  !
   ! This subroutine calculates the values of the basic functions of the
   ! finite element at the given point on the reference element.
   ! celement defines the element type that is used. Depending on
@@ -2331,131 +2336,20 @@ contains
 
 ! </subroutine>
 
-    ! Choose the right element subroutine to call.
-    select case (celement)
-    ! 1D elements
-    case (EL_P0_1D)
-      call elem_P0_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P1_1D)
-      call elem_P1_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P2_1D)
-      call elem_P2_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_S31_1D)
-      call elem_S31_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T0_1D)
-      call elem_DG_T0_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T1_1D)
-      call elem_DG_T1_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T2_1D)
-      call elem_DG_T2_1D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    ! call the generic1 routine
+    if(elem_isNonparametric(celement)) then
 
-    ! 2D elements
-    case (EL_P0)
-      call elem_P0 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P1,EL_DG_P1_2D)
-      call elem_P1 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P2)
-      call elem_P2 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P1T)
-      call elem_P1T (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q0)
-      call elem_Q0 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q1,EL_DG_Q1_2D)
-      call elem_Q1 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q2, EL_DG_Q2_2D)
-      call elem_Q2 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_QP1)
-      call elem_QP1 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_QP1NP,EL_QP1NPD)
-      call elem_QP1NP (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
-    case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
-      call elem_EM30 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
-    case (EL_E030)
-      call elem_E030 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_EB30)
-      call elem_EB30 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_EM31)
-      call elem_EM31 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
-    case (EL_E031)
-      call elem_E031 (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_E050)
-      call elem_E050 (celement, revalElement%Dcoords, revalElement%itwistIndex, &
-          revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_EB50)
-      call elem_EB50 (celement, revalElement%Dcoords, revalElement%itwistIndex, &
-          revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T0_2D)
-      call elem_DG_T0_2D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T1_2D)
-      call elem_DG_T1_2D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_DG_T2_2D)
-      call elem_DG_T2_2D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+      ! non-parametric element; pass the real points array
+      call elem_generic1(celement, revalElement%Dcoords, revalElement%Djac, &
+        revalElement%ddetj, Bder, revalElement%DpointReal, Dbas, revalElement%itwistIndex)
 
-    ! 3D elements
-    case (EL_P0_3D)
-      call elem_P0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P1_3D)
-      call elem_P1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q0_3D)
-      call elem_Q0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Q1_3D)
-      call elem_Q1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Y0_3D)
-      call elem_Y0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_Y1_3D)
-      call elem_Y1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_R0_3D)
-      call elem_R0_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_R1_3D)
-      call elem_R1_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_EM30_3D)
-      call elem_EM30_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_E030_3D)
-      call elem_E030_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_E031_3D)
-      call elem_E031_3D (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    else
 
-    case default
-      ! Element not implemened!
-      ! Throw a floating point exception so that the program stops here!
-      ! We cannot use "PRINT" here as the routine is PURE!
-      call sys_throwFPE()
-    end select
+      ! parametric element; pass the reference points array
+      call elem_generic1(celement, revalElement%Dcoords, revalElement%Djac, &
+        revalElement%ddetj, Bder, revalElement%DpointRef, Dbas, revalElement%itwistIndex)
+
+    end if
 
   end subroutine
 
@@ -2467,6 +2361,8 @@ contains
                                 Bder, Dbas, npoints, Dpoints, itwistIndex)
 
 !<description>
+  ! DEPRECATED: Use elem_generic_sim2 instead.
+  !
   ! This subroutine calculates the values of the basic functions of the
   ! finite element at multiple given points on the reference element.
 !</description>
@@ -2635,7 +2531,8 @@ contains
                                Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
 
 !<description>
-  ! DEPRECATED:
+  ! DEPRECATED: Use elem_generic_sim2 instead.
+  !
   ! This subroutine simultaneously calculates the values of the basic
   ! functions of the finite element at multiple given points on the reference
   ! element for multiple given elements.
