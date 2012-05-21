@@ -1064,7 +1064,8 @@ contains
 !<subroutine>
 
   subroutine cc_generateProjectionMatrices (&
-      rdiscretisationCoarse,rdiscretisationFine,rasmTemplFine)
+      rdiscretisationCoarse,rdiscretisationFine,&
+      rcubatureInfoCoarse,rcubatureInfoFine,rasmTemplFine)
   
 !<description>
   ! Calculates the matrix entries for the projection matrices in rasmTemplFine.
@@ -1081,6 +1082,12 @@ contains
   ! Discretisation structure that defines how to discretise the different
   ! operators on the fine mesh.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisationFine
+  
+  ! Cubature structure that defines the cubature on the coarse mesh
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfoCoarse
+  
+  ! Cubature structure that defines the cubature on the fine mesh
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfoFine
 
   ! A t_asmTemplates structure for the fine mesg. The projection
   ! matrices in this structure are generated.
@@ -1096,12 +1103,14 @@ contains
       call mlop_build2LvlProlMatrix(&
           rdiscretisationCoarse%RspatialDiscr(1),&
           rdiscretisationFine%RspatialDiscr(1),&
-          .true., rasmTemplFine%rmatrixProlVelocity, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixProlVelocity, MLOP_AVRG_MASS,&
+          rcubatureInfoCoarse,rcubatureInfoFine)
 
       call mlop_build2LvlInterpMatrix(&
           rdiscretisationCoarse%RspatialDiscr(1),&
           rdiscretisationFine%RspatialDiscr(1),&
-          .true., rasmTemplFine%rmatrixInterpVelocity, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixInterpVelocity, MLOP_AVRG_MASS,&
+          rcubatureInfoCoarse,rcubatureInfoFine)
 
     end if
 
@@ -1112,12 +1121,14 @@ contains
       call mlop_build2LvlProlMatrix(&
           rdiscretisationCoarse%RspatialDiscr(3),&
           rdiscretisationFine%RspatialDiscr(3),&
-          .true., rasmTemplFine%rmatrixProlPressure, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixProlPressure, MLOP_AVRG_MASS,&
+          rcubatureInfoCoarse,rcubatureInfoFine)
 
       call mlop_build2LvlInterpMatrix(&
           rdiscretisationCoarse%RspatialDiscr(3),&
           rdiscretisationFine%RspatialDiscr(3),&
-          .true., rasmTemplFine%rmatrixInterpPressure, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixInterpPressure, MLOP_AVRG_MASS,&
+          rcubatureInfoCoarse,rcubatureInfoFine)
 
     end if
 
@@ -1274,6 +1285,7 @@ contains
 
     ! local variables
     integer :: i
+    type(t_scalarCubatureInfo) :: rcubatureInfoCoarse,rcubatureInfoFine
 
     ! Assemble template matrices
     do i = rproblem%NLMIN, rproblem%NLMAX
@@ -1284,9 +1296,23 @@ contains
     
     ! Assemble projection matrices
     do i = rproblem%NLMIN+1, rproblem%NLMAX
+    
+      ! Define the cubature formula on each mesh,
+      ! based on the cubature formula of the mass matrix.
+      ! Can be used for all components.
+      call spdiscr_createDefCubStructure (&
+          rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(1), &
+          rcubatureInfoCoarse,rproblem%rmatrixAssembly%icubM)
+
+      call spdiscr_createDefCubStructure (&
+          rproblem%RlevelInfo(i)%rdiscretisation%RspatialDiscr(1), &
+          rcubatureInfoFine,rproblem%rmatrixAssembly%icubM)
+    
+      ! Assemble the matrices
       call cc_generateProjectionMatrices(&
           rproblem%RlevelInfo(i-1)%rdiscretisation, &
           rproblem%RlevelInfo(i)%rdiscretisation, &
+          rcubatureInfoCoarse, rcubatureInfoFine, &
           rproblem%RlevelInfo(i)%rasmTempl)
     end do
 
