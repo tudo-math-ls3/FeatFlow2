@@ -716,6 +716,14 @@ contains
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .true.
 
+          case (8)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+            call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rnonlinearIteration%p_RfilterChain)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .false.
+
           ! --- NEW IMPLEMENTATION ---
           case (101)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)

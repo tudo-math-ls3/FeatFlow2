@@ -47,6 +47,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #     (-> specialised variant of 4, but faster)
 # =6: BiCGStab smoother with diagonal VANKA preconditioner
 # =7: BiCGStab smoother with full VANKA preconditioner
+# =8: BiCGStab smoother with general VANKA preconditioner
 #
 # The following smoothers are some new Vanka implementations.
 # = 101: diagonal Vanka (a new implementation of 3)
