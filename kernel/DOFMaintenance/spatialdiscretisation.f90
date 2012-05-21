@@ -1019,11 +1019,11 @@ contains
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
+          ! 5x5 Gauss formula; in particular needed for EL_Q3T_2D
+          ccubType = CUB_G5X5
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
           ! 4x4 Gauss formula
           ccubType = CUB_G4X4
-        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
-          ! 3x3 Gauss formula
-          ccubType = CUB_G3X3
         end select
 
       case (EL_Q1T)
@@ -1037,7 +1037,7 @@ contains
           ccubType = CUB_G2X2
         end select
 
-      case (EL_QP1, EL_DCQP1_2D, EL_DCQP2_2D)
+      case (EL_QP1, EL_DCQP1_2D)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -1046,6 +1046,17 @@ contains
         case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
           ! 2x2 Gauss formula
           ccubType = CUB_G2X2
+        end select
+
+      case (EL_DCQP2_2D)
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 4x4 Gauss formula
+          ccubType = CUB_G4X4
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3X3
         end select
 
       case default
