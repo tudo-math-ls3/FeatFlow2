@@ -249,7 +249,7 @@ contains
     call lsysbl_createVecBlockIndMat (Rlvl(NLMAX)%rmatSys,rvecTmp, .true.)
 
     ! assemble rhs vector
-    call linf_buildSimpleVector(rvecRhs%RvectorBlock(1), coeffOne)
+    call linf_buildSimpleVector(rvecRhs%RvectorBlock(1), fcoeff_buildVectorSc_sim=coeffOne)
 
     ! filter vectors
     rvecRhs%p_rdiscreteBC => Rlvl(NLMAX)%rdbc

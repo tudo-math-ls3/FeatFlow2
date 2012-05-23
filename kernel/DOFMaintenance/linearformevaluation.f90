@@ -86,6 +86,9 @@
 !# 21.) linf_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
+!# 22.) linf_buildSimpleVector
+!#      -> Assembles a simple vector with one term.
+!#
 !# It contains the following set of auxiliary routines:
 !#
 !# 1.) linf_buildVectorDble_conf
@@ -6238,13 +6241,17 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildSimpleVector(rvector, fcoeff_buildVectorSc_sim, &
-                                    bclear, cderiv, rcollection, rperfconfig)
+  subroutine linf_buildSimpleVector(rvector, rcubatureInfo, &
+      fcoeff_buildVectorSc_sim, bclear, cderiv, rcollection, rperfconfig)
 
 !<description>
 !</description>
 
 !<input>
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
@@ -6287,18 +6294,8 @@ contains
     if(present(bclear)) bclear2 = bclear
 
     ! assemble
-    if(present(fcoeff_buildVectorSc_sim)) then
-      if(present(rcollection)) then
-        call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-            rvector, fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
-      else
-        call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-            rvector, fcoeff_buildVectorSc_sim, rperfconfig=rperfconfig)
-      end if
-    else
-      call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-          rvector, rperfconfig=rperfconfig)
-    end if
+    call linf_buildVectorScalar3(rform, bclear2, rvector, rcubatureInfo, &
+        fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 
   end subroutine
 
