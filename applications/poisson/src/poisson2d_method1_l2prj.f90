@@ -37,7 +37,6 @@ module poisson2d_method1_l2prj
   use ucd
   use scalarpde
   use pprocerror
-  use genoutput
   use stdoperators
   use coarsegridcorrection
   use filtersupport
@@ -136,7 +135,7 @@ contains
     
     ! A couple of block vectors. These will be filled
     ! with data for the linear solver.
-    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_vectorBlock) :: rvecSol,rvecRhs,rvecTmp
 
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
@@ -183,7 +182,6 @@ contains
     ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
-    real(DP), dimension(:), pointer :: p_Ddata
 
     ! A simple counter variable
     integer :: i
@@ -328,9 +326,9 @@ contains
 
     ! Next step: Create a RHS vector, a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rrhsBlock,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvectorBlock,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rtempBlock,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecRhs,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecSol,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecTmp,.true.)
       
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
@@ -345,7 +343,7 @@ contains
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     call linf_buildVectorScalar (&
-        rlinform,.true.,rrhsBlock%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_2D)
+        rlinform,.true.,rvecRhs%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_2D)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
@@ -391,9 +389,9 @@ contains
 
     ! Our right-hand-side/solution/temp vectors also needs to 
     ! know the boundary conditions.
-    call lsysbl_assignDiscreteBC(rrhsBlock,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvectorBlock,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecRhs,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecSol,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecTmp,Rlevels(NLMAX)%rdiscreteBC)
 
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -401,8 +399,8 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhsBlock)
-    call vecfil_discreteBCsol (rvectorBlock)
+    call vecfil_discreteBCrhs (rvecRhs)
+    call vecfil_discreteBCsol (rvecSol)
     
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
@@ -558,16 +556,16 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rvecSol,rvecRhs,rvecTmp)
       
-    ! That is it, rvectorBlock now contains our solution.
+    ! That is it, rvecSol now contains our solution.
 
     ! Calculate the error to the reference function.
-    call pperr_scalar (PPERR_L2ERROR,derror,rvectorBlock%RvectorBlock(1),&
+    call pperr_scalar (PPERR_L2ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_2D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    call pperr_scalar (PPERR_H1ERROR,derror,rvectorBlock%RvectorBlock(1),&
+    call pperr_scalar (PPERR_H1ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_2D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
@@ -599,7 +597,7 @@ contains
     !                         k=1
     !
     ! with (psi_1,...,psi_n) being the basis functions of Q1~ and
-    ! x = (x_1,...,x_n) being our actual solution vector rvectorBlock.
+    ! x = (x_1,...,x_n) being our actual solution vector rvecSol.
     ! Now the discrete Q1 function v_h we search for also has a coefficient
     ! vector y = (y_1,...,y_m) and can be written as
     !
@@ -643,7 +641,7 @@ contains
     call lsyssc_createVecByDiscr (rdiscrQ1, rvecRhsQ1, .false.)
     
     ! Calculate r := N*x
-    call lsyssc_scalarMatVec(rmatrixMassPrj, rvectorBlock%rvectorBlock(1),&
+    call lsyssc_scalarMatVec(rmatrixMassPrj, rvecSol%RvectorBlock(1),&
                              rvecRhsQ1, 1.0_DP, 0.0_DP)
     
     ! At this point we will not need the matrix N anymore, as we just needed
@@ -735,8 +733,8 @@ contains
         Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_l2prj.vtk')
     
     ! Add our Q1-solution to the UCD exporter:
-    call lsyssc_getbase_double (rvecSolQ1,p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+        rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -789,9 +787,9 @@ contains
     call mlprj_doneProjection(Rlevels(NLMIN)%rprojection)
         
     ! Release the block matrix/vectors
-    call lsysbl_releaseVector (rtempBlock)
-    call lsysbl_releaseVector (rvectorBlock)
-    call lsysbl_releaseVector (rrhsBlock)
+    call lsysbl_releaseVector (rvecTmp)
+    call lsysbl_releaseVector (rvecSol)
+    call lsysbl_releaseVector (rvecRhs)
     do i = NLMAX, NLMIN, -1
       call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
     end do

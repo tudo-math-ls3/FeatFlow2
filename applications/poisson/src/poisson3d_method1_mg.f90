@@ -34,7 +34,6 @@ module poisson3d_method1_mg
   use scalarpde
   use ucd
   use pprocerror
-  use genoutput
   use matrixio
   use meshregion
     
@@ -114,7 +113,7 @@ contains
     
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_vectorBlock) :: rvecSol,rvecRhs,rvecTmp
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
@@ -146,7 +145,6 @@ contains
     ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
-    real(DP), dimension(:), pointer :: p_Ddata
     
     ! A temporary variable for the Level-loops
     integer :: i
@@ -287,9 +285,9 @@ contains
 
     ! Next step: Create a RHS vector, a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rrhsBlock,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvectorBlock,.true.)
-    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rtempBlock,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecRhs,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecSol,.true.)
+    call lsysbl_createVectorBlock (Rlevels(NLMAX)%rdiscretisation,rvecTmp,.true.)
       
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
@@ -304,7 +302,7 @@ contains
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     call linf_buildVectorScalar (&
-        rlinform,.true.,rrhsBlock%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_3D)
+        rlinform,.true.,rvecRhs%RvectorBlock(1),Rlevels(NLMAX)%rcubatureInfo,coeff_RHS_3D)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
@@ -350,9 +348,9 @@ contains
 
     ! Our right-hand-side/solution/temp vectors also needs to 
     ! know the boundary conditions.
-    call lsysbl_assignDiscreteBC(rrhsBlock,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvectorBlock,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecRhs,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecSol,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecTmp,Rlevels(NLMAX)%rdiscreteBC)
 
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -360,8 +358,8 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors. Call the appropriate vector filter that
     ! modifies the vectors according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhsBlock)
-    call vecfil_discreteBCsol (rvectorBlock)
+    call vecfil_discreteBCrhs (rvecRhs)
+    call vecfil_discreteBCsol (rvecSol)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -459,13 +457,13 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rvecSol,rvecRhs,rvecTmp)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Postprocessing of the solution
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
-    ! That is it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvecSol now contains our solution. We can now
     ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
@@ -476,19 +474,20 @@ contains
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,Rlevels(NLMAX)%rtriangulation,&
                        trim(sucddir)//'/u3d_1_mg.vtk')
     
-    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    ! Add the solution to the UCD exporter
+    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+        rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
     ! Calculate the error to the reference function.
-    call pperr_scalar (PPERR_L2ERROR,derror,rvectorBlock%RvectorBlock(1),&
+    call pperr_scalar (PPERR_L2ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_3D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
-    call pperr_scalar (PPERR_H1ERROR,derror,rvectorBlock%RvectorBlock(1),&
+    call pperr_scalar (PPERR_H1ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_3D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
@@ -507,9 +506,9 @@ contains
     call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the block matrices/vectors
-    call lsysbl_releaseVector (rtempBlock)
-    call lsysbl_releaseVector (rvectorBlock)
-    call lsysbl_releaseVector (rrhsBlock)
+    call lsysbl_releaseVector (rvecTmp)
+    call lsysbl_releaseVector (rvecSol)
+    call lsysbl_releaseVector (rvecRhs)
     do i = NLMAX, NLMIN, -1
       call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
     end do

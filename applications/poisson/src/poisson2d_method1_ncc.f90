@@ -43,7 +43,6 @@ module poisson2d_method1_ncc
   use element
   use ucd
   use pprocerror
-  use genoutput
   use feevaluation
   use collection
     
@@ -230,8 +229,8 @@ contains
     ! A matrix, a RHS vector, a solution vector and a temporary vector. 
     ! The RHS vector accepts the RHS of the problem, the solution vector
     ! accepts the solution. All are block vectors with only one block.
-    type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_matrixBlock) :: rmatSystem
+    type(t_vectorBlock) :: rvecSol,rvecRhs,rvecTmp
 
     ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
@@ -239,10 +238,6 @@ contains
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
-
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
@@ -261,13 +256,13 @@ contains
     ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
-    real(DP), dimension(:), pointer :: p_Ddata
     
     ! Data to be passed to the callback routine.
     type(t_vectorBlock), target :: rsolutionT
     type(t_collection) :: rcollection
     integer :: ivt
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Ddata
 
     ! Ok, let us start.
     !
@@ -350,12 +345,12 @@ contains
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! At first, create a basic 1x1 block matrix based on the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrixBlock)
+    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatSystem)
     
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-        LSYSSC_MATRIX9,rmatrixBlock%RmatrixBlock(1,1))
+        LSYSSC_MATRIX9,rmatSystem%RmatrixBlock(1,1))
     
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -388,7 +383,7 @@ contains
     ! data.
     ! The collection is passed as additional parameter. That is the way
     ! how we get the vector to the callback routine.
-    call bilf_buildMatrixScalar (rform,.true.,rmatrixBlock%RmatrixBlock(1,1),&
+    call bilf_buildMatrixScalar (rform,.true.,rmatSystem%RmatrixBlock(1,1),&
         rcubatureInfo,coeff_Laplace_2D_ncc,rcollection)
     
     ! Now we can forget about the collection again.
@@ -401,9 +396,9 @@ contains
         
     ! Next step: Create a RHS vector, a solution vector and a temporary
     ! vector. All are filled with zero.
-    call lsysbl_createVectorBlock (rdiscretisation,rrhsBlock,.true.)
-    call lsysbl_createVectorBlock (rdiscretisation,rvectorBlock,.true.)
-    call lsysbl_createVectorBlock (rdiscretisation,rtempBlock,.true.)
+    call lsysbl_createVectorBlock (rdiscretisation,rvecRhs,.true.)
+    call lsysbl_createVectorBlock (rdiscretisation,rvecSol,.true.)
+    call lsysbl_createVectorBlock (rdiscretisation,rvecTmp,.true.)
 
     ! Set up a linear form structure for the assembly of the
     ! the right hand side.
@@ -417,7 +412,7 @@ contains
     ! This scalar vector will later be used as the one and only first
     ! component in a block vector.
     call linf_buildVectorScalar (&
-        rlinform,.true.,rrhsBlock%RvectorBlock(1),rcubatureInfo,coeff_RHS_2D)
+        rlinform,.true.,rvecRhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_2D)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Assembly of matrices/vectors finished
@@ -480,10 +475,10 @@ contains
     ! Assign the BC`s to the vectors and the matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    call lsysbl_assignDiscreteBC(rmatrixBlock,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rrhsBlock,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvectorBlock,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rmatSystem,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecRhs,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecSol,rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvecTmp,rdiscreteBC)
                              
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -491,9 +486,9 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhsBlock)
-    call vecfil_discreteBCsol (rvectorBlock)
-    call matfil_discreteBC (rmatrixBlock)
+    call vecfil_discreteBCrhs (rvecRhs)
+    call vecfil_discreteBCsol (rvecSol)
+    call matfil_discreteBC (rmatSystem)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -520,15 +515,7 @@ contains
     p_rsolverNode%ioutputLevel = 2
     
     ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
-    ! routine to attach all these matrices.
-    ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This does not work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrixBlock/)
-    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    call linsol_setMatrix(p_RsolverNode,rmatSystem)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -556,13 +543,13 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
+    call linsol_solveAdaptively (p_rsolverNode,rvecSol,rvecRhs,rvecTmp)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Postprocessing of the solution
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
-    ! That is it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvecSol now contains our solution. We can now
     ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
@@ -573,8 +560,9 @@ contains
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        trim(sucddir)//'/u2d_1_ncc.vtk')
     
-    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    ! Add the solution to the UCD exporter
+    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+        rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -595,10 +583,10 @@ contains
     call linsol_releaseSolver (p_rsolverNode)
     
     ! Release the block matrix/vectors
-    call lsysbl_releaseVector (rtempBlock)
-    call lsysbl_releaseVector (rvectorBlock)
-    call lsysbl_releaseVector (rrhsBlock)
-    call lsysbl_releaseMatrix (rmatrixBlock)
+    call lsysbl_releaseVector (rvecTmp)
+    call lsysbl_releaseVector (rvecSol)
+    call lsysbl_releaseVector (rvecRhs)
+    call lsysbl_releaseMatrix (rmatSystem)
 
     ! Release the cubature info structure.
     call spdiscr_releaseCubStructure(rcubatureInfo)

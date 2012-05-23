@@ -545,14 +545,10 @@ contains
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
-    type(t_vectorBlock), target :: rtempBlock
+    type(t_vectorBlock), target :: rvecTmp
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
-
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs
@@ -560,7 +556,7 @@ contains
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
     ! Create a temporary vector for the solver - it needs that.
-    call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
+    call lsysbl_createVecBlockIndirect (p_rrhs, rvecTmp, .false.)
     
     ! Resort the RHS and solution vector according to the resorting
     ! strategy given in the matrix.
@@ -569,10 +565,10 @@ contains
       ! The vectors are assumed to know how they are resorted (the strategy
       ! is already attached to them). So call the resorting routines
       ! to resort them as necessary!
-      ! We use the first subvector of rtempBlock as temporary data; it is
+      ! We use the first subvector of rvecTmp as temporary data; it is
       ! large enough, as we only have one block.
-      call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.true.)
-      call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.true.)
+      call lsysbl_sortVectorInSitu (p_rrhs,rvecTmp%RvectorBlock(1),.true.)
+      call lsysbl_sortVectorInSitu (p_rvector,rvecTmp%RvectorBlock(1),.true.)
     end if
     
     ! During the linear solver, the boundary conditions must
@@ -600,15 +596,7 @@ contains
     p_rsolverNode%ioutputLevel = 2
 
     ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
-    ! routine to attach all these matrices.
-    ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This does not work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/p_rmatrix/)
-    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    call linsol_setMatrix(p_RsolverNode,p_rmatrix)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -624,7 +612,7 @@ contains
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,&
-                                 p_rvector,p_rrhs,rtempBlock)
+                                 p_rvector,p_rrhs,rvecTmp)
     
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
@@ -635,13 +623,13 @@ contains
     
     ! Unsort the vectors again in case they were resorted before calling
     ! the solver.
-    ! We use the first subvector of rtempBlock as temporary data; it is
+    ! We use the first subvector of rvecTmp as temporary data; it is
     ! large enough, as we only have one block.
-    call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
-    call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.false.)
+    call lsysbl_sortVectorInSitu (p_rrhs,rvecTmp%RvectorBlock(1),.false.)
+    call lsysbl_sortVectorInSitu (p_rvector,rvecTmp%RvectorBlock(1),.false.)
     
     ! Release the temporary vector
-    call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rvecTmp)
 
   end subroutine
 
@@ -664,9 +652,6 @@ contains
 
   ! local variables
   
-    ! We need some more variables for postprocessing.
-    real(DP), dimension(:), pointer :: p_Ddata
-    
     ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
@@ -702,8 +687,9 @@ contains
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
                        trim(sucddir)//'/u2d_2_cmsort.vtk')
     
-    call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    ! Add the solution to the UCD exporter
+    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+        p_rvector%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
