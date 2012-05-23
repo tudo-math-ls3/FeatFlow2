@@ -35,8 +35,7 @@
 !# To solve a problem, one has basically to call the following routines
 !# 1.) linsol_initXXXX                - Initialises a solver, returns a solver
 !#                                      structure identifying the solver
-!# 2.) linsol_setMatrices             - Attach the system matrix/matrices to the
-!#                                      solver
+!# 2.) linsol_setMatrix               - Attach the system matrix to the solver
 !# 3.) linsol_initStructure           - Allow the solvers to perform problem-
 !#                                      structure specific initialisation
 !#                                      (e.g. symbolical factorisation).
@@ -676,6 +675,7 @@ module linearsolver
   private
   
   public :: linsol_setMatrices
+  public :: linsol_setMatrix
   public :: linsol_matricesCompatible
   public :: linsol_setOnelevelMatrixDirect
   public :: linsol_initStructure
@@ -2462,6 +2462,48 @@ contains
     case (LINSOL_ALG_DEFLGMRES)
       call linsol_setMatrixDeflGMRES (rsolverNode, Rmatrices)
     end select
+
+  end subroutine
+
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_setMatrix (rsolverNode, rmatrix)
+  
+!<description>
+  
+  ! Initialises the system matrix in the solver node rsolverNode and
+  ! in all nodes attached to it (preconditioners,...).
+  ! This subroutine is a single-level variant of linsol_setMatrices.
+  
+!</description>
+  
+!<input>
+  ! The system matrix.
+  type(t_matrixBlock), intent(in) :: rmatrix
+!</input>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  type(t_matrixBlock), dimension(1) :: Rmatrices
+
+    ! temporarily duplicate the matrix into an array of length 1
+    call lsysbl_duplicateMatrix(rmatrix, Rmatrices(1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+    ! call the array version of this routine
+    call linsol_setMatrices(rsolverNode, Rmatrices)
+
+    ! and release the temporary copy
+    call lsysbl_releaseMatrix(Rmatrices(1))
 
   end subroutine
   
