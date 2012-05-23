@@ -35,8 +35,8 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)..\" IntermediateDirectory="obj_$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" CallingConvention="callConventionCRef" RuntimeLibrary="rtMultiThreadedDLL"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_x64.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" LinkLibraryDependencies="false" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib" GenerateManifest="false" SubSystem="subSystemConsole" AdditionalDependencies="winlibamd_ifc12_x64.lib winlibblaslapack_ifc12_x64.lib winlibkernelc_ifc12_x64.lib winlibkernel_ifc12_x64.lib winlibumfpack4_ifc12_x64.lib"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" CallingConvention="callConventionCRef" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_x64.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" LinkLibraryDependencies="false" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" AdditionalDependencies="winlibamd_ifc12_x64.lib winlibblaslapack_ifc12_x64.lib winlibkernelc_ifc12_x64.lib winlibkernel_ifc12_x64.lib winlibumfpack4_ifc12_x64.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -54,6 +54,7 @@
 		<File RelativePath="..\src\elemdbg1d_callback.f90"/>
 		<File RelativePath="..\src\elemdbg1d_test1.f90"/>
 		<File RelativePath="..\src\elemdbg2d_callback.f90"/>
+		<File RelativePath="..\src\elemdbg2d_sd_aux.f90"/>
 		<File RelativePath="..\src\elemdbg2d_test1.f90"/>
 		<File RelativePath="..\src\elemdbg3d_callback.f90"/>
 		<File RelativePath="..\src\elemdbg3d_test1.f90"/></Filter></Files>

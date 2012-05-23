@@ -47,6 +47,7 @@
 		<File RelativePath="..\src\elemdbg1d_callback.f90"/>
 		<File RelativePath="..\src\elemdbg1d_test1.f90"/>
 		<File RelativePath="..\src\elemdbg2d_callback.f90"/>
+		<File RelativePath="..\src\elemdbg2d_sd_aux.f90"/>
 		<File RelativePath="..\src\elemdbg2d_test1.f90"/>
 		<File RelativePath="..\src\elemdbg3d_callback.f90"/>
 		<File RelativePath="..\src\elemdbg3d_test1.f90"/></Filter>

@@ -77,16 +77,19 @@ contains
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2
   character(LEN=64) :: selement,scubature
   type(t_bilinearForm) :: rform
-  integer :: iwritemesh, h_Ipermute
+  integer :: iucd, h_Ipermute
   type(t_ucdexport) :: rexport
-  real(DP), dimension(:), pointer :: p_Ddata
   real(DP) :: dnu,dbeta1,dupsam,dgamma
   integer :: istabil, isolution, ifillin
   !type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
+  character(len=SYS_STRLEN) :: sucddir
   
     h_Ipermute = ST_NOHANDLE
+
+    ! Fetch sytem variables
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './ucd'
     
     ! Fetch minimum and maximum levels
     call parlst_getvalue_int(rparam, sConfigSection, 'NLMIN', NLMIN, -1)
@@ -142,8 +145,8 @@ contains
     ! Fetch fill-in level for ILU(k) preconditioner
     call parlst_getvalue_int(rparam, sConfigSection, 'IFILLIN', ifillin, 0)
 
-    ! Writing of the mesh
-    call parlst_getvalue_int(rparam, sConfigSection, 'IWRITEMESH', iwritemesh, 0)
+    ! UCD export
+    call parlst_getvalue_int(rparam, sConfigSection, 'IUCD', iucd, 0)
     
     ! Parse element and cubature
     celement = elem_igetID(selement)
@@ -477,31 +480,28 @@ contains
           trim(sys_sdEP(Derror(1,ilvl),20,12)) // &
           trim(sys_sdEP(Derror(2,ilvl),20,12)))
           
-      ! Probably write the mesh to disc
-      if (iwritemesh .eq. 1) then
-        call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/sol1d_'//TRIM(sys_siL(ilvl,5))//'.gmv')
+      ! Do we perform UCD output?
+      if (iucd .gt. 0) then
+
+        ! What type of output?
+        select case(iucd)
+        case (1)
+          call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+               trim(sucddir) // '/sol1d_' // trim(sys_siL(ilvl,5)) // '.gmv')
+
+        case (2)
+          call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+             trim(sucddir) // '/sol1d_' // trim(sys_siL(ilvl,5)) // '.vtk')
+
+        end select
 
         ! Project the solution to the vertices
-        allocate (p_Ddata(rtriangulation%NVT))
-        call spdp_projectToVertices (rvecSol%RvectorBlock(1), p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+        call ucd_addVectorByVertex (rexport,'sol',UCD_VAR_STANDARD, rvecSol%RvectorBlock(1))
 
+        ! Write and release ucd
         call ucd_write (rexport)
         call ucd_release (rexport)
-        deallocate(p_Ddata)
-      else if (iwritemesh .eq. 2) then
-        call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/sol1d_'//TRIM(sys_siL(ilvl,5))//'.vtk')
 
-        ! Project the solution to the vertices
-        allocate (p_Ddata(rtriangulation%NVT))
-        call spdp_projectToVertices (rvecSol%RvectorBlock(1), p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-
-        call ucd_write (rexport)
-        call ucd_release (rexport)
-        deallocate(p_Ddata)
       end if
       
       ! Clean up this level

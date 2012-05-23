@@ -9,7 +9,7 @@ SCONFIGSECTION = EXAMPLE
 # Example Section
 [EXAMPLE]
 
-# Test that is to be loaded (non-optional)
+# Test that is to be loaded (mandatory)
 # 101 -> 1D Element-Debugger #1: L2-projection
 # 102 -> 1D Element-Debugger #1: Poisson system
 # 103 -> 1D Element-Debugger #1: Convection-Diffusion system
@@ -24,14 +24,14 @@ ITEST = 202
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General Parameters
 
-# Minimum and maximum levels (non-optional)
+# Minimum and maximum levels (mandatory)
 NLMIN = 2
 NLMAX = 7
 
-# Element identifier (non-optional)
+# Element identifier (mandatory)
 SELEMENT = EL_Q1_2D
 
-# Cubature rule identifier (non-optional)
+# Cubature rule identifier (mandatory)
 SCUBATURE = G3_2D
 
 # Desired solution u of the system (default: 0)
@@ -53,11 +53,11 @@ SCUBATURE = G3_2D
 #   3 -> u(x,y,z) = z
 ISOLUTION = 0
 
-# Write solution on each level to GMV/VTK file (default: 0)
+# Export solution on each level to GMV/VTK file (default: 0)
 # 0 -> no output
 # 1 -> write GMV
 # 2 -> write VTK
-IWRITEMESH = 0
+IUCD = 0
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Mesh Distortion Parameters
