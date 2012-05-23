@@ -102,8 +102,12 @@ endif
 GFORTRANVERSION  := $(shell eval $(F90VERSION) )
 
 # Functions to detect minimal compiler version
+gfortranminversion_4_7=\
+	$(if $(findstring 4.7.,$(GFORTRANVERSION)),yes,no)
 gfortranminversion_4_6=\
-	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)
+	$(if $(findstring yes,\
+	$(call gfortranminversion_4_7) \
+	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)),yes,no)
 gfortranminversion_4_5=\
 	$(if $(findstring yes,\
 	$(call gfortranminversion_4_6) \
@@ -126,6 +130,10 @@ gfortranminversion_4_1=\
 	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)),yes,no)
 
 # Functions to detect maximal compiler version
+gfortranmaxversion_4_7=\
+	$(if $(findstring yes,\
+	$(call gfortranmaxversion_4_6) \
+	$(if $(findstring 4.7.,$(GFORTRANVERSION)),yes,no)),yes,no)
 gfortranmaxversion_4_6=\
 	$(if $(findstring yes,\
 	$(call gfortranmaxversion_4_5) \
