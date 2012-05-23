@@ -56,7 +56,7 @@ program flagship
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
   ! Initialise CUDA subsystem
-  call coproc_init(1)
+  call coproc_init(0)
 #endif
 
   ! Initialise Feat2 subsystem
