@@ -1155,6 +1155,7 @@ contains
   real(DP), dimension(:), pointer :: p_Dx
   real(DP) :: dt
   integer :: ider,nadj
+  logical :: bvertexDofs
 
     ! Which derivative?
     ider = DER_FUNC
@@ -1179,10 +1180,6 @@ contains
     NVT = p_rtria%NVT
     NDIM = p_rtria%ndim
 
-    ! Get the vertices-at-element and elements-at-vertex-idx arrays
-    call storage_getbase_int2d(p_rtria%h_IverticesAtElement, p_IvertAtElem)
-    call storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
-
     ! Prepare the values array
     if(.not. associated(p_Dvalues)) then
       allocate(p_Dvalues(NVT))
@@ -1190,11 +1187,53 @@ contains
       deallocate(p_Dvalues)
       allocate(p_Dvalues(NVT))
     end if
-    call lalg_clearVectorDble(p_Dvalues,NVT)
+
+    ! Project function values?
+    if(ider .eq. DER_FUNC) then
+
+      ! Let' see if our FE space has DOFs in the vertices
+      bvertexDofs = .true.
+      do i = 1, p_rdiscr%inumFESpaces
+
+        ! check the elements
+        select case(elem_getPrimaryElement(p_rdiscr%RelementDistr(i)%celement))
+        case (EL_P1_1D, EL_P2_1D, EL_S31_1D)
+        case (EL_P1_2D, EL_P2_2D)
+        case (EL_Q1_2D, EL_Q2_2D)
+        case (EL_P1_3D)
+        case (EL_Q1_3D, EL_Q2_3D)
+          ! For all of the previous elements we can simply copy the first NVT entries
+          ! from the coefficient vector to obtain the function values in the vertices.
+
+        case default
+          ! Some other FE space with no function values in the vertices
+          bvertexDofs = .false.
+
+        end select
+
+      end do
+
+      ! Vertex-DOF based FE space?
+      if(bvertexDofs) then
+
+        ! Then we only need to copy the first NVT DOFs from our vector
+        call lalg_copyVectorDble(p_Dx, p_Dvalues, NVT)
+        return
+
+      end if
+
+    end if
+
+    ! Get the vertices-at-element and elements-at-vertex-idx arrays
+    call storage_getbase_int2d(p_rtria%h_IverticesAtElement, p_IvertAtElem)
+    call storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
 
     ! Set up Bder
     Bder = .false.
     Bder(ider) = .true.
+
+    ! Clear the output array
+    call lalg_clearVectorDble(p_Dvalues,NVT)
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -1370,6 +1409,7 @@ contains
   real(DP), dimension(:), pointer :: p_Dx
   real(DP) :: dt
   integer :: ider
+  logical :: bcellDofs
 
     ! Which derivative?
     ider = DER_FUNC
@@ -1401,11 +1441,49 @@ contains
       deallocate(p_Dvalues)
       allocate(p_Dvalues(NEL))
     end if
-    call lalg_clearVectorDble(p_Dvalues,NEL)
+
+    ! Project function values?
+    if(ider .eq. DER_FUNC) then
+
+      ! Let' see if our FE space has DOFs in the cells
+      bcellDofs = .true.
+      do i = 1, p_rdiscr%inumFESpaces
+
+        ! check the elements
+        select case(elem_getPrimaryElement(p_rdiscr%RelementDistr(i)%celement))
+        case (EL_P0_1D)
+        case (EL_P0_2D)
+        case (EL_Q0_2D, EL_QP1_2D)
+        case (EL_P0_3D)
+        case (EL_Q0_3D, EL_QP1_3D)
+          ! For all of the previous elements we can simply copy the first NEL entries
+          ! from the coefficient vector to obtain the function values in the cells.
+
+        case default
+          ! Some other FE space with no function values in the cells
+          bcellDofs = .false.
+
+        end select
+
+      end do
+
+      ! Cell-DOF based FE space?
+      if(bcellDofs) then
+
+        ! Then we only need to copy the first NVT DOFs from our vector
+        call lalg_copyVectorDble(p_Dx, p_Dvalues, NEL)
+        return
+
+      end if
+
+    end if
 
     ! Set up Bder
     Bder = .false.
     Bder(ider) = .true.
+
+    ! Clear the output array
+    call lalg_clearVectorDble(p_Dvalues,NEL)
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces

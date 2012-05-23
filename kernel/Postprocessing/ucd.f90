@@ -91,6 +91,14 @@
 !# 24.) ucd_getSimulationTime
 !#      -> Get simulation time.
 !#
+!# 25.) ucd_addVectorByVertex / ucd_addVectorByElement
+!#      -> Projects an FE function vector to the vertices/element midpoints
+!#         and adds it to the export structure.
+!#
+!# 26.) ucd_addVectorFieldByVertex / ucd_addVectorFieldByElement
+!#      -> Projects an FE function vector field to the vertices/element midpoints
+!#         and adds it to the export structure.
+!#
 !# To write a file (GMV, AVS, VTK, MATLAB or what else), one has to use the
 !# following sequence of commands:
 !#
@@ -139,6 +147,9 @@ module ucd
   use paramlist
   use io
   use geometry
+  use linearsystemscalar
+  use spdiscprojection
+
   implicit none
 
   private
@@ -572,6 +583,10 @@ module ucd
   public :: ucd_infoVariables
   public :: ucd_getSimulationTime
   public :: ucd_addSurfTri
+  public :: ucd_addVectorByVertex
+  public :: ucd_addVectorByElement
+  public :: ucd_addVectorFieldByVertex
+  public :: ucd_addVectorFieldByElement
 
   interface ucd_addVariableVertexBased
     module procedure ucd_addVariableVertexBased1
@@ -5362,6 +5377,286 @@ contains
       end if
 
     end if
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine ucd_addVectorByVertex (rexport, sname, cvarSpec, rvector, ideriv)
+
+!<description>
+  ! Projects an FE function to the vertices and adds it as a variable to
+  ! the ucd export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+
+  ! Specification bitfield for the variable. A combination of the
+  ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+
+  ! A vector that is to be projected. Must have a discretisation structure attached.
+  type(t_vectorScalar), intent(in) :: rvector
+
+  ! OPTIONAL: A derivative specifier describing which derivative is to be exported.
+  ! If not given, the function values are exported.
+  integer, optional, intent(in) :: ideriv
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dvalues
+
+    nullify(p_Dvalues)
+
+    ! Project solution to vertices
+    if(present(ideriv)) then
+      call spdp_projectToVertices(rvector, p_Dvalues, ideriv)
+    else
+      call spdp_projectToVertices(rvector, p_Dvalues)
+    end if
+
+    ! And add it to the export
+    call ucd_addVariableVertexBased2(rexport, sname, cvarSpec, p_Dvalues)
+
+    ! And release the temporary array
+    deallocate(p_Dvalues)
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine ucd_addVectorByElement (rexport, sname, cvarSpec, rvector, ideriv)
+
+!<description>
+  ! Projects an FE function to the element midpoints and adds it as a variable to
+  ! the ucd export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+
+  ! Specification bitfield for the variable. A combination of the
+  ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+
+  ! A vector that is to be projected. Must have a discretisation structure attached.
+  type(t_vectorScalar), intent(in) :: rvector
+
+  ! OPTIONAL: A derivative specifier describing which derivative is to be exported.
+  ! If not given, the function values are exported.
+  integer, optional, intent(in) :: ideriv
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dvalues
+
+    nullify(p_Dvalues)
+
+    ! Project solution to cells
+    if(present(ideriv)) then
+      call spdp_projectToCells(rvector, p_Dvalues, ideriv)
+    else
+      call spdp_projectToCells(rvector, p_Dvalues)
+    end if
+
+    ! And add it to the export
+    call ucd_addVariableElementBased2(rexport, sname, cvarSpec, p_Dvalues)
+
+    ! And release the temporary array
+    deallocate(p_Dvalues)
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine ucd_addVectorFieldByVertex (rexport, sname, cvarSpec, Rvector)
+
+!<description>
+  ! Projects an FE function to the vertices and adds it as a variable to
+  ! the ucd export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+
+  ! Specification bitfield for the variable. A combination of the
+  ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+
+  ! A vector array that is to be projected. Must have a discretisation structure attached.
+  type(t_vectorScalar), dimension(:), intent(in) :: Rvector
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dx, p_Dy, p_Dz
+
+    nullify(p_Dx)
+    nullify(p_Dy)
+    nullify(p_Dz)
+
+    ! How many components do we have?
+    select case(ubound(Rvector,1))
+    case (1)
+      ! Project solution to vertices
+      call spdp_projectToVertices(rvector(1), p_Dx)
+
+      ! And add it to the export
+      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpec, p_Dx)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dx)
+
+    case (2)
+      ! Project solution to vertices
+      call spdp_projectToVertices(rvector(1), p_Dx)
+      call spdp_projectToVertices(rvector(2), p_Dy)
+
+      ! And add it to the export
+      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpec, p_Dx, p_Dy)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dy)
+      deallocate(p_Dx)
+
+    case (3)
+      ! Project solution to vertices
+      call spdp_projectToVertices(rvector(1), p_Dx)
+      call spdp_projectToVertices(rvector(2), p_Dy)
+      call spdp_projectToVertices(rvector(3), p_Dz)
+
+      ! And add it to the export
+      call ucd_addVarVertBasedVec2(rexport, sname, cvarSpec, p_Dx, p_Dy, p_Dz)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dz)
+      deallocate(p_Dy)
+      deallocate(p_Dx)
+
+    case default
+      call output_line ('Invalid vector array size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVectorFieldByVertex')
+      call sys_halt()
+
+    end select
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine ucd_addVectorFieldByElement (rexport, sname, cvarSpec, Rvector)
+
+!<description>
+  ! Projects an FE function to the element midpoints and adds it as a variable to
+  ! the ucd export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the variable.
+  character(LEN=*), intent(in) :: sname
+
+  ! Specification bitfield for the variable. A combination of the
+  ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
+  ! Standard value=UCD_VAR_STANDARD.
+  integer(I32), intent(in) :: cvarSpec
+
+  ! A vector array that is to be projected. Must have a discretisation structure attached.
+  type(t_vectorScalar), dimension(:), intent(in) :: Rvector
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dx, p_Dy, p_Dz
+
+    nullify(p_Dx)
+    nullify(p_Dy)
+    nullify(p_Dz)
+
+    ! How many components do we have?
+    select case(ubound(Rvector,1))
+    case (1)
+      ! Project solution to cells
+      call spdp_projectToCells(rvector(1), p_Dx)
+
+      ! And add it to the export
+      call ucd_addVarElemBasedVec2(rexport, sname, cvarSpec, p_Dx)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dx)
+
+    case (2)
+      ! Project solution to cells
+      call spdp_projectToCells(rvector(1), p_Dx)
+      call spdp_projectToCells(rvector(2), p_Dy)
+
+      ! And add it to the export
+      call ucd_addVarElemBasedVec2(rexport, sname, cvarSpec, p_Dx, p_Dy)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dy)
+      deallocate(p_Dx)
+
+    case (3)
+      ! Project solution to cells
+      call spdp_projectToCells(rvector(1), p_Dx)
+      call spdp_projectToCells(rvector(2), p_Dy)
+      call spdp_projectToCells(rvector(3), p_Dz)
+
+      ! And add it to the export
+      call ucd_addVarElemBasedVec2(rexport, sname, cvarSpec, p_Dx, p_Dy, p_Dz)
+
+      ! deallocate temporary arrays
+      deallocate(p_Dz)
+      deallocate(p_Dy)
+      deallocate(p_Dx)
+
+    case default
+      call output_line ('Invalid vector array size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addVectorFieldByElement')
+      call sys_halt()
+
+    end select
 
   end subroutine
 
