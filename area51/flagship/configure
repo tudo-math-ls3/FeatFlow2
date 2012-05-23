@@ -35,7 +35,7 @@ SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
 
 # Add CUDA support (if available)
 # (disable any ls alias setting)
-SRCEXTRA_APP="`\ls src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+SRCEXTRA_APP="`\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
 
 # Use system-wide configure
 ../../bin/configure \
