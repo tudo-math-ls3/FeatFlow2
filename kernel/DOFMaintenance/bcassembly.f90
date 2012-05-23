@@ -73,6 +73,9 @@
 !# 16.) bcasm_releaseSlip
 !#      -> Release slip boundary conditions on the real bondary
 !#
+!# 17.) bcasm_newHomDirichletBConRealBd
+!#      -> Discretises homogene dirichlet boundary conditions on a 2D bounday region.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -198,6 +201,7 @@ module bcassembly
   public :: bcasm_clearDiscreteBC
   public :: bcasm_releaseDiscreteBC
   public :: bcasm_newDirichletBC_1D
+  public :: bcasm_newHomDirichletBConRealBd
   public :: bcasm_newDirichletBConRealBd
   public :: bcasm_newPdropBConRealBd
   public :: bcasm_newDirichletBConMR
@@ -850,6 +854,80 @@ contains
     end if
 
     ! That is it
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bcasm_newHomDirichletBConRealBd (rblockDiscretisation, &
+      iequation, rboundaryRegion, rdiscreteBC, ccomplexity, coptions)
+
+!<description>
+  ! Creates a discrete version of homogene Dirichlet boundary conditions.
+  ! rboundaryRegion describes the region which is to be discretised. The discretised
+  ! boundary conditions are created in rdiscreteBC, which is assumed
+  ! to be undefined when entering this routine.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. The boundary
+  ! conditions inside of this structure are discretised.
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
+
+  ! An identifier for the equation, this boundary condition refers to.
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
+  ! Y-velocity), etc.
+  integer, intent(in) :: iequation
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+
+  ! Optional: A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC`s, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  integer(I32), intent(in), optional :: ccomplexity
+
+  ! Optional: A field specifying additional options for the assembly.
+  ! If not specified, BCASM_DISCOPT_STD is assumed.
+  integer(I32), intent(in), optional :: coptions
+!</input>
+
+!<inputoutput>
+  ! A t_discreteBC structures, representing the boundary discretised
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
+!</inputoutput>
+
+!</subroutine>
+
+    ! call the inhomogene version
+    call bcasm_newDirichletBConRealBd (rblockDiscretisation, &
+      iequation, rboundaryRegion, rdiscreteBC, &
+      funcZeroBC, ccomplexity=ccomplexity, coptions=coptions)
+
+  contains
+
+    subroutine funcZeroBC (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                           cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+    integer, dimension(:), intent(in)                           :: Icomponents
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+    integer, intent(in)                                         :: ielement
+    integer, intent(in)                                         :: cinfoNeeded
+    integer, intent(in)                                          :: iwhere
+    real(DP), intent(in)                                        :: dwhere
+    type(t_collection), intent(inout), optional                 :: rcollection
+    real(DP), dimension(:), intent(out)                         :: Dvalues
+
+      Dvalues(:) = 0.0_DP
+
+    end subroutine
 
   end subroutine
 
