@@ -1196,7 +1196,7 @@ contains
     else
       if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
         ! Reallocate
-        allocate(revalVectors%p_RvectorData(size(revalVectors%p_RvectorData)))
+        allocate(p_RvectorData(size(revalVectors%p_RvectorData)+16))
         p_RvectorData(1:revalVectors%ncount) = &
             revalVectors%p_RvectorData(1:revalVectors%ncount)
         deallocate(revalVectors%p_RvectorData)
@@ -1264,7 +1264,7 @@ contains
     else
       if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
         ! Reallocate
-        allocate(revalVectors%p_RvectorData(size(revalVectors%p_RvectorData)))
+        allocate(p_RvectorData(size(revalVectors%p_RvectorData)+16))
         p_RvectorData(1:revalVectors%ncount) = &
             revalVectors%p_RvectorData(1:revalVectors%ncount)
         deallocate(revalVectors%p_RvectorData)
