@@ -5161,6 +5161,7 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTest,&
@@ -5170,6 +5171,14 @@ contains
         .not.rgroupFEMSet%bidenticalTrialAndTest)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTrial,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_IdofsList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_IdofsList
 
@@ -5199,6 +5208,8 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTest,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
@@ -5207,6 +5218,14 @@ contains
         .not.rgroupFEMSet%bidenticalTrialAndTest)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTrial,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_IdofsList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_IdofsList
 
@@ -5236,10 +5255,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdiagList,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_IdiagList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_IdiagList
 
@@ -5269,9 +5297,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdiagList,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_IdiagList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_IdiagList
 
@@ -5301,10 +5339,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeListIdx,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_IedgeListIdx')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_IedgeListIdx
 
@@ -5334,9 +5381,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeListIdx,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_IedgeListIdx')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_IedgeListIdx
 
@@ -5366,10 +5423,19 @@ contains
 !</input>
 !</subroutine>
 
-
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
     if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream, 2)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_IedgeList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_IedgeList
 
@@ -5399,9 +5465,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeList,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_IedgeList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_IedgeList
 
@@ -5431,10 +5507,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeListIdx,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_InodeListIdx')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_InodeListIdx
 
@@ -5464,9 +5549,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeListIdx,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_InodeListIdx')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_InodeListIdx
 
@@ -5496,10 +5591,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeList,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_InodeList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_InodeList
 
@@ -5529,9 +5633,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeList,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_InodeList')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_InodeList
 
@@ -5561,10 +5675,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtNode,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_CoeffsAtNode')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_CoeffsAtNode
 
@@ -5594,9 +5717,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtNode,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_CoeffsAtNode')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_CoeffsAtNode
 
@@ -5626,10 +5759,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtEdge,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_CoeffsAtEdge')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_CoeffsAtEdge
 
@@ -5659,9 +5801,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtEdge,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_CoeffsAtEdge')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_CoeffsAtEdge
 
@@ -5691,10 +5843,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
 
     if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtDiag,&
         ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyH2D_CoeffsAtDiag')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyH2D_CoeffsAtDiag
 
@@ -5724,9 +5885,19 @@ contains
 !</input>
 !</subroutine>
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
     if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
         call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtDiag,&
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+
+#else
+    
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'gfem_copyD2H_CoeffsAtDiag')
+    call sys_halt()
+
+#endif
 
   end subroutine gfem_copyD2H_CoeffsAtDiag
 
