@@ -14,10 +14,8 @@
  */
 
 extern "C" {
-  int coproc_transpose2d(void **ptrSrc, void **ptrDest,
-			 int bytes_per_elmt, int n1, int n2);
-  int coproc_transpose3d(void **ptrSrc, void **ptrDest,
-			 int bytes_per_elmt, int n1, int n2, int n3);
+  int coproc_transposeOnHost2d(void *, void *, int, int, int);
+  int coproc_transposeOnHost3d(void *, void *, int, int, int, int);
 }
 
 #endif
