@@ -40,7 +40,7 @@ endif
 ################################################################################
 
 # create header file list
-HSRC = coproc_core.h coproc_storage_cuda.h
+HSRC = coproc_core.h coproc_storage_cuda.h coproc_transpose.h
 
 # create source file list add object file generator rule for C sources
 SRC := $(SRC)
@@ -50,7 +50,7 @@ OBJ = $(SRC:%.c=$(OBJDIR)/%.o)
 SRC_COMPLETE := $(SRC)
 
 # add cuda source file list and implicit object file generator rule
-SRC_CUDA = coproc_core.cu coproc_storage_cuda.cu
+SRC_CUDA = coproc_core.cu coproc_storage_cuda.cu coproc_transpose.cu
 
 SRC_COMPLETE :=$(SRC_COMPLETE) $(SRC_CUDA)
 
