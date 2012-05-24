@@ -49,10 +49,14 @@
 !#      -> Initialise a vector evaluation list for the evaluation
 !#         of vectors
 !#
-!# 13.) fev2_doneVectorEval
+!# 13.) fev2_prepareVectorEval
+!#      -> (Re-)allocates temporary memory for the evaluation.
+!#         Must be called after fev2_initVectorEval.
+!#
+!# 14.) fev2_doneVectorEval
 !#      -> Release a vector evaluation list
 !#
-!# 14.) fev2_evaluateVectors
+!# 15.) fev2_evaluateVectors
 !#      -> Evaluate all vectors in a vector evaluation list in a set of points
 !#         on a set of elements
 !# </purpose>
@@ -239,6 +243,7 @@ module feevaluation2
   public :: fev2_addDummyVectorToEvalList
   public :: fev2_releaseVectorList
   public :: fev2_initVectorEval
+  public :: fev2_prepareVectorEval
   public :: fev2_doneVectorEval
   public :: fev2_evaluateVectors
 
@@ -282,7 +287,7 @@ contains
       end select
     
     case (NDIM2D)
-      select case (imaxDerivativeIdx)
+      select case (imaxDerivative)
       case (0)
         imaxDerivativeIdx = DER_FUNC2D
       case (1)
@@ -292,7 +297,7 @@ contains
       end select
       
     case (NDIM3D)
-      select case (imaxDerivativeIdx)
+      select case (imaxDerivative)
       case (0)
         imaxDerivativeIdx = DER_FUNC3D
       case (1)
@@ -1320,7 +1325,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_initVectorEval(revalVectors,RfemData,revalElementSet)
+  subroutine fev2_initVectorEval(revalVectors,RfemData)
 
 !<description>
   ! Auxiliary subroutine. 
@@ -1331,10 +1336,6 @@ contains
   ! List all involved FEM spaces that appear in the vectors
   ! collected in revalVectors
   type(t_fev2FemData), dimension(:), intent(in) :: RfemData
-  
-  ! Element evaluation set encapsuling coordinates on of the cubature
-  ! points on the reference element, real elements, Jacobian determinants etc.
-  type(t_evalElementSet), intent(in) :: revalElementSet
 !</input>
 
 !<inputoutput>
@@ -1345,18 +1346,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i, nentries, nmaxDerivativeIdx, npointsPerElement, nelements
+    integer :: i, nentries, nmaxDerivativeIdx
     type(t_fev2VectorData), pointer :: p_rvectorData
     
     ! For every vector to evaluate, allocate memory for the
     ! values in the points.
     
     nentries = size(RfemData)
-    npointsPerElement = revalElementSet%npointsPerElement
-    nelements = revalElementSet%nelements
-    
-    revalVectors%npointsPerElement = npointsPerElement
-    revalVectors%nelements = nelements
     
     do i=1,revalVectors%ncount
     
@@ -1382,17 +1378,76 @@ contains
       
       end if
 
-      ! Allocate memory for the point values.
-      if (.not. p_rvectorData%bisInterleaved) then
-        ! Non-interleaved data
-        allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
-      else
-        ! Interleaved data
-        allocate (p_rvectorData%p_DdataIntl(&
-            p_rvectorData%nvar,npointsPerElement,nelements,nmaxDerivativeIdx))
-      end if
-    
     end do
+        
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_prepareVectorEval(revalVectors,revalElementSet)
+
+!<description>
+  ! Auxiliary subroutine. Called during the evaluaation.
+  ! Prepares the evaluation of the vector data. Allocates/Deallocates/
+  ! Reallocates temporary memory if necessary.
+!</description>
+
+!<input>
+  ! Element evaluation set encapsuling coordinates on of the cubature
+  ! points on the reference element, real elements, Jacobian determinants etc.
+  type(t_evalElementSet), intent(in) :: revalElementSet
+!</input>
+
+!<inputoutput>
+  ! Vector structure to be initialised
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i, nmaxDerivativeIdx, npointsPerElement, nelements
+    type(t_fev2VectorData), pointer :: p_rvectorData
+    
+    ! For every vector to evaluate, allocate memory for the
+    ! values in the points.
+    npointsPerElement = revalElementSet%npointsPerElement
+    nelements = revalElementSet%nelements
+    
+    if ((revalVectors%npointsPerElement .ne. npointsPerElement) .or. &
+        (revalVectors%nelements .ne. nelements)) then
+      
+      revalVectors%npointsPerElement = npointsPerElement
+      revalVectors%nelements = nelements
+
+      ! Allocate memory.
+      do i=1,revalVectors%ncount
+
+        p_rvectorData => revalVectors%p_RvectorData(i)
+
+        nmaxDerivativeIdx = p_rvectorData%nmaxDerivativeIdx
+      
+        ! Deallocate memory if memory is allocated.
+        if (associated(p_rvectorData%p_Ddata)) deallocate (p_rvectorData%p_Ddata)
+        if (associated(p_rvectorData%p_DdataIntl)) deallocate (p_rvectorData%p_DdataIntl)
+
+        ! Allocate memory for the point values.
+        if ((npointsPerElement .ne. 0) .and. (nelements .ne. 0)) then
+          if (.not. p_rvectorData%bisInterleaved) then
+            ! Non-interleaved data
+            allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
+          else
+            ! Interleaved data
+            allocate (p_rvectorData%p_DdataIntl(&
+                p_rvectorData%nvar,npointsPerElement,nelements,nmaxDerivativeIdx))
+          end if
+        end if
+      
+      end do
+      
+    end if
         
   end subroutine
 

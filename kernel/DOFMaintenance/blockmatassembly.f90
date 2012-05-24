@@ -2008,9 +2008,8 @@ contains
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
       revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
 
-      ! Allocate memory for the values in the cubature points
-      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData,&
-          rassemblyData%revalElementSet)
+      ! Initialise the vector evaluation.
+      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
     end if
 
   end subroutine
@@ -2647,6 +2646,9 @@ contains
       ! Calculate the FEM basis functions in the cubature points.
       call bma_evaluateFEMforMat(rassemblyData,rmatrixAssembly)
 
+      ! (Re-)allocate memory for the FEM evaluation if necessary.
+      call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
+
       ! Evaluate the attached vectors in the cubature points.
       call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
 
@@ -2795,7 +2797,7 @@ contains
           p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList)
 
       ! Check if element distribution is empty
-      if (NEL .le. 0 ) cycle
+      if (NEL .le. 0) cycle
 
       ! Initialise a matrix assembly structure for that element distribution
       call bma_initMatAssembly(rmatrixAssembly,ccubType,cflags,&
@@ -3072,9 +3074,8 @@ contains
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
       revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
 
-      ! Allocate memory for the values in the cubature points
-      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData,&
-          rassemblyData%revalElementSet)
+      ! Prepare the evaluation of teh FEM functions
+      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
     end if
 
   end subroutine
@@ -3642,6 +3643,9 @@ contains
 
       ! Calculate the FEM basis functions in the cubature points.
       call bma_evaluateFEMforVec(rassemblyData,rvectorAssembly)
+
+      ! (Re-)allocate memory for the FEM evaluation if necessary.
+      call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
 
       ! Evaluate the attached vectors in the cubature points.
       call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
