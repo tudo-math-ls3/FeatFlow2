@@ -1314,6 +1314,10 @@ contains
           rproblem%RlevelInfo(i)%rdiscretisation, &
           rcubatureInfoCoarse, rcubatureInfoFine, &
           rproblem%RlevelInfo(i)%rasmTempl)
+          
+      ! Release memory
+      call spdiscr_releaseCubStructure (rcubatureInfoFine)
+      call spdiscr_releaseCubStructure (rcubatureInfoCoarse)
     end do
 
   end subroutine
