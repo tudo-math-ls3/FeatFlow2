@@ -861,6 +861,33 @@ contains
 
 !<subroutine>
 
+  subroutine bcasm_auxFuncZeroBC (Icomponents,rdiscretisation,rboundaryRegion,&
+      ielement, cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Homogene boundary conditions.
+!</description>
+
+  integer, dimension(:), intent(in)                           :: Icomponents
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+  integer, intent(in)                                         :: ielement
+  integer, intent(in)                                         :: cinfoNeeded
+  integer, intent(in)                                          :: iwhere
+  real(DP), intent(in)                                        :: dwhere
+  type(t_collection), intent(inout), optional                 :: rcollection
+  real(DP), dimension(:), intent(out)                         :: Dvalues
+
+!<subroutine>
+
+    Dvalues(:) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine bcasm_newHomDirichletBConRealBd (rblockDiscretisation, &
       iequation, rboundaryRegion, rdiscreteBC, ccomplexity, coptions)
 
@@ -909,25 +936,7 @@ contains
     ! call the inhomogene version
     call bcasm_newDirichletBConRealBd (rblockDiscretisation, &
       iequation, rboundaryRegion, rdiscreteBC, &
-      funcZeroBC, ccomplexity=ccomplexity, coptions=coptions)
-
-  contains
-
-    subroutine funcZeroBC (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
-                           cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-    integer, dimension(:), intent(in)                           :: Icomponents
-    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-    type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
-    integer, intent(in)                                         :: ielement
-    integer, intent(in)                                         :: cinfoNeeded
-    integer, intent(in)                                          :: iwhere
-    real(DP), intent(in)                                        :: dwhere
-    type(t_collection), intent(inout), optional                 :: rcollection
-    real(DP), dimension(:), intent(out)                         :: Dvalues
-
-      Dvalues(:) = 0.0_DP
-
-    end subroutine
+      bcasm_auxFuncZeroBC, ccomplexity=ccomplexity, coptions=coptions)
 
   end subroutine
 
