@@ -2514,7 +2514,9 @@ contains
             ! Non-interleaved matrix
             p_Dentry => p_rmatrixData%p_Dentry
 
-            do m=1,ubound(p_Dentry,3)
+            ! The outer-most loop loops only up to the maximum element
+            ! number. The allocated memory may be larger.
+            do m=1,rassemblyData%nelements
               do l=1,ubound(p_Dentry,2)
                 do k=1,ubound(p_Dentry,1)
                   p_Da(p_Kentry(k,l,m)) = p_Da(p_Kentry(k,l,m)) + p_Dentry(k,l,m)
@@ -2529,7 +2531,9 @@ contains
             p_DentryIntl => p_rmatrixData%p_DentryIntl
             nvar = p_rmatrixData%nvar
 
-            do m=1,ubound(p_DentryIntl,4)
+            ! The outer-most loop loops only up to the maximum element
+            ! number. The allocated memory may be larger.
+            do m=1,rassemblyData%nelements
               do l=1,ubound(p_DentryIntl,3)
                 do k=1,ubound(p_DentryIntl,2)
                   do ivar=1,ubound(p_DentryIntl,1)
@@ -3520,7 +3524,9 @@ contains
         ! Non-Interleaved
         p_Dentry => p_rvectorData%p_Dentry
 
-        do l=1,ubound(p_Dentry,2)
+        ! The outer-most loop loops only up to the maximum element
+        ! number. The allocated memory may be larger.
+        do l=1,rassemblyData%nelements
           do k=1,ubound(p_Dentry,1)
             p_Ddata(p_IdofsTest(k,l)) = p_Ddata(p_IdofsTest(k,l)) + p_Dentry(k,l)
           end do
@@ -3532,7 +3538,9 @@ contains
         p_DentryIntl => p_rvectorData%p_DentryIntl
         nvar = p_rvectorData%nvar
 
-        do l=1,ubound(p_DentryIntl,3)
+        ! The outer-most loop loops only up to the maximum element
+        ! number. The allocated memory may be larger.
+        do l=1,rassemblyData%nelements
           do k=1,ubound(p_DentryIntl,2)
             do ivar = 1,ubound(p_DentryIntl,1)
               p_Ddata(nvar*(p_IdofsTest(k,l)-1)+ivar) = &
