@@ -100,7 +100,7 @@ extern "C" {
 /*******************************************************************************
  * Clear memory on host
  ******************************************************************************/
-int coproc_clearMemoryOnHost(void *h_ptr,
+int coproc_clearMemoryOnHost(void * __restrict__ h_ptr,
 			     size_t size)
 {
   memset(h_ptr, 0, size);
@@ -170,7 +170,7 @@ extern "C" {
 /*******************************************************************************
  * Clear memory on device
  ******************************************************************************/
-int coproc_clearMemoryOnDevice(void *d_ptr,
+int coproc_clearMemoryOnDevice(void * __restrict__ d_ptr,
 			       size_t size)
 {
   if (cudaMemset(d_ptr, 0, size) != cudaSuccess) {
@@ -193,8 +193,8 @@ extern "C" {
 /*******************************************************************************
  * Copy host memory to host memory synchroneously
  ******************************************************************************/
-int coproc_memcpyHostToHost(void *h_ptrSrc, 
-			    void *h_ptrDest,
+int coproc_memcpyHostToHost(void * __restrict__ h_ptrSrc, 
+			    void * __restrict__ h_ptrDest,
 			    size_t size)
 {
   if (cudaMemcpy(h_ptrDest, h_ptrSrc,
@@ -219,8 +219,8 @@ extern "C" {
 /*******************************************************************************
  * Copy host memory to host memory asynchroneously
  ******************************************************************************/
-int coproc_memcpyHostToHostAsync(void *h_ptrSrc, 
-				 void *h_ptrDest,
+int coproc_memcpyHostToHostAsync(void * __restrict__ h_ptrSrc, 
+				 void * __restrict__ h_ptrDest,
 				 size_t size,
 				 cudaStream_t stream=0)
 {
@@ -244,8 +244,8 @@ extern "C" {
 /*******************************************************************************
  * Copy host memory to device memory synchroneously
  ******************************************************************************/
-int coproc_memcpyHostToDevice(void *h_ptrSrc, 
-			      void *d_ptrDest,
+int coproc_memcpyHostToDevice(void * __restrict__ h_ptrSrc, 
+			      void * __restrict__ d_ptrDest,
 			      size_t size)
 {
   if (cudaMemcpy(d_ptrDest, h_ptrSrc,
@@ -270,8 +270,8 @@ extern "C" {
 /*******************************************************************************
  * Copy host memory to device memory asynchroneously
  ******************************************************************************/
-int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
-				   void *d_ptrDest,
+int coproc_memcpyHostToDeviceAsync(void * __restrict__ h_ptrSrc, 
+				   void * __restrict__ d_ptrDest,
 				   size_t size,
 				   cudaStream_t stream=0)
 {
@@ -295,8 +295,8 @@ extern "C" {
 /*******************************************************************************
  * Copy device memory to host memory synchroneously
  ******************************************************************************/
-int coproc_memcpyDeviceToHost(void *d_ptrSrc,
-			      void *h_ptrDest,
+int coproc_memcpyDeviceToHost(void * __restrict__  d_ptrSrc,
+			      void * __restrict__ h_ptrDest,
 			      size_t size)
 {
   if (cudaMemcpy(h_ptrDest, d_ptrSrc,
@@ -321,8 +321,8 @@ extern "C" {
 /*******************************************************************************
  * Copy device memory to host memory asynchroneously
  ******************************************************************************/
-int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
-				   void *h_ptrDest,
+int coproc_memcpyDeviceToHostAsync(void * __restrict__ d_ptrSrc,
+				   void * __restrict__ h_ptrDest,
 				   size_t size,
 				   cudaStream_t stream=0)
 {
@@ -346,8 +346,8 @@ extern "C" {
 /*******************************************************************************
  * Copy device memory data to device memory synchroneously
  ******************************************************************************/
-int coproc_memcpyDeviceToDevice(void *d_ptrSrc,
-				void *d_ptrDest,
+int coproc_memcpyDeviceToDevice(void * __restrict__ d_ptrSrc,
+				void * __restrict__ d_ptrDest,
 				size_t size)
 {
   if (d_ptrDest != d_ptrSrc) {
@@ -375,8 +375,8 @@ extern "C" {
 /*******************************************************************************
  * Copy device memory data to device memory asynchroneously
  ******************************************************************************/
-int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
-				     void *d_ptrDest,
+int coproc_memcpyDeviceToDeviceAsync(void * __restrict__ d_ptrSrc,
+				     void * __restrict__ d_ptrDest,
 				     size_t size,
 				     cudaStream_t stream=0)
 {
