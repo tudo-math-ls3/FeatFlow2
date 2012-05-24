@@ -17162,7 +17162,7 @@ contains
 
 
   recursive subroutine storage_syncMemoryHostDevice (ihandle, csyncBlock,&
-      btransposeMemoryOrder, istream, rheap)
+      btransposeMemoryOrder, istream, nelemPack, rheap)
 
 !<description>
   ! This routine synchronises the handle of the heap between host
@@ -17187,6 +17187,10 @@ contains
   ! If istream is present and if asynchroneous transfer is supported
   ! then all memory transfers are carried out asynchroneously
   integer(I64), intent(in), optional :: istream
+
+  ! OPTIONAL: if btransposeMemoryOrder=.TRUE. the number elements that
+  ! should be packed into a single item to be treated as atomic unit.
+  integer, intent(in), optional :: nelemPack
 !</input>
 
 !<inputoutput>
@@ -17203,13 +17207,17 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode, p_rnodeTmp
   type(C_PTR) :: cdeviceMemPtr
-  integer :: ihandleTmp
+  integer :: ihandleTmp,npack
   logical :: btranspose
   integer(I64) :: istreamTmp
 
     ! Do we have to transpose the memory order
     btranspose = .false.
     if (present(btransposeMemoryOrder)) btranspose = btransposeMemoryOrder
+
+    ! Do we have to pack multiple items
+    npack = 1
+    if (present(nelemPack)) npack = max(1,nelemPack)
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -17299,7 +17307,7 @@ contains
           ! storage but can copy the original data to the device and
           ! perform the transpose operation directly on the device. So
           ! far, we have to work with a temporal array since the data
-          ! may be needed untranspoed in host memory.
+          ! may be needed untransposed in host memory.
 
           ! Create a temporal working array ...
           ihandleTmp = ST_NOHANDLE
@@ -17313,19 +17321,25 @@ contains
         select case(p_rnode%idataType)
         case (ST_SINGLE)
           if (btranspose) then
-            call transposeOutOfPlace_Single2D(p_rnode%p_Fsingle2D, p_rnodeTmp%p_Fsingle2D,&
-                size(p_rnodeTmp%p_Fsingle2D,1), size(p_rnodeTmp%p_Fsingle2D,2))
+            call transposeOutOfPlace_Single2D(p_rnode%p_Fsingle2D,&
+                p_rnodeTmp%p_Fsingle2D,&
+                size(p_rnodeTmp%p_Fsingle2D,1),&
+                size(p_rnodeTmp%p_Fsingle2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Fsingle2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
-
+          
         case (ST_DOUBLE)
           if (btranspose) then
-            call transposeOutOfPlace_Double2D(p_rnode%p_Ddouble2D, p_rnodeTmp%p_Ddouble2D,&
-                size(p_rnodeTmp%p_Ddouble2D,1), size(p_rnodeTmp%p_Ddouble2D,2))
+            call transposeOutOfPlace_Double2D(p_rnode%p_Ddouble2D,&
+                p_rnodeTmp%p_Ddouble2D,&
+                size(p_rnodeTmp%p_Ddouble2D,1),&
+                size(p_rnodeTmp%p_Ddouble2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17335,8 +17349,11 @@ contains
 
         case (ST_QUAD)
           if (btranspose) then
-            call transposeOutOfPlace_Quad2D(p_rnode%p_Qquad2D, p_rnodeTmp%p_Qquad2D,&
-                size(p_rnodeTmp%p_Qquad2D,1), size(p_rnodeTmp%p_Qquad2D,2))
+            call transposeOutOfPlace_Quad2D(p_rnode%p_Qquad2D,&
+                p_rnodeTmp%p_Qquad2D,&
+                size(p_rnodeTmp%p_Qquad2D,1),&
+                size(p_rnodeTmp%p_Qquad2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17346,10 +17363,13 @@ contains
 
         case (ST_INT)
           if (btranspose) then
-            call transposeOutOfPlace_Integer2D(p_rnode%p_Iinteger2D, p_rnodeTmp%p_Iinteger2D,&
-                size(p_rnodeTmp%p_Iinteger2D,1), size(p_rnodeTmp%p_Iinteger2D,2))
+            call transposeOutOfPlace_Integer2D(p_rnode%p_Iinteger2D,&
+                p_rnodeTmp%p_Iinteger2D,&
+                size(p_rnodeTmp%p_Iinteger2D,1),&
+                size(p_rnodeTmp%p_Iinteger2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)           
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iinteger2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
@@ -17357,8 +17377,11 @@ contains
 
         case (ST_INT8)
           if (btranspose) then
-            call transposeOutOfPlace_Int8_2D(p_rnode%p_Iint8_2D, p_rnodeTmp%p_Iint8_2D,&
-                size(p_rnodeTmp%p_Iint8_2D,1), size(p_rnodeTmp%p_Iint8_2D,2))
+            call transposeOutOfPlace_Int8_2D(p_rnode%p_Iint8_2D,&
+                p_rnodeTmp%p_Iint8_2D,&
+                size(p_rnodeTmp%p_Iint8_2D,1),&
+                size(p_rnodeTmp%p_Iint8_2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17368,8 +17391,11 @@ contains
 
         case (ST_INT16)
           if (btranspose) then
-            call transposeOutOfPlace_Int16_2D(p_rnode%p_Iint16_2D, p_rnodeTmp%p_Iint16_2D,&
-                size(p_rnodeTmp%p_Iint16_2D,1), size(p_rnodeTmp%p_Iint16_2D,2))
+            call transposeOutOfPlace_Int16_2D(p_rnode%p_Iint16_2D,&
+                p_rnodeTmp%p_Iint16_2D,&
+                size(p_rnodeTmp%p_Iint16_2D,1),&
+                size(p_rnodeTmp%p_Iint16_2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17379,8 +17405,11 @@ contains
 
         case (ST_INT32)
           if (btranspose) then
-            call transposeOutOfPlace_Int32_2D(p_rnode%p_Iint32_2D, p_rnodeTmp%p_Iint32_2D,&
-                size(p_rnodeTmp%p_Iint32_2D,1), size(p_rnodeTmp%p_Iint32_2D,2))
+            call transposeOutOfPlace_Int32_2D(p_rnode%p_Iint32_2D,&
+                p_rnodeTmp%p_Iint32_2D,&
+                size(p_rnodeTmp%p_Iint32_2D,1),&
+                size(p_rnodeTmp%p_Iint32_2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17390,8 +17419,11 @@ contains
 
         case (ST_INT64)
           if (btranspose) then
-            call transposeOutOfPlace_Int64_2D(p_rnode%p_Iint64_2D, p_rnodeTmp%p_Iint64_2D,&
-                size(p_rnodeTmp%p_Iint64_2D,1), size(p_rnodeTmp%p_Iint64_2D,2))
+            call transposeOutOfPlace_Int64_2D(p_rnode%p_Iint64_2D,&
+                p_rnodeTmp%p_Iint64_2D,&
+                size(p_rnodeTmp%p_Iint64_2D,1),&
+                size(p_rnodeTmp%p_Iint64_2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17401,8 +17433,11 @@ contains
 
         case (ST_LOGICAL)
           if (btranspose) then
-            call transposeOutOfPlace_Logical2D(p_rnode%p_Blogical2D, p_rnodeTmp%p_Blogical2D,&
-                size(p_rnodeTmp%p_Blogical2D,1), size(p_rnodeTmp%p_Blogical2D,2))
+            call transposeOutOfPlace_Logical2D(p_rnode%p_Blogical2D,&
+                p_rnodeTmp%p_Blogical2D,&
+                size(p_rnodeTmp%p_Blogical2D,1),&
+                size(p_rnodeTmp%p_Blogical2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17412,8 +17447,11 @@ contains
 
         case (ST_CHAR)
           if (btranspose) then
-            call transposeOutOfPlace_Char2D(p_rnode%p_SChar2D, p_rnodeTmp%p_SChar2D,&
-                size(p_rnodeTmp%p_SChar2D,1), size(p_rnodeTmp%p_SChar2D,2))
+            call transposeOutOfPlace_Char2D(p_rnode%p_SChar2D,&
+                p_rnodeTmp%p_SChar2D,&
+                size(p_rnodeTmp%p_SChar2D,1),&
+                size(p_rnodeTmp%p_SChar2D,2),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar2D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17438,7 +17476,7 @@ contains
           ! storage but can copy the original data to the device and
           ! perform the transpose operation directly on the device. So
           ! far, we habe to work with a temporal array since the data
-          ! may be needed untranspoed in host memory.
+          ! may be needed untransposed in host memory.
 
           ! Create a temporal working array ...
           ihandleTmp = ST_NOHANDLE
@@ -17452,9 +17490,12 @@ contains
         select case(p_rnode%idataType)
         case (ST_SINGLE)
           if (btranspose) then
-            call transposeOutOfPlace_Single3D(p_rnode%p_Fsingle3D, p_rnodeTmp%p_Fsingle3D,&
-                size(p_rnodeTmp%p_Fsingle3D,1), size(p_rnodeTmp%p_Fsingle3D,2),&
-                size(p_rnodeTmp%p_Fsingle3D,3))
+            call transposeOutOfPlace_Single3D(p_rnode%p_Fsingle3D,&
+                p_rnodeTmp%p_Fsingle3D,&
+                size(p_rnodeTmp%p_Fsingle3D,1),&
+                size(p_rnodeTmp%p_Fsingle3D,2),&
+                size(p_rnodeTmp%p_Fsingle3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17464,9 +17505,12 @@ contains
 
         case (ST_DOUBLE)
           if (btranspose) then
-            call transposeOutOfPlace_Double3D(p_rnode%p_Ddouble3D, p_rnodeTmp%p_Ddouble3D,&
-                size(p_rnodeTmp%p_Ddouble3D,1), size(p_rnodeTmp%p_Ddouble3D,2),&
-                size(p_rnodeTmp%p_Ddouble3D,3))
+            call transposeOutOfPlace_Double3D(p_rnode%p_Ddouble3D,&
+                p_rnodeTmp%p_Ddouble3D,&
+                size(p_rnodeTmp%p_Ddouble3D,1),&
+                size(p_rnodeTmp%p_Ddouble3D,2),&
+                size(p_rnodeTmp%p_Ddouble3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17476,9 +17520,12 @@ contains
 
         case (ST_QUAD)
           if (btranspose) then
-            call transposeOutOfPlace_Quad3D(p_rnode%p_Qquad3D, p_rnodeTmp%p_Qquad3D,&
-                size(p_rnodeTmp%p_Qquad3D,1), size(p_rnodeTmp%p_Qquad3D,2),&
-                size(p_rnodeTmp%p_Qquad3D,3))
+            call transposeOutOfPlace_Quad3D(p_rnode%p_Qquad3D,&
+                p_rnodeTmp%p_Qquad3D,&
+                size(p_rnodeTmp%p_Qquad3D,1),&
+                size(p_rnodeTmp%p_Qquad3D,2),&
+                size(p_rnodeTmp%p_Qquad3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17488,9 +17535,12 @@ contains
 
         case (ST_INT)
           if (btranspose) then
-            call transposeOutOfPlace_Integer3D(p_rnode%p_Iinteger3D, p_rnodeTmp%p_Iinteger3D,&
-                size(p_rnodeTmp%p_Iinteger3D,1), size(p_rnodeTmp%p_Iinteger3D,2),&
-                size(p_rnodeTmp%p_Iinteger3D,3))
+            call transposeOutOfPlace_Integer3D(p_rnode%p_Iinteger3D,&
+                p_rnodeTmp%p_Iinteger3D,&
+                size(p_rnodeTmp%p_Iinteger3D,1),&
+                size(p_rnodeTmp%p_Iinteger3D,2),&
+                size(p_rnodeTmp%p_Iinteger3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17500,9 +17550,12 @@ contains
 
         case (ST_INT8)
           if (btranspose) then
-            call transposeOutOfPlace_Int8_3D(p_rnode%p_Iint8_3D, p_rnodeTmp%p_Iint8_3D,&
-                size(p_rnodeTmp%p_Iint8_3D,1), size(p_rnodeTmp%p_Iint8_3D,2),&
-                size(p_rnodeTmp%p_Iint8_3D,3))
+            call transposeOutOfPlace_Int8_3D(p_rnode%p_Iint8_3D,&
+                p_rnodeTmp%p_Iint8_3D,&
+                size(p_rnodeTmp%p_Iint8_3D,1),&
+                size(p_rnodeTmp%p_Iint8_3D,2),&
+                size(p_rnodeTmp%p_Iint8_3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17512,9 +17565,12 @@ contains
 
         case (ST_INT16)
           if (btranspose) then
-            call transposeOutOfPlace_Int16_3D(p_rnode%p_Iint16_3D, p_rnodeTmp%p_Iint16_3D,&
-                size(p_rnodeTmp%p_Iint16_3D,1), size(p_rnodeTmp%p_Iint16_3D,2),&
-                size(p_rnodeTmp%p_Iint16_3D,3))
+            call transposeOutOfPlace_Int16_3D(p_rnode%p_Iint16_3D,&
+                p_rnodeTmp%p_Iint16_3D,&
+                size(p_rnodeTmp%p_Iint16_3D,1),&
+                size(p_rnodeTmp%p_Iint16_3D,2),&
+                size(p_rnodeTmp%p_Iint16_3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17524,9 +17580,12 @@ contains
 
         case (ST_INT32)
           if (btranspose) then
-            call transposeOutOfPlace_Int32_3D(p_rnode%p_Iint32_3D, p_rnodeTmp%p_Iint32_3D,&
-                size(p_rnodeTmp%p_Iint32_3D,1), size(p_rnodeTmp%p_Iint32_3D,2),&
-                size(p_rnodeTmp%p_Iint32_3D,3))
+            call transposeOutOfPlace_Int32_3D(p_rnode%p_Iint32_3D,&
+                p_rnodeTmp%p_Iint32_3D,&
+                size(p_rnodeTmp%p_Iint32_3D,1),&
+                size(p_rnodeTmp%p_Iint32_3D,2),&
+                size(p_rnodeTmp%p_Iint32_3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17536,9 +17595,12 @@ contains
 
         case (ST_INT64)
           if (btranspose) then
-            call transposeOutOfPlace_Int64_3D(p_rnode%p_Iint64_3D, p_rnodeTmp%p_Iint64_3D,&
-                size(p_rnodeTmp%p_Iint64_3D,1), size(p_rnodeTmp%p_Iint64_3D,2),&
-                size(p_rnodeTmp%p_Iint64_3D,3))
+            call transposeOutOfPlace_Int64_3D(p_rnode%p_Iint64_3D,&
+                p_rnodeTmp%p_Iint64_3D,&
+                size(p_rnodeTmp%p_Iint64_3D,1),&
+                size(p_rnodeTmp%p_Iint64_3D,2),&
+                size(p_rnodeTmp%p_Iint64_3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17548,9 +17610,12 @@ contains
 
         case (ST_LOGICAL)
           if (btranspose) then
-            call transposeOutOfPlace_Logical3D(p_rnode%p_Blogical3D, p_rnodeTmp%p_Blogical3D,&
-                size(p_rnodeTmp%p_Blogical3D,1), size(p_rnodeTmp%p_Blogical3D,2),&
-                size(p_rnodeTmp%p_Blogical3D,3))
+            call transposeOutOfPlace_Logical3D(p_rnode%p_Blogical3D,&
+                p_rnodeTmp%p_Blogical3D,&
+                size(p_rnodeTmp%p_Blogical3D,1),&
+                size(p_rnodeTmp%p_Blogical3D,2),&
+                size(p_rnodeTmp%p_Blogical3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17560,9 +17625,12 @@ contains
 
         case (ST_CHAR)
           if (btranspose) then
-            call transposeOutOfPlace_Char3D(p_rnode%p_SChar3D, p_rnodeTmp%p_SChar3D,&
-                size(p_rnodeTmp%p_SChar3D,1), size(p_rnodeTmp%p_SChar3D,2),&
-                size(p_rnodeTmp%p_SChar3D,3))
+            call transposeOutOfPlace_Char3D(p_rnode%p_SChar3D,&
+                p_rnodeTmp%p_SChar3D,&
+                size(p_rnodeTmp%p_SChar3D,1),&
+                size(p_rnodeTmp%p_SChar3D,2),&
+                size(p_rnodeTmp%p_SChar3D,3),&
+                p_rnode%imemBytes, npack)
             call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar3D,&
                 p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
@@ -17658,61 +17726,81 @@ contains
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Fsingle2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Single2D(p_rnode%p_Fsingle2D,&
-              size(p_rnode%p_Fsingle2D,2), size(p_rnode%p_Fsingle2D,1))
-
+              size(p_rnode%p_Fsingle2D,2),&
+              size(p_rnode%p_Fsingle2D,1),&
+              p_rnode%imemBytes, npack)
+          
         case (ST_DOUBLE)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Ddouble2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Double2D(p_rnode%p_Ddouble2D,&
-              size(p_rnode%p_Ddouble2D,2), size(p_rnode%p_Ddouble2D,1))
+              size(p_rnode%p_Ddouble2D,2),&
+              size(p_rnode%p_Ddouble2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_QUAD)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Qquad2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Quad2D(p_rnode%p_Qquad2D,&
-              size(p_rnode%p_Qquad2D,2), size(p_rnode%p_Qquad2D,1))
+              size(p_rnode%p_Qquad2D,2),&
+              size(p_rnode%p_Qquad2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iinteger2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Integer2D(p_rnode%p_Iinteger2D,&
-              size(p_rnode%p_Iinteger2D,2), size(p_rnode%p_Iinteger2D,1))
+              size(p_rnode%p_Iinteger2D,2),&
+              size(p_rnode%p_Iinteger2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT8)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint8_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int8_2D(p_rnode%p_Iint8_2D,&
-              size(p_rnode%p_Iint8_2D,2), size(p_rnode%p_Iint8_2D,1))
+              size(p_rnode%p_Iint8_2D,2),&
+              size(p_rnode%p_Iint8_2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT16)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint16_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int16_2D(p_rnode%p_Iint16_2D,&
-              size(p_rnode%p_Iint16_2D,2), size(p_rnode%p_Iint16_2D,1))
+              size(p_rnode%p_Iint16_2D,2),&
+              size(p_rnode%p_Iint16_2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT32)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint32_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int32_2D(p_rnode%p_Iint32_2D,&
-              size(p_rnode%p_Iint32_2D,2), size(p_rnode%p_Iint32_2D,1))
+              size(p_rnode%p_Iint32_2D,2),&
+              size(p_rnode%p_Iint32_2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT64)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint64_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int64_2D(p_rnode%p_Iint64_2D,&
-              size(p_rnode%p_Iint64_2D,2), size(p_rnode%p_Iint64_2D,1))
+              size(p_rnode%p_Iint64_2D,2),&
+              size(p_rnode%p_Iint64_2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_LOGICAL)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Blogical2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Logical2D(p_rnode%p_Blogical2D,&
-              size(p_rnode%p_Blogical2D,2), size(p_rnode%p_Blogical2D,1))
+              size(p_rnode%p_Blogical2D,2),&
+              size(p_rnode%p_Blogical2D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_CHAR)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Schar2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Char2D(p_rnode%p_Schar2D,&
-              size(p_rnode%p_Schar2D,2), size(p_rnode%p_Schar2D,1))
+              size(p_rnode%p_Schar2D,2),&
+              size(p_rnode%p_Schar2D,1),&
+              p_rnode%imemBytes, npack)
 
         case default
           call output_line ('Unsupported data typee!', &
@@ -17727,71 +17815,91 @@ contains
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Fsingle3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Single3D(p_rnode%p_Fsingle3D,&
-              size(p_rnode%p_Fsingle3D,3), size(p_rnode%p_Fsingle3D,2),&
-              size(p_rnode%p_Fsingle3D,1))
+              size(p_rnode%p_Fsingle3D,3),&
+              size(p_rnode%p_Fsingle3D,2),&
+              size(p_rnode%p_Fsingle3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_DOUBLE)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Ddouble3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Double3D(p_rnode%p_Ddouble3D,&
-              size(p_rnode%p_Ddouble3D,3), size(p_rnode%p_Ddouble3D,2),&
-              size(p_rnode%p_Ddouble3D,1))
+              size(p_rnode%p_Ddouble3D,3),&
+              size(p_rnode%p_Ddouble3D,2),&
+              size(p_rnode%p_Ddouble3D,1),&
+                p_rnode%imemBytes, npack)
 
         case (ST_QUAD)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Qquad3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Quad3D(p_rnode%p_Qquad3D,&
-              size(p_rnode%p_Qquad3D,3), size(p_rnode%p_Qquad3D,2),&
-              size(p_rnode%p_Qquad3D,1))
+              size(p_rnode%p_Qquad3D,3),&
+              size(p_rnode%p_Qquad3D,2),&
+              size(p_rnode%p_Qquad3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iinteger3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Integer3D(p_rnode%p_Iinteger3D,&
-              size(p_rnode%p_Iinteger3D,3), size(p_rnode%p_Iinteger3D,2),&
-              size(p_rnode%p_Iinteger3D,1))
+              size(p_rnode%p_Iinteger3D,3),&
+              size(p_rnode%p_Iinteger3D,2),&
+              size(p_rnode%p_Iinteger3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT8)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint8_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int8_3D(p_rnode%p_Iint8_3D,&
-              size(p_rnode%p_Iint8_3D,3), size(p_rnode%p_Iint8_3D,2),&
-              size(p_rnode%p_Iint8_3D,1))
+              size(p_rnode%p_Iint8_3D,3),&
+              size(p_rnode%p_Iint8_3D,2),&
+              size(p_rnode%p_Iint8_3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT16)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint16_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int16_3D(p_rnode%p_Iint16_3D,&
-              size(p_rnode%p_Iint16_3D,3), size(p_rnode%p_Iint16_3D,2),&
-              size(p_rnode%p_Iint16_3D,1))
+              size(p_rnode%p_Iint16_3D,3),&
+              size(p_rnode%p_Iint16_3D,2),&
+              size(p_rnode%p_Iint16_3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT32)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint32_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int32_3D(p_rnode%p_Iint32_3D,&
-              size(p_rnode%p_Iint32_3D,3), size(p_rnode%p_Iint32_3D,2),&
-              size(p_rnode%p_Iint32_3D,1))
+              size(p_rnode%p_Iint32_3D,3),&
+              size(p_rnode%p_Iint32_3D,2),&
+              size(p_rnode%p_Iint32_3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_INT64)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint64_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int64_3D(p_rnode%p_Iint64_3D,&
-              size(p_rnode%p_Iint64_3D,3), size(p_rnode%p_Iint64_3D,2),&
-              size(p_rnode%p_Iint64_3D,1))
+              size(p_rnode%p_Iint64_3D,3),&
+              size(p_rnode%p_Iint64_3D,2),&
+              size(p_rnode%p_Iint64_3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_LOGICAL)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Blogical3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Logical3D(p_rnode%p_Blogical3D,&
-              size(p_rnode%p_Blogical3D,3), size(p_rnode%p_Blogical3D,2),&
-              size(p_rnode%p_Blogical3D,1))
+              size(p_rnode%p_Blogical3D,3),&
+              size(p_rnode%p_Blogical3D,2),&
+              size(p_rnode%p_Blogical3D,1),&
+              p_rnode%imemBytes, npack)
 
         case (ST_CHAR)
           call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Schar3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Char3D(p_rnode%p_Schar3D,&
-              size(p_rnode%p_Schar3D,3), size(p_rnode%p_Schar3D,2),&
-              size(p_rnode%p_Schar3D,1))
+              size(p_rnode%p_Schar3D,3),&
+              size(p_rnode%p_Schar3D,2),&
+              size(p_rnode%p_Schar3D,1),&
+              p_rnode%imemBytes, npack)
 
         case default
           call output_line ('Unsupported data typee!', &
@@ -17815,7 +17923,7 @@ contains
       if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
         ! Device memory has not been allocated so this is a simple copy
         call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
-            btranspose, istream, p_rheap)
+            btranspose, istream, nelemPack, p_rheap)
       else
         ! This is tricky. We need to transfer the data from host memory
         ! into device memory and accumulate it into device memory. This
@@ -17831,7 +17939,7 @@ contains
         ! into temporal memory block on device. Note that the memory
         ! address has been modified by hand, so that data is preserved.
         call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
-            btranspose, istream, p_rheap)
+            btranspose, istream, nelemPack, p_rheap)
 
         ! We are back from recursion and both memory blocks are
         ! available in device memory. So we can add both memory blocks
@@ -18051,15 +18159,16 @@ contains
     ! In-place transpose the memory order of a single 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Single2D(Fsingle2D,n1,n2)
+    subroutine transposeInPlace_Single2D(Fsingle2D,n1,n2,membytes,npack)
       real(SP), dimension(*), intent(inout) :: Fsingle2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       real(SP), dimension(:), allocatable :: Fsingle2D_t
 
       allocate(Fsingle2D_t(n1*n2))
       Fsingle2D_t(1:n1*n2) = Fsingle2D(1:n1*n2)
-      call transposeOutOfPlace_Single2D(Fsingle2D_t,Fsingle2D,n1,n2)
+      call transposeOutOfPlace_Single2D(Fsingle2D_t,Fsingle2D,n1,n2,membytes,npack)
       deallocate(Fsingle2D_t)
 
     end subroutine transposeInPlace_Single2D
@@ -18067,15 +18176,16 @@ contains
     ! In-place transpose the memory order of a single 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Single3D(Fsingle3D,n1,n2,n3)
+    subroutine transposeInPlace_Single3D(Fsingle3D,n1,n2,n3,membytes,npack)
       real(SP), dimension(*), intent(inout) :: Fsingle3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       real(SP), dimension(:), allocatable :: Fsingle3D_t
 
       allocate(Fsingle3D_t(n1*n2*n3))
       Fsingle3D_t(1:n1*n2*n3) = Fsingle3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Single3D(Fsingle3D_t,Fsingle3D,n1,n2,n3)
+      call transposeOutOfPlace_Single3D(Fsingle3D_t,Fsingle3D,n1,n2,n3,membytes,npack)
       deallocate(Fsingle3D_t)
 
     end subroutine transposeInPlace_Single3D
@@ -18083,51 +18193,66 @@ contains
     ! Out-of-place transpose the memory order of a single 2D array
     ! stored in host memory into a single 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Single2D(Fsingle2D,Fsingle2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Single2D(Fsingle2D,Fsingle2D_t,n1,n2,membytes,npack)
       real(SP), intent(in), dimension(*) :: Fsingle2D
       real(SP), intent(out), dimension(*) :: Fsingle2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Fsingle2D_t(n2*(i-1)+j) = Fsingle2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Fsingle2D, Fsingle2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Fsingle2D_t(n2*(i-1)+j) = Fsingle2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Single2D
 
     ! Out-of-place transpose the memory order of a single 3D array
     ! stored in host memory into a single 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Single3D(Fsingle3D,Fsingle3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Single3D(Fsingle3D,Fsingle3D_t,n1,n2,n3,membytes,npack)
       real(SP), intent(in), dimension(*) :: Fsingle3D
       real(SP), intent(out), dimension(*) :: Fsingle3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes      
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Fsingle3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Fsingle3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Fsingle3D, Fsingle3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Fsingle3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Fsingle3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Single3D
 
     ! In-place transpose the memory order of a double 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Double2D(Ddouble2D,n1,n2)
+    subroutine transposeInPlace_Double2D(Ddouble2D,n1,n2,membytes,npack)
       real(DP), dimension(*), intent(inout) :: Ddouble2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       real(DP), dimension(:), allocatable :: Ddouble2D_t
 
       allocate(Ddouble2D_t(n1*n2))
       Ddouble2D_t(1:n1*n2) = Ddouble2D(1:n1*n2)
-      call transposeOutOfPlace_Double2D(Ddouble2D_t,Ddouble2D,n1,n2)
+      call transposeOutOfPlace_Double2D(Ddouble2D_t,Ddouble2D,n1,n2,membytes,npack)
       deallocate(Ddouble2D_t)
 
     end subroutine transposeInPlace_Double2D
@@ -18135,15 +18260,16 @@ contains
     ! In-place transpose the memory order of a double 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Double3D(Ddouble3D,n1,n2,n3)
+    subroutine transposeInPlace_Double3D(Ddouble3D,n1,n2,n3,membytes,npack)
       real(DP), dimension(*), intent(inout) :: Ddouble3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       real(DP), dimension(:), allocatable :: Ddouble3D_t
 
       allocate(Ddouble3D_t(n1*n2*n3))
       Ddouble3D_t(1:n1*n2*n3) = Ddouble3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Double3D(Ddouble3D_t,Ddouble3D,n1,n2,n3)
+      call transposeOutOfPlace_Double3D(Ddouble3D_t,Ddouble3D,n1,n2,n3,membytes,npack)
       deallocate(Ddouble3D_t)
 
     end subroutine transposeInPlace_Double3D
@@ -18151,51 +18277,66 @@ contains
     ! Out-of-place transpose the memory order of a double 2D array
     ! stored in host memory into a double 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Double2D(Ddouble2D,Ddouble2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Double2D(Ddouble2D,Ddouble2D_t,n1,n2,membytes,npack)
       real(DP), intent(in), dimension(*) :: Ddouble2D
       real(DP), intent(out), dimension(*) :: Ddouble2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Ddouble2D_t(n2*(i-1)+j) = Ddouble2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Ddouble2D, Ddouble2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Ddouble2D_t(n2*(i-1)+j) = Ddouble2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Double2D
 
     ! Out-of-place transpose the memory order of a double 3D array
     ! stored in host memory into a double 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Double3D(Ddouble3D,Ddouble3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Double3D(Ddouble3D,Ddouble3D_t,n1,n2,n3,membytes,npack)
       real(DP), intent(in), dimension(*) :: Ddouble3D
       real(DP), intent(out), dimension(*) :: Ddouble3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Ddouble3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Ddouble3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Ddouble3D, Ddouble3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Ddouble3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Ddouble3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Double3D
 
     ! In-place transpose the memory order of a quad 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Quad2D(Qquad2D,n1,n2)
+    subroutine transposeInPlace_Quad2D(Qquad2D,n1,n2,membytes,npack)
       real(QP), dimension(*), intent(inout) :: Qquad2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       real(QP), dimension(:), allocatable :: Qquad2D_t
 
       allocate(Qquad2D_t(n1*n2))
       Qquad2D_t(1:n1*n2) = Qquad2D(1:n1*n2)
-      call transposeOutOfPlace_Quad2D(Qquad2D_t,Qquad2D,n1,n2)
+      call transposeOutOfPlace_Quad2D(Qquad2D_t,Qquad2D,n1,n2,membytes,npack)
       deallocate(Qquad2D_t)
 
     end subroutine transposeInPlace_Quad2D
@@ -18203,15 +18344,16 @@ contains
     ! In-place transpose the memory order of a quad 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Quad3D(Qquad3D,n1,n2,n3)
+    subroutine transposeInPlace_Quad3D(Qquad3D,n1,n2,n3,membytes,npack)
       real(QP), dimension(*), intent(inout) :: Qquad3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       real(QP), dimension(:), allocatable :: Qquad3D_t
 
       allocate(Qquad3D_t(n1*n2*n3))
       Qquad3D_t(1:n1*n2*n3) = Qquad3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Quad3D(Qquad3D_t,Qquad3D,n1,n2,n3)
+      call transposeOutOfPlace_Quad3D(Qquad3D_t,Qquad3D,n1,n2,n3,membytes,npack)
       deallocate(Qquad3D_t)
 
     end subroutine transposeInPlace_Quad3D
@@ -18219,51 +18361,66 @@ contains
     ! Out-of-place transpose the memory order of a quad 2D array
     ! stored in host memory into a quad 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Quad2D(Qquad2D,Qquad2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Quad2D(Qquad2D,Qquad2D_t,n1,n2,membytes,npack)
       real(QP), intent(in), dimension(*) :: Qquad2D
       real(QP), intent(out), dimension(*) :: Qquad2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Qquad2D_t(n2*(i-1)+j) = Qquad2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Qquad2D, Qquad2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Qquad2D_t(n2*(i-1)+j) = Qquad2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Quad2D
 
     ! Out-of-place transpose the memory order of a quad 3D array
     ! stored in host memory into a quad 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Quad3D(Qquad3D,Qquad3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Quad3D(Qquad3D,Qquad3D_t,n1,n2,n3,membytes,npack)
       real(QP), intent(in), dimension(*) :: Qquad3D
       real(QP), intent(out), dimension(*) :: Qquad3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Qquad3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Qquad3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Qquad3D, Qquad3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Qquad3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Qquad3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Quad3D
 
     ! In-place transpose the memory order of an integer 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Integer2D(Iinteger2D,n1,n2)
+    subroutine transposeInPlace_Integer2D(Iinteger2D,n1,n2,membytes,npack)
       integer, dimension(*), intent(inout) :: Iinteger2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       integer, dimension(:), allocatable :: Iinteger2D_t
 
       allocate(Iinteger2D_t(n1*n2))
       Iinteger2D_t(1:n1*n2) = Iinteger2D(1:n1*n2)
-      call transposeOutOfPlace_Integer2D(Iinteger2D_t,Iinteger2D,n1,n2)
+      call transposeOutOfPlace_Integer2D(Iinteger2D_t,Iinteger2D,n1,n2,membytes,npack)
       deallocate(Iinteger2D_t)
 
     end subroutine transposeInPlace_Integer2D
@@ -18271,15 +18428,16 @@ contains
     ! In-place transpose the memory order of a integer 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Integer3D(Iinteger3D,n1,n2,n3)
+    subroutine transposeInPlace_Integer3D(Iinteger3D,n1,n2,n3,membytes,npack)
       integer, dimension(*), intent(inout) :: Iinteger3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       integer, dimension(:), allocatable :: Iinteger3D_t
 
       allocate(Iinteger3D_t(n1*n2*n3))
       Iinteger3D_t(1:n1*n2*n3) = Iinteger3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Integer3D(Iinteger3D_t,Iinteger3D,n1,n2,n3)
+      call transposeOutOfPlace_Integer3D(Iinteger3D_t,Iinteger3D,n1,n2,n3,membytes,npack)
       deallocate(Iinteger3D_t)
 
     end subroutine transposeInPlace_Integer3D
@@ -18287,51 +18445,66 @@ contains
     ! Out-of-place transpose the memory order of a integer 2D array
     ! stored in host memory into a integer 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Integer2D(Iinteger2D,Iinteger2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Integer2D(Iinteger2D,Iinteger2D_t,n1,n2,membytes,npack)
       integer, intent(in), dimension(*) :: Iinteger2D
       integer, intent(out), dimension(*) :: Iinteger2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Iinteger2D_t(n2*(i-1)+j) = Iinteger2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Iinteger2D, Iinteger2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Iinteger2D_t(n2*(i-1)+j) = Iinteger2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Integer2D
 
     ! Out-of-place transpose the memory order of a integer 3D array
     ! stored in host memory into a integer 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Integer3D(Iinteger3D,Iinteger3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Integer3D(Iinteger3D,Iinteger3D_t,n1,n2,n3,membytes,npack)
       integer, intent(in), dimension(*) :: Iinteger3D
       integer, intent(out), dimension(*) :: Iinteger3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Iinteger3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iinteger3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Iinteger3D, Iinteger3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Iinteger3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iinteger3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Integer3D
 
     ! In-place transpose the memory order of an int8 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int8_2D(Iint8_2D,n1,n2)
+    subroutine transposeInPlace_Int8_2D(Iint8_2D,n1,n2,membytes,npack)
       integer(I8), dimension(*), intent(inout) :: Iint8_2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I8), dimension(:), allocatable :: Iint8_2D_t
 
       allocate(Iint8_2D_t(n1*n2))
       Iint8_2D_t(1:n1*n2) = Iint8_2D(1:n1*n2)
-      call transposeOutOfPlace_Int8_2D(Iint8_2D_t,Iint8_2D,n1,n2)
+      call transposeOutOfPlace_Int8_2D(Iint8_2D_t,Iint8_2D,n1,n2,membytes,npack)
       deallocate(Iint8_2D_t)
 
     end subroutine transposeInPlace_Int8_2D
@@ -18339,15 +18512,16 @@ contains
     ! In-place transpose the memory order of a int8 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int8_3D(Iint8_3D,n1,n2,n3)
+    subroutine transposeInPlace_Int8_3D(Iint8_3D,n1,n2,n3,membytes,npack)
       integer(I8), dimension(*), intent(inout) :: Iint8_3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I8), dimension(:), allocatable :: Iint8_3D_t
 
       allocate(Iint8_3D_t(n1*n2*n3))
       Iint8_3D_t(1:n1*n2*n3) = Iint8_3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Int8_3D(Iint8_3D_t,Iint8_3D,n1,n2,n3)
+      call transposeOutOfPlace_Int8_3D(Iint8_3D_t,Iint8_3D,n1,n2,n3,membytes,npack)
       deallocate(Iint8_3D_t)
 
     end subroutine transposeInPlace_Int8_3D
@@ -18355,51 +18529,66 @@ contains
     ! Out-of-place transpose the memory order of a int8 2D array
     ! stored in host memory into a int8 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int8_2D(Iint8_2D,Iint8_2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Int8_2D(Iint8_2D,Iint8_2D_t,n1,n2,membytes,npack)
       integer(I8), intent(in), dimension(*) :: Iint8_2D
       integer(I8), intent(out), dimension(*) :: Iint8_2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Iint8_2D_t(n2*(i-1)+j) = Iint8_2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Iint8_2D, Iint8_2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Iint8_2D_t(n2*(i-1)+j) = Iint8_2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int8_2D
 
     ! Out-of-place transpose the memory order of a int8 3D array
     ! stored in host memory into a int8 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int8_3D(Iint8_3D,Iint8_3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Int8_3D(Iint8_3D,Iint8_3D_t,n1,n2,n3,membytes,npack)
       integer(I8), intent(in), dimension(*) :: Iint8_3D
       integer(I8), intent(out), dimension(*) :: Iint8_3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Iint8_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint8_3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Iint8_3D, Iint8_3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Iint8_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint8_3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int8_3D
 
     ! In-place transpose the memory order of an int16 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int16_2D(Iint16_2D,n1,n2)
+    subroutine transposeInPlace_Int16_2D(Iint16_2D,n1,n2,membytes,npack)
       integer(I16), dimension(*), intent(inout) :: Iint16_2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I16), dimension(:), allocatable :: Iint16_2D_t
 
       allocate(Iint16_2D_t(n1*n2))
       Iint16_2D_t(1:n1*n2) = Iint16_2D(1:n1*n2)
-      call transposeOutOfPlace_Int16_2D(Iint16_2D_t,Iint16_2D,n1,n2)
+      call transposeOutOfPlace_Int16_2D(Iint16_2D_t,Iint16_2D,n1,n2,membytes,npack)
       deallocate(Iint16_2D_t)
 
     end subroutine transposeInPlace_Int16_2D
@@ -18407,15 +18596,16 @@ contains
     ! In-place transpose the memory order of a int16 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int16_3D(Iint16_3D,n1,n2,n3)
+    subroutine transposeInPlace_Int16_3D(Iint16_3D,n1,n2,n3,membytes,npack)
       integer(I16), dimension(*), intent(inout) :: Iint16_3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I16), dimension(:), allocatable :: Iint16_3D_t
 
       allocate(Iint16_3D_t(n1*n2*n3))
       Iint16_3D_t(1:n1*n2*n3) = Iint16_3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Int16_3D(Iint16_3D_t,Iint16_3D,n1,n2,n3)
+      call transposeOutOfPlace_Int16_3D(Iint16_3D_t,Iint16_3D,n1,n2,n3,membytes,npack)
       deallocate(Iint16_3D_t)
 
     end subroutine transposeInPlace_Int16_3D
@@ -18423,51 +18613,66 @@ contains
     ! Out-of-place transpose the memory order of a int16 2D array
     ! stored in host memory into a int16 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int16_2D(Iint16_2D,Iint16_2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Int16_2D(Iint16_2D,Iint16_2D_t,n1,n2,membytes,npack)
       integer(I16), intent(in), dimension(*) :: Iint16_2D
       integer(I16), intent(out), dimension(*) :: Iint16_2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Iint16_2D_t(n2*(i-1)+j) = Iint16_2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Iint16_2D, Iint16_2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Iint16_2D_t(n2*(i-1)+j) = Iint16_2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int16_2D
 
     ! Out-of-place transpose the memory order of a int16 3D array
     ! stored in host memory into a int16 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int16_3D(Iint16_3D,Iint16_3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Int16_3D(Iint16_3D,Iint16_3D_t,n1,n2,n3,membytes,npack)
       integer(I16), intent(in), dimension(*) :: Iint16_3D
       integer(I16), intent(out), dimension(*) :: Iint16_3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Iint16_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint16_3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Iint16_3D, Iint16_3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Iint16_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint16_3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int16_3D
 
     ! In-place transpose the memory order of an int32 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int32_2D(Iint32_2D,n1,n2)
+    subroutine transposeInPlace_Int32_2D(Iint32_2D,n1,n2,membytes,npack)
       integer(I32), dimension(*), intent(inout) :: Iint32_2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I32), dimension(:), allocatable :: Iint32_2D_t
 
       allocate(Iint32_2D_t(n1*n2))
       Iint32_2D_t(1:n1*n2) = Iint32_2D(1:n1*n2)
-      call transposeOutOfPlace_Int32_2D(Iint32_2D_t,Iint32_2D,n1,n2)
+      call transposeOutOfPlace_Int32_2D(Iint32_2D_t,Iint32_2D,n1,n2,membytes,npack)
       deallocate(Iint32_2D_t)
 
     end subroutine transposeInPlace_Int32_2D
@@ -18475,15 +18680,16 @@ contains
     ! In-place transpose the memory order of a int32 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int32_3D(Iint32_3D,n1,n2,n3)
+    subroutine transposeInPlace_Int32_3D(Iint32_3D,n1,n2,n3,membytes,npack)
       integer(I32), dimension(*), intent(inout) :: Iint32_3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I32), dimension(:), allocatable :: Iint32_3D_t
 
       allocate(Iint32_3D_t(n1*n2*n3))
       Iint32_3D_t(1:n1*n2*n3) = Iint32_3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Int32_3D(Iint32_3D_t,Iint32_3D,n1,n2,n3)
+      call transposeOutOfPlace_Int32_3D(Iint32_3D_t,Iint32_3D,n1,n2,n3,membytes,npack)
       deallocate(Iint32_3D_t)
 
     end subroutine transposeInPlace_Int32_3D
@@ -18491,51 +18697,66 @@ contains
     ! Out-of-place transpose the memory order of a int32 2D array
     ! stored in host memory into a int32 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int32_2D(Iint32_2D,Iint32_2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Int32_2D(Iint32_2D,Iint32_2D_t,n1,n2,membytes,npack)
       integer(I32), intent(in), dimension(*) :: Iint32_2D
       integer(I32), intent(out), dimension(*) :: Iint32_2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Iint32_2D_t(n2*(i-1)+j) = Iint32_2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Iint32_2D, Iint32_2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Iint32_2D_t(n2*(i-1)+j) = Iint32_2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int32_2D
 
     ! Out-of-place transpose the memory order of a int32 3D array
     ! stored in host memory into a int32 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int32_3D(Iint32_3D,Iint32_3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Int32_3D(Iint32_3D,Iint32_3D_t,n1,n2,n3,membytes,npack)
       integer(I32), intent(in), dimension(*) :: Iint32_3D
       integer(I32), intent(out), dimension(*) :: Iint32_3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Iint32_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint32_3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Iint32_3D, Iint32_3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Iint32_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint32_3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int32_3D
 
     ! In-place transpose the memory order of an int64 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int64_2D(Iint64_2D,n1,n2)
+    subroutine transposeInPlace_Int64_2D(Iint64_2D,n1,n2,membytes,npack)
       integer(I64), dimension(*), intent(inout) :: Iint64_2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I64), dimension(:), allocatable :: Iint64_2D_t
 
       allocate(Iint64_2D_t(n1*n2))
       Iint64_2D_t(1:n1*n2) = Iint64_2D(1:n1*n2)
-      call transposeOutOfPlace_Int64_2D(Iint64_2D_t,Iint64_2D,n1,n2)
+      call transposeOutOfPlace_Int64_2D(Iint64_2D_t,Iint64_2D,n1,n2,membytes,npack)
       deallocate(Iint64_2D_t)
 
     end subroutine transposeInPlace_Int64_2D
@@ -18543,15 +18764,16 @@ contains
     ! In-place transpose the memory order of a int64 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Int64_3D(Iint64_3D,n1,n2,n3)
+    subroutine transposeInPlace_Int64_3D(Iint64_3D,n1,n2,n3,membytes,npack)
       integer(I64), dimension(*), intent(inout) :: Iint64_3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       integer(I64), dimension(:), allocatable :: Iint64_3D_t
 
       allocate(Iint64_3D_t(n1*n2*n3))
       Iint64_3D_t(1:n1*n2*n3) = Iint64_3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Int64_3D(Iint64_3D_t,Iint64_3D,n1,n2,n3)
+      call transposeOutOfPlace_Int64_3D(Iint64_3D_t,Iint64_3D,n1,n2,n3,membytes,npack)
       deallocate(Iint64_3D_t)
 
     end subroutine transposeInPlace_Int64_3D
@@ -18559,51 +18781,66 @@ contains
     ! Out-of-place transpose the memory order of a int64 2D array
     ! stored in host memory into a int64 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int64_2D(Iint64_2D,Iint64_2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Int64_2D(Iint64_2D,Iint64_2D_t,n1,n2,membytes,npack)
       integer(I64), intent(in), dimension(*) :: Iint64_2D
       integer(I64), intent(out), dimension(*) :: Iint64_2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Iint64_2D_t(n2*(i-1)+j) = Iint64_2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Iint64_2D, Iint64_2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Iint64_2D_t(n2*(i-1)+j) = Iint64_2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int64_2D
 
     ! Out-of-place transpose the memory order of a int64 3D array
     ! stored in host memory into a int64 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Int64_3D(Iint64_3D,Iint64_3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Int64_3D(Iint64_3D,Iint64_3D_t,n1,n2,n3,membytes,npack)
       integer(I64), intent(in), dimension(*) :: Iint64_3D
       integer(I64), intent(out), dimension(*) :: Iint64_3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Iint64_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint64_3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Iint64_3D, Iint64_3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Iint64_3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Iint64_3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Int64_3D
 
     ! In-place transpose the memory order of a logical 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Logical2D(Blogical2D,n1,n2)
+    subroutine transposeInPlace_Logical2D(Blogical2D,n1,n2,membytes,npack)
       logical, dimension(*), intent(inout) :: Blogical2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       logical, dimension(:), allocatable :: Blogical2D_t
 
       allocate(Blogical2D_t(n1*n2))
       Blogical2D_t(1:n1*n2) = Blogical2D(1:n1*n2)
-      call transposeOutOfPlace_Logical2D(Blogical2D_t,Blogical2D,n1,n2)
+      call transposeOutOfPlace_Logical2D(Blogical2D_t,Blogical2D,n1,n2,membytes,npack)
       deallocate(Blogical2D_t)
 
     end subroutine transposeInPlace_Logical2D
@@ -18611,15 +18848,16 @@ contains
     ! In-place transpose the memory order of a logical 3D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Logical3D(Blogical3D,n1,n2,n3)
+    subroutine transposeInPlace_Logical3D(Blogical3D,n1,n2,n3,membytes,npack)
       logical, dimension(*), intent(inout) :: Blogical3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       logical, dimension(:), allocatable :: Blogical3D_t
 
       allocate(Blogical3D_t(n1*n2*n3))
       Blogical3D_t(1:n1*n2*n3) = Blogical3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Logical3D(Blogical3D_t,Blogical3D,n1,n2,n3)
+      call transposeOutOfPlace_Logical3D(Blogical3D_t,Blogical3D,n1,n2,n3,membytes,npack)
       deallocate(Blogical3D_t)
 
     end subroutine transposeInPlace_Logical3D
@@ -18627,51 +18865,66 @@ contains
     ! Out-of-place transpose the memory order of a logical 2D array
     ! stored in host memory into a logical 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Logical2D(Blogical2D,Blogical2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Logical2D(Blogical2D,Blogical2D_t,n1,n2,membytes,npack)
       logical, intent(in), dimension(*) :: Blogical2D
       logical, intent(out), dimension(*) :: Blogical2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Blogical2D_t(n2*(i-1)+j) = Blogical2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Blogical2D, Blogical2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Blogical2D_t(n2*(i-1)+j) = Blogical2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Logical2D
 
     ! Out-of-place transpose the memory order of a logical 3D array
     ! stored in host memory into a logical 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Logical3D(Blogical3D,Blogical3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Logical3D(Blogical3D,Blogical3D_t,n1,n2,n3,membytes,npack)
       logical, intent(in), dimension(*) :: Blogical3D
       logical, intent(out), dimension(*) :: Blogical3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Blogical3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Blogical3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Blogical3D, Blogical3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Blogical3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Blogical3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
-        end do
       end do
+    end if
     end subroutine transposeOutOfPlace_Logical3D
 
     ! In-place transpose the memory order of a character 2D array stored
     ! in host memory. In the current implementation, this routine
     ! works out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Char2D(Schar2D,n1,n2)
+    subroutine transposeInPlace_Char2D(Schar2D,n1,n2,membytes,npack)
       character, dimension(*), intent(inout) :: Schar2D
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
       character, dimension(:), allocatable :: Schar2D_t
 
       allocate(Schar2D_t(n1*n2))
       Schar2D_t(1:n1*n2) = Schar2D(1:n1*n2)
-      call transposeOutOfPlace_Char2D(Schar2D_t,Schar2D,n1,n2)
+      call transposeOutOfPlace_Char2D(Schar2D_t,Schar2D,n1,n2,membytes,npack)
       deallocate(Schar2D_t)
 
     end subroutine transposeInPlace_Char2D
@@ -18679,15 +18932,16 @@ contains
     ! In-place transpose the memory order of a char 3D array stored in
     ! host memory. In the current implementation, this routine works
     ! out-of-place but future implementations will be in-place.
-    subroutine transposeInPlace_Char3D(Schar3D,n1,n2,n3)
+    subroutine transposeInPlace_Char3D(Schar3D,n1,n2,n3,membytes,npack)
       character, dimension(*), intent(inout) :: Schar3D
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
       character, dimension(:), allocatable :: Schar3D_t
 
       allocate(Schar3D_t(n1*n2*n3))
       Schar3D_t(1:n1*n2*n3) = Schar3D(1:n1*n2*n3)
-      call transposeOutOfPlace_Char3D(Schar3D_t,Schar3D,n1,n2,n3)
+      call transposeOutOfPlace_Char3D(Schar3D_t,Schar3D,n1,n2,n3,membytes,npack)
       deallocate(Schar3D_t)
 
     end subroutine transposeInPlace_Char3D
@@ -18695,37 +18949,51 @@ contains
     ! Out-of-place transpose the memory order of a char 2D array
     ! stored in host memory into a char 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Char2D(Schar2D,Schar2D_t,n1,n2)
+    subroutine transposeOutOfPlace_Char2D(Schar2D,Schar2D_t,n1,n2,membytes,npack)
       character, intent(in), dimension(*) :: Schar2D
       character, intent(out), dimension(*) :: Schar2D_t
-      integer, intent(in) :: n1,n2
+      integer, intent(in) :: n1,n2,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j
+      integer :: i,j,isize,nbyte
 
-      do j=1,n2
-        do i=1,n1
-          Schar2D_t(n2*(i-1)+j) = Schar2D(n1*(j-1)+i)
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/isize
+        call coproc_transposeOnHost2d(Schar2D, Schar2D_t, nbyte, isize, n2)
+      else
+        do j=1,n2
+          do i=1,n1
+            Schar2D_t(n2*(i-1)+j) = Schar2D(n1*(j-1)+i)
+          end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Char2D
 
     ! Out-of-place transpose the memory order of a char 3D array
     ! stored in host memory into a char 1D array stored in device
     ! memory
-    subroutine transposeOutOfPlace_Char3D(Schar3D,Schar3D_t,n1,n2,n3)
+    subroutine transposeOutOfPlace_Char3D(Schar3D,Schar3D_t,n1,n2,n3,membytes,npack)
       character, intent(in), dimension(*) :: Schar3D
       character, intent(out), dimension(*) :: Schar3D_t
-      integer, intent(in) :: n1,n2,n3
+      integer, intent(in) :: n1,n2,n3,npack
+      integer(I64), intent(in) :: membytes
 
-      integer :: i,j,k
-
-      do k=1,n3
-        do j=1,n2
-          do i=1,n1
-            Schar3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Schar3D(n1*n2*(k-1)+n1*(j-1)+i)
+      integer :: i,j,k,isize,nbyte
+      
+      if (npack > 1) then
+        isize = n1/npack
+        nbyte = membytes/n2/n3/isize
+        call coproc_transposeOnHost3d(Schar3D, Schar3D_t, nbyte, isize, n2, n3)
+      else
+        do k=1,n3
+          do j=1,n2
+            do i=1,n1
+              Schar3D_t(n2*n3*(i-1)+n3*(j-1)+k) = Schar3D(n1*n2*(k-1)+n1*(j-1)+i)
+            end do
           end do
         end do
-      end do
+      end if
     end subroutine transposeOutOfPlace_Char3D
 
   end subroutine storage_syncMemoryHostDevice
