@@ -33,7 +33,7 @@ DOWNLOAD=if test -f $(LOCKFILE); then \
 	else \
 	    trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    touch $(LOCKFILE); \
-	    wget -O $(TARBALL) $(URL); \
+	    wget --no-proxy -O $(TARBALL) $(URL); \
 	    rm -f $(LOCKFILE); \
 	fi; \
 	trap - 2 3 9;

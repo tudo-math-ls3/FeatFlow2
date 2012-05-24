@@ -182,8 +182,7 @@ include ../unpack.mk
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
 
-#AMD_TARBALL = ../AMD-2.2.4.tar.gz
-AMD_TARBALL = ../AMD.tar.gz
+AMD_TARBALL = ../AMD-2.2.4.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -205,8 +204,7 @@ $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 # a locking mechanism.
 $(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2.4 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-#$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.4.tar.gz
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.4.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
@@ -214,11 +212,9 @@ $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-#$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.4.tar.gz
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/current/AMD.tar.gz
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.4.tar.gz
 $(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-#$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.4.tar.gz
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd.tar.gz
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.4.tar.gz
 $(AMD_TARBALL):  WAITTIME = 15
 $(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
