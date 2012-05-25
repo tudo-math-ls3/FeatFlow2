@@ -18152,6 +18152,8 @@ contains
 
 #endif
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
   contains
 
     ! Here, the working routines follow
@@ -18995,6 +18997,8 @@ contains
         end do
       end if
     end subroutine transposeOutOfPlace_Char3D
+
+#endif
 
   end subroutine storage_syncMemoryHostDevice
 
