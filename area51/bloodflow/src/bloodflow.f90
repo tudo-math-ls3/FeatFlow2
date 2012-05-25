@@ -51,14 +51,17 @@
 
 module bloodflow
 
+  use basicgeometry
   use boundary
   use fsystem
+  use genoutput
   use hadaptaux
   use hadaptaux2d
   use hadaptivity
   use linearsystemscalar
   use listInt
   use paramlist
+  use quadtreeDble
   use storage
   use triangulation
   use ucd
@@ -694,7 +697,7 @@ contains
     real(DP), dimension(TRIA_NVETRI2D) :: DlineParam
     real(DP) :: dparamMax
     integer, dimension(TRIA_NVETRI2D) :: Iedgestatus
-    integer :: ipoint,ipos,iobj,ive,jve,iel,jel,ivt,istatus,idx,iel0,i1,i2,i3
+    integer :: ipoint,iobj,ive,jve,iel,jel,ivt,istatus,idx,iel0,i1,i2,i3
 
     
     ! Release the marker array (if any)
@@ -900,7 +903,7 @@ contains
               if (iand(p_Imarker(jel), BITFIELD_INLIST)&
                                      .ne. BITFIELD_INLIST) then
                 p_Imarker(jel) = ior(p_Imarker(jel), BITFIELD_INLIST)
-                call list_append(rbloodflow%relementList, jel, ipos)
+                call list_push_back(rbloodflow%relementList, jel)
               end if
             end if
           end do
@@ -977,9 +980,10 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_listInt) :: riterator
     real(DP), dimension(:), pointer :: p_Dindicator
     integer, dimension(:), pointer :: p_Imarker
-    integer :: ipos, iel
+    integer :: iel
 
     ! Create new indicator vector in double precision
     call lsyssc_createVector(rindicator,&
@@ -996,16 +1000,18 @@ contains
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
-    ipos = list_next(rbloodflow%relementList, .true.)
-    list: do while(ipos .ne. LNULL)
+    riterator = list_begin(rbloodflow%relementList)
+    list: do while(riterator /= list_end(rbloodflow%relementList))
       
       ! Get element number and proceed to next position
-      call list_get(rbloodflow%relementList, ipos, iel)
-      ipos = list_next(rbloodflow%relementList, .false.)
+      iel = list_get(rbloodflow%relementList, riterator)
       
       ! Set indicator for the current element
       if (iand(p_Imarker(iel), BITFIELD_EDGE_INTERSECTION) .ne. 0)&
           p_Dindicator(iel) = dtolerance
+
+      ! Update iterator
+      call list_next(riterator)
     end do list
 
   end subroutine bloodflow_convertRefMarker
@@ -1031,6 +1037,7 @@ contains
 !</subroutine>
 
     ! local variables
+    type(it_listInt) :: riterator
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     integer, dimension(:), pointer :: p_Imarker, p_IvertexAge, p_InodalProperty
@@ -1038,7 +1045,7 @@ contains
     real(DP), dimension(TRIA_NVETRI2D) :: DedgeParam, DedgeParamAux
     integer, dimension(TRIA_NVETRI2D) :: Iedgestatus, IedgestatusAux
     integer, dimension(2) :: Isize
-    integer :: ive,nve,iel,nel,ivt,nvt,i1,i2,i3,ipoint,ipos,istatus
+    integer :: ive,nve,iel,nel,ivt,nvt,i1,i2,i3,ipoint,istatus
     
     
     ! Set pointers
@@ -1116,12 +1123,11 @@ contains
 !!$    !---------------------------------------------------------------------------
 !!$
 !!$    ! Loop over all elements adjacent to the object
-!!$    ipos = list_next(rbloodflow%relementList, .true.)
-!!$    list1: do while(ipos .ne. LNULL)
+!!$    riterator = list_begin(rbloodflow%relementList)
+!!$    list1: do while(riterator /= list_end(rbloodflow%relementList))
 !!$
 !!$      ! Get element number and proceed to next position
-!!$      call list_get(rbloodflow%relementList, ipos, iel)
-!!$      ipos = list_next(rbloodflow%relementList, .false.)
+!!$      iel = list_get(rbloodflow%relementList, riterator)
 !!$
 !!$      ! Get number of vertices of current element
 !!$      nve = tria_getNVE(p_IverticesAtElement, iel)
@@ -1187,7 +1193,7 @@ contains
 !!$        ivt = p_IverticesAtElement(ive, iel)
 !!$        if (IcornerStatus(ive) .ne. 0) then
 !!$          ! Update coordinate of vertex in quadtree
-!!$          istatus = qtree_moveInQuadtree(&
+!!$          istatus = qtree_reposition(&
 !!$              rbloodflow%rhadapt%rVertexCoordinates2D,&
 !!$              p_DvertexCoords(:,ivt),&
 !!$              p_DobjectCoords(:,IcornerStatus(ive)))
@@ -1198,6 +1204,8 @@ contains
 !!$        end if
 !!$      end do
 !!$
+!!$    ! Update iterator
+!!$    call list_next(riterator)
 !!$    end do list1
       
     !---------------------------------------------------------------------------
@@ -1206,12 +1214,11 @@ contains
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
-    ipos = list_next(rbloodflow%relementList, .true.)
-    list: do while(ipos .ne. LNULL)
+    riterator = list_begin(rbloodflow%relementList)
+    list: do while(riterator /= list_end(rbloodflow%relementList))
       
       ! Get element number and proceed to next position
-      call list_get(rbloodflow%relementList, ipos, iel)
-      ipos = list_next(rbloodflow%relementList, .false.)
+      iel = list_get(rbloodflow%relementList, riterator)
     
       ! Remove "in list" flag from marker
       p_Imarker(iel) = iand(p_Imarker(iel),not(BITFIELD_INLIST))
@@ -1304,7 +1311,7 @@ contains
               ivt = p_IverticesAtElement(ive,iel)
               if (p_IvertexAge(ivt) .ge. 0) then
                 ! Update coordinate of vertex in quadtree
-                istatus = qtree_moveInQuadtree(&
+                istatus = qtree_reposition(&
                     rbloodflow%rhadapt%rVertexCoordinates2D,&
                     p_DvertexCoords(:, ivt), DpointCoords(:,ive))
               
@@ -1322,7 +1329,7 @@ contains
               ivt = p_IverticesAtElement(mod(ive, nve)+1,iel)
               if (p_IvertexAge(ivt) .ge. 0) then
                 ! Update coordinate of vertex in quadtree
-                istatus = qtree_moveInQuadtree(&
+                istatus = qtree_reposition(&
                     rbloodflow%rhadapt%rVertexCoordinates2D,&
                     p_DvertexCoords(:, ivt), DpointCoords(:,ive))
                 ! Adjust vertex coordinates and lock it
@@ -1342,6 +1349,9 @@ contains
         end if
 
       end select
+
+      ! Update iterator
+      call list_next(riterator)
     end do list
 
     !---------------------------------------------------------------------------

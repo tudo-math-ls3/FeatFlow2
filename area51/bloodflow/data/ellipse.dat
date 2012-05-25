@@ -16,7 +16,7 @@ trifilename = grids/box.tri
 prmfilename = grids/box.prm
 
 # Number of global refinement levels
-iglobRefLevel = 6
+iglobRefLevel = 2
 
 ################################################################################
 [Output]
@@ -38,15 +38,15 @@ b       = 0.5
 [Timestepping]
 ################################################################################
 dtimeStart = 0.0
-dtimeStop  = 0.1 #6.283185307179586477
+dtimeStop  = 1.0 #6.283185307179586477
 dtimestep  = 0.1
 
 ################################################################################
 [Adaptation]
 ################################################################################
-npreadapt            = 1
+npreadapt            = 5
 npostadapt           = 3
-nsubdividemax        = 5
+nsubdividemax        = 10
 iadaptationstrategy  = 1
 drefinementtolerance = 0.5
 dcoarseningtolerance = 0.0
