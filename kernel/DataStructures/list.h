@@ -193,7 +193,7 @@
 !# ! Perform reverse iteration through list items
 !# rit = list_rbegin(rlist)
 !# do while (rit /= list_rend(rlist))
-!#   key = list_get(rlist, rit, key)
+!#   key = list_get(rlist, rit)
 !#   print *, "key=",key
 !#   call list_next(rit)
 !# end do
