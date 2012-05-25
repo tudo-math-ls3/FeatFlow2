@@ -1,0 +1,111 @@
+# ========================================================================
+# This file contains parameters configuring the time discretization
+# of the problem.
+
+#####################
+[TIME-DISCRETISATION]
+#####################
+
+# Type of problem (ISTAT): 0=steady,1=nonsteady
+
+itimedependence = 1
+
+# ----------------------------------------------------------------------
+
+# Absolute start time of the simulation (TIMENS)
+
+dtimeInit = 0.0
+
+# Max. absolute time of the simulation (TIMEMX); simulation stops if 
+# time > dtimemax or #iterations > niterations
+
+dtimeMax = 1.0
+
+# ----------------------------------------------------------------------
+
+# Number of time steps on time level 1.
+# Must be >= 2 for everything except implicit Euler!
+
+niterations = 2
+
+# Minimum level in time.
+TIMENLMIN = 1
+
+# Maximum level in time. The calculation is done on this time
+# level combined with the maximum space level NLMAX.
+TIMENLMAX = 1
+
+# ----------------------------------------------------------------------
+
+# Time-stepping scheme;
+# 0=one step scheme
+# 1=FS-Theta 3-step scheme
+# 2=One-step scheme with old time discretisation for the dual.
+
+ctimeStepScheme = 0
+
+# parameter for one step scheme (THETA) if itimeStepScheme=0;
+# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+
+dtimeStepTheta = 1.0
+
+# ----------------------------------------------------------------------
+
+# Type of projection in time.
+# -1: automatic
+# =0: constant prolongation/restriction
+# =1: linear prolongation/restriction. primal+dual solutions located
+#     at the endpoints of the time interval.
+# =2: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. No time negotiation, so
+#     the restriction uses a constant interpolation of the primal
+#     space to synchronise in time with the dual space.
+# =3: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. Full linear restriction
+#     with interpolation in time.
+# =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
+#     extrapolation at the time endpoints. Solutions located at the
+#     time endpoints. (not completely implemented)
+# =5: Piecewise linear with larger stencil. Solutions located at the
+#     time endpoints. (not completely implemented)
+# =6: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. No time negotiation, so
+#     the restriction uses a constant interpolation of the primal
+#     space to synchronise in time with the dual space. Simple
+#     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
+#     respecting that the matrices must be exchanged.
+
+ctypeProjection = -1
+
+# ========================================================================
+# This section defines a combined space-time refinement.
+
+######################
+[SPACETIME-REFINEMENT]
+######################
+
+# Whether space levels are coupled to time levels.
+# =0: Refinement only in time: Space level NLMAX is used on all time levels.
+# =1: Refinement in time and space: Space level NLMAX-i = Time level TIMENLMAX-i
+# =2: Refinement only in space: Time level TIMENLMAX-i has the same number of time 
+#     steps as time level TIMENLMAX, but uses space level NLMAX-i.
+
+ispacelevelcoupledtotimelevel = 1
+
+# If space and time levels are coupled:
+# Maximum level where simultaneous refinement in space and time is
+# allowed. This and all higher levels will use the maximum space refinement.
+# Standard value: 0 = maximum level.
+# Negative values: use level (TIMENLMAX+nmaxSimulRefLevel) as maximum.
+
+nmaxSimulRefLevel = 0
+
+# If space and time levels are coupled:
+# Factor that specifies the number of refinement levels in time before refining
+# in space.
+# Standard: 1.0 = each refinement in time results in a refinement in space.
+# Other values e.g.:
+#   2.0 = two refinements in time per refinement in space
+#   0.5 = two refinements in space per refinement in time
+
+dspacetimeRefFactor = 1.0

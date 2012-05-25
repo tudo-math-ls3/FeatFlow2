@@ -1,0 +1,21 @@
+# =======================================================================================
+# Control of the output of the program
+
+###############
+[GENERALOUTPUT]
+###############
+
+# Level of output during the initialisation phase
+# =0: no output, 
+# =1: basic output
+# =2: standard output
+ioutputInit = 2
+
+# Log file for messages.
+# ='': Disable log file.
+smsgLog = 'log/output.log'
+
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages.
+# ='': Use log file.
+serrorLog = ''

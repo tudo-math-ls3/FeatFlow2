@@ -1,0 +1,399 @@
+# ========================================================================
+# Parameters configuring the space-time solver
+
+#############
+[TIME-SOLVER]
+#############
+
+# Type of space-time solver/preconditioner combination to use.
+# 0 = Direct linear solver, only for testing purposes.
+# 1 = Nonlinear defect correction loop, preconditioned with a
+#     1-level solver for linear subproblems. 
+# 2 = Nonlinear defect correction loop, preconditioned with a
+#     Space time Multigrid for linear subproblems. 
+
+cpreconditioner = 2
+
+# Type of preconditioner to use in every timestep, = type of linear
+# subproblem to solve in the nonlinear space time defect correction loop.
+# =1: Preconditioning by solving the standard system.
+# =2: Preconditioning by Newton-Iteration.
+#     This is a combination of a linear solver (ctypeNonlinearIteration=1)
+#     in conjunction with an extended matrix to improve convergence speed
+#     (at the cost of assembly time and stability of the linear solver/
+#     preconditioner).
+# =3: Inexact Newton. Stopping criterion of the linear solver is chosen
+#     adaptively. The stopping criteria of the linear solvers are not used.
+
+ctypeNonlinearIteration = 2
+
+# Whether to postprocess intermediate solutions.
+# =1: After each nonlinear step, apply postprocessing to the solution.
+# =2: After each nonlinear step, apply postprocessing to the solution.
+#     Write postprocessing files with unique filename.
+
+cpostprocessIterates = 0
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+      
+nmaxIterations     = 10
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-8
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-0
+
+# General damping parameter when adding the preconditioned defect
+# to the solution in the nonlinear space-time iteration
+
+domega             = 1.0
+
+# Output level of the solver
+
+ioutputLevel       = 2
+
+# Maximum number of defect correction iterations before starting Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+
+nmaxFixedPointIterations = 0
+
+# Relative convergence criterion to use for defect correction
+# before Newton is started.
+
+depsRelFixedPoint = 1E-1
+
+# Stopping criterion for the linear solver in the inexact Newton iteration.
+# Controls the minimum number of digits to gain in the linear solver
+# per Newton iteration. Only used if ctypePreconditioner = 3.
+
+dinexactNewtonEpsRel = 1.0E-2
+
+# Exponent to control the stopping criterion for the linear solver in
+# an inexact Newton iteration. =2 result in quadratic convergence,
+# =1.5 in superlinear convergence. Only used if ctypePreconditioner = 3.
+
+dinexactNewtonExponent = 2.0
+
+# Name of the section defining the step length control
+ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
+
+# Name of the section defining a single-grid solver. This is used if
+# cpreconditioner=1.
+ssectionSingleGridSolver = TIME-SINGLEGRIDSOLVER
+
+# Name of the section defining the preconditioner of the single grid solver.
+ssectionSinglePreconditioner = TIME-SINGLEGRIDPRECOND
+
+# Name of the section defining the multigrid iteration.
+ssectionMultigrid = TIME-MULTIGRID
+
+# Name of the section containing the space-time smoother
+ssectionSmoother = TIME-SMOOTHER
+
+# Name of the section containing the preconditioner of the space-time smoother
+ssectionSmootherPrecond = TIME-SMOOTHERPRECOND
+
+# Name of the section defining a coarse grid solver. 
+ssectionCgrSolver = TIME-SINGLEGRIDSOLVER
+
+# Name of the section defining the preconditioner of the single grid solver.
+ssectionCgrPreconditioner = TIME-SINGLEGRIDPRECOND
+
+################
+[TIME-MULTIGRID]
+################
+
+# This section configures the space-time multigrid solver
+# which is activated by ispaceTimeSolverType=1.
+
+# Minimum number of time-MG sweeps per nonlinear time-iteration
+
+nminIterations = 1
+
+# Maximum number of time-MG sweeps per nonlinear time-iteration
+
+nmaxIterations = 10
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+# Not used if inexact Newton is used as nonlinear solver.
+
+depsRel            = 1E-2
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+# Not used if inexact Newton is used as nonlinear solver.
+
+depsAbs            = 1E-0
+
+# Minimum relative difference between two iterates
+
+depsDiff           = 1E-5
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 0
+
+# Output level of the solver
+
+ioutputLevel       = 2
+
+# Cycle. 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+icycle = 1
+
+# Minimum value for the adaptive coarse grid correction.
+# Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
+# Standard = 1.0
+
+dalphamin = 1.0
+
+# Minimum value for the adaptive coarse grid correction.
+# Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
+# Standard = 1.0
+
+dalphamax = 1.0
+
+###############
+[TIME-SMOOTHER]
+###############
+
+# Type of space-time smoother.
+# =0: Block Jacobi
+# =1: Block Forward-Backward SOR (domega, Preconditioner-domega)
+# =2: BiCGStab with Block Jacobi preconditioner
+# =3: BiCGStab with Block Forward-Backward Gauss-Seidel preconditioning
+# =6: CG (Jacobi)
+# =7: CG (Forward-Backward Gauss-Seidel)
+# =8: Defect correction with UMFPACK preconditioning
+# =9: Forward-Backward preconditioner
+# =10: Defect correction with Forward-Backward preconditioner
+# =11: BiCGStab with Block Forward-Backward solver preconditioning
+cspaceTimeSmoother = 1 
+
+# Damping parameter
+domega = 0.9
+
+# Relaxation parameter (e.g. in SOR)
+drelax = 1.0
+
+# Number of presmoothing steps
+nsmpre = 0
+
+# Number of postsmoothing steps
+nsmpost = 1
+
+# Relative convergence criterion. If this is reached, the smoother
+# will stop the smoothing prematurely. Standard=0.0=always perform
+# nsmSteps smoothing steps.
+depsRel = 0.0
+
+# Absolute convergence criterion. If this is reached, the smoother
+# will stop the smoothing prematurely. Standard=0.0=always perform
+# nsmSteps smoothing steps.
+depsAbs = 0.0
+
+# Type of stopping criterion, if nsmSteps is not reached.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
+
+# Output level of the smoother
+
+ioutputLevel = 2
+
+# If ctypeNonlinearIteration = 1 or = 2: Name of the section in the file 
+# "linsol.ini" that configures the linear solver to use for
+# smoothing.
+
+slinearSolver        = CC-LINEARSOLVER
+
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 
+
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
+
+######################
+[TIME-SMOOTHERPRECOND]
+######################
+
+# Damping parameter of a preconditioner
+
+domega = 1.0
+
+# Relaxation parameter (e.g. in SOR)
+
+drelax = 1.0
+
+# Output level of the smoother
+
+ioutputLevel = 0
+
+# If ctypeNonlinearIteration = 1 or = 2: Name of the section in the file 
+# "linsol.ini" that configures the linear solver to use for
+# preconditioning.
+
+slinearSolver        = CC-LINEARSOLVER
+
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 
+
+# For FBSOR-Type smoothers: Do a partial update of the solution
+# during the iteration (only primal on forward sweep, only dual
+# on backward sweep).
+
+ifbSORPartialUpdate=0
+
+
+#######################
+[TIME-SINGLEGRIDSOLVER]
+#######################
+
+# Type of solver.
+# =0: Iterative Defect correction with Block Jacobi ([PRECOND].drelax)
+# =1: Iterative Defect correction with Block SOR([PRECOND].drelax)
+# =2: Iterative BiCGStab with Block Jacobi preconditioner
+# =3: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
+# =5: Iterative CG
+# =6: direct (UMFPACK Gauss elimination)
+# =7: Pure block FBGS solver
+# =8: Defect correction with UMFPACK preconditioning
+# =10: Defect correction with with a simple Forward-Backward preconditioner
+# =11: BiCGStab with a simple Forward-Backward preconditioner
+# =12: BiCGStab with a right simple Forward-Backward preconditioner
+# =13: Defect correction with with space-time VANKA and a simple 
+#      Forward-Backward preconditioner
+# If there's a preconditioner involved, its parameters can be found in the section
+# [TIME-SINGLEGRIDPRECOND] below!
+ctypeSolver = 1
+
+# Minimum number of time-iterations
+nminIterations = 1
+
+# Maximum number of time-iterations
+nmaxIterations = 100 #20
+
+# Damping parameter
+domega = 1.0
+
+# Relaxation parameter (e.g. in SOR)
+drelax = 1.0
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+# Not used if inexact Newton is used as nonlinear solver.
+
+depsRel = 1E-2
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+# Not used if inexact Newton is used as nonlinear solver.
+
+depsAbs = 1E-0
+
+# Maximum relative residual before the iteration is treated as 'divergent'
+
+ddivRel = 1E20
+
+# Output level of the solver.
+
+ioutputLevel = 2 
+ 
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
+
+# Reinitialisation counter, e.g. for BiCGStab.
+# Every niteReinit iterations, the algorithm reinitialises.
+# =0: no reinitialisation.
+
+niteReinit = 0
+
+########################
+[TIME-SINGLEGRIDPRECOND]
+########################
+
+# Preconditioner of the solver. Only parameters, no solver type!
+
+# Minimum number of time-iterations
+nminIterations = 1
+
+# Maximum number of time-iterations
+nmaxIterations = 1
+
+# damping parameter
+domega = 1.0
+
+# Relaxation parameter (e.g. in SOR)
+drelax = 1.0
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-13
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-0
+
+# Maximum relative residual before the iteration is treated as 'divergent'
+
+ddivRel            = 1E20
+
+# Output level of the solver.
+# If a subsolver is embedded in the solver, it receives the output level
+# ioutputLevel-2.
+
+ioutputLevel = 0
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 0
+
+# For FBSOR-Type preconditioner: Do a partial update of the solution
+# during the iteration (only primal on forward sweep, only dual
+# on backward sweep).
+
+ifbSORPartialUpdate=0
+
+# If itypePreconditioning = 1 or = 2 or =9: Name of the section in the file 
+# "linsol.ini" that configures the linear solver to use for
+# preconditioning.
+# If there's a subsolver, this configures the spatial preconditioner
+# of the subsolver.
+
+slinearSolver = CC-LINEARSOLVER
+
+# Specifies the section of an alternative linear solver on space which is
+# used if slinearSolver fails. ="": Not specified.
+
+slinearSolverAlternative = 

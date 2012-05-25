@@ -1,0 +1,27 @@
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+#############
+[PARAMTRIANG]
+#############
+
+# Filename of the parametrisation of the domain
+sParametrisation = './pre/bench1.prm'
+
+# Filename of the coarse grid mesh
+sMesh = './pre/bench1.tri'
+
+# Type of mesh to use as coarse mesh.
+# =0: the mesh is specified in the TRI file smesh
+# =1: 'Sliced quad mesh'. This is a standard QUAD mesh with ncellsX
+#     cells in X-direction on the coarse grid. The cells show an
+#     anisotropy of ncells:1.
+#     Note that in this case the PRM-file QUAD.PRM must be chosen!
+imeshType = 0
+
+# If imeshType=1: Number of cells in X-direction.
+ncellsX = 1

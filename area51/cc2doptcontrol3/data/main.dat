@@ -1,0 +1,71 @@
+#######################################
+# OPTFLOW MAIN CONFIGURATION FILE
+#
+# The following [MAIN] section defines
+# the entry point of the application.
+#######################################
+
+######
+[MAIN]
+######
+
+# Section defining the output parameters
+ssectionOutput = GENERALOUTPUT
+
+# Section defining Debug flags
+ssectionDebugFlags = DEBUG
+
+# Section defining the underlying mesh
+ssectionParamTriang = PARAMTRIANG
+
+# Name of the section defining the basic space discretisation
+# (refinement, stabilisation,...)
+ssectionDiscrSpace = CC-DISCRETISATION
+
+# Section defining prolongation/restriction in space
+ssectionProlRestSpace = CC-PROLREST
+
+# Section defining the basic time discretisation
+ssectionTimeDiscretisation = TIME-DISCRETISATION
+
+# Section defining the space-time refinement
+ssectionSpaceTimeRefinement = SPACETIME-REFINEMENT
+
+# Section defining the optimal control problem.
+ssectionOptControl = OPTIMALCONTROL
+
+# Section defining the nonlinear space-time solver
+ssectionSpaceTimeSolver = TIME-SOLVER
+
+# Section defining the space-time preprocessing 
+ssectionSpaceTimePostprocessing = TIME-PREPROCESSING
+
+# Section defining the space-time postprocessing 
+ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
+
+
+# =======================================================================================
+# Debug flags
+
+#######
+[DEBUG]
+#######
+
+# DEBUG-Flags. Only change if you know what you do!!!
+
+# If the following constant is set from 1.0 to 0.0, the primal system is
+# decoupled from the dual system!
+# dprimalDualCoupling = 1.0
+
+# If the following constant is set from 1.0 to 0.0, the dual system is
+# decoupled from the primal system!
+# ddualPrimalCoupling = 1.0
+
+# If the following parameter is set from 1.0 to 0.0, the terminal
+# condition between the primal and dual equation is decoupled, i.e.
+# the dual equation gets independent from the primal one.
+# dterminalCondDecoupled = 1.0
+
+# If the following parameter is set from 1.0 to 0.0, the time coupling
+# is disabled, resulting in a stationary simulation in every timestep.
+# dtimeCoupling = 1.0

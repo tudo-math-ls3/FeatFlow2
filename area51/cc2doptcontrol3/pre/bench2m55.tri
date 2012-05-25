@@ -1,0 +1,23 @@
+Coarse mesh exported by DeViSoR PRM-TRI exporter
+Parametrisierung PARXC, PARYC, TMAXC
+    2 6 0 4 1     NEL NVT NMT NVE NBCT 
+DCORVG
+0.0 0
+1.0 0
+2.0 0
+3.0 0
+0.5 0
+2.5 0
+KVERT
+1 5 6 4 
+5 2 3 6 
+KNPR
+1
+1
+1
+1
+1
+1
+KMM
+1 4 
+
