@@ -22,6 +22,9 @@
 #endif
 #endif
 
+#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
+
 typedef struct {
   int color;
   int node[2];
@@ -33,6 +36,67 @@ typedef struct {
  */
 int edgeColoring (int neq, int nedge, Edge *edgelist)
 {
+
+  // Edge-coloring by simple greedy algorithm
+  int icolor,ieq,jeq,iedge;
+
+  // Initialize array NodeData[neq] which serves as counter in the
+  // first place and is later used to mark the colors of edges
+  // adjacent to the current node
+  long int* NodeData = malloc(neq*sizeof(int));
+  for (ieq=0; ieq<neq; ++ieq)
+    NodeData[ieq] = 0;
+
+  // First shuffle pass: Compute the number of edges at each DOF
+  for (iedge=0; iedge<nedge; ++iedge) {
+    NodeData[edgelist[iedge].node[0]]++;
+    NodeData[edgelist[iedge].node[1]]++;
+  }
+
+  // Second shuffle pass: Compute the maximum number of edges at DOF
+  int ncolor = 0;
+  for (ieq=0; ieq<neq; ++ieq)
+    ncolor = max(ncolor, NodeData[ieq]);
+  
+  // At the moment the greedy edge coloring algorithm is used which
+  // may require 2x the chromatic index
+  ncolor = 2*ncolor;
+
+  // Sanity check
+  if (ncolor>sizeof(long int)) {
+    printf("Error: number of colors exceeds sizeof(long int)!\n");
+    free(NodeData);
+    return -1;
+  }
+
+  // Clear array NodeData
+  for (ieq=0; ieq<neq; ++ieq)
+    NodeData[ieq]=0;
+  
+  // Third shuffle pass: loop over all edges and determine the next
+  // free color to be used for the current edge
+  for (iedge=0; iedge<nedge; ++iedge) {
+    ieq = edgelist[iedge].node[0];
+    jeq = edgelist[iedge].node[1];
+    
+    // The idea is as follows: each color is associated with a single
+    // bit which is either set or unset. Thus, we loop over all bits
+    // and check if the current bit is unset in both endpoints
+    for (icolor=0; icolor<ncolor; ++icolor) {
+      if (~(NodeData[ieq] & (1<<icolor)) &&
+	  ~(NodeData[jeq] & (1<<icolor)))
+
+	// Set color marker for nodes IEQ and JEQ
+	NodeData[ieq] |= (1<<icolor);
+	NodeData[jeq] |= (1<<icolor);
+
+	// Set edge color in human readable format
+	edgelist[iedge].color = icolor;
+	break;
+    }
+  }
+  
+  free(NodeData);
   return 1;
 }
 
@@ -82,7 +146,7 @@ void FNAME(regroupedgelist)(int *neq, int *nedge, int *ncolor,
   
   // Apply edge coloring algorithm
   int ncolors = edgeColoring(*neq, *nedge, edgelist);
-  if (ncolors > ncolor) {
+  if (ncolors > *ncolor) {
     printf("Error: number of colors exceds maximum number of colors!\n");
     return;
   }
