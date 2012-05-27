@@ -15,10 +15,14 @@ APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
 APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
 
 # Enable auto-tuning using genetic algorithms.
-# APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+if ([ -n "${AUTOTUNE+x}" ] && [ "$AUTOTUNE" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+fi
 
 # Enable use of coproc_malloc/coproc_free
+if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
 APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
+fi
 
 # Specify header files which should be copied to the object directory
 HEADER_FILES_TO_COPY="src/flagship.h
@@ -32,12 +36,26 @@ HEADER_FILES_TO_COPY="src/flagship.h
 # Specify list of application source files
 # (disable any ls alias setting)
 SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
+SRCEXTRA_APP="src/coloring.c "
 
-# Add CUDA support (if available)
+# Add coprocessor support (if available)
 # (disable any ls alias setting)
-SRCEXTRA_APP="`\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
+SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+fi
 
 # Use system-wide configure
+if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
+../../bin/configure \
+    --appname=flagship-\$\(ID\) \
+    --programfile=src/flagship.f90 \
+    --srclist_app="${SRCLIST_APP}" \
+    --srcextra_app="${SRCEXTRA_APP}" \
+    --header-files-to-copy="${HEADER_FILES_TO_COPY}" \
+    --apponlyflags="${APPONLYFLAGS}" \
+    --coproc=cuda20 \
+    "$@"
+else
 ../../bin/configure \
     --appname=flagship-\$\(ID\) \
     --programfile=src/flagship.f90 \
@@ -46,3 +64,4 @@ SRCEXTRA_APP="`\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/
     --header-files-to-copy="${HEADER_FILES_TO_COPY}" \
     --apponlyflags="${APPONLYFLAGS}" \
     "$@"
+fi
