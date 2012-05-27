@@ -2908,17 +2908,43 @@ public:
 	{
 	  case 4:
 	    {
-		execute_internal<float,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+  	        execute_internal<DO_SYNC,float,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
 		break;
 	    }
 	  case 8:
 	    {
-		execute_internal<float2,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+	        execute_internal<DO_SYNC,float2,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
 		break;
 	    }
 	  case 16:
 	    {
-		execute_internal<float4,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+	        execute_internal<DO_SYNC,float4,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+		break;
+	    }
+#ifdef CUDADMA_DEBUG_ON
+	  default:
+		printf("Invalid ALIGNMENT %d must be one of (4,8,16)\n",ALIGNMENT);
+		break;
+#endif
+        }
+  }
+  __device__ __forceinline__ void execute_dma_no_sync(const int *RESTRICT index_ptr, const void *RESTRICT src_ptr, void *RESTRICT dst_ptr) const
+  {
+    switch (ALIGNMENT)
+	{
+	  case 4:
+	    {
+  	        execute_internal<false,float,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+		break;
+	    }
+	  case 8:
+	    {
+	        execute_internal<false,float2,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
+		break;
+	    }
+	  case 16:
+	    {
+	        execute_internal<false,float4,LDS_PER_ELMT_PER_THREAD,ROW_ITERS_FULL,ROW_ITERS_SPLIT,COL_ITERS_FULL,COL_ITERS_SPLIT>(index_ptr, src_ptr, dst_ptr);
 		break;
 	    }
 #ifdef CUDADMA_DEBUG_ON
@@ -2929,7 +2955,7 @@ public:
         }
   }
 protected:
-  template<typename BULK_TYPE, int ELMT_LDS, int DMA_ROW_ITERS_FULL, int DMA_ROW_ITERS_SPLIT, int DMA_COL_ITERS_FULL, int DMA_COL_ITERS_SPLIT>
+  template<bool DO_SYNC_EXECUTE, typename BULK_TYPE, int ELMT_LDS, int DMA_ROW_ITERS_FULL, int DMA_ROW_ITERS_SPLIT, int DMA_COL_ITERS_FULL, int DMA_COL_ITERS_SPLIT>
   __device__ __forceinline__ void execute_internal(const int *RESTRICT index_ptr, const void *RESTRICT src_ptr, void *RESTRICT dst_ptr) const
   {
 #ifdef INDIRECT_EXECUTE 
@@ -2941,7 +2967,7 @@ protected:
           copy_across_elmts_indirect<BULK_TYPE,DMA_COL_ITERS_SPLIT>(index_ptr, src_row_ptr, dst_row_ptr, this->dma_split_partial_elmts, this->partial_bytes, offset_index)
 	#define COPY_ELMT_FN cudaDMAStridedBase::template \
           copy_elmt<BULK_TYPE, DMA_COL_ITERS_FULL, ALIGNMENT>(src_row_ptr,dst_row_ptr)
-	INDIRECT_EXECUTE(DO_SYNC)
+        INDIRECT_EXECUTE((DO_SYNC && DO_SYNC_EXECUTE))
 	#undef COPY_ACROSS_ELMTS1
 	#undef COPY_ACROSS_ELMTS2
         #undef COPY_ACROSS_ELMTS3
@@ -2956,12 +2982,12 @@ protected:
 			// The optimized case
 			if (this->all_threads_active)
 			{
-				cudaDMAIndirectBase<GATHER>::template do_xfer_across_indirect<DO_SYNC>(index_ptr, src_row_ptr, dst_row_ptr, 
+				cudaDMAIndirectBase<GATHER>::template do_xfer_across_indirect<DO_SYNC&&DO_SYNC_EXECUTE>(index_ptr, src_row_ptr, dst_row_ptr, 
                                                                   this->dma_split_partial_elmts, this->partial_bytes, 0);
 			}
 			else
 			{
-				if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+				if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 				if (this->dma_split_partial_elmts > 0)
 					cudaDMAIndirectBase<GATHER>::template do_xfer_across_indirect<false>(index_ptr, src_row_ptr, dst_row_ptr, 
                                                                   this->dma_split_partial_elmts, this->partial_bytes, 0);
@@ -2970,7 +2996,7 @@ protected:
 		else
 		{
                         int offset_index = 0;
-			if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+			if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 			//#pragma unroll 
 			for (int i=0; i<DMA_ROW_ITERS_SPLIT; i++)
 			{
@@ -2991,14 +3017,14 @@ protected:
 		char       * dst_row_ptr = ((char*)dst_ptr)       + this->dma_dst_offset;
 		if (DMA_ROW_ITERS_SPLIT == 0)
 		{
-			if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+			if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 			cudaDMAIndirectBase<GATHER>::template copy_across_elmts_indirect<BULK_TYPE,DMA_COL_ITERS_SPLIT>(index_ptr, src_row_ptr, 
                                                   dst_row_ptr, this->dma_split_partial_elmts, this->partial_bytes, 0);
 		}
 		else
 		{
                         int offset_index = 0; 
-			if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+			if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 			//#pragma unroll
 			for (int i=0; i<DMA_ROW_ITERS_SPLIT; i++)
 			{
@@ -3037,27 +3063,27 @@ protected:
 				if (this->all_threads_active)
 				{
 					if (this->warp_partial)
-						CUDADMA_BASE::do_xfer<DO_SYNC,ALIGNMENT>(src_row_ptr,dst_row_ptr,opt_xfer);
+						CUDADMA_BASE::do_xfer<DO_SYNC&&DO_SYNC_EXECUTE,ALIGNMENT>(src_row_ptr,dst_row_ptr,opt_xfer);
 					else
-						if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+						if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 				}
 				else
 				{
-					if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+					if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 					if (this->warp_partial)
 						CUDADMA_BASE::do_xfer<false,ALIGNMENT>(src_row_ptr,dst_row_ptr,opt_xfer);
 				}
 			}
 			else // We actually need to load multiple columns
 			{
-				if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+				if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
                                 cudaDMAStridedBase::template copy_elmt<BULK_TYPE,DMA_COL_ITERS_FULL,ALIGNMENT>(src_row_ptr,dst_row_ptr);
 			}
 		}
 		else
 		{
                         int offset_index = this->init_elmt_id;
-			if (DO_SYNC) CUDADMA_BASE::wait_for_dma_start();
+			if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::wait_for_dma_start();
 			if (this->warp_active)
 			{
 				//#pragma unroll
@@ -3083,7 +3109,7 @@ protected:
 			}
 		}
 	}
-	if (DO_SYNC) CUDADMA_BASE::finish_async_dma();
+	if (DO_SYNC&&DO_SYNC_EXECUTE) CUDADMA_BASE::finish_async_dma();
 #endif
   }
 };
