@@ -9,51 +9,35 @@
 // Define short-hand IDX-macros for diagonal list
 #ifdef DIAGLIST_DEVICE
 #if (DIAGLIST_DEVICE == AOS)
-#define IDX1_DIAGLIST IDX1
 #define IDX2_DIAGLIST IDX2
-#define IDX3_DIAGLIST IDX3
 #else
-#define IDX1_DIAGLIST IDX1T
 #define IDX2_DIAGLIST IDX2T
-#define IDX3_DIAGLIST IDX3T
 #endif
 #endif
 
 // Define short-hand IDX-macros for edge list
 #ifdef EDGELIST_DEVICE
 #if (EDGELIST_DEVICE == AOS)
-#define IDX1_EDGELIST IDX1
 #define IDX2_EDGELIST IDX2
-#define IDX3_EDGELIST IDX3
 #else
-#define IDX1_EDGELIST IDX1T
-#define IDX2_EDGELIST IDX2T
-#define IDX3_EDGELIST IDX3T
+#define IDX2_EDGELIST(a,i1,i2,n1,n2) a[((i1-1)/2) * 2*n2 + 2*(i2-1) + ((i1&1) == 0 ? 1 : 0)]
 #endif
 #endif
 
 // Define short-hand IDX-macros for coefficients at diagonal
 #ifdef COEFFSATDIAG_DEVICE
 #if (COEFFSATDIAG_DEVICE == AOS)
-#define IDX1_COEFFSATDIAG IDX1
 #define IDX2_COEFFSATDIAG IDX2
-#define IDX3_COEFFSATDIAG IDX3
 #else
-#define IDX1_COEFFSATDIAG IDX1T
 #define IDX2_COEFFSATDIAG IDX2T
-#define IDX3_COEFFSATDIAG IDX3T
 #endif
 #endif
 
 // Define short-hand IDX-macros for coefficients at edges
 #ifdef COEFFSATEDGE_DEVICE
 #if (COEFFSATEDGE_DEVICE == AOS)
-#define IDX1_COEFFSATEDGE IDX1
-#define IDX2_COEFFSATEDGE IDX2
 #define IDX3_COEFFSATEDGE IDX3
 #else
-#define IDX1_COEFFSATEDGE IDX1T
-#define IDX2_COEFFSATEDGE IDX2T
 #define IDX3_COEFFSATEDGE IDX3T
 #endif
 #endif
