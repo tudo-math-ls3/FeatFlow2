@@ -114,12 +114,12 @@ template <int nelem>
 		if (btranspose) {
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2(DataAtNode,i,ipos,nelem,datalen);
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
 		} 
 		else {
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) = IDX2(DataAtNode,i,ipos,nelem,datalen);
 		}
 	      }
 	      else {
@@ -129,12 +129,12 @@ template <int nelem>
 		if (btranspose) {
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,ipos,nelem,datalen);
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
 		} 
 		else {
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2T(DataAtNode,i,ipos,nelem,datalen);
+		    IDX2_REVERSE(vec,i,ieq,nelem,neq) += IDX2(DataAtNode,i,ipos,nelem,datalen);
 		}
 	      }
 	    }
@@ -938,7 +938,7 @@ template <int nelem>
 		  // Scatter data to first end point ieq
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3T(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
 		
 		  // Scatter data to second end point jeq
 #pragma unroll
@@ -949,7 +949,7 @@ template <int nelem>
 		  // Scatter data to first end point ieq
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) = IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
 		
 		  // Scatter data to second end point jeq
 #pragma unroll
@@ -965,7 +965,7 @@ template <int nelem>
 		  // Scatter data to first end point ieq
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3T(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3T(DataAtEdge,i,1,ipos,nelem,2,datalen);
 		
 		  // Scatter data to second end point jeq
 #pragma unroll
@@ -976,7 +976,7 @@ template <int nelem>
 		  // Scatter data to first end point ieq
 #pragma unroll
 		  for (int i=1; i<=nelem; i++)
-		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,1,i,ipos,nelem,2,datalen);
+		    IDX2_FORWARD(vec,i,ieq,nelem,neq) += IDX3(DataAtEdge,i,1,ipos,nelem,2,datalen);
 		
 		  // Scatter data to second end point jeq
 #pragma unroll
