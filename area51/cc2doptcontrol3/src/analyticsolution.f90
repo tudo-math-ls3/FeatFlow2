@@ -990,7 +990,7 @@ contains
 
 !</subroutine>
 
-    type(t_vectorBlock), pointer :: p_rvector,p_rvector2
+    type(t_vectorBlock), pointer :: p_rvector
 
     ! Put the type and id to the collection.
     call collct_setvalue_int (rcollection, trim(sname)//"_CTYPE", &

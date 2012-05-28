@@ -104,7 +104,7 @@ module newtoniterationlinear
     real(DP) :: domega = 1.0_DP
   
     ! Temporary memory for calculations
-    type(t_controlSpace), pointer :: p_rtempVector
+    type(t_controlSpace), pointer :: p_rtempVector => null()
 
   end type
   
@@ -347,9 +347,9 @@ contains
     !     rkktsystemDirDeriv%p_rcontrolLin
     ! which starts with zero.
     
-    call kkt_clearPrimal (rkktsystemDirDeriv%p_rprimalSolLin)
-    call kkt_clearDual (rkktsystemDirDeriv%p_rdualSolLin)
-    call kkt_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
+    call kktsp_clearPrimal (rkktsystemDirDeriv%p_rprimalSolLin)
+    call kktsp_clearDual (rkktsystemDirDeriv%p_rdualSolLin)
+    call kktsp_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
     
     ! Call the Richardson iteration to calculate an update
     ! for the control.

@@ -43,6 +43,7 @@ module spatialbc
   use scalarpde
   use linearformevaluation
   use linearsystemscalar
+  use vectorfilters
   
   use collection
   use convection
@@ -2015,7 +2016,7 @@ contains
 
 !<input>
   ! Boundary conditions in the problem.
-  type(t_optcBDC), intent(in) :: roptcBDC
+  type(t_optcBDC), intent(inout) :: roptcBDC
 
   ! Time where the BC's should be implemented.
   real(DP), intent(IN) :: dtime
@@ -2051,15 +2052,15 @@ contains
 
 !</subroutine>
 
+    ! Boundary condition structure which receives the boudary
+    ! conditions. 
+    type(t_discreteBC) :: rdiscreteBClocal
+
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
   
     ! DEBUG!!!
     call lsysbl_getbase_double (rd,p_Ddata)
-
-    ! Boundary condition structure which receives the boudary
-    ! conditions. 
-    type(t_discreteBC) :: rdiscreteBClocal
 
     if (.not. present(rdiscreteBC)) then
       ! Initialise the boundary conditions
@@ -2075,7 +2076,7 @@ contains
         call vecfil_discreteBCsol (rx,rdiscreteBClocal)
       end if
       
-      if (present(rb) then
+      if (present(rb)) then
         call vecfil_discreteBCrhs (rb,rdiscreteBClocal)
       end if
       
@@ -2100,7 +2101,7 @@ contains
         call lsysbl_assignDiscreteBC (rx,rdiscreteBC)
       end if
       
-      if (present(rb) then
+      if (present(rb)) then
         call vecfil_discreteBCrhs (rb,rdiscreteBC)
         call lsysbl_assignDiscreteBC (rb,rdiscreteBC)
       end if

@@ -92,7 +92,6 @@ module postprocessing
   
   private
   
-  public :: t_optcPostprocessing
   public :: optcpp_initpostprocessing
   public :: optcpp_donepostprocessing
   public :: optcpp_postprocessSingleSol

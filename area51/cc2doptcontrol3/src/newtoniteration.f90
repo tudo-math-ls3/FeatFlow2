@@ -158,7 +158,7 @@ contains
   
   ! On output, this structure receives a representation of the search
   ! direction / residual in the Newton iteration.
-  type(t_controlSpaceRes), intent(inout) :: rresidual
+  type(t_controlSpace), intent(inout) :: rresidual
 !</inputoutput>
 
 !<output>
@@ -222,7 +222,7 @@ contains
     ! Later, a step length control can be added here.
     
     call kktsp_controlLinearComb (&
-        rcorrection,rkktsystem%p_rcontrol,1.0_DP,rnewtonParam%domega,1.0_DP)
+        rcorrection,rnewtonParam%domega,rkktsystem%p_rcontrol,1.0_DP)
 
   end subroutine
 
@@ -247,7 +247,7 @@ contains
    
     ! local variables
     type(t_kktsystemDirDeriv) :: rkktsystemDirDeriv
-    type(t_controlSpaceRes) :: rdescentDir
+    type(t_controlSpace) :: rdescentDir
     
     ! Prepare a structure that encapsules the directional derivative.
     

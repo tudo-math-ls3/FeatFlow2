@@ -12,6 +12,7 @@ module structurespostproc
 
   use fsystem
   use storage
+  use basicgeometry
   use boundary
   use triangulation
   use cubature
@@ -42,12 +43,11 @@ module structurespostproc
   use constantsdiscretisation
   use structuresdiscretisation
   use structuresboundaryconditions
+  use structuresdiscretisation
   
   implicit none
   
   private
-  
-  public :: t_optcPostprocessing
   
 !<types>
 
@@ -192,6 +192,185 @@ module structurespostproc
 
 !</typeblock>
 
+  public :: t_optcPostprocessing
+
 !</types>
 
+contains
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine struc_initPostprocParams (rparlist,ssection,rphysics,rpostproc)
+
+!<description>
+  ! Reads postprocessing parameters from a parameter list.
+  ! Remark: Substructures are not initialised!
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters can be found.
+  character(len=*), intent(in) :: ssection
+
+  ! Information about the physics.
+  type(t_settings_physics), intent(in) :: rphysics
+!</input>
+
+!<output>
+  ! Postprocessing structure, to set up with data.
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sstr, sparam
+    integer :: npoints, i
+
+    ! Read remaining parameters from the DAT file.
+    !
+    ! UCD export
+    call parlst_getvalue_int (rparlist,ssection,&
+        "ioutputUCD",rpostproc%ioutputUCD,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameUCD",rpostproc%sfilenameUCD,"",bdequote=.true.)
+
+    ! Export of solution and control.
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteFinalSolution",rpostproc%cwriteFinalSolution,1)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
+        "",bdequote=.true.)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteFinalControl",rpostproc%cwriteFinalControl,1)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfinalControlFileName",rpostproc%sfinalControlFileName,&
+        "",bdequote=.true.)
+
+    ! function value calculation
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcFunctionalValues",rpostproc%icalcFunctionalValues,0)
+
+    ! Body forces
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcForces",rpostproc%icalcForces,0)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "ibodyForcesBdComponent",rpostproc%ibodyForcesBdComponent,2)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rphysics%dnuConst)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dbdForcesCoeff2",rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwriteBodyForces",rpostproc%iwriteBodyForces,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameBodyForces",rpostproc%sfilenameBodyForces,&
+        "",bdequote=.true.)
+
+    ! Flux
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcFlux",rpostproc%icalcFlux,0)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwriteFlux",rpostproc%iwriteFlux,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'sfilenameFlux',rpostproc%sfilenameFlux,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'dfluxline',sstr,"",bdequote=.true.)
+        
+    call parlst_getvalue_string (rparlist,ssection,&
+        'dfluxline',sstr,"",bdequote=.true.)
+    if (sstr .ne. "") then
+      ! Read the start/end coordinates
+      read(sstr,*) rpostproc%Dfluxline(1),rpostproc%Dfluxline(2),&
+          rpostproc%Dfluxline(3),rpostproc%Dfluxline(4)
+    end if
+
+    ! internal Energy
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcKineticEnergy",rpostproc%icalcKineticEnergy,1)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwriteKineticEnergy",rpostproc%iwriteKineticEnergy,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'sfilenameKineticEnergy',rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
+
+    ! Error calculation
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcError",rpostproc%icalcError,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionReferenceFunction",sstr,"",bdequote=.true.)
+    
+    if (sstr .eq. "") &
+        rpostproc%icalcError = 0
+    
+    ! Init the points to evaluate
+    npoints = parlst_querysubstrings (rparlist, ssection, &
+        "CEVALUATEPOINTVALUES")
+ 
+    if (npoints .gt. 0) then
+      allocate (rpostproc%p_DcoordsPointEval(NDIM2D,npoints))
+      allocate (rpostproc%p_ItypePointEval(NDIM2D,npoints))
+    
+      ! Read the points
+      do i=1,npoints
+        call parlst_getvalue_string (rparlist, ssection, &
+            "CEVALUATEPOINTVALUES", sparam, "", i)
+        read (sparam,*) rpostproc%p_DcoordsPointEval(1,i),rpostproc%p_DcoordsPointEval(2,i),&
+            rpostproc%p_ItypePointEval(1,i),rpostproc%p_ItypePointEval(2,i)
+      end do
+    end if
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwritePointValues",rpostproc%iwritePointValues,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'sfilenamePointValues',rpostproc%sfilenamePointValues,"",bdequote=.true.)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine struc_donePostprocParams (rpostproc)
+  
+!<description>
+  ! Clean up postprocessing parameters.
+!</description>
+  
+!<inputoutput>
+  ! Postprocessing parameters to be cleaned up.
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Release allocated parameter arrays.
+    if (associated(rpostproc%p_DcoordsPointEval)) deallocate(rpostproc%p_DcoordsPointEval)
+    if (associated(rpostproc%p_ItypePointEval)) deallocate(rpostproc%p_ItypePointEval)
+
+  end subroutine
+  
 end module

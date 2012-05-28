@@ -39,6 +39,8 @@ module spacematvecassembly
   use assemblytemplates
   
   use kktsystemspaces
+  
+  use user_callback
     
   implicit none
   
@@ -2207,7 +2209,7 @@ contains
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForAssembly (rusercollection)
+          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
 
         end select ! Equation
 
@@ -2349,7 +2351,7 @@ contains
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"TARGER")
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForAssembly (rusercollection)
+          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
             
         end select ! Equation
         
@@ -2501,7 +2503,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForAssembly (rusercollection)
+          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
       
@@ -2651,7 +2653,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForAssembly (rusercollection)
+          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
         
@@ -3278,7 +3280,7 @@ contains
           
           p_DbasTest => RvectorData(1)%p_DbasTest
 
-          select case (p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ccontrolConstraints)
+          select case (p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
             
           ! ---------------------------------------------------------
           ! No constraints
@@ -3324,10 +3326,10 @@ contains
           case (1)
             
             ! Get the box constraints
-            dumin1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%dumin1
-            dumin2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%dumin2
-            dumax1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%dumax1
-            dumax2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%dumax2
+            dumin1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+            dumin2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin2
+            dumax1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+            dumax2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax2
 
             ! Loop over the elements in the current set.
             do iel = 1,nelements

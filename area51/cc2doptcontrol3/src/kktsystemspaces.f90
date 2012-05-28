@@ -36,6 +36,8 @@ module kktsystemspaces
   use structuresgeneral
   use assemblytemplates
   
+  use spacediscretisation
+  
   implicit none
   
   private
@@ -96,6 +98,33 @@ module kktsystemspaces
 
 !</types>
 
+  ! Initialise the space discretisation of the primal space
+  public :: kktsp_initPrimalSpaceDiscr
+
+  ! Initialise the space discretisation of the dual space
+  public :: kktsp_initDualSpaceDiscr
+
+  ! Initialise the space discretisation of the control space
+  public :: kktsp_initControlSpaceDiscr
+
+  ! Initialise a primal vector
+  public :: kktsp_initPrimalVector
+
+  ! Initialise a dual vector
+  public :: kktsp_initDualVector
+
+  ! Initialise a control vector
+  public :: kktsp_initControlVector
+
+  ! Release a primal vector
+  public :: kktsp_donePrimalVector
+
+  ! Release a dual vector
+  public :: kktsp_doneDualVector
+
+  ! Release a control vector
+  public :: kktsp_doneControlVector
+
   ! Linear combination in the primal spacce
   public :: kktsp_primalLinearComb
 
@@ -115,6 +144,320 @@ module kktsystemspaces
   public :: kktsp_clearControl
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initPrimalSpaceDiscr (rspaceDiscr,rphysics,roptControl,&
+      rsettingsDiscr,rtriangulation,rboundary)
+  
+!<description>
+  ! Initialises the space discretisation of the primal space.
+!</description>
+
+!<input>
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
+  
+  ! Structure defining the optimal control problem to calculate
+  type(t_settings_optcontrol), intent(in) :: roptControl
+  
+  ! Discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  
+  ! Triangulation structure encapsuling the mesh.
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! Boundary structure encapsuling the domain
+  type(t_boundary), intent(in) :: rboundary
+!</input>
+
+!<output>
+  ! Spatial discretisation to be initialied.
+  type(t_blockDiscretisation), intent(out) :: rspaceDiscr
+!</output>
+
+!</subroutine>
+
+    ! Create the corresponding discretisation.
+    call spdsc_getDist1LevelDiscr (rboundary,rtriangulation,&
+        rspaceDiscr,rsettingsDiscr%ielementType)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initDualSpaceDiscr (rspaceDiscr,rspaceDiscrPrimal,rphysics,roptControl)
+  
+!<description>
+  ! Initialises the space discretisation of the dual space.
+!</description>
+
+!<input>
+  ! Space discretisation of the primal space.
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
+  
+  ! Structure defining the optimal control problem to calculate
+  type(t_settings_optcontrol), intent(in) :: roptControl
+!</input>
+
+!<output>
+  ! Spatial discretisation to be initialied.
+  type(t_blockDiscretisation), intent(out) :: rspaceDiscr
+!</output>
+
+!</subroutine>
+
+    ! Primal and dual space are identical
+    call spdiscr_duplicateBlockDiscr (rspaceDiscrPrimal, rspaceDiscr, .true.)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initControlSpaceDiscr (rspaceDiscr,&
+      rspaceDiscrPrimal,rsettingsDiscr,rphysics,roptControl)
+  
+!<description>
+  ! Initialises the space discretisation of the dual space.
+!</description>
+
+!<input>
+  ! Space discretisation of the primal space.
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
+  
+  ! Structure defining the optimal control problem to calculate
+  type(t_settings_optcontrol), intent(in) :: roptControl
+
+  ! Discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
+!</input>
+
+!<output>
+  ! Spatial discretisation to be initialied.
+  type(t_blockDiscretisation), intent(out) :: rspaceDiscr
+!</output>
+
+!</subroutine>
+
+    ! The structure of the control space is a bit confusing, since
+    ! it depends on the control applied.
+    !
+    ! At first, check the equation to be discretised.
+    select case (rphysics%cequation)
+    
+    ! -------------------------------------------------------------
+    ! Stokes/Navier Stokes.
+    ! -------------------------------------------------------------
+    case (0,1)
+    
+      ! -----------------------------------------------------------
+      ! Distributed control
+      ! -----------------------------------------------------------
+      if (roptControl%dalphaC .ge. 0.0_DP) then
+        
+        ! This is distributed control in the velocity space.
+        ! The discretisation matches the discretisation of the primal velocity.
+        call spdiscr_deriveBlockDiscr (rspaceDiscrPrimal, rspaceDiscr, 1, 2)
+      
+        return
+        
+      end if
+    
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initPrimalVector (rvector,rspaceDiscr,rtimeDiscr)
+  
+!<description>
+  ! Creates a primal vector.
+!</description>
+
+!<input>
+  ! Spatial discretisation
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Time discretisation
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+!</input>
+
+!<output>
+  ! Vector to be created.
+  type(t_primalSpace), intent(out) :: rvector
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory for the data
+    allocate(rvector%p_rvector)
+    call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
+    
+    ! Allocate temp memory for accessing the data
+    call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_donePrimalVector (rvector)
+  
+!<description>
+  ! Releases a primal vector.
+!</description>
+
+!<inputoutput>
+  ! Vector to be released.
+  type(t_primalSpace), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release temp memory
+    call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
+
+    ! Release vetor data
+    call sptivec_releaseVector (rvector%p_rvector)
+    deallocate(rvector%p_rvector)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initDualVector (rvector,rspaceDiscr,rtimeDiscr)
+  
+!<description>
+  ! Creates a dual vector.
+!</description>
+
+!<input>
+  ! Spatial discretisation
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Time discretisation
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+!</input>
+
+!<output>
+  ! Vector to be created.
+  type(t_primalSpace), intent(out) :: rvector
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory for the data
+    allocate(rvector%p_rvector)
+    call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
+    
+    ! Allocate temp memory for accessing the data
+    call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_doneDualVector (rvector)
+  
+!<description>
+  ! Releases a dual vector.
+!</description>
+
+!<inputoutput>
+  ! Vector to be released.
+  type(t_primalSpace), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release temp memory
+    call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
+
+    ! Release vetor data
+    call sptivec_releaseVector (rvector%p_rvector)
+    deallocate(rvector%p_rvector)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_initControlVector (rvector,rspaceDiscr,rtimeDiscr)
+  
+!<description>
+  ! Creates a control vector.
+!</description>
+
+!<input>
+  ! Spatial discretisation
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Time discretisation
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+!</input>
+
+!<output>
+  ! Vector to be created.
+  type(t_primalSpace), intent(out) :: rvector
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory for the data
+    allocate(rvector%p_rvector)
+    call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
+    
+    ! Allocate temp memory for accessing the data
+    call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_doneControlVector (rvector)
+  
+!<description>
+  ! Releases a control vector.
+!</description>
+
+!<inputoutput>
+  ! Vector to be released.
+  type(t_primalSpace), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release temp memory
+    call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
+
+    ! Release vetor data
+    call sptivec_releaseVector (rvector%p_rvector)
+    deallocate(rvector%p_rvector)
+
+  end subroutine
 
   ! ***************************************************************************
 

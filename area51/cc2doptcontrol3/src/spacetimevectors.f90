@@ -106,6 +106,8 @@
 !# 28.) sptivec_bindDiscreteBCtoBuffer
 !#      -> Binds discrete boundary conditions to a pool
 !#
+!# 29.) sptivec_assurePoolSize
+!#      -> Assures that a vector pool has a minimum size
 !# </purpose>
 !##############################################################################
 
@@ -158,6 +160,7 @@ module spacetimevectors
   
   public :: t_spaceTimeVectorAccess
   public :: sptivec_createAccessPool
+  public :: sptivec_assurePoolSize
   public :: sptivec_releaseAccessPool
   public :: sptivec_getVectorFromPool
   public :: sptivec_getFreeBufferFromPool
@@ -2364,6 +2367,35 @@ contains
       do i=1,size(raccessPool%p_IvectorIndex)
         call lsysbl_assignDiscreteFBC (raccessPool%p_RvectorPool(i),rdiscreteFBC)
       end do
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_assurePoolSize (raccessPool,isize)
+
+!<description>
+  ! Assures that a vector pool has a minimum size.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be checked.
+  type(t_spaceTimeVectorAccess), intent(inout) :: raccessPool
+  
+  ! Minimum size of the pool.
+  integer, intent(in) :: isize
+!</inputoutput>
+
+!</subroutine>
+
+    ! Stop if the pool is not large enough.
+    if (size(raccessPool%p_RvectorPool) .lt. isize) then
+      call output_line("Vector pool not large enough",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_assurePoolSize")
+      call sys_halt()
     end if
     
   end subroutine

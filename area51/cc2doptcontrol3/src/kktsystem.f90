@@ -117,7 +117,7 @@ module kktsystem
   public :: kkt_solveDual
 
   ! Calculate the control from the solution of the primal/dual equation
-  public :: kkt_calcControl
+  public :: kkt_dualToControl
 
   ! Calculate the residual of the control equation(s)
   public :: kkt_calcControlRes
@@ -130,7 +130,7 @@ module kktsystem
 
   ! Calculate the control of the linearised KKT system 
   ! from the solution of the primal/dual equation
-  public :: kkt_calcControlDirDeriv
+  public :: kkt_dualToControlDirDeriv
 
   ! Calculate the residual of the control equation(s) in the linearised KKT system
   public :: kkt_calcControlResDirDeriv
@@ -191,7 +191,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControl (rkktsystem,rcontrol)
+  subroutine kkt_dualToControl (rkktsystem,rcontrol)
   
 !<description>
   ! From the solution of the primal and dual problem, this routine
@@ -205,16 +205,127 @@ contains
 
 !<inputoutput>
   ! Receives the control.
-  type(t_controlSpace), intent(inout) :: rcontrol
+  type(t_controlSpace), intent(inout), target :: rcontrol
 !</inputoutput>
 
 !</subroutine>
 
+    ! local variables
+    integer :: icomp,istep
+    real(DP) :: dtheta
+    type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
+    type(t_spaceTimeVector), pointer :: p_rdualSol
+
     ! This is strongly equation and problem dependent
     ! and may imply a projection to the admissible set.
-    ! ... to be done
-    call sys_halt()
-   
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    !
+    ! Which timestep scheme do we have?
+    
+    p_rdualSol => rkktsystem%p_rdualSol%p_rvector
+    
+    ! Timestepping technique?
+    select case (p_rdualSol%p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rdualSol%p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rdualSol%p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! Loop over all timesteps.
+        do istep = 1,p_rdualSol%p_rtimeDiscr%nintervals+1
+        
+          ! Fetch the dual and control vectors.
+          call sptivec_getVectorFromPool (&
+              rkktsystem%p_rdualSol%p_rvectorAccess,istep,p_rdualSpace)
+
+          call sptivec_getVectorFromPool (&
+              rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
+              
+          ! icomp counts the component in the control
+          icomp = 0
+          
+          ! Which equation do we have?
+          select case (rkktsystem%p_rphysics%cequation)
+          
+          ! -------------------------------------------------------------
+          ! Stokes/Navier Stokes.
+          ! -------------------------------------------------------------
+          case (0,1)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (rkktsystem%p_roptControl%rconstraints%cdistVelConstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+              
+                if (rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+
+                ! The first two components of the control read
+                !
+                !    u = -1/alpha lambda
+                !
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/rkktsystem%p_roptControl%dalphaC,0.0_DP)
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/rkktsystem%p_roptControl%dalphaC,0.0_DP)
+              
+              end select ! constraints
+
+            end if ! alpha
+          
+          end select ! equation
+          
+          ! Save the new control
+          call sptivec_commitVecInPool (rcontrol%p_rvectorAccess,istep)
+        
+        end do ! istep
+
+      end select
+    
+    end select    
+    
   end subroutine
 
   ! ***************************************************************************
@@ -257,12 +368,12 @@ contains
     !
     !   d  =  -J'(u)  =  -u + P ( -1/alpha [B'(u)]* lambda ) 
     !
-    ! We call kkt_calcControl to calculate a new control 
+    ! We call kkt_dualToControl to calculate a new control 
     !
     !      rresidual = P ( -1/alpha [B'(u)]* lambda )
     !
     ! from the primal/dual variables in rkktsystem.
-    call kkt_calcControl (rkktsystem,rresidual)
+    call kkt_dualToControl (rkktsystem,rresidual)
     
     ! Add -u:   rresidual = rresidual - u
     call kktsp_controlLinearComb (rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP)
@@ -324,7 +435,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControlDirDeriv (rkktsystemDirDeriv,rcontrol)
+  subroutine kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rcontrolLin)
   
 !<description>
   ! From the solution of the linearised primal and dual problem, this routine
@@ -341,14 +452,126 @@ contains
 !<inputoutput>
   ! OPTIONAL: If specified, this receives the control.
   ! If not specified, the control in rkktsystem is overwritten.
-  type(t_controlSpace), intent(inout) :: rcontrol
+  type(t_controlSpace), intent(inout) :: rcontrolLin
 !</inputoutput>
 
 !</subroutine>
    
-    ! This is strongly equation and problem dependent.
-    ! ... to be done
-    call sys_halt()
+    ! local variables
+    integer :: icomp,istep
+    real(DP) :: dtheta
+    type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
+    type(t_spaceTimeVector), pointer :: p_rdualSolLin
+
+    ! This is strongly equation and problem dependent
+    ! and may imply a projection to the admissible set.
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    !
+    ! Which timestep scheme do we have?
+    
+    p_rdualSolLin => rkktsystemDirDeriv%p_rdualSolLin%p_rvector
+    
+    ! Timestepping technique?
+    select case (p_rdualSolLin%p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rdualSolLin%p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rdualSolLin%p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! Loop over all timesteps.
+        do istep = 1,p_rdualSolLin%p_rtimeDiscr%nintervals+1
+        
+          ! Fetch the dual and control vectors.
+          call sptivec_getVectorFromPool (&
+              rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep,p_rdualSpace)
+
+          call sptivec_getVectorFromPool (&
+              rcontrolLin%p_rvectorAccess,istep,p_rcontrolSpace)
+              
+          ! icomp counts the component in the control
+          icomp = 0
+          
+          ! Which equation do we have?
+          select case (rkktsystemDirDeriv%p_rkktsystem%p_rphysics%cequation)
+          
+          ! -------------------------------------------------------------
+          ! Stokes/Navier Stokes.
+          ! -------------------------------------------------------------
+          case (0,1)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%rconstraints%cdistVelConstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+
+                if (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  call sys_halt()
+                end if
+              
+                ! The first two components of the linearised control read
+                !
+                !    u~ = -1/alpha lambda~
+                !
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC,0.0_DP)
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC,0.0_DP)
+              
+              end select ! constraints
+
+            end if ! alpha
+          
+          end select ! equation
+          
+          ! Save the new linearised control
+          call sptivec_commitVecInPool (rcontrolLin%p_rvectorAccess,istep)
+        
+        end do ! istep
+
+      end select
+    
+    end select    
     
   end subroutine
 
@@ -406,7 +629,7 @@ contains
     ! We expect rkktsystemDirDeriv to represent the value "J''(u) g".
     ! To calculate the residual, we need a representation of this value
     ! in the control space.
-    call kkt_calcControlDirDeriv (rkktsystemDirDeriv,rresidual)
+    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rresidual)
 
     ! b) rresidual = rresidual + d - g
     call kktsp_controlLinearComb (&

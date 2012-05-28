@@ -584,8 +584,10 @@ contains
 
     ! Parameters defining the control constraints
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "ccontrolConstraints",roptcontrol%rconstraints%ccontrolConstraints,0)
+        "cdistVelConstraints",roptcontrol%rconstraints%cdistVelConstraints,0)
 
+    ! Set the type to "constraints by constant".
+    ! If the constraints are analytically given, this will be changed later.
     roptcontrol%rconstraints%cdistVelConstType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
@@ -604,6 +606,8 @@ contains
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,0)
 
+    ! Set the type to "constraints by constant".
+    ! If the constraints are analytically given, this will be changed later.
     roptcontrol%rconstraints%cstateConstraintsType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&

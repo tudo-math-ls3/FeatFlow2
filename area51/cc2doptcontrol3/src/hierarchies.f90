@@ -33,7 +33,7 @@
 !# </purpose>
 !##############################################################################
 
-module initsolver
+module hierarchies
 
   use fsystem
   use storage
@@ -77,6 +77,152 @@ module initsolver
   public :: init_initSpaceTimeHierarchy
   
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_generateSlicedQuadMesh (rtriangulation,ncellsX)
+  
+!<description>
+  ! This routine generates a standard [0,1]^2 QUAD mesh with ncellsX cells in
+  ! X-direction. By nature, these cells show an anisotropy of ncellsX:1.
+!</description>
+  
+!<input>
+  ! Number of cells in X-direction.
+  integer, intent(IN) :: ncellsX
+!</input>
+    
+!<output>
+  ! Triangulation structure that receives the triangulation.
+  type(t_triangulation), intent(OUT) :: rtriangulation
+!</output>
+    
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_Ddata2D
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer, dimension(:,:), pointer :: p_Idata2D
+    integer, dimension(:), pointer :: p_Idata,p_IverticesAtBoundary,p_IboundaryCpIdx
+    integer :: ivt, iel
+    integer, dimension(2) :: Isize
+    
+    ! Initialise the basic mesh
+    rtriangulation%ndim = NDIM2D
+    rtriangulation%NEL = ncellsX
+    rtriangulation%NVT = (ncellsX+1)*2
+    rtriangulation%NMT = 0
+    rtriangulation%NNVE = 4
+    rtriangulation%NNEE = 4
+    rtriangulation%NBCT = 1
+    rtriangulation%InelOfType(:) = 0
+    rtriangulation%InelOfType(TRIA_NVEQUAD2D) = rtriangulation%NEL
+    
+    ! Allocate memory for the basic arrays on the heap
+    ! 2d array of size(NDIM2D, NVT)
+    Isize = (/NDIM2D,rtriangulation%NVT/)
+    call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointers to the coordinate array
+    ! p_Ddata2D is the pointer to the coordinate array
+    call storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+    
+    ! Initialise the point coordinates.
+    ! Odd vertices on the bottom, even vertices on top of the QUAD mesh,
+    ! numbered from left to right.
+    do ivt=0,ncellsX
+      p_Ddata2D(1,2*ivt+1) = real(ivt,DP)/real(ncellsX,DP)
+      p_Ddata2D(2,2*ivt+1) = 0.0_DP
+
+      p_Ddata2D(1,2*ivt+2) = real(ivt,DP)/real(ncellsX,DP)
+      p_Ddata2D(2,2*ivt+2) = 1.0_DP
+    end do
+    
+    ! Allocate memory for IverticesAtElement
+    ! build the old KVERT...
+    ! 2d array of size(NVE, NEL)
+    Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
+    call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the IverticesAtElement array and read the array
+    call storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_Idata2D)
+
+    ! Initialise the connectivity for the cells.
+    do iel=0,ncellsX-1
+      p_Idata2D(1,iel+1) = 2*iel+1
+      p_Idata2D(2,iel+1) = 2*iel+3
+      p_Idata2D(3,iel+1) = 2*iel+4
+      p_Idata2D(4,iel+1) = 2*iel+2
+    end do
+    
+    ! Allocate memory for InodalProperty
+    call storage_new ('tria_read_tri2D', 'KNPR', &
+        rtriangulation%NVT, ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+    
+    ! Get the pointer to the InodalProperty array
+    call storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_Idata)
+
+    ! All vertices are on the boundary
+    p_Idata(:) = 1
+    
+    ! Number of vertices on the boundary -- all of them
+    rtriangulation%NVBD = rtriangulation%NVT
+    
+    ! Allocate memory for IverticesAtBoundary.
+    call storage_new ('tria_generateBasicBoundary', &
+        'KVBD', rtriangulation%NVBD, &
+        ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+        
+    ! Allocate memory for the boundary component index vector.
+    ! Initialise that with zero!
+    call storage_new ('tria_generateBasicBoundary', &
+        'KBCT', rtriangulation%NBCT+1, &
+        ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    
+    ! Get pointers to the arrays
+    call storage_getbase_int (&
+        rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+        
+    call storage_getbase_int (&
+        rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! The first element in p_IboundaryCpIdx is (as the head) always =1.
+    p_IboundaryCpIdx(1) = 1
+    p_IboundaryCpIdx(2) = 1 + rtriangulation%NVBD
+
+    ! Initialise the numbers of the vertices on the boundary
+    do ivt=0,ncellsX
+      p_IverticesAtBoundary (ivt+1) = 2*ivt+1
+      p_IverticesAtBoundary (2*(ncellsX+1)-ivt) = 2*ivt+2
+    end do
+    
+    ! Allocate memory for  and DvertexParameterValue
+    call storage_new ('tria_generateBasicBoundary', &
+        'DVBDP', rtriangulation%NVBD, &
+        ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+    
+    ! Get the array where to store boundary parameter values.
+    call storage_getbase_double (&
+        rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+    call storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+        
+    ! Initialise the parameter values of the vertices. For the bottommost
+    ! edge, they coincide wit the coordinate. For the topmost edge,
+    ! that's 3 - x-coordinate.
+    do ivt=1,ncellsX+1
+      p_DvertexParameterValue (ivt) = p_Ddata2D(1,p_IverticesAtBoundary(ivt))
+      p_DvertexParameterValue (ncellsX+1+ivt) = &
+          3.0_DP - p_Ddata2D(1,p_IverticesAtBoundary(ncellsX+1+ivt))
+    end do
+
+  end subroutine
 
   ! ***************************************************************************
 
