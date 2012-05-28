@@ -83,9 +83,9 @@
 ! transformation if memory layout on host and device are different.
 #endif
 #define DIAGLIST_DEVICE     SOA
-#define EDGELIST_DEVICE     AOS
+#define EDGELIST_DEVICE     SOA
 #define COEFFSATDIAG_DEVICE SOA
-#define COEFFSATEDGE_DEVICE AOS
+#define COEFFSATEDGE_DEVICE SOA
 
 #if 0
 !##############################################################################
