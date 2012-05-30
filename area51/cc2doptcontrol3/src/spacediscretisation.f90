@@ -10,11 +10,7 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) fgetDist1LvDiscrNavSt2D
-!#     -> Callback routine for spdsc_getDist1LevelDiscrNavSt2D to be used in
-!#        routines from fespacehierarchy.
-!#
-!# 2.) spdsc_getDist1LevelDiscr
+!# 1.) spdsc_getDist1LevelDiscr
 !#     -> Creates a distributed FE discretisation for one spatial level
 !#
 !# </purpose>
@@ -36,37 +32,9 @@ module spacediscretisation
   
   private
   
-  public :: fgetDist1LvDiscrNavSt2D
   public :: spdsc_getDist1LevelDiscr
   
 contains
-
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  subroutine fgetDist1LvDiscrNavSt2D(rtriangulation,rdiscr,rboundary,rcollection)
-
-!<description>
-  ! Callback routine wrapper for spdsc_get1LevelDiscrNavSt2D. Allows to create
-  ! a discretisation with the routines from fespacehierarchy.
-  ! Expects the following information in rcollection:
-  !   rcollection%IquickAccess(1) = ieltype
-!</description>
-
-  type(t_triangulation), intent(in) :: rtriangulation
-  type(t_blockDiscretisation), intent(out) :: rdiscr
-  type(t_collection), intent(inout), optional :: rcollection
-  type(t_boundary), intent(in), optional :: rboundary
-    
-!</subroutine>
-    
-    ! Create the discretisation corresponding to the triangulation
-    ! and element type ieltype.
-    call spdsc_getDist1LevelDiscr (rboundary,rtriangulation,&
-        rdiscr,rcollection%IquickAccess(1))
-    
-  end subroutine
 
   ! ***************************************************************************
 

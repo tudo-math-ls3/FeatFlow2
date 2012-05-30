@@ -137,28 +137,6 @@ scubB              =
 
 scubF              = 
 
-# ------------------------------------------------------------------------
-
-# Parameters to configure matrix generation on multiple levels.
-# This stabilises the preconditioner of the nonlinear iteration
-# in case of high aspect ratios in the cells of the mesh.
-# Works only with Q1~ discretisation.
-
-# Configure adaptive matrix generation.
-# 0=no adaptive matrix gen.=standard; 
-# 1=switch to constant mat. gen., depending on dAdMatThreshold; 
-# 2=switch mat. gen. depenting on size of ncurrent and neighbour element
-
-iAdaptiveMatrix    = 0
-
-# Treshold parameter: 
-# switch construction of coarse grid matrices from standard finite element 
-# approach to locally constant interpolation for all rows belonging to elements 
-# with aspect ratio >= dAdMatThreshold; 
-# 0D0=all elements; 20D0=standard; -1D0=infinity=no matrix modifications
-
-dAdMatThreshold    = 20.0
-
 
 # ========================================================================
 # The following section describes the interlevel projection (prolongation/

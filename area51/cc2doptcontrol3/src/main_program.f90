@@ -209,7 +209,6 @@ contains
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/discretisation.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/flows.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/linsol.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/forwardsolver.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/optcontrol.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/output.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/paramtriang.dat')

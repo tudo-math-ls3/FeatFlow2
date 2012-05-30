@@ -58,8 +58,12 @@ module hierarchies
   use fespacehierarchy
   use spacetimehierarchy
   
+  use constantsdiscretisation
   use structuresdiscretisation
   use structuresgeneral
+  use structuresoptcontrol
+  
+  use kktsystemspaces
   
   use spacediscretisation
   use spacetimeinterlevelprojection
@@ -67,14 +71,49 @@ module hierarchies
   implicit none
   
   private
+
+  ! Type encapsuling the information used for creating a discretisation
+  ! in space
+  type t_spaceDiscrParams
   
+    ! Discretisation to create.
+    integer :: cspace = CCSPACE_PRIMAL
+    
+    ! Pointer to physical parameters
+    type(t_settings_physics), pointer :: p_rphysics => null()
+    
+    ! Pointer to structure defining the optimal control problem to calculate
+    type(t_settings_optcontrol), pointer :: p_roptControl => null()
+    
+    ! Pointer to discretisation settings
+    type(t_settings_discr), pointer :: p_rsettingsDiscr => null()
+    
+    ! Space discretisation hierarchy of the primal space or NULL if not available.
+    type(t_feHierarchy), pointer :: p_rfeHierarchyPrimal => null()
+    
+  end type
+  
+  ! Initialise a mesh
   public :: init_initParamTria
+  
+  ! Release a mesh
   public :: init_doneParamTria
+  
+  ! Initialise a time hierarchy
   public :: init_initTimeHierarchy
+  
+  ! Initialise a spatial hierarchy
   public :: init_initSpaceDiscrHier
-  public :: init_initSpacePrjHierarchy
-  public :: init_initSpaceTimePrjHierarchy
+  
+  ! Initialise a space-time hierarchy
   public :: init_initSpaceTimeHierarchy
+  
+  ! Initialise a projection hierarchy for prolongation and restriction in space
+  public :: init_initSpacePrjHierarchy
+  
+  ! Initialise a projection hierarchy for prolongation and restriction
+  ! in space-time
+  public :: init_initSpaceTimePrjHierarchy
   
 contains
 
@@ -442,7 +481,7 @@ contains
     if (ioutputLevel .ge. 2) then
       call output_lbrk ()
       call output_line ('Mesh hierarchy statistics:')
-      call output_lbrk ()
+      call output_line ("--------------------------")
       call mshh_printHierStatistics (rmeshHierarchy)
     end if
     
@@ -492,19 +531,79 @@ contains
     if (ioutputLevel .ge. 2) then
       call output_lbrk ()
       call output_line ('Time hierarchy statistics:')
-      call output_lbrk ()
+      call output_line ("--------------------------")
       call tmsh_printHierStatistics (rtimeHierarchy)
     end if
 
   end subroutine
   
+  ! *****<**********************************************************************
+
+!<subroutine>
+  
+  subroutine fgetDist1LvDiscr(ilevel,rtriangulation,rspaceDiscr,rboundary,rcollection)
+
+!<description>
+  ! Callback routine wrapper for spdsc_get1LevelDiscrNavSt2D. Allows to create
+  ! a discretisation with the routines from fespacehierarchy.
+  ! Expects the following information in rcollection:
+  !   rcollection%IquickAccess(1) = ieltype
+!</description>
+
+  integer, intent(in) :: ilevel
+  type(t_triangulation), intent(in) :: rtriangulation
+  type(t_blockDiscretisation), intent(out) :: rspaceDiscr
+  type(t_collection), intent(inout), optional :: rcollection
+  type(t_boundary), intent(in), optional :: rboundary
+    
+!</subroutine>
+    
+    ! local variables
+    type(t_spaceDiscrParams) :: rdiscrParams
+
+    ! Recover the discretisation structure
+    rdiscrParams = transfer(rcollection%DquickAccess(:),rdiscrParams)
+    
+    ! Which space is to be created?
+    
+    select case (rdiscrParams%cspace)
+    
+    ! --------------------
+    ! Primal space
+    ! --------------------
+    case (CCSPACE_PRIMAL)
+      call kktsp_initPrimalSpaceDiscr (rspaceDiscr,&
+          rdiscrParams%p_rphysics,rdiscrParams%p_roptControl,&
+          rdiscrParams%p_rsettingsDiscr,rtriangulation,rboundary)
+
+    ! --------------------
+    ! Dual space
+    ! --------------------
+    case (CCSPACE_DUAL)
+      call kktsp_initDualSpaceDiscr (rspaceDiscr,&
+          rdiscrParams%p_rfeHierarchyPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation,&
+          rdiscrParams%p_rphysics,rdiscrParams%p_roptControl)
+
+    ! --------------------
+    ! Control space
+    ! --------------------
+    case (CCSPACE_CONTROL)
+      call kktsp_initControlSpaceDiscr (rspaceDiscr,&
+          rdiscrParams%p_rfeHierarchyPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation,&
+          rdiscrParams%p_rsettingsDiscr,rdiscrParams%p_rphysics,&
+          rdiscrParams%p_roptControl)
+    end select
+
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine init_initSpaceDiscrHier (rparlist,rfeHierarchy,&
-      rphysics,rsettingsSpaceDiscr,rboundary,&
-      rmeshHierarchy,ioutputLevel)
+  subroutine init_initSpaceDiscrHier (&
+      rfeHierarchyPrimal,rfeHierarchyDual,rfeHierarchyControl,&
+      rphysics,roptControl,rsettingsDiscr,rmeshHierarchy,rboundary,&
+      ioutputLevel)
 
 !<description>
   ! Initialises the hierarchies for the space discretisation on all levels
@@ -512,34 +611,41 @@ contains
 !</description>
 
 !<input>
-  ! Parameter list
-  type(t_parlist), intent(in) :: rparlist
-  
   ! Physics of the problem
-  type(t_settings_physics), intent(in) :: rphysics
+  type(t_settings_physics), intent(in), target :: rphysics
   
-  ! Structure with space discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  ! Structure defining the optimal control problem to calculate
+  type(t_settings_optcontrol), intent(in), target :: roptControl
 
-  ! Description of the boundary
-  type(t_boundary), intent(in) :: rboundary
+  ! Structure with space discretisation settings
+  type(t_settings_discr), intent(in), target :: rsettingsDiscr
 
   ! A mesh hierarchy with all available space meshes.
-  type(t_meshHierarchy), intent(in) :: rmeshHierarchy
+  type(t_meshHierarchy), intent(in), target :: rmeshHierarchy
+
+  ! Description of the boundary
+  type(t_boundary), intent(in), target :: rboundary
 
   ! Output level during initialisation
   integer, intent(in) :: ioutputLevel
 !</input>
 
 !<output>
-  ! The FE space hierarch structure to create
-  type(t_feHierarchy), intent(out) :: rfeHierarchy
+  ! The FE space hierarch structure to create, primal space
+  type(t_feHierarchy), intent(out), target :: rfeHierarchyPrimal
+
+  ! The FE space hierarch structure to create, dual space
+  type(t_feHierarchy), intent(out) :: rfeHierarchyDual
+
+  ! The FE space hierarch structure to create, control space
+  type(t_feHierarchy), intent(out) :: rfeHierarchyControl
 !</output>
 
 !</subroutine>
   
     ! local variables
     type(t_collection) :: rcollection
+    type(t_spaceDiscrParams) :: rdiscrParams
     
     select case (rphysics%cequation)
     case (0,1)
@@ -551,22 +657,60 @@ contains
       ! as follows:
       !   rcollection%IquickAccess(1) = ieltype
 
-      ! Element type
-      rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
+      ! Initialise the structure encapsuling the parameters of the discretisation.
+      ! The structure is placed in the collection
 
-      ! Create an FE space hierarchy based on the existing mesh hierarchy.
-      call fesph_createHierarchy (rfeHierarchy,&
+      rdiscrParams%p_rphysics => rphysics
+      rdiscrParams%p_roptControl => roptControl
+      rdiscrParams%p_rsettingsDiscr => rsettingsDiscr
+      
+      ! Create the hierarchy for the primal space
+      rdiscrParams%cspace = CCSPACE_PRIMAL
+      rdiscrParams%p_rfeHierarchyPrimal => null()
+      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+      
+      call fesph_createHierarchy (rfeHierarchyPrimal,&
           rmeshHierarchy%nlevels,rmeshHierarchy,&
-          fgetDist1LvDiscrNavSt2D,rcollection,rboundary)
+          fgetDist1LvDiscr,rcollection,rboundary)
+
+      ! Create the hierarchy for the dual space
+
+      rdiscrParams%cspace = CCSPACE_DUAL
+      rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
+      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+
+      call fesph_createHierarchy (rfeHierarchyDual,&
+          rmeshHierarchy%nlevels,rmeshHierarchy,&
+          fgetDist1LvDiscr,rcollection,rboundary)
+
+      ! Create the hierarchy for the control space
+
+      rdiscrParams%cspace = CCSPACE_CONTROL
+      rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
+      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+
+      call fesph_createHierarchy (rfeHierarchyControl,&
+          rmeshHierarchy%nlevels,rmeshHierarchy,&
+          fgetDist1LvDiscr,rcollection,rboundary)
           
     end select
     
     if (ioutputLevel .ge. 2) then
       ! Print statistics about the discretisation
       call output_lbrk ()
-      call output_line ("Space discretisation hierarchy statistics:")
+      call output_line ("Space discretisation hierarchy statistics")
+      call output_line ("-----------------------------------------")
+      call output_line ("Primal space:")
       call output_lbrk ()
-      call fesph_printHierStatistics (rfeHierarchy)
+      call fesph_printHierStatistics (rfeHierarchyPrimal)
+      call output_lbrk ()
+      call output_line ("Dual space:")
+      call output_lbrk ()
+      call fesph_printHierStatistics (rfeHierarchyDual)
+      call output_lbrk ()
+      call output_line ("Control space:")
+      call output_lbrk ()
+      call fesph_printHierStatistics (rfeHierarchyControl)
     end if
 
   end subroutine
@@ -835,7 +979,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initSpaceTimePrjHierarchy (rprjHierarchy,rtimeDisr,rhierarchy,&
+  subroutine init_initSpaceTimePrjHierarchy (rprjHierarchy,rhierarchy,&
       rprojHierarchySpace,rphysics,rparlist,ssection)
   
 !<description>
@@ -843,9 +987,6 @@ contains
 !</description>
   
 !<input>
-  ! Underlying time (coarse) grid.
-  type(t_timeDiscretisation), intent(in) :: rtimeDisr
-
   ! Underlying space-time hierarchy.
   type(t_spaceTimeHierarchy), intent(in) :: rhierarchy
   

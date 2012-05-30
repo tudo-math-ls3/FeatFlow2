@@ -91,16 +91,8 @@ module forwardbackwardsimulation
   ! Include main structures; used for matrix assembly!
   use constantsdiscretisation
   use assemblytemplates
-  use assemblytemplatesoptc
-  use structuresoptc
   
   use structuresoptflow
-  
-  use timediscretisation
-  use spatialbcdef
-  use spacematvecassembly
-  use spacetimevectors
-  use spacetimelinearsystem
   
   use user_callback
 
@@ -170,12 +162,6 @@ module forwardbackwardsimulation
 
     real(DP) :: depsRelNewton = 1.0E99_DP
   
-    ! Whether to use the inexact Newton iteration or not.
-    ! The inexact Newton controls the stopping criterion of the linear
-    ! solver according to the nonlinear residual.
-    
-    integer :: cinexactNewton = 1
-
     ! Stopping criterion for the linear solver in the inexact Newton iteration.
     ! Controls the minimum number of digits to gain in the linear solver
     ! per Newton iteration. Only used if cinexactNewton = 1.
@@ -263,7 +249,7 @@ module forwardbackwardsimulation
     ! =0: simple linear solver
     ! =1: nonlinear defect correction solver.
     ! =2: Newton solver
-    ! =3: adaptive Newton with parameters in radaptiveNewton
+    ! =3: inexact Newton with parameters in radaptiveNewton
     integer :: ctypeIteration = -1
     
     ! Output mode. Used for printing messages.

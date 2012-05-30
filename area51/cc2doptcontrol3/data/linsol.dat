@@ -22,18 +22,11 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 1=General VANKA. 'Direct' method.
 #   Note: This doesn't seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
-# 3=Diagonal VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
-#   Note: This doesn't seem to work!?!
-# 4=Full VANKA for 2D Navier-Stokes optimal control problem.
-# 5=Full VANKA for 2D Navier-Stokes optimal control problem. 'Direct' method.
-#   Note: This doesn't seem to work!?!
-# 6=BiCGStab with Full VANKA preconditioning
-# 7=BiCGStab with Diagonal VANKA preconditioning
-# 8=BiCGStab with Diagonal VANKA preconditioning, all element types
-# 9=Diagonal VANKA preconditioning, all element types
-# 10=BiCGStab with general VANKA preconditioning
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 9
+ismootherType = 2
 
 # Name of the section in this file which configures the smoother.
 
@@ -45,19 +38,12 @@ ssmootherSection = 'CC-SMOOTHER'
 # =2: Defect correction with full VANKA preconditioning.
 # =3: BiCGStab with diagonal VANKA preconditioning
 # =4: BiCGStab with full VANKA preconditioning
-# =5: BiCGStab with general VANKA preconditioning
-# =6: BiCGStab with diagonal VANKA preconditioning, all element types
 
-icoarseGridSolverType = 6
+icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
 scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
-
-# Name of the section configuring the preconditioner of the coarse 
-# grid correction.
-
-sCgrPreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
 
 
 # ========================================================================

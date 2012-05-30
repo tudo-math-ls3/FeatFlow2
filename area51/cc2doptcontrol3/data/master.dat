@@ -18,19 +18,15 @@ spredirectory = %{sappdirectory}/pre
 
 # Files to import
 
-simportdatafiles(12) = 
+simportdatafiles(11) = 
   "main.dat"
   "bdconditions.dat"
   "discretisation.dat"
   "flows.dat"
   "linsol.dat"
-  "forwardsolver.dat"
   "optcontrol.dat"
   "output.dat"
   "paramtriang.dat"
   "postprocessing.dat"
   "spacetimesolver.dat"
   "timediscr.dat"
-#  "./data/master_testflow2.dat"
-#  "./data/master_ANALYT_016_nonstvergleich.dat"
-

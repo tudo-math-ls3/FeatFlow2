@@ -3838,8 +3838,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_assembleMatrix_primal (rspatialOperatorAsm,rprimalSol,idofTime,bfull,&
-      rmatrix)
+  subroutine smva_assembleMatrix_primal (rmatrix,&
+      rspatialOperatorAsm,rprimalSol,idofTime,bfull)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -3971,8 +3971,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_assembleMatrix_dual (rspatialOperatorAsm,rprimalSol,idofTime,&
-      rmatrix)
+  subroutine smva_assembleMatrix_dual (rmatrix,&
+      rspatialOperatorAsm,rprimalSol,idofTime)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
