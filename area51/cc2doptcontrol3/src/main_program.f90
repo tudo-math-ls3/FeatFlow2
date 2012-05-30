@@ -70,6 +70,7 @@ module main_program
   
   use structuresoptflow
   use initoptflow
+  use newtoniteration
   
   implicit none
 
@@ -270,6 +271,9 @@ contains
     ! Global solution, temp vector
     type(t_spacetimevector) :: rsolution,rtemp,rrhsDiscrete
 
+    ! Structure for the Newton solver
+    type(t_newtonParameters) :: rsolver
+
     ! Postprocessing data.
     type(t_optcPostprocessing) :: rpostproc
     
@@ -303,8 +307,19 @@ contains
     call stat_clearTimer (rinitTime)
     call stat_startTimer (rinitTime)
 
-    call output_line ("Initialising solver structures.")
+    if (rsettings%routput%ioutputInit .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising solver structures.")
+    end if
     call init_initOptFlow (rparlist,rsettings,p_rsettingsSolver,rsettings%routput%ioutputInit)
+    
+    if (rsettings%routput%ioutputInit .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising the descent algorithm loop.")
+    end if
+    call newtonit_initParams (rsolver,p_rsettingsSolver,rsettings%ssectionSpaceTimeSolver,rparlist)
+    call newtonit_initStructure (rsolver)
+    call newtonit_initData (rsolver)
     
 !    ! Create a temp vector
 !    call sptivec_initVector (rtemp,&
@@ -344,6 +359,10 @@ contains
 !    call stnlsinit_printSolverStatistics (p_rnlstsolver)
 !    
 !    ! Release all data
+    call newtonit_doneData (rsolver)
+    call newtonit_doneStructure (rsolver)
+    call newtonit_done (rsolver)
+
     call init_doneOptFlow (p_rsettingsSolver)
     
     call stat_stopTimer (rtotalTime)

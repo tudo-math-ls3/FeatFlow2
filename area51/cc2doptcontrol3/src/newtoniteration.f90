@@ -34,6 +34,7 @@ module newtoniteration
   use structuresdiscretisation
   use structuresoptcontrol
   use structuresgeneral
+  use structuresoptflow
   use assemblytemplates
   
   use spacematvecassembly
@@ -140,6 +141,9 @@ module newtoniteration
     ! file (if a log file is opened).
     integer(I32) :: coutputmode = OU_MODE_STD
   
+    ! Parameters of the OptFlow solver
+    type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
+
     ! <!-- ----------------------------------------- -->
     ! <!-- STOPPING CRITERIA, DAMPING PARAMETERS,... --> 
     ! <!-- ----------------------------------------- -->
@@ -260,7 +264,7 @@ module newtoniteration
 !</types>
 
   ! Basic initialisation of the Newton solver
-  public :: newtonit_init
+  public :: newtonit_initParams
   
   ! Structural initialisation
   public :: newtonit_initStructure
@@ -286,13 +290,16 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initParams (rsolver,ssection,rparamList)
+  subroutine newtonit_initParams (rsolver,rsettingsSolver,ssection,rparamList)
   
 !<description>
   ! Initialises the solver parameters according to a parameter list.
 !</description>
   
 !<input>
+  ! Parameters of the OptFlow solver
+  type(t_settings_optflow), intent(in), target :: rsettingsSolver
+  
   ! Parameter list with the parameters configuring the nonlinear solver
   type(t_parlist), intent(in) :: rparamList
 
@@ -320,6 +327,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"newtonit_initParams")
       call sys_halt()
     end if
+    
+    ! Remember the solver settings for later use
+    rsolver%p_rsettingsSolver => rsettingsSolver
 
     ! Get stopping criteria of the nonlinear iteration
     call parlst_getvalue_double (p_rsection, "depsRel", &
@@ -455,7 +465,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_updateControl (rnewtonParam,rkktsystem,rcorrection)
+  subroutine newtonit_updateControl (rsolver,rkktsystem,rcorrection)
   
 !<description>
   ! Calculates the basic (unprecondiotioned) search direction of the 
@@ -465,7 +475,7 @@ contains
 !<input>
   ! Parameters for the Newton iteration.
   ! The output parameters are changed according to the iteration.
-  type(t_newtonParameters), intent(in) :: rnewtonParam
+  type(t_newtonParameters), intent(in) :: rsolver
 
   ! The preconditioned search direction
   type(t_controlSpace), intent(inout) :: rcorrection
@@ -486,7 +496,7 @@ contains
     ! Later, a step length control can be added here.
     
     call kktsp_controlLinearComb (&
-        rcorrection,rnewtonParam%domega,rkktsystem%p_rcontrol,1.0_DP)
+        rcorrection,rsolver%domega,rkktsystem%p_rcontrol,1.0_DP)
 
   end subroutine
 
@@ -494,12 +504,12 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_solve (rnewtonParam,rkktsystem)
+  subroutine newtonit_solve (rsolver,rkktsystem)
   
 !<inputoutput>
   ! Parameters for the Newton iteration.
   ! The output parameters are changed according to the iteration.
-  type(t_newtonParameters), intent(inout) :: rnewtonParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 
   ! Structure defining the KKT system.
   ! The solutions in this structure are taken as initial
@@ -516,7 +526,7 @@ contains
     ! Prepare a structure that encapsules the directional derivative.
     
     ! Apply the Newton iteration
-    rnewtonParam%nnonlinearIterations = 0
+    rsolver%nnonlinearIterations = 0
     
     do while (.true.)
     
@@ -535,28 +545,28 @@ contains
       ! -------------------------------------------------------------
 
       ! Compute the basic (unpreconditioned) search direction d_n.
-      call newtonit_getResidual (rkktsystem,rdescentDir,rnewtonParam%dresFinal)
+      call newtonit_getResidual (rkktsystem,rdescentDir,rsolver%dresFinal)
 
-      if (rnewtonParam%nnonlinearIterations .eq. 1) then
+      if (rsolver%nnonlinearIterations .eq. 1) then
         ! Remember the initial residual
-        rnewtonParam%dresInit = rnewtonParam%dresFinal
+        rsolver%dresInit = rsolver%dresFinal
       end if
 
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------
-      if (rnewtonParam%nnonlinearIterations .ge. rnewtonParam%nminIterations) then
+      if (rsolver%nnonlinearIterations .ge. rsolver%nminIterations) then
         ! Check the residual.
         !
         ! Absolute residual
-        if (rnewtonParam%dresFinal .le. rnewtonParam%depsAbs) then
-          rnewtonParam%iresult = 0
+        if (rsolver%dresFinal .le. rsolver%depsAbs) then
+          rsolver%iresult = 0
           exit
         end if
         
         ! Relative residual
-        if (rnewtonParam%dresFinal .le. rnewtonParam%depsRel * rnewtonParam%dresInit) then
-          rnewtonParam%iresult = 0
+        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
+          rsolver%iresult = 0
           exit
         end if
       end if
@@ -565,14 +575,14 @@ contains
       ! Check for divergence
       ! -------------------------------------------------------------
       ! Absolute residual
-      if (rnewtonParam%dresFinal .ge. rnewtonParam%ddivAbs) then
-        rnewtonParam%iresult = 1
+      if (rsolver%dresFinal .ge. rsolver%ddivAbs) then
+        rsolver%iresult = 1
         exit
       end if
       
       ! Relative residual
-      if (rnewtonParam%dresFinal .ge. rnewtonParam%ddivRel * rnewtonParam%dresInit) then
-        rnewtonParam%iresult = 1
+      if (rsolver%dresFinal .ge. rsolver%ddivRel * rsolver%dresInit) then
+        rsolver%iresult = 1
         exit
       end if
       
@@ -580,9 +590,9 @@ contains
       ! Check other stopping criteria
       ! -------------------------------------------------------------
 
-      if (rnewtonParam%nnonlinearIterations .ge. rnewtonParam%nmaxIterations) then
+      if (rsolver%nnonlinearIterations .ge. rsolver%nmaxIterations) then
         ! Maximum number of iterations reached.
-        rnewtonParam%iresult = -1
+        rsolver%iresult = -1
         exit
       end if
       
@@ -595,7 +605,7 @@ contains
       !
       !    J''(u_n) g_n  =  d_n
       !
-      call newtonlin_precondNewton (rnewtonParam%rlinsolParam,&
+      call newtonlin_precondNewton (rsolver%rlinsolParam,&
           rkktsystemDirDeriv,rdescentDir)
       
       ! -------------------------------------------------------------
@@ -607,13 +617,13 @@ contains
       !    u_n+1  =  u_n  +  g_n
       !
       ! or to any configured step-length control rule.
-      call newtonit_updateControl (rnewtonParam,rkktsystem,rdescentDir)
+      call newtonit_updateControl (rsolver,rkktsystem,rdescentDir)
       
       ! -------------------------------------------------------------
       ! Proceed with the next iteration
       ! -------------------------------------------------------------
       ! Next iteration
-      rnewtonParam%nnonlinearIterations = rnewtonParam%nnonlinearIterations + 1
+      rsolver%nnonlinearIterations = rsolver%nnonlinearIterations + 1
     
     end do
 
@@ -623,7 +633,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_init (rlinsolParam,rparlist,ssection)
+  subroutine newtonit_init (rsolver,rparlist,ssection)
   
 !<description>
   ! Basic initialisation of the Newton solver.
@@ -640,7 +650,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(out) :: rlinsolParam
+  type(t_newtonParameters), intent(out) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -651,7 +661,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initStructure (rlinsolParam)
+  subroutine newtonit_initStructure (rsolver)
   
 !<description>
   ! Structural initialisation of the Newton solver.
@@ -659,7 +669,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(inout) :: rlinsolParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -671,7 +681,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initData (rlinsolParam)
+  subroutine newtonit_initData (rsolver)
   
 !<description>
   ! Final preparation of the Newton solver.
@@ -679,7 +689,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(inout) :: rlinsolParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -690,7 +700,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_doneData (rlinsolParam)
+  subroutine newtonit_doneData (rsolver)
   
 !<description>
   ! Cleanup of the data initalised in newtonit_initData.
@@ -698,7 +708,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rlinsolParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -709,7 +719,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_doneStructure (rlinsolParam)
+  subroutine newtonit_doneStructure (rsolver)
   
 !<description>
   ! Cleanup of the data initalised in newtonit_initStructure.
@@ -717,7 +727,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rlinsolParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -728,7 +738,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_done (rlinsolParam)
+  subroutine newtonit_done (rsolver)
   
 !<description>
   ! Clean up the Newton iteration.
@@ -736,7 +746,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rlinsolParam
+  type(t_newtonParameters), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>

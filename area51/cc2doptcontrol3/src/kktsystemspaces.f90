@@ -356,7 +356,7 @@ contains
 
 !<output>
   ! Vector to be created.
-  type(t_primalSpace), intent(out) :: rvector
+  type(t_dualSpace), intent(out) :: rvector
 !</output>
 
 !</subroutine>
@@ -382,7 +382,7 @@ contains
 
 !<inputoutput>
   ! Vector to be released.
-  type(t_primalSpace), intent(inout) :: rvector
+  type(t_dualSpace), intent(inout) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -416,7 +416,7 @@ contains
 
 !<output>
   ! Vector to be created.
-  type(t_primalSpace), intent(out) :: rvector
+  type(t_controlSpace), intent(out) :: rvector
 !</output>
 
 !</subroutine>
@@ -442,7 +442,7 @@ contains
 
 !<inputoutput>
   ! Vector to be released.
-  type(t_primalSpace), intent(inout) :: rvector
+  type(t_controlSpace), intent(inout) :: rvector
 !</inputoutput>
 
 !</subroutine>

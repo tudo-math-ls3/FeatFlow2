@@ -110,6 +110,12 @@ module kktsystem
 
 !</types>
 
+  ! Initialises a KKT system.
+  public :: kkt_initKKTsystem
+
+  ! Cleans up a KKT system.
+  public :: kkt_doneKKTsystem
+
   ! Solve the primal equation
   public :: kkt_solvePrimal
 
@@ -136,6 +142,178 @@ module kktsystem
   public :: kkt_calcControlResDirDeriv
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_initKKTsystem (rkktsystem,rphysics,roptControl,&
+      rspaceDiscrPrimal,rtimeDiscrPrimal,&
+      rspaceDiscrDual,rtimeDiscrDual,&
+      rspaceDiscrControl,rtimeDiscrControl)
+  
+!<description>
+  ! Initialises a KKT system structure.
+!</description>
+
+!<input>  
+  ! Underlying physics
+  type(t_settings_physics), intent(in), target :: rphysics
+  
+  ! Structure defining the optimal control problem to calculate
+  type(t_settings_optcontrol), intent(in), target :: roptControl
+
+  ! Spatial discretisation, primal space
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+  
+  ! Time discretisation, primal space
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrPrimal
+
+  ! Spatial discretisation, dual space
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrDual
+  
+  ! Time discretisation, dual space
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrDual
+
+  ! Spatial discretisation, control space
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrControl
+  
+  ! Time discretisation, control space
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrControl
+!</input>
+
+!<output>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(out) :: rkktsystem
+!</output>
+
+!</subroutine>
+
+    ! Remember the structures
+    rkktsystem%p_rphysics => rphysics
+    rkktsystem%p_roptControl => roptControl
+    
+    ! Allocate memory for the solutions of the KKT system.
+    allocate (rkktsystem%p_rprimalSol)
+    call kktsp_initPrimalVector (rkktsystem%p_rprimalSol,rspaceDiscrPrimal,rtimeDiscrPrimal)
+
+    allocate (rkktsystem%p_rdualSol)
+    call kktsp_initDualVector (rkktsystem%p_rdualSol,rspaceDiscrDual,rtimeDiscrDual)
+
+    allocate (rkktsystem%p_rcontrol)
+    call kktsp_initControlVector (rkktsystem%p_rcontrol,rspaceDiscrControl,rtimeDiscrControl)
+   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_doneKKTsystem (rkktsystem)
+  
+!<description>
+  ! Cleans up a KKT system structure.
+!</description>
+
+!<inputoutput>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+!</inputoutput>
+
+!</subroutine>
+
+    ! Clean up the structures
+    nullify(rkktsystem%p_rphysics)
+    nullify(rkktsystem%p_roptControl)
+    
+    ! Release memory
+    call kktsp_donePrimalVector (rkktsystem%p_rprimalSol)
+    deallocate (rkktsystem%p_rprimalSol)
+
+    call kktsp_doneDualVector (rkktsystem%p_rdualSol)
+    deallocate (rkktsystem%p_rdualSol)
+
+    call kktsp_doneControlVector (rkktsystem%p_rcontrol)
+    deallocate (rkktsystem%p_rcontrol)
+   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_initKKTsystemDirDeriv (rkktsystemDirDeriv,rkktsystem)
+  
+!<description>
+  ! Initialises the structure for a directional derivative of the
+  ! solutions of a KKT system.
+!</description>
+
+!<input>  
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(in), target :: rkktsystem
+!</input>
+
+!<output>
+  ! Structure defining the directional derivative.
+  type(t_kktsystemDirDeriv), intent(out), target :: rkktsystemDirDeriv
+!</output>
+
+!</subroutine>
+
+    ! Remember the structures
+    rkktsystemDirDeriv%p_rkktsystem => rkktsystem
+    
+    ! Allocate memory for the solutions of the KKT system.
+    allocate (rkktsystemDirDeriv%p_rprimalSolLin)
+    call kktsp_initPrimalVector (rkktsystemDirDeriv%p_rprimalSolLin,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
+
+    allocate (rkktsystemDirDeriv%p_rdualSolLin)
+    call kktsp_initDualVector (rkktsystemDirDeriv%p_rdualSolLin,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
+
+    allocate (rkktsystemDirDeriv%p_rcontrolLin)
+    call kktsp_initControlVector (rkktsystemDirDeriv%p_rcontrolLin,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
+        rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
+   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_doneKKTsystemDirDeriv (rkktsystemDirDeriv)
+  
+!<description>
+  ! Cleans up the structure for a directional derivative of the
+  ! solutions of a KKT system.
+!</description>
+
+!<inputoutput>
+  ! Structure defining the directional derivative.
+  type(t_kktsystemDirDeriv), intent(out), target :: rkktsystemDirDeriv
+!</inputoutput>
+
+!</subroutine>
+
+    ! Clean up the structures
+    nullify(rkktsystemDirDeriv%p_rkktsystem)
+    
+    ! Release memory
+    call kktsp_donePrimalVector (rkktsystemDirDeriv%p_rprimalSolLin)
+    deallocate (rkktsystemDirDeriv%p_rprimalSolLin)
+
+    call kktsp_doneDualVector (rkktsystemDirDeriv%p_rdualSolLin)
+    deallocate (rkktsystemDirDeriv%p_rdualSolLin)
+
+    call kktsp_doneControlVector (rkktsystemDirDeriv%p_rcontrolLin)
+    deallocate (rkktsystemDirDeriv%p_rcontrolLin)
+   
+  end subroutine
 
   ! ***************************************************************************
 
