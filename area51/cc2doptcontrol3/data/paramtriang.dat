@@ -10,10 +10,10 @@
 #############
 
 # Filename of the parametrisation of the domain
-sParametrisation = './pre/bench1.prm'
+sParametrisation = './pre/QUAD.prm'
 
 # Filename of the coarse grid mesh
-sMesh = './pre/bench1.tri'
+sMesh = './pre/QUAD.tri'
 
 # Type of mesh to use as coarse mesh.
 # =0: the mesh is specified in the TRI file smesh

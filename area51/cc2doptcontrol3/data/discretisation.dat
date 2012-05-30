@@ -61,7 +61,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 1
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 

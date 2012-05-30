@@ -79,14 +79,6 @@ dstartVectorWeight = 1.0
 
 sstartVector = INITIALITERATE
 
-# Name of the section configuring the forward solver if ctypeStartVector=2.
-
-sstartVectorSolver = CC-NONLINEAR
-
-# Name of the section configuring the backward solver if ctypeStartVector=3.
-
-sstartVectorBackwardSolver = %{CC-NONLINEAR.slinearSolver}
-
 # Name of the section defining the boundary conditions of the start vector
 # if ctypeStartVector=2.
 

@@ -68,6 +68,9 @@ module main_program
   use structurespostproc
   use structuresmain
   
+  use structuresoptflow
+  use initoptflow
+  
   implicit none
 
 !<globals>
@@ -262,13 +265,10 @@ contains
     ! The following structure configures our solver.
     ! We allocate this dynamically since the structure may be too large
     ! for the stack.
-    !type(t_settings_optflow), pointer :: p_rsettingsSolver
+    type(t_settings_optflow), pointer :: p_rsettingsSolver
     
     ! Global solution, temp vector
     type(t_spacetimevector) :: rsolution,rtemp,rrhsDiscrete
-
-    ! Analytic solution defining the RHS of the equation.
-    type(t_anSolution) :: rrhs
 
     ! Postprocessing data.
     type(t_optcPostprocessing) :: rpostproc
@@ -297,58 +297,27 @@ contains
     
 !    ! Initialise the settings of the solver,
 !    ! allocate all template matrices etc.
-!    allocate(p_rsettingsSolver)
+    allocate(p_rsettingsSolver)
 !    allocate(p_rnlstsolver)
-!    
-!    call stat_clearTimer (rinitTime)
-!    call stat_startTimer (rinitTime)
-!
-!    call output_line ("Initialising solver structures.")
-!    call init_initStandardSolver (rparlist,rsettings,p_rsettingsSolver,p_rnlstsolver,&
-!        rpostproc,rrhs,rsettings%routput%ioutputInit)
-!
-!    ! Discretise the RHS according to the time stepping scheme.
-!    call output_lbrk()
-!    call output_line ("Discretising RHS.")
-!
-!    call stat_clearTimer (rrhsvectime)
-!    call stat_startTimer (rrhsvectime)
-!    
-!    call sptivec_initVector (rrhsdiscrete,&
-!        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
-!        p_rsettingsSolver%rfeHierPrimalDual% &
-!        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-!    call sptivec_clearVector (rrhsdiscrete)
-!    call init_discretiseRHS (p_rsettingsSolver,rrhs,rrhsDiscrete)
-!    
-!    call stat_stopTimer (rrhsvectime)
-!    
-!    if (rsettings%routput%ioutputInit .ge. 1) then
-!      call output_lbrk ()
-!      call output_line ("Time for discretisation of the RHS vector = "//&
-!          sys_sdL(rrhsvectime%delapsedReal,10))
-!    end if
-!
-!    ! DEBUG!!!
-!    !call sptivec_saveToFileSequence(rrhsdiscrete,"(""rhs"// &
-!    !    trim(sys_siL(p_rsettingsSolver%rtimeHierarchy%nlevels,10))// &
-!    !    ".txt."",I5.5)",.true.)
-!    
-!    ! Implement the initial condition to the discrete RHS.
-!    call init_implementInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
-!
+    
+    call stat_clearTimer (rinitTime)
+    call stat_startTimer (rinitTime)
+
+    call output_line ("Initialising solver structures.")
+    call init_initOptFlow (rparlist,rsettings,p_rsettingsSolver,rsettings%routput%ioutputInit)
+    
 !    ! Create a temp vector
 !    call sptivec_initVector (rtemp,&
 !        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
 !        p_rsettingsSolver%rfeHierPrimalDual% &
 !        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
 !
-!    call stat_stopTimer (rinitTime)
-!
-!    call output_separator (OU_SEP_EQUAL)
-!    call output_line ("Time for initialisation            = "//&
-!        sys_sdL(rinitTime%delapsedReal,10))
-!    call output_separator (OU_SEP_EQUAL)
+    call stat_stopTimer (rinitTime)
+
+    call output_separator (OU_SEP_EQUAL)
+    call output_line ("Time for initialisation            = "//&
+        sys_sdL(rinitTime%delapsedReal,10))
+    call output_separator (OU_SEP_EQUAL)
 !        
 !    ! Solve the system
 !    call stat_clearTimer (rsolverTime)
@@ -369,17 +338,13 @@ contains
 !    ! Sum up the time for the postprocesing during the simulation
 !    call stat_addTimers (p_rnlstsolver%rtimePostprocessing,rtimePostProc)
 !
-!    call output_separator (OU_SEP_EQUAL)
+    call output_separator (OU_SEP_EQUAL)
 !    
 !    ! Print out statistics about our solver.
 !    call stnlsinit_printSolverStatistics (p_rnlstsolver)
 !    
 !    ! Release all data
-!    call sptivec_releaseVector (rtemp)
-!    call sptivec_releaseVector (rsolution)
-!    call sptivec_releaseVector (rrhsdiscrete)
-!    call ansol_done(rrhs)
-!    call init_doneStandardSolver (p_rsettingsSolver,p_rnlstsolver,rpostproc)
+    call init_doneOptFlow (p_rsettingsSolver)
     
     call stat_stopTimer (rtotalTime)
 

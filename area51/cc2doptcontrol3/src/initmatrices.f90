@@ -157,7 +157,7 @@ contains
 
 !<inputoutput>
   ! The Assembly template structure to clean up
-  type(t_staticSpaceAsmTemplates), intent(out) :: rstaticAsmTemplates
+  type(t_staticSpaceAsmTemplates), intent(inout) :: rstaticAsmTemplates
 !</inputoutput>
 
 !</subroutine>

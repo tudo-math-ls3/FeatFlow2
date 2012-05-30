@@ -48,7 +48,6 @@
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="f90">
 		<Filter Name="old">
-		<Filter Name="main"/>
 		<Filter Name="optflow">
 		<Filter Name="boundary">
 		<File RelativePath="..\src\spacetimedirichletbcc.f90">

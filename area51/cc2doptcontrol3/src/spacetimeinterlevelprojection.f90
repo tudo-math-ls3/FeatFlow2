@@ -335,7 +335,7 @@ contains
     nullify(rprojHier%p_rspaceTimeHierarchy)
     nullify(rprojHier%p_rtimeCoarseDiscr)
     
-    deallocate(rprojHier%p_Icomponents)
+    if (associated(rprojHier%p_Icomponents)) deallocate(rprojHier%p_Icomponents)
     
     ! Set itimeOrder=0 -> structure not initialised anymore.
     rprojHier%ctimeProjection = -1
