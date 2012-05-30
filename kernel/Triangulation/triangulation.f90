@@ -258,12 +258,12 @@
 !#     missing. E.g. there is no information about adjacencies.
 !#     Such meshes come e.g. from .TRI files when reading them with
 !#     tria_readTriFile2D or similar routines. These basic meshes can normally
-!#     not be used for any computations; all the missing informationhas first
+!#     not be used for any computations; all the missing information has first
 !#     to be 'extracted' or 'generated' based on them. They can only be used
 !#     for very low-level modifications; e.g. the routine tria_rawGridToTri
 !#     allows to convert a quad mesh in a triangular mesh, which would
 !#     be much harder if all adjacency information is already computed.
-!#     Another possibile thing what can be done with such a 'raw' mesh is to
+!#     Another possible thing what can be done with such a 'raw' mesh is to
 !#     do quicker pre-refinement with routines like
 !#     tria_quickRefine2LevelOrdering. This routine refines the mesh without
 !#     computing everything and is therefore a little bit faster than a
