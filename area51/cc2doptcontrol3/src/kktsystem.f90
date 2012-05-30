@@ -116,6 +116,14 @@ module kktsystem
   ! Cleans up a KKT system.
   public :: kkt_doneKKTsystem
 
+  ! Initialises the structure for a directional derivative of the
+  ! solutions of a KKT system.
+  public :: kkt_initKKTsystemDirDeriv
+
+  ! Cleans up the structure for a directional derivative of the
+  ! solutions of a KKT system.
+  public :: kkt_doneKKTsystemDirDeriv
+
   ! Solve the primal equation
   public :: kkt_solvePrimal
 
