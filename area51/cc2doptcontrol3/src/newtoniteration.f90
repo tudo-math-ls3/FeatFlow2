@@ -259,9 +259,6 @@ module newtoniteration
 
 !</types>
 
-  ! Apply a Newton iteration in the control space
-  public :: newtonit_solve
-  
   ! Basic initialisation of the Newton solver
   public :: newtonit_init
   
@@ -270,6 +267,9 @@ module newtoniteration
   
   ! Final initialisation
   public :: newtonit_initData
+  
+  ! Apply a Newton iteration in the control space
+  public :: newtonit_solve
   
   ! Cleanup of data
   public :: newtonit_doneData

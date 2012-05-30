@@ -137,7 +137,14 @@ module assemblytemplates
 
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
+    
+    ! Precalculated EOJ matrix in the primal velocity space.
+    ! Calculated with nu=1.
+    type(t_matrixScalar) :: rmatrixEOJPrimalVel
 
+    ! Precalculated EOJ matrix in the dual velocity space.
+    ! Calculated with nu=1. May share the content with rmatrixEOJPrimal.
+    type(t_matrixScalar) :: rmatrixEOJDualVel
   end type
 
 !</typeblock>

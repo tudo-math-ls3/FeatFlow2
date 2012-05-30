@@ -65,13 +65,14 @@ module structuresdiscretisation
   type t_settings_discr
   
     ! Type of element pair to use for the discretisation.
-    ! 0 = Q1~(E031) / Q1~(E031) / Q0
-    ! 1 = Q1~(E030) / Q1~(E030) / Q0
-    ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
-    ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
-    ! 4 = Q2 (E013) / Q2 (E013) / QP1
-    ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
-    ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+    ! 2D Stokes/Navier-Stokes:
+    !  0 = Q1~(E031) / Q1~(E031) / Q0
+    !  1 = Q1~(E030) / Q1~(E030) / Q0
+    !  2 = Q1~(EM31) / Q1~(EM31) / Q0
+    !  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+    !  4 = Q2 (E013) / Q2 (E013) / QP1
+    !  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+    !  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
     ! (EM30 = nonparametric, nonconformal Rannacher-Turek element)
     ! (QP1  = Quadrilateral discontinuous P1 element)
     integer :: ielementType = 3
@@ -88,10 +89,10 @@ module structuresdiscretisation
     ! cubature formula for RHS F
     integer(i32) :: icubF = CUB_GEN_AUTO
 
-    ! Stabilisation parameters for the convectino in the primal system.
+    ! Stabilisation parameters for the convection in the primal system.
     type(t_settings_stabil) :: rstabilConvecPrimal
 
-    ! Stabilisation parameters for the convectino in the dual system.
+    ! Stabilisation parameters for the convection in the dual system.
     type(t_settings_stabil) :: rstabilConvecDual
 
   end type
@@ -145,7 +146,11 @@ module structuresdiscretisation
 
 !</types>
 
+  ! Extracts main discretisation settings in space from the DAT file.
   public :: struc_getSpaceDiscrSettings
+  
+  ! Reads information about physics from the DAT file and saves them to rphysics.
+  public :: struc_initPhysics
 
 contains
 

@@ -56,14 +56,9 @@ module structuresoptflow
   ! Structure collecting all settings of the space-time optflow solver.
   type t_settings_optflow
 
-    !<!--
-    ! ################
-    ! INPUT PARAMETERS
-    ! ################
-    !
-    ! The following parameters must be set by the main program in order to
-    ! run the solver.
-    ! -->
+    !<!-- ------------------------- -->
+    !<!-- MESH, DOMAIN, HIERARCHIES -->
+    !<!-- ------------------------- -->
 
     ! An object for saving the domain
     type(t_boundary) :: rboundary
@@ -99,27 +94,54 @@ module structuresoptflow
     ! A level info hierarchy for the assembly of stuff on all levels.
     type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
 
-    ! A hierarchy of space levels for velocity+pressure 
-    type(t_feHierarchy) :: rfeHierarchy
+    ! A hierarchy of space levels for the primal space
+    type(t_feHierarchy) :: rfeHierarchyPrimal
+
+    ! A hierarchy of space levels for the dual space
+    type(t_feHierarchy) :: rfeHierarchyDual
+
+    ! A hierarchy of space levels for the control space
+    type(t_feHierarchy) :: rfeHierarchyControl
     
-    ! Projection hierarchy for the interlevel projection in space.
-    type(t_interlevelProjectionHier) :: rprjHierSpace
+    ! Projection hierarchy for the interlevel projection in the primal space.
+    type(t_interlevelProjectionHier) :: rprjHierSpacePrimal
+
+    ! Projection hierarchy for the interlevel projection in the dual space.
+    type(t_interlevelProjectionHier) :: rprjHierSpaceDual
+
+    ! Projection hierarchy for the interlevel projection in the control space.
+    type(t_interlevelProjectionHier) :: rprjHierSpaceControl
     
-    ! A space-time hierarchy based on the primal/dual space
-    type(t_spaceTimeHierarchy) :: rspaceTimeHierarchy
+    ! A space-time hierarchy based on the primal space
+    type(t_spaceTimeHierarchy) :: rspaceTimeHierPrimal
     
-    ! Projection hierarchy for the interlevel projection in space/time.
-    type(t_sptiProjHierarchy) :: rprjHierSpaceTime
+    ! A space-time hierarchy based on the primal space
+    type(t_spaceTimeHierarchy) :: rspaceTimeHierDual
+
+    ! A space-time hierarchy based on the primal space
+    type(t_spaceTimeHierarchy) :: rspaceTimeHierControl
+
+    ! Projection hierarchy for the interlevel projection in space/time, primal space.
+    type(t_sptiProjHierarchy) :: rprjHierSpaceTimePrimal
+
+    ! Projection hierarchy for the interlevel projection in space/time, dual space.
+    type(t_sptiProjHierarchy) :: rprjHierSpaceTimeDual
+
+    ! Projection hierarchy for the interlevel projection in space/time, control space.
+    type(t_sptiProjHierarchy) :: rprjHierSpaceTimeControl
     
     ! All debug flags used by the application
     type(t_optcDebugFlags) :: rdebugFlags
 
-    !<!-- ------------------------------------- -->
-    !<!-- INITIAL CONDITION, BOUNDARY CONDITION -->
-    !<!-- ------------------------------------- -->
+    !<!-- ------------------------------------------ -->
+    !<!-- INITIAL CONDITION, BOUNDARY CONDITION, RHS -->
+    !<!-- ------------------------------------------ -->
 
     ! Analytic solution defining the initial condition.
     type(t_anSolution) :: rinitialCondition
+
+    ! Analytic solution defining the right-hand side
+    type(t_anSolution) :: rrhs
 
     ! The boundary conditions, analytic definition
     type(t_optcBDC) :: roptcBDC

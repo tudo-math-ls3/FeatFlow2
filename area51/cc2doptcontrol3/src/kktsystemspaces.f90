@@ -149,7 +149,7 @@ contains
 
 !<subroutine>
 
-  subroutine kktsp_initPrimalSpaceDiscr (rspaceDiscr,rphysics,roptControl,&
+  subroutine kktsp_initPrimalSpaceDiscr (rspaceDiscr,rphysics,&
       rsettingsDiscr,rtriangulation,rboundary)
   
 !<description>
@@ -159,9 +159,6 @@ contains
 !<input>
   ! Underlying physics
   type(t_settings_physics), intent(in) :: rphysics
-  
-  ! Structure defining the optimal control problem to calculate
-  type(t_settings_optcontrol), intent(in) :: roptControl
   
   ! Discretisation settings
   type(t_settings_discr), intent(in) :: rsettingsDiscr

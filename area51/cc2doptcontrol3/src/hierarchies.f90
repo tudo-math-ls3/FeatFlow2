@@ -72,8 +72,11 @@ module hierarchies
   
   private
 
+!<types>
+
+!<typeblock>
   ! Type encapsuling the information used for creating a discretisation
-  ! in space
+  ! in space.
   type t_spaceDiscrParams
   
     ! Discretisation to create.
@@ -82,7 +85,8 @@ module hierarchies
     ! Pointer to physical parameters
     type(t_settings_physics), pointer :: p_rphysics => null()
     
-    ! Pointer to structure defining the optimal control problem to calculate
+    ! Pointer to structure defining the optimal control problem to calculate.
+    ! can be NULL for cspace = CCSPACE_PRIMAL.
     type(t_settings_optcontrol), pointer :: p_roptControl => null()
     
     ! Pointer to discretisation settings
@@ -92,6 +96,12 @@ module hierarchies
     type(t_feHierarchy), pointer :: p_rfeHierarchyPrimal => null()
     
   end type
+  
+!</typeblock>
+
+  public :: t_spaceDiscrParams
+
+!</types>
   
   ! Initialise a mesh
   public :: init_initParamTria
@@ -104,6 +114,9 @@ module hierarchies
   
   ! Initialise a spatial hierarchy
   public :: init_initSpaceDiscrHier
+
+  ! Releases a spatial hierarchy  
+  public :: init_doneSpaceDiscrHier
   
   ! Initialise a space-time hierarchy
   public :: init_initSpaceTimeHierarchy
@@ -114,6 +127,13 @@ module hierarchies
   ! Initialise a projection hierarchy for prolongation and restriction
   ! in space-time
   public :: init_initSpaceTimePrjHierarchy
+  
+  ! Initialises a space hierarchy based on a coarse mesh and a refinement
+  ! strategy specified in rrefinement.
+  public :: init_initSpaceHierarchy
+  
+  ! Callback function which creates the discretisation on a level.
+  public :: fgetDist1LvDiscr
   
 contains
 
@@ -296,7 +316,7 @@ contains
   ! The rdiscrTime%itag tag decides upon the type of one-step scheme, if
   ! a one-step scheme is chosen.
   ! =0: Standard, =1: Old (not respecting any minimisation problem)
-  type(t_timeDiscretisation) :: rdiscrTime
+  type(t_timeDiscretisation), intent(out) :: rdiscrTime
 !</output>
 
 !</subroutine>
@@ -573,8 +593,7 @@ contains
     ! --------------------
     case (CCSPACE_PRIMAL)
       call kktsp_initPrimalSpaceDiscr (rspaceDiscr,&
-          rdiscrParams%p_rphysics,rdiscrParams%p_roptControl,&
-          rdiscrParams%p_rsettingsDiscr,rtriangulation,rboundary)
+          rdiscrParams%p_rphysics,rdiscrParams%p_rsettingsDiscr,rtriangulation,rboundary)
 
     ! --------------------
     ! Dual space
@@ -652,7 +671,7 @@ contains
       ! Stokes, Navier-Stokes, 2D
       
       ! Read the parameters that define the underlying discretisation.
-      ! We use fget1LevelDiscretisation to create the basic spaces.
+      ! We use fgetDist1LvDiscr to create the basic spaces.
       ! This routines expects the rcollection%IquickAccess array to be initialised
       ! as follows:
       !   rcollection%IquickAccess(1) = ieltype
@@ -719,21 +738,29 @@ contains
 
 !<subroutine>
 
-  subroutine init_doneSpaceDiscrHier (rfeHierarchy)
+  subroutine init_doneSpaceDiscrHier (rfeHierarchyPrimal,rfeHierarchyDual,rfeHierarchyControl)
   
 !<description>
   ! Cleans up the discretisation hierarchies in rsettings.
 !</description>
 
 !<output>
-  ! The FE space hierarch structure to release
-  type(t_feHierarchy), intent(out) :: rfeHierarchy
+  ! The FE space hierarch structure to clean up, primal space
+  type(t_feHierarchy), intent(inout) :: rfeHierarchyPrimal
+
+  ! The FE space hierarch structure to clean up, dual space
+  type(t_feHierarchy), intent(inout) :: rfeHierarchyDual
+
+  ! The FE space hierarch structure to clean up, control space
+  type(t_feHierarchy), intent(inout) :: rfeHierarchyControl
 !</output>
 
 !</subroutine>
 
     ! Release all discretisation hierarchies.
-    call fesph_releaseHierarchy(rfeHierarchy)
+    call fesph_releaseHierarchy(rfeHierarchyControl)
+    call fesph_releaseHierarchy(rfeHierarchyDual)
+    call fesph_releaseHierarchy(rfeHierarchyPrimal)
 
   end subroutine
 
@@ -743,8 +770,8 @@ contains
 
   subroutine init_initSpaceTimeHierarchy (rparlist,ssection,&
       rrefinementSpace,rrefinementTime,&
-      rfeHierPrimal,rfeHierPrimalDual,rtimeHierarchy,&
-      rspaceTimeHierPrimal,rspaceTimeHierPrimalDual)
+      rfeHierPrimal,rfeHierDual,rfeHierControl,rtimeHierarchy,&
+      rspaceTimeHierPrimal,rspaceTimeHierDual,rspaceTimeHierControl)
   
 !<description>
   ! Creates a space-time hierarchy based on the parameters in the parameter list.
@@ -764,22 +791,28 @@ contains
   ! Settings that define the refinement in time
   type(t_settings_refinement), intent(in) :: rrefinementTime
 
-  ! A mesh hierarchy with all available space meshes, only primal space.
+  ! A mesh hierarchy with all available space meshes, primal space.
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
-  
-  ! A mesh hierarchy with all available space meshes, primal + dual space.
-  type(t_feHierarchy), intent(in) :: rfeHierPrimalDual
+
+  ! A mesh hierarchy with all available space meshes, dual space.
+  type(t_feHierarchy), intent(in) :: rfeHierDual
+
+  ! A mesh hierarchy with all available space meshes, control space.
+  type(t_feHierarchy), intent(in) :: rfeHierControl
 
   ! A hierarchy of time levels
   type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
 !</input>
 
 !<inputoutput>
-  ! A space-time hierarchy based on the primal/dual space
+  ! A space-time hierarchy based on the primal space
   type(t_spaceTimeHierarchy), intent(out) :: rspaceTimeHierPrimal
   
-  ! A space-time hierarchy based on the primal+dual space
-  type(t_spaceTimeHierarchy), intent(out) :: rspaceTimeHierPrimalDual
+  ! A space-time hierarchy based on the dual space
+  type(t_spaceTimeHierarchy), intent(out) :: rspaceTimeHierDual
+
+  ! A space-time hierarchy based on the control space
+  type(t_spaceTimeHierarchy), intent(out) :: rspaceTimeHierControl
 !</inputoutput>
 
 !</subroutine>
@@ -810,8 +843,11 @@ contains
     call sth_initHierarchy (rspaceTimeHierPrimal,&
         rfeHierPrimal,rtimeHierarchy)
 
-    call sth_initHierarchy (rspaceTimeHierPrimalDual,&
-        rfeHierPrimalDual,rtimeHierarchy)
+    call sth_initHierarchy (rspaceTimeHierDual,&
+        rfeHierDual,rtimeHierarchy)
+
+    call sth_initHierarchy (rspaceTimeHierControl,&
+        rfeHierControl,rtimeHierarchy)
         
     select case (ispacelevelcoupledtotimelevel)
     case (0)
@@ -831,7 +867,11 @@ contains
         1,rrefinementSpace%nlevels,&
         1,rrefinementTime%nlevels,dspacetimeRefFactor)
 
-    call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimalDual,&
+    call sth_defineHierarchyByCoarsening (rspaceTimeHierDual,&
+        1,rrefinementSpace%nlevels,&
+        1,rrefinementTime%nlevels,dspacetimeRefFactor)
+
+    call sth_defineHierarchyByCoarsening (rspaceTimeHierControl,&
         1,rrefinementSpace%nlevels,&
         1,rrefinementTime%nlevels,dspacetimeRefFactor)
 

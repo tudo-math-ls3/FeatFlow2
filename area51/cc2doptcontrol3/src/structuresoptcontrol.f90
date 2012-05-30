@@ -582,12 +582,9 @@ contains
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         "iconvectionExplicit",roptcontrol%iconvectionExplicit,0)
 
-    ! Parameters defining the control constraints
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cdistVelConstraints",roptcontrol%rconstraints%cdistVelConstraints,0)
-
     ! Set the type to "constraints by constant".
     ! If the constraints are analytically given, this will be changed later.
+    roptcontrol%rconstraints%cdistVelConstraints = 0
     roptcontrol%rconstraints%cdistVelConstType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&
@@ -602,12 +599,9 @@ contains
     call parlst_getvalue_double (rparlist,ssectionOptC,&
         "ddistVelUmax2",roptcontrol%rconstraints%ddistVelUmax2,1.0E10_DP)
 
-    ! Parameters defining the state constraints
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,0)
-
     ! Set the type to "constraints by constant".
     ! If the constraints are analytically given, this will be changed later.
+    roptcontrol%rconstraints%cstateConstraints = 0
     roptcontrol%rconstraints%cstateConstraintsType = 0
 
     call parlst_getvalue_double (rparlist,ssectionOptC,&

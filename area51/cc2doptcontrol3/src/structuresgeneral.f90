@@ -133,11 +133,17 @@ module structuresgeneral
     type(t_anSolution), pointer :: p_rtargetFunction => null()
   end type
 
-  public :: t_globalData
-
 !</typeblock>
 
+  public :: t_globalData
+
 !</types>
+
+  ! Reads all debug flags from the parameter list.
+  public :: struc_getDebugFlags
+  
+  ! Reads in parameters that define the refinement.
+  public :: struc_getRefinementParams
 
 contains
 

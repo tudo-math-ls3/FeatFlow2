@@ -67,7 +67,13 @@ module structuresmain
     character(len=SYS_STRLEN) :: ssectionDiscrSpace = "CC-DISCRETISATION";
 
     ! Section defining prolongation/restriction in space
-    character(len=SYS_STRLEN) :: ssectionProlRestSpace = "CC-PROLREST";
+    character(len=SYS_STRLEN) :: ssectionProlRestSpacePrimal = "CC-PROLREST";
+
+    ! Section defining prolongation/restriction in space
+    character(len=SYS_STRLEN) :: ssectionProlRestSpaceDual = "CC-PROLREST";
+
+    ! Section defining prolongation/restriction in space
+    character(len=SYS_STRLEN) :: ssectionProlRestSpaceControl = "CC-PROLREST";
 
     ! Section defining the basic time discretisation
     character(len=SYS_STRLEN) :: ssectionTimeDiscretisation = "TIME-DISCRETISATION";
@@ -179,8 +185,16 @@ contains
         rsettings%ssectionDiscrSpace,bdequote=.true.)
     
     call parlst_getvalue_string (rparlist,ssection,&
-        "ssectionProlRestSpace",rsettings%ssectionProlRestSpace,&
-        rsettings%ssectionProlRestSpace,bdequote=.true.)
+        "ssectionProlRestSpacePrimal",rsettings%ssectionProlRestSpacePrimal,&
+        rsettings%ssectionProlRestSpacePrimal,bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionProlRestSpaceDual",rsettings%ssectionProlRestSpaceDual,&
+        rsettings%ssectionProlRestSpaceDual,bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionProlRestSpaceControl",rsettings%ssectionProlRestSpaceControl,&
+        rsettings%ssectionProlRestSpaceControl,bdequote=.true.)
     
     call parlst_getvalue_string (rparlist,ssection,&
         "ssectionTimeDiscretisation",rsettings%ssectionTimeDiscretisation,&

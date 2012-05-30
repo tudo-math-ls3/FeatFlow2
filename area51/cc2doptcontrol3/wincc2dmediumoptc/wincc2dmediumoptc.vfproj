@@ -48,11 +48,7 @@
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="f90">
 		<Filter Name="old">
-		<Filter Name="main">
-		<File RelativePath="..\src\initsolver.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32">
-				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File></Filter>
+		<Filter Name="main"/>
 		<Filter Name="optflow">
 		<Filter Name="boundary">
 		<File RelativePath="..\src\spacetimedirichletbcc.f90">
@@ -124,6 +120,7 @@
 		<File RelativePath="..\src\structurespostproc.f90"/></Filter>
 		<Filter Name="main">
 		<File RelativePath="..\src\cc2doptc.f90"/>
+		<File RelativePath="..\src\initoptflow.f90"/>
 		<File RelativePath="..\src\main_program.f90">
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File>

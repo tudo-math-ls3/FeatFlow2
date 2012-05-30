@@ -334,31 +334,6 @@ contains
 !    !    trim(sys_siL(p_rsettingsSolver%rtimeHierarchy%nlevels,10))// &
 !    !    ".txt."",I5.5)",.true.)
 !    
-!    ! Create a start vector for the solver.
-!    call output_lbrk()
-!    call output_line ("Initialising start vector.")
-!
-!    call sptivec_initVector (rsolution,&
-!        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
-!        p_rsettingsSolver%rfeHierPrimalDual% &
-!        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-!    
-!    call stat_clearTimer (rstartvectime)
-!    call stat_startTimer (rstartvectime)
-!
-!    call init_initStartVector(p_rsettingsSolver,p_rsettingsSolver%rsettingsSpaceDiscr,&
-!        p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
-!        rparlist,rsettings%ssectionSpaceTimePreprocessing,&
-!        p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete,rsettings%routput%ioutputInit)
-!    
-!    call stat_stopTimer (rstartvectime)
-!    
-!    if (rsettings%routput%ioutputInit .ge. 1) then
-!      call output_lbrk ()
-!      call output_line ("Time for creation of the start vector = "//&
-!          sys_sdL(rstartvectime%delapsedReal,10))
-!    end if
-!    
 !    ! Implement the initial condition to the discrete RHS.
 !    call init_implementInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
 !

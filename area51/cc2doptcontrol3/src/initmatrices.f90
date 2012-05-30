@@ -48,6 +48,7 @@ module initmatrices
   use stdoperators
   use linearsystemscalar
   use linearsystemblock
+  use convection
 
   use fespacehierarchybase
   use fespacehierarchy
@@ -425,6 +426,101 @@ contains
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
         DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_generateEOJmatrix (rphysics,rsettingsSpaceDiscr,rstaticAsmTemplates)
+  
+!<description>
+  ! Calculates a matrix fort EOJ stabilisation.
+!</description>
+
+!<input>
+  ! Definition of the underlying equation
+  type(t_settings_physics), intent(in) :: rphysics
+
+  ! Settings controlling the spatial discretisation (stabilisation parameters).
+  ! This must coincide with the structure passed to inmat_initSpaceLevel.
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+!</input>
+
+!<inputoutput>
+  ! A t_staticSpaceAsmTemplates structure. The static matrices in this structure are generated.
+  type(t_staticSpaceAsmTemplates), intent(inout), target :: rstaticAsmTemplates
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_jumpStabilisation) :: rjumpStabil
+
+    ! -------------------------------------------------------------------------
+    ! EOJ matrix
+    ! -------------------------------------------------------------------------
+    
+    select case (rphysics%cequation)
+    
+    ! ---------------------------------------------------------------
+    ! Stokes/Navier Stokes.
+    ! ---------------------------------------------------------------
+    case (0,1)
+      ! Create an empty matrix
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rstaticAsmTemplates%rmatrixEOJPrimalVel,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixEOJPrimalVel)
+
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do. Viscosity is set to 1.0 here.
+      ! The operator is linear, so scaling the matrix by nu, one
+      ! obtains the corresponding EOJ matrix.
+      rjumpStabil%dnu = 1.0_DP
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgamma = rsettingsSpaceDiscr%rstabilConvecPrimal%dupsam
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+
+      ! Call the jump stabilisation technique to stabilise that stuff.
+      ! We can assemble the jump part any time as it's independent of any
+      ! convective parts...
+      call conv_jumpStabilisation2d (&
+          rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplates%rmatrixEOJPrimalVel)
+          
+      ! Subtract the boundary operator.
+      !if (rsettingsSpaceDiscr%rstabilConvecPrimal%ceojStabilOnBoundary .eq. 0) then
+      !  call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplates%rmatrixEOJPrimalVel)
+      !end if
+      
+      ! Primal and dual matrices identical?
+      if ((rsettingsSpaceDiscr%rstabilConvecPrimal%dupsam .eq. &
+          rsettingsSpaceDiscr%rstabilConvecDual%dupsam) &
+          ! .and. &
+          !(rsettingsSpaceDiscr%rstabilConvecPrimal%ceojStabilOnBoundary .eq. &
+          !rsettingsSpaceDiscr%rstabilConvecDual%ceojStabilOnBoundary)
+          ) then
+      else
+        ! Create another one for the dual space.
+        rjumpStabil%dgamma = rsettingsSpaceDiscr%rstabilConvecDual%dupsam
+
+        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
+            rstaticAsmTemplates%rmatrixEOJDualVel,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixEOJDualVel)
+
+        call conv_jumpStabilisation2d (&
+            rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplates%rmatrixEOJDualVel)
+
+        ! Subtract the boundary operator.
+        !if (rsettingsSpaceDiscr%rstabilConvecDual%ceojStabilOnBoundary .eq. 0) then
+        !  call smva_addBdEOJOperator (rjumpStabil,-1.0_DP,rstaticAsmTemplates%rmatrixEOJDualVel)
+        !end if
+      end if
+      
+    end select
+        
   end subroutine
 
   ! ***************************************************************************

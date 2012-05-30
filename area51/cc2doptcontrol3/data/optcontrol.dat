@@ -5,8 +5,11 @@
 # Section defining the boundary expressions
 ssectionBoundaryExpressions = BDEXPRESSIONS
 
-# Section defining the boundary conditions of the optimal control problem
-ssectionBoundaryConditions = BDCONDITIONS
+# Section defining the boundary conditions of the primal equation
+ssectionBoundaryCondPrimal = BDCONDITIONS_PRIMAL
+
+# Section defining the boundary conditions of the dual equation
+ssectionBoundaryCondDual = BDCONDITIONS_DUAL
 
 # Name of the section that defines the target flow.
 stargetFunction = OPTCTARGETFUNCTION
