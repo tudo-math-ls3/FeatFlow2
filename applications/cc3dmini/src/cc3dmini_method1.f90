@@ -495,7 +495,7 @@ contains
       !
       ! Note that we share the structure of B1/B2 with those B1/B2 of the
       ! block matrix, while we create copies of the entries. The reason is
-      ! that these matrices are modified for bondary conditions later.
+      ! that these matrices are modified for boundary conditions later.
       call lsyssc_duplicateMatrix (rproblem%p_RlevelInfo(i)%rmatrixB1, &
                                    p_rmatrix%RmatrixBlock(1,4),&
                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)

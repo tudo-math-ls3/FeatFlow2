@@ -251,7 +251,7 @@ sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 # ------------------------------------------------------------------------
 # Flux values
 
-# Calculate the flux through one or multilple lines.
+# Calculate the flux through one or multiple lines.
 # The number in braces "(n)" defines the number of lines where to
 # evaluate the flux. Afterwards follows a list of points in the
 # format

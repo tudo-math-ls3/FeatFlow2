@@ -623,7 +623,7 @@ contains
   ! Example: For a 5-point stencil with <tex>$Q_1$</tex>, boundary DOF`s get matrix
   ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner
   ! points get matrix weights "4, -1, -1, -1, -1" (center and all surroundings).
-  ! To make bondary DOF`s behave like inner DOF`s, the entries in
+  ! To make boundary DOF`s behave like inner DOF`s, the entries in
   ! the matrices belonging to such an edge have to be doubled,
   ! leading to "4, -1, -1".
   ! So this filter loops through the matrix and doubles all matrix entries

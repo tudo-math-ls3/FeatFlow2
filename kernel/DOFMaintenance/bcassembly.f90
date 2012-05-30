@@ -65,13 +65,13 @@
 !#       -> Initialises the global performance configuration
 !#
 !# 14.) bcasm_releaseDirichlet
-!#      -> Release discrete Dirichlet boundary conditions on the real bondary
+!#      -> Release discrete Dirichlet boundary conditions on the real boundary
 !#
 !# 15.) bcasm_releasePressureDrop
-!#      -> Release pressure drop boundary conditions on the real bondary
+!#      -> Release pressure drop boundary conditions on the real boundary
 !#
 !# 16.) bcasm_releaseSlip
-!#      -> Release slip boundary conditions on the real bondary
+!#      -> Release slip boundary conditions on the real boundary
 !#
 !# 17.) bcasm_newHomDirichletBConRealBd
 !#      -> Discretises homogene dirichlet boundary conditions on a 2D bounday region.

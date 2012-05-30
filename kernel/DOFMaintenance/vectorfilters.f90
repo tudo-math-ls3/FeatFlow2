@@ -1365,7 +1365,7 @@ contains
 
   if ((rfmbcStructure%isubtype .eq. 1) .or. (rfmbcStructure%isubtype .eq. 3)) then
     ! The DOF`s should be treated as Dirichlet-DOF`s.
-    ! Only the matrix is modified according to the FEAST mirror bondary conditions!
+    ! Only the matrix is modified according to the FEAST mirror boundary conditions!
     !
     ! For the implementation, we just set dmirrorWeight to 0.0.
     ! This clears all DOF entries and thus treats the DOF`s like Dirichlet DOF`s.

@@ -456,7 +456,7 @@ contains
       !
       ! Note that we share the structure of B1/B2 with those B1/B2 of the
       ! block matrix, while we create copies of the entries. The reason is
-      ! that these matrices are modified for bondary conditions later.
+      ! that these matrices are modified for boundary conditions later.
       call lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
                                    p_rmatrix%RmatrixBlock(1,3),&
                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -564,7 +564,7 @@ contains
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the bondary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a 'boundary region' - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.

@@ -58,7 +58,7 @@
 !# BC`s on fictitious boundary components \\
 !# -------------------------------------- \\
 !# The concept of (analytic) fictitious boundary components is somehow
-!# different to the concept of standard bondary conditions.
+!# different to the concept of standard boundary conditions.
 !# An analytic fictitious boundary component is a 'virtual object' in the
 !# domain that is associated to a special boundary condition. Each FB-object
 !# therefore covers a 'group of cells' inside the domain.

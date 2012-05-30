@@ -206,7 +206,7 @@ contains
     ! We first set up the boundary conditions for the X-velocity, then those
     ! of the Y-velocity.
     !
-    ! Get the expression/bc sections from the bondary condition block
+    ! Get the expression/bc sections from the boundary condition block
     call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
     call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
     

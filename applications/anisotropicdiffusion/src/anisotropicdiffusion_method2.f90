@@ -807,7 +807,7 @@ contains
     select case (isolution)
     case (0,1,3)
       
-      ! We ask the bondary routines to create a 'boundary region' - which is
+      ! We ask the boundary routines to create a 'boundary region' - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.

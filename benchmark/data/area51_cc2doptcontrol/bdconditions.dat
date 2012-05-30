@@ -77,7 +77,7 @@ bdExpressions(20) =
 
 ineumannBoundary = -1
 
-# For each boundary component, a bondary component specifier 
+# For each boundary component, a boundary component specifier
 # 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
 # that follow. A sub-segment either corresponds to an actual boundary
 # segment or is a 'free' boundary segment anywhere on the boundary.
