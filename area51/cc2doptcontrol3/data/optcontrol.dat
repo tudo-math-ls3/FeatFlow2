@@ -17,8 +17,11 @@ stargetFunction = OPTCTARGETFUNCTION
 # Name of the section that defines the initial condition.
 sinitialCondition = INITIALCONDITION
 
-# Name of the section that defines the RHS of the (Navier-)Stokes equation
-srhs = RIGHTHANDSIDE
+# Name of the section that defines the primal RHS of the (Navier-)Stokes equation
+srhsPrimal = RIGHTHANDSIDE_PRIMAL
+
+# Name of the section that defines the primal RHS of the (Navier-)Stokes equation
+srhsDual = RIGHTHANDSIDE_DUAL
 
 # Name of the section defining the physics
 ssectionPhysics = "CC-PHYSICSPRIMAL"

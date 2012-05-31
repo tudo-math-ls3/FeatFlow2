@@ -99,18 +99,53 @@ dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 ifileformat = 1
 
 # =======================================================================================
-# Section that defines the RHS in the optimal control problem.
+# Section that defines the primal RHS in the optimal control problem.
 
-###############
-[RIGHTHANDSIDE]
-###############
+######################
+[RIGHTHANDSIDE_PRIMAL]
+######################
 
 # Type of function.
 # =-1: analytically given as callback function using iid
 # =0: zero function
 # =3: analytically given in expression sexpression(1..ncomponents)
 
-ctype = -1
+ctype = 0
+
+# Id of the function in case ctype=0.
+
+iid = 0
+
+# Number of components
+
+ncomponents = 2
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
+#    X / Y  = coordinate of the point where to evaluate the expression
+#    TIME   = current time
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+
+sexpression(2) =
+  ""
+  ""
+
+# =======================================================================================
+# Section that defines the dual RHS in the optimal control problem.
+
+####################
+[RIGHTHANDSIDE_DUAL]
+####################
+
+# Type of function.
+# =-1: analytically given as callback function using iid
+# =0: zero function
+# =3: analytically given in expression sexpression(1..ncomponents)
+
+ctype = 0
 
 # Id of the function in case ctype=0.
 
