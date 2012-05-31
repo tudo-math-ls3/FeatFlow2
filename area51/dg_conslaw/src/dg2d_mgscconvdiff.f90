@@ -200,7 +200,7 @@ contains
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
     
     ! Set convection and diffusion parameters
-    rproblem%dnu = 2.0_dp**(-20_dp)  !1.0_dp/1024.0_dp
+    rproblem%dnu = 2.0_dp**(-8_dp)  !1.0_dp/1024.0_dp
     rproblem%Dbeta(1) = 1.0_dp
     rproblem%Dbeta(2) = 1.0_dp
 
@@ -781,7 +781,7 @@ contains
       ! for pre- and post-smoothing.
       call linsol_getMultigrid2Level (p_rsolverNode,i-ilvmin+1,p_rlevelInfo)
       p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
-      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpresmoother => null() !p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
       ! Attach our user-defined projection to the level. (Matrices)
@@ -870,7 +870,7 @@ contains
     p_rsolverNode1%depsRel = 1.0e-10_dp
     p_rsolverNode1%depsAbs = 0.0_dp
     p_rsolverNode1%nmaxIterations = 5000
-!    p_rsolverNode1%iresNorm = 0
+    p_rsolverNode1%iresNorm = 0
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation

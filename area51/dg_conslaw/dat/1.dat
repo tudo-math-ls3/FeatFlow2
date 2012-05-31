@@ -2,12 +2,12 @@
 
 # We want to solve our problem on level ...
 nlmin = 1
-nlmax = 5
+nlmax = 8
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
+prmname = ./pre/QUAD.prm
 #prmname = ./pre/QUADROT.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
@@ -22,13 +22,13 @@ nlmax = 5
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
 #prmname = ./pre/ramp_5deg_quads.prm
 #prmname = ./pre/gammchannel_quads.prm
-prmname = ./pre/hole1.prm
+#prmname = ./pre/hole1.prm
 #prmname = ./pre/roundhole3.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
+triname = ./pre/QUAD.tri
 #triname = ./pre/QUADROT.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
@@ -43,7 +43,7 @@ prmname = ./pre/hole1.prm
 #triname = ./pre/ramp_5deg_inlet_quads.tri
 #triname = ./pre/ramp_5deg_quads.tri
 #triname = ./pre/gammchannel_quads.tri
-triname = ./pre/hole1.tri
+#triname = ./pre/hole1.tri
 #triname = ./pre/roundhole3.tri
 
 # What kind of finite elements do we use?
