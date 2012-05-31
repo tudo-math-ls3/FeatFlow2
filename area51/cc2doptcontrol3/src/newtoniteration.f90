@@ -35,6 +35,7 @@ module newtoniteration
   use structuresoptcontrol
   use structuresgeneral
   use structuresoptflow
+  use structuresnewton
   use assemblytemplates
   
   use spacematvecassembly
@@ -44,218 +45,35 @@ module newtoniteration
   use kktsystemhierarchy
   
   use newtoniterationlinear
+
+  implicit none
   
   private
-  
-!<type>
 
-  ! This structure controls the Newton iteration -- i.e. the preconditioning
-  ! with the Frechet derivative of the Navier--Stokes equation, which
-  ! can lead to quadratic covergence of the nonlinear solver.
-  ! As Newton works only in the basin of attraction of the solution,
-  ! the parameters in this structure allow to define a switching criterion
-  ! when to use Newton. In the first couple of iterations, defect correction
-  ! is used, while the iteration switches to Newton if the residuum is small
-  ! enough.
-  ! This block is used if CCPREC_NEWTONDYNAMIC is used as preconditioner.
-  type t_ccDynamicNewtonControl
-  
-    ! Minimum number of fix point iterations before switching to
-    ! preconditioning with the Newton matrix.
-
-    integer :: nminFixedPointIterations = 0
-
-    ! Maximum number of fix point iterations before switching to
-    ! preconditioning with the Newton matrix.
-
-    integer :: nmaxFixedPointIterations = 0
-
-    ! Norm of absolute residuum before applying Newton.
-    ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
-    ! Otherwise, the usual fix point iteration is used.
-    ! Stamndard value = 1E-5.
-
-    real(DP) :: depsAbsNewton = 1.0E-5_DP
-
-    ! Norm of relative residuum before applying Newton.
-    ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
-    ! Otherwise, the usual fix point iteration is used.
-    ! Standard value = 1E99 -> The absolute residuum counts.
-
-    real(DP) :: depsRelNewton = 1.0E99_DP
-  
-    ! Whether to use the inexact Newton iteration or not.
-    ! The inexact Newton controls the stopping criterion of the linear
-    ! solver according to the nonlinear residual.
-    
-    integer :: cinexactNewton = 1
-
-    ! Stopping criterion for the linear solver in the inexact Newton iteration.
-    ! Controls the minimum number of digits to gain in the linear solver
-    ! per Newton iteration. 
-    
-    real(dp) :: dinexactNewtonEpsRel = 1.0E-2_DP
-
-    ! Exponent to control the stopping criterion for the linear solver in
-    ! an inexact Newton iteration. =2 result in quadratic convergence,
-    ! =1.5 in superlinear convergence. 
-    
-    real(dp) :: dinexactNewtonExponent = 2.0_DP
-  
-  end type
-  
-!</typeblock>
-
-  public :: t_ccDynamicNewtonControl
+!<types>
 
 !<typeblock>
   
-  ! Contains the parameters of the Newton iteration.
-  type t_newtonParameters
-  
-    ! <!-- -------------- -->
-    ! <!-- STATUS, OUTPUT -->
-    ! <!-- -------------- -->
+  ! Parameters for the space-time Newton algorithm.
+  type t_spacetimeNewton
 
-    ! OUTPUT: Result
-    ! The result of the solution process.
-    ! =-1: convergence criterion not reached.
-    ! =0: success.
-    ! =1: iteration broke down, diverging.
-    ! =2: iteration broke down, preconditioner did not work.
-    ! =3: error in the parameters.
-    integer :: iresult = 0
+    ! <!-- --------------------------------------- -->
+    ! <!-- GENRERAL PARAMETERS AND SOLVER SETTINGS -->
+    ! <!-- --------------------------------------- -->
 
-    ! Output level of the solver.
-    ! =-1: no output
-    ! =0: no output, only errors
-    ! =1: basic output
-    ! =2: standard output
-    integer :: ioutputLevel = 2
+    ! General newton parameters
+    type(t_newtonParameters) :: rnewtonParams
 
-    ! Output mode. Used for printing messages.
-    ! =OU_MODE_STD: Print messages to the terminal and probably to a log
-    ! file (if a log file is opened).
-    integer(I32) :: coutputmode = OU_MODE_STD
-  
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
-
-    ! <!-- ----------------------------------------- -->
-    ! <!-- STOPPING CRITERIA, DAMPING PARAMETERS,... --> 
-    ! <!-- ----------------------------------------- -->
-
-    ! Type of the iteration.
-    ! =-1: undefined
-    ! =0: simple linear solver
-    ! =1: nonlinear defect correction solver.
-    ! =2: Newton solver
-    ! =3: adaptive Newton with parameters in radaptiveNewton
-    integer :: ctypeIteration = -1
-    
-    ! Type of stopping criterion to use for standard convergence test. One of the
-    ! NLSOL_STOP_xxxx constants.
-    ! Note: This parameter is only evaluated in the stanard convergence test.
-    ! If the caller of the nonlinear solver specifies a callback routine fcb_resNormCheck
-    ! for checking the convergence, that callback routine must implement its own
-    ! logic to handle relative and absolute convrgence criteria!
-    ! integer :: cstoppingCriterion = NLSOL_STOP_STANDARD
-
-    ! Type of norm to use in the residual checking of the total vector
-    ! (cf. linearalgebra.f90).
-    ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
-    ! integer :: iresNormTotal = 2
-
-    ! Relative stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL * !!initial defect!!.
-    ! =0: ignore, use absolute stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsRel = 1E-5_DP
-
-    ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSABS.
-    ! =0: ignore, use relative stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsAbs = 1E-5_DP
-
-    ! Relative divergence criterion.  Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY_DP disables the relative divergence check.
-    ! standard = 1E3
-    real(DP) :: ddivRel = 1E6_DP
-
-    ! Absolute divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
-    ! standard = SYS_INFINITY_DP
-    real(DP) :: ddivAbs = SYS_INFINITY_DP
-
-    ! Minimum number of iterations top perform
-    integer :: nminIterations = 1
-
-    ! Maximum number of iterations top perform
-    integer :: nmaxIterations = 50
-  
-    ! Damping parameter for the Newton iteration
-    real(DP) :: domega = 1.0_DP
-  
-    ! User defined parameter list; if not NULL(), this is added
-    ! as comments to postprocessing files.
-    type(t_parlist), pointer :: p_rparlist => null()
 
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->
 
-    ! Parameters for the dynamic and inexact Newton algorithm
-    type(t_ccDynamicNewtonControl) :: radaptiveNewton
-
     ! Parameters for the linear space-time subsolver.
     type(t_linsolParameters) :: rlinsolParam
     
-    ! <!-- ---------- -->
-    ! <!-- STATISTICS -->
-    ! <!-- ---------- -->
-    
-    ! Initial residual in the control space.
-    real(DP) :: dresInit = 0.0_DP
-
-    ! Final residual in the control space.
-    real(DP) :: dresFinal = 0.0_DP
-
-    ! Total number of nonlinear iterations
-    integer :: nnonlinearIterations = 0
-    
-    ! Total number of linear iterations
-    integer :: nlinearIterations = 0
-    
-    ! Total time for the solver
-    real(DP) :: dtimeTotal = 0.0_DP
-    
-    ! Total time for nonlinear iteration
-    real(DP) :: dtimeNonlinearSolver = 0.0_DP
-    
-    ! Total time for linear space-time solver
-    real(DP) :: dtimeLinearSolver = 0.0_DP
-
-    ! Total time for linear solver in space
-    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
-    
-    ! Total time for matrix assembly
-    real(DP) :: dtimeMatrixAssembly = 0.0_DP
-
-    ! Total time for defect calculation
-    real(DP) :: dtimeDefectCalculation = 0.0_DP
-
-    ! Total time for matrix assembly
-    real(DP) :: dtimePostprocessing = 0.0_DP
-
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
@@ -267,13 +85,13 @@ module newtoniteration
     type(t_controlSpace), pointer :: p_rdescentDir => null()
     
   end type
-  
+
 !</typeblock>
-  
-  public :: t_newtonParameters
+
+   public :: t_spacetimeNewton
 
 !</types>
-
+  
   ! Basic initialisation of the Newton solver
   public :: newtonit_initParams
   
@@ -321,106 +139,16 @@ contains
 
 !<output>
   ! Solver structure receiving the parameters
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</output>
 
 !</subroutine>
 
-    ! local variables
-    type(t_parlstSection), pointer :: p_rsection
-    character(len=SYS_STRLEN) :: sstring,snewton
-
-    call parlst_querysection(rparamList, ssection, p_rsection)
-
-    if (.not. associated(p_rsection)) then
-      call output_line ("Cannot create nonlinear solver; no section ''"//&
-          trim(ssection)//"''!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"newtonit_initParams")
-      call sys_halt()
-    end if
-    
     ! Remember the solver settings for later use
     rsolver%p_rsettingsSolver => rsettingsSolver
 
-    ! Get stopping criteria of the nonlinear iteration
-    call parlst_getvalue_double (p_rsection, "depsRel", &
-                                 rsolver%depsRel, rsolver%depsRel)
-
-    call parlst_getvalue_double (p_rsection, "depsAbs", &
-                                 rsolver%depsAbs, rsolver%depsAbs)
-
-    call parlst_getvalue_double (p_rsection, "ddivRel", &
-                                 rsolver%ddivRel, rsolver%ddivRel)
-
-    call parlst_getvalue_double (p_rsection, "ddivAbs", &
-                                 rsolver%ddivAbs, rsolver%ddivAbs)
-
-    call parlst_getvalue_double (p_rsection, "domega", &
-                                 rsolver%domega, rsolver%domega)
-
-    call parlst_getvalue_int (p_rsection, "nminIterations", &
-        rsolver%nminIterations, rsolver%nminIterations)
-
-    call parlst_getvalue_int (p_rsection, "nmaxIterations", &
-        rsolver%nmaxIterations, rsolver%nmaxIterations)
-
-    call parlst_getvalue_int (p_rsection, 'ioutputLevel', &
-        rsolver%ioutputLevel, rsolver%ioutputLevel)
-
-    ! Get information about the iteration.
-      
-    ! At first, ask the parameters in the INI/DAT file which type of
-    ! preconditioner is to be used. The data in the preconditioner structure
-    ! is to be initialised appropriately!
-    call parlst_getvalue_int (p_rsection, "ctypeIteration", &
-        rsolver%ctypeIteration, rsolver%ctypeIteration)
-
-    ! We have even the extended, dynamic Newton as preconditioner.
-    ! Put the parameters for the extended Newton from the DAT file
-    ! into the Adaptive-Newton configuration block.
-    
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionAdaptiveNewton", sstring, "", bdequote=.true.)
-    snewton = ""
-    if (sstring .ne. "") read (sstring,*) snewton
-    if (snewton .ne. "") then
-      ! Initialise the parameters of the adaptive Newton
-      call parlst_getvalue_int (rparamList, snewton, &
-          "nminFixedPointIterations", &
-          rsolver%radaptiveNewton%nminFixedPointIterations, &
-          rsolver%radaptiveNewton%nminFixedPointIterations)
-
-      call parlst_getvalue_int (rparamList, snewton, &
-          "nmaxFixedPointIterations", &
-          rsolver%radaptiveNewton%nmaxFixedPointIterations, &
-          rsolver%radaptiveNewton%nmaxFixedPointIterations)
-
-      call parlst_getvalue_double (rparamList, snewton, &
-          "depsAbsNewton", &
-          rsolver%radaptiveNewton%depsAbsNewton, &
-          rsolver%radaptiveNewton%depsAbsNewton)
-
-      call parlst_getvalue_double (rparamList, snewton, &
-          "depsRelNewton", &
-          rsolver%radaptiveNewton%depsRelNewton, &
-          rsolver%radaptiveNewton%depsRelNewton)
-
-      call parlst_getvalue_int (rparamList, snewton, &
-          "cinexactNewton", &
-          rsolver%radaptiveNewton%cinexactNewton, &
-          rsolver%radaptiveNewton%cinexactNewton)
-
-      call parlst_getvalue_double (rparamList, snewton, &
-          "dinexactNewtonEpsRel", &
-          rsolver%radaptiveNewton%dinexactNewtonEpsRel, &
-          rsolver%radaptiveNewton%dinexactNewtonEpsRel)
-
-      call parlst_getvalue_double (rparamList, snewton, &
-          "dinexactNewtonExponent", &
-          rsolver%radaptiveNewton%dinexactNewtonExponent, &
-          rsolver%radaptiveNewton%dinexactNewtonExponent)
-
-    end if
+    ! Initialise basic parameters
+    call newtonit_initBasicParams (rsolver%rnewtonParams,ssection,rparamList)
 
   end subroutine
 
@@ -486,7 +214,7 @@ contains
 !<input>
   ! Parameters for the Newton iteration.
   ! The output parameters are changed according to the iteration.
-  type(t_newtonParameters), intent(in) :: rsolver
+  type(t_spacetimeNewton), intent(in) :: rsolver
 
   ! The preconditioned search direction
   type(t_controlSpace), intent(inout) :: rcorrection
@@ -507,7 +235,7 @@ contains
     ! Later, a step length control can be added here.
     
     call kktsp_controlLinearComb (&
-        rcorrection,rsolver%domega,rkktsystem%p_rcontrol,1.0_DP)
+        rcorrection,rsolver%rnewtonParams%domega,rkktsystem%p_rcontrol,1.0_DP)
 
   end subroutine
 
@@ -520,7 +248,7 @@ contains
 !<inputoutput>
   ! Parameters for the Newton iteration.
   ! The output parameters are changed according to the iteration.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 
   ! Structure defining a hierarchy of solutions of the KKT system.
   ! The solution on the maximum level is taken as initial
@@ -546,7 +274,7 @@ contains
     ! Prepare a structure that encapsules the directional derivative.
     
     ! Apply the Newton iteration
-    rsolver%nnonlinearIterations = 0
+    rsolver%rnewtonParams%nnonlinearIterations = 0
     
     do while (.true.)
     
@@ -565,56 +293,28 @@ contains
       ! -------------------------------------------------------------
 
       ! Compute the basic (unpreconditioned) search direction d_n.
-      call newtonit_getResidual (p_rkktsystem,p_rdescentDir,rsolver%dresFinal)
+      call newtonit_getResidual (p_rkktsystem,p_rdescentDir,&
+          rsolver%rnewtonParams%dresFinal)
 
-      if (rsolver%nnonlinearIterations .eq. 1) then
+      if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
         ! Remember the initial residual
-        rsolver%dresInit = rsolver%dresFinal
+        rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
       end if
 
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------
-      if (rsolver%nnonlinearIterations .ge. rsolver%nminIterations) then
-        ! Check the residual.
-        !
-        ! Absolute residual
-        if (rsolver%dresFinal .le. rsolver%depsAbs) then
-          rsolver%iresult = 0
-          exit
-        end if
-        
-        ! Relative residual
-        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
-          rsolver%iresult = 0
-          exit
-        end if
-      end if
+      if (newtonit_checkConvergence (rsolver%rnewtonParams)) exit
       
       ! -------------------------------------------------------------
       ! Check for divergence
       ! -------------------------------------------------------------
-      ! Absolute residual
-      if (rsolver%dresFinal .ge. rsolver%ddivAbs) then
-        rsolver%iresult = 1
-        exit
-      end if
-      
-      ! Relative residual
-      if (rsolver%dresFinal .ge. rsolver%ddivRel * rsolver%dresInit) then
-        rsolver%iresult = 1
-        exit
-      end if
+      if (newtonit_checkDivergence (rsolver%rnewtonParams)) exit
       
       ! -------------------------------------------------------------
       ! Check other stopping criteria
       ! -------------------------------------------------------------
-
-      if (rsolver%nnonlinearIterations .ge. rsolver%nmaxIterations) then
-        ! Maximum number of iterations reached.
-        rsolver%iresult = -1
-        exit
-      end if
+      if (newtonit_checkIterationStop (rsolver%rnewtonParams)) exit
       
       ! -------------------------------------------------------------
       ! Preconditioning with the Newton matrix
@@ -643,7 +343,8 @@ contains
       ! Proceed with the next iteration
       ! -------------------------------------------------------------
       ! Next iteration
-      rsolver%nnonlinearIterations = rsolver%nnonlinearIterations + 1
+      rsolver%rnewtonParams%nnonlinearIterations = &
+          rsolver%rnewtonParams%nnonlinearIterations + 1
     
     end do
     
@@ -670,7 +371,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(out) :: rsolver
+  type(t_spacetimeNewton), intent(out) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -696,7 +397,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -719,7 +420,7 @@ contains
 
 !<inputoutput>
   ! Structure to be initialised.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -744,7 +445,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -768,7 +469,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>
@@ -790,7 +491,7 @@ contains
 
 !<inputoutput>
   ! Structure to be cleaned up.
-  type(t_newtonParameters), intent(inout) :: rsolver
+  type(t_spacetimeNewton), intent(inout) :: rsolver
 !</inputoutput>
 
 !</subroutine>

@@ -270,7 +270,7 @@ contains
     type(t_settings_optflow), pointer :: p_rsettingsSolver
     
     ! Structure for the Newton solver
-    type(t_newtonParameters) :: rsolver
+    type(t_spacetimeNewton) :: rsolver
 
     ! Postprocessing data.
     type(t_optcPostprocessing) :: rpostproc
@@ -340,15 +340,15 @@ contains
     call output_line ("Time for initialisation            = "//&
         sys_sdL(rinitTime%delapsedReal,10))
     call output_separator (OU_SEP_EQUAL)
-!        
-!    ! Solve the system
-!    call stat_clearTimer (rsolverTime)
-!    call stat_startTimer (rsolverTime)
-!    call nlstslv_solve (p_rsettingsSolver,p_rnlstsolver,rpostproc,rsolution,rrhsdiscrete,rtemp)
-!    call stat_stopTimer (rsolverTime)
-!    
-!    call output_separator (OU_SEP_EQUAL)
-!
+        
+    ! Solve the system
+    call stat_clearTimer (rsolverTime)
+    call stat_startTimer (rsolverTime)
+    call newtonit_solve (rsolver,rsolution)
+    call stat_stopTimer (rsolverTime)
+    
+    call output_separator (OU_SEP_EQUAL)
+
 !    ! Pipe the solution through our postprocessing routines
 !    call output_line ("Postprocessing of the final solution...")
 !    call stat_clearTimer (rtimePostProc)

@@ -333,8 +333,22 @@ contains
 
 !</subroutine>
 
-    ! ... to be done
-    call sys_halt()
+    ! -------------------------------------------------------------------------
+    ! Basic description
+    !
+    ! What we have to do here is a loop through all timesteps.
+    ! For a nonlinear state equation, the problems to solve in each timestep
+    ! are nonlinear. The control is given in rkktsystem and acts as right-hand
+    ! side, on the boundary or whereever.
+    !
+    ! For the nonlinear Navier-Stokes equations with distributed control
+    ! for example, the equation to solve here reads
+    !
+    !    y_t - Laplace(y) + (y grad) y + grad(p) = u
+    !                                     -div y = 0
+    !
+    ! with the control u being given in rkktsystem.
+    ! -------------------------------------------------------------------------
    
   end subroutine
 
