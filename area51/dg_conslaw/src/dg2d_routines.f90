@@ -35,6 +35,8 @@ module dg2d_routines
   use genoutput
   use mprimitives
   
+  use perfconfig
+  
   use linearsystemblock
   use linearsystemscalar
 
