@@ -587,7 +587,7 @@ contains
     end if
 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    call user_doneCollectForAssembly (rsettings%rglobalData,rcollection)
+    call user_doneCollectForVecAssembly (rsettings%rglobalData,rcollection)
     call collct_done(rcollection)
 
   end subroutine
@@ -1523,7 +1523,7 @@ contains
 !    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,DER_FUNC,DER_FUNC)
 !
 !    ! Clean up the collection (as we are done with the assembly, that's it.
-!    call user_doneCollectForAssembly (rproblem,rproblem%rcollection)
+!    call user_doneCollectForVecAssembly (rproblem,rproblem%rcollection)
 !
 !  end subroutine
 !
@@ -1685,7 +1685,7 @@ contains
 !    call lsyssc_clearVector(rrhs%RvectorBlock(6))
 !
 !    ! Clean up the collection (as we are done with the assembly, that's it.
-!    call user_doneCollectForAssembly (rproblem,rproblem%rcollection)
+!    call user_doneCollectForVecAssembly (rproblem,rproblem%rcollection)
 !
 !  end subroutine
 !

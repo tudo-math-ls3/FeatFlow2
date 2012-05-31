@@ -36,12 +36,12 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
-!# 8.) user_initCollectForAssembly
+!# 8.) user_initCollectForVecAssembly
 !#     -> Is called prior to the assembly process.
 !#     -> Stores some information from the problem structure to a collection
 !#        such that it can be accessed in callback routines
 !#
-!# 9.) user_doneCollectForAssembly
+!# 9.) user_doneCollectForVecAssembly
 !#     -> Is called after the assembly process.
 !#     -> Releases information stored in the collection by
 !#        user_initCollectForAssembly.
@@ -62,7 +62,7 @@
 !# -> rcollection%DquickAccess(2)   = minimum simulation time
 !# -> rcollection%DquickAccess(3)   = maximum simulation time
 !#
-!# After the assembly, user_doneCollectForAssembly is called to clean up.
+!# After the assembly, user_doneCollectForVecAssembly is called to clean up.
 !# Note: Information stored in the quick-access array are of temporary
 !# nature and does not have to be cleaned up.
 !#
@@ -99,9 +99,8 @@ module user_callback
   
   public :: user_initGlobalData
   public :: user_doneGlobalData
-  public :: user_initCollectForAssembly
   public :: user_initCollectForVecAssembly
-  public :: user_doneCollectForAssembly
+  public :: user_doneCollectForVecAssembly
   public :: user_coeff_RHS
   public :: user_fct_Target
   public :: user_coeff_Target
@@ -124,7 +123,7 @@ contains
 
 !<subroutine>
 
-  subroutine user_initGlobalData (rsettings,rrhs,rglobalData)
+  subroutine user_initGlobalData (rsettings,rglobalData)
   
 !<description>
   ! Initialises the global data structure rglobalData with information from
@@ -136,9 +135,6 @@ contains
   ! Global program settings
   type(t_settings_optflow), intent(in), target :: rsettings
 
-  ! Right hand side
-  type(t_anSolution), intent(in), target :: rrhs
-
   ! Global data.
   type(t_globalData), intent(inout) :: rglobalData
 !</input>
@@ -149,7 +145,8 @@ contains
     rglobalData%p_rparlist => rsettings%p_rparlist
     rglobalData%p_rtimeCoarse => rsettings%rtimeCoarse
     rglobalData%p_rsettingsOptControl => rsettings%rsettingsOptControl
-    rglobalData%p_rrhs => rrhs
+    rglobalData%p_rrhsPrimal => rsettings%rrhsPrimal
+    rglobalData%p_rrhsDual => rsettings%rrhsDual
     rglobalData%p_rtargetFunction => rsettings%rsettingsOptControl%rtargetFunction
     rglobalData%p_rphysics => rsettings%rphysicsPrimal
     
@@ -175,54 +172,10 @@ contains
     nullify(rglobalData%p_rparlist)
     nullify(rglobalData%p_rtimeCoarse)
     nullify(rglobalData%p_rsettingsOptControl)
-    nullify(rglobalData%p_rrhs)
+    nullify(rglobalData%p_rrhsPrimal)
+    nullify(rglobalData%p_rrhsDual)
     nullify(rglobalData%p_rtargetFunction)
 
-  end subroutine
-  
-! ***************************************************************************
-
-!<subroutine>
-
-  subroutine user_initCollectForAssembly (rglobalData,dtime,rcollection)
-  
-!<description>
-  ! This subroutine is an auxiliary subroutine called by the framework
-  ! and has usually not to be changed by the user.
-  !
-  ! The subroutine prepares the collection rcollection to be passed to callback
-  ! routines for assembling boundary conditions or RHS vectors. It is
-  ! called directly prior to the assembly to store problem-specific information
-  ! in the quick-access arrays of the collection.
-!</description>
-
-!<input>
-  ! Current simulation time.
-  real(dp), intent(in) :: dtime
-!</input>
-
-!<inputoutput>
-  ! Global data.
-  type(t_globalData), intent(in) :: rglobalData
-
-  ! Collection structure which is passed to the callback routines.
-  type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-
-!</subroutine>
-
-    ! Save the simulation time as well as the minimum and maximum time
-    ! to the quick-access array of the collection,
-    ! so it can be accessed in the callback routines!
-    rcollection%IquickAccess(1) = rglobalData%p_rrhs%iid
-    rcollection%IquickAccess(2) = rglobalData%p_rsettingsOptControl%rtargetFunction%iid
-    rcollection%Dquickaccess(1) = dtime
-    rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
-    rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
-    rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
-    rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
-    rcollection%Dquickaccess(6) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
-    
   end subroutine
   
 ! ***************************************************************************
@@ -251,7 +204,7 @@ contains
   ! Global Id of the flow.
   integer, intent(in) :: iid
   
-  ! Component to be assembled.
+  ! Component to be assembled. =0: not specified, will be specified later.
   integer, intent(in) :: icomponent
 
   ! Current simulation time.
@@ -292,7 +245,7 @@ contains
   
 !<subroutine>
 
-  subroutine user_doneCollectForAssembly (rglobalData,rcollection)
+  subroutine user_doneCollectForVecAssembly (rglobalData,rcollection)
   
 !<description>
   ! This subroutine is an auxiliary subroutine called by the framework
@@ -321,10 +274,8 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_RHS (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
+  subroutine user_coeff_RHS (Dcoefficients,&
+      icomponent,npointsPerElement,nelements,Dpoints,rcollection)
     
     use basicgeometry
     use triangulation
@@ -344,34 +295,20 @@ contains
   !</description>
     
   !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    ! Number of the component of the RHS to be evaluated.
+    integer, intent(in) :: icomponent
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
@@ -390,21 +327,19 @@ contains
   !</subroutine>
   
     real(DP) :: dtime,dalpha
-    integer :: iid,cequation,icomponent
+    integer :: iid,cequation
     real(DP), dimension(:,:), allocatable :: DvaluesAct
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
       cequation = rcollection%Iquickaccess(1)
-      icomponent = rcollection%Iquickaccess(2)
       iid = rcollection%Iquickaccess(3)
       dtime = rcollection%Dquickaccess(1)
       dalpha = rcollection%Dquickaccess(4)
     else
       cequation = -1
       iid = 0
-      icomponent = 0
       dtime = 0.0_DP
       dalpha = 1.0_DP
     end if

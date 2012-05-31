@@ -29,6 +29,8 @@ module spacematvecassembly
   use blockmatassemblybase
   use blockmatassembly
   use collection
+  use fespacehierarchybase
+  use fespacehierarchy
   
   use spacetimevectors
   use analyticsolution
@@ -36,92 +38,21 @@ module spacematvecassembly
   use structuresdiscretisation
   use structuresoptcontrol
   use structuresgeneral
+  use structuresoptflow
+  use structuresoperatorasm
   use assemblytemplates
+  use spacetimehierarchy
   
   use kktsystemspaces
   
   use user_callback
-    
+  
   implicit none
   
   private
   
-!<constants>
-
-!<constantblock description = "A list of operator tyes for the assembly">
-
-  ! Navier-Stokes operator, primal equation
-  integer, parameter :: OPTP_PRIMAL = 0
-
-  ! Simple linearised Navier-Stokes, primal equation
-  integer, parameter :: OPTP_PRIMALLIN_SIMPLE = 1
+!</types>
   
-  ! Full linearised Navier-Stokes (Newton), primal equation
-  integer, parameter :: OPTP_PRIMALLIN = 2
-  
-  ! Navier-Stokes operator, dual equation
-  integer, parameter :: OPTP_DUAL = 3
-
-  ! Navier-Stokes operator, linearised dual equation
-  integer, parameter :: OPTP_DUALLIN_SIMPLE = 4
-
-  ! Navier-Stokes operator, linearised dual equation (Newton)
-  integer, parameter :: OPTP_DUALLIN = 5
-  
-  ! Full linearised Navier-Stokes (Newton), dual equation,
-  ! nonlinear part in the RHS.
-  integer, parameter :: OPTP_DUALLIN_RHS = 6
-
-!</constantblock>
-
-!</constants>
-
-!<types>
-
-!<typeblock>
-
-  ! This type encapsules structures necessary for the
-  ! assembly of space-time operators.
-  type t_spacetimeOperatorAsm
-  
-    ! Space discretisation.
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr => null()
-    
-    ! Time discretisation. Defines the time stepping scheme
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr => null()
-    
-    ! Physics of the problem
-    type(t_settings_physics), pointer :: p_rphysics => null()
-    
-    ! Parameters for the discretisation in space
-    type(t_settings_discr), pointer :: p_rsettingsDiscr => null()
-
-    ! Optimal-control parameters
-    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
-    
-    ! Assembly templates corresponding to the above space discretisation
-    type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates => null()
-
-    ! Reference to the analytic solution defining the RHS of the primal equation
-    type(t_anSolution), pointer :: p_rrhsPrimal => null()
-
-    ! Reference to the analytic solution defining the RHS of the dual equation
-    type(t_anSolution), pointer :: p_rrhsDual => null()
-
-    ! Reference to the analytic solution defining the target
-    type(t_anSolution), pointer :: p_rtargetFlow => null()
-
-    ! Reference to global data
-    type(t_globalData), pointer :: p_rglobalData => null()
-    
-    ! Reference to the debug flags
-    type(t_optcDebugFlags), pointer :: p_rdebugFlags => null()
-  end type
-
-!</typeblock>
-
-  public :: t_spacetimeOperatorAsm
-
 !<typeblock>
 
   ! Pointer to t_spacetimeOperator for being passed to callback routines.
@@ -139,11 +70,13 @@ module spacematvecassembly
     private
   
     ! A temporary block matrix which can be used for
-    ! intermediate calculations.
+    ! intermediate calculations. Discretised in te FE space
+    ! of the primal space
     type(t_matrixBlock) :: rmatrix
 
     ! A set of temporary block vectors which can be used for
-    ! intermediate calculations.
+    ! intermediate calculations. Discretised with the
+    ! FE space of the primal space.
     type(t_vectorBlock), dimension(1) :: rvector
 
   end type
@@ -178,6 +111,15 @@ public :: t_assemblyTempDataSpace
   ! Assemble the matrices of the operator of the linearised dual equation
   public :: smva_assembleMatrix_dual
   
+  ! Creates a hierarchy of operator assembly structures.
+  public :: smva_initOperatorAsm
+
+  ! Creates a hierarchy of operator assembly structures.
+  public :: smva_createOpAsmHier
+  
+  ! Releases the hierarchy of operator assembly structures.
+  public :: smva_releaseOpAsmHier
+
 contains
 
   ! ***************************************************************************
@@ -206,11 +148,13 @@ contains
     
     ! Create temp vectors
     do i=1,ubound(rtempData%Rvector,1)
-      call lsysbl_createVectorBlock(rspatialOperatorAsm%p_rspaceDiscr,rtempData%Rvector(i),.false.)
+      call lsysbl_createVectorBlock(&
+          rspatialOperatorAsm%p_rspaceDiscrPrimal,rtempData%Rvector(i),.false.)
     end do
   
     ! Create a full matrix
-    call lsysbl_createMatBlockByDiscr (rspatialOperatorAsm%p_rspaceDiscr,rtempData%rmatrix)
+    call lsysbl_createMatBlockByDiscr (&
+        rspatialOperatorAsm%p_rspaceDiscrPrimal,rtempData%rmatrix)
     
     ! Fill it with data from the assembly template structure.
     ! The structure depends on the current equation...
@@ -355,7 +299,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -363,15 +307,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -537,7 +481,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -545,15 +489,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -734,7 +678,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -742,15 +686,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -936,7 +880,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -944,15 +888,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -1136,7 +1080,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -1144,15 +1088,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2129,7 +2073,7 @@ contains
     rcollection%IquickAccess(1) = OPTP_PRIMAL
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2137,15 +2081,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2177,7 +2121,8 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForAssembly (rspatialOperatorAsm%p_rglobalData,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+              rspatialOperatorAsm%p_rrhsPrimal%iid,0,dtime,rusercollection)
           
           ! Prepare the evaluation of the primal RHS.
           call ansol_prepareEval (rspatialOperatorAsm%p_rrhsPrimal,rcollection,"RHS",dtime)
@@ -2209,7 +2154,7 @@ contains
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
 
         end select ! Equation
 
@@ -2281,7 +2226,7 @@ contains
     rcollection%IquickAccess(1) = OPTP_DUAL
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2289,15 +2234,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2325,7 +2270,8 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForAssembly (rspatialOperatorAsm%p_rglobalData,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+              rspatialOperatorAsm%p_rrhsDual%iid,0,dtime,rusercollection)
 
           ! Prepare the evaluation of the primal RHS.
           call ansol_prepareEval (rspatialOperatorAsm%p_rrhsDual,rcollection,"RHS",dtime)
@@ -2351,7 +2297,7 @@ contains
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"TARGER")
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
             
         end select ! Equation
         
@@ -2427,7 +2373,7 @@ contains
     rcollection%IquickAccess(1) = OPTP_PRIMALLIN
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2435,15 +2381,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2471,7 +2417,8 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForAssembly (rspatialOperatorAsm%p_rglobalData,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+              0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
           !
@@ -2503,7 +2450,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
       
@@ -2587,7 +2534,7 @@ contains
     end if
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2595,15 +2542,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2631,7 +2578,8 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForAssembly (rspatialOperatorAsm%p_rglobalData,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+              0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
           !
@@ -2653,7 +2601,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
         
@@ -2737,7 +2685,7 @@ contains
     end if
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2745,15 +2693,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -3876,7 +3824,7 @@ contains
     call lsysbl_clearMatrix (rmatrix)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -3884,15 +3832,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -4005,7 +3953,7 @@ contains
     call lsysbl_clearMatrix (rmatrix)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscr%ctype)
+    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -4013,15 +3961,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscr%dtheta
+      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscr,idofTime-1,&
+      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscr%itag)
+      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -4097,6 +4045,141 @@ contains
       
     end select ! Timestep scheme
   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_initOperatorAsm (roperatorAsm,ilevel,rsettings)
+  
+!<description>
+  ! Initialises an operator assembly structure ofor level ilevel.
+!</description>
+
+!<input>
+  ! Structure with the settings of the space-time solver
+  type(t_settings_optflow), intent(in), target :: rsettings
+  
+  ! Level in the global space-time hierarchy.
+  integer, intent(in) :: ilevel
+!</input>
+
+!<output>
+  ! A t_spacetimeOpAsmHierarchy to initialise.
+  type(t_spacetimeOperatorAsm), intent(out) :: roperatorAsm
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,ispacelevel
+    type(t_feSpaceLevel), pointer:: p_rfeSpaceLevel
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+
+    ! Get the discrisation structures on every level.
+    ! Primal space
+    call sth_getLevel (rsettings%rspacetimeHierPrimal,&
+        ilevel,p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
+        
+    ! Save them.
+    roperatorAsm%p_rspaceDiscrPrimal => &
+        p_rfeSpaceLevel%p_rdiscretisation
+    
+    roperatorAsm%p_rtimeDiscrPrimal => p_rtimeDiscr
+    
+    ! Dual space
+    call sth_getLevel (rsettings%rspacetimeHierDual,ilevel,&
+        p_rfeSpaceLevel,p_rtimeDiscr)
+    roperatorAsm%p_rspaceDiscrDual => &
+        p_rfeSpaceLevel%p_rdiscretisation
+
+    roperatorAsm%p_rtimeDiscrDual => p_rtimeDiscr
+
+    ! Control space
+    call sth_getLevel (rsettings%rspacetimeHierControl,ilevel,&
+        p_rfeSpaceLevel,p_rtimeDiscr)
+    roperatorAsm%p_rspaceDiscrControl => &
+        p_rfeSpaceLevel%p_rdiscretisation
+
+    roperatorAsm%p_rtimeDiscrControl => p_rtimeDiscr
+    
+    ! Get the assembly templates
+    roperatorAsm%p_rasmTemplates => &
+        rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispacelevel)
+    
+    ! Fetch the other parameters
+    roperatorAsm%p_rphysics => rsettings%rphysicsPrimal
+    roperatorAsm%p_rsettingsDiscr => rsettings%rsettingsSpaceDiscr
+    roperatorAsm%p_rsettingsOptControl => rsettings%rsettingsOptControl
+    roperatorAsm%p_rrhsPrimal => rsettings%rrhsPrimal
+    roperatorAsm%p_rrhsDual => rsettings%rrhsDual
+    roperatorAsm%p_rtargetFlow => rsettings%rsettingsOptControl%rtargetFunction
+    roperatorAsm%p_rglobalData => rsettings%rglobalData
+    roperatorAsm%p_rdebugFlags => rsettings%rdebugFlags
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_createOpAsmHier (rhierarchy,rsettings)
+  
+!<description>
+  ! Creates a hierarchy of operator assembly structures.
+!</description>
+
+!<input>
+  ! Structure with the settings of the space-time solver
+  type(t_settings_optflow), intent(in), target :: rsettings
+!</input>
+
+!<output>
+  ! A t_spacetimeOpAsmHierarchy to initialise.
+  type(t_spacetimeOpAsmHierarchy), intent(out) :: rhierarchy
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Allocate memory.
+    rhierarchy%nlevels = rsettings%rspacetimeHierPrimal%nlevels
+    allocate(rhierarchy%p_RopAsmList(rhierarchy%nlevels))
+  
+    ! On each level...  
+    do i=1,rhierarchy%nlevels
+
+      ! Initialise the operator assembly structure    
+      call smva_initOperatorAsm (rhierarchy%p_RopAsmList(i),i,rsettings)
+      
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_releaseOpAsmHier (rhierarchy)
+  
+!<description>
+  ! Releases the hierarchy of operator assembly structures.
+!</description>
+
+!<inputoutput>
+  ! A t_spacetimeOpAsmHierarchy to clean up.
+  type(t_spacetimeOpAsmHierarchy), intent(inout) :: rhierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release memory.
+    deallocate(rhierarchy%p_RopAsmList)
+    rhierarchy%nlevels = 0
+
   end subroutine
 
 end module

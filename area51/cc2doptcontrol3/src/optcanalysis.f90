@@ -187,7 +187,7 @@ contains
 !      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
 !                        user_ffunction_TargetY,rcollection)
 !
-!      call user_doneCollectForAssembly (rglobalData,rcollection)
+!      call user_doneCollectForVecAssembly (rglobalData,rcollection)
 !
 !    else
 !
@@ -603,7 +603,7 @@ contains
           call pperr_scalar (PPERR_L2ERROR,Derr(1),rzeroVector%RvectorBlock(1),&
               fct_diffToTarget,rlocalcoll)
 
-          call user_doneCollectForAssembly (rglobalData,rcollection)
+          call user_doneCollectForVecAssembly (rglobalData,rcollection)
 
           call user_initCollectForVecAssembly (rglobalData,&
               rreference%iid,2,dtime,rcollection)
@@ -613,7 +613,7 @@ contains
           call pperr_scalar (PPERR_L2ERROR,Derr(2),rzeroVector%RvectorBlock(2),&
               fct_diffToTarget,rlocalcoll)
               
-          call user_doneCollectForAssembly (rglobalData,rcollection)
+          call user_doneCollectForVecAssembly (rglobalData,rcollection)
           
         else
           
@@ -941,7 +941,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
       end do
       
@@ -960,7 +960,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
       end if
       
@@ -978,7 +978,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
       end if
           
@@ -1008,7 +1008,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
             
       end do
@@ -1027,7 +1027,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
       end if
           
@@ -1046,7 +1046,7 @@ contains
             optcana_evalFunction,rcollection)
 
         if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+          call user_doneCollectForVecAssembly (rglobalData,ruserCollection)
         end if
       end if
 

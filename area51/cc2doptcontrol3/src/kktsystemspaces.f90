@@ -306,6 +306,7 @@ contains
     call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
     
     ! Allocate temp memory for accessing the data
+    allocate(rvector%p_rvectorAccess)
     call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
 
   end subroutine
@@ -329,7 +330,8 @@ contains
 
     ! Release temp memory
     call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
-
+    deallocate(rvector%p_rvectorAccess)
+    
     ! Release vetor data
     call sptivec_releaseVector (rvector%p_rvector)
     deallocate(rvector%p_rvector)
@@ -366,6 +368,7 @@ contains
     call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
     
     ! Allocate temp memory for accessing the data
+    allocate(rvector%p_rvectorAccess)
     call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
 
   end subroutine
@@ -389,6 +392,7 @@ contains
 
     ! Release temp memory
     call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
+    deallocate(rvector%p_rvectorAccess)
 
     ! Release vetor data
     call sptivec_releaseVector (rvector%p_rvector)
@@ -426,6 +430,7 @@ contains
     call sptivec_initVector(rvector%p_rvector,rtimeDiscr,rspaceDiscr)
     
     ! Allocate temp memory for accessing the data
+    allocate(rvector%p_rvectorAccess)
     call sptivec_createAccessPool(rvector%p_rvector,rvector%p_rvectorAccess,5)
 
   end subroutine
@@ -449,6 +454,7 @@ contains
 
     ! Release temp memory
     call sptivec_releaseAccessPool(rvector%p_rvectorAccess)
+    deallocate(rvector%p_rvectorAccess)
 
     ! Release vetor data
     call sptivec_releaseVector (rvector%p_rvector)

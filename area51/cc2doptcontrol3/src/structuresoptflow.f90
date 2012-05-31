@@ -44,6 +44,7 @@ module structuresoptflow
   use structuresdiscretisation
   use structuresboundaryconditions
   use structuresoptcontrol
+  use structuresoperatorasm
   
   implicit none
   
@@ -93,7 +94,10 @@ module structuresoptflow
     
     ! A level info hierarchy for the assembly of stuff on all levels.
     type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
-
+    
+    ! A hierarchy of operator assembly structures for all levels.
+    type(t_spacetimeOpAsmHierarchy) :: roperatorAsmHier
+    
     ! A hierarchy of space levels for the primal space
     type(t_feHierarchy) :: rfeHierarchyPrimal
 
@@ -140,8 +144,11 @@ module structuresoptflow
     ! Analytic solution defining the initial condition.
     type(t_anSolution) :: rinitialCondition
 
-    ! Analytic solution defining the right-hand side
-    type(t_anSolution) :: rrhs
+    ! Analytic solution defining the right-hand side, primal solution
+    type(t_anSolution) :: rrhsPrimal
+
+    ! Analytic solution defining the right-hand side, dual solution
+    type(t_anSolution) :: rrhsDual
 
     ! The boundary conditions, analytic definition
     type(t_optcBDC) :: roptcBDC

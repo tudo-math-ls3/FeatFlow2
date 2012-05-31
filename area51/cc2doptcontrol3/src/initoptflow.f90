@@ -44,6 +44,7 @@ module initoptflow
   use structuresoptcontrol
   use hierarchies
   
+  use spacematvecassembly
   use initmatrices
   use spacetimeinterlevelprojection
   
@@ -237,6 +238,9 @@ contains
         rsettingsSolver%rspaceAsmHierarchy,&
         rsettingsSolver%rsettingsSpaceDiscr,&
         rsettingsSolver%rfeHierarchyPrimal)
+        
+    ! Set up operator assembly structures for the assembly of KKT stuff
+    call smva_createOpAsmHier(rsettingsSolver%roperatorAsmHier,rsettingsSolver)
 
     if (ioutputLevel .ge. 2) then
       call output_lbrk()
@@ -356,12 +360,31 @@ contains
       call output_lbrk()
       call output_line ("Initialising RHS.")
     end if
+    
+    ! Primal RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
-        "srhs",sstr,bdequote=.true.)
+        "srhsPrimal",sstr,bdequote=.true.)
     select case (rsettingsSolver%rphysicsPrimal%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
-      call init_initFunction (rparlist,sstr,rsettingsSolver%rrhs,&
+      call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsPrimal,&
+          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
+          rsettingsSolver%rboundary,rsettingsSolver%rphysicsPrimal,isuccess)
+    end select
+    if (isuccess .eq. 1) then
+      call output_line ('Functions created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call sys_halt()
+    end if
+
+    ! Dual RHS
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "srhsDual",sstr,bdequote=.true.)
+    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsDual,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
           rsettingsSolver%rboundary,rsettingsSolver%rphysicsPrimal,isuccess)
@@ -399,8 +422,7 @@ contains
     ! the settings structure to the global data structure.
     ! From that point on, we can call assembly routines that use callback
     ! routines.
-    call user_initGlobalData (&
-        rsettingsSolver,rsettingsSolver%rrhs,rsettingsSolver%rglobalData)
+    call user_initGlobalData (rsettingsSolver,rsettingsSolver%rglobalData)
 
 !    ! Now we calculate all assembly template data.
 !    !

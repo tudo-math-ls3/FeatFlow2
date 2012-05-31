@@ -39,11 +39,6 @@ module assemblytemplates
   
   private
   
-  public :: t_staticSpaceAsmTemplates
-  public :: t_staticSpaceAsmHierarchy
-  public :: astmpl_createSpaceAsmHier
-  public :: astmpl_releaseSpaceAsmHier
-  
 !<types>
 
 !<typeblock>
@@ -149,6 +144,8 @@ module assemblytemplates
 
 !</typeblock>
 
+  public :: t_staticSpaceAsmTemplates
+
 !<typeblock>
 
   ! A hierarchy of t_staticSpaceAsmTemplates structures.
@@ -164,8 +161,16 @@ module assemblytemplates
 
 !</typeblock>
 
+  public :: t_staticSpaceAsmHierarchy
 
 !</types>
+
+  ! Allocates memory for a level hierarchy consisting of nlevels levels
+  public :: astmpl_createSpaceAsmHier
+  
+  ! Releases a level info hierarchy.
+  public :: astmpl_releaseSpaceAsmHier
+  
 
 contains
 
@@ -204,7 +209,7 @@ contains
   subroutine astmpl_releaseSpaceAsmHier (rhierarchy)
   
 !<description>
-  ! Releases a levle info hierarchy.
+  ! Releases a level info hierarchy.
   !
   ! WARNING: Attached matrices are NOT automatically released!
 !</description>

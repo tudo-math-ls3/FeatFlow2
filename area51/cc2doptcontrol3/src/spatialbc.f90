@@ -389,7 +389,7 @@ contains
                       rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
                       cc_getDirBCNavSt2D,rcollection)
                       
-                  call user_doneCollectForAssembly (rglobalData,rusercollection)
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
 
                   ! Y-velocity
                   rcollection%IquickAccess(1) = 2
@@ -402,7 +402,7 @@ contains
                       rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
                       cc_getDirBCNavSt2D,rcollection)
                       
-                  call user_doneCollectForAssembly (rglobalData,rusercollection)
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                 
                 else
                     
@@ -454,7 +454,7 @@ contains
                         rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
                         cc_getDirBCNavSt2D,rcollection)
                         
-                    call user_doneCollectForAssembly (rglobalData,rusercollection)
+                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                     
                   end if
                       
@@ -488,7 +488,7 @@ contains
                         rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
                         cc_getDirBCNavSt2D,rcollection)
                         
-                    call user_doneCollectForAssembly (rglobalData,rusercollection)
+                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                     
                   end if
                   
@@ -777,7 +777,7 @@ contains
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                              
 !                        end if
 !                        
@@ -821,7 +821,7 @@ contains
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                        
@@ -862,7 +862,7 @@ contains
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                              
 !                        end if
 !                        
@@ -890,7 +890,7 @@ contains
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                              
 !                        end if
 !                        
@@ -966,7 +966,7 @@ contains
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                              
 !                        end if
 !                        
@@ -1010,7 +1010,7 @@ contains
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                      end if
@@ -1067,7 +1067,7 @@ contains
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                        
@@ -1112,7 +1112,7 @@ contains
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                        
@@ -1188,7 +1188,7 @@ contains
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                              
 !                        end if
 !                        
@@ -1232,7 +1232,7 @@ contains
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                      end if
@@ -1343,7 +1343,7 @@ contains
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                        
@@ -1388,7 +1388,7 @@ contains
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
 !                              
-!                          call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        end if
 !                        
@@ -1508,7 +1508,7 @@ contains
 !                                rvectorDirichletBCCRHS%RvectorBlock(1),&
 !                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
 !                                
-!                            call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                            call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                                
 !                          end if
 !                          
@@ -1552,7 +1552,7 @@ contains
 !                                rvectorDirichletBCCRHS%RvectorBlock(1),&
 !                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
 !
-!                            call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                            call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                          end if
 !                          
@@ -1595,7 +1595,7 @@ contains
 !                            rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                            cc_getBDconditionsNavSt2D,rcoll)
 !
-!                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                        call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !
 !                        call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
 !
@@ -1604,7 +1604,7 @@ contains
 !                            rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
 !                            cc_getBDconditionsNavSt2D,rcoll)
 !                            
-!                        call user_doneCollectForAssembly (rglobalData,rcallbackcollection)
+!                        call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
 !                            
 !                      end if
 !                      

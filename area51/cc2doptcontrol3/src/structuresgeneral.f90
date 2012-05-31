@@ -126,8 +126,11 @@ module structuresgeneral
     ! Reference to the optimal control parameters.
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
     
-    ! Pointer to the right hand side.
-    type(t_anSolution), pointer :: p_rrhs => null()
+    ! Pointer to the primal right hand side.
+    type(t_anSolution), pointer :: p_rrhsPrimal => null()
+
+    ! Pointer to the dual right hand side.
+    type(t_anSolution), pointer :: p_rrhsDual => null()
 
     ! Pointer to the target function.
     type(t_anSolution), pointer :: p_rtargetFunction => null()

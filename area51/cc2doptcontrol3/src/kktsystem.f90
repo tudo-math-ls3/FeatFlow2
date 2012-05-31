@@ -36,6 +36,7 @@ module kktsystem
   use structuresgeneral
   use assemblytemplates
   
+  use structuresoperatorasm
   use spacematvecassembly
   
   use kktsystemspaces
@@ -53,12 +54,6 @@ module kktsystem
   ! corresponding control (if not directly calculated from the dual
   ! solution on-demand).
   type t_kktsystem
-  
-    ! Underlying physics
-    type(t_settings_physics), pointer :: p_rphysics => null()
-    
-    ! Structure defining the optimal control problem to calculate
-    type(t_settings_optcontrol), pointer :: p_roptControl => null()
   
     ! Solution of the primal equation of the KKT system.
     type(t_primalSpace), pointer :: p_rprimalSol => null()
@@ -155,7 +150,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_initKKTsystem (rkktsystem,rphysics,roptControl,&
+  subroutine kkt_initKKTsystem (rkktsystem,rspacetimeOperatorAsm,&
       rspaceDiscrPrimal,rtimeDiscrPrimal,&
       rspaceDiscrDual,rtimeDiscrDual,&
       rspaceDiscrControl,rtimeDiscrControl)
@@ -165,11 +160,8 @@ contains
 !</description>
 
 !<input>  
-  ! Underlying physics
-  type(t_settings_physics), intent(in), target :: rphysics
-  
-  ! Structure defining the optimal control problem to calculate
-  type(t_settings_optcontrol), intent(in), target :: roptControl
+  ! Parameters for the assembly of space-time operators
+  type(t_spacetimeOperatorAsm), intent(in), target :: rspacetimeOperatorAsm
 
   ! Spatial discretisation, primal space
   type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
@@ -198,8 +190,7 @@ contains
 !</subroutine>
 
     ! Remember the structures
-    rkktsystem%p_rphysics => rphysics
-    rkktsystem%p_roptControl => roptControl
+    rkktsystem%p_rspacetimeOperatorAsm => rspacetimeOperatorAsm
     
     ! Allocate memory for the solutions of the KKT system.
     allocate (rkktsystem%p_rprimalSol)
@@ -231,8 +222,7 @@ contains
 !</subroutine>
 
     ! Clean up the structures
-    nullify(rkktsystem%p_rphysics)
-    nullify(rkktsystem%p_roptControl)
+    nullify(rkktsystem%p_rspacetimeOperatorAsm)
     
     ! Release memory
     call kktsp_donePrimalVector (rkktsystem%p_rprimalSol)
@@ -402,6 +392,15 @@ contains
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
     type(t_spaceTimeVector), pointer :: p_rdualSol
 
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystem%p_rspacetimeOperatorAsm%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystem%p_rspacetimeOperatorAsm%p_rsettingsOptControl
+
     ! This is strongly equation and problem dependent
     ! and may imply a projection to the admissible set.
     !
@@ -455,7 +454,7 @@ contains
           icomp = 0
           
           ! Which equation do we have?
-          select case (rkktsystem%p_rphysics%cequation)
+          select case (p_rphysics%cequation)
           
           ! -------------------------------------------------------------
           ! Stokes/Navier Stokes.
@@ -467,17 +466,17 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
 
               ! Do we have constraints?
-              select case (rkktsystem%p_roptControl%rconstraints%cdistVelConstraints)
+              select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
 
               ! ----------------------------------------------------------
               ! No constraints
               ! ----------------------------------------------------------
               case (0)
               
-                if (rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
                   call sys_halt()
@@ -490,12 +489,12 @@ contains
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
-                    -1.0_DP/rkktsystem%p_roptControl%dalphaC,0.0_DP)
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
-                    -1.0_DP/rkktsystem%p_roptControl%dalphaC,0.0_DP)
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
               
               end select ! constraints
 
@@ -649,6 +648,15 @@ contains
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
     type(t_spaceTimeVector), pointer :: p_rdualSolLin
 
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystemDirDeriv%p_rkktsystem%p_rspacetimeOperatorAsm%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystemDirDeriv%p_rkktsystem%p_rspacetimeOperatorAsm%p_rsettingsOptControl
+
     ! This is strongly equation and problem dependent
     ! and may imply a projection to the admissible set.
     !
@@ -702,7 +710,7 @@ contains
           icomp = 0
           
           ! Which equation do we have?
-          select case (rkktsystemDirDeriv%p_rkktsystem%p_rphysics%cequation)
+          select case (p_rphysics%cequation)
           
           ! -------------------------------------------------------------
           ! Stokes/Navier Stokes.
@@ -714,17 +722,17 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
 
               ! Do we have constraints?
-              select case (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%rconstraints%cdistVelConstraints)
+              select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
 
               ! ----------------------------------------------------------
               ! No constraints
               ! ----------------------------------------------------------
               case (0)
 
-                if (rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC .ge. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
                   call sys_halt()
@@ -737,12 +745,12 @@ contains
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
-                    -1.0_DP/rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC,0.0_DP)
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
-                    -1.0_DP/rkktsystemDirDeriv%p_rkktsystem%p_roptControl%dalphaC,0.0_DP)
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
               
               end select ! constraints
 
