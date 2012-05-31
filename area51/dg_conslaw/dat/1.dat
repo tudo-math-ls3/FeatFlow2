@@ -2,7 +2,7 @@
 
 # We want to solve our problem on level ...
 nlmin = 1
-nlmax = 6
+nlmax = 5
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -17,12 +17,12 @@ nlmax = 6
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 #prmname = ./pre/bartsimpson.prm
-prmname = ./pre/dedeobstacle.prm
+#prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
 #prmname = ./pre/ramp_5deg_quads.prm
 #prmname = ./pre/gammchannel_quads.prm
-#prmname = ./pre/hole1.prm
+prmname = ./pre/hole1.prm
 #prmname = ./pre/roundhole3.prm
 
 # Name of the triangulation file
@@ -38,12 +38,12 @@ prmname = ./pre/dedeobstacle.prm
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 #triname = ./pre/bartsimpson.tri
-triname = ./pre/dedeobstacle.tri
+#triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/ramp_5deg_inlet_quads.tri
 #triname = ./pre/ramp_5deg_quads.tri
 #triname = ./pre/gammchannel_quads.tri
-#triname = ./pre/hole1.tri
+triname = ./pre/hole1.tri
 #triname = ./pre/roundhole3.tri
 
 # What kind of finite elements do we use?
@@ -52,7 +52,7 @@ triname = ./pre/dedeobstacle.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 3
+FEkind = 4
 
 
 [TIMESTEPPING]

@@ -10882,6 +10882,8 @@ end subroutine
       end do
     end do
 
+!    ! Constant RHS
+!    Dcoefficients (1,:,:) = 1.0_dp
 
 
 !     ! RHS for u = 16*x*(1-x)*y*(1-y)
@@ -10991,7 +10993,7 @@ end subroutine
         
         ! Calculate dirichlet value on boundary
         dg = dx**4.0_dp + dy**4.0_dp + dx*dx*dy*dy
-        
+!        dg = 0.0_dp
 
         ! Term 1: v
         dpolgrad = real(rcollection%Iquickaccess(1))

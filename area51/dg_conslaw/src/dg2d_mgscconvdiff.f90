@@ -200,9 +200,9 @@ contains
     call parlst_readFromFile(rproblem%rparlist,sparameterfileName)
     
     ! Set convection and diffusion parameters
-    rproblem%dnu = 1.0_dp ! /1024.0_dp
-    rproblem%Dbeta(1) = 0.0_dp
-    rproblem%Dbeta(2) = 0.0_dp
+    rproblem%dnu = 2.0_dp**(-20_dp)  !1.0_dp/1024.0_dp
+    rproblem%Dbeta(1) = 1.0_dp
+    rproblem%Dbeta(2) = 1.0_dp
 
   end subroutine
 
@@ -581,7 +581,7 @@ contains
     
 
     ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolverNode , p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode, p_rsmoother, p_rsmoother2
 !    type(t_linsolPointer), dimension(:), allocatable :: p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -608,44 +608,44 @@ contains
     
     
     
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    ! Set up prolongation matrices for Multigrid
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    
-!    ! Loop over all levels except for the coarse-most one
-!    do i = ilvmin+1,ilvmax
-!    
-!      ! Create the matrix structure of the prolongation matrix.
-!      call mlop_create2LvlMatrixStruct(&
-!          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
-!          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
-!          LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl)
-!      
-!      ! And assemble the entries of the prolongation matrix.
-!      call mlop_build2LvlProlMatrix (&
-!          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
-!          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
-!          .true., rproblem%RlevelInfo(i)%rmatProl)
-!      
-!      ! Now set up an interlevel projecton structure for this level
-!      ! based on the Laplace matrix on this level.
-!      call mlprj_initProjectionMat (rproblem%RlevelInfo(i)%rprojection,&
-!                                    rproblem%RlevelInfo(i)%rmatrix)
-!      
-!      ! And initialise the matrix-based projection
-!      call mlprj_initMatrixProjection(&
-!          rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,1),&
-!          rproblem%RlevelInfo(i)%rmatProl)
-!      
-!    end do
-!
-!    ! And set up an interlevel projecton structure for the coarse-most level.
-!    call mlprj_initProjectionMat (rproblem%RlevelInfo(ilvmin)%rprojection,&
-!                                  rproblem%RlevelInfo(ilvmin)%rmatrix)
-!    
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!    ! Prolongation matrices for Multigrid are set up now
-!    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Set up prolongation matrices for Multigrid
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! Loop over all levels except for the coarse-most one
+    do i = ilvmin+1,ilvmax
+    
+      ! Create the matrix structure of the prolongation matrix.
+      call mlop_create2LvlMatrixStruct(&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! And assemble the entries of the prolongation matrix.
+      call mlop_build2LvlProlMatrix (&
+          rproblem%RlevelInfo(i-1)%p_rdiscretisation%RspatialDiscr(1),&
+          rproblem%RlevelInfo(i)%p_rdiscretisation%RspatialDiscr(1),&
+          .true., rproblem%RlevelInfo(i)%rmatProl)
+      
+      ! Now set up an interlevel projecton structure for this level
+      ! based on the Laplace matrix on this level.
+      call mlprj_initProjectionMat (rproblem%RlevelInfo(i)%rprojection,&
+                                    rproblem%RlevelInfo(i)%rmatrix)
+      
+      ! And initialise the matrix-based projection
+      call mlprj_initMatrixProjection(&
+          rproblem%RlevelInfo(i)%rprojection%RscalarProjection(1,1),&
+          rproblem%RlevelInfo(i)%rmatProl)
+      
+    end do
+
+    ! And set up an interlevel projecton structure for the coarse-most level.
+    call mlprj_initProjectionMat (rproblem%RlevelInfo(ilvmin)%rprojection,&
+                                  rproblem%RlevelInfo(ilvmin)%rmatrix)
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Prolongation matrices for Multigrid are set up now
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
  
     
@@ -682,15 +682,15 @@ contains
     
     
       
-    ! Loop through all levels. Whereever the projection structure
-    ! is missing, create it
-    do ilevel = 2,p_rsolverNode%p_rsubnodeMultigrid2%nlevels
-      ! Initialise the projection structure
-      call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
-                                           rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
-                                           rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
-
-    end do
+!    ! Loop through all levels. Whereever the projection structure (No Matrix Projection)
+!    ! is missing, create it
+!    do ilevel = 2,p_rsolverNode%p_rsubnodeMultigrid2%nlevels
+!      ! Initialise the projection structure
+!      call linsol_initProjMultigrid2Level (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel),&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-2)%p_rdiscretisation,&
+!                                           rproblem%RlevelInfo(ilvmin+ilevel-1)%p_rdiscretisation)
+!
+!    end do
     
     
     
@@ -764,15 +764,16 @@ contains
 !        call linsol_initBlockSOR (p_rsmoother, 1.0_dp)
 !        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
 !        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
+!        call linsol_initSSOR (p_rsmoother, 1.0_dp)
 
-!        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+!        call linsol_convertToSmoother (p_rsmoother,1,1.0_DP)
 
 
         call linsol_initBlockUpwGS (p_rsmoother, rproblem%Dbeta, &
                 rproblem%RlevelInfo(i)%p_rdiscretisation%p_rtriangulation, &
                 rproblem%RlevelInfo(i)%raddTriaData%p_Dnormals)
 
-        call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
+        call linsol_convertToSmoother (p_rsmoother,1,1.0_DP)
         
       end if
     
@@ -783,20 +784,23 @@ contains
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
       
-!      ! Attach our user-defined projection to the level.
-!      call linsol_initProjMultigrid2Level(p_rlevelInfo, &
-!                                          rproblem%RlevelInfo(i)%rprojection)
+      ! Attach our user-defined projection to the level. (Matrices)
+      call linsol_initProjMultigrid2Level(p_rlevelInfo, &
+                                          rproblem%RlevelInfo(i)%rprojection)
       
     end do
     
     ! Set the output level of the solver to 2 for some output
-    p_rsolverNode%ioutputLevel = 2
+    p_rsolverNode%ioutputLevel = 0
 !    p_rsolverNode%depsRel = 1.0e-12
     p_rsolverNode%depsAbs = 1.0e-12
     p_rsolverNode%nmaxIterations = 5000
     
 !    ! Set to W-cycle
 !    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 2
+
+    ! Set to V-cycle
+    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 1
 
     ! Attach the system matrices to the solver.
     !
@@ -819,13 +823,61 @@ contains
       call lsysbl_releaseMatrix (Rmatrices(i))
     end do
     deallocate(Rmatrices)
+
+
+!    ! Multigrid solver    
+!    ! Initialise structure/data of the solver. This allows the
+!    ! solver to allocate memory / perform some precalculation
+!    ! to the problem.
+!    call linsol_initStructure (p_rsolverNode,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!    call linsol_initData (p_rsolverNode,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!    
+!    ! Finally solve the system. As we want to solve Ax=b with
+!    ! b being the real RHS and x being the real solution vector,
+!    ! we use linsol_solveAdaptively. If b is a defect
+!    ! RHS and x a defect update to be added to a solution vector,
+!    ! we would have to use linsol_precondDefect instead.
+!    call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
+    
+    
+    
+    
+    call linsol_convertToSmoother (p_rsolverNode,1,1.0_DP)
+    
+    ! BiCGStab with Multigrid preconditioner
+    CALL linsol_initBiCGStab (p_rsolverNode1,p_rsolverNode,RfilterChain)
+
+
+    allocate(Rmatrices(ilvmin:ilvmax))
+    do i=ilvmin,ilvmax
+      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end do
+    
+    call linsol_setMatrices(p_RsolverNode1,Rmatrices(ilvmin:ilvmax))
+    
+    ! We can release Rmatrices immediately -- as long as we do not
+    ! release rproblem%RlevelInfo(i)%rmatrix!
+    do i=ilvmin,ilvmax
+      call lsysbl_releaseMatrix (Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
+    
+    
+    p_rsolverNode1%ioutputLevel = 2
+    p_rsolverNode1%depsRel = 1.0e-10_dp
+    p_rsolverNode1%depsAbs = 0.0_dp
+    p_rsolverNode1%nmaxIterations = 5000
+!    p_rsolverNode1%iresNorm = 0
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    call linsol_initStructure (p_rsolverNode,ierror)
+    call linsol_initStructure (p_rsolverNode1,ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
-    call linsol_initData (p_rsolverNode,ierror)
+    call linsol_initData (p_rsolverNode1,ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Finally solve the system. As we want to solve Ax=b with
@@ -833,9 +885,7 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
-    
-    
+    call linsol_solveAdaptively (p_rsolverNode1,p_rvector,p_rrhs,rtempBlock)
     
     
    
@@ -1121,11 +1171,11 @@ contains
     
     sofile = './gmv/u2d'
 
-    ! Output solution to gmv file
-    call dg2gmv(p_rvector%Rvectorblock(1),3,sofile,-1)
-
-    ! Output solution to vtk file
-    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+!    ! Output solution to gmv file
+!    call dg2gmv(p_rvector%Rvectorblock(1),3,sofile,-1)
+!
+!    ! Output solution to vtk file
+!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
     
     write(*,*) ''
    
