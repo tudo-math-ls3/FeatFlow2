@@ -12,10 +12,10 @@
 .PHONY:	default
 default: $(OBJDIR)/libamd.a
 
-#FEAT2# include ../../UFconfig/UFconfig.mk
+#FEAT2# include ../SuiteSparse_config/SuiteSparse_config.mk
 
-#FEAT2# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../UFconfig
-C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../UFconfig
+#FEAT2# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../SuiteSparse_config
+C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../SuiteSparse_config
 
 #-------------------------------------------------------------------------------
 # source files
@@ -24,11 +24,11 @@ C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../UFconfig
 AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
 	amd_order amd_control amd_info amd_valid amd_preprocess
 
-#FEAT2# UFCONFIG = ../../UFconfig/UFconfig.h
-UFCONFIG = ../UFconfig/UFconfig.h
+#FEAT2# SUITESPARSE_CONFIG = ../../SuiteSparse_config/SuiteSparse_config.h
+SUITESPARSE_CONFIG = ../SuiteSparse_config/SuiteSparse_config.h
 
-#FEAT2# INC = ../Include/amd.h ../Include/amd_internal.h $(UFCONFIG)
-INC = Include/amd.h Include/amd_internal.h $(UFCONFIG)
+#FEAT2# INC = ../Include/amd.h ../Include/amd_internal.h $(SUITESPARSE_CONFIG)
+INC = Include/amd.h Include/amd_internal.h $(SUITESPARSE_CONFIG)
 
 #-------------------------------------------------------------------------------
 # object files for each version
@@ -119,10 +119,10 @@ $(OBJDIR)/libamdf77.a: $(AMDF77)
 # This Makefile is potentially called simultaneously from multiple make processes,
 # e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
-# standard FEAT2 lock file mechanism.
+# usual FEAT2 lock file mechanism.
 include ../create_library.mk
 $(OBJDIR)/libamd.a:  LOCKFILE = ../LOCK.creating.libamd.a
-$(OBJDIR)/libamd.a:  WAITTIME = 10
+$(OBJDIR)/libamd.a:  WAITTIME = 15
 $(OBJDIR)/libamd.a:  RETRIES  = 24
 $(OBJDIR)/libamd.a: $(OBJDIR)/amd_global.o $(AMDI) $(AMDL)
 	@$(CREATE_LIB)
@@ -156,10 +156,10 @@ $(OBJDIR):
 # would mean that e.g. in a 4-way parallel make run, a tarball would get
 # extracted 4 times in parallel, because make is not aware that the rule is
 # identical for the first 4 items of $(SRC_AMD). The same holds for
-# $(SRC_UFCONFIG). Extracting the same tarball several times simultaneously,
-# gives rise to several problems. Among those is the case where a source file
-# gets already compiled while it is being overwritten by its copy from the
-# tarball. Beware of doing that.
+# $(SRC_SUITESPARSE_CONFIG). Extracting the same tarball several times
+# simultaneously, gives rise to several problems. Among those is the case
+# where a source file gets already compiled while it is being overwritten by
+# its copy from the tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
 # when compiling the FEAT2 regression benchmark as this is usually done in
@@ -182,7 +182,7 @@ include ../unpack.mk
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
 
-AMD_TARBALL = ../AMD-2.2.4.tar.gz
+AMD_TARBALL = ../AMD-2.3.0.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -195,26 +195,26 @@ SRC_AMD = Include/amd_internal.h Include/amd.h \
 # existence indicates that the AMD tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
+LAST_FILE_FROM_AMD_TARBALL = ../AMD/Source/amd_valid.c
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2.4 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.3.0 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.4.tar.gz
-$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.3.0.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
 $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.4.tar.gz
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.3.0.tar.gz
 $(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.4.tar.gz
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.3.0.tar.gz
 $(AMD_TARBALL):  WAITTIME = 15
 $(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
@@ -222,32 +222,33 @@ $(AMD_TARBALL):
 
 
 #-------------------------------------------------------------------------------
-# Automatically extract UFconfig tarball when required.
+# Automatically extract SuiteSparse_config tarball when required.
 #-------------------------------------------------------------------------------
 
-UFCONFIG_TARBALL = ../UFconfig-3.7.1.tar.gz
+SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.0.0.tar.gz
 
-# List of required source files from UFconfig package. Purpose: let them share
-# a single common prerequisite that in turn is created by unpacking the tarball.
+# List of required source files from SuiteSparse_config package. Purpose: let
+# them share a single common prerequisite that in turn is created by unpacking
+# the tarball.
 # That's the key to serialise the unpacking process.
-SRC_UFCONFIG = $(UFCONFIG)
+SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
 
-$(UFCONFIG):  NAME     = "UFconfig 3.7.1 sources"
-$(UFCONFIG):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.7.1.tar.gz
-$(UFCONFIG):  WAITTIME = 10
-$(UFCONFIG):  RETRIES  = 24
-$(UFCONFIG):  PATCHCMD = echo
-$(UFCONFIG): | $(UFCONFIG_TARBALL)
+$(SUITESPARSE_CONFIG):  NAME     = "SuiteSparse_config 4.0.0 sources"
+$(SUITESPARSE_CONFIG):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
+$(SUITESPARSE_CONFIG):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.0.0.tar.gz
+$(SUITESPARSE_CONFIG):  WAITTIME = 15
+$(SUITESPARSE_CONFIG):  RETRIES  = 24
+$(SUITESPARSE_CONFIG):  PATCHCMD = echo
+$(SUITESPARSE_CONFIG): | $(TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.7.1.tar.gz
-$(UFCONFIG_TARBALL):  TARBALL  = $(UFCONFIG_TARBALL)
-$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.7.1.tar.gz
-$(UFCONFIG_TARBALL):  WAITTIME = 15
-$(UFCONFIG_TARBALL):  RETRIES  = 24
-$(UFCONFIG_TARBALL):
+$(SUITESPARSE_CONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/SuiteSparse_config/SuiteSparse_config-4.0.0.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
+$(SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.download.suitesparse_config-4.0.0.tar.gz
+$(SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
+$(SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
+$(SUITESPARSE_CONFIG_TARBALL):
 	@$(call DOWNLOAD)
 
 
@@ -276,4 +277,7 @@ purge:
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
-	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk ../UFconfig
+	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \
+                ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
+                ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_Mac.mk \
+                ../SuiteSparse_config/xerbla
