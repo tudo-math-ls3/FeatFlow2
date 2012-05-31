@@ -121,7 +121,7 @@ module structuresnewton
     ! Type of the iteration.
     ! =-1: undefined
     ! =0: simple linear solver
-    ! =1: nonlinear defect correction solver.
+    ! =1: nonlinear loop for a semilinear equation
     ! =2: Newton solver
     ! =3: adaptive Newton with parameters in radaptiveNewton
     integer :: ctypeIteration = -1

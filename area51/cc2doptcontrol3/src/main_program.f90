@@ -324,7 +324,7 @@ contains
       call output_lbrk()
       call output_line ("Initialising the descent algorithm loop.")
     end if
-    call newtonit_initParams (rsolver,p_rsettingsSolver,rsettings%ssectionSpaceTimeSolver,rparlist)
+    call newtonit_init (rsolver,p_rsettingsSolver,rsettings%ssectionSpaceTimeSolver,rparlist)
     call newtonit_initStructure (rsolver,rsolution)
     call newtonit_initData (rsolver)
     

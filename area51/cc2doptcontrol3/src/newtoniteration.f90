@@ -39,6 +39,8 @@ module newtoniteration
   use assemblytemplates
   
   use spacematvecassembly
+  use spacelinearsolver
+  use spacesolver
   
   use kktsystemspaces
   use kktsystem
@@ -74,6 +76,40 @@ module newtoniteration
     ! Parameters for the linear space-time subsolver.
     type(t_linsolParameters) :: rlinsolParam
     
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Nonlinear primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Nonlinear primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierPrimal => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierDual => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierPrimalLin => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierDualLin => null()
+    
+    ^ die dinger müssen irgendwo erzeugt und benutzt werden.
+    
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
@@ -93,7 +129,7 @@ module newtoniteration
 !</types>
   
   ! Basic initialisation of the Newton solver
-  public :: newtonit_initParams
+  public :: newtonit_init
   
   ! Structural initialisation
   public :: newtonit_initStructure
@@ -119,7 +155,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initParams (rsolver,rsettingsSolver,ssection,rparamList)
+  subroutine newtonit_init (rsolver,rsettingsSolver,ssection,rparamList)
   
 !<description>
   ! Initialises the solver parameters according to a parameter list.
@@ -166,7 +202,7 @@ contains
 !<inputoutput>
   ! Structure defining the KKT system. The control in this structure
   ! defines the current 'state' of the Newton algorithm.
-  ! On output, the 
+  ! On output, the primal and dual solution are updated.
   type(t_kktsystem), intent(inout) :: rkktsystem
   
   ! On output, this structure receives a representation of the search
@@ -244,6 +280,10 @@ contains
 !<subroutine>
 
   subroutine newtonit_solve (rsolver,rkktsystemHierarchy)
+  
+!<description>
+  ! Applies a Newton iteration to solve the space-time system.
+!</description>
   
 !<inputoutput>
   ! Parameters for the Newton iteration.
@@ -348,34 +388,6 @@ contains
     
     end do
     
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine newtonit_init (rsolver,rparlist,ssection)
-  
-!<description>
-  ! Basic initialisation of the Newton solver.
-!</description>
-
-!<input>
-  ! Parameter list that contains the data for the preconditioning.
-  type(t_parlist), intent(in) :: rparlist
-  
-  ! Entry Section in the parameter list containing the data of the 
-  ! preconditioner.
-  character(len=*), intent(in) :: ssection
-!</input>
-
-!<inputoutput>
-  ! Structure to be initialised.
-  type(t_spacetimeNewton), intent(out) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-   
   end subroutine
 
   ! ***************************************************************************

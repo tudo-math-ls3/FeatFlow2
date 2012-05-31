@@ -21,6 +21,7 @@ module structuresoperatorasm
   use structuresgeneral
   use structuresdiscretisation
   use structuresoptcontrol
+  use structuresboundaryconditions
   
   use assemblytemplates
 
@@ -86,6 +87,9 @@ module structuresoperatorasm
     
     ! Assembly templates corresponding to the above space discretisation
     type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates => null()
+    
+    ! Definition of the boundary conditions
+    type(t_optcBDC), pointer :: p_roptcBDC => null()
 
     ! Physics of the problem
     type(t_settings_physics), pointer :: p_rphysics => null()

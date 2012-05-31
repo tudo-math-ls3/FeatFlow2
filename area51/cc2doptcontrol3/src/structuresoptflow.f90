@@ -107,6 +107,9 @@ module structuresoptflow
     ! A hierarchy of space levels for the control space
     type(t_feHierarchy) :: rfeHierarchyControl
     
+    ! Boundary condition hierarchy for all space levels, primal and dual space
+    type(t_optcBDCSpaceHierarchy) :: roptcBDCSpaceHierarchy
+    
     ! Projection hierarchy for the interlevel projection in the primal space.
     type(t_interlevelProjectionHier) :: rprjHierSpacePrimal
 

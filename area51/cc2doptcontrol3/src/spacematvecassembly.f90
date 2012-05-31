@@ -4117,6 +4117,7 @@ contains
     roperatorAsm%p_rtargetFlow => rsettings%rsettingsOptControl%rtargetFunction
     roperatorAsm%p_rglobalData => rsettings%rglobalData
     roperatorAsm%p_rdebugFlags => rsettings%rdebugFlags
+    roperatorAsm%p_roptcBDC => rsettings%roptcBDC
       
   end subroutine
 

@@ -109,11 +109,19 @@ module spacelinearsolver
     type(t_matrixBlock), pointer :: p_rmatrix => null()
   end type
 
+!</typeblock>
+
 !<typeblock>
 
   ! This structure encapsules a hierarchy of linear solvers for all
   ! levels in a space discrtisation hierarchy.
   type t_linsolHierarchySpace
+  
+    ! Minimum level
+    integer :: nlmin = 0
+    
+    ! Maximum level
+    integer :: nlmax = 0
   
     ! Underlying equation, the solvers in this structure support.
     integer :: cequation = LSS_EQN_GENERAL
@@ -138,8 +146,41 @@ module spacelinearsolver
 
 !</typeblock>
 
+  public :: t_linsolHierarchySpace
+
 !</types>
 
+  ! Initialises a linear solver according to the settings in a parameter list.
+  public :: lssh_initSolver
+
+  ! Cleans up a linear solver according to the settings in a parameter list.
+  public :: lssh_doneSolver
+
+  ! Based on a FE space hierarchy and a parameter list, this subroutine
+  ! creates a linear solver hierarchy.
+  public :: lssh_createLinsolHierarchy
+
+  ! Releases a given linear solver hierarchy.
+  public :: lssh_releaseLinsolHierarchy
+
+  ! Defines the system matrix for level ilevel.
+  public :: lssh_setMatrix
+  
+  ! Initialises structural data for the solver at level ilevel.
+  public :: lssh_initStructure
+  
+  ! Initialises calculation data for the solver at level ilevel.
+  public :: lssh_initData
+  
+  ! Cleans up calculation data for the solver at level ilevel.
+  public :: lssh_doneData
+  
+  ! Cleans up structural data for the solver at level ilevel.
+  public :: lssh_doneStructure
+  
+  ! Applies preconditioning of rd with the solver on level ilevel.
+  public :: lssh_precondDefect
+  
 contains
 
   ! ***************************************************************************
@@ -150,7 +191,7 @@ contains
       rparList,ssection,rdebugFlags)
   
 !<description>
-  ! Initialises a linear solver according to the settings in a parameter list
+  ! Initialises a linear solver according to the settings in a parameter list.
 !</description>
 
 !<input>
@@ -473,9 +514,36 @@ contains
 
 !<subroutine>
 
+  subroutine lssh_doneSolver (rsolver)
+  
+!<description>
+  ! Cleans up a linear solver according to the settings in a parameter list.
+!</description>
+
+!<inputoutput>
+  ! Solver node to initialise
+  type(t_linsolSpace), intent(inout) :: rsolver
+!</inputoutput>
+  
+!</subroutine>
+
+    type(t_linsolSpace) :: rtemplate
+
+    ! Release the solver
+    call linsol_releaseSolver(rsolver%p_rsolverNode)
+    
+    ! Overwrite with default settings
+    rsolver = rtemplate
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine lssh_createLinsolHierarchy (&
       rlsshierarchy,rfespaceHierarchy,rprjHierarchy,&
-      cequation,rparList,ssection,rdebugFlags)
+      nlmin,nlmax,cequation,rparList,ssection,rdebugFlags)
   
 !<description>
   ! Based on a FE space hierarchy and a parameter list, this subroutine
@@ -488,6 +556,13 @@ contains
   
   ! An interlevel projection hierarchy, for MG based solvers
   type(t_interlevelProjectionHier), intent(in), target :: rprjHierarchy
+
+  ! Minimum level in the hierarchy rfeSpaceHierarchy.
+  ! Standard = 1. =0: nlmin=nlmax
+  integer, intent(in) :: nlmin
+
+  ! Maximum level in the hierarchy. <=0: use level MAX+nlmax
+  integer, intent(in) :: nlmax
 
   ! Underlying equation. One of the LSS_EQN_xxxx constants.
   integer, intent(in) :: cequation
@@ -515,9 +590,19 @@ contains
     ! Save some structures
     rlssHierarchy%p_rdebugFlags => rdebugFlags
     rlssHierarchy%p_feSpaceHierarchy => rfeSpaceHierarchy
+    rlssHierarchy%nlmin = nlmin
+    rlssHierarchy%nlmax = nlmax
+    
+    if (rlssHierarchy%nlmax .le. 0) then
+      rlssHierarchy%nlmax = rfeSpaceHierarchy%nlevels + rlssHierarchy%nlmax
+    end if
+
+    if (rlssHierarchy%nlmin .le. 0) then
+      rlssHierarchy%nlmin = rfeSpaceHierarchy%nlevels + rlssHierarchy%nlmin
+    end if
     
     ! Create an array of solvers
-    allocate(rlssHierarchy%p_RlinearSolvers(rfeSpaceHierarchy%nlevels))
+    allocate(rlssHierarchy%p_RlinearSolvers(rlssHierarchy%nlmin:rlssHierarchy%nlmax))
     
     ! Supported equation
     rlsshierarchy%cequation = cequation
@@ -529,7 +614,7 @@ contains
     ! Solver specific initialisation
     ! -----------------------------------------------------
     ! Initialise the solvers
-    do i=1,rfeSpaceHierarchy%nlevels
+    do i=rlssHierarchy%nlmin,rlssHierarchy%nlmax
       call lssh_initSolver (&
           rlssHierarchy%p_RlinearSolvers(i),cequation,i,&
           rprjHierarchy,rparList,ssection,rdebugFlags)
@@ -558,8 +643,8 @@ contains
     integer :: i
 
     ! Release the local linear solvers
-    do i=1,size(rlssHierarchy%p_RlinearSolvers)
-      call linsol_releaseSolver(rlssHierarchy%p_RlinearSolvers(i)%p_rsolverNode)
+    do i=rlssHierarchy%nlmin,rlssHierarchy%nlmax
+      call lssh_doneSolver(rlssHierarchy%p_RlinearSolvers(i))
     end do
 
     ! DE-associate pointers, clenup
@@ -603,7 +688,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_initStructure (rlsshierarchy,ilevel,cflags,ierror)
+  subroutine lssh_initStructure (rlsshierarchy,ilevel,ierror)
 
 !<description>
   ! Initialises structural data for the solver at level ilevel.
@@ -612,7 +697,41 @@ contains
 !<input>
   ! Level of the hierarchy
   integer, intent(in) :: ilevel
+!</input>
   
+!<inputoutput>
+  ! The underlying hierarchy.
+  type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+!</subroutine>
+
+    ! Initialise the solver node
+    call linsol_initStructure (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,ierror)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lssh_initData (rlsshierarchy,ilevel,cflags,ierror)
+
+!<description>
+  ! Initialises calculation data for the solver at level ilevel.
+!</description>
+  
+!<input>
+  ! Level of the hierarchy
+  integer, intent(in) :: ilevel
+
   ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
   ! the solver performs filtering.
   integer(I32), intent(in) :: cflags
@@ -620,7 +739,7 @@ contains
   
 !<inputoutput>
   ! The underlying hierarchy.
-  type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
+  type(t_linsolHierarchySpace), intent(inout) :: rlssHierarchy
 !</inputoutput>
   
 !<output>
@@ -716,40 +835,6 @@ contains
       end select ! Outer solver
       
     end select ! equation
-
-    ! Initialise the solver node
-    call linsol_initStructure (p_rlinsolSpace%p_rsolverNode,ierror)
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine lssh_initData (rlsshierarchy,ilevel,ierror)
-
-!<description>
-  ! Initialises calculation data for the solver at level ilevel.
-!</description>
-  
-!<input>
-  ! Level of the hierarchy
-  integer, intent(in) :: ilevel
-!</input>
-  
-!<inputoutput>
-  ! The underlying hierarchy.
-  type(t_linsolHierarchySpace), intent(inout) :: rlssHierarchy
-!</inputoutput>
-  
-!<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to
-  ! LINSOL_ERR_NOERROR indicates that an error happened during the
-  ! initialisation phase.
-  integer, intent(out) :: ierror
-!</output>
-  
-!</subroutine>
 
     ! Initialise the solver node
     call linsol_initData (&

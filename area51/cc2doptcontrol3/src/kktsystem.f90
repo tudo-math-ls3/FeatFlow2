@@ -40,6 +40,7 @@ module kktsystem
   use spacematvecassembly
   
   use kktsystemspaces
+  use spacesolver
   
   implicit none
   
@@ -150,7 +151,8 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_initKKTsystem (rkktsystem,rspacetimeOperatorAsm,&
+  subroutine kkt_initKKTsystem (rkktsystem,&
+      rspacetimeOperatorAsm,&
       rspaceDiscrPrimal,rtimeDiscrPrimal,&
       rspaceDiscrDual,rtimeDiscrDual,&
       rspaceDiscrControl,rtimeDiscrControl)
@@ -317,18 +319,26 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solvePrimal (rkktsystem)
+  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,ilevel)
   
 !<description>
   ! Solves the primal equation in the KKT system based on the control in the
   ! rkktsystem structure.
 !</description>
   
+!<input>
+  ! Level in the solver structure, corresponding to the solution
+  integer, intent(in) :: ilevel
+!</input>
+
 !<inputoutput>
   ! Structure defining the KKT system.
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystem), intent(inout) :: rkktsystem
+  
+  ! Space solver structure used for solving subequations in space
+  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
 !</inputoutput>
 
 !</subroutine>
@@ -356,18 +366,26 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDual (rkktsystem)
+  subroutine kkt_solveDual (rkktsystem,rspaceSolver,ilevel)
   
 !<description>
   ! Solves the dual equation in the KKT system based on the control and the
   ! primal solution in the rkktsystem structure.
 !</description>
   
+!<input>
+  ! Level in the solver structure, corresponding to the solution
+  integer, intent(in) :: ilevel
+!</input>
+
 !<inputoutput>
   ! Structure defining the KKT system.
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystem), intent(inout) :: rkktsystem
+
+  ! Space solver structure used for solving subequations in space
+  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
 !</inputoutput>
 
 !</subroutine>
@@ -586,17 +604,25 @@ contains
   
 !<subroutine>
 
-  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv)
+  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,ilevel)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
 !</description>
   
+!<input>
+  ! Level in the solver structure, corresponding to the solution
+  integer, intent(in) :: ilevel
+!</input>
+
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv
+
+  ! Space solver structure used for solving subequations in space
+  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
 !</inputoutput>
 
 !</subroutine>
@@ -610,17 +636,25 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv)
+  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,ilevel)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
 !</description>
   
+!<input>
+  ! Level in the solver structure, corresponding to the solution
+  integer, intent(in) :: ilevel
+!</input>
+
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv
+
+  ! Space solver structure used for solving subequations in space
+  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
 !</inputoutput>
 
 !</subroutine>

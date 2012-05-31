@@ -115,6 +115,44 @@ module spatialbc
 
 !</typeblock>
 
+!<typeblock>
+
+  ! Structure encapsuling discrete boundary conditions in space.
+  type t_optcBDCSpace
+  
+    ! Discrete (Dirichlet-) boundary conditions, primal or dual space
+    type(t_discreteBC) :: rdiscreteBC
+
+    ! Bonudary regions with do-nothing Neumann boundary conditions.
+    type(t_boundaryRegionList) :: rneumannBoundary
+  
+    ! Bonudary regions with Dirichlet control boundary
+    type(t_boundaryRegionList) :: rdirichletControlBoundary
+  
+  end type
+  
+!</typeblock>
+
+!<typeblock>
+
+  ! A hierarchy of discrete boundary condition structures in space.
+  ! For every level of a hierarchy of FEM spaces, this structure contains
+  ! a t_optcBDCSpace encapsuling the corresponding bonudary conditions in space.
+  type t_optcBDCSpaceHierarchy
+  
+    ! Minimum level
+    integer :: nlmin = 0
+    
+    ! Maximum level
+    integer :: nlmax = 0
+    
+    ! Boundary conditions structures for all levels
+    type(t_optcBDCSpace), dimension(:), pointer :: p_RoptcBDCspace => null()
+  
+  end type
+  
+!</typeblock>
+
 !<types>
 
   public :: t_bdRegionEntry
@@ -2113,6 +2151,90 @@ contains
 
     end if
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_initBDCHierarchy (roptcBDCHierarchy,rfeSpaceHierarchy,nlmin,nlmax)
+  
+!<description>
+  ! Initialises a boundary condition hierarchy corresponding to a
+  ! FE space hierarchy.
+!</desctiption>
+
+!<input>
+  ! Underlying hierarchy of FE spaces.
+  type(t_feHierarchy), target :: rfeSpaceHierarchy
+
+  ! Minimum level in the hierarchy rfeSpaceHierarchy.
+  ! Standard = 1. =0: nlmin=nlmax
+  integer, intent(in) :: nlmin
+
+  ! Maximum level in the hierarchy. <=0: use level MAX+nlmax
+  integer, intent(in) :: nlmax
+!</input>
+
+!<output>
+  ! Boundary condition hierarchy to initialise.
+  type(t_optcBDCSpaceHierarchy), intent(out) :: roptcBDCHierarchy
+!</output>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Set up the structure between level nlmin and nlmax
+    rfeSpaceHierarchy%nlmin = nlmin
+    rfeSpaceHierarchy%nlmax = nlmax
+    
+    if (rfeSpaceHierarchy%nlmax .le. 0) then
+      rfeSpaceHierarchy%nlmax = rfeSpaceHierarchy%nlevels + rfeSpaceHierarchy%nlmax
+    end if
+
+    if (rfeSpaceHierarchy%nlmin .le. 0) then
+      rfeSpaceHierarchy%nlmin = rfeSpaceHierarchy%nlevels + rfeSpaceHierarchy%nlmin
+    end if
+    
+    allocate(rfeSpaceHierarchy%p_RoptcBDCspace(rfeSpaceHierarchy%nlmin:rfeSpaceHierarchy%nlmax))
+
+    ! Initialise the boundary condition structures.
+    do i=rfeSpaceHierarchy%nlmin,rfeSpaceHierarchy%nlmax
+      call bcasm_initDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCPrimal)
+      call bcasm_initDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCDual)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_doneBDCHierarchy (roptcBDCHierarchy)
+  
+!<description>
+  ! Cleans up a boundary condition hierarchy.
+!</desctiption>
+
+!<inputoutput>
+  ! Boundary condition hierarchy to initialise.
+  type(t_optcBDCSpaceHierarchy), intent(inout) :: roptcBDCHierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Initialise the boundary condition structures.
+    do i=rfeSpaceHierarchy%nlmax,rfeSpaceHierarchy%nlmin,-1
+      call bcasm_releaseDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCDual)
+      call bcasm_releaseDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCPrimal)
+    end do
+
+    ! Release the memory
+    deallocate(rfeSpaceHierarchy%p_RoptcBDCspace)
+
   end subroutine
 
 end module

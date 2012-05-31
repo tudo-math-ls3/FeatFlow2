@@ -106,6 +106,14 @@ module newtoniterationlinear
     ! Temporary memory for calculations
     type(t_controlSpace), pointer :: p_rtempVector => null()
 
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierPrimalLin => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rsolverHierDualLin => null()
+    
   end type
   
   !</typeblock>
@@ -365,13 +373,22 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_init (rlinsolParam,rparlist,ssection)
+  subroutine newtonlin_init (rlinsolParam,&
+      rsolverHierPrimalLin,rsolverHierDualLin,rparlist,ssection)
   
 !<description>
   ! Basic initialisation of the preconditioner.
 !</description>
 
 !<input>
+  ! Hierarchy of solvers in space for all levels.
+  ! Linearised primal equation.
+  type(t_linsolHierarchySpace), target :: rsolverHierPrimalLin
+  
+  ! Hierarchy of solvers in space for all levels.
+  ! Linearised dual equation.
+  type(t_linsolHierarchySpace), target :: rsolverHierDualLin
+
   ! Parameter list that contains the data for the preconditioning.
   type(t_parlist), intent(in) :: rparlist
   
@@ -387,13 +404,17 @@ contains
 
 !</subroutine>
    
+    ! Save the linear solvers.
+    rlinsolParam%p_rsolverHierPrimalLin => rsolverHierPrimalLin
+    rlinsolParam%p_rsolverHierDualLin => rsolverHierDualLin
+   
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine newtonlin_initStructure (rlinsolParam)
+  subroutine newtonlin_initStructure (rlinsolParam,rsolverHierPrimalLin,rsolverHierDualLin)
   
 !<description>
   ! Structural initialisation of the preconditioner
