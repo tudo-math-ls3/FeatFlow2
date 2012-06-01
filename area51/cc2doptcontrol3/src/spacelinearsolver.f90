@@ -199,7 +199,7 @@ contains
   ! Underlying equation. One of the LSS_EQN_xxxx constants.
   integer, intent(in) :: cequation
   
-  ! Number of available levels in the underlying hierarchs.
+  ! Number of available levels in the underlying hierarchy.
   integer, intent(in) :: nlevels
 
   ! Projection hierarchy, for MG based solvers

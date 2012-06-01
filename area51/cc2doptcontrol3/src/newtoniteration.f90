@@ -273,24 +273,20 @@ contains
 
 !</subroutine>
 
-    integer :: ispacelevel,ilevel
+    integer :: ilevel
 
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
 
-    ! Get the topmost space-level in the hierarchy.
+    ! Get the topmost level of the hierarchy.
     ilevel = rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%nlevels
-    call sth_getLevel (rsolver%p_rsettingsSolver%rspaceTimeHierPrimal,&
-        ilevel,ispaceLevel=ispacelevel)
 
     ! Solve the primal equation, update the primal solution.
-    call kkt_solvePrimal (rkktsystem,&
-        rsolver%p_rsolverHierPrimal,ispacelevel)
-    
+    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,ilevel)
+
     ! Solve the dual equation, update the dual solution.
-    call kkt_solveDual (rkktsystem,&
-        rsolver%p_rsolverHierDual,ispacelevel)
+    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,ilevel)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   

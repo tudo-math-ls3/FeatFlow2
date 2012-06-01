@@ -327,7 +327,8 @@ contains
 !</description>
   
 !<input>
-  ! (Space-)Level in the solver structure, corresponding to the solution
+  ! Space-time level of the solution in the underlying space-time hierarchy 
+  ! of KKT systems.
   integer, intent(in) :: ilevel
 !</input>
 
@@ -389,11 +390,11 @@ contains
       ! The solution is copied to rx to prevent it from being overwritten
       ! during the solution process -- it is still part of the nonlinearity
       ! in the KKT system...
-      call spaceslh_solve (rspaceSolver,ilevel,idofTime,rkktsystem%p_rprimalSol)
+      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%p_rprimalSol)
       
     end do ! step
    
-    call spaceslh_doneStructure (rspaceSolver, ilevel)
+    call spaceslh_doneStructure (rspaceSolver)
     
   end subroutine
 

@@ -34,6 +34,7 @@ module spacesolver
   
   use spacetimevectors
   use analyticsolution
+  use spacetimehierarchy
   
   use structuresdiscretisation
   use structuresoptcontrol
@@ -60,8 +61,10 @@ module spacesolver
 
 !<typeblock>
 
-  ! This structure encapsules a hierarchy of linear solvers for all
-  ! levels in a space discrtisation hierarchy.
+  ! The space solver hierarchy structure is a solver which is able
+  ! to solve in every timestep of a space-time hierarchy the corresponding
+  ! nonlinear forward system or the corresponding linear forward/backward
+  ! systems.
   type t_spaceSolverHierarchy
   
     ! <!-- --------------------------- -->
@@ -97,12 +100,24 @@ module spacesolver
     ! depending on which equation to solve.
     integer :: copType = 0
 
-    ! Parameters of the OptFlow solver
+    ! Parameters of the OptFlow solver.
+    ! The global space-time hierarchy in this structure defines
+    ! the hierarchy, this solver is build upon.
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
 
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
+    
+    ! Current space-time level in the global hierarchy, this solver
+    ! structure is configured for.
+    integer :: ilevel = 0
+    
+    ! Current space level, this solver structure is configured for.
+    integer :: ispacelevel = 0
+    
+    ! Current time level, this solver structure is configured for.
+    integer :: itimelevel = 0
     
     ! Temporary vectors for nonlinear iterations
     type(t_vectorBlock), pointer :: p_rd => null()
@@ -232,12 +247,17 @@ contains
 !</subroutine>
 
     integer :: ilev
+    
+    ! Remember the level. Obtain the corresponding space and time level.
+    rsolver%ilevel = ilevel
+    call sth_getLevel(rsolver%p_rsettingsSolver%rspaceTimeHierPrimal,&
+        ilevel,ispaceLevel=rsolver%ispaceLevel,itimeLevel=rsolver%itimeLevel)
 
     ! Allocate temporary vectors / matrices for all space levels.
-    allocate(rsolver%p_Rsolutions(ilevel))
-    allocate(rsolver%p_Rmatrices(ilevel))
+    allocate(rsolver%p_Rsolutions(rsolver%ispaceLevel))
+    allocate(rsolver%p_Rmatrices(rsolver%ispaceLevel))
     
-    do ilev = rsolver%p_rlssHierarchy%nlmin,min(ilevel,rsolver%p_rlssHierarchy%nlmax)
+    do ilev = rsolver%p_rlssHierarchy%nlmin,rsolver%ispaceLevel
       ! Initialise a temporary vector for the nonlinearity
       call lsysbl_createVectorBlock (&
           rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
@@ -281,16 +301,13 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_initData (rsolver, ilevel, ierror, idofTime, rprimalSol)
+  subroutine spaceslh_initData (rsolver, ierror, idofTime, rprimalSol)
   
 !<description>
   ! Final preparation of the Newton solver.
 !</description>
 
 !<input>
-  ! Level in the global space hierarchy, the solver should be applied to.
-  integer, intent(in) :: ilevel
-
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
 
@@ -321,7 +338,7 @@ contains
     
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
-    do ilev = min(ilevel,rsolver%p_rlssHierarchy%nlmax),rsolver%p_rlssHierarchy%nlmin,-1
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),&
           rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(ilev),&
@@ -331,7 +348,7 @@ contains
 
     ! Initialise the structures of the associated linear subsolver
     call lssh_initData (&
-        rsolver%p_rlsshierarchy,ilevel,cflags,ierror)
+        rsolver%p_rlsshierarchy,rsolver%ispacelevel,cflags,ierror)
 
   end subroutine
 
@@ -339,16 +356,11 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_doneData (rsolver, ilevel)
+  subroutine spaceslh_doneData (rsolver)
   
 !<description>
   ! Cleanup of the data initalised in spaceslh_initData.
 !</description>
-
-!<input>
-  ! Level in the global space hierarchy to be cleaned up.
-  integer, intent(in) :: ilevel
-!</input>
 
 !<inputoutput>
   ! Structure to be cleaned up.
@@ -358,7 +370,7 @@ contains
 !</subroutine>
 
     ! Clean up the structures of the associated linear subsolver
-    call lssh_doneData (rsolver%p_rlsshierarchy,ilevel)
+    call lssh_doneData (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
 
   end subroutine
 
@@ -366,16 +378,11 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_doneStructure (rsolver,ilevel)
+  subroutine spaceslh_doneStructure (rsolver)
   
 !<description>
   ! Cleanup of the data initalised in spaceslh_initStructure.
 !</description>
-
-!<input>
-  ! Level in the global space hierarchy to be cleaned up.
-  integer, intent(in) :: ilevel
-!</input>
 
 !<inputoutput>
   ! Structure to be cleaned up.
@@ -387,13 +394,13 @@ contains
     integer :: ilev
    
     ! Clean up the structures of the associated linear subsolver
-    call lssh_doneStructure (rsolver%p_rlsshierarchy,ilevel)
+    call lssh_doneStructure (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
    
    ! Release assembly data
     call smva_releaseTempData (rsolver%rtempData)
    
     ! deallocate temporary vectors
-    do ilev=rsolver%p_rlssHierarchy%nlmax,rsolver%p_rlssHierarchy%nlmin,-1
+    do ilev=rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
       call lsysbl_releaseVector (rsolver%p_Rsolutions(ilev))
       call lsysbl_releaseMatrix (rsolver%p_Rmatrices(ilev))
     end do
@@ -434,17 +441,12 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,ilevel,idofTime,&
+  subroutine spaceslh_solve (rsolver,idofTime,&
       rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
 !</description>
-
-!<input>
-  ! Level in the global space hierarchy corresponding to rd.
-  integer, intent(in) :: ilevel
-!</input>
 
 !<inputoutput>
   ! Parameters for the iteration.
@@ -500,7 +502,7 @@ contains
       
         ! Compute the basic (unpreconditioned) search direction in rd.
         call smva_getDef_primal (&
-            rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(ilevel),&
+            rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(rsolver%ilevel),&
             rprimalSol,rcontrol,idofTime,p_rd,rsolver%rtempData)
 
         if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
@@ -528,13 +530,13 @@ contains
         ! -------------------------------------------------------------
 
         ! Assemble the matrices on all levels.
-        call spaceslh_initData (rsolver, ilevel, ierror, idofTime, rprimalSol)        
+        call spaceslh_initData (rsolver, ierror, idofTime, rprimalSol)        
         
         ! Solve the system
-        call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,p_rd)
+        call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd)
         
         ! Cleanup
-        call spaceslh_doneData (rsolver,ilevel)
+        call spaceslh_doneData (rsolver)
         
         ! -------------------------------------------------------------
         ! Update of the solution

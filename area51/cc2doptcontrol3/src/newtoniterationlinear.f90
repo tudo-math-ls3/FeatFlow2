@@ -156,23 +156,17 @@ contains
 
 !</subroutine>
 
-    integer :: ispacelevel
-
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
 
-    ! Get the topmost space-level in the hierarchy.
-    call sth_getLevel (rlinsolParam%p_rsettingsSolver%rspaceTimeHierPrimal,&
-        ilevel,ispaceLevel=ispacelevel)
-    
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin,ispacelevel)
+        rlinsolParam%p_rsolverHierPrimalLin,ilevel)
     
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin,ispacelevel)
+        rlinsolParam%p_rsolverHierDualLin,ilevel)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
