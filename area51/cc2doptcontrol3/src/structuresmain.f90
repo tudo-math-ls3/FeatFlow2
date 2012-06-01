@@ -85,7 +85,7 @@ module structuresmain
     character(len=SYS_STRLEN) :: ssectionOptControl = "OPTIMALCONTROL";
 
     ! Section defining the nonlinear space-time solver
-    character(len=SYS_STRLEN) :: ssectionSpaceTimeSolver = "TIME-SOLVER";
+    character(len=SYS_STRLEN) :: ssectionSpaceTimeSolver = "SPACETIME-SOLVER";
 
     ! Section defining the space-time preprocessing
     character(len=SYS_STRLEN) :: ssectionSpaceTimePreprocessing = "TIME-PREPROCESSING";

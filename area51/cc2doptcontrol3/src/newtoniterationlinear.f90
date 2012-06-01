@@ -34,12 +34,19 @@ module newtoniterationlinear
   use structuresdiscretisation
   use structuresoptcontrol
   use structuresgeneral
+  use structuresoptflow
   use assemblytemplates
   
   use spacematvecassembly
+  use spacelinearsolver
+  use spacesolver
   
   use kktsystemspaces
   use kktsystem
+  
+  use structuresnewton
+  
+  implicit none
   
   private
 
@@ -50,70 +57,35 @@ module newtoniterationlinear
   ! Contains the parameters of the Newton iteration.
   type t_linsolParameters
   
-    ! OUTPUT: Result
-    ! The result of the solution process.
-    ! =-1: convergence criterion not reached.
-    ! =0: success.
-    ! =1: iteration broke down, diverging.
-    ! =2: iteration broke down, preconditioner did not work.
-    ! =3: error in the parameters.
-    integer :: iresult = 0
+    ! <!-- --------------------------------------- -->
+    ! <!-- GENRERAL PARAMETERS AND SOLVER SETTINGS -->
+    ! <!-- --------------------------------------- -->
 
-    ! OUTPUT: Number of performed iterations.
-    integer :: iiterations = 0
-    
-    ! OUTPUT: Initial residual in the control space.
-    real(DP) :: dresInit = 0.0_DP
+    ! General newton parameters
+    type(t_newtonPrecParameters) :: rprecParameters
 
-    ! OUTPUT: Final residual in the control space.
-    real(DP) :: dresFinal = 0.0_DP
-
-    ! Relative stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL * !!initial defect!!.
-    ! =0: ignore, use absolute stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsRel = 1E-5_DP
-
-    ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSABS.
-    ! =0: ignore, use relative stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsAbs = 1E-5_DP
-
-    ! Relative divergence criterion.  Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY_DP disables the relative divergence check.
-    ! standard = 1E3
-    real(DP) :: ddivRel = 1E6_DP
-
-    ! Absolute divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
-    ! standard = SYS_INFINITY_DP
-    real(DP) :: ddivAbs = SYS_INFINITY_DP
-
-    ! Minimum number of iterations top perform
-    integer :: nminIterations = 1
-
-    ! Maximum number of iterations top perform
-    integer :: nmaxIterations = 50
-    
-    ! General relaxation parameter
-    real(DP) :: domega = 1.0_DP
+    ! Parameters of the OptFlow solver
+    type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
   
-    ! Temporary memory for calculations
-    type(t_controlSpace), pointer :: p_rtempVector => null()
+    ! <!-- ----------------------------- -->
+    ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
+    ! <!-- ----------------------------- -->
 
     ! Hierarchy of solvers in space for all levels.
     ! Linearised primal equation.
-    type(t_linsolHierarchySpace), pointer :: p_rsolverHierPrimalLin => null()
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimalLin => null()
 
     ! Hierarchy of solvers in space for all levels.
     ! Linearised dual equation.
-    type(t_linsolHierarchySpace), pointer :: p_rsolverHierDualLin => null()
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDualLin => null()
     
+    ! <!-- -------------- -->
+    ! <!-- TEMPORARY DATA -->
+    ! <!-- -------------- -->
+    
+    ! Temporary memory for calculations
+    type(t_controlSpace), pointer :: p_rtempVector => null()
+
   end type
   
   !</typeblock>
@@ -124,7 +96,7 @@ module newtoniterationlinear
 
   ! Apply preconditioning of a defect with the Newton preconditioner
   ! in the control space.
-  public :: newtonlin_precondNewton
+  public :: newtonlin_precond
   
   ! Basic initialisation of the Newton solver
   public :: newtonlin_init
@@ -150,13 +122,20 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_getResidual (rkktsystemDirDeriv,rrhs,rresidual,dres)
+  subroutine newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs,rresidual,dres)
   
 !<description>
   ! Calculates the residual in the linearised control equation.
 !</description>
   
 !<inputoutput>
+  ! Parameters for the iteration.
+  type(t_linsolParameters), intent(inout) :: rlinsolParam
+  
+  ! Level in the global space-time hierarchy where the residual
+  ! should be computed.
+  integer, intent(in) :: ilevel
+
   ! Structure defining the linearised KKT system.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
   
@@ -178,12 +157,14 @@ contains
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
-
+    
     ! Solve the primal equation, update the primal solution.
-    call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv)
+    call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
+        rlinsolParam%p_rsolverHierPrimalLin,ilevel)
     
     ! Solve the dual equation, update the dual solution.
-    call kkt_solveDualDirDeriv (rkktsystemDirDeriv)
+    call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
+        rlinsolParam%p_rsolverHierDualLin,ilevel)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -199,7 +180,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rrhs)
+  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs)
   
 !<description>
   ! Applies a Richardson iteration in the control space
@@ -216,6 +197,10 @@ contains
   ! initial and target vector.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
   
+  ! Level in the global space-time hierarchy where the residual
+  ! should be computed.
+  integer, intent(in) :: ilevel
+
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
 !</inputoutput>
@@ -223,7 +208,7 @@ contains
 !</subroutine>
 
     ! Richardson is a do loop...
-    rlinsolParam%iiterations = 0
+    rlinsolParam%rprecParameters%niterations = 0
 
     do while (.true.)
     
@@ -232,56 +217,28 @@ contains
       ! -------------------------------------------------------------
 
       ! Compute the residual and its norm.
-      call newtonlin_getResidual (rkktsystemDirDeriv,rrhs,&
-          rlinsolParam%p_rtempVector,rlinsolParam%dresFinal)
+      call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs,&
+          rlinsolParam%p_rtempVector,rlinsolParam%rprecParameters%dresFinal)
 
-      if (rlinsolParam%iiterations .eq. 1) then
+      if (rlinsolParam%rprecParameters%niterations .eq. 1) then
         ! Remember the initial residual
-        rlinsolParam%dresInit = rlinsolParam%dresFinal
+        rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
       end if
 
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------
-      if (rlinsolParam%iiterations .ge. rlinsolParam%nminIterations) then
-        ! Check the residual.
-        !
-        ! Absolute residual
-        if (rlinsolParam%dresFinal .le. rlinsolParam%depsAbs) then
-          rlinsolParam%iresult = 0
-          exit
-        end if
-        
-        ! Relative residual
-        if (rlinsolParam%dresFinal .le. rlinsolParam%depsRel * rlinsolParam%dresInit) then
-          rlinsolParam%iresult = 0
-          exit
-        end if
-      end if
+      if (newtonlin_checkConvergence(rlinsolParam%rprecParameters)) exit
       
       ! -------------------------------------------------------------
       ! Check for divergence
       ! -------------------------------------------------------------
-      ! Absolute residual
-      if (rlinsolParam%dresFinal .ge. rlinsolParam%ddivAbs) then
-        rlinsolParam%iresult = 1
-        exit
-      end if
-      
-      ! Relative residual
-      if (rlinsolParam%dresFinal .ge. rlinsolParam%ddivRel * rlinsolParam%dresInit) then
-        rlinsolParam%iresult = 1
-        exit
-      end if
+      if (newtonlin_checkDivergence(rlinsolParam%rprecParameters)) exit
       
       ! -------------------------------------------------------------
       ! Check other stopping criteria
       ! -------------------------------------------------------------
-      if (rlinsolParam%iiterations .ge. rlinsolParam%nmaxIterations) then
-        ! Maximum number of iterations reached.
-        rlinsolParam%iresult = -1
-        exit
-      end if
+      if (newtonlin_checkIterationStop(rlinsolParam%rprecParameters)) exit
       
       ! -------------------------------------------------------------
       ! Update of the solution
@@ -289,14 +246,16 @@ contains
 
       ! Add the residual (damped) to the current control.
       ! This updates the current control.
-      call kktsp_controlLinearComb (rlinsolParam%p_rtempVector,rlinsolParam%domega,&
+      call kktsp_controlLinearComb (rlinsolParam%p_rtempVector,&
+          rlinsolParam%rprecParameters%domega,&
           rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
     
       ! -------------------------------------------------------------
       ! Proceed with the iteration
       ! -------------------------------------------------------------
       ! Next iteration
-      rlinsolParam%iiterations = rlinsolParam%iiterations + 1
+      rlinsolParam%rprecParameters%niterations = &
+          rlinsolParam%rprecParameters%niterations + 1
     
     end do
 
@@ -306,7 +265,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_precondNewton (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
+  subroutine newtonlin_precond (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
   
 !<description>
   ! Calculates the Newton search direction by applying the Newton
@@ -331,6 +290,8 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: ilevel
 
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
@@ -359,9 +320,12 @@ contains
     call kktsp_clearDual (rkktsystemDirDeriv%p_rdualSolLin)
     call kktsp_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
     
+    ! Get the topmost level
+    ilevel = rlinsolParam%p_rsettingsSolver%rspaceTimeHierPrimal%nlevels
+    
     ! Call the Richardson iteration to calculate an update
     ! for the control.
-    call newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
+    call newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,ilevel,rnewtonDir)
     
     ! Overwrite the rnewtonDir with the update.
     call kktsp_controlLinearComb (&
@@ -373,7 +337,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_init (rlinsolParam,&
+  subroutine newtonlin_init (rlinsolParam,rsettingsSolver,&
       rsolverHierPrimalLin,rsolverHierDualLin,rparlist,ssection)
   
 !<description>
@@ -381,13 +345,16 @@ contains
 !</description>
 
 !<input>
+  ! Parameters of the OptFlow solver
+  type(t_settings_optflow), intent(in), target :: rsettingsSolver
+
   ! Hierarchy of solvers in space for all levels.
   ! Linearised primal equation.
-  type(t_linsolHierarchySpace), target :: rsolverHierPrimalLin
+  type(t_spaceSolverHierarchy), target :: rsolverHierPrimalLin
   
   ! Hierarchy of solvers in space for all levels.
   ! Linearised dual equation.
-  type(t_linsolHierarchySpace), target :: rsolverHierDualLin
+  type(t_spaceSolverHierarchy), target :: rsolverHierDualLin
 
   ! Parameter list that contains the data for the preconditioning.
   type(t_parlist), intent(in) :: rparlist
@@ -404,7 +371,8 @@ contains
 
 !</subroutine>
    
-    ! Save the linear solvers.
+    ! Remember the settings for later use
+    rlinsolParam%p_rsettingsSolver => rsettingsSolver
     rlinsolParam%p_rsolverHierPrimalLin => rsolverHierPrimalLin
     rlinsolParam%p_rsolverHierDualLin => rsolverHierDualLin
    
@@ -414,7 +382,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_initStructure (rlinsolParam,rsolverHierPrimalLin,rsolverHierDualLin)
+  subroutine newtonlin_initStructure (rlinsolParam)
   
 !<description>
   ! Structural initialisation of the preconditioner

@@ -39,7 +39,10 @@ module spacesolver
   use structuresoptcontrol
   use structuresgeneral
   use structuresoptflow
+  use structuresboundaryconditions
   use assemblytemplates
+  
+  use spatialbc
   
   use structuresoperatorasm
   use spacematvecassembly
@@ -136,8 +139,8 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_init (rsolver,rsettingsSolver,&
-      copType,rlssHierarchy,roptcBDCSpaceHierarchy,ssection,rparamList)
+  subroutine spaceslh_init (rsolver,rsettingsSolver,copType,&
+      rlssHierarchy,roptcBDCSpaceHierarchy,ssection,rparamList)
   
 !<description>
   ! Initialises the solver parameters according to a parameter list.
@@ -152,7 +155,7 @@ contains
   ! OPTP_PRIMAL, OPTP_DUAL, OPTP_PRIMALLIN or OPTP_DUALLIN,
   ! depending on which equation to solve.
   integer, intent(in) :: copType
-  
+
   ! Hierarchy of linear solvers in space used for solving
   ! auxiliary linear subproblems. The solver on level ilevel
   ! will be used to solve linear subproblems.
@@ -182,6 +185,7 @@ contains
     rsolver%p_rsettingsSolver => rsettingsSolver
     rsolver%p_rlssHierarchy => rlssHierarchy
     rsolver%p_roptcBDCSpaceHierarchy => roptcBDCSpaceHierarchy
+    rsolver%copType = copType
 
     if (present(ssection) .and. present(rparamList)) then
     

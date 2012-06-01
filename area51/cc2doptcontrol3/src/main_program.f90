@@ -344,7 +344,7 @@ contains
     ! Solve the system
     call stat_clearTimer (rsolverTime)
     call stat_startTimer (rsolverTime)
-    call newtonit_solve (rsolver,rsolution)
+    !call newtonit_solve (rsolver,rsolution)
     call stat_stopTimer (rsolverTime)
     
     call output_separator (OU_SEP_EQUAL)

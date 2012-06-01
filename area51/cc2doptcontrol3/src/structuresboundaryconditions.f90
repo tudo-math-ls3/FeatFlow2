@@ -18,6 +18,10 @@ module structuresboundaryconditions
   use fparser
   use mprimitives
   
+  use boundary
+  use discretebc
+  use bcassemblybase
+  
   use structuresdiscretisation
   
   implicit none
@@ -86,6 +90,20 @@ module structuresboundaryconditions
 
 !</constantblock>
 
+!<constantblock description="Assembly mode for boundary conditions">
+  ! Assembles strong Dirichlet boundary conditions
+  integer, parameter, public :: SBC_DIRICHLETBC = 1
+
+  ! Assembles Neumann boundary conditions.
+  integer, parameter, public :: SBC_NEUMANN = 2
+
+  ! Assembles Dirichlet boudary control boundary conditions.
+  integer, parameter, public :: SBC_DIRICHLETBCC = 4
+  
+  ! Assembles all boundary conditions.
+  integer, parameter, public :: SBC_ALL = SBC_DIRICHLETBC + SBC_NEUMANN + SBC_DIRICHLETBCC
+!</constantblock>
+
 !</constants>
   
 !<types>
@@ -135,12 +153,106 @@ module structuresboundaryconditions
 
   public :: t_p_optcBDC
 
+!<typeblock>
+  
+  ! Encapsules a region on the boundary where Neumann boundary conditions
+  ! are present.
+  type t_bdRegionEntry
+  
+    ! The boundary region where there are Neumann boudary conditions
+    type(t_boundaryRegion) :: rboundaryRegion
+    
+    ! Pointer to the next Neumann boundaty region
+    type(t_bdRegionEntry), pointer :: p_nextBdRegion
+  
+  end type
+  
+!</typeblock>
+
+  public :: t_bdRegionEntry
+
+!<typeblock>
+
+  ! Encapsules all Neumann boundary parts in the domain
+  type t_boundaryRegionList
+  
+    ! Number of Neumann boundary regions in the primal equation
+    integer :: nregions = 0
+
+    ! Pointer to the head of a list of Neumann boundary regions, primal equation
+    type(t_bdRegionEntry), pointer :: p_rbdHead => null()
+
+    ! Pointer to the tail of a list of Neumann boundary regions, primal equation
+    type(t_bdRegionEntry), pointer :: p_rbdTail => null()
+  
+  end type
+
+!</typeblock>
+
+  public :: t_boundaryRegionList
+
+!<typeblock>
+
+  ! Structure encapsuling discrete boundary conditions in space.
+  type t_optcBDCSpace
+  
+    ! Discrete (Dirichlet-) boundary conditions, primal or dual space
+    type(t_discreteBC) :: rdiscreteBC
+
+    ! Bonudary regions with do-nothing Neumann boundary conditions.
+    type(t_boundaryRegionList) :: rneumannBoundary
+  
+    ! Bonudary regions with Dirichlet control boundary
+    type(t_boundaryRegionList) :: rdirichletControlBoundary
+  
+  end type
+  
+!</typeblock>
+
+  public :: t_optcBDCSpace
+
+!<typeblock>
+
+  ! A hierarchy of discrete boundary condition structures in space.
+  ! For every level of a hierarchy of FEM spaces, this structure contains
+  ! a t_optcBDCSpace encapsuling the corresponding bonudary conditions in space.
+  type t_optcBDCSpaceHierarchy
+  
+    ! Minimum level
+    integer :: nlmin = 0
+    
+    ! Maximum level
+    integer :: nlmax = 0
+    
+    ! Boundary conditions structures for all levels
+    type(t_optcBDCSpace), dimension(:), pointer :: p_RoptcBDCspace => null()
+  
+  end type
+  
+!</typeblock>
+
+  public :: t_optcBDCSpaceHierarchy
+
 !</types>
 
+  ! Initialises a boundary condition structure.
   public :: struc_initBDC
+
+  ! Returns the type and information of a boundary expression.
   public :: struc_getBdExprInfo
+
+  ! Evaluates an expression on the boundary.
   public :: struc_evalExpression
+
+  ! Cleans up information in the optimal control structure.
   public :: struc_doneBDC
+
+  ! Adds boundary region to a list of boundary regions.
+  public :: sbc_addBoundaryRegion
+  
+  ! Releases a rregionList structure that was allocated in
+  ! sbc_assembleBDconditions.
+  public :: sbc_releaseBoundaryList 
 
 contains
 
@@ -462,4 +574,78 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_addBoundaryRegion (rboundaryRegion,rregionList)
+  
+!<description>
+  ! Adds boundary region to a list of boundary regions.
+!</desctiption>
+
+!<input>
+  ! Region to attach.
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! List of boundary regions where to attach the region
+  type(t_boundaryRegionList), intent(inout), target :: rregionList
+!</inputoutput>
+
+!</subroutine>
+
+    if (rregionList%nregions .eq. 0) then
+      ! Create the structure if it does not exist.
+      allocate (rregionList%p_rbdTail)
+      rregionList%p_rbdHead => rregionList%p_rbdTail
+    else
+      ! Attach a new tail.
+      allocate (rregionList%p_rbdTail%p_nextBdRegion)
+      rregionList%p_rbdTail => rregionList%p_rbdTail%p_nextBdRegion
+    end if
+    
+    ! Put the boundary region to there.
+    rregionList%p_rbdTail%rboundaryRegion = rboundaryRegion
+    
+    rregionList%nregions = rregionList%nregions + 1
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_releaseBoundaryList (rregionList)
+  
+!<description>
+  ! Releases a rregionList structure that was allocated in
+  ! sbc_assembleBDconditions.
+!</desctiption>
+
+!<inputoutput>
+  ! Structure to release
+  type(t_boundaryRegionList), intent(inout), target :: rregionList
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_bdRegionEntry), pointer :: p_rregion1,p_rregion2
+    integer :: i
+    
+    ! Release the entries
+    p_rregion1 => rregionList%p_rbdHead
+    do i=1,rregionList%nregions
+      p_rregion2 => p_rregion1
+      p_rregion1 => p_rregion2%p_nextBDregion
+      deallocate(p_rregion2)
+    end do
+    
+    ! Nothing inside anymore.
+    rregionList%nregions = 0
+
+  end subroutine
+  
 end module

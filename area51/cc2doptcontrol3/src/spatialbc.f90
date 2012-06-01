@@ -44,6 +44,9 @@ module spatialbc
   use linearformevaluation
   use linearsystemscalar
   use vectorfilters
+
+  use fespacehierarchybase
+  use fespacehierarchy
   
   use collection
   use convection
@@ -61,182 +64,23 @@ module spatialbc
   
   private
   
-!<constants>
-
-!<constantblock description="Assembly mode for boundary conditions">
-  ! Assembles strong Dirichlet boundary conditions
-  integer, parameter, public :: SBC_DIRICHLETBC = 1
-
-  ! Assembles Neumann boundary conditions.
-  integer, parameter, public :: SBC_NEUMANN = 2
-
-  ! Assembles Dirichlet boudary control boundary conditions.
-  integer, parameter, public :: SBC_DIRICHLETBCC = 4
-  
-  ! Assembles all boundary conditions.
-  integer, parameter, public :: SBC_ALL = SBC_DIRICHLETBC + SBC_NEUMANN + SBC_DIRICHLETBCC
-!</constantblock>
-
-!</constants>
+!<types>
 
 !<types>
 
-!<typeblock>
-  
-  ! Encapsules a region on the boundary where Neumann boundary conditions
-  ! are present.
-  type t_bdRegionEntry
-  
-    ! The boundary region where there are Neumann boudary conditions
-    type(t_boundaryRegion) :: rboundaryRegion
-    
-    ! Pointer to the next Neumann boundaty region
-    type(t_bdRegionEntry), pointer :: p_nextBdRegion
-  
-  end type
-  
-!</typeblock>
-
-!<typeblock>
-
-  ! Encapsules all Neumann boundary parts in the domain
-  type t_boundaryRegionList
-  
-    ! Number of Neumann boundary regions in the primal equation
-    integer :: nregions = 0
-
-    ! Pointer to the head of a list of Neumann boundary regions, primal equation
-    type(t_bdRegionEntry), pointer :: p_rbdHead => null()
-
-    ! Pointer to the tail of a list of Neumann boundary regions, primal equation
-    type(t_bdRegionEntry), pointer :: p_rbdTail => null()
-  
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Structure encapsuling discrete boundary conditions in space.
-  type t_optcBDCSpace
-  
-    ! Discrete (Dirichlet-) boundary conditions, primal or dual space
-    type(t_discreteBC) :: rdiscreteBC
-
-    ! Bonudary regions with do-nothing Neumann boundary conditions.
-    type(t_boundaryRegionList) :: rneumannBoundary
-  
-    ! Bonudary regions with Dirichlet control boundary
-    type(t_boundaryRegionList) :: rdirichletControlBoundary
-  
-  end type
-  
-!</typeblock>
-
-!<typeblock>
-
-  ! A hierarchy of discrete boundary condition structures in space.
-  ! For every level of a hierarchy of FEM spaces, this structure contains
-  ! a t_optcBDCSpace encapsuling the corresponding bonudary conditions in space.
-  type t_optcBDCSpaceHierarchy
-  
-    ! Minimum level
-    integer :: nlmin = 0
-    
-    ! Maximum level
-    integer :: nlmax = 0
-    
-    ! Boundary conditions structures for all levels
-    type(t_optcBDCSpace), dimension(:), pointer :: p_RoptcBDCspace => null()
-  
-  end type
-  
-!</typeblock>
-
-!<types>
-
-  public :: t_bdRegionEntry
-  public :: t_boundaryRegionList
   public :: sbc_assembleBDconditions
   public :: sbc_releaseBoundaryList
   public :: sbc_implementDirichletBC
+  
+  ! Initialises a boundary condition hierarchy corresponding to a
+  ! FE space hierarchy.
+  public :: sbc_initBDCHierarchy
+  
+  ! Cleans up a boundary condition hierarchy.
+  public :: sbc_doneBDCHierarchy
 
 contains
 
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine sbc_addBoundaryRegion (rboundaryRegion,rregionList)
-  
-!<description>
-  ! Adds bodunary region to a list of boundary regions.
-!</desctiption>
-
-!<input>
-  ! Region to attach.
-  type(t_boundaryRegion), intent(in) :: rboundaryRegion
-!</input>
-
-!<inputoutput>
-  ! List of boundary regions where to attach the region
-  type(t_boundaryRegionList), intent(inout), target :: rregionList
-!</inputoutput>
-
-!</subroutine>
-
-    if (rregionList%nregions .eq. 0) then
-      ! Create the structure if it does not exist.
-      allocate (rregionList%p_rbdTail)
-      rregionList%p_rbdHead => rregionList%p_rbdTail
-    else
-      ! Attach a new tail.
-      allocate (rregionList%p_rbdTail%p_nextBdRegion)
-      rregionList%p_rbdTail => rregionList%p_rbdTail%p_nextBdRegion
-    end if
-    
-    ! Put the boundary region to there.
-    rregionList%p_rbdTail%rboundaryRegion = rboundaryRegion
-    
-    rregionList%nregions = rregionList%nregions + 1
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine sbc_releaseBoundaryList (rregionList)
-  
-!<description>
-  ! Releases a rregionList structure that was allocated in
-  ! sbc_assembleBDconditions.
-!</desctiption>
-
-!<inputoutput>
-  ! Structure to release
-  type(t_boundaryRegionList), intent(inout), target :: rregionList
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    type(t_bdRegionEntry), pointer :: p_rregion1,p_rregion2
-    integer :: i
-    
-    ! Release the entries
-    p_rregion1 => rregionList%p_rbdHead
-    do i=1,rregionList%nregions
-      p_rregion2 => p_rregion1
-      p_rregion1 => p_rregion2%p_nextBDregion
-      deallocate(p_rregion2)
-    end do
-    
-    ! Nothing inside anymore.
-    rregionList%nregions = 0
-
-  end subroutine
-  
   ! ***************************************************************************
 
 !<subroutine>
@@ -2186,23 +2030,22 @@ contains
     integer :: i
 
     ! Set up the structure between level nlmin and nlmax
-    rfeSpaceHierarchy%nlmin = nlmin
-    rfeSpaceHierarchy%nlmax = nlmax
+    roptcBDCHierarchy%nlmin = nlmin
+    roptcBDCHierarchy%nlmax = nlmax
     
-    if (rfeSpaceHierarchy%nlmax .le. 0) then
-      rfeSpaceHierarchy%nlmax = rfeSpaceHierarchy%nlevels + rfeSpaceHierarchy%nlmax
+    if (roptcBDCHierarchy%nlmax .le. 0) then
+      roptcBDCHierarchy%nlmax = rfeSpaceHierarchy%nlevels + roptcBDCHierarchy%nlmax
     end if
 
-    if (rfeSpaceHierarchy%nlmin .le. 0) then
-      rfeSpaceHierarchy%nlmin = rfeSpaceHierarchy%nlevels + rfeSpaceHierarchy%nlmin
+    if (roptcBDCHierarchy%nlmin .le. 0) then
+      roptcBDCHierarchy%nlmin = rfeSpaceHierarchy%nlevels + roptcBDCHierarchy%nlmin
     end if
     
-    allocate(rfeSpaceHierarchy%p_RoptcBDCspace(rfeSpaceHierarchy%nlmin:rfeSpaceHierarchy%nlmax))
+    allocate(roptcBDCHierarchy%p_RoptcBDCspace(roptcBDCHierarchy%nlmin:roptcBDCHierarchy%nlmax))
 
     ! Initialise the boundary condition structures.
-    do i=rfeSpaceHierarchy%nlmin,rfeSpaceHierarchy%nlmax
-      call bcasm_initDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCPrimal)
-      call bcasm_initDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCDual)
+    do i=roptcBDCHierarchy%nlmin,roptcBDCHierarchy%nlmax
+      call bcasm_initDiscreteBC(roptcBDCHierarchy%p_RoptcBDCspace(i)%rdiscreteBC)
     end do
 
   end subroutine
@@ -2227,13 +2070,12 @@ contains
     integer :: i
 
     ! Initialise the boundary condition structures.
-    do i=rfeSpaceHierarchy%nlmax,rfeSpaceHierarchy%nlmin,-1
-      call bcasm_releaseDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCDual)
-      call bcasm_releaseDiscreteBC(rfeSpaceHierarchy%p_RoptcBDCspace(i)%rdiscreteBCPrimal)
+    do i=roptcBDCHierarchy%nlmax,roptcBDCHierarchy%nlmin,-1
+      call bcasm_releaseDiscreteBC(roptcBDCHierarchy%p_RoptcBDCspace(i)%rdiscreteBC)
     end do
 
     ! Release the memory
-    deallocate(rfeSpaceHierarchy%p_RoptcBDCspace)
+    deallocate(roptcBDCHierarchy%p_RoptcBDCspace)
 
   end subroutine
 
