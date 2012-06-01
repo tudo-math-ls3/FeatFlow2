@@ -1,9 +1,9 @@
 # ========================================================================
 # Parameters configuring the space-time solver
 
-#############
-[TIME-SOLVER]
-#############
+##################
+[SPACETIME-SOLVER]
+##################
 
 # Type of space-time solver/preconditioner combination to use.
 # 0 = Direct linear solver, only for testing purposes.
@@ -64,6 +64,12 @@ ioutputLevel       = 2
 
 # Section configuring the adaptive/inexact Newton
 ssectionAdaptiveNewton = TIME-ADAPTIVENEWTON
+
+# Section defining the nonlinear solver in space
+ssectionNonlinSolverSpace = CC-NONLINEARSOLVER
+
+# Section defining the linear solver in space
+ssectionLinSolverSpace = CC-LINEARSOLVER
 
 # Name of the section defining the step length control
 # ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
@@ -135,7 +141,117 @@ dinexactNewtonEpsRel = 1.0E-2
 dinexactNewtonExponent = 2.0
 
 
+# ========================================================================
+# Parameters configuring the nonlinear solver in space
 
+####################
+[CC-NONLINEARSOLVER]
+####################
+
+# Type of space-time solver/preconditioner combination to use.
+# 0 = Direct linear solver, only for testing purposes.
+# 1 = Nonlinear defect correction loop, preconditioned with a
+#     1-level solver for linear subproblems. 
+# 2 = Nonlinear defect correction loop, preconditioned with a
+#     Space time Multigrid for linear subproblems. 
+
+cpreconditioner = 2
+
+# Type of space-time preconditioner to use, = type of linear
+# subproblem to solve in the nonlinear space-time defect correction loop.
+# =1: Preconditioning by solving the standard system.
+# =2: Preconditioning by Newton-Iteration.
+#     This is a combination of a linear solver (ctypeNonlinearIteration=1)
+#     in conjunction with an extended matrix to improve convergence speed
+#     (at the cost of assembly time and stability of the linear solver/
+#     preconditioner).
+# =3: Inexact Newton. Stopping criterion of the linear solver is chosen
+#     adaptively. The stopping criteria of the linear solvers are not used.
+
+ctypeIteration = 2
+
+# Whether to postprocess intermediate solutions.
+# =1: After each nonlinear step, apply postprocessing to the solution.
+# =2: After each nonlinear step, apply postprocessing to the solution.
+#     Write postprocessing files with unique filename.
+
+# cpostprocessIterates = 0
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+      
+nmaxIterations     = 10
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-8
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 1E-0
+
+# General damping parameter when adding the preconditioned defect
+# to the solution in the nonlinear space-time iteration
+
+domega             = 1.0
+
+# Output level of the solver
+
+ioutputLevel       = 2
+
+# Section configuring the adaptive/inexact Newton
+ssectionAdaptiveNewton = CC-ADAPTIVENEWTON
+
+
+###################
+[CC-ADAPTIVENEWTON]
+###################
+
+# Minimum number of defect correction iterations before starting Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+
+nminFixedPointIterations = 0
+
+# Maximum number of defect correction iterations before starting Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+
+nmaxFixedPointIterations = 0
+
+# Norm of absolute residuum before applying Newton. 
+# Newton is only applied
+# if   ||absolute residuum|| < depsAbsNewton
+# and  ||relative residuum|| < depsRelNewton.
+# Otherwise, the usual fix point iteration is used.
+# Stamndard value = 1E-5.
+
+depsAbsNewton = 1.0E-5
+
+# Norm of relative residuum before applying Newton. 
+# Newton is only applied
+# if   ||absolute residuum|| < depsAbsNewton
+# and  ||relative residuum|| < depsRelNewton.
+# Otherwise, the usual fix point iteration is used.
+# Standard value = 1E99 -> The absolute residuum counts.
+
+depsRelNewton = 1.0E99
+
+# Stopping criterion for the linear solver in the inexact Newton iteration.
+# Controls the minimum number of digits to gain in the linear solver
+# per Newton iteration. Only used if ctypePreconditioner = 3.
+
+dinexactNewtonEpsRel = 1.0E-2
+
+# Exponent to control the stopping criterion for the linear solver in
+# an inexact Newton iteration. =2 result in quadratic convergence,
+# =1.5 in superlinear convergence. Only used if ctypePreconditioner = 3.
+
+dinexactNewtonExponent = 2.0
 
 
 

@@ -35,7 +35,7 @@ ssectionSpaceTimeRefinement = SPACETIME-REFINEMENT
 ssectionOptControl = OPTIMALCONTROL
 
 # Section defining the nonlinear space-time solver
-ssectionSpaceTimeSolver = TIME-SOLVER
+ssectionSpaceTimeSolver = SPACETIME-SOLVER
 
 # Section defining the space-time preprocessing 
 ssectionSpaceTimePostprocessing = TIME-PREPROCESSING
