@@ -2106,7 +2106,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval

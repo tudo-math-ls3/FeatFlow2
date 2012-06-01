@@ -390,7 +390,8 @@ contains
       ! The solution is copied to rx to prevent it from being overwritten
       ! during the solution process -- it is still part of the nonlinearity
       ! in the KKT system...
-      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%p_rprimalSol)
+      call spaceslh_solve (rspaceSolver,idofTime,&
+          rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       
     end do ! step
    
