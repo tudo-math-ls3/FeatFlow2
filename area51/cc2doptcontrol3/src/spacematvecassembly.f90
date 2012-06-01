@@ -57,7 +57,7 @@ module spacematvecassembly
 
   ! Pointer to t_spacetimeOperator for being passed to callback routines.
   type p_t_spacetimeOperatorAsm
-    type(t_spacetimeOperatorAsm), pointer :: p_rspatialOperatorAsm
+    type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
   end type
 
 !</typeblock>
@@ -86,6 +86,9 @@ module spacematvecassembly
 public :: t_assemblyTempDataSpace
 
 !</types>
+
+  ! Reserves space for the system matrix
+  public :: smva_allocSystemMatrix
 
   ! Allocate temporary memory
   public :: smva_allocTempData
@@ -126,16 +129,143 @@ contains
   
 !<subroutine>
 
-  subroutine smva_allocTempData (rspatialOperatorAsm,rtempData)
+  subroutine smva_allocSystemMatrix (rmatrix,rphysics,roptcontrol,rsettingsDiscr,&
+      rspatialDiscr,rasmTemplates)
 
 !<description>
   ! Allocates temporary data for the assembly of an operator
 !</description>
 
 !<input>
-  ! Definition of the operator. 
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  ! Physics of the problem
+  type(t_settings_physics), intent(in) :: rphysics
+  
+  ! Optimal-control parameters
+  type(t_settings_optcontrol), intent(in) :: roptcontrol
+
+  ! Parameters for the discretisation in space
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  
+  ! Discretisation structure on that space level
+  type(t_blockDiscretisation), intent(in) :: rspatialDiscr
+  
+  ! Templates for the assembly
+  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
 !</input>
+
+!<output>
+  ! Matrix to be created.
+  type(t_matrixBlock), intent(out) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! Create a full matrix
+    call lsysbl_createMatBlockByDiscr (rspatialDiscr,rmatrix)
+
+    ! Fill it with data from the assembly template structure.
+    ! The structure depends on the current equation...
+    select case (rphysics%cequation)
+
+    ! *************************************************************
+    ! Stokes/Navier Stokes.
+    ! *************************************************************
+    case (0,1)
+    
+      ! ---------------------------------------------------
+      ! 2x2 block for the velocity
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEM,&
+          rmatrix%RmatrixBlock(1,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEMoffdiag,&
+          rmatrix%RmatrixBlock(2,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEMoffdiag,&
+          rmatrix%RmatrixBlock(1,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEM,&
+          rmatrix%RmatrixBlock(2,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+      ! ---------------------------------------------------
+      ! B-matrices
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateGradient,&
+          rmatrix%RmatrixBlock(1,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateGradient,&
+          rmatrix%RmatrixBlock(2,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
+      ! ---------------------------------------------------
+      ! D-matrices
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateDivergence,&
+          rmatrix%RmatrixBlock(3,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateDivergence,&
+          rmatrix%RmatrixBlock(3,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
+      ! ---------------------------------------------------
+      ! Pressure block
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEMPressure,&
+          rmatrix%RmatrixBlock(3,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+         
+    case default
+      
+      call output_line("Unknown equation",&
+          OU_CLASS_ERROR,OU_MODE_STD,"smva_allocTempData")
+      call sys_halt()
+    
+    end select
+    
+    ! Update the matrix structure
+    call lsysbl_updateMatStrucInfo(rmatrix)
+        
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_allocTempData (rtempData,rphysics,roptcontrol,rsettingsDiscr,&
+      rspatialDiscr,rasmTemplates)
+
+!<description>
+  ! Allocates temporary data for the assembly of an operator in space
+!</description>
+
+!<input>
+  ! Physics of the problem
+  type(t_settings_physics), intent(in) :: rphysics
+  
+  ! Optimal-control parameters
+  type(t_settings_optcontrol), intent(in) :: roptcontrol
+
+  ! Parameters for the discretisation in space
+  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  
+  ! Discretisation structure on that space level
+  type(t_blockDiscretisation), intent(in) :: rspatialDiscr
+  
+  ! Templates for the assembly
+  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+!</input>
+
 
 !<output>
   ! Structure containing temporary data.
@@ -149,86 +279,14 @@ contains
     ! Create temp vectors
     do i=1,ubound(rtempData%Rvector,1)
       call lsysbl_createVectorBlock(&
-          rspatialOperatorAsm%p_rspaceDiscrPrimal,rtempData%Rvector(i),.false.)
+          rspatialDiscr,rtempData%Rvector(i),.false.)
     end do
   
-    ! Create a full matrix
-    call lsysbl_createMatBlockByDiscr (&
-        rspatialOperatorAsm%p_rspaceDiscrPrimal,rtempData%rmatrix)
-    
-    ! Fill it with data from the assembly template structure.
-    ! The structure depends on the current equation...
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    ! Create a temp matrix
+    call smva_allocSystemMatrix (rtempData%rmatrix,&
+        rphysics,roptcontrol,rsettingsDiscr,&
+        rspatialDiscr,rasmTemplates)
 
-    ! *************************************************************
-    ! Stokes/Navier Stokes.
-    ! *************************************************************
-    case (0,1)
-    
-      ! ---------------------------------------------------
-      ! 2x2 block for the velocity
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateFEM,&
-          rtempData%rmatrix%RmatrixBlock(1,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateFEMoffdiag,&
-          rtempData%rmatrix%RmatrixBlock(2,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateFEMoffdiag,&
-          rtempData%rmatrix%RmatrixBlock(1,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateFEM,&
-          rtempData%rmatrix%RmatrixBlock(2,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-          
-      ! ---------------------------------------------------
-      ! B-matrices
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateGradient,&
-          rtempData%rmatrix%RmatrixBlock(1,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateGradient,&
-          rtempData%rmatrix%RmatrixBlock(2,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      
-      ! ---------------------------------------------------
-      ! D-matrices
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateDivergence,&
-          rtempData%rmatrix%RmatrixBlock(3,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateDivergence,&
-          rtempData%rmatrix%RmatrixBlock(3,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      
-      ! ---------------------------------------------------
-      ! Pressure block
-      call lsyssc_duplicateMatrix (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixTemplateFEMPressure,&
-          rtempData%rmatrix%RmatrixBlock(3,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-         
-    case default
-      
-      call output_line("Unknown equation",&
-          OU_CLASS_ERROR,OU_MODE_STD,"smva_allocTempData")
-      call sys_halt()
-    
-    end select
-    
-    ! Update the matrix structure
-    call lsysbl_updateMatStrucInfo(rtempData%rmatrix)
-        
   end subroutine
 
   ! ***************************************************************************
@@ -263,7 +321,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_apply_primal (rspatialOperatorAsm,rprimalSol,idofTime,rdest,rtempData)
+  subroutine smva_apply_primal (rspaceTimeOperatorAsm,rprimalSol,idofTime,rdest,rtempData)
   
 !<description>
   ! Applies the operator of the primal equation at DOF idofTime in time
@@ -272,7 +330,7 @@ contains
 
 !<input>
   ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Structure that defines the current primal solution.
   type(t_primalSpace), intent(inout) :: rprimalSol
@@ -299,7 +357,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -307,15 +365,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -332,7 +390,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -353,13 +411,13 @@ contains
         
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
@@ -385,13 +443,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
@@ -400,16 +458,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -419,7 +477,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primal (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_primal (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,rtempData%rmatrix)
 
           ! -----------------------------------------
@@ -442,7 +500,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_primal (rspatialOperatorAsm,rprimalSol,rcontrol,idofTime,rdest,rtempData)
+  subroutine smva_getDef_primal (rspaceTimeOperatorAsm,rprimalSol,rcontrol,idofTime,rdest,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -451,7 +509,7 @@ contains
 
 !<input>
   ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Structure that defines the current primal solution.
   type(t_primalSpace), intent(inout) :: rprimalSol
@@ -481,7 +539,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -489,15 +547,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -514,7 +572,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -541,13 +599,13 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -570,7 +628,7 @@ contains
           ! ===============================================
           
           ! Get the RHS vector.
-          call smva_getRhs_Primal (rspatialOperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
+          call smva_getRhs_Primal (rspaceTimeOperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
           
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -581,13 +639,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -596,16 +654,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -615,7 +673,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primal (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_primal (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,rtempData%rmatrix)
 
           ! -----------------------------------------
@@ -638,7 +696,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_dual (rspatialOperatorAsm,rprimalSol,rdualSol,idofTime,&
+  subroutine smva_getDef_dual (rspaceTimeOperatorAsm,rprimalSol,rdualSol,idofTime,&
       rdest,rtempData)
   
 !<description>
@@ -648,7 +706,7 @@ contains
 
 !<input>
   ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Space-time vector that describes the current primal solution.
   type(t_primalSpace), intent(inout) :: rprimalSol
@@ -678,7 +736,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -686,15 +744,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -711,7 +769,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -738,13 +796,13 @@ contains
 
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
@@ -766,7 +824,7 @@ contains
           ! ===============================================
           
           ! Get the RHS vector
-          call smva_getRhs_Dual (rspatialOperatorAsm,idofTime,rprimalSol,1.0_DP,rdest)
+          call smva_getRhs_Dual (rspaceTimeOperatorAsm,idofTime,rprimalSol,1.0_DP,rdest)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -777,13 +835,13 @@ contains
 
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
-            call smva_getLaplaceMatrix (rspatialOperatorAsm,&
-                rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            call smva_getLaplaceMatrix (rspaceTimeOperatorAsm,&
+                rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
@@ -792,16 +850,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -811,7 +869,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_Dual (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_Dual (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,rtempData%rmatrix)
 
           ! -----------------------------------------
@@ -834,7 +892,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_primalLin (rspatialOperatorAsm,&
+  subroutine smva_getDef_primalLin (rspaceTimeOperatorAsm,&
       rprimalSol,rcontrol,rprimalLinSol,rcontrolLin,idofTime,rdest,rtempData)
   
 !<description>
@@ -844,7 +902,7 @@ contains
 
 !<input>
   ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Structure that describes the solution of the forward equation.
   type(t_primalSpace), intent(inout) :: rprimalSol
@@ -880,7 +938,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -888,15 +946,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -913,7 +971,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -934,13 +992,13 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
@@ -961,7 +1019,7 @@ contains
           ! ===============================================
           ! RHS assembly
           ! ===============================================
-          call smva_getRhs_primalLin (rspatialOperatorAsm,idofTime,&
+          call smva_getRhs_primalLin (rspaceTimeOperatorAsm,idofTime,&
               rcontrol,rcontrolLin,1.0_DP,rdest)
           
           ! ===============================================
@@ -973,13 +1031,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
@@ -988,16 +1046,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -1007,7 +1065,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primalLin (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,.true.,rtempData%rmatrix)
 
           ! -----------------------------------------
@@ -1030,7 +1088,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_dualLin (rspatialOperatorAsm,&
+  subroutine smva_getDef_dualLin (rspaceTimeOperatorAsm,&
       rprimalSol,rdualSol,rprimalLinSol,rdualLinSol,idofTime,bfull,rdest,rtempData)
   
 !<description>
@@ -1040,7 +1098,7 @@ contains
 
 !<input>
   ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Space-time vector that describes the solution of the forward equation.
   type(t_primalSpace), intent(inout) :: rprimalSol
@@ -1080,7 +1138,7 @@ contains
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -1088,15 +1146,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -1113,7 +1171,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -1134,13 +1192,13 @@ contains
             
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -1162,7 +1220,7 @@ contains
           ! RHS assembly
           ! ===============================================
                
-          call smva_getRhs_dualLin (rspatialOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+          call smva_getRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
               bfull,1.0_DP,rdest)
             
           ! ===============================================
@@ -1174,13 +1232,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rtempData%rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rtempData%rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -1189,16 +1247,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -1208,7 +1266,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_Dual (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_Dual (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,rtempData%rmatrix)
 
           ! -----------------------------------------
@@ -1231,7 +1289,7 @@ contains
           !                          - (rdualSol,  grad(rprimalLinSol) phi)
           !
           ! For the assembly, the RHS assembly has to be invoked.
-          call smva_getSemilinRhs_dualLin (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,&
               rdualSol,rprimalLinSol,bfull,-1.0_DP,rdest)
           
         end select ! Equation
@@ -1246,7 +1304,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getMassMatrix (rspatialOperatorAsm,rmatrix,dweight)
+  subroutine smva_getMassMatrix (rspaceTimeOperatorAsm,rmatrix,dweight)
 
 !<description>
   ! Implements the mass matrix into rmatrix, weighted by dweight
@@ -1254,7 +1312,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
   
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -1268,7 +1326,7 @@ contains
 !</subroutine>
     
     ! Which equation do we have?    
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1276,12 +1334,12 @@ contains
     case (0,1)
     
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
           rmatrix%RmatrixBlock(1,1),1.0_DP,rmatrix%RmatrixBlock(1,1),&
           .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
           rmatrix%RmatrixBlock(2,2),1.0_DP,rmatrix%RmatrixBlock(2,2),&
           .false.,.false.,.true.,.true.)
     end select
@@ -1292,7 +1350,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getLaplaceMatrix (rspatialOperatorAsm,rmatrix,dweight)
+  subroutine smva_getLaplaceMatrix (rspaceTimeOperatorAsm,rmatrix,dweight)
 
 !<description>
   ! Implements the Laplace matrix into rmatrix, weighted by dweight
@@ -1300,7 +1358,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
   
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -1314,7 +1372,7 @@ contains
 !</subroutine>
     
     ! Which equation do we have?    
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1322,12 +1380,12 @@ contains
     case (0,1)
     
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
           rmatrix%RmatrixBlock(1,1),1.0_DP,rmatrix%RmatrixBlock(1,1),&
           .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
           rmatrix%RmatrixBlock(2,2),1.0_DP,rmatrix%RmatrixBlock(2,2),&
           .false.,.false.,.true.,.true.)
     end select
@@ -1338,7 +1396,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getBMatrix (rspatialOperatorAsm,rmatrix,dweight)
+  subroutine smva_getBMatrix (rspaceTimeOperatorAsm,rmatrix,dweight)
 
 !<description>
   ! Implements the B-matrix into rmatrix, weighted by dweight
@@ -1346,7 +1404,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
   
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -1360,19 +1418,19 @@ contains
 !</subroutine>
     
     ! Which equation do we have?    
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
     case (0,1)
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixB1,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB1,dweight,&
           rmatrix%RmatrixBlock(1,3),1.0_DP,rmatrix%RmatrixBlock(1,3),&
           .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixB2,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB2,dweight,&
           rmatrix%RmatrixBlock(2,3),1.0_DP,rmatrix%RmatrixBlock(2,3),&
           .false.,.false.,.true.,.true.)
           
@@ -1384,7 +1442,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getDMatrix (rspatialOperatorAsm,rmatrix,dweight)
+  subroutine smva_getDMatrix (rspaceTimeOperatorAsm,rmatrix,dweight)
 
 !<description>
   ! Implements the D-matrix into rmatrix, weighted by dweight
@@ -1392,7 +1450,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
   
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -1406,19 +1464,19 @@ contains
 !</subroutine>
     
     ! Which equation do we have?    
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
     
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
     case (0,1)
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixD1,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD1,dweight,&
           rmatrix%RmatrixBlock(3,1),1.0_DP,rmatrix%RmatrixBlock(3,1),&
           .false.,.false.,.true.,.true.)
 
       call lsyssc_matrixLinearComb (&
-          rspatialOperatorAsm%p_rasmTemplates%rmatrixD2,dweight,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD2,dweight,&
           rmatrix%RmatrixBlock(3,2),1.0_DP,rmatrix%RmatrixBlock(3,2),&
           .false.,.false.,.true.,.true.)
     end select
@@ -1429,7 +1487,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getEOJMatrix (rspatialOperatorAsm,rmatrix,dweight)
+  subroutine smva_getEOJMatrix (rspaceTimeOperatorAsm,rmatrix,dweight)
 
 !<description>
   ! Implements the D-matrix into rmatrix, weighted by dweight
@@ -1437,7 +1495,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
   
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -1458,19 +1516,19 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinMat_primal (rspatialOperatorAsm,idofTime,&
+  subroutine smva_getSemilinMat_primal (rspaceTimeOperatorAsm,idofTime,&
       rprimalSol,dweight,rmatrix)
 
 !<description>
   ! Implements the semilinear part of the operator described by
-  ! rspatialOperatorAsm into rmatrix, weighted by dweight.
+  ! rspaceTimeOperatorAsm into rmatrix, weighted by dweight.
   !
   ! Nonlinear backward equation.
 !</description>
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
 
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
@@ -1491,7 +1549,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1501,12 +1559,12 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Which equation do we have?
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
@@ -1526,7 +1584,7 @@ contains
       ! Build the matrix      
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
 
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -1539,19 +1597,19 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinMat_primalLin (rspatialOperatorAsm,idofTime,&
+  subroutine smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
       rprimalSol,dweight,bfull,rmatrix)
 
 !<description>
   ! Implements the semilinear part of the operator described by
-  ! rspatialOperatorAsm into rmatrix, weighted by dweight.
+  ! rspaceTimeOperatorAsm into rmatrix, weighted by dweight.
   !
   ! Linearised forward equation.
 !</description>
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
   
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
@@ -1576,7 +1634,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1586,12 +1644,12 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Which equation do we have?
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
@@ -1615,7 +1673,7 @@ contains
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -1628,18 +1686,18 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinMat_Dual (rspatialOperatorAsm,idofTime,rprimalSol,dweight,rmatrix)
+  subroutine smva_getSemilinMat_Dual (rspaceTimeOperatorAsm,idofTime,rprimalSol,dweight,rmatrix)
 
 !<description>
   ! Implements the semilinear part of the operator described by
-  ! rspatialOperatorAsm into rmatrix, weighted by dweight.
+  ! rspaceTimeOperatorAsm into rmatrix, weighted by dweight.
   !
   ! Backward equation, nonlinear as well as linearised version.
 !</description>
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
 
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
@@ -1660,7 +1718,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1670,15 +1728,15 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Notify the callback routine what to assemble.
     rcollection%IquickAccess(1) = OPTP_DUAL
           
     ! Which equation do we have?
-    select case (rspatialOperatorAsm%p_rphysics%cequation)
+    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
@@ -1695,7 +1753,7 @@ contains
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -1764,12 +1822,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DnonlinearityY2 => null()
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
-    type(t_spacetimeOperatorAsm), pointer :: p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspatialOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspatialOperatorAsm)
-    p_rspatialOperatorAsm => p_p_rspatialOperatorAsm%p_rspatialOperatorAsm
+    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
     
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -1800,7 +1858,7 @@ contains
     p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
 
     ! Which equation do we have?
-    select case (p_rspatialOperatorAsm%p_rphysics%cequation)
+    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
     case (1)
     
       ! -------------------------------------------------------------
@@ -2019,7 +2077,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_Primal (rspatialOperatorAsm,idofTime,rcontrol,dweight,rrhs)
+  subroutine smva_getRhs_Primal (rspaceTimeOperatorAsm,idofTime,rcontrol,dweight,rrhs)
 
 !<description>
   ! Calculates the RHS of the primal equation, based on a 'current'
@@ -2028,7 +2086,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
 
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
@@ -2048,7 +2106,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2065,15 +2123,15 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
     rcollection%IquickAccess(1) = OPTP_PRIMAL
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2081,15 +2139,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2106,7 +2164,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2121,11 +2179,11 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
-              rspatialOperatorAsm%p_rrhsPrimal%iid,0,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
+              rspaceTimeOperatorAsm%p_rrhsPrimal%iid,0,dtime,rusercollection)
           
           ! Prepare the evaluation of the primal RHS.
-          call ansol_prepareEval (rspatialOperatorAsm%p_rrhsPrimal,rcollection,"RHS",dtime)
+          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rrhsPrimal,rcollection,"RHS",dtime)
 
           ! Prepare the evaluation.
           !
@@ -2137,7 +2195,7 @@ contains
           ! in the velocity space.
           ! Only add this if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (rspatialOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
@@ -2149,12 +2207,12 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
 
         end select ! Equation
 
@@ -2172,7 +2230,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_Dual (rspatialOperatorAsm,idofTime,rprimalSol,dweight,rrhs)
+  subroutine smva_getRhs_Dual (rspaceTimeOperatorAsm,idofTime,rprimalSol,dweight,rrhs)
 
 !<description>
   ! Calculates the RHS of the dual equation, based on a 'current'
@@ -2181,7 +2239,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
 
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
@@ -2201,7 +2259,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1
     type(t_collection) :: rcollection
@@ -2218,15 +2276,15 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
     rcollection%IquickAccess(1) = OPTP_DUAL
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2234,15 +2292,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2259,7 +2317,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2270,12 +2328,12 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
-              rspatialOperatorAsm%p_rrhsDual%iid,0,dtime,rusercollection)
+          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
+              rspaceTimeOperatorAsm%p_rrhsDual%iid,0,dtime,rusercollection)
 
           ! Prepare the evaluation of the primal RHS.
-          call ansol_prepareEval (rspatialOperatorAsm%p_rrhsDual,rcollection,"RHS",dtime)
-          call ansol_prepareEval (rspatialOperatorAsm%p_rtargetFlow,rcollection,"TARGET",dtime)
+          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rrhsDual,rcollection,"RHS",dtime)
+          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rtargetFlow,rcollection,"TARGET",dtime)
           
           ! Prepare the evaluation.
           !
@@ -2291,13 +2349,13 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"TARGER")
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
             
         end select ! Equation
         
@@ -2315,7 +2373,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_primalLin (rspatialOperatorAsm,idofTime,&
+  subroutine smva_getRhs_primalLin (rspaceTimeOperatorAsm,idofTime,&
       rcontrol,rcontrolLin,dweight,rrhs)
 
 !<description>
@@ -2325,7 +2383,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
   
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
@@ -2348,7 +2406,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2365,15 +2423,15 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
     rcollection%IquickAccess(1) = OPTP_PRIMALLIN
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2381,15 +2439,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2406,7 +2464,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2417,14 +2475,14 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
               0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
           !
           ! Add the dual velocity if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (rspatialOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
             ! Position 1+2 = control
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
@@ -2446,11 +2504,11 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
       
@@ -2468,7 +2526,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_dualLin (rspatialOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+  subroutine smva_getRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
       bfull,dweight,rrhs)
 
 !<description>
@@ -2478,7 +2536,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
   
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
@@ -2505,7 +2563,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2522,8 +2580,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2534,7 +2592,7 @@ contains
     end if
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2542,15 +2600,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2567,7 +2625,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2578,7 +2636,7 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,&
+          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
               0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
@@ -2597,11 +2655,11 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForVecAssembly (rspatialOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
           
         end select ! Equation
         
@@ -2619,7 +2677,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinRhs_dualLin (rspatialOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+  subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
       bfull,dweight,rrhs)
 
 !<description>
@@ -2629,7 +2687,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
   
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
@@ -2656,7 +2714,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2673,8 +2731,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspatialOperatorAsm%p_rspatialOperatorAsm => rspatialOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspatialOperatorAsm,rcollection%IquickAccess(8:))
+    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2685,7 +2743,7 @@ contains
     end if
     
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -2693,15 +2751,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -2718,7 +2776,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Navier Stokes
@@ -2740,7 +2798,7 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspatialOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
@@ -2811,12 +2869,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Dlambda1,p_Dlambda2
     real(DP), dimension(:,:,:), pointer :: p_Dylin1,p_Dylin2
 
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
-    type(t_spacetimeOperatorAsm), pointer :: p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspatialOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspatialOperatorAsm)
-    p_rspatialOperatorAsm => p_p_rspatialOperatorAsm%p_rspatialOperatorAsm
+    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -2828,7 +2886,7 @@ contains
     p_DcubWeight => rassemblyData%p_DcubWeight
     
     ! Which equation do we have?
-    select case (p_rspatialOperatorAsm%p_rphysics%cequation)
+    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
     case (0,1)
     
       ! -------------------------------------------------------------
@@ -2987,12 +3045,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Drhs1,p_Drhs2
     real(DP), dimension(:), pointer :: p_DobservationArea => null()
 
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspatialOperatorAsm
-    type(t_spacetimeOperatorAsm), pointer :: p_rspatialOperatorAsm
+    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspatialOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspatialOperatorAsm)
-    p_rspatialOperatorAsm => p_p_rspatialOperatorAsm%p_rspatialOperatorAsm
+    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -3004,7 +3062,7 @@ contains
     p_DcubWeight => rassemblyData%p_DcubWeight
     
     ! Which equation do we have?
-    select case (p_rspatialOperatorAsm%p_rphysics%cequation)
+    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
     case (0,1)
     
       ! -------------------------------------------------------------
@@ -3142,7 +3200,7 @@ contains
         
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_rspatialOperatorAsm%p_rsettingsOptControl%dalphaC
+        dalpha = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC
         
         if (dalpha .ge. 0.0_DP) then
 
@@ -3207,7 +3265,7 @@ contains
         !
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_rspatialOperatorAsm%p_rsettingsOptControl%dalphaC
+        dalpha = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC
         
         if (dalpha .gt. 0.0_DP) then
 
@@ -3228,7 +3286,7 @@ contains
           
           p_DbasTest => RvectorData(1)%p_DbasTest
 
-          select case (p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+          select case (p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
             
           ! ---------------------------------------------------------
           ! No constraints
@@ -3274,10 +3332,10 @@ contains
           case (1)
             
             ! Get the box constraints
-            dumin1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-            dumin2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin2
-            dumax1 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-            dumax2 = p_rspatialOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax2
+            dumin1 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+            dumin2 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin2
+            dumax1 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+            dumax2 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax2
 
             ! Loop over the elements in the current set.
             do iel = 1,nelements
@@ -3545,7 +3603,7 @@ contains
         p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
         p_Dy2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
 
-        if (.not. associated(p_rspatialOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
+        if (.not. associated(p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
           ! Observation area is the complete domain
@@ -3597,7 +3655,7 @@ contains
           ! ---------------------------------------------------------
           ! Observation area is a rectangle
           ! ---------------------------------------------------------
-          p_DobservationArea => p_rspatialOperatorAsm%p_rsettingsOptControl%p_DobservationArea
+          p_DobservationArea => p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea
         
           ! Loop over the elements in the current set.
           do iel = 1,nelements
@@ -3683,7 +3741,7 @@ contains
         
         p_DbasTest => RvectorData(1)%p_DbasTest
         
-        if (.not. associated(p_rspatialOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
+        if (.not. associated(p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
           ! Observation area is the complete domain
@@ -3728,7 +3786,7 @@ contains
           ! ---------------------------------------------------------
           ! Observation area is a rectangle
           ! ---------------------------------------------------------
-          p_DobservationArea => p_rspatialOperatorAsm%p_rsettingsOptControl%p_DobservationArea
+          p_DobservationArea => p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea
 
           ! Loop over the elements in the current set.
           do iel = 1,nelements
@@ -3787,7 +3845,7 @@ contains
 !<subroutine>
 
   subroutine smva_assembleMatrix_primal (rmatrix,&
-      rspatialOperatorAsm,rprimalSol,idofTime,bfull)
+      rspaceTimeOperatorAsm,rprimalSol,idofTime,bfull)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -3796,7 +3854,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Structure that defines the nonlinearity in the
   ! primal equation.
@@ -3824,7 +3882,7 @@ contains
     call lsysbl_clearMatrix (rmatrix)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -3832,15 +3890,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -3857,7 +3915,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -3870,13 +3928,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_primal")
@@ -3885,16 +3943,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -3904,7 +3962,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primalLin (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,bfull,rmatrix)
 
         end select ! Equation
@@ -3920,7 +3978,7 @@ contains
 !<subroutine>
 
   subroutine smva_assembleMatrix_dual (rmatrix,&
-      rspatialOperatorAsm,rprimalSol,idofTime)
+      rspaceTimeOperatorAsm,rprimalSol,idofTime)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -3929,7 +3987,7 @@ contains
 
 !<input>
   ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspatialOperatorAsm
+  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
 
   ! Structure that defines the nonlinearity in the
   ! primal equation.
@@ -3953,7 +4011,7 @@ contains
     call lsysbl_clearMatrix (rmatrix)
 
     ! Timestepping technique?
-    select case (rspatialOperatorAsm%p_rtimeDiscrDual%ctype)
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -3961,15 +4019,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspatialOperatorAsm%p_rtimeDiscrDual%dtheta
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspatialOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspatialOperatorAsm%p_rtimeDiscrDual%itag)
+      select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -3986,7 +4044,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspatialOperatorAsm%p_rphysics%cequation)
+        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -4002,13 +4060,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspatialOperatorAsm,rmatrix,dtstep)
+          call smva_getMassMatrix (rspaceTimeOperatorAsm,rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspatialOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspatialOperatorAsm,rmatrix,rspatialOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -4017,16 +4075,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspatialOperatorAsm,rmatrix,1.0_DP)
+          call smva_getBMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspatialOperatorAsm,rmatrix,1.0_DP)
+          call smva_getDMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspatialOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspatialOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -4036,7 +4094,7 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_Dual (rspatialOperatorAsm,idofTime,&
+          call smva_getSemilinMat_Dual (rspaceTimeOperatorAsm,idofTime,&
               rprimalSol,1.0_DP,rmatrix)
 
         end select ! Equation

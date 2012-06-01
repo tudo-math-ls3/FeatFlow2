@@ -21,6 +21,7 @@ module spacelinearsolver
   use linearsolver
   use filtersupport
   use multilevelprojection
+  use linearsystemscalar
   use linearsystemblock
   use coarsegridcorrection
   use linearsolverautoinitialise
@@ -712,6 +713,24 @@ contains
 !</output>
   
 !</subroutine>
+    
+    ! local variables
+    integer :: i
+    type(t_matrixBlock), dimension(:), allocatable :: Rmatrices
+
+    ! Pass the matrices to the solver.
+    allocate(Rmatrices(1:ilevel))
+    do i=1,ilevel
+      call lsysbl_duplicateMatrix (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rmatrix,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end do
+    
+    call linsol_setMatrices (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,Rmatrices)
+
+    do i=1,ilevel
+      call lsysbl_releaseMatrix(Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
 
     ! Initialise the solver node
     call linsol_initStructure (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,ierror)

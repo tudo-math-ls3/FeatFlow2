@@ -71,11 +71,7 @@ module spacesolver
     ! General Newton parameters for nonlinear iterations.
     ! This is level independent.
     type(t_newtonParameters) :: rnewtonParams
-
-    ! Temporary vectors for nonlinear iterations
-    type(t_vectorBlock), pointer :: p_rd => null()
-    type(t_vectorBlock), pointer :: p_rx => null()
-
+    
     ! <!-- ------------------------ -->
     ! <!-- LINEAR SOLVER STRUCTURES -->
     ! <!-- ------------------------ -->
@@ -104,6 +100,22 @@ module spacesolver
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
 
+    ! <!-- -------------- -->
+    ! <!-- TEMPORARY DATA -->
+    ! <!-- -------------- -->
+    
+    ! Temporary vectors for nonlinear iterations
+    type(t_vectorBlock), pointer :: p_rd => null()
+
+    ! Hierarchy of vectors for solutions, for setting up nonlinearities
+    type(t_vectorBlock), dimension(:), pointer :: p_Rsolutions => null()
+
+    ! Hierarchy of system matrices
+    type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
+    
+    ! Temporary assembly data
+    type(t_assemblyTempDataSpace) :: rtempData
+    
   end type
 
 !</typeblock>
@@ -118,15 +130,9 @@ module spacesolver
   ! Structural initialisation
   public :: spaceslh_initStructure
   
-  ! Final initialisation
-  public :: spaceslh_initData
-  
   ! Solves the spatial system
   public :: spaceslh_solve
   
-  ! Cleanup of data
-  public :: spaceslh_doneData
-
   ! Cleanup of structures
   public :: spaceslh_doneStructure
 
@@ -225,6 +231,45 @@ contains
 
 !</subroutine>
 
+    integer :: ilev
+
+    ! Allocate temporary vectors / matrices for all space levels.
+    allocate(rsolver%p_Rsolutions(ilevel))
+    allocate(rsolver%p_Rmatrices(ilevel))
+    
+    do ilev = rsolver%p_rlssHierarchy%nlmin,min(ilevel,rsolver%p_rlssHierarchy%nlmax)
+      ! Initialise a temporary vector for the nonlinearity
+      call lsysbl_createVectorBlock (&
+          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+          rsolver%p_Rsolutions(ilev))
+      
+      ! Initialise a system matrix
+      call smva_allocSystemMatrix (rsolver%p_Rmatrices(ilev),&
+          rsolver%p_rsettingsSolver%rphysicsPrimal,&
+          rsolver%p_rsettingsSolver%rsettingsOptControl,&
+          rsolver%p_rsettingsSolver%rsettingsSpaceDiscr,&
+          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+          rsolver%p_rsettingsSolver%rspaceAsmHierarchy%p_RasmTemplList(ilev))
+          
+      ! Provide the matrix to the linear solver
+      call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
+    end do
+    
+    ! Allocate some temp vectors on the topmost level
+    ilev = min(ilevel,rsolver%p_rlssHierarchy%nlmax)
+
+    allocate (rsolver%p_rd)
+    call lsysbl_createVectorBlock (&
+        rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+        rsolver%p_rd)
+        
+    call smva_allocTempData (rsolver%rtempData,&
+          rsolver%p_rsettingsSolver%rphysicsPrimal,&
+          rsolver%p_rsettingsSolver%rsettingsOptControl,&
+          rsolver%p_rsettingsSolver%rsettingsSpaceDiscr,&
+          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
+          rsolver%p_rsettingsSolver%rspaceAsmHierarchy%p_RasmTemplList(ilev))
+
     ! Initialise the structures of the associated linear subsolver
     call lssh_initStructure (&
         rsolver%p_rlsshierarchy,ilevel,ierror)
@@ -236,7 +281,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_initData (rsolver, ilevel, cflags, ierror)
+  subroutine spaceslh_initData (rsolver, ilevel, ierror, idofTime, rprimalSol)
   
 !<description>
   ! Final preparation of the Newton solver.
@@ -246,9 +291,11 @@ contains
   ! Level in the global space hierarchy, the solver should be applied to.
   integer, intent(in) :: ilevel
 
-  ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
-  ! the solver performs filtering.
-  integer(I32), intent(in) :: cflags
+  ! Number of the DOF in time which should be calculated into rdest.
+  integer, intent(in) :: idofTime
+
+  ! Current solution of the primal equation. Defines the nonlinearity.
+  type(t_primalSpace), intent(inout), target :: rprimalSol
 !</input>
 
 !<inputoutput>
@@ -264,6 +311,23 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+    integer :: ilev
+    
+    ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
+    ! the solver performs filtering.
+    integer(I32) :: cflags
+    
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the system matrices.
+    do ilev = min(ilevel,rsolver%p_rlssHierarchy%nlmax),rsolver%p_rlssHierarchy%nlmin,-1
+    
+      call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),&
+          rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(ilev),&
+          rprimalSol,idofTime,rsolver%rnewtonParams%ctypeIteration .eq. 2)
+    
+    end do
 
     ! Initialise the structures of the associated linear subsolver
     call lssh_initData (&
@@ -319,10 +383,27 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: ilev
    
     ! Clean up the structures of the associated linear subsolver
     call lssh_doneStructure (rsolver%p_rlsshierarchy,ilevel)
    
+   ! Release assembly data
+    call smva_releaseTempData (rsolver%rtempData)
+   
+    ! deallocate temporary vectors
+    do ilev=rsolver%p_rlssHierarchy%nlmax,rsolver%p_rlssHierarchy%nlmin,-1
+      call lsysbl_releaseVector (rsolver%p_Rsolutions(ilev))
+      call lsysbl_releaseMatrix (rsolver%p_Rmatrices(ilev))
+    end do
+
+    deallocate(rsolver%p_Rsolutions)
+    deallocate(rsolver%p_Rmatrices)
+    
+    ! Deallocate temporary data
+    deallocate (rsolver%p_rd)
+
   end subroutine
 
   ! ***************************************************************************
@@ -353,7 +434,8 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,ilevel,rd)
+  subroutine spaceslh_solve (rsolver,ilevel,idofTime,&
+      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
@@ -365,19 +447,37 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Parameters for the Newton iteration.
+  ! Parameters for the iteration.
   ! The output parameters are changed according to the iteration.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
 
-  ! Vector to be preconditioned. Used as right-hand side.
-  ! Will be replaced by the solution.
-  type(t_vectorBlock), intent(inout), target :: rd
+  ! Number of the DOF in time which should be calculated into rdest.
+  integer, intent(in) :: idofTime
+
+  ! Current solution of the primal equation.
+  type(t_primalSpace), intent(inout), target :: rprimalSol
+
+  ! Current solution of the dual equation.
+  type(t_dualSpace), intent(inout), optional, target :: rdualSol
+
+  ! Current solution of the control equation
+  type(t_controlSpace), intent(inout), optional, target :: rcontrol
+
+  ! Current solution of the linearised primal equation.
+  type(t_primalSpace), intent(inout), optional, target :: rprimalSolLin
+
+  ! Current solution of the linearised dual equation.
+  type(t_dualSpace), intent(inout), optional, target :: rdualSolLin
+
+  ! Current solution of the linearised control equation
+  type(t_controlSpace), intent(inout), optional, target :: rcontrolLin
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rx,p_rd
+    type(t_vectorBlock), pointer :: p_rd, p_rx
+    integer :: ierror
    
     ! Which type of operator is to be solved?
     select case (rsolver%coptype)
@@ -393,9 +493,72 @@ contains
       ! At first, get a temp vector we can use for creating the
       ! nonlinear defect.
       p_rd => rsolver%p_rd
-      p_rx => rsolver%p_rx
       
-      ! ...
+      ! Apply the Newton iteration
+      rsolver%rnewtonParams%nnonlinearIterations = 0
+      do while (.true.)
+      
+        ! Compute the basic (unpreconditioned) search direction in rd.
+        call smva_getDef_primal (&
+            rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(ilevel),&
+            rprimalSol,rcontrol,idofTime,p_rd,rsolver%rtempData)
+
+        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
+          ! Remember the initial residual
+          rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+        end if
+
+        ! -------------------------------------------------------------
+        ! Check for convergence
+        ! -------------------------------------------------------------
+        if (newtonit_checkConvergence (rsolver%rnewtonParams)) exit
+        
+        ! -------------------------------------------------------------
+        ! Check for divergence
+        ! -------------------------------------------------------------
+        if (newtonit_checkDivergence (rsolver%rnewtonParams)) exit
+        
+        ! -------------------------------------------------------------
+        ! Check other stopping criteria
+        ! -------------------------------------------------------------
+        if (newtonit_checkIterationStop (rsolver%rnewtonParams)) exit
+        
+        ! -------------------------------------------------------------
+        ! Preconditioning with the Newton matrix
+        ! -------------------------------------------------------------
+
+        ! Assemble the matrices on all levels.
+        call spaceslh_initData (rsolver, ilevel, ierror, idofTime, rprimalSol)        
+        
+        ! Solve the system
+        call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,p_rd)
+        
+        ! Cleanup
+        call spaceslh_doneData (rsolver,ilevel)
+        
+        ! -------------------------------------------------------------
+        ! Update of the solution
+        ! -------------------------------------------------------------
+
+        ! Update the control according to the search direction:
+        !
+        !    u_n+1  =  u_n  +  g_n
+        !
+        ! or to any configured step-length control rule.
+        call sptivec_getVectorFromPool(rprimalSol%p_rvectorAccess,idofTime,p_rx)
+        call lsysbl_vectorLinearComb (p_rd,p_rx,rsolver%rnewtonParams%domega,1.0_DP)
+        call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
+        
+        ! -------------------------------------------------------------
+        ! Proceed with the next iteration
+        ! -------------------------------------------------------------
+        ! Next iteration
+        rsolver%rnewtonParams%nnonlinearIterations = &
+            rsolver%rnewtonParams%nnonlinearIterations + 1
+      
+      end do
+      
+      
       
       
       
@@ -406,115 +569,24 @@ contains
     ! ---------------------------------------------------------------
     case (OPTP_DUAL)
       ! Call the linear solver, it does the job for us.
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
     
     ! ---------------------------------------------------------------
     ! Linearised primal equation. Linear loop.
     ! ---------------------------------------------------------------
     case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
       ! Call the linear solver, it does the job for us.
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
 
     ! ---------------------------------------------------------------
     ! Linearised dual equation. Linear loop.
     ! ---------------------------------------------------------------
     case (OPTP_DUALLIN)
       ! Call the linear solver, it does the job for us.
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
 
     end select
 
-!
-!
-!
-!    ! local variables
-!    type(t_kktsystemDirDeriv) :: rkktsystemDirDeriv
-!    type(t_controlSpace), pointer :: p_rdescentDir
-!    type(t_kktsystem), pointer :: p_rkktsystem
-!    
-!    ! Get a pointer to the solution of the maximum level
-!    p_rkktsystem => rkktsystemHierarchy%p_RkktSystems(rkktsystemHierarchy%nlevels)
-!    
-!    ! Temporary vector
-!    p_rdescentDir => rsolver%p_rdescentDir
-!    
-!    ! Prepare a structure that encapsules the directional derivative.
-!    
-!    ! Apply the Newton iteration
-!    rsolver%rnewtonParams%nnonlinearIterations = 0
-!    
-!    do while (.true.)
-!    
-!      ! The Newton iteration reads
-!      !
-!      !    u_n+1  =  u_n  -  [J''(u_n)]^-1  J'(u_n)
-!      !
-!      ! or in other words,
-!      !
-!      !    u_n+1  =  u_n  +  [J''(u_n)]^-1  d_n
-!      !
-!      ! with the residual   d_n = -J'(u_n)   specifying a 'search direction'.
-!      
-!      ! -------------------------------------------------------------
-!      ! Get the current residual / search direction
-!      ! -------------------------------------------------------------
-!
-!      ! Compute the basic (unpreconditioned) search direction d_n.
-!      call newtonit_getResidual (p_rkktsystem,p_rdescentDir,&
-!          rsolver%rnewtonParams%dresFinal)
-!
-!      if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
-!        ! Remember the initial residual
-!        rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
-!      end if
-!
-!      ! -------------------------------------------------------------
-!      ! Check for convergence
-!      ! -------------------------------------------------------------
-!      if (newtonit_checkConvergence (rsolver%rnewtonParams)) exit
-!      
-!      ! -------------------------------------------------------------
-!      ! Check for divergence
-!      ! -------------------------------------------------------------
-!      if (newtonit_checkDivergence (rsolver%rnewtonParams)) exit
-!      
-!      ! -------------------------------------------------------------
-!      ! Check other stopping criteria
-!      ! -------------------------------------------------------------
-!      if (newtonit_checkIterationStop (rsolver%rnewtonParams)) exit
-!      
-!      ! -------------------------------------------------------------
-!      ! Preconditioning with the Newton matrix
-!      ! -------------------------------------------------------------
-!      
-!      ! Actual Newton iteration. Apply the Newton preconditioner
-!      ! to get the Newton search direction:
-!      !
-!      !    J''(u_n) g_n  =  d_n
-!      !
-!      call newtonlin_precondNewton (rsolver%rlinsolParam,&
-!          rkktsystemDirDeriv,p_rdescentDir)
-!      
-!      ! -------------------------------------------------------------
-!      ! Update of the solution
-!      ! -------------------------------------------------------------
-!
-!      ! Update the control according to the search direction:
-!      !
-!      !    u_n+1  =  u_n  +  g_n
-!      !
-!      ! or to any configured step-length control rule.
-!      call newtonit_updateControl (rsolver,p_rkktsystem,p_rdescentDir)
-!      
-!      ! -------------------------------------------------------------
-!      ! Proceed with the next iteration
-!      ! -------------------------------------------------------------
-!      ! Next iteration
-!      rsolver%rnewtonParams%nnonlinearIterations = &
-!          rsolver%rnewtonParams%nnonlinearIterations + 1
-!    
-!    end do
-    
   end subroutine
 
 

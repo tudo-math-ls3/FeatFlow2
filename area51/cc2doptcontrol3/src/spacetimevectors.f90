@@ -166,6 +166,8 @@ module spacetimevectors
   public :: sptivec_getFreeBufferFromPool
   public :: sptivec_invalidateVecInPool
   public :: sptivec_commitVecInPool
+  public :: sptivec_lockVecInPool
+  public :: sptivec_unlockVecInPool
   public :: sptivec_bindPoolToVec
   public :: sptivec_bindDiscreteBCtoBuffer
 
@@ -247,10 +249,12 @@ module spacetimevectors
     
     ! A list of indices that saves for every space-vector from the pool the
     ! associated index in the space-time vector.
+    ! If the number is negative, the corresponding vector is locked
+    ! and not overwritten until being unlocked.
     integer, dimension(:), pointer :: p_IvectorIndex => null()
     
     ! Id of the next free vector which is overwritten if the read-method
-    ! is called.
+    ! is called. If this is =0, no vector is available.
     integer :: inextFreeVector = 0
     
   end type
@@ -2165,10 +2169,17 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
       call sys_halt()
     end if
+    
+    if (raccessPool%inextFreeVector .eq. 0) then
+      ! No free vector available
+      call output_line ("No free vector available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
   
     ! Take a look if we already have that vector
     do i=1,size(raccessPool%p_IvectorIndex)
-      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
         p_rx => raccessPool%p_RvectorPool(i)
         return
       end if
@@ -2189,11 +2200,20 @@ contains
     
     ! Here is our read vector
     p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
-    
-    ! Increase the number of the next free vector.
-    ! We use the buffer as a ring buffer.
-    raccessPool%inextFreeVector = &
-        mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+
+    ! Find a new free position
+    do 
+      ! Increase the number of the next free vector.
+      ! We use the buffer as a ring buffer.
+      raccessPool%inextFreeVector = &
+          mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+          
+      ! We found one if the corresponding index is non-negative.
+      if (raccessPool%p_IvectorIndex(raccessPool%inextFreeVector) .ge. 0) return
+      
+      ! The loop terminates since the lock-routine ensures that
+      ! we have a free vector available.
+    end do
     
   end subroutine
 
@@ -2229,7 +2249,7 @@ contains
     ! Take a look if we have that vector; if yes, remove it from the list
     ! of fetched vectors.
     do i=1,size(raccessPool%p_IvectorIndex)
-      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
         raccessPool%p_IvectorIndex(i) = 0
       end if
     end do
@@ -2265,6 +2285,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
       call sys_halt()
     end if
+
     if (.not. associated(raccessPool%p_rspaceTimeVector)) then
       call output_line('No space-time vector associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
@@ -2272,7 +2293,7 @@ contains
     end if
   
     do i=1,size(raccessPool%p_IvectorIndex)
-      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
         ! Found. Has to be written to the source.
         call sptivec_setTimestepData (raccessPool%p_rspaceTimeVector, iindex, &
             raccessPool%p_RvectorPool(i))
@@ -2316,6 +2337,13 @@ contains
       call sys_halt()
     end if
 
+    if (raccessPool%inextFreeVector .eq. 0) then
+      ! No free vector available
+      call output_line ("No free vector available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+  
     ! Here is our read vector
     p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
 
@@ -2326,6 +2354,20 @@ contains
     ! We use the buffer as a ring buffer.
     raccessPool%inextFreeVector = &
         mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+
+    ! Find a new free position    
+    do 
+      ! Increase the number of the next free vector.
+      ! We use the buffer as a ring buffer.
+      raccessPool%inextFreeVector = &
+          mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+          
+      ! We found one if the corresponding index is non-negative.
+      if (raccessPool%p_IvectorIndex(raccessPool%inextFreeVector) .ge. 0) return
+      
+      ! The loop terminates since the lock-routine ensures that
+      ! we have a free vector available.
+    end do
     
   end subroutine
 
@@ -2398,6 +2440,140 @@ contains
       call sys_halt()
     end if
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_lockVecInPool (raccessPool,iindex)
+
+!<description>
+  ! Locks vector iindex in the vector pool such that it is not
+  ! overwritten by other vectors upon requesting data.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index of the vector to be locked.
+  integer, intent(in) :: iindex
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i,ilockcount
+    
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      call output_line('No space-time vector associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call sys_halt()
+    end if
+  
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+        ! Found. Lock it.
+        raccessPool%p_IvectorIndex(i) = -abs(raccessPool%p_IvectorIndex(i))
+        
+        ! Is inextFreeVector pointing to this vector? If yes,
+        ! try to find the next free one.
+        if (raccessPool%inextFreeVector .eq. i) then
+        
+          ! Find a new free position
+          ilockcount = 0
+          
+          do 
+            ! Increase the number of the next free vector.
+            ! We use the buffer as a ring buffer.
+            raccessPool%inextFreeVector = &
+                mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+                
+            ! We found one if the corresponding index is non-negative.
+            if (raccessPool%p_IvectorIndex(raccessPool%inextFreeVector) .ge. 0) exit
+            
+            ! Count the vector. If the lock counter reaches the size of the buffer,
+            ! no vectors are available.
+            ilockcount = ilockcount + 1
+            if (ilockcount .ge. size(raccessPool%p_IvectorIndex)) then
+              ! No vector available
+              raccessPool%inextFreeVector = 0
+              exit
+            end if
+            
+          end do
+        
+        end if
+        
+        return
+        
+      end if
+      
+    end do
+
+    call output_line('Invalid vector!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_lockVecInPool')
+    call sys_halt()
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_unlockVecInPool (raccessPool,iindex)
+
+!<description>
+  ! Unlocks vector iindex in the vector pool.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index of the vector to be locked.
+  integer, intent(in) :: iindex
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      call output_line('No space-time vector associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call sys_halt()
+    end if
+  
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+        ! Found. Unlock it.
+        raccessPool%p_IvectorIndex(i) = abs(raccessPool%p_IvectorIndex(i))
+        
+        ! If the current vector position indicates that no
+        ! vectors are available, indicate that this one is available.
+        if (raccessPool%inextFreeVector .eq. 0) raccessPool%inextFreeVector = i
+        return
+        
+      end if
+    end do
+
+    call output_line('Invalid vector!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_lockVecInPool')
+    call sys_halt()
+  
   end subroutine
 
 end module

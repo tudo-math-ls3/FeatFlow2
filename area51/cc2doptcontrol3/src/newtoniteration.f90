@@ -43,6 +43,7 @@ module newtoniteration
   use spacelinearsolver
   use spacesolver
   
+  use spacetimehierarchy
   use kktsystemspaces
   use kktsystem
   use kktsystemhierarchy
@@ -272,22 +273,24 @@ contains
 
 !</subroutine>
 
-    integer :: ilevel
+    integer :: ispacelevel,ilevel
 
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
 
-    ! Get the topmost level in the hierarchy.
+    ! Get the topmost space-level in the hierarchy.
     ilevel = rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%nlevels
+    call sth_getLevel (rsolver%p_rsettingsSolver%rspaceTimeHierPrimal,&
+        ilevel,ispaceLevel=ispacelevel)
 
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimal (rkktsystem,&
-        rsolver%p_rsolverHierPrimal,ilevel)
+        rsolver%p_rsolverHierPrimal,ispacelevel)
     
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDual (rkktsystem,&
-        rsolver%p_rsolverHierDual,ilevel)
+        rsolver%p_rsolverHierDual,ispacelevel)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   

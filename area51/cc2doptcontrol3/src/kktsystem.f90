@@ -327,7 +327,7 @@ contains
 !</description>
   
 !<input>
-  ! Level in the solver structure, corresponding to the solution
+  ! (Space-)Level in the solver structure, corresponding to the solution
   integer, intent(in) :: ilevel
 !</input>
 
@@ -343,6 +343,9 @@ contains
 
 !</subroutine>
 
+    ! local variables
+    integer :: idofTime, ierror
+    
     ! -------------------------------------------------------------------------
     ! Basic description
     !
@@ -359,7 +362,39 @@ contains
     !
     ! with the control u being given in rkktsystem.
     ! -------------------------------------------------------------------------
+    ! All the timestepping weights and so on are realised in the 
+    ! matrix-vector assembly routines. Here, we only have to
+    ! apply a loop over all unknowns in time.
+    ! -------------------------------------------------------------------------
+    
+    call spaceslh_initStructure (rspaceSolver, ilevel, ierror)
+    if (ierror .ne. 0) then
+      call output_line("Error initialising the solver structures.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
+      call sys_halt()
+    end if
+    
+    ! -----------------------
+    ! Loop over all timesteps
+    ! -----------------------
+    do idofTime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime
+    
+      if (ierror .ne. 0) then
+        call output_line("Error initialising the solver data.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
+        call sys_halt()
+      end if
+
+      ! Apply the solver to update the solution.
+      ! The solution is copied to rx to prevent it from being overwritten
+      ! during the solution process -- it is still part of the nonlinearity
+      ! in the KKT system...
+      call spaceslh_solve (rspaceSolver,ilevel,idofTime,rkktsystem%p_rprimalSol)
+      
+    end do ! step
    
+    call spaceslh_doneStructure (rspaceSolver, ilevel)
+    
   end subroutine
 
   ! ***************************************************************************

@@ -44,6 +44,8 @@ module newtoniterationlinear
   use kktsystemspaces
   use kktsystem
   
+  use spacetimehierarchy
+  
   use structuresnewton
   
   implicit none
@@ -154,17 +156,23 @@ contains
 
 !</subroutine>
 
+    integer :: ispacelevel
+
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
+
+    ! Get the topmost space-level in the hierarchy.
+    call sth_getLevel (rlinsolParam%p_rsettingsSolver%rspaceTimeHierPrimal,&
+        ilevel,ispaceLevel=ispacelevel)
     
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin,ilevel)
+        rlinsolParam%p_rsolverHierPrimalLin,ispacelevel)
     
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin,ilevel)
+        rlinsolParam%p_rsolverHierDualLin,ispacelevel)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -291,7 +299,7 @@ contains
 
 !</subroutine>
 
-    integer :: ilevel
+    integer :: ispacelevel,ilevel
 
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
