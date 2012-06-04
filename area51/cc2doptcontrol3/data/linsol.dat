@@ -95,7 +95,7 @@ domega             = 1.0
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 
-ioutputLevel       = 0 # -1
+ioutputLevel       = 2 # -1
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).

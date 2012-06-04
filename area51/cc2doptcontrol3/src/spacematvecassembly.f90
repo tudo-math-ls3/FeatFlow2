@@ -21,6 +21,7 @@ module spacematvecassembly
   use timediscretisation
   use linearsystemscalar
   use linearsystemblock
+  use multilevelprojection
   
   use scalarpde
   use linearformevaluation
@@ -41,6 +42,8 @@ module spacematvecassembly
   use structuresoptflow
   use structuresoperatorasm
   use assemblytemplates
+  use fespacehierarchybase
+  use fespacehierarchy
   use spacetimehierarchy
   
   use kktsystemspaces
@@ -74,10 +77,15 @@ module spacematvecassembly
     ! of the primal space
     type(t_matrixBlock) :: rmatrix
 
-    ! A set of temporary block vectors which can be used for
-    ! intermediate calculations. Discretised with the
-    ! FE space of the primal space.
-    type(t_vectorBlock), dimension(1) :: rvector
+    ! A set of block vectors for assembling the nonlinearity
+    ! on different levels. Rvectors(i) corresponds to space
+    ! level i.
+    type(t_vectorBlock), dimension(:), pointer :: p_Rvectors => null()
+
+    ! A set of block matrices for assembling the nonlinearity
+    ! on different levels. Rmatrices(i) corresponds to space
+    ! level i.
+    type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
 
   end type
 
@@ -240,7 +248,7 @@ contains
 !<subroutine>
 
   subroutine smva_allocTempData (rtempData,rphysics,roptcontrol,rsettingsDiscr,&
-      rspatialDiscr,rasmTemplates)
+      nlmax,rfeSpaceHierarchy,roperatorAsmHier)
 
 !<description>
   ! Allocates temporary data for the assembly of an operator in space
@@ -256,11 +264,14 @@ contains
   ! Parameters for the discretisation in space
   type(t_settings_spacediscr), intent(in) :: rsettingsDiscr
   
-  ! Discretisation structure on that space level
-  type(t_blockDiscretisation), intent(in) :: rspatialDiscr
+  ! Maximum Level in the spatial hierarchy where the assembly should be applied.
+  integer, intent(in) :: nlmax
   
-  ! Templates for the assembly
-  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+  ! Hierarchy of FEM spaces for the different space levels
+  type(t_feHierarchy), intent(in) :: rfeSpaceHierarchy
+  
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
 !</input>
 
 
@@ -273,16 +284,21 @@ contains
 
     integer :: i
     
-    ! Create temp vectors
-    do i=1,ubound(rtempData%Rvector,1)
+    ! Create temp vectors for every level
+    allocate(rtempData%p_Rvectors(nlmax))
+    allocate(rtempData%p_Rmatrices(nlmax))
+    do i=1,nlmax
+      ! Create a temp vector
       call lsysbl_createVectorBlock(&
-          rspatialDiscr,rtempData%Rvector(i),.false.)
+          rfeSpaceHierarchy%p_rfeSpaces(i)%p_rdiscretisation,&
+          rtempData%p_Rvectors(i),.false.)
+
+      ! Create a temp matrix
+      call smva_allocSystemMatrix (rtempData%p_Rmatrices(i),&
+          rphysics,roptcontrol,rsettingsDiscr,&
+          rfeSpaceHierarchy%p_rfeSpaces(i)%p_rdiscretisation,&
+          roperatorAsmHier%p_rstaticSpaceAsmHier%p_RasmTemplList(i))
     end do
-  
-    ! Create a temp matrix
-    call smva_allocSystemMatrix (rtempData%rmatrix,&
-        rphysics,roptcontrol,rsettingsDiscr,&
-        rspatialDiscr,rasmTemplates)
 
   end subroutine
 
@@ -306,11 +322,13 @@ contains
     integer :: i
     
     ! Release everything
-    call lsysbl_releaseMatrix (rtempData%rmatrix)
 
-    do i=1,ubound(rtempData%Rvector,1)
-      call lsysbl_releaseVector (rtempData%Rvector(i))
+    do i=1,ubound(rtempData%p_Rvectors,1)
+      call lsysbl_releaseMatrix (rtempData%p_Rmatrices(i))
+      call lsysbl_releaseVector (rtempData%p_Rvectors(i))
     end do
+    deallocate(rtempData%p_Rvectors)
+    deallocate(rtempData%p_Rmatrices)
     
   end subroutine
 
@@ -501,7 +519,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primal (&
-      rspaceTimeOperatorAsm,rprimalSol,rcontrol,idofTime,rdest,rtempData)
+      roperatorAsmHier,isollevelSpace,isollevelTime,rprimalSol,rcontrol,&
+      idofTime, ispacelevel, rdest, rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -509,9 +528,15 @@ contains
 !</description>
 
 !<input>
-  ! Definition of the operator
-  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
+  ! Hierarchy of space-time operators.
+  type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
 
+  ! Space-level corresponding to the solution
+  integer, intent(in) :: isollevelSpace
+
+  ! Time-level corresponding to the solution
+  integer, intent(in) :: isollevelTime
+  
   ! Structure that defines the current primal solution.
   type(t_primalSpace), intent(inout) :: rprimalSol
 
@@ -520,11 +545,14 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+  
+  ! Space level of the destination vector
+  integer, intent(in) :: ispacelevel
 !</input>
 
 !<inputoutput>
   ! Structure with temporary assembly data.
-  type(t_assemblyTempDataSpace), intent(inout) :: rtempData
+  type(t_assemblyTempDataSpace), intent(inout), target :: rtempData
     
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rdest
@@ -535,15 +563,30 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_matrixBlock), pointer :: p_rmatrix
     
-    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,isollevelSpace,isollevelTime)
+        
+    p_ranalyticData => roperatorAsm%p_ranalyticData
     
+    if (ispacelevel .ne. isollevelSpace) then
+      call output_line("Nonlinear defect only supported on maximum level.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"smva_getRhs_Primal")
+      call sys_halt()
+    end if
+    
+    ! Output temp matrix
+    p_rmatrix => rtempdata%p_Rmatrices(ispacelevel)
+
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
 
     ! Timestepping technique?
-    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (roperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -551,15 +594,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = roperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -599,19 +642,19 @@ contains
             ! ===============================================
 
             ! Clear the temporary matrix
-            call lsysbl_clearMatrix (rtempData%rmatrix)
+            call lsysbl_clearMatrix (p_rmatrix)
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
             end if
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
             if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
+                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -621,7 +664,7 @@ contains
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
-            call lsysbl_blockMatVec (rtempData%rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+            call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
           end if
 
@@ -634,26 +677,26 @@ contains
           ! ===============================================
           
           ! Get the RHS vector.
-          call smva_getRhs_Primal (rspaceTimeOperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
+          call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
           
           ! ===============================================
           ! Prepare the linear parts of the matrix.
           ! ===============================================
           
           ! Clear the temporary matrix
-          call lsysbl_clearMatrix (rtempData%rmatrix)
+          call lsysbl_clearMatrix (p_rmatrix)
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
-            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
           end if
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
           if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
+                roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -662,16 +705,16 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getBMatrix (roperatorAsm,p_rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
+          call smva_getDMatrix (roperatorAsm,p_rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
           !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
-          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
+          !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,p_rmatrix,1.0_DP)
           !end if
             
           ! ===============================================
@@ -681,8 +724,8 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primal (rspaceTimeOperatorAsm,idofTime,&
-              rprimalSol,1.0_DP,rtempData%rmatrix)
+          call smva_getSemilinMat_primal (roperatorAsm,idofTime,&
+              rprimalSol,1.0_DP,p_rmatrix)
 
           ! -----------------------------------------
           ! Realise the defect with the linear and
@@ -690,7 +733,7 @@ contains
           ! -----------------------------------------
 
           call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-          call lsysbl_blockMatVec (rtempData%rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+          call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
 
         end select ! Equation
       
@@ -1087,8 +1130,8 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
-              rprimalSol,1.0_DP,.true.,rtempData%rmatrix)
+          !call smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
+          !    rprimalSol,1.0_DP,.true.,rtempData%rmatrix)
 
           ! -----------------------------------------
           ! Realise the defect with the linear and
@@ -1649,8 +1692,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
-      rprimalSol,dweight,bfull,rmatrix)
+  subroutine smva_getSemilinMat_primalLin (rmatrix,ispacelevel,roperatorAsmHier,&
+      idofTime,rprimalSol,isollevelSpace,isollevelTime,dweight,bfull,rtempdata)
 
 !<description>
   ! Implements the semilinear part of the operator described by
@@ -1660,9 +1703,13 @@ contains
 !</description>
 
 !<input>
-  ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
-  
+  ! Space level where the operator should be assembled, corresponding 
+  ! to rmatrix.
+  integer, intent(in) :: ispacelevel
+
+  ! Hierarchy of space-time operators.
+  type(t_spacetimeOpAsmHierarchy), intent(inout) :: roperatorAsmHier
+
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
   
@@ -1673,6 +1720,12 @@ contains
   ! This is the primal solution of the last nonlinear iteration.
   type(t_primalSpace), intent(inout) :: rprimalSol
 
+  ! Space-level corresponding to the solution
+  integer, intent(in) :: isollevelSpace
+
+  ! Time-level corresponding to the solution
+  integer, intent(in) :: isollevelTime
+  
   ! TRUE activates the full linearised operator (Newton).
   ! FALSE activates a partially linearised operator without the Newton part.
   logical, intent(in) :: bfull
@@ -1681,6 +1734,9 @@ contains
 !<inputoutput>
   ! Block matrix receiving the result.
   type(t_matrixBlock), intent(inout) :: rmatrix
+
+  ! Structure containing temporary data.
+  type(t_assemblyTempDataSpace), intent(inout), target :: rtempData
 !</inputoutput>
 
 !</subroutine>
@@ -1691,17 +1747,22 @@ contains
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_spacetimeOperatorAsm), target :: roperatorAsm
+    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,ispacelevel,isollevelTime)
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => roperatorAsm
     rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
-    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+    p_ranalyticData => roperatorAsm%p_ranalyticData
 
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
@@ -1720,15 +1781,39 @@ contains
       
       ! Prepare the evaluation
       !
-      ! Vector 1+2 = primal velocity.
+      ! Get the nonlienarity
       call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+      
+      ! If ispacelevel != isollevelSpace, the vector p_rvector points to
+      ! a solution which is incompatible to out FEM space. We have to interpolate
+      ! it down to our actual FEM space.
+      !
+      if (ispacelevel .eq. isollevelSpace-1) then
+        ! Project down p_rvector to level isollevelSpace-1
+        call mlprj_performInterpolationHier (roperatorAsmHier%p_rprjHierSpacePrimal,&
+            isollevelSpace,rtempdata%p_Rvectors(ispacelevel),p_rvector)
+        
+        ! New solution vector at level ispacelevel
+        p_rvector => rtempdata%p_Rvectors(ispacelevel)
+        
+      else if (ispacelevel .lt. isollevelSpace-1) then
+        ! Project down the last projected solution to level ispacelevel
+        call mlprj_performInterpolationHier (roperatorAsmHier%p_rprjHierSpacePrimal,&
+            isollevelSpace,rtempdata%p_Rvectors(ispacelevel),&
+            rtempdata%p_Rvectors(ispacelevel+1))
+
+        ! New solution vector at level ispacelevel
+        p_rvector => rtempdata%p_Rvectors(ispacelevel)
+      end if
+      
+      ! Vector 1+2 = primal velocity.
       call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
       call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),1)
       
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -3926,21 +4011,33 @@ contains
   
 !<subroutine>
 
-  subroutine smva_assembleMatrix_primal (rmatrix,&
-      rspaceTimeOperatorAsm,rprimalSol,idofTime,bfull)
+  subroutine smva_assembleMatrix_primal (rmatrix,ispacelevel,idofTime,&
+      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,bfull,rtempdata)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
   ! solvers for the primal equation.
+  !
+  ! If this routine is called for multiple space levels, it shall
+  ! be called in a backward order from ispacelevel = isollevel, ..., 1.
 !</description>
 
 !<input>
-  ! Definition of the operator. Must be a linearised operator.
-  type(t_spacetimeOperatorAsm) :: rspaceTimeOperatorAsm
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(inout), target :: roperatorAsmHier
+  
+  ! Space level where the operator should be evaluated
+  integer, intent(in) :: ispacelevel
 
   ! Structure that defines the nonlinearity in the
   ! primal equation.
   type(t_primalSpace), intent(inout) :: rprimalSol
+  
+  ! Space-level corresponding to the solution
+  integer, intent(in) :: isollevelSpace
+
+  ! Time-level corresponding to the solution
+  integer, intent(in) :: isollevelTime
 
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
@@ -3951,8 +4048,11 @@ contains
 !</input>
 
 !<inputoutput>
+  ! Structure containing temporary data.
+  type(t_assemblyTempDataSpace), intent(inout) :: rtempData
+
   ! Block matrix receiving the result.
-  type(t_matrixBlock) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -3960,14 +4060,19 @@ contains
     ! local variables
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
     
-    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
-    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,ispacelevel,isollevelTime)
+        
+    p_ranalyticData => roperatorAsm%p_ranalyticData
+
     ! Clear the output matrix
     call lsysbl_clearMatrix (rmatrix)
 
     ! Timestepping technique?
-    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    select case (roperatorAsm%p_rtimeDiscrPrimal%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -3975,15 +4080,15 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      dtheta = roperatorAsm%p_rtimeDiscrPrimal%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%itag)
+      select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -4013,13 +4118,13 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspaceTimeOperatorAsm,rmatrix,dtstep)
+          call smva_getMassMatrix (roperatorAsm,rmatrix,dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
           if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rmatrix,p_ranalyticData%p_rphysics%dnuConst)
+                roperatorAsm,rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_primal")
@@ -4028,11 +4133,11 @@ contains
           
           ! -----------------------------------------
           ! B-matrices
-          call smva_getBMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
+          call smva_getBMatrix (roperatorAsm,rmatrix,1.0_DP)
           
           ! -----------------------------------------
           ! D-matrices
-          call smva_getDMatrix (rspaceTimeOperatorAsm,rmatrix,1.0_DP)
+          call smva_getDMatrix (roperatorAsm,rmatrix,1.0_DP)
 
           ! -----------------------------------------
           ! EOJ-stabilisation
@@ -4047,8 +4152,10 @@ contains
           ! The semilinear parts of the matrix can be set up with
           ! the block matrix assembly routines. Invoke them using
           ! a separate subroutine
-          call smva_getSemilinMat_primalLin (rspaceTimeOperatorAsm,idofTime,&
-              rprimalSol,1.0_DP,bfull,rmatrix)
+          call smva_getSemilinMat_primalLin (&
+              rmatrix,ispacelevel,roperatorAsmHier,idofTime,&
+              rprimalSol,isollevelSpace,isollevelTime,1.0_DP,bfull,&
+              rtempdata)
 
         end select ! Equation
       
@@ -4251,6 +4358,10 @@ contains
     roperatorAsmHier%p_rfeHierarchyDual => rsettings%rfeHierarchyDual
     roperatorAsmHier%p_rfeHierarchyControl => rsettings%rfeHierarchyControl
     
+    roperatorAsmHier%p_rprjHierSpacePrimal => rsettings%rprjHierSpacePrimal
+    roperatorAsmHier%p_rprjHierSpaceDual => rsettings%rprjHierSpaceDual
+    roperatorAsmHier%p_rprjHierSpaceControl => rsettings%rprjHierSpaceControl
+
     roperatorAsmHier%p_rstaticSpaceAsmHier => rsettings%rspaceAsmHierarchy
     roperatorAsmHier%p_roptcBDCSpaceHierarchy => rsettings%roptcBDCSpaceHierarchy
 

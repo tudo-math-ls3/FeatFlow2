@@ -14,6 +14,7 @@ module structuresoperatorasm
   use fsystem
   
   use spatialdiscretisation
+  use multilevelprojection
   use timediscretisation
   
   use analyticsolution
@@ -159,6 +160,15 @@ module structuresoperatorasm
 
     ! Hierarchy of FEM spaces, control space.
     type(t_feHierarchy), pointer :: p_rfeHierarchyControl => null()
+    
+    ! Projection hierarchy for the interlevel projection in the primal space.
+    type(t_interlevelProjectionHier), pointer :: p_rprjHierSpacePrimal => null()
+
+    ! Projection hierarchy for the interlevel projection in the dual space.
+    type(t_interlevelProjectionHier), pointer :: p_rprjHierSpaceDual => null()
+
+    ! Projection hierarchy for the interlevel projection in the control space.
+    type(t_interlevelProjectionHier), pointer :: p_rprjHierSpaceControl => null()
     
     ! Hierarchy of space assembly structures
     type(t_staticSpaceAsmHierarchy), pointer :: p_rstaticSpaceAsmHier => null()

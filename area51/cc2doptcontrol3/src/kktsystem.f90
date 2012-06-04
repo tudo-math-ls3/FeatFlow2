@@ -386,7 +386,7 @@ contains
       end if
 
       ! Apply the solver to update the solution in timestep idofTime.
-      call spaceslh_solve (rspaceSolver,idofTime,&
+      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%ispacelevel,&
           rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       
     end do ! step

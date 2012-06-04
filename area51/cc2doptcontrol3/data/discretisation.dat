@@ -5,7 +5,7 @@
 # equation.
 
 ##################
-[CC-PHYSICSPRIMAL]
+[CC-physics]
 ##################
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation

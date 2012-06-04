@@ -24,7 +24,7 @@ srhsPrimal = RIGHTHANDSIDE_PRIMAL
 srhsDual = RIGHTHANDSIDE_DUAL
 
 # Name of the section defining the physics
-ssectionPhysics = "CC-PHYSICSPRIMAL"
+ssectionPhysics = "CC-physics"
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
 # -1.0 = no distributed control

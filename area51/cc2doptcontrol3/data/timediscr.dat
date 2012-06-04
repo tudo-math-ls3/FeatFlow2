@@ -26,7 +26,7 @@ dtimeMax = 1.0
 # Number of time steps on time level 1.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 2
+niterations = 10
 
 # Minimum level in time.
 TIMENLMIN = 1

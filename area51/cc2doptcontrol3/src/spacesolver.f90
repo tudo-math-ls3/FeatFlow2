@@ -126,9 +126,6 @@ module spacesolver
     ! Temporary vectors for nonlinear iterations
     type(t_vectorBlock), pointer :: p_rd => null()
 
-    ! Hierarchy of vectors for solutions, for setting up nonlinearities
-    type(t_vectorBlock), dimension(:), pointer :: p_Rsolutions => null()
-
     ! Hierarchy of system matrices
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
     
@@ -275,7 +272,6 @@ contains
     rsolver%p_roperatorAsmHier => roperatorAsmHier
 
     ! Allocate temporary vectors / matrices for all space levels.
-    allocate(rsolver%p_Rsolutions(rsolver%ispaceLevel))
     allocate(rsolver%p_Rmatrices(rsolver%ispaceLevel))
     
     do ilev = rsolver%p_rlssHierarchy%nlmin,rsolver%ispaceLevel
@@ -296,9 +292,6 @@ contains
         call sys_halt()
       end select
       
-      call lsysbl_createVectorBlock (&
-          p_rdiscretisation,rsolver%p_Rsolutions(ilev))
-    
       ! Get the corresponding operator assembly structure and
       ! initialise a system matrix
       call stoh_getOpAsm_slvtlv (&
@@ -320,11 +313,21 @@ contains
         allocate (rsolver%p_rd)
         call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd)
             
-        call smva_allocTempData (rsolver%rtempData,&
-            roperatorAsmHier%ranalyticData%p_rphysics,&
-            roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
-            roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-            p_rdiscretisation,roperatorAsm%p_rasmTemplates)
+        select case (rsolver%copType)
+        case (OPTP_PRIMAL,OPTP_PRIMALLIN)
+          call smva_allocTempData (rsolver%rtempData,&
+              roperatorAsmHier%ranalyticData%p_rphysics,&
+              roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
+              roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
+              ilev,roperatorAsmHier%p_rfeHierarchyPrimal,roperatorAsmHier)
+
+        case (OPTP_DUAL,OPTP_DUALLIN)
+          call smva_allocTempData (rsolver%rtempData,&
+              roperatorAsmHier%ranalyticData%p_rphysics,&
+              roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
+              roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
+              ilev,roperatorAsmHier%p_rfeHierarchyDual,roperatorAsmHier)
+        end select
 
         ! Initialise the structures of the associated linear subsolver
         call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,ierror)
@@ -339,10 +342,11 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_initData (rsolver, ierror, idofTime, rprimalSol)
+  subroutine spaceslh_initData_primal (rsolver, ierror, idofTime, &
+      rprimalSol, isollevelSpace, isollevelTime)
   
 !<description>
-  ! Final preparation of the Newton solver.
+  ! Final preparation of the Newton solver. Primal space.
 !</description>
 
 !<input>
@@ -351,6 +355,12 @@ contains
 
   ! Current solution of the primal equation. Defines the nonlinearity.
   type(t_primalSpace), intent(inout), target :: rprimalSol
+  
+  ! Space level corresponding to rprimalSol.
+  integer, intent(in) :: isollevelSpace
+
+  ! Time level corresponding to rprimalSol.
+  integer, intent(in) :: isollevelTime
 !</input>
 
 !<inputoutput>
@@ -369,7 +379,6 @@ contains
 
     ! local variables
     integer :: ilev
-    type(t_spacetimeOperatorAsm) :: roperatorAsm
     
     ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
     ! the solver performs filtering.
@@ -379,14 +388,9 @@ contains
     ! and set up the system matrices.
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
-      ! Get the corresponding operator assembly structure and
-      ! initialise a system matrix
-      call stoh_getOpAsm_slvtlv (&
-          roperatorAsm,rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel)
-
-      call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),&
-          roperatorAsm,rprimalSol,idofTime,&
-          rsolver%rnewtonParams%ctypeIteration .eq. 2)
+      call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,isollevelTime,&
+          rsolver%rnewtonParams%ctypeIteration .eq. 2,rsolver%rtempData)
     
     end do
 
@@ -445,11 +449,9 @@ contains
    
     ! deallocate temporary vectors
     do ilev=rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
-      call lsysbl_releaseVector (rsolver%p_Rsolutions(ilev))
       call lsysbl_releaseMatrix (rsolver%p_Rmatrices(ilev))
     end do
 
-    deallocate(rsolver%p_Rsolutions)
     deallocate(rsolver%p_Rmatrices)
     
     ! Deallocate temporary data
@@ -485,7 +487,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,idofTime,&
+  subroutine spaceslh_solve (rsolver,idofTime,isollevel,&
       rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
@@ -499,6 +501,9 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+
+  ! Space level corresponding to the solution structures.
+  integer, intent(in) :: isollevel
 
   ! Current solution of the primal equation.
   type(t_primalSpace), intent(inout), target :: rprimalSol
@@ -524,12 +529,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rd, p_rx
     integer :: ierror
-    type(t_spacetimeOperatorAsm) :: roperatorAsm
    
-    ! Get the corresponding operator assembly structure
-    call stoh_getOpAsm_slvtlv (&
-        roperatorAsm,rsolver%p_roperatorAsmHier,rsolver%ispacelevel,rsolver%itimelevel)
-
     ! Which type of operator is to be solved?
     select case (rsolver%coptype)
 
@@ -550,12 +550,20 @@ contains
       do while (.true.)
       
         ! Compute the basic (unpreconditioned) search direction in rd.
-        call smva_getDef_primal (roperatorAsm,&
-            rprimalSol,rcontrol,idofTime,p_rd,rsolver%rtempData)
+        call smva_getDef_primal (rsolver%p_roperatorAsmHier,&
+            rsolver%ispacelevel,rsolver%itimelevel,&
+            rprimalSol,rcontrol,idofTime,isollevel,p_rd,rsolver%rtempData)
 
         if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
           ! Remember the initial residual
           rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+        end if
+        
+        if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+          call output_line (&
+              trim(sys_si(idofTime,8)) // &
+              " " // trim(sys_si(rsolver%rnewtonParams%nnonlinearIterations,4)) // &
+              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -578,7 +586,8 @@ contains
         ! -------------------------------------------------------------
 
         ! Assemble the matrices on all levels.
-        call spaceslh_initData (rsolver, ierror, idofTime, rprimalSol)        
+        call spaceslh_initData_primal (rsolver, ierror, idofTime, &
+            rprimalSol,rsolver%ispacelevel,rsolver%itimelevel)
         
         ! Solve the system
         call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd)
