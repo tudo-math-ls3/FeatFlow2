@@ -276,7 +276,7 @@ contains
     end do
     
     ! Allocate some temp vectors on the topmost level
-    ilev = min(ilevel,rsolver%p_rlssHierarchy%nlmax)
+    ilev = rsolver%ispaceLevel
 
     allocate (rsolver%p_rd)
     call lsysbl_createVectorBlock (&
@@ -292,7 +292,7 @@ contains
 
     ! Initialise the structures of the associated linear subsolver
     call lssh_initStructure (&
-        rsolver%p_rlsshierarchy,ilevel,ierror)
+        rsolver%p_rlsshierarchy,ilev,ierror)
 
   end subroutine
 

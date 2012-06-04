@@ -1549,7 +1549,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1559,8 +1559,8 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Which equation do we have?
@@ -1634,7 +1634,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1644,8 +1644,8 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Which equation do we have?
@@ -1718,7 +1718,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
@@ -1728,8 +1728,8 @@ contains
 
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
     ! Notify the callback routine what to assemble.
@@ -1822,12 +1822,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DnonlinearityY2 => null()
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
-    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+    rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
     
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -2106,7 +2106,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm) :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2123,8 +2123,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2259,7 +2259,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1
     type(t_collection) :: rcollection
@@ -2276,8 +2276,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2406,7 +2406,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2423,8 +2423,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2563,7 +2563,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2580,8 +2580,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2714,7 +2714,7 @@ contains
 !</subroutine>
 
     ! local variables    
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
@@ -2731,8 +2731,8 @@ contains
     
     ! Prepare a pointer to our operator for callback routines.
     ! It is passed via rcollection.
-    p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
-    rcollection%IquickAccess(8:) = transfer(p_p_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
@@ -2869,12 +2869,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Dlambda1,p_Dlambda2
     real(DP), dimension(:,:,:), pointer :: p_Dylin1,p_Dylin2
 
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
-    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+    rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -3045,12 +3045,12 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Drhs1,p_Drhs2
     real(DP), dimension(:), pointer :: p_DobservationArea => null()
 
-    type(p_t_spacetimeOperatorAsm), pointer :: p_p_rspaceTimeOperatorAsm
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
 
     ! From the collection, fetch our operator structure, nonlinearity,...
-    p_p_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),p_p_rspaceTimeOperatorAsm)
-    p_rspaceTimeOperatorAsm => p_p_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+    rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
+    p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)

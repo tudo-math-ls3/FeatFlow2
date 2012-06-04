@@ -56,13 +56,7 @@
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File></Filter>
-		<Filter Name="datastructures">
-		<File RelativePath="..\src\structuresoptcspacetimenlsol.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\src\structuresspacetimelinsol.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32">
-				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File></Filter>
+		<Filter Name="datastructures"/>
 		<Filter Name="general">
 		<File RelativePath="..\src\scriptfilesupport.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
@@ -77,14 +71,8 @@
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\src\postprocessing.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File></Filter>
-		<Filter Name="space-time linear systems">
-		<File RelativePath="..\src\spacetimelinearsystem.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32">
-				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File></Filter>
-		<Filter Name="spacetimediscretisation">
-		<File RelativePath="..\src\timeboundaryconditions.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File></Filter>
+		<Filter Name="space-time linear systems"/>
+		<Filter Name="spacetimediscretisation"/>
 		<Filter Name="spacetimesolver">
 		<File RelativePath="..\src\forwardbackwardsimulation.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
@@ -114,6 +102,8 @@
 		<File RelativePath="..\src\structuresboundaryconditions.f90"/>
 		<File RelativePath="..\src\structuresdiscretisation.f90"/>
 		<File RelativePath="..\src\structuresgeneral.f90"/>
+		<File RelativePath="..\src\structuresnewton.f90"/>
+		<File RelativePath="..\src\structuresoperatorasm.f90"/>
 		<File RelativePath="..\src\structuresoptcontrol.f90"/>
 		<File RelativePath="..\src\structuresoptflow.f90"/>
 		<File RelativePath="..\src\structurespostproc.f90"/></Filter>
@@ -129,7 +119,8 @@
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File>
 		<File RelativePath="..\src\newtoniterationlinear.f90"/>
-		<File RelativePath="..\src\spacelinearsolver.f90"/></Filter>
+		<File RelativePath="..\src\spacelinearsolver.f90"/>
+		<File RelativePath="..\src\spacesolver.f90"/></Filter>
 		<Filter Name="space-discretisation and assembly">
 		<File RelativePath="..\src\newtonderivative.f90"/>
 		<File RelativePath="..\src\spacediscretisation.f90"/>
@@ -141,6 +132,7 @@
 		<File RelativePath="..\src\kktsystem.f90">
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled"/></FileConfiguration></File>
+		<File RelativePath="..\src\kktsystemhierarchy.f90"/>
 		<File RelativePath="..\src\kktsystemspaces.f90"/>
 		<File RelativePath="..\src\spacetimeinterlevelprojection.f90"/>
 		<File RelativePath="..\src\timeevaluation.f90">
