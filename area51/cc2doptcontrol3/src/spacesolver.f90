@@ -343,7 +343,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primal (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, isollevelTime)
+      rprimalSol, isollevelSpace)
   
 !<description>
   ! Final preparation of the Newton solver. Primal space.
@@ -354,13 +354,12 @@ contains
   integer, intent(in) :: idofTime
 
   ! Current solution of the primal equation. Defines the nonlinearity.
+  ! The space level of the solution is specified by isollevelSpace.
+  ! The time level must match rsolver%itimelevel.
   type(t_primalSpace), intent(inout), target :: rprimalSol
   
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
-
-  ! Time level corresponding to rprimalSol.
-  integer, intent(in) :: isollevelTime
 !</input>
 
 !<inputoutput>
@@ -389,7 +388,8 @@ contains
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,isollevelTime,&
+          rsolver%p_roperatorAsmHier,&
+          rprimalSol,isollevelSpace,rsolver%itimelevel,&
           rsolver%rnewtonParams%ctypeIteration .eq. 2,rsolver%rtempData)
     
     end do
@@ -487,7 +487,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,idofTime,isollevel,&
+  subroutine spaceslh_solve (rsolver,idofTime,isollevelSpace,&
       rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
@@ -503,7 +503,7 @@ contains
   integer, intent(in) :: idofTime
 
   ! Space level corresponding to the solution structures.
-  integer, intent(in) :: isollevel
+  integer, intent(in) :: isollevelSpace
 
   ! Current solution of the primal equation.
   type(t_primalSpace), intent(inout), target :: rprimalSol
@@ -514,13 +514,19 @@ contains
   ! Current solution of the control equation
   type(t_controlSpace), intent(inout), optional, target :: rcontrol
 
-  ! Current solution of the linearised primal equation.
+  ! Current solution of the primal equation. Defines the nonlinearity.
+  ! The space level of the solution is specified by isollevelSpace.
+  ! The time level must match rsolver%itimelevel.
   type(t_primalSpace), intent(inout), optional, target :: rprimalSolLin
 
   ! Current solution of the linearised dual equation.
+  ! The space level of the solution is specified by isollevelSpace.
+  ! The time level must match rsolver%itimelevel.
   type(t_dualSpace), intent(inout), optional, target :: rdualSolLin
 
   ! Current solution of the linearised control equation
+  ! The space level of the solution is specified by isollevelSpace.
+  ! The time level must match rsolver%itimelevel.
   type(t_controlSpace), intent(inout), optional, target :: rcontrolLin
 !</inputoutput>
 
@@ -550,9 +556,10 @@ contains
       do while (.true.)
       
         ! Compute the basic (unpreconditioned) search direction in rd.
-        call smva_getDef_primal (rsolver%p_roperatorAsmHier,&
-            rsolver%ispacelevel,rsolver%itimelevel,&
-            rprimalSol,rcontrol,idofTime,isollevel,p_rd,rsolver%rtempData)
+        call smva_getDef_primal (p_rd,&
+            rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+            rsolver%p_roperatorAsmHier,&
+            rprimalSol,rcontrol,rsolver%rtempData)
 
         if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
           ! Remember the initial residual
@@ -561,7 +568,7 @@ contains
         
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
-              trim(sys_si(idofTime,8)) // &
+              trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(rsolver%rnewtonParams%nnonlinearIterations,4)) // &
               " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
         end if
@@ -587,7 +594,7 @@ contains
 
         ! Assemble the matrices on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%itimelevel)
+            rprimalSol,rsolver%ispacelevel)
         
         ! Solve the system
         call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd)

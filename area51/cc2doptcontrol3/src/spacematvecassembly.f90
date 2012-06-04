@@ -518,9 +518,8 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_primal (&
-      roperatorAsmHier,isollevelSpace,isollevelTime,rprimalSol,rcontrol,&
-      idofTime, ispacelevel, rdest, rtempData)
+  subroutine smva_getDef_primal (rdest,ispacelevel,itimelevel,idofTime,&
+      roperatorAsmHier,rprimalSol,rcontrol,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -528,16 +527,18 @@ contains
 !</description>
 
 !<input>
+  ! Space-level corresponding to the rdest
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level corresponding to the rdest
+  integer, intent(in) :: itimelevel
+  
   ! Hierarchy of space-time operators.
   type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
 
-  ! Space-level corresponding to the solution
-  integer, intent(in) :: isollevelSpace
-
-  ! Time-level corresponding to the solution
-  integer, intent(in) :: isollevelTime
-  
   ! Structure that defines the current primal solution.
+  ! Must be discretised on the space and time level defined by
+  ! ispacelevel and itimelevel.
   type(t_primalSpace), intent(inout) :: rprimalSol
 
   ! Structure that defines the current control.
@@ -545,9 +546,6 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
-  
-  ! Space level of the destination vector
-  integer, intent(in) :: ispacelevel
 !</input>
 
 !<inputoutput>
@@ -569,15 +567,9 @@ contains
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
-        roperatorAsm,roperatorAsmHier,isollevelSpace,isollevelTime)
+        roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
         
     p_ranalyticData => roperatorAsm%p_ranalyticData
-    
-    if (ispacelevel .ne. isollevelSpace) then
-      call output_line("Nonlinear defect only supported on maximum level.",&
-          OU_CLASS_ERROR,OU_MODE_STD,"smva_getRhs_Primal")
-      call sys_halt()
-    end if
     
     ! Output temp matrix
     p_rmatrix => rtempdata%p_Rmatrices(ispacelevel)
