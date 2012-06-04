@@ -25,7 +25,8 @@ AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
 	amd_order amd_control amd_info amd_valid amd_preprocess
 
 #FEAT2# SUITESPARSE_CONFIG = ../../SuiteSparse_config/SuiteSparse_config.h
-SUITESPARSE_CONFIG = ../SuiteSparse_config/SuiteSparse_config.h
+SUITESPARSE_CONFIG = ../SuiteSparse_config/SuiteSparse_config.h \
+                     ../SuiteSparse_config/SuiteSparse_config.c
 
 #FEAT2# INC = ../Include/amd.h ../Include/amd_internal.h $(SUITESPARSE_CONFIG)
 INC = Include/amd.h Include/amd_internal.h $(SUITESPARSE_CONFIG)
@@ -232,6 +233,13 @@ SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config-4.0.0.tar.gz
 # the tarball.
 # That's the key to serialise the unpacking process.
 SRC_SUITESPARSE_CONFIG = $(SUITESPARSE_CONFIG)
+
+# Choose the last file that is extracted from the SuiteSparse_config tarball. It's
+# existence indicates that the SuiteSparse_config tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_config.c
+$(SRC_SUITESPARSE_CONFIG): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 $(SUITESPARSE_CONFIG):  NAME     = "SuiteSparse_config 4.0.0 sources"
 $(SUITESPARSE_CONFIG):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
