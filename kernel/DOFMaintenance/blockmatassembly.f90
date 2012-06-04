@@ -1801,7 +1801,7 @@ contains
 !<subroutine>
 
   subroutine bma_initMatAssemblyData(rassemblyData,&
-      rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
+      rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors)
 
 !<description>
   ! Initialises the main parameters in the structure containing the
@@ -1825,6 +1825,10 @@ contains
   ! each FEM space is the default.
   integer, dimension(:,:), intent(in), optional :: RmaxDerivativeTest
   integer, dimension(:,:), intent(in), optional :: RmaxDerivativeTrial
+
+  ! OPTIONAL: A set of FEM functions to be evaluated during the vector
+  ! assembly.
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
 !</input>
 
 !<output>
@@ -1844,6 +1848,10 @@ contains
     ! Prepare FEM data
     call fev2_prepareFemDataBMat(rmatrix,rassemblyData%p_RfemData,&
         ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
+
+    ! Prepare FEM data for the vectors to be evaluated.
+    call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+        ielementDistr)
 
     ! Initialise the blocks according to the structure of the matrix
     ! and the FEM spaces used.
@@ -1925,7 +1933,7 @@ contains
     ! At first, just copy the content from the matrix template structure
     rassemblyData = rassemblyDataTemplate
 
-    ! Not initialise the dynamic content.
+    ! Now initialise the dynamic content.
     !
     ! Copy the FEM data and the matrix data
     allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
@@ -2175,7 +2183,8 @@ contains
     ! Initialise the template structure which is used during the
     ! actual matrix assembly.
     call bma_initMatAssemblyData(rmatrixAssembly%rassemblyDataTemplate,&
-        rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
+        rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,&
+        revalVectors)
 
     ! Get the transformation from the first FEM data structure.
     rmatrixAssembly%ctrafoType = &
@@ -2903,7 +2912,7 @@ contains
 !<subroutine>
 
   subroutine bma_initVecAssemblyData(rassemblyData,&
-      rvector,ielementDistr,RmaxDerivativeTest)
+      rvector,ielementDistr,RmaxDerivativeTest,revalVectors)
 
 !<description>
   ! Initialises the main parameters in the structure containing the
@@ -2926,6 +2935,10 @@ contains
   ! specified or an entry is =-1, only the function values for 
   ! each FEM space are computed, derivatives are omitted.
   integer, dimension(:), intent(in), optional :: RmaxDerivativeTest
+  
+  ! OPTIONAL: A set of FEM functions to be evaluated during the vector
+  ! assembly.
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
 !</input>
 
 !<output>
@@ -2945,6 +2958,10 @@ contains
     ! Prepare FEM data
     call fev2_prepareFemDataBVec(rvector,rassemblyData%p_RfemData,&
         ielementDistr,RmaxDerivativeTest)
+        
+    ! Prepare FEM data for the vectors to be evaluated.
+    call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+        ielementDistr)
 
     ! Initialise the blocks according to the structure of the vector
     ! and the FEM spaces used.
@@ -3025,7 +3042,7 @@ contains
     ! At first, just copy the content from the vector template structure
     rassemblyData = rassemblyDataTemplate
 
-    ! Not initialise the dynamic content.
+    ! Now initialise the dynamic content.
     !
     ! Copy the FEM data and the vector data
     allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
@@ -3078,7 +3095,7 @@ contains
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
       revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
 
-      ! Prepare the evaluation of teh FEM functions
+      ! Prepare the evaluation of the FEM functions
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
     end if
 
@@ -3229,7 +3246,8 @@ contains
     ! Initialise the template structure which is used during the
     ! actual vector assembly.
     call bma_initVecAssemblyData(rvectorAssembly%rassemblyDataTemplate,&
-        rvector,ielementDistr,RmaxDerivativeTest)
+        rvector,ielementDistr,RmaxDerivativeTest,&
+        revalVectors)
 
     ! Get the transformation from the first FEM data structure.
     rvectorAssembly%ctrafoType = &

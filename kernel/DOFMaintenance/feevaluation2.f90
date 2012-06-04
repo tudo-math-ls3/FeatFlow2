@@ -59,6 +59,10 @@
 !# 15.) fev2_evaluateVectors
 !#      -> Evaluate all vectors in a vector evaluation list in a set of points
 !#         on a set of elements
+!#
+!# 16.) fev2_prepareFemDataVecEval
+!#      -> Basic initialisation of a FEM data structure based on a
+!#         vector evaluation structure
 !# </purpose>
 !##############################################################################
 
@@ -180,7 +184,7 @@ module feevaluation2
     integer :: nvar = 1
     
     ! Maximum derivative to be computed.
-    ! If this is =0, nmaxDerivativeIdx>0 and p_rvector=>null(), this vector
+    ! If this is =-1, nmaxDerivativeIdx>0 and p_rvector=>null(), this vector
     ! is a dummy vector.
     integer :: nmaxDerivative = 0
 
@@ -246,6 +250,7 @@ module feevaluation2
   public :: fev2_prepareVectorEval
   public :: fev2_doneVectorEval
   public :: fev2_evaluateVectors
+  public :: fev2_prepareFemDataVecEval
 
 contains
 
@@ -721,43 +726,13 @@ contains
     ! Release the temporary lists
     deallocate (p_RdiscrNodes)
     
-  contains
-  
-    subroutine addDiscr (Rlist,nentries,rentry)
-    ! Adds rentry to a list represented by an array
-    type(t_fev2FemData), dimension(:), intent(inout) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(inout) :: nentries
-      nentries = nentries + 1
-      Rlist(nentries)%p_rdiscr => rentry
-    end subroutine
-    
-    integer function containsDiscr (Rlist,nentries,rentry)
-    ! returns <> 0 (the index) if the list Rlist contains rentry
-    type(t_fev2FemData), dimension(:), intent(in) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(in) :: nentries
-    
-      integer :: i
-      
-      do i=1,nentries
-        if (associated(Rlist(nentries)%p_rdiscr,rentry)) then
-          containsDiscr = i
-          return
-        end if
-      end do
-      
-      containsDiscr = 0
-      
-    end function
-    
   end subroutine
 
 !****************************************************************************
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataSVec(rvector,p_RfemData,ielementDistr, &
+  recursive subroutine fev2_prepareFemDataSVec(rvector,p_RfemData,ielementDistr, &
       imaxDerivative)
 
 !<description>
@@ -791,7 +766,7 @@ contains
   
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTest
-    integer :: i,ivecDiscrTest
+    integer :: ivecDiscrTest
     
     ! List of used discretisation structures
     type(t_fev2FemData), dimension(:), pointer :: p_RdiscrNodes
@@ -819,7 +794,7 @@ contains
       p_RfemData => p_RdiscrNodes
       
       ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
+      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
     
       ! Initialise the content
       p_RfemData(ndiscrNodes)%celement = &
@@ -836,42 +811,9 @@ contains
         max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
         
     call fev2_initBder(&
-        p_RfemData(ivecDiscrTest)%celement,p_RfemData(i)%nmaxDerivative,&
+        p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
         p_RfemData(ivecDiscrTest)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTest)%Bder)
 
-    ! Release the temporary lists
-    deallocate (p_RdiscrNodes)
-    
-  contains
-  
-    subroutine addDiscr (Rlist,nentries,rentry)
-    ! Adds rentry to a list represented by an array
-    type(t_fev2FemData), dimension(:), intent(inout) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(inout) :: nentries
-      nentries = nentries + 1
-      Rlist(nentries)%p_rdiscr => rentry
-    end subroutine
-    
-    integer function containsDiscr (Rlist,nentries,rentry)
-    ! returns <> 0 (the index) if the list Rlist contains rentry
-    type(t_fev2FemData), dimension(:), intent(in) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(in) :: nentries
-    
-      integer :: i
-      
-      do i=1,nentries
-        if (associated(Rlist(nentries)%p_rdiscr,rentry)) then
-          containsDiscr = i
-          return
-        end if
-      end do
-      
-      containsDiscr = 0
-      
-    end function
-    
   end subroutine
 
 !****************************************************************************
@@ -942,7 +884,7 @@ contains
       p_RfemData => p_RdiscrNodes
       
       ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
+      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
     
       ! Initialise the content
       p_RfemData(ndiscrNodes)%celement = &
@@ -972,7 +914,7 @@ contains
       p_RfemData => p_RdiscrNodes
       
       ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTrial)
+      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
     
       ! Initialise the content
       p_RfemData(ndiscrNodes)%celement = &
@@ -999,39 +941,6 @@ contains
         p_RfemData(ivecDiscrTrial)%celement,p_RfemData(ivecDiscrTrial)%nmaxDerivative,&
         p_RfemData(ivecDiscrTrial)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTrial)%Bder)
 
-    ! Release the temporary lists
-    deallocate (p_RdiscrNodes)
-    
-  contains
-  
-    subroutine addDiscr (Rlist,nentries,rentry)
-    ! Adds rentry to a list represented by an array
-    type(t_fev2FemData), dimension(:), intent(inout) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(inout) :: nentries
-      nentries = nentries + 1
-      Rlist(nentries)%p_rdiscr => rentry
-    end subroutine
-    
-    integer function containsDiscr (Rlist,nentries,rentry)
-    ! returns <> 0 (the index) if the list Rlist contains rentry
-    type(t_fev2FemData), dimension(:), intent(in) :: Rlist
-    type(t_spatialDiscretisation), intent(in), target :: rentry
-    integer, intent(in) :: nentries
-    
-      integer :: i
-      
-      do i=1,nentries
-        if (associated(Rlist(nentries)%p_rdiscr,rentry)) then
-          containsDiscr = i
-          return
-        end if
-      end do
-      
-      containsDiscr = 0
-      
-    end function
-    
   end subroutine
 
   !****************************************************************************
@@ -1278,8 +1187,8 @@ contains
     ! Nullify the pointer to mark it as dummy.
     nullify(revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector)
     
-    ! Maximum derivative to be calculated. Set to zero here.
-    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = 0
+    ! Maximum derivative to be calculated. Set to -1 here.
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = -1
     
     ! Number of subarrays is saved to nmaxDerivativeIndex
     revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = 1
@@ -1358,7 +1267,7 @@ contains
     
       p_rvectorData => revalVectors%p_RvectorData(i)
 
-      if (p_rvectorData%nmaxDerivative .gt. 0) then
+      if (p_rvectorData%nmaxDerivative .ge. 0) then
         ! Standard vector with data.
         
         ! Maximum index in Bder
@@ -1609,4 +1518,49 @@ contains
       
   end subroutine
   
+!****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_prepareFemDataVecEval(revalVectors,p_RfemData,ielementDistr)
+
+!<description>
+  ! Initialise a FEM structure based on the FEM spaces
+  ! appearing in a t_fev2Vectors structure
+  ! No memory is allocated.
+!</description>
+
+!<input>
+  ! A t_fev2Vectors structure with a set of vectorsto be evaluated.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+  
+  ! Element distribution to use.
+  integer, intent(in) :: ielementDistr
+!</input>
+
+!<output>
+  ! Pointer to data of all involved FEM spaces.
+  ! If this points to NULL, a new array is allocated.
+  ! If this does not point to NULL, new FEM structures are appended.
+  ! Memory is reallocated if necessary.
+  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Loop over all vectors to be evaluated  
+    do i=1,revalVectors%ncount
+      if (associated(revalVectors%p_RvectorData(i)%p_rvector)) then
+        ! Add the FEM space if not done already.
+        call fev2_prepareFemDataSVec(&
+            revalVectors%p_RvectorData(i)%p_rvector,p_RfemData,ielementDistr, &
+            revalVectors%p_RvectorData(i)%nmaxDerivative)
+      end if
+    end do
+
+  end subroutine
+
 end module
