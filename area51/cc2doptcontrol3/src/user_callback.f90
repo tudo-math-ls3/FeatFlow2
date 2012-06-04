@@ -148,7 +148,7 @@ contains
     rglobalData%p_rrhsPrimal => rsettings%rrhsPrimal
     rglobalData%p_rrhsDual => rsettings%rrhsDual
     rglobalData%p_rtargetFunction => rsettings%rsettingsOptControl%rtargetFunction
-    rglobalData%p_rphysics => rsettings%rphysicsPrimal
+    rglobalData%p_rphysics => rsettings%rphysics
     
   end subroutine
   

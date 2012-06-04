@@ -124,7 +124,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs,rresidual,dres)
+  subroutine newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,rresidual,dres)
   
 !<description>
   ! Calculates the residual in the linearised control equation.
@@ -134,10 +134,6 @@ contains
   ! Parameters for the iteration.
   type(t_linsolParameters), intent(inout) :: rlinsolParam
   
-  ! Level in the global space-time hierarchy where the residual
-  ! should be computed.
-  integer, intent(in) :: ilevel
-
   ! Structure defining the linearised KKT system.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
   
@@ -162,11 +158,11 @@ contains
 
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin,ilevel)
+        rlinsolParam%p_rsolverHierPrimalLin)
     
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin,ilevel)
+        rlinsolParam%p_rsolverHierDualLin)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -182,7 +178,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs)
+  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rrhs)
   
 !<description>
   ! Applies a Richardson iteration in the control space
@@ -199,10 +195,6 @@ contains
   ! initial and target vector.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
   
-  ! Level in the global space-time hierarchy where the residual
-  ! should be computed.
-  integer, intent(in) :: ilevel
-
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
 !</inputoutput>
@@ -219,7 +211,7 @@ contains
       ! -------------------------------------------------------------
 
       ! Compute the residual and its norm.
-      call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,ilevel,rrhs,&
+      call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
           rlinsolParam%p_rtempVector,rlinsolParam%rprecParameters%dresFinal)
 
       if (rlinsolParam%rprecParameters%niterations .eq. 1) then
@@ -293,7 +285,7 @@ contains
 
 !</subroutine>
 
-    integer :: ispacelevel,ilevel
+    integer :: ispacelevel
 
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
@@ -322,12 +314,9 @@ contains
     call kktsp_clearDual (rkktsystemDirDeriv%p_rdualSolLin)
     call kktsp_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
     
-    ! Get the topmost level
-    ilevel = rlinsolParam%p_rsettingsSolver%rspaceTimeHierPrimal%nlevels
-    
     ! Call the Richardson iteration to calculate an update
     ! for the control.
-    call newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,ilevel,rnewtonDir)
+    call newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
     
     ! Overwrite the rnewtonDir with the update.
     call kktsp_controlLinearComb (&

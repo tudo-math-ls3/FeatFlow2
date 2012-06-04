@@ -160,7 +160,7 @@ contains
     call init_initSpaceDiscrHier (&
         rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rfeHierarchyDual,&
         rsettingsSolver%rfeHierarchyControl,&
-        rsettingsSolver%rphysicsPrimal,rsettingsSolver%rsettingsOptControl,&
+        rsettingsSolver%rphysics,rsettingsSolver%rsettingsOptControl,&
         rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rmeshHierarchy,&
         rsettingsSolver%rboundary,ioutputLevel)
         
@@ -215,17 +215,17 @@ contains
     
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimal,&
         rsettingsSolver%rspaceTimeHierPrimal,&
-        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysicsPrimal,&
+        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysics,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeDual,&
         rsettingsSolver%rspaceTimeHierDual,&
-        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysicsPrimal,&
+        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysics,&
         rparlist,rsettings%ssectionTimeDiscretisation)
 
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeControl,&
         rsettingsSolver%rspaceTimeHierControl,&
-        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysicsPrimal,&
+        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysics,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     ! Init+Allocate memory for the matrices on all levels and create all
@@ -284,7 +284,7 @@ contains
         "ssectionBoundaryCondDual",sstr3,bdequote=.true.)
     
     call struc_initBDC (rsettingsSolver%roptcBDC,rparlist,&
-        rsettingsSolver%rphysicsPrimal,sstr,sstr2,sstr3)
+        rsettingsSolver%rphysics,sstr,sstr2,sstr3)
 
     ! Initialise the physics parameter that describe the
     ! physical equation
@@ -294,7 +294,7 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "ssectionPhysics",sstr,bdequote=.true.)
-    call struc_initPhysics (rparlist,rsettingsSolver%rphysicsPrimal,sstr)
+    call struc_initPhysics (rparlist,rsettingsSolver%rphysics,sstr)
 
     ! Ok, now we can initialise the Optimal-Control settings, read in the
     ! target function etc.
@@ -310,11 +310,11 @@ contains
       call output_line ("Initialising target function.")
     end if
     
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
       call init_initOptControlTargetFunc2D (rparlist,rsettings%ssectionOptControl,&
-          rsettingsSolver%rphysicsPrimal,rsettingsSolver%rsettingsSpaceDiscr,&
+          rsettingsSolver%rphysics,rsettingsSolver%rsettingsSpaceDiscr,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rtimeHierarchy,&
           rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
@@ -325,7 +325,7 @@ contains
       call output_line ("Initialising constraints.")
     end if
     
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
       call init_initOptControlConstraints (rparlist,rsettings%ssectionOptControl,&
@@ -342,13 +342,13 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "sinitialCondition",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysicsPrimal,isuccess)
+          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
     end select
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
@@ -364,13 +364,13 @@ contains
     ! Primal RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsPrimal",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsPrimal,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysicsPrimal,isuccess)
+          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
     end select
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
@@ -381,13 +381,13 @@ contains
     ! Dual RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsDual",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsDual,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysicsPrimal,isuccess)
+          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
     end select
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
@@ -436,7 +436,7 @@ contains
 !        rsettingsSolver%rfeHierPrimal)
 !    
 !    call inmat_calcStaticLvlAsmHierOptC (rsettingsSolver%rspaceAsmHierarchy,&
-!        rsettingsSolver%rspaceAsmHierarchyOptC,rsettingsSolver%rphysicsPrimal,&
+!        rsettingsSolver%rspaceAsmHierarchyOptC,rsettingsSolver%rphysics,&
 !        rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual,&
 !        rsettingsSolver,ioutputlevel .ge. 1)
 !
@@ -563,7 +563,7 @@ contains
   type(t_settings_physics), intent(in), target :: rphysics
 
   ! Structure with space discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Underlying spatial coarse mesh of the problem.
   type(t_triangulation), intent(in) :: rtriaCoarse
@@ -630,7 +630,7 @@ contains
   character(len=*), intent(in) :: ssectionOptC
 
   ! Structure with space discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Underlying spatial coarse mesh of the problem.
   type(t_triangulation), intent(in) :: rtriaCoarse
@@ -744,7 +744,7 @@ contains
   character(len=*), intent(in) :: ssectionOptC
 
   ! Structure with space discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Underlying spatial coarse mesh of the problem.
   type(t_triangulation), intent(in) :: rtriaCoarse
@@ -920,7 +920,7 @@ contains
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
   ! Space discretisation settings
-  type(t_settings_discr), intent(in), target :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in), target :: rsettingsSpaceDiscr
 
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
   ! If the element of the target function matches the one of the primary
@@ -942,7 +942,7 @@ contains
     integer :: ieltype,iavaillevel
     type(t_collection) :: rcollection
     type(t_spaceDiscrParams) :: rdiscrParams
-    type(t_settings_discr), target :: rsettingsDiscrLocal
+    type(t_settings_spacediscr), target :: rsettingsDiscrLocal
 
     ! Initialise the local discretisation structure
     rsettingsDiscrLocal = rsettingsSpaceDiscr
@@ -967,7 +967,7 @@ contains
       if (ilevel .lt. rrefinementSpace%npreref+1) then
         ! We have to create that level.
 
-        rdiscrParams%p_rsettingsDiscr => rsettingsDiscrLocal
+        rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscrLocal
         rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
         
         ! Create the basic analytic solution: Mesh, discretisation structure,...
@@ -991,7 +991,7 @@ contains
           iavaillevel = min(rfeHierarchy%nlevels,ilevel-rrefinementSpace%npreref)
           
           ! Use the default discrezisation
-          rdiscrParams%p_rsettingsDiscr => rsettingsSpaceDiscr
+          rdiscrParams%p_rsettingsSpaceDiscr => rsettingsSpaceDiscr
           rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
           
           ! And now create the basic function. Only in case ilevel>NLMAX,
@@ -1009,7 +1009,7 @@ contains
           iavaillevel = min(rfeHierarchy%nlevels,ilevel-rrefinementSpace%npreref)
 
           ! Use the local discretisation withthe new element
-          rdiscrParams%p_rsettingsDiscr => rsettingsDiscrLocal
+          rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscrLocal
           rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
           
           ! And now create the basic function. Only in case ilevel>NLMAX,
@@ -1026,7 +1026,7 @@ contains
     
       ! Mesh is different. Then we have to do everything by hand...
 
-      rdiscrParams%p_rsettingsDiscr => rsettingsDiscrLocal
+      rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscrLocal
       rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
       
       ! Create the basic analytic solution: Mesh, discretisation structure,...
@@ -1062,7 +1062,7 @@ contains
   character(len=*), intent(in) :: ssection
 
   ! Space discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Coarse mesh, corresponding to rfeHierarchy.
   type(t_triangulation), intent(in) :: rtriaCoarse
@@ -1259,7 +1259,7 @@ contains
 !  character(len=*), intent(in) :: ssection
 !  
 !  ! Structure with space discretisation settings
-!  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+!  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !
 !  ! Boundary conditions to use.
 !  type(t_optcBDC), intent(in), target  :: rboundaryConditions
@@ -1289,7 +1289,7 @@ contains
 !    integer :: isuccess, npoints, i
 !
 !    ! Basic initialisation of the postprocessing structure
-!    call optcpp_initpostprocessing (rpostproc,rsettings%rphysicsPrimal,CCSPACE_PRIMALDUAL,&
+!    call optcpp_initpostprocessing (rpostproc,rsettings%rphysics,CCSPACE_PRIMALDUAL,&
 !        rboundaryConditions,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
 !        
 !    ! Read remaining parameters from the DAT file.
@@ -1330,7 +1330,7 @@ contains
 !        "ibodyForcesBdComponent",rpostproc%ibodyForcesBdComponent,2)
 !
 !    call parlst_getvalue_double (rparlist,ssection,&
-!        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnuConst)
+!        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rsettings%rphysics%dnuConst)
 !
 !    call parlst_getvalue_double (rparlist,ssection,&
 !        "dbdForcesCoeff2",rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
@@ -1389,7 +1389,7 @@ contains
 !    if (rpostproc%icalcError .ne. 0) then
 !    
 !      isuccess = 1
-!      select case (rsettings%rphysicsPrimal%cequation)
+!      select case (rsettings%rphysics%cequation)
 !      case (0,1)
 !        ! Stokes, Navier-Stokes, 2D
 !    

@@ -1869,7 +1869,7 @@ contains
           rpreconditioner%p_RassemblyData(ilev),rnonlinearity)
 
       ! Get a dummy structure for a full matrix.
-      call stlin_getFullMatrixDummy(rsettings%rphysicsPrimal,rnonlinearSpatialMatrix)
+      call stlin_getFullMatrixDummy(rsettings%rphysics,rnonlinearSpatialMatrix)
       
 !      ! Probably deactivate the offdiagonal submatrices, we don't need them.
 !      ! Saves some memory.

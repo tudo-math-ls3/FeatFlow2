@@ -89,7 +89,7 @@ contains
   type(t_triangulation), intent(in), target :: rtriangulation
   
   ! Settings controlling the spatial discretisation (cubature)
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Discretisation of the velocity space.
   type(t_spatialDiscretisation), intent(in), target :: rdiscrVelocity
@@ -377,7 +377,7 @@ contains
 !<input>
   ! Settings controlling the spatial discretisation (stabilisation parameters).
   ! This must coincide with the structure passed to inmat_initSpaceLevel.
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !</input>
 
 !<inputoutput>
@@ -444,7 +444,7 @@ contains
 
   ! Settings controlling the spatial discretisation (stabilisation parameters).
   ! This must coincide with the structure passed to inmat_initSpaceLevel.
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !</input>
 
 !<inputoutput>
@@ -538,7 +538,7 @@ contains
   type(t_feHierarchy), intent(in) :: rfeHierarchy
 
   ! Settings controlling the spatial discretisation (cubature)
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !</input>
 
 !<inputoutput>
@@ -617,7 +617,7 @@ contains
 !<input>
   ! Settings controlling the spatial discretisation (stabilisation parameters).
   ! This must coincide with the structure passed to inmat_initSpaceLevel.
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !</input>
 
 !<inputoutput>

@@ -42,10 +42,10 @@ module kktsystemhierarchy
     ! A space-time hierarchy based on the primal space
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierPrimal => null()
     
-    ! A space-time hierarchy based on the primal space
+    ! A space-time hierarchy based on the dual space
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierDual => null()
 
-    ! A space-time hierarchy based on the primal space
+    ! A space-time hierarchy based on the control space
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierControl => null()
 
     ! Number of levels in the hierarchy
@@ -224,7 +224,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkth_initKKTSystem (rkktsystem,rkktsystemHierarchy,ilevel,rspacetimeOperatorAsm)
+  subroutine kkth_initKKTSystem (rkktsystem,rkktsystemHierarchy,ilevel,roperatorAsmHier)
   
 !<description>
   ! Initialises a KKT system structure for level ilevel of the hierarchy
@@ -238,8 +238,8 @@ contains
   ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
   integer, intent(in) :: ilevel
   
-  ! Parameters for the assembly of space-time operators
-  type(t_spacetimeOperatorAsm), intent(in), target :: rspacetimeOperatorAsm
+  ! Hierarchy of all possible space-time operators
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
 !</input>
 
 !<output>
@@ -250,32 +250,18 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: ilev
-    type(t_feSpaceLevel), pointer :: p_rspaceDiscrPrimal
-    type(t_feSpaceLevel), pointer :: p_rspaceDiscrDual
-    type(t_feSpaceLevel), pointer :: p_rspaceDiscrControl
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscrPrimal
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscrDual
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscrControl
+    integer :: ilev, ispacelevel, itimelevel
     
     ilev = ilevel
     if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
 
     ! Get the spatial and time discretisations of that level
     call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierPrimal,ilev,&
-        p_rspaceDiscrPrimal,p_rtimeDiscrPrimal)
-
-    call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierDual,ilev,&
-        p_rspaceDiscrDual,p_rtimeDiscrDual)
-
-    call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierControl,ilev,&
-        p_rspaceDiscrControl,p_rtimeDiscrControl)
+        ispacelevel=ispacelevel, itimelevel=itimelevel)
     
     ! Initialise the KKT system on level i
-    call kkt_initKKTsystem (rkktsystem,rspacetimeOperatorAsm,&
-        p_rspaceDiscrPrimal%p_rdiscretisation,p_rtimeDiscrPrimal,&
-        p_rspaceDiscrDual%p_rdiscretisation,p_rtimeDiscrDual,&
-        p_rspaceDiscrControl%p_rdiscretisation,p_rtimeDiscrControl)
+    call kkt_initKKTsystem (rkktsystem,roperatorAsmHier,&
+        ispacelevel, itimelevel)
 
   end subroutine
 
@@ -335,7 +321,7 @@ contains
         ! Initialise the KKT system on level i
         call kkth_initKKTSystem (&
             rkktsystemHierarchy%p_RkktSystems(i),rkktsystemHierarchy,i,&
-            roperatorAsmHier%p_RopAsmList(i))
+            roperatorAsmHier)
       end do
       
     end if

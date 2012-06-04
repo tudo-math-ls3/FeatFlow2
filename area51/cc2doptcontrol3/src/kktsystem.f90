@@ -65,8 +65,15 @@ module kktsystem
     ! Solution of the control equation of the KKT system.
     type(t_controlSpace), pointer :: p_rcontrol => null()
 
-    ! Parameters for the assembly of space-time operators
-    type(t_spacetimeOperatorAsm), pointer :: p_rspacetimeOperatorAsm => null()
+    ! Underlying space-time operator assembly hierarchy
+    ! specifying all possible space and time discretisations / levels.
+    type(t_spacetimeOpAsmHierarchy), pointer :: p_roperatorAsmHier => null()
+
+    ! Space-level in the global space-time hierarchy, the solver should be applied to.
+    integer :: ispacelevel = 0
+
+    ! Time-level in the global space-time hierarchy, the solver should be applied to.
+    integer :: itimelevel = 0
     
   end type
 
@@ -152,10 +159,7 @@ contains
 !<subroutine>
 
   subroutine kkt_initKKTsystem (rkktsystem,&
-      rspacetimeOperatorAsm,&
-      rspaceDiscrPrimal,rtimeDiscrPrimal,&
-      rspaceDiscrDual,rtimeDiscrDual,&
-      rspaceDiscrControl,rtimeDiscrControl)
+      roperatorAsmHier,ispacelevel,itimelevel)
   
 !<description>
   ! Initialises a KKT system structure.
@@ -163,25 +167,13 @@ contains
 
 !<input>  
   ! Parameters for the assembly of space-time operators
-  type(t_spacetimeOperatorAsm), intent(in), target :: rspacetimeOperatorAsm
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
 
-  ! Spatial discretisation, primal space
-  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
-  
-  ! Time discretisation, primal space
-  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrPrimal
+  ! Space-level in the global space-time hierarchy, the solver should be applied to.
+  integer, intent(in) :: ispacelevel
 
-  ! Spatial discretisation, dual space
-  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrDual
-  
-  ! Time discretisation, dual space
-  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrDual
-
-  ! Spatial discretisation, control space
-  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrControl
-  
-  ! Time discretisation, control space
-  type(t_timeDiscretisation), intent(in), target :: rtimeDiscrControl
+  ! Time-level in the global space-time hierarchy, the solver should be applied to.
+  integer, intent(in) :: itimelevel
 !</input>
 
 !<output>
@@ -191,18 +183,29 @@ contains
 
 !</subroutine>
 
+    ! local variables
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
     ! Remember the structures
-    rkktsystem%p_rspacetimeOperatorAsm => rspacetimeOperatorAsm
+    rkktsystem%p_roperatorAsmHier => roperatorAsmHier
+    rkktsystem%ispacelevel = ispacelevel
+    rkktsystem%itimelevel = itimelevel
+    
+    ! Get the underlying space and time discretisation structures.
+    call stoh_getOpAsm_slvtlv (roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
     
     ! Allocate memory for the solutions of the KKT system.
     allocate (rkktsystem%p_rprimalSol)
-    call kktsp_initPrimalVector (rkktsystem%p_rprimalSol,rspaceDiscrPrimal,rtimeDiscrPrimal)
+    call kktsp_initPrimalVector (rkktsystem%p_rprimalSol,&
+        roperatorAsm%p_rspaceDiscrPrimal,roperatorAsm%p_rtimeDiscrPrimal)
 
     allocate (rkktsystem%p_rdualSol)
-    call kktsp_initDualVector (rkktsystem%p_rdualSol,rspaceDiscrDual,rtimeDiscrDual)
+    call kktsp_initDualVector (rkktsystem%p_rdualSol,&
+        roperatorAsm%p_rspaceDiscrDual,roperatorAsm%p_rtimeDiscrDual)
 
     allocate (rkktsystem%p_rcontrol)
-    call kktsp_initControlVector (rkktsystem%p_rcontrol,rspaceDiscrControl,rtimeDiscrControl)
+    call kktsp_initControlVector (rkktsystem%p_rcontrol,&
+        roperatorAsm%p_rspaceDiscrControl,roperatorAsm%p_rtimeDiscrControl)
    
   end subroutine
 
@@ -224,7 +227,7 @@ contains
 !</subroutine>
 
     ! Clean up the structures
-    nullify(rkktsystem%p_rspacetimeOperatorAsm)
+    nullify(rkktsystem%p_roperatorAsmHier)
     
     ! Release memory
     call kktsp_donePrimalVector (rkktsystem%p_rprimalSol)
@@ -319,19 +322,13 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,ilevel)
+  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver)
   
 !<description>
   ! Solves the primal equation in the KKT system based on the control in the
   ! rkktsystem structure.
 !</description>
   
-!<input>
-  ! Space-time level of the solution in the underlying space-time hierarchy 
-  ! of KKT systems.
-  integer, intent(in) :: ilevel
-!</input>
-
 !<inputoutput>
   ! Structure defining the KKT system.
   ! The solutions in this structure are taken as initial
@@ -368,7 +365,9 @@ contains
     ! apply a loop over all unknowns in time.
     ! -------------------------------------------------------------------------
     
-    call spaceslh_initStructure (rspaceSolver, ilevel, ierror)
+    call spaceslh_initStructure (rspaceSolver, &
+        rkktsystem%ispacelevel, rkktsystem%itimelevel, &
+        rkktsystem%p_roperatorAsmHier,ierror)
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
           OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
@@ -386,10 +385,7 @@ contains
         call sys_halt()
       end if
 
-      ! Apply the solver to update the solution.
-      ! The solution is copied to rx to prevent it from being overwritten
-      ! during the solution process -- it is still part of the nonlinearity
-      ! in the KKT system...
+      ! Apply the solver to update the solution in timestep idofTime.
       call spaceslh_solve (rspaceSolver,idofTime,&
           rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       
@@ -403,18 +399,13 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDual (rkktsystem,rspaceSolver,ilevel)
+  subroutine kkt_solveDual (rkktsystem,rspaceSolver)
   
 !<description>
   ! Solves the dual equation in the KKT system based on the control and the
   ! primal solution in the rkktsystem structure.
 !</description>
   
-!<input>
-  ! Level in the solver structure, corresponding to the solution
-  integer, intent(in) :: ilevel
-!</input>
-
 !<inputoutput>
   ! Structure defining the KKT system.
   ! The solutions in this structure are taken as initial
@@ -466,9 +457,9 @@ contains
 
     ! Fetch some structures
     p_rphysics => &
-        rkktsystem%p_rspacetimeOperatorAsm%p_rphysics
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
     p_rsettingsOptControl => &
-        rkktsystem%p_rspacetimeOperatorAsm%p_rsettingsOptControl
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
 
     ! This is strongly equation and problem dependent
     ! and may imply a projection to the admissible set.
@@ -641,17 +632,12 @@ contains
   
 !<subroutine>
 
-  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,ilevel)
+  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
 !</description>
   
-!<input>
-  ! Level in the solver structure, corresponding to the solution
-  integer, intent(in) :: ilevel
-!</input>
-
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
@@ -673,17 +659,12 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,ilevel)
+  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
 !</description>
   
-!<input>
-  ! Level in the solver structure, corresponding to the solution
-  integer, intent(in) :: ilevel
-!</input>
-
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
@@ -738,9 +719,9 @@ contains
 
     ! Fetch some structures
     p_rphysics => &
-        rkktsystemDirDeriv%p_rkktsystem%p_rspacetimeOperatorAsm%p_rphysics
+        rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
     p_rsettingsOptControl => &
-        rkktsystemDirDeriv%p_rkktsystem%p_rspacetimeOperatorAsm%p_rsettingsOptControl
+        rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
 
     ! This is strongly equation and problem dependent
     ! and may imply a projection to the admissible set.

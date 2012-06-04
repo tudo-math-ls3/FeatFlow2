@@ -92,6 +92,14 @@ module spacesolver
     type(t_optcBDCSpaceHierarchy), pointer :: p_roptcBDCSpaceHierarchy => null()
 
     ! <!-- ---------------- -->
+    ! <!-- HIERARCHIES      -->
+    ! <!-- ---------------- -->
+    
+    ! A hierarchy of operator assembly structures for all levels.
+    ! This is a central discretisation structure passed to all assembly routines.
+    type(t_spacetimeOpAsmHierarchy), pointer :: p_roperatorAsmHier => null()
+    
+    ! <!-- ---------------- -->
     ! <!-- GENERAL SETTINGS -->
     ! <!-- ---------------- -->
 
@@ -108,10 +116,6 @@ module spacesolver
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
-    
-    ! Current space-time level in the global hierarchy, this solver
-    ! structure is configured for.
-    integer :: ilevel = 0
     
     ! Current space level, this solver structure is configured for.
     integer :: ispacelevel = 0
@@ -178,7 +182,7 @@ contains
   integer, intent(in) :: copType
 
   ! Hierarchy of linear solvers in space used for solving
-  ! auxiliary linear subproblems. The solver on level ilevel
+  ! auxiliary linear subproblems. The solver on level ispacelevel
   ! will be used to solve linear subproblems.
   type(t_linsolHierarchySpace), target :: rlssHierarchy
 
@@ -221,15 +225,24 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_initStructure (rsolver, ilevel, ierror)
+  subroutine spaceslh_initStructure (rsolver, ispacelevel, itimelevel,&
+      roperatorAsmHier,ierror)
   
 !<description>
   ! Structural initialisation of the Newton solver.
 !</description>
 
 !<input>
-  ! Level in the global space hierarchy, the solver should be applied to.
-  integer, intent(in) :: ilevel
+  ! Space-level in the global space-time hierarchy, the solver should be applied to.
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level in the global space-time hierarchy, the solver should be applied to.
+  integer, intent(in) :: itimelevel
+
+  ! A hierarchy of operator assembly structures for all levels.
+  ! This is a central discretisation structure passed to all assembly routines.
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+  
 !</input>
 
 !<inputoutput>
@@ -247,53 +260,78 @@ contains
 !</subroutine>
 
     integer :: ilev
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    if (rsolver%p_rlssHierarchy%nlmin .gt. ispaceLevel) then
+      call output_line ("Invalid space level.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_initStructure")
+      call sys_halt()
+    end if
     
-    ! Remember the level. Obtain the corresponding space and time level.
-    rsolver%ilevel = ilevel
-    call sth_getLevel(rsolver%p_rsettingsSolver%rspaceTimeHierPrimal,&
-        ilevel,ispaceLevel=rsolver%ispaceLevel,itimeLevel=rsolver%itimeLevel)
+    ! Remember the level and the hierarchy structures. 
+    rsolver%ispacelevel = ispacelevel
+    rsolver%itimelevel = itimelevel
+    rsolver%p_roperatorAsmHier => roperatorAsmHier
 
     ! Allocate temporary vectors / matrices for all space levels.
     allocate(rsolver%p_Rsolutions(rsolver%ispaceLevel))
     allocate(rsolver%p_Rmatrices(rsolver%ispaceLevel))
     
     do ilev = rsolver%p_rlssHierarchy%nlmin,rsolver%ispaceLevel
+    
       ! Initialise a temporary vector for the nonlinearity
-      call lsysbl_createVectorBlock (&
-          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
-          rsolver%p_Rsolutions(ilev))
+      select case (rsolver%copType)
+      case (OPTP_PRIMAL,OPTP_PRIMALLIN)
+        p_rdiscretisation => &
+            roperatorAsmHier%p_rfeHierarchyPrimal%p_rfeSpaces(ilev)%p_rdiscretisation
+
+      case (OPTP_DUAL,OPTP_DUALLIN)
+        p_rdiscretisation => &
+            roperatorAsmHier%p_rfeHierarchyDual%p_rfeSpaces(ilev)%p_rdiscretisation
       
-      ! Initialise a system matrix
+      case default
+        call output_line ("Unknown space.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_initStructure")
+        call sys_halt()
+      end select
+      
+      call lsysbl_createVectorBlock (&
+          p_rdiscretisation,rsolver%p_Rsolutions(ilev))
+    
+      ! Get the corresponding operator assembly structure and
+      ! initialise a system matrix
+      call stoh_getOpAsm_slvtlv (&
+          roperatorAsm,roperatorAsmHier,ilev,rsolver%itimelevel)
+          
       call smva_allocSystemMatrix (rsolver%p_Rmatrices(ilev),&
-          rsolver%p_rsettingsSolver%rphysicsPrimal,&
-          rsolver%p_rsettingsSolver%rsettingsOptControl,&
-          rsolver%p_rsettingsSolver%rsettingsSpaceDiscr,&
-          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
-          rsolver%p_rsettingsSolver%rspaceAsmHierarchy%p_RasmTemplList(ilev))
+          roperatorAsmHier%ranalyticData%p_rphysics,&
+          roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
+          roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
+          p_rdiscretisation,roperatorAsm%p_rasmTemplates)
           
       ! Provide the matrix to the linear solver
       call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
+      
+      if (ilev .eq. rsolver%ispaceLevel) then
+      
+        ! On the highest space level, allocate some temp vectors on the topmost level
+
+        allocate (rsolver%p_rd)
+        call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd)
+            
+        call smva_allocTempData (rsolver%rtempData,&
+            roperatorAsmHier%ranalyticData%p_rphysics,&
+            roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
+            roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
+            p_rdiscretisation,roperatorAsm%p_rasmTemplates)
+
+        ! Initialise the structures of the associated linear subsolver
+        call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,ierror)
+
+      end if
     end do
     
-    ! Allocate some temp vectors on the topmost level
-    ilev = rsolver%ispaceLevel
-
-    allocate (rsolver%p_rd)
-    call lsysbl_createVectorBlock (&
-        rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
-        rsolver%p_rd)
-        
-    call smva_allocTempData (rsolver%rtempData,&
-          rsolver%p_rsettingsSolver%rphysicsPrimal,&
-          rsolver%p_rsettingsSolver%rsettingsOptControl,&
-          rsolver%p_rsettingsSolver%rsettingsSpaceDiscr,&
-          rsolver%p_rlssHierarchy%p_feSpaceHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
-          rsolver%p_rsettingsSolver%rspaceAsmHierarchy%p_RasmTemplList(ilev))
-
-    ! Initialise the structures of the associated linear subsolver
-    call lssh_initStructure (&
-        rsolver%p_rlsshierarchy,ilev,ierror)
-
   end subroutine
 
 
@@ -331,6 +369,7 @@ contains
 
     ! local variables
     integer :: ilev
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
     
     ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
     ! the solver performs filtering.
@@ -340,9 +379,14 @@ contains
     ! and set up the system matrices.
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
+      ! Get the corresponding operator assembly structure and
+      ! initialise a system matrix
+      call stoh_getOpAsm_slvtlv (&
+          roperatorAsm,rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel)
+
       call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),&
-          rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(ilev),&
-          rprimalSol,idofTime,rsolver%rnewtonParams%ctypeIteration .eq. 2)
+          roperatorAsm,rprimalSol,idofTime,&
+          rsolver%rnewtonParams%ctypeIteration .eq. 2)
     
     end do
 
@@ -480,7 +524,12 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rd, p_rx
     integer :: ierror
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,rsolver%p_roperatorAsmHier,rsolver%ispacelevel,rsolver%itimelevel)
+
     ! Which type of operator is to be solved?
     select case (rsolver%coptype)
 
@@ -489,7 +538,7 @@ contains
     ! ---------------------------------------------------------------
     case (OPTP_PRIMAL)
 
-      ! This is the most complicated part. On level ilevel, we have
+      ! This is the most complicated part. On level ispacelevel, we have
       ! to apply a nonlinear loop.
       !
       ! At first, get a temp vector we can use for creating the
@@ -501,8 +550,7 @@ contains
       do while (.true.)
       
         ! Compute the basic (unpreconditioned) search direction in rd.
-        call smva_getDef_primal (&
-            rsolver%p_rsettingsSolver%roperatorAsmHier%p_RopAsmList(rsolver%ilevel),&
+        call smva_getDef_primal (roperatorAsm,&
             rprimalSol,rcontrol,idofTime,p_rd,rsolver%rtempData)
 
         if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then

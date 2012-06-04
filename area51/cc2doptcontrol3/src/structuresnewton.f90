@@ -597,14 +597,14 @@ contains
     newtonit_checkDivergence = .false.
 
     ! Absolute residual
-    if (rsolver%dresFinal .ge. rsolver%ddivAbs) then
+    if (.not. (rsolver%dresFinal .lt. rsolver%ddivAbs)) then
       rsolver%iresult = 1
       newtonit_checkDivergence = .true.
       return
     end if
     
     ! Relative residual
-    if (rsolver%dresFinal .ge. rsolver%ddivRel * rsolver%dresInit) then
+    if (.not. (rsolver%dresFinal .le. rsolver%ddivRel * rsolver%dresInit)) then
       rsolver%iresult = 1
       newtonit_checkDivergence = .true.
       return

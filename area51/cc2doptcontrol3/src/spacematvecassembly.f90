@@ -115,9 +115,6 @@ public :: t_assemblyTempDataSpace
   public :: smva_assembleMatrix_dual
   
   ! Creates a hierarchy of operator assembly structures.
-  public :: smva_initOperatorAsm
-
-  ! Creates a hierarchy of operator assembly structures.
   public :: smva_createOpAsmHier
   
   ! Releases the hierarchy of operator assembly structures.
@@ -144,7 +141,7 @@ contains
   type(t_settings_optcontrol), intent(in) :: roptcontrol
 
   ! Parameters for the discretisation in space
-  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsDiscr
   
   ! Discretisation structure on that space level
   type(t_blockDiscretisation), intent(in) :: rspatialDiscr
@@ -257,7 +254,7 @@ contains
   type(t_settings_optcontrol), intent(in) :: roptcontrol
 
   ! Parameters for the discretisation in space
-  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsDiscr
   
   ! Discretisation structure on that space level
   type(t_blockDiscretisation), intent(in) :: rspatialDiscr
@@ -352,6 +349,9 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
@@ -390,7 +390,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -415,9 +415,9 @@ contains
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
@@ -447,9 +447,9 @@ contains
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
@@ -466,7 +466,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -500,7 +500,8 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDef_primal (rspaceTimeOperatorAsm,rprimalSol,rcontrol,idofTime,rdest,rtempData)
+  subroutine smva_getDef_primal (&
+      rspaceTimeOperatorAsm,rprimalSol,rcontrol,idofTime,rdest,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -534,6 +535,9 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
@@ -572,7 +576,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -599,13 +603,15 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            if (dtstep .ne. 0.0_DP) then
+              call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+            end if
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -639,13 +645,15 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
+          if (dtstep .ne. 0.0_DP) then
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+          end if
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
@@ -662,7 +670,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -731,6 +739,9 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
@@ -769,7 +780,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -796,13 +807,15 @@ contains
 
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            if (dtstep .ne. 0.0_DP) then
+              call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+            end if
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
@@ -835,13 +848,15 @@ contains
 
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
+          if (dtstep .ne. 0.0_DP) then
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+          end if
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (rspaceTimeOperatorAsm,&
-                rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
@@ -858,7 +873,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -933,6 +948,9 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
@@ -971,7 +989,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -992,13 +1010,15 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            if (dtstep .ne. 0.0_DP) then
+              call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+            end if
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
@@ -1031,13 +1051,15 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
+          if (dtstep .ne. 0.0_DP) then
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+          end if
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
@@ -1054,7 +1076,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -1133,6 +1155,9 @@ contains
     ! local variables
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_vectorBlock), pointer :: p_rvector
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output vector
     call lsysbl_clearVector (rdest)
@@ -1171,7 +1196,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -1192,13 +1217,15 @@ contains
             
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP-dtstep)
+            if (dtstep .ne. 0.0_DP) then
+              call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+            end if
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
-            if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
               call smva_getLaplaceMatrix (&
-                  rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                  rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
             else
               call output_line("Nonconstant viscosity not supported.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -1232,13 +1259,15 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,dtstep)
+          if (dtstep .ne. 0.0_DP) then
+            call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP/dtstep)
+          end if
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rtempData%rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rtempData%rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -1255,7 +1284,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -1324,9 +1353,14 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables    
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?    
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1370,9 +1404,14 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables    
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?    
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1416,9 +1455,14 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables    
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?    
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1463,8 +1507,13 @@ contains
 
 !</subroutine>
     
+    ! local variables
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?    
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
     
     ! ***********************************************************
     ! Stokes/Navier Stokes.
@@ -1553,7 +1602,8 @@ contains
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
-
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
 
@@ -1563,13 +1613,15 @@ contains
     rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (1)
+    case (0)
     
       ! Notify the callback routine what to assemble.
       rcollection%IquickAccess(1) = OPTP_PRIMAL
@@ -1578,8 +1630,8 @@ contains
       !
       ! Vector 1+2 = primal velocity (for the nonlinearity)
       call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),0)
-      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),0)
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),1)
 
       ! Build the matrix      
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
@@ -1638,6 +1690,7 @@ contains
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
@@ -1648,13 +1701,15 @@ contains
     rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
     rcollection%DquickAccess(1) = dweight
 
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+
     ! Which equation do we have?
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (1)
+    case (0)
     
       ! Notify the callback routine what to assemble.
       if (bfull) then
@@ -1667,8 +1722,8 @@ contains
       !
       ! Vector 1+2 = primal velocity.
       call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),0)
-      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),0)
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),1)
       
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
@@ -1722,6 +1777,7 @@ contains
     type(t_collection) :: rcollection
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
@@ -1734,14 +1790,16 @@ contains
 
     ! Notify the callback routine what to assemble.
     rcollection%IquickAccess(1) = OPTP_DUAL
+
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
           
     ! Which equation do we have?
-    select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
 
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (1)
+    case (0)
     
       ! Prepare the evaluation.
       !
@@ -1808,7 +1866,7 @@ contains
     real(DP) :: dweight
     real(DP) :: dbasI, dbasJ, dbasIx, dbasJx, dbasIy, dbasJy
     real(DP) :: du1, du2, du1x, du1y, du2x, du2y
-    integer :: iel, icubp, idofe, jdofe, i
+    integer :: iel, icubp, idofe, jdofe
     integer :: coptype
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix12
@@ -1824,10 +1882,12 @@ contains
     ! local variables    
     type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! From the collection, fetch our operator structure, nonlinearity,...
     rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
     p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+    p_ranalyticData => p_rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -1848,8 +1908,8 @@ contains
     p_rmatrixData21 => RmatrixData(2,1)
     p_rmatrixData12 => RmatrixData(1,2)
     p_rmatrixData22 => RmatrixData(2,2)
-    p_DbasTrial => RmatrixData(i,i)%p_DbasTrial
-    p_DbasTest => RmatrixData(i,i)%p_DbasTest
+    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
+    p_DbasTest => RmatrixData(1,1)%p_DbasTest
 
     ! Get the matrix data      
     p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
@@ -1858,12 +1918,12 @@ contains
     p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
 
     ! Which equation do we have?
-    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
-    case (1)
-    
-      ! -------------------------------------------------------------
-      ! Navier Stokes.
-      ! -------------------------------------------------------------
+    select case (p_ranalyticData%p_rphysics%cequation)
+
+    ! -------------------------------------------------------------
+    ! Navier Stokes.
+    ! -------------------------------------------------------------
+    case (0)
       
       ! Primal or dual equation?
       select case (copType)
@@ -2112,10 +2172,13 @@ contains
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
 
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+    
     ! Prepare a local and a user-defined collection
     call collct_init (rcollection)
     call collct_init (ruserCollection)
@@ -2164,7 +2227,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2179,11 +2242,11 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
-              rspaceTimeOperatorAsm%p_rrhsPrimal%iid,0,dtime,rusercollection)
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              p_ranalyticData%p_rrhsPrimal%iid,0,dtime,rusercollection)
           
           ! Prepare the evaluation of the primal RHS.
-          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rrhsPrimal,rcollection,"RHS",dtime)
+          call ansol_prepareEval (p_ranalyticData%p_rrhsPrimal,rcollection,"RHS",dtime)
 
           ! Prepare the evaluation.
           !
@@ -2195,7 +2258,7 @@ contains
           ! in the velocity space.
           ! Only add this if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
@@ -2212,7 +2275,7 @@ contains
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
 
         end select ! Equation
 
@@ -2265,9 +2328,12 @@ contains
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
+
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Prepare a local and a user-defined collection
     call collct_init (rcollection)
@@ -2317,7 +2383,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2328,12 +2394,13 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
-              rspaceTimeOperatorAsm%p_rrhsDual%iid,0,dtime,rusercollection)
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              p_ranalyticData%p_rrhsDual%iid,0,dtime,rusercollection)
 
           ! Prepare the evaluation of the primal RHS.
-          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rrhsDual,rcollection,"RHS",dtime)
-          call ansol_prepareEval (rspaceTimeOperatorAsm%p_rtargetFlow,rcollection,"TARGET",dtime)
+          call ansol_prepareEval (p_ranalyticData%p_rrhsDual,rcollection,"RHS",dtime)
+          call ansol_prepareEval (p_ranalyticData%p_rsettingsOptControl%rtargetFunction,&
+              rcollection,"TARGET",dtime)
           
           ! Prepare the evaluation.
           !
@@ -2355,7 +2422,7 @@ contains
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"TARGER")
           call ansol_doneEvalCollection (rcollection,"RHS")
-          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
         end select ! Equation
         
@@ -2412,9 +2479,12 @@ contains
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
+
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Prepare a local and a user-defined collection
     call collct_init (rcollection)
@@ -2464,7 +2534,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2475,14 +2545,14 @@ contains
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
               0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
           !
           ! Add the dual velocity if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
             ! Position 1+2 = control
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
@@ -2508,7 +2578,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
           
         end select ! Equation
       
@@ -2569,9 +2639,12 @@ contains
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
+
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Prepare a local and a user-defined collection
     call collct_init (rcollection)
@@ -2625,7 +2698,7 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Stokes/Navier Stokes
@@ -2636,7 +2709,7 @@ contains
           dtime = dtimestart
           
           ! Prepare the user-defined collection for the assembly
-          call user_initCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,&
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
               0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
@@ -2659,7 +2732,7 @@ contains
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForVecAssembly (rspaceTimeOperatorAsm%p_rglobalData,rusercollection)
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
           
         end select ! Equation
         
@@ -2720,9 +2793,12 @@ contains
     type(t_fev2Vectors) :: rvectorEval
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Prepare a local and a user-defined collection
     call collct_init (rcollection)
@@ -2776,12 +2852,12 @@ contains
       case (1)
 
         ! Which equation do we have?
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! ***********************************************************
         ! Navier Stokes
         ! ***********************************************************
-        case (1)
+        case (0)
         
           ! Prepare the evaluation.
           !
@@ -2871,10 +2947,13 @@ contains
 
     type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! From the collection, fetch our operator structure, nonlinearity,...
     rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
     p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+
+    p_ranalyticData => p_rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -2886,7 +2965,7 @@ contains
     p_DcubWeight => rassemblyData%p_DcubWeight
     
     ! Which equation do we have?
-    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
     case (0,1)
     
       ! -------------------------------------------------------------
@@ -3047,10 +3126,13 @@ contains
 
     type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
     ! From the collection, fetch our operator structure, nonlinearity,...
     rp_rspaceTimeOperatorAsm = transfer(rcollection%IquickAccess(8:),rp_rspaceTimeOperatorAsm)
     p_rspaceTimeOperatorAsm => rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm
+
+    p_ranalyticData => p_rspaceTimeOperatorAsm%p_ranalyticData
 
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
@@ -3062,7 +3144,7 @@ contains
     p_DcubWeight => rassemblyData%p_DcubWeight
     
     ! Which equation do we have?
-    select case (p_rspaceTimeOperatorAsm%p_rphysics%cequation)
+    select case (p_ranalyticData%p_rphysics%cequation)
     case (0,1)
     
       ! -------------------------------------------------------------
@@ -3200,7 +3282,7 @@ contains
         
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
         if (dalpha .ge. 0.0_DP) then
 
@@ -3265,7 +3347,7 @@ contains
         !
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
         if (dalpha .gt. 0.0_DP) then
 
@@ -3286,7 +3368,7 @@ contains
           
           p_DbasTest => RvectorData(1)%p_DbasTest
 
-          select case (p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+          select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
             
           ! ---------------------------------------------------------
           ! No constraints
@@ -3332,10 +3414,10 @@ contains
           case (1)
             
             ! Get the box constraints
-            dumin1 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-            dumin2 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmin2
-            dumax1 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-            dumax2 = p_rspaceTimeOperatorAsm%p_rsettingsOptControl%rconstraints%ddistVelUmax2
+            dumin1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+            dumin2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin2
+            dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+            dumax2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
 
             ! Loop over the elements in the current set.
             do iel = 1,nelements
@@ -3603,7 +3685,7 @@ contains
         p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
         p_Dy2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
 
-        if (.not. associated(p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
+        if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
           ! Observation area is the complete domain
@@ -3655,7 +3737,7 @@ contains
           ! ---------------------------------------------------------
           ! Observation area is a rectangle
           ! ---------------------------------------------------------
-          p_DobservationArea => p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea
+          p_DobservationArea => p_ranalyticData%p_rsettingsOptControl%p_DobservationArea
         
           ! Loop over the elements in the current set.
           do iel = 1,nelements
@@ -3741,7 +3823,7 @@ contains
         
         p_DbasTest => RvectorData(1)%p_DbasTest
         
-        if (.not. associated(p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea)) then
+        if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
           ! Observation area is the complete domain
@@ -3786,7 +3868,7 @@ contains
           ! ---------------------------------------------------------
           ! Observation area is a rectangle
           ! ---------------------------------------------------------
-          p_DobservationArea => p_rspaceTimeOperatorAsm%p_rsettingsOptControl%p_DobservationArea
+          p_DobservationArea => p_ranalyticData%p_rsettingsOptControl%p_DobservationArea
 
           ! Loop over the elements in the current set.
           do iel = 1,nelements
@@ -3877,6 +3959,9 @@ contains
     
     ! local variables
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output matrix
     call lsysbl_clearMatrix (rmatrix)
@@ -3915,7 +4000,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -3932,9 +4017,9 @@ contains
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_primal")
@@ -3951,7 +4036,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -4006,6 +4091,9 @@ contains
     
     ! local variables
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
     ! Clear the output matrix
     call lsysbl_clearMatrix (rmatrix)
@@ -4044,7 +4132,7 @@ contains
       case (1)
 
         ! Which equation do we have?    
-        select case (rspaceTimeOperatorAsm%p_rphysics%cequation)
+        select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
         ! Stokes/Navier Stokes.
@@ -4064,9 +4152,9 @@ contains
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
-          if (rspaceTimeOperatorAsm%p_rphysics%cviscoModel .eq. 0) then
+          if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
             call smva_getLaplaceMatrix (&
-                rspaceTimeOperatorAsm,rmatrix,rspaceTimeOperatorAsm%p_rphysics%dnuConst)
+                rspaceTimeOperatorAsm,rmatrix,p_ranalyticData%p_rphysics%dnuConst)
           else
             call output_line("Nonconstant viscosity not supported.",&
                 OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
@@ -4083,7 +4171,7 @@ contains
 
           ! -----------------------------------------
           ! EOJ-stabilisation
-          !if (rspaceTimeOperatorAsm%p_rsettingsDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+          !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
           !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
           !end if
             
@@ -4109,81 +4197,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_initOperatorAsm (roperatorAsm,ilevel,rsettings)
-  
-!<description>
-  ! Initialises an operator assembly structure ofor level ilevel.
-!</description>
-
-!<input>
-  ! Structure with the settings of the space-time solver
-  type(t_settings_optflow), intent(in), target :: rsettings
-  
-  ! Level in the global space-time hierarchy.
-  integer, intent(in) :: ilevel
-!</input>
-
-!<output>
-  ! A t_spacetimeOpAsmHierarchy to initialise.
-  type(t_spacetimeOperatorAsm), intent(out) :: roperatorAsm
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    integer :: i,ispacelevel
-    type(t_feSpaceLevel), pointer:: p_rfeSpaceLevel
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-
-    ! Get the discrisation structures on every level.
-    ! Primal space
-    call sth_getLevel (rsettings%rspacetimeHierPrimal,&
-        ilevel,p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
-        
-    ! Save them.
-    roperatorAsm%p_rspaceDiscrPrimal => &
-        p_rfeSpaceLevel%p_rdiscretisation
-    
-    roperatorAsm%p_rtimeDiscrPrimal => p_rtimeDiscr
-    
-    ! Dual space
-    call sth_getLevel (rsettings%rspacetimeHierDual,ilevel,&
-        p_rfeSpaceLevel,p_rtimeDiscr)
-    roperatorAsm%p_rspaceDiscrDual => &
-        p_rfeSpaceLevel%p_rdiscretisation
-
-    roperatorAsm%p_rtimeDiscrDual => p_rtimeDiscr
-
-    ! Control space
-    call sth_getLevel (rsettings%rspacetimeHierControl,ilevel,&
-        p_rfeSpaceLevel,p_rtimeDiscr)
-    roperatorAsm%p_rspaceDiscrControl => &
-        p_rfeSpaceLevel%p_rdiscretisation
-
-    roperatorAsm%p_rtimeDiscrControl => p_rtimeDiscr
-    
-    ! Get the assembly templates
-    roperatorAsm%p_rasmTemplates => &
-        rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispacelevel)
-    
-    ! Fetch the other parameters
-    roperatorAsm%p_rphysics => rsettings%rphysicsPrimal
-    roperatorAsm%p_rsettingsDiscr => rsettings%rsettingsSpaceDiscr
-    roperatorAsm%p_rsettingsOptControl => rsettings%rsettingsOptControl
-    roperatorAsm%p_rrhsPrimal => rsettings%rrhsPrimal
-    roperatorAsm%p_rrhsDual => rsettings%rrhsDual
-    roperatorAsm%p_rtargetFlow => rsettings%rsettingsOptControl%rtargetFunction
-    roperatorAsm%p_rglobalData => rsettings%rglobalData
-    roperatorAsm%p_rdebugFlags => rsettings%rdebugFlags
-    roperatorAsm%p_roptcBDC => rsettings%roptcBDC
-      
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine smva_createOpAsmHier (rhierarchy,rsettings)
+  subroutine smva_createOpAsmHier (roperatorAsmHier,rsettings)
   
 !<description>
   ! Creates a hierarchy of operator assembly structures.
@@ -4196,25 +4210,49 @@ contains
 
 !<output>
   ! A t_spacetimeOpAsmHierarchy to initialise.
-  type(t_spacetimeOpAsmHierarchy), intent(out) :: rhierarchy
+  type(t_spacetimeOpAsmHierarchy), intent(out) :: roperatorAsmHier
 !</output>
 
 !</subroutine>
 
-    ! local variables
-    integer :: i
+    ! Fetch pointers to the structures from the main setting structure.
+    !
+    ! Analytical data
+    roperatorAsmHier%ranalyticData%p_roptcBDC => &
+        rsettings%roptcBDC
+        
+    roperatorAsmHier%ranalyticData%p_rphysics => &
+        rsettings%rphysics
+        
+    roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr => &
+        rsettings%rsettingsSpaceDiscr
+        
+    roperatorAsmHier%ranalyticData%p_rsettingsOptControl => &
+        rsettings%rsettingsOptControl
+        
+    roperatorAsmHier%ranalyticData%p_rrhsPrimal => &
+        rsettings%rrhsPrimal
+        
+    roperatorAsmHier%ranalyticData%p_rrhsDual => &
+        rsettings%rrhsDual
+        
+    roperatorAsmHier%ranalyticData%p_rglobalData => &
+        rsettings%rglobalData
+        
+    roperatorAsmHier%ranalyticData%p_rdebugFlags => &
+        rsettings%rdebugFlags
+        
+    ! Hierarchies
+    roperatorAsmHier%p_rtimeHierarchyPrimal => rsettings%rtimeHierarchy
+    roperatorAsmHier%p_rtimeHierarchyDual => rsettings%rtimeHierarchy
+    roperatorAsmHier%p_rtimeHierarchyControl => rsettings%rtimeHierarchy
 
-    ! Allocate memory.
-    rhierarchy%nlevels = rsettings%rspacetimeHierPrimal%nlevels
-    allocate(rhierarchy%p_RopAsmList(rhierarchy%nlevels))
-  
-    ! On each level...  
-    do i=1,rhierarchy%nlevels
-
-      ! Initialise the operator assembly structure    
-      call smva_initOperatorAsm (rhierarchy%p_RopAsmList(i),i,rsettings)
-      
-    end do
+    roperatorAsmHier%p_rfeHierarchyPrimal => rsettings%rfeHierarchyPrimal
+    roperatorAsmHier%p_rfeHierarchyDual => rsettings%rfeHierarchyDual
+    roperatorAsmHier%p_rfeHierarchyControl => rsettings%rfeHierarchyControl
+    
+    roperatorAsmHier%p_rstaticSpaceAsmHier => rsettings%rspaceAsmHierarchy
+    roperatorAsmHier%p_roptcBDCSpaceHierarchy => rsettings%roptcBDCSpaceHierarchy
 
   end subroutine
 
@@ -4222,7 +4260,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_releaseOpAsmHier (rhierarchy)
+  subroutine smva_releaseOpAsmHier (roperatorAsmHier)
   
 !<description>
   ! Releases the hierarchy of operator assembly structures.
@@ -4230,15 +4268,16 @@ contains
 
 !<inputoutput>
   ! A t_spacetimeOpAsmHierarchy to clean up.
-  type(t_spacetimeOpAsmHierarchy), intent(inout) :: rhierarchy
+  type(t_spacetimeOpAsmHierarchy), intent(inout) :: roperatorAsmHier
 !</inputoutput>
 
 !</subroutine>
 
-    ! Release memory.
-    deallocate(rhierarchy%p_RopAsmList)
-    rhierarchy%nlevels = 0
+    type(t_spacetimeOpAsmHierarchy) :: rtemplate
 
+    ! Overwrite with default settings
+    roperatorAsmHier = rtemplate
+    
   end subroutine
 
 end module

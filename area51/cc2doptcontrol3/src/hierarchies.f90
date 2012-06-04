@@ -90,7 +90,7 @@ module hierarchies
     type(t_settings_optcontrol), pointer :: p_roptControl => null()
     
     ! Pointer to discretisation settings
-    type(t_settings_discr), pointer :: p_rsettingsDiscr => null()
+    type(t_settings_spacediscr), pointer :: p_rsettingsSpaceDiscr => null()
     
     ! Space discretisation hierarchy of the primal space or NULL if not available.
     type(t_feHierarchy), pointer :: p_rfeHierarchyPrimal => null()
@@ -593,7 +593,7 @@ contains
     ! --------------------
     case (CCSPACE_PRIMAL)
       call kktsp_initPrimalSpaceDiscr (rspaceDiscr,&
-          rdiscrParams%p_rphysics,rdiscrParams%p_rsettingsDiscr,rtriangulation,rboundary)
+          rdiscrParams%p_rphysics,rdiscrParams%p_rsettingsSpaceDiscr,rtriangulation,rboundary)
 
     ! --------------------
     ! Dual space
@@ -609,7 +609,7 @@ contains
     case (CCSPACE_CONTROL)
       call kktsp_initControlSpaceDiscr (rspaceDiscr,&
           rdiscrParams%p_rfeHierarchyPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation,&
-          rdiscrParams%p_rsettingsDiscr,rdiscrParams%p_rphysics,&
+          rdiscrParams%p_rsettingsSpaceDiscr,rdiscrParams%p_rphysics,&
           rdiscrParams%p_roptControl)
     end select
 
@@ -637,7 +637,7 @@ contains
   type(t_settings_optcontrol), intent(in), target :: roptControl
 
   ! Structure with space discretisation settings
-  type(t_settings_discr), intent(in), target :: rsettingsDiscr
+  type(t_settings_spacediscr), intent(in), target :: rsettingsDiscr
 
   ! A mesh hierarchy with all available space meshes.
   type(t_meshHierarchy), intent(in), target :: rmeshHierarchy
@@ -681,7 +681,7 @@ contains
 
       rdiscrParams%p_rphysics => rphysics
       rdiscrParams%p_roptControl => roptControl
-      rdiscrParams%p_rsettingsDiscr => rsettingsDiscr
+      rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscr
       
       ! Create the hierarchy for the primal space
       rdiscrParams%cspace = CCSPACE_PRIMAL

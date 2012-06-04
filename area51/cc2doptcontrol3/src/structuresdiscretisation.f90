@@ -62,7 +62,7 @@ module structuresdiscretisation
 !<typeblock>
   
   ! Structure encapsuling the main discretisation
-  type t_settings_discr
+  type t_settings_spacediscr
   
     ! Type of element pair to use for the discretisation.
     ! 2D Stokes/Navier-Stokes:
@@ -99,7 +99,7 @@ module structuresdiscretisation
 
 !</typeblock>
 
-  public :: t_settings_discr
+  public :: t_settings_spacediscr
 
 !<typeblock>
 
@@ -224,7 +224,7 @@ contains
 
 !<output>
    ! Structure receiving the main discretisation settings
-   type(t_settings_discr), intent(out) :: rsettingsSpaceDiscr
+   type(t_settings_spacediscr), intent(out) :: rsettingsSpaceDiscr
 !</output>
 
 !</subroutine>

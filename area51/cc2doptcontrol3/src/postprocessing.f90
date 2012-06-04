@@ -1448,13 +1448,13 @@ contains
         call output_lbrk()
         if (associated(rsettings%rsettingsOptControl%p_DobservationArea)) then
           ! Subdomain is the observation area
-          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysics,&
               roptControl%rconstraints,rsettings%roptcBDC,rvector,roptcontrol%rtargetFunction,&
               roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror,&
               rsettings%rsettingsOptControl%p_DobservationArea)
         else
           ! Full domain
-          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
+          call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysics,&
               roptControl%rconstraints,rsettings%roptcBDC,rvector,roptcontrol%rtargetFunction,&
               roptControl%dalphaC,roptControl%dbetaC,roptControl%dgammaC,Derror)
         end if
@@ -1529,7 +1529,7 @@ contains
     real(dp) :: dtimePrimal,dtimeDual,dtstep
     
     ! Create a default postprocessing structure
-    call optcpp_initpostprocessing (rpostproc,rsettings%rphysicsPrimal,CCSPACE_PRIMALDUAL,&
+    call optcpp_initpostprocessing (rpostproc,rsettings%rphysics,CCSPACE_PRIMALDUAL,&
         rsettings%roptcBDC,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
     
     ! Only apply the visualisation output

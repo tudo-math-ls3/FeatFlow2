@@ -161,7 +161,7 @@ contains
   type(t_settings_physics), intent(in) :: rphysics
   
   ! Discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsDiscr
   
   ! Triangulation structure encapsuling the mesh.
   type(t_triangulation), intent(in) :: rtriangulation
@@ -238,7 +238,7 @@ contains
   type(t_settings_optcontrol), intent(in) :: roptControl
 
   ! Discretisation settings
-  type(t_settings_discr), intent(in) :: rsettingsDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsDiscr
 !</input>
 
 !<output>

@@ -357,7 +357,7 @@ contains
 
 !<input>
   ! Settings controlling the spatial discretisation (cubature)
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Solver parameters.
   type(t_settings_optflow), intent(inout) :: rsettings
@@ -470,7 +470,7 @@ contains
 !<subroutine>
 
   subroutine inmat_generateStaticMatOptC (rstaticAsmTemplates,rstaticAsmTemplatesOptC,&
-      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings)
+      rphysics,rstabilPrimal,rstabilDual,rsettings)
   
 !<description>
   ! Calculates entries of all static stabilisation matrices which depend
@@ -482,7 +482,7 @@ contains
 
 !<input>
   ! Physics of the problem
-  type(t_settings_physics), intent(in) :: rphysicsPrimal
+  type(t_settings_physics), intent(in) :: rphysics
   
   ! Stabilisation parameters for the primal and dual system.
   type(t_settings_stabil), intent(in) :: rstabilPrimal
@@ -525,7 +525,7 @@ contains
     
       ! Set up the jump stabilisation structure.
       ! There's not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rphysicsPrimal%dnuConst
+      rjumpStabil%dnu = rphysics%dnuConst
       
       ! Set stabilisation parameter
       rjumpStabil%dgamma = rstabilPrimal%dupsam
@@ -564,7 +564,7 @@ contains
 
         ! Set up the jump stabilisation structure.
         ! There's not much to do, only initialise the viscosity...
-        rjumpStabil%dnu = rphysicsPrimal%dnuConst
+        rjumpStabil%dnu = rphysics%dnuConst
         
         ! Set stabilisation parameter
         rjumpStabil%dgamma = rstabilDual%dupsam
@@ -708,7 +708,7 @@ contains
 
 !<input>
   ! Settings controlling the spatial discretisation (element, cubature)
-  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 
   ! Settings structure for the optimal control solver.
   ! Not used here, but passed to callback routines called during
@@ -758,7 +758,7 @@ contains
 !<subroutine>
 
   subroutine inmat_calcStaticLvlAsmHierOptC(rhierarchy,rhierarchyOptC,&
-      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings,bprint)
+      rphysics,rstabilPrimal,rstabilDual,rsettings,bprint)
   
 !<description>
   ! Calculates the static matrices of the optimal control problem on all levels.
@@ -769,7 +769,7 @@ contains
   type(t_staticSpaceAsmHierarchy), intent(inout) :: rhierarchy
 
   ! Physics of the problem
-  type(t_settings_physics) :: rphysicsPrimal
+  type(t_settings_physics) :: rphysics
 
   ! Stabilisation parameters for the primal and dual system.
   type(t_settings_stabil), intent(in) :: rstabilPrimal
@@ -811,7 +811,7 @@ contains
 
       call inmat_generateStaticMatOptC (rhierarchy%p_RasmTemplList(ilevel),&
           rhierarchyOptC%p_RasmTemplList(ilevel),&
-          rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings)
+          rphysics,rstabilPrimal,rstabilDual,rsettings)
     end do
 
   end subroutine
@@ -1406,7 +1406,7 @@ contains
 !
 !    ! Assemble the Stokes operator:
 !    call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixStokes,.true.,&
-!        rproblem%rphysicsPrimal%dnu)
+!        rproblem%rphysics%dnu)
 !
 !    ! Build the first pressure matrix B1.
 !    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixB1,&
@@ -1445,7 +1445,7 @@ contains
 !
 !      ! Set up the jump stabilisation structure.
 !      ! There's not much to do, only initialise the viscosity...
-!      rjumpStabil%dnu = rproblem%rphysicsPrimal%dnu
+!      rjumpStabil%dnu = rproblem%rphysics%dnu
 !
 !      ! Set stabilisation parameter
 !      rjumpStabil%dgamma = dupsam1
@@ -1477,7 +1477,7 @@ contains
 !
 !        ! Set up the jump stabilisation structure.
 !        ! There's not much to do, only initialise the viscosity...
-!        rjumpStabil%dnu = rproblem%rphysicsPrimal%dnu
+!        rjumpStabil%dnu = rproblem%rphysics%dnu
 !
 !        ! Set stabilisation parameter
 !        rjumpStabil%dgamma = dupsam2

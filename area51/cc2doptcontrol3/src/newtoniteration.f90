@@ -191,7 +191,7 @@ contains
 
     ! Type of equation?
     cequation = LSS_EQN_GENERAL
-    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    select case (rsettingsSolver%rphysics%cequation)
     case (0,1)
       ! Stokes / Navier-Stokes
       cequation = LSS_EQN_STNAVST2D
@@ -273,20 +273,15 @@ contains
 
 !</subroutine>
 
-    integer :: ilevel
-
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
 
-    ! Get the topmost level of the hierarchy.
-    ilevel = rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%nlevels
-
     ! Solve the primal equation, update the primal solution.
-    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,ilevel)
+    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal)
 
     ! Solve the dual equation, update the dual solution.
-    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,ilevel)
+    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   

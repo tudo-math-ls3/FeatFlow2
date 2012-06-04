@@ -58,27 +58,18 @@ module structuresoptflow
   type t_settings_optflow
 
     !<!-- ------------------------- -->
-    !<!-- MESH, DOMAIN, HIERARCHIES -->
+    !<!-- GENERAL SETTINGS          -->
     !<!-- ------------------------- -->
 
-    ! An object for saving the domain
-    type(t_boundary) :: rboundary
-
     ! Physics of the problem
-    type(t_settings_physics) :: rphysicsPrimal
+    type(t_settings_physics) :: rphysics
 
     ! Settings controlling the spatial discretisation (element, 
     ! cubature, stabilisation)
-    type(t_settings_discr) :: rsettingsSpaceDiscr
+    type(t_settings_spacediscr) :: rsettingsSpaceDiscr
 
     ! Parameters of the optimal control problem
     type(t_settings_optcontrol) :: rsettingsOptControl
-
-    ! Space coarse mesh without refinement
-    type(t_triangulation) :: rtriaCoarse
-    
-    ! Time coarse mesh without refinement
-    type(t_timeDiscretisation) :: rtimeCoarse
 
     ! Settings that define the refinement in space
     type(t_settings_refinement) :: rrefinementSpace
@@ -86,17 +77,28 @@ module structuresoptflow
     ! Settings that define the refinement in time
     type(t_settings_refinement) :: rrefinementTime
     
+    ! All debug flags used by the application
+    type(t_optcDebugFlags) :: rdebugFlags
+
+    !<!-- --------------------------------- -->
+    !<!-- MESH, DOMAIN, TIME-DISCRETISATION -->
+    !<!-- --------------------------------- -->
+
+    ! An object for saving the domain
+    type(t_boundary) :: rboundary
+
+    ! Space coarse mesh without refinement
+    type(t_triangulation) :: rtriaCoarse
+    
+    ! Time coarse mesh without refinement
+    type(t_timeDiscretisation) :: rtimeCoarse
+
+    !<!-- ------------------------- -->
+    !<!-- HIERARCHIES IN SPACE      -->
+    !<!-- ------------------------- -->
+
     ! A mesh hierarchy with all available space meshes.
     type(t_meshHierarchy) :: rmeshHierarchy
-    
-    ! A hierarchy of time levels
-    type(t_timescaleHierarchy) :: rtimeHierarchy
-    
-    ! A level info hierarchy for the assembly of stuff on all levels.
-    type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
-    
-    ! A hierarchy of operator assembly structures for all levels.
-    type(t_spacetimeOpAsmHierarchy) :: roperatorAsmHier
     
     ! A hierarchy of space levels for the primal space
     type(t_feHierarchy) :: rfeHierarchyPrimal
@@ -107,8 +109,8 @@ module structuresoptflow
     ! A hierarchy of space levels for the control space
     type(t_feHierarchy) :: rfeHierarchyControl
     
-    ! Boundary condition hierarchy for all space levels, primal and dual space
-    type(t_optcBDCSpaceHierarchy) :: roptcBDCSpaceHierarchy
+    ! A level info hierarchy for the assembly of stuff on all levels.
+    type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
     
     ! Projection hierarchy for the interlevel projection in the primal space.
     type(t_interlevelProjectionHier) :: rprjHierSpacePrimal
@@ -118,6 +120,20 @@ module structuresoptflow
 
     ! Projection hierarchy for the interlevel projection in the control space.
     type(t_interlevelProjectionHier) :: rprjHierSpaceControl
+    
+    ! Boundary condition hierarchy for all space levels, primal and dual space
+    type(t_optcBDCSpaceHierarchy) :: roptcBDCSpaceHierarchy
+    
+    !<!-- ------------------------- -->
+    !<!-- HIERARCHIES IN TIME       -->
+    !<!-- ------------------------- -->
+
+    ! A hierarchy of time levels
+    type(t_timescaleHierarchy) :: rtimeHierarchy
+
+    !<!-- ------------------------- -->
+    !<!-- HIERARCHIES IN SPACE-TIME -->
+    !<!-- ------------------------- -->
     
     ! A space-time hierarchy based on the primal space
     type(t_spaceTimeHierarchy) :: rspaceTimeHierPrimal
@@ -137,9 +153,10 @@ module structuresoptflow
     ! Projection hierarchy for the interlevel projection in space/time, control space.
     type(t_sptiProjHierarchy) :: rprjHierSpaceTimeControl
     
-    ! All debug flags used by the application
-    type(t_optcDebugFlags) :: rdebugFlags
-
+    ! A hierarchy of operator assembly structures for all levels.
+    ! This is a central discretisation structure passed to all assembly routines.
+    type(t_spacetimeOpAsmHierarchy) :: roperatorAsmHier
+    
     !<!-- ------------------------------------------ -->
     !<!-- INITIAL CONDITION, BOUNDARY CONDITION, RHS -->
     !<!-- ------------------------------------------ -->

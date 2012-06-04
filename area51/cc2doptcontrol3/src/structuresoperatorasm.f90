@@ -24,6 +24,9 @@ module structuresoperatorasm
   use structuresboundaryconditions
   
   use assemblytemplates
+  use fespacehierarchybase
+  use timescalehierarchy
+  use spacetimehierarchy
 
   implicit none
 
@@ -63,6 +66,41 @@ module structuresoperatorasm
 
 !<typeblock>
 
+  ! Encapsules analytic data for setting up discrete operators
+  ! on the space-time cylinder
+  type t_spacetimeOpAsmAnalyticData
+  
+    ! Definition of the boundary conditions
+    type(t_optcBDC), pointer :: p_roptcBDC => null()
+
+    ! Physics of the problem
+    type(t_settings_physics), pointer :: p_rphysics => null()
+    
+    ! Parameters for the discretisation in space
+    type(t_settings_spacediscr), pointer :: p_rsettingsSpaceDiscr => null()
+
+    ! Optimal-control parameters
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
+    
+    ! Reference to the analytic solution defining the RHS of the primal equation
+    type(t_anSolution), pointer :: p_rrhsPrimal => null()
+
+    ! Reference to the analytic solution defining the RHS of the dual equation
+    type(t_anSolution), pointer :: p_rrhsDual => null()
+
+    ! Reference to global data
+    type(t_globalData), pointer :: p_rglobalData => null()
+    
+    ! Reference to the debug flags
+    type(t_optcDebugFlags), pointer :: p_rdebugFlags => null()
+  end type
+
+!</typeblock>
+
+  public :: t_spacetimeOpAsmAnalyticData
+
+!<typeblock>
+
   ! This type encapsules structures necessary for the
   ! assembly of space-time operators.
   type t_spacetimeOperatorAsm
@@ -88,32 +126,8 @@ module structuresoperatorasm
     ! Assembly templates corresponding to the above space discretisation
     type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates => null()
     
-    ! Definition of the boundary conditions
-    type(t_optcBDC), pointer :: p_roptcBDC => null()
-
-    ! Physics of the problem
-    type(t_settings_physics), pointer :: p_rphysics => null()
-    
-    ! Parameters for the discretisation in space
-    type(t_settings_discr), pointer :: p_rsettingsDiscr => null()
-
-    ! Optimal-control parameters
-    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
-    
-    ! Reference to the analytic solution defining the RHS of the primal equation
-    type(t_anSolution), pointer :: p_rrhsPrimal => null()
-
-    ! Reference to the analytic solution defining the RHS of the dual equation
-    type(t_anSolution), pointer :: p_rrhsDual => null()
-
-    ! Reference to the analytic solution defining the target
-    type(t_anSolution), pointer :: p_rtargetFlow => null()
-
-    ! Reference to global data
-    type(t_globalData), pointer :: p_rglobalData => null()
-    
-    ! Reference to the debug flags
-    type(t_optcDebugFlags), pointer :: p_rdebugFlags => null()
+    ! Analytic data necessary to set up operators.
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData => null()
   end type
 
 !</typeblock>
@@ -125,12 +139,33 @@ module structuresoperatorasm
   ! A hierarchy of t_spacetimeOperatorAsm structures.
   type t_spacetimeOpAsmHierarchy
 
-    ! Number of levels in the hierarchy.
-    integer :: nlevels = 0
+    ! Analytic data necessary to set up operators.
+    type(t_spacetimeOpAsmAnalyticData) :: ranalyticData
+    
+    ! A hierarchy of time levels, primal space
+    type(t_timescaleHierarchy), pointer :: p_rtimeHierarchyPrimal => null()
+
+    ! A hierarchy of time levels, dual space
+    type(t_timescaleHierarchy), pointer :: p_rtimeHierarchyDual => null()
+
+    ! A hierarchy of time levels, control space
+    type(t_timescaleHierarchy), pointer :: p_rtimeHierarchyControl => null()
+    
+    ! Hierarchy of FEM spaces, primal space.
+    type(t_feHierarchy), pointer :: p_rfeHierarchyPrimal => null()
+
+    ! Hierarchy of FEM spaces, dual space.
+    type(t_feHierarchy), pointer :: p_rfeHierarchyDual => null()
+
+    ! Hierarchy of FEM spaces, control space.
+    type(t_feHierarchy), pointer :: p_rfeHierarchyControl => null()
+    
+    ! Hierarchy of space assembly structures
+    type(t_staticSpaceAsmHierarchy), pointer :: p_rstaticSpaceAsmHier => null()
   
-    ! The level info structures on all levels.
-    type(t_spacetimeOperatorAsm), dimension(:), pointer :: p_RopAsmList => null()
-  
+    ! Boundary condition hierarchy for all space levels, primal and dual space
+    type(t_optcBDCSpaceHierarchy), pointer :: p_roptcBDCSpaceHierarchy => null()
+
   end type
 
 !</typeblock>
@@ -138,5 +173,109 @@ module structuresoperatorasm
   public :: t_spacetimeOpAsmHierarchy
 
 !</types>
+
+  ! Get a space-time operator assembly structure based on a space- and time-level
+  public :: stoh_getOpAsm_slvtlv
+
+  ! Get a space-time operator assembly strcuture based on a space-time level
+  public :: stoh_getOpAsm
+  
+contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine stoh_getOpAsm_slvtlv (roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+
+!<description>
+  ! Creates a space-time operator assembly structure based on a hierarchy
+  ! of operator assembly structures, a space-level and a time-level.
+!</description>
+ 
+!<input>
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+  
+  ! Space level.
+  integer, intent(in) :: ispacelevel
+
+  ! Time level.
+  integer, intent(in) :: itimelevel
+!</input>
+
+!<outout>
+  ! Space-time operator assembly structure to be created.
+  type(t_spacetimeOperatorAsm), intent(out) :: roperatorAsm
+!</outout>
+  
+!</subroutine>
+
+    ! Fetch pointers to the structures from the hierarchy.
+    
+    roperatorAsm%p_rspaceDiscrPrimal => &
+        roperatorAsmHier%p_rfeHierarchyPrimal%p_rfeSpaces(ispacelevel)%p_rdiscretisation
+    
+    roperatorAsm%p_rspaceDiscrDual => &
+        roperatorAsmHier%p_rfeHierarchyDual%p_rfeSpaces(ispacelevel)%p_rdiscretisation
+    
+    roperatorAsm%p_rspaceDiscrControl => &
+        roperatorAsmHier%p_rfeHierarchyControl%p_rfeSpaces(ispacelevel)%p_rdiscretisation
+    
+    roperatorAsm%p_rtimeDiscrPrimal => &
+        roperatorAsmHier%p_rtimeHierarchyPrimal%p_RtimeLevels(itimelevel)
+    
+    roperatorAsm%p_rtimeDiscrDual => &
+        roperatorAsmHier%p_rtimeHierarchyDual%p_RtimeLevels(itimelevel)
+    
+    roperatorAsm%p_rtimeDiscrControl => &
+        roperatorAsmHier%p_rtimeHierarchyControl%p_RtimeLevels(itimelevel)
+    
+    roperatorAsm%p_rasmTemplates => &
+        roperatorAsmHier%p_rstaticSpaceAsmHier%p_RasmTemplList(ispacelevel)
+    
+    roperatorAsm%p_ranalyticData => roperatorAsmHier%ranalyticData
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine stoh_getOpAsm (roperatorAsm,rsthierarchy,ilevel,roperatorAsmHier)
+
+!<description>
+  ! Creates a space-time operator assembly structure based on a hierarchy
+  ! of operator assembly structures, a space-level and a time-level.
+!</description>
+ 
+!<input>
+  ! A space-time hierarchy
+  type(t_spacetimeHierarchy), intent(in) :: rsthierarchy
+  
+  ! Level in the space-time hierarchy
+  integer, intent(in) :: ilevel
+
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+!</input>
+
+!<outout>
+  ! Space-time operator assembly structure to be created.
+  type(t_spacetimeOperatorAsm), intent(out) :: roperatorAsm
+!</outout>
+  
+!</subroutine>
+  
+    integer :: ispacelevel, itimelevel
+    
+    ! Get the space- and time-level from the space-time hierarchy
+    call sth_getLevel (rsthierarchy,ilevel,&
+        ispaceLevel=ispaceLevel,itimeLevel=itimeLevel)
+        
+    ! Set up the structure
+    call stoh_getOpAsm_slvtlv (roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+
+  end subroutine
 
 end module
