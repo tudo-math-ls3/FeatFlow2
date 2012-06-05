@@ -776,8 +776,14 @@ contains
     ! of this block.
     p_rdiscrTest  => rvector%p_rspatialDiscr
     
-    ! Do we have the trial space already?
-    ivecDiscrTest = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
+    if (.not. associated(p_rdiscrTest)) return
+    
+    ! Do we have the test space already?
+    ivecDiscrTest = 0
+    if (associated(p_RfemData)) then
+      ivecDiscrTest = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+    end if
+    
     if (ivecDiscrTest .eq. 0) then
       
       ! Structure is new. Reallocate, add and initialise.
@@ -793,6 +799,7 @@ contains
       
       p_RfemData => p_RdiscrNodes
       
+      ! Add the test space
       ndiscrNodes = ndiscrNodes-1
       call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
     
@@ -865,81 +872,98 @@ contains
     p_rdiscrTest  => rmatrix%p_rspatialDiscrTest
     p_rdiscrTrial  => rmatrix%p_rspatialDiscrTest
     
-    ! Do we have the trial space already?
-    ivecDiscrTest = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
-    
-    if (ivecDiscrTest .eq. 0) then
-      
-      ! Structure is new. Reallocate, add and initialise.
+    ! Do we have the test space already?
+    if (associated(p_rdiscrTest)) then
+      ivecDiscrTest = 0
       if (associated(p_RfemData)) then
-        ndiscrNodes = size(p_RfemData)+1
-        allocate (p_RdiscrNodes(ndiscrNodes))
-        p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
-        deallocate(p_RfemData)
-      else
-        ndiscrNodes = 1
-        allocate (p_RdiscrNodes(ndiscrNodes))
+        ivecDiscrTest = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
       end if
       
-      p_RfemData => p_RdiscrNodes
-      
-      ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
-    
-      ! Initialise the content
-      p_RfemData(ndiscrNodes)%celement = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
-      p_RfemData(ndiscrNodes)%ctrafoType = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-      p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
-
-      ivecDiscrTest = ndiscrNodes
-    end if
-
-    ivecDiscrTrial = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTrial)
-
-    if (ivecDiscrTrial .eq. 0) then
-      
-      ! Structure is new. Reallocate, add and initialise.
-      if (associated(p_RfemData)) then
-        ndiscrNodes = size(p_RfemData)+1
-        allocate (p_RdiscrNodes(ndiscrNodes))
-        p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
-        deallocate(p_RfemData)
-      else
-        ndiscrNodes = 1
-        allocate (p_RdiscrNodes(ndiscrNodes))
-      end if
-      
-      p_RfemData => p_RdiscrNodes
-      
-      ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
-    
-      ! Initialise the content
-      p_RfemData(ndiscrNodes)%celement = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
-      p_RfemData(ndiscrNodes)%ctrafoType = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-      p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
-
-      ivecDiscrTrial = ndiscrNodes
-    end if
-
-    ! Maximum derivative for the test space
-    p_RfemData(ivecDiscrTest)%nmaxDerivative = &
-        max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
-
-    p_RfemData(ivecDiscrTrial)%nmaxDerivative = &
-        max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxDerivative)
+      if (ivecDiscrTest .eq. 0) then
         
-    call fev2_initBder(&
-        p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
-        p_RfemData(ivecDiscrTest)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTest)%Bder)
+        ! Structure is new. Reallocate, add and initialise.
+        if (associated(p_RfemData)) then
+          ndiscrNodes = size(p_RfemData)+1
+          allocate (p_RdiscrNodes(ndiscrNodes))
+          p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
+          deallocate(p_RfemData)
+        else
+          ndiscrNodes = 1
+          allocate (p_RdiscrNodes(ndiscrNodes))
+        end if
+        
+        p_RfemData => p_RdiscrNodes
+        
+        ! Add the test space
+        ndiscrNodes = ndiscrNodes-1
+        call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+      
+        ! Initialise the content
+        p_RfemData(ndiscrNodes)%celement = &
+            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
+        p_RfemData(ndiscrNodes)%ctrafoType = &
+            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
 
-    call fev2_initBder(&
-        p_RfemData(ivecDiscrTrial)%celement,p_RfemData(ivecDiscrTrial)%nmaxDerivative,&
-        p_RfemData(ivecDiscrTrial)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTrial)%Bder)
+        ivecDiscrTest = ndiscrNodes
+      end if
+
+      ! Maximum derivative for the test space
+      p_RfemData(ivecDiscrTest)%nmaxDerivative = &
+          max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
+
+      call fev2_initBder(&
+          p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
+          p_RfemData(ivecDiscrTest)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTest)%Bder)
+
+    end if
+    
+    ! Do we have the trial space already?
+    if (associated(p_rdiscrTrial)) then
+    
+      ivecDiscrTrial = 0
+      if (associated(p_RfemData)) then
+        ivecDiscrTrial = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
+      end if
+
+      if (ivecDiscrTrial .eq. 0) then
+        
+        ! Structure is new. Reallocate, add and initialise.
+        if (associated(p_RfemData)) then
+          ndiscrNodes = size(p_RfemData)+1
+          allocate (p_RdiscrNodes(ndiscrNodes))
+          p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
+          deallocate(p_RfemData)
+        else
+          ndiscrNodes = 1
+          allocate (p_RdiscrNodes(ndiscrNodes))
+        end if
+        
+        p_RfemData => p_RdiscrNodes
+        
+        ! Add the trial space
+        ndiscrNodes = ndiscrNodes-1
+        call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
+      
+        ! Initialise the content
+        p_RfemData(ndiscrNodes)%celement = &
+            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
+        p_RfemData(ndiscrNodes)%ctrafoType = &
+            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
+
+        ivecDiscrTrial = ndiscrNodes
+      end if
+
+      ! Maximum derivative for the trial space
+      p_RfemData(ivecDiscrTrial)%nmaxDerivative = &
+          max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxDerivative)
+          
+      call fev2_initBder(&
+          p_RfemData(ivecDiscrTrial)%celement,p_RfemData(ivecDiscrTrial)%nmaxDerivative,&
+          p_RfemData(ivecDiscrTrial)%nmaxDerivativeIdx,p_RfemData(ivecDiscrTrial)%Bder)
+
+    end if
 
   end subroutine
 
