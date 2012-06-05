@@ -1850,8 +1850,10 @@ contains
         ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
 
     ! Prepare FEM data for the vectors to be evaluated.
-    call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
-        ielementDistr)
+    if (present(revalVectors)) then
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+          ielementDistr)
+    end if
 
     ! Initialise the blocks according to the structure of the matrix
     ! and the FEM spaces used.
@@ -2960,8 +2962,10 @@ contains
         ielementDistr,RmaxDerivativeTest)
         
     ! Prepare FEM data for the vectors to be evaluated.
-    call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
-        ielementDistr)
+    if (present(revalVectors)) then
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+          ielementDistr)
+    end if
 
     ! Initialise the blocks according to the structure of the vector
     ! and the FEM spaces used.
