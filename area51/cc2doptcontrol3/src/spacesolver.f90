@@ -319,14 +319,14 @@ contains
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-              ilev,roperatorAsmHier%p_rfeHierarchyPrimal,roperatorAsmHier)
+              ilev,roperatorAsmHier)
 
         case (OPTP_DUAL,OPTP_DUALLIN)
           call smva_allocTempData (rsolver%rtempData,&
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-              ilev,roperatorAsmHier%p_rfeHierarchyDual,roperatorAsmHier)
+              ilev,roperatorAsmHier)
         end select
 
         ! Initialise the structures of the associated linear subsolver
@@ -377,12 +377,15 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ilev
+    integer :: ilev,iprevlv
     
     ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
     ! the solver performs filtering.
     integer(I32) :: cflags
     
+    ! iprevlv contains the last assembled level.
+    iprevlv = 0
+
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
@@ -390,7 +393,9 @@ contains
       call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
           rsolver%p_roperatorAsmHier,&
           rprimalSol,isollevelSpace,rsolver%itimelevel,&
-          rsolver%rnewtonParams%ctypeIteration .eq. 2,rsolver%rtempData)
+          rsolver%rnewtonParams%ctypeIteration .eq. 2,rsolver%rtempData,iprevlv)
+          
+      iprevlv = ilev
     
     end do
 
@@ -535,7 +540,11 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rd, p_rx
     integer :: ierror
+    type(t_linsolNode), pointer :: p_rsolverNode
    
+    ! At first, get a temp vector we can use for creating defects,
+    p_rd => rsolver%p_rd
+
     ! Which type of operator is to be solved?
     select case (rsolver%coptype)
 
@@ -546,15 +555,14 @@ contains
 
       ! This is the most complicated part. On level ispacelevel, we have
       ! to apply a nonlinear loop.
-      !
-      ! At first, get a temp vector we can use for creating the
-      ! nonlinear defect.
-      p_rd => rsolver%p_rd
       
       ! Apply the Newton iteration
       rsolver%rnewtonParams%nnonlinearIterations = 0
       do while (.true.)
       
+        ! -------------------------------------------------------------
+        ! Get the nonlinear defect
+        ! -------------------------------------------------------------
         ! Compute the basic (unpreconditioned) search direction in rd.
         call smva_getDef_primal (p_rd,&
             rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
@@ -624,18 +632,52 @@ contains
       
       end do
       
-      
-      
-      
-      
-      
-
     ! ---------------------------------------------------------------
     ! Dual equation. Linear loop.
     ! ---------------------------------------------------------------
     case (OPTP_DUAL)
+      ! We apply one defect correction, so to pass a defect to the 
+      ! linear solver.
+
+      ! Create a defect
+      call smva_getDef_dual (p_rd,&
+          rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+          rsolver%p_roperatorAsmHier,&
+          rprimalSol,rdualSol,rsolver%rtempData)
+      
+      ! Remember the initial residual
+      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+
+      ! Print the initial residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(0,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
       ! Call the linear solver, it does the job for us.
-      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+      
+      ! Get the final residual
+      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+    
+      ! Print the final residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(1,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
+      ! Update the control according to the search direction:
+      !
+      !    u_new  =  u_old  +  g_n
+      !
+      ! or to any configured step-length control rule.
+      call sptivec_getVectorFromPool(rdualSol%p_rvectorAccess,idofTime,p_rx)
+      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+      call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
     
     ! ---------------------------------------------------------------
     ! Linearised primal equation. Linear loop.

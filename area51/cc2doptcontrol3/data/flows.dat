@@ -189,7 +189,7 @@ sexpression(2) =
 # =3: analytically given in expression sexpression(1..ncomponents)
 # =4: Created by a forward simulation. NOTE: NOT YET SUPPORTED!
 
-ctype = -1
+ctype = 0
 
 # Id of the function in case ctype=0.
 
@@ -210,8 +210,7 @@ ncomponents = 2
 
 sexpression(2) =
   ""
-  ""
-  
+  "" 
 
 # Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.

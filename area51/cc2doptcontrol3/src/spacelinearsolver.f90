@@ -921,7 +921,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_precondDefect (rlsshierarchy,ilevel,rd)
+  subroutine lssh_precondDefect (rlsshierarchy,ilevel,rd,p_rsolverNode)
 
 !<description>
   ! Applies preconditioning of rd with the solver on level ilevel.
@@ -938,6 +938,10 @@ contains
   
   ! The defect to apply preconditioning to.
   type(t_vectorBlock), intent(inout) :: rd
+  
+  ! OPTIONAL; If present, this is set to the solver node of the linear
+  ! solver used to solve the system
+  type(t_linsolNode), pointer, optional :: p_rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -945,6 +949,10 @@ contains
     ! Initialise the solver node
     call linsol_precondDefect (&
         rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,rd)
+        
+    if (present(p_rsolverNode)) then
+      p_rsolverNode => rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode
+    end if
     
   end subroutine
 

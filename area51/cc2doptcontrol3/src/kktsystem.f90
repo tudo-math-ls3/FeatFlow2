@@ -365,9 +365,11 @@ contains
     ! apply a loop over all unknowns in time.
     ! -------------------------------------------------------------------------
     
+    ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
         rkktsystem%p_roperatorAsmHier,ierror)
+
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
           OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
@@ -379,12 +381,6 @@ contains
     ! -----------------------
     do idofTime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime
     
-      if (ierror .ne. 0) then
-        call output_line("Error initialising the solver data.",&
-            OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
-        call sys_halt()
-      end if
-
       ! Apply the solver to update the solution in timestep idofTime.
       call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%ispacelevel,&
           rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
@@ -418,9 +414,39 @@ contains
 
 !</subroutine>
 
-    ! ... to be done
-    call sys_halt()
+    ! local variables
+    integer :: idofTime, ierror
+
+    ! -------------------------------------------------------------------------
+    ! The solution of the dual equation is rather similar to the primal
+    ! equation, but even simpler. The timeloop loops backward through the
+    ! timesteps, and in every timestep, a linear problem has to be solved.
+    ! -------------------------------------------------------------------------
+    
+    ! Initialise basic solver structures
+    call spaceslh_initStructure (rspaceSolver, &
+        rkktsystem%ispacelevel, rkktsystem%itimelevel, &
+        rkktsystem%p_roperatorAsmHier,ierror)
+
+    if (ierror .ne. 0) then
+      call output_line("Error initialising the solver structures.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_solveDual")
+      call sys_halt()
+    end if
+    
+    ! ----------------------------------
+    ! Loop over all timesteps, backwards
+    ! ----------------------------------
+    do idofTime = rkktsystem%p_rprimalSol%p_rvector%NEQtime,1,-1
+    
+      ! Apply the solver to update the solution in timestep idofTime.
+      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%ispacelevel,&
+          rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
+      
+    end do ! step
    
+    call spaceslh_doneStructure (rspaceSolver)
+    
   end subroutine
 
   ! ***************************************************************************
