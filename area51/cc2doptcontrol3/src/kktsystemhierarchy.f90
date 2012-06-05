@@ -60,6 +60,32 @@ module kktsystemhierarchy
 
   public :: t_kktsystemHierarchy
 
+!<typeblock>
+  
+  ! A hierarchy of directional derivatives of a KKT system
+  type t_kktsystemDirDerivHierarchy
+  
+    ! A space-time hierarchy based on the primal space
+    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierPrimal => null()
+    
+    ! A space-time hierarchy based on the dual space
+    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierDual => null()
+
+    ! A space-time hierarchy based on the control space
+    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierControl => null()
+
+    ! Number of levels in the hierarchy
+    integer :: nlevels = 0
+
+    ! Array of KKT system (solutions) for all the levels
+    type(t_kktsystemDirDeriv), dimension(:), pointer :: p_RkktSysDirDeriv => null()
+  
+  end type
+
+!</typeblock>
+
+  public :: t_kktsystemDirDerivHierarchy
+
 !</types>
 
   ! Initialises a primal solution according to level ilevel in the
@@ -211,7 +237,7 @@ contains
     if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
 
     ! Get the spatial and time discretisations of that level
-    call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierDual,ilev,&
+    call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierControl,ilev,&
         p_rspaceDiscr,p_rtimeDiscr)
 
     ! Create the vector

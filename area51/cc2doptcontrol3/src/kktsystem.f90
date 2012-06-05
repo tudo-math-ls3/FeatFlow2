@@ -562,7 +562,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
               
-                if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
                   call sys_halt()

@@ -43,6 +43,7 @@ module newtoniterationlinear
   
   use kktsystemspaces
   use kktsystem
+  use kktsystemhierarchy
   
   use spacetimehierarchy
   
@@ -259,7 +260,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_precond (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
+  subroutine newtonlin_precond (rlinsolParam,rkktsysDirDerivHierarchy,rnewtonDir)
   
 !<description>
   ! Calculates the Newton search direction by applying the Newton
@@ -274,9 +275,9 @@ contains
   ! The output parameters are changed according to the iteration.
   type(t_linsolParameters), intent(inout) :: rlinsolParam
 
-  ! Structure defining directional derivatives of the KKT system.
+  ! Hierarchy of directional derivatives of the KKT system.
   ! Used for temporary calculations.
-  type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv 
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy 
 
   ! This structure contains the search direction to be
   ! preconditioned. Will be replaced by the precoditioned search direction.
@@ -285,7 +286,11 @@ contains
 
 !</subroutine>
 
-    integer :: ispacelevel
+    type(t_kktsystemDirDeriv), pointer :: p_rkktsysDirDeriv
+    
+    ! The calculation is done on the topmost level
+    p_rkktsysDirDeriv => &
+        rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(rkktsysDirDerivHierarchy%nlevels)
 
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
@@ -310,17 +315,17 @@ contains
     !     rkktsystemDirDeriv%p_rcontrolLin
     ! which starts with zero.
     
-    call kktsp_clearPrimal (rkktsystemDirDeriv%p_rprimalSolLin)
-    call kktsp_clearDual (rkktsystemDirDeriv%p_rdualLinSol)
-    call kktsp_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
+    call kktsp_clearPrimal (p_rkktsysDirDeriv%p_rprimalSolLin)
+    call kktsp_clearDual (p_rkktsysDirDeriv%p_rdualLinSol)
+    call kktsp_clearControl (p_rkktsysDirDeriv%p_rcontrolLin)
     
     ! Call the Richardson iteration to calculate an update
     ! for the control.
-    call newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rnewtonDir)
+    call newtonlin_richardson (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir)
     
     ! Overwrite the rnewtonDir with the update.
     call kktsp_controlLinearComb (&
-        rkktsystemDirDeriv%p_rcontrolLin,1.0_DP,rnewtonDir,0.0_DP)
+        p_rkktsysDirDeriv%p_rcontrolLin,1.0_DP,rnewtonDir,0.0_DP)
 
   end subroutine
 

@@ -109,6 +109,9 @@ module newtoniteration
     ! Underlying KKT system hierarchy that defines the shape of the solutions.
     type(t_kktsystemHierarchy), pointer :: p_rkktsystemHierarchy => null()
     
+    ! Hierarchy of directional derivatives. Calculated during the Newton iteration.
+    type(t_kktsystemDirDerivHierarchy), pointer :: p_rkktsysDirDerivHierarchy => null()
+    
     ! Descent direction
     type(t_controlSpace), pointer :: p_rdescentDir => null()
     
@@ -357,14 +360,13 @@ contains
 !</subroutine>
    
     ! local variables
-    type(t_kktsystemDirDeriv) :: rkktsystemDirDeriv
     type(t_controlSpace), pointer :: p_rdescentDir
     type(t_kktsystem), pointer :: p_rkktsystem
     
-    ! Get a pointer to the solution of the maximum level
+    ! Get a pointer to the solution on the maximum level
     p_rkktsystem => rkktsystemHierarchy%p_RkktSystems(rkktsystemHierarchy%nlevels)
     
-    ! Temporary vector
+    ! Temporary vector(s)
     p_rdescentDir => rsolver%p_rdescentDir
     
     ! Prepare a structure that encapsules the directional derivative.
@@ -422,7 +424,7 @@ contains
       !    J''(u_n) g_n  =  d_n
       !
       call newtonlin_precond (rsolver%rlinsolParam,&
-          rkktsystemDirDeriv,p_rdescentDir)
+          rsolver%p_rkktsysDirDerivHierarchy,p_rdescentDir)
       
       ! -------------------------------------------------------------
       ! Update of the solution
@@ -498,6 +500,10 @@ contains
 
     ! Create a vector holding the descent direction (highest level)
     call kkth_initControl (rsolver%p_rdescentDir,rsolver%p_rkktsystemHierarchy,0)
+    
+    ! Allocate memory for the directional derivative to be computed
+    ! during the Newton algorithm.
+    allocate(rsolver%p_rkktsysDirDerivHierarchy)
    
   end subroutine
 
@@ -518,10 +524,11 @@ contains
 
 !</subroutine>
 
-    ! Release the descent direction
+    ! Release the descent direction, memory for the directional derivative,...
     call kktsp_doneControlVector (rsolver%p_rdescentDir)
-  
     deallocate(rsolver%p_rdescentDir)
+    
+    deallocate(rsolver%p_rkktsysDirDerivHierarchy)
    
   end subroutine
 
