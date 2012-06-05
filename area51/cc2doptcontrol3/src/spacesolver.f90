@@ -493,7 +493,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_solve (rsolver,idofTime,isollevelSpace,&
-      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
+      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualLinSol,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
@@ -527,7 +527,7 @@ contains
   ! Current solution of the linearised dual equation.
   ! The space level of the solution is specified by isollevelSpace.
   ! The time level must match rsolver%itimelevel.
-  type(t_dualSpace), intent(inout), optional, target :: rdualSolLin
+  type(t_dualSpace), intent(inout), optional, target :: rdualLinSol
 
   ! Current solution of the linearised control equation
   ! The space level of the solution is specified by isollevelSpace.
@@ -670,11 +670,10 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
-      ! Update the control according to the search direction:
+      ! Update the control according to the defect:
       !
       !    u_new  =  u_old  +  g_n
-      !
-      ! or to any configured step-length control rule.
+
       call sptivec_getVectorFromPool(rdualSol%p_rvectorAccess,idofTime,p_rx)
       call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
       call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
@@ -683,15 +682,95 @@ contains
     ! Linearised primal equation. Linear loop.
     ! ---------------------------------------------------------------
     case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
+      ! We apply one defect correction, so to pass a defect to the 
+      ! linear solver.
+
+      ! Create a defect
+      call smva_getDef_primalLin (p_rd,&
+          rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+          rsolver%p_roperatorAsmHier,&
+          rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,&
+          rsolver%coptype .eq. OPTP_PRIMALLIN,rsolver%rtempData)
+      
+      ! Remember the initial residual
+      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+
+      ! Print the initial residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(0,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
       ! Call the linear solver, it does the job for us.
-      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+      
+      ! Get the final residual
+      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+    
+      ! Print the final residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(1,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
+      ! Update the control according to the defect
+      !
+      !    u_new  =  u_old  +  g_n
+
+      call sptivec_getVectorFromPool(rprimalSolLin%p_rvectorAccess,idofTime,p_rx)
+      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+      call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
 
     ! ---------------------------------------------------------------
     ! Linearised dual equation. Linear loop.
     ! ---------------------------------------------------------------
-    case (OPTP_DUALLIN)
+    case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
+      ! We apply one defect correction, so to pass a defect to the 
+      ! linear solver.
+
+      ! Create a defect
+      call smva_getDef_dualLin (p_rd,&
+          rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+          rsolver%p_roperatorAsmHier,&
+          rprimalSol,rdualSol,rprimalSolLin,rdualLinSol,&
+          rsolver%coptype .eq. OPTP_DUALLIN,rsolver%rtempData)
+      
+      ! Remember the initial residual
+      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+
+      ! Print the initial residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(0,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
       ! Call the linear solver, it does the job for us.
-      !call lssh_precondDefect (rsolver%p_rlsshierarchy,ilevel,rd)
+      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+      
+      ! Get the final residual
+      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+    
+      ! Print the final residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(1,4)) // &
+            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+      end if
+
+      ! Update the control according to the defect
+      !
+      !    u_new  =  u_old  +  g_n
+
+      call sptivec_getVectorFromPool(rdualLinSol%p_rvectorAccess,idofTime,p_rx)
+      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+      call sptivec_commitVecInPool(rdualLinSol%p_rvectorAccess,idofTime)
 
     end select
 

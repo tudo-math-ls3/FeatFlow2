@@ -98,7 +98,7 @@ module kktsystem
     ! Solution of the linearised dual equation of the KKT system.
     ! Specifies the directional derivative of the dual equation
     ! into the direction specified by p_rdualDirection.
-    type(t_dualSpace), pointer :: p_rdualSolLin => null()
+    type(t_dualSpace), pointer :: p_rdualLinSol => null()
 
     ! Solution of the linearised control equation of the KKT system.
     ! Specifies the directional derivative of the control equation
@@ -273,8 +273,8 @@ contains
         rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
         rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
 
-    allocate (rkktsystemDirDeriv%p_rdualSolLin)
-    call kktsp_initDualVector (rkktsystemDirDeriv%p_rdualSolLin,&
+    allocate (rkktsystemDirDeriv%p_rdualLinSol)
+    call kktsp_initDualVector (rkktsystemDirDeriv%p_rdualLinSol,&
         rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
         rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
 
@@ -310,8 +310,8 @@ contains
     call kktsp_donePrimalVector (rkktsystemDirDeriv%p_rprimalSolLin)
     deallocate (rkktsystemDirDeriv%p_rprimalSolLin)
 
-    call kktsp_doneDualVector (rkktsystemDirDeriv%p_rdualSolLin)
-    deallocate (rkktsystemDirDeriv%p_rdualSolLin)
+    call kktsp_doneDualVector (rkktsystemDirDeriv%p_rdualLinSol)
+    deallocate (rkktsystemDirDeriv%p_rdualLinSol)
 
     call kktsp_doneControlVector (rkktsystemDirDeriv%p_rcontrolLin)
     deallocate (rkktsystemDirDeriv%p_rcontrolLin)
@@ -738,7 +738,7 @@ contains
     integer :: icomp,istep
     real(DP) :: dtheta
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
-    type(t_spaceTimeVector), pointer :: p_rdualSolLin
+    type(t_spaceTimeVector), pointer :: p_rdualLinSol
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -757,10 +757,10 @@ contains
     !
     ! Which timestep scheme do we have?
     
-    p_rdualSolLin => rkktsystemDirDeriv%p_rdualSolLin%p_rvector
+    p_rdualLinSol => rkktsystemDirDeriv%p_rdualLinSol%p_rvector
     
     ! Timestepping technique?
-    select case (p_rdualSolLin%p_rtimeDiscr%ctype)
+    select case (p_rdualLinSol%p_rtimeDiscr%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -768,11 +768,11 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = p_rdualSolLin%p_rtimeDiscr%dtheta
+      dtheta = p_rdualLinSol%p_rtimeDiscr%dtheta
       
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (p_rdualSolLin%p_rtimeDiscr%itag)
+      select case (p_rdualLinSol%p_rtimeDiscr%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -789,11 +789,11 @@ contains
       case (1)
       
         ! Loop over all timesteps.
-        do istep = 1,p_rdualSolLin%p_rtimeDiscr%nintervals+1
+        do istep = 1,p_rdualLinSol%p_rtimeDiscr%nintervals+1
         
           ! Fetch the dual and control vectors.
           call sptivec_getVectorFromPool (&
-              rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep,p_rdualSpace)
+              rkktsystemDirDeriv%p_rdualLinSol%p_rvectorAccess,istep,p_rdualSpace)
 
           call sptivec_getVectorFromPool (&
               rcontrolLin%p_rvectorAccess,istep,p_rcontrolSpace)

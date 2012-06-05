@@ -1102,7 +1102,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,rprimalLinSol,rcontrolLin,bfull,rtempData)
+      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised primaö equation
@@ -1128,7 +1128,7 @@ contains
   type(t_controlSpace), intent(inout) :: rcontrol
 
   ! Structure that describes the solution of the linearised primal equation.
-  type(t_primalSpace), intent(inout) :: rprimalLinSol
+  type(t_primalSpace), intent(inout) :: rprimalSolLin
 
   ! Structure that describes the solution of the linearised control equation.
   type(t_controlSpace), intent(inout) :: rcontrolLin
@@ -1242,7 +1242,7 @@ contains
 
             ! -----------------------------------------
             ! Realise the defect
-            call sptivec_getVectorFromPool (rprimalLinSol%p_rvectorAccess,idofTime-1,p_rvector)
+            call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
           end if
@@ -1312,7 +1312,7 @@ contains
           ! semilinear parts of the operator
           ! -----------------------------------------
 
-          call sptivec_getVectorFromPool (rprimalLinSol%p_rvectorAccess,idofTime,p_rvector)
+          call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector)
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
 
         end select ! Equation
@@ -1328,7 +1328,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,rprimalLinSol,rdualLinSol,bfull,rtempData)
+      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualLinSol,bfull,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised dual equation
@@ -1354,7 +1354,7 @@ contains
   type(t_dualSpace), intent(inout) :: rdualSol
 
   ! Space-time vector that describes the solution of the linearised forward equation.
-  type(t_dualSpace), intent(inout) :: rprimalLinSol
+  type(t_primalSpace), intent(inout) :: rprimalSolLin
 
   ! Structure that defines the vector rdualLinSol.
   type(t_dualSpace), intent(inout) :: rdualLinSol
@@ -1481,7 +1481,7 @@ contains
           ! RHS assembly
           ! ===============================================
                
-          call smva_getRhs_dualLin (roperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+          call smva_getRhs_dualLin (roperatorAsm,idofTime,rdualSol,rprimalSolLin,&
               bfull,1.0_DP,rdest)
             
           ! ===============================================
@@ -1550,12 +1550,12 @@ contains
           ! terms to be subtracted, which stem from the full Frechet derivative
           ! of the dual equation. There is:
           !
-          !    (dual operator) = rhs - (rdualSol, (rprimalLinSol grad) (phi))
-          !                          - (rdualSol,  grad(rprimalLinSol) phi)
+          !    (dual operator) = rhs - (rdualSol, (rprimalSolLin grad) (phi))
+          !                          - (rdualSol,  grad(rprimalSolLin) phi)
           !
           ! For the assembly, the RHS assembly has to be invoked.
           call smva_getSemilinRhs_dualLin (roperatorAsm,idofTime,&
-              rdualSol,rprimalLinSol,bfull,-1.0_DP,rdest)
+              rdualSol,rprimalSolLin,bfull,-1.0_DP,rdest)
           
         end select ! Equation
       
@@ -2962,7 +2962,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+  subroutine smva_getRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalSolLin,&
       bfull,dweight,rrhs)
 
 !<description>
@@ -2988,7 +2988,7 @@ contains
   type(t_dualSpace), intent(inout) :: rdualSol
 
   ! Space-time vector which contains the solution of the linearised primal equation.
-  type(t_dualSpace), intent(inout) :: rprimalLinSol
+  type(t_primalSpace), intent(inout) :: rprimalSolLin
 !</input>
 
 !<inputoutput>
@@ -3087,7 +3087,7 @@ contains
 
           ! Vector 3+4 = linearised primal velocity. We need the 1st
           ! derivative as well.
-          call sptivec_getVectorFromPool (rprimalLinSol%p_rvectorAccess,idofTime,p_rvector2)
+          call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),1)
           
@@ -3116,7 +3116,7 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalLinSol,&
+  subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalSolLin,&
       bfull,dweight,rrhs)
 
 !<description>
@@ -3142,7 +3142,7 @@ contains
   type(t_dualSpace), intent(inout) :: rdualSol
 
   ! Space-time vector which contains the solution of the linearised primal equation.
-  type(t_dualSpace), intent(inout) :: rprimalLinSol
+  type(t_primalSpace), intent(inout) :: rprimalSolLin
 !</input>
 
 !<inputoutput>
@@ -3233,7 +3233,7 @@ contains
           call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
 
           ! Vector 3+4 = linearised primal velocity.
-          call sptivec_getVectorFromPool (rprimalLinSol%p_rvectorAccess,idofTime,p_rvector2)
+          call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),1)
           

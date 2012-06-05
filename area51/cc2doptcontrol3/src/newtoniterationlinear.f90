@@ -311,7 +311,7 @@ contains
     ! which starts with zero.
     
     call kktsp_clearPrimal (rkktsystemDirDeriv%p_rprimalSolLin)
-    call kktsp_clearDual (rkktsystemDirDeriv%p_rdualSolLin)
+    call kktsp_clearDual (rkktsystemDirDeriv%p_rdualLinSol)
     call kktsp_clearControl (rkktsystemDirDeriv%p_rcontrolLin)
     
     ! Call the Richardson iteration to calculate an update
