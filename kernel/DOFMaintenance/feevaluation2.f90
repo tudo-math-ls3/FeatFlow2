@@ -781,7 +781,7 @@ contains
     ! Do we have the test space already?
     ivecDiscrTest = 0
     if (associated(p_RfemData)) then
-      ivecDiscrTest = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+      ivecDiscrTest = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTest)
     end if
     
     if (ivecDiscrTest .eq. 0) then
@@ -876,7 +876,7 @@ contains
     if (associated(p_rdiscrTest)) then
       ivecDiscrTest = 0
       if (associated(p_RfemData)) then
-        ivecDiscrTest = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+        ivecDiscrTest = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTest)
       end if
       
       if (ivecDiscrTest .eq. 0) then
@@ -923,7 +923,7 @@ contains
     
       ivecDiscrTrial = 0
       if (associated(p_RfemData)) then
-        ivecDiscrTrial = containsDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
+        ivecDiscrTrial = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTrial)
       end if
 
       if (ivecDiscrTrial .eq. 0) then
