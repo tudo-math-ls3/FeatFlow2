@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 
 # Computation of results in GMV-format
-cd ~/nobackup/Featflow2/area51/flagship
+cd ~/nobackup/Featflow2/application/flagship
 ./Projects/fct_book/Scripts/shocktube1d.sh loworder
 ./Projects/fct_book/Scripts/shocktube1d.sh failsafe
 ./Projects/fct_book/Scripts/shocktube1d.sh failsafeall

@@ -19,7 +19,6 @@ extraflags=""
 LC_ALL=C
 
 
-
 ######################################################
 # We want to develop our code in the home directory (because that
 # is not only stored on a RAID system, but also backuped regularly
@@ -32,8 +31,8 @@ LC_ALL=C
 # Try to come up with a reasonable location in $HOME/nobackup based on
 # the current working directory. One could simply append the current
 # working directory to a fixed object directory prefix, example:
-#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
-#  => Obj directory: $HOME/nobackup/feat2obj/$HOME/experimental/Featflow2/area51/cc2dmedium
+#  Source directory: $HOME/experimental/Featflow2/applications/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/$HOME/experimental/Featflow2/applications/cc2dmedium
 #
 # But in this case the path given to compilers to locate module files
 # (-fmod, -J options) and the path to the object file (-o option) can 
@@ -41,8 +40,8 @@ LC_ALL=C
 # characters (e.g. PGI). So, try to come up with something more useful:
 # cut away the strings "$HOME" and "Featflow2" from the path to the
 # current directory and use that:
-#  Source directory: $HOME/experimental/Featflow2/area51/cc2dmedium
-#  => Obj directory: $HOME/nobackup/feat2obj/experimental/area51/cc2dmedium
+#  Source directory: $HOME/experimental/Featflow2/applications/cc2dmedium
+#  => Obj directory: $HOME/nobackup/feat2obj/experimental/applications/cc2dmedium
 
 # Change to the directory where this script resides
 # (it is possible to call this script via <some path>/configure,
@@ -102,23 +101,18 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 
 
 ######################################################
-# Include configuration file
-. ../../area51/flagship/flagship.conf
-
+# Invoke configure script in application directory
 ../../bin/configure \
 	--appname=flagship \
-	--programfile=../../area51/flagship/src/flagship.f90 \
-	--srclist_app="`ls ../../area51/flagship/src/*.f90 ../../area51/flagship/src/models/*/*.f90 ../../area51/flagship/src/kernel/*.f90`" \
-        --header-files-to-copy=../../area51/flagship/src/flagship.h \
-        --header-files-to-copy=../../area51/flagship/src/models/hydro/hydro.h \
-        --header-files-to-copy=../../area51/flagship/src/models/hydro/hydro_callback.h \
-        --header-files-to-copy=../../area51/flagship/src/models/mhd/mhd.h \
-        --header-files-to-copy=../../area51/flagship/src/kernel/thermodynamics.h \
-        --header-files-to-copy=../../area51/flagship/src/kernel/magnetohydrodynamics.h \
+	--programfile=../../applications/flagship/src/flagship.f90 \
+	--srclist_app="`ls ../../applications/flagship/src/*.f90 ../../applications/flagship/src/models/*/*.f90 ../../applications/flagship/src/kernel/*.f90`" \
+        --header-files-to-copy=../../applications/flagship/src/flagship.h \
+        --header-files-to-copy=../../applications/flagship/src/models/hydro/hydro.h \
+        --header-files-to-copy=../../applications/flagship/src/models/hydro/hydro_callback.h \
+        --header-files-to-copy=../../applications/flagship/src/models/mhd/mhd.h \
+        --header-files-to-copy=../../applications/flagship/src/kernel/thermodynamics.h \
+        --header-files-to-copy=../../applications/flagship/src/kernel/magnetohydrodynamics.h \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	--apponlyflags="$APPONLYFLAGS"\
 	$@
-
-echo "Application will be compiled with the following flags:\n"
-echo $MESSAGE
