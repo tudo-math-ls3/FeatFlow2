@@ -400,11 +400,12 @@ contains
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
-    subroutine fgetDiscr(rtriangulation,rdiscr,rboundary,rcollection)
+    subroutine fgetDiscr(ilevel,rtriangulation,rdiscr,rboundary,rcollection)
     use triangulation
     use boundary
     use spatialdiscretisation
     use collection
+    integer, intent(in) :: ilevel
     type(t_triangulation), intent(in) :: rtriangulation
     type(t_blockDiscretisation), intent(out) :: rdiscr
     type(t_collection), intent(inout), optional :: rcollection
@@ -505,11 +506,12 @@ contains
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
-    subroutine fgetDiscr(rtriangulation,rdiscr,rboundary,rcollection)
+    subroutine fgetDiscr(ilevel,rtriangulation,rdiscr,rboundary,rcollection)
     use triangulation
     use boundary
     use spatialdiscretisation
     use collection
+    integer, intent(in) :: ilevel
     type(t_triangulation), intent(in) :: rtriangulation
     type(t_blockDiscretisation), intent(out) :: rdiscr
     type(t_collection), intent(inout), optional :: rcollection
@@ -575,11 +577,12 @@ contains
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
-    subroutine fgetDiscr(rtriangulation,rdiscr,rboundary,rcollection)
+    subroutine fgetDiscr(ilevel,rtriangulation,rdiscr,rboundary,rcollection)
     use triangulation
     use boundary
     use spatialdiscretisation
     use collection
+    integer, intent(in) :: ilevel
     type(t_triangulation), intent(in) :: rtriangulation
     type(t_blockDiscretisation), intent(out) :: rdiscr
     type(t_collection), intent(inout), optional :: rcollection
