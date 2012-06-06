@@ -7,9 +7,9 @@
 ################################################################################
 
 simportdatafiles(3) =
-  'data/zpinch/2d/default.dat'
-  'data/solverdefault.dat'
-  'data/zpinch/solverdefault.dat'
+  '../../zpinch/2d/default.dat'
+  '../../solverdefault.dat'
+  '../../zpinch/solverdefault.dat'
 
 ################################################################################
 
@@ -25,7 +25,7 @@ subapplication(2) =
   Transport
 
 # file which contains the application specific data
-indatfile = data/benchmark/zpinch/2d/zpinch-rz.indat
+indatfile = %{sdatadirectory}/benchmark/zpinch/2d/zpinch-rz.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname(2) =
@@ -76,10 +76,10 @@ ilimitersynchronisation = 2
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_$res.prm
+prmfile = %{sgriddirectory}/2d/zpinch_$res.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_$res.tri
+trifile = %{sgriddirectory}/2d/zpinch_$res.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0

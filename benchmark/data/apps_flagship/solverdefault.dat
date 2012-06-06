@@ -5,6 +5,7 @@
 ################################################################################
 
 iresNorm = 0
+istoppingCriterion = 1
 nminiterations = 1
 nmaxiterations = 1
 domega = 1.0
@@ -26,6 +27,8 @@ ddefZero = 1e-30
 [NonlinearSolver]
 ################################################################################
 
+iresNorm = 0
+istoppingCriterion = 1
 ddivRel  = 1e99
 ddivAbs  = 1e99
 drhsZero = 1e-30
@@ -48,6 +51,8 @@ ddefZero = 1e-30
 [LinearSolver]
 ################################################################################
 
+iresNorm = 0
+istoppingCriterion = 1
 ddivRel  = 1e99
 ddivAbs  = 1e99
 drhsZero = 1e-30
@@ -58,3 +63,16 @@ ddefZero = 1e-30
 [LinearPrecond]
 ################################################################################
 
+
+################################################################################
+[Timestepping]
+################################################################################
+
+# proportional exponent for PID controller
+dproportionalexponent = 0.075
+
+# integrap exponent for PID controller
+dintegralexponent = 0.175
+
+# derivative exponent for PID controller
+dderivativeexponent = 0.01

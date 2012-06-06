@@ -108,13 +108,17 @@ contains
     call parlst_getvalue_string(rparlist,&
         trim(soutputName), 'sucdsolution', sucdsolution)
     call parlst_getvalue_int(rparlist,&
-        trim(soutputName), 'iformatucd', iformatUCD)
-
+        trim(soutputName), 'iformatucd', iformatUCD, 0)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'subapplication', ssectionNameHydro, isubstring=1)
     call parlst_getvalue_int(rparlist,&
         ssectionNameHydro, 'isystemformat', isystemformat)
     
+    if (iformatUCD .eq. 0) then
+      call output_line('No valid output format is specified!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'zpinch_outputSolution')
+    end if
+
     ! Initialise the UCD exporter
     call flagship_initUCDexport(rproblemLevel, sucdsolution,&
         iformatUCD, rexport, ifilenumber)

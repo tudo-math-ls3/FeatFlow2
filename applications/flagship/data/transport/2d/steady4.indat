@@ -16,6 +16,7 @@
 
 # Definition of user-defined constants
 defconst: CbI = 4.0
+defconst: gamma = 1.0
 
 # Specify the initial solution
 deffunc: @initsol = 0 ; x,y,t
@@ -38,12 +39,8 @@ IBCT
 NCOMP
 5
 PARAMETERS
-0.15 T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
-0.2  T  'DIRICHLET_WEAK'  '4-20*x'  '_CbI'  '1.0' ; x,y,t
-3.0  T  'DIRICHLET_WEAK'  '0.0'     '_CbI'  '1.0'
-3.05 T  'DIRICHLET_WEAK'  '20-20*y' '_CbI'  '1.0' ; x,y,t
-4.0  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
-
-0.2  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
-3.0  F  'DIRICHLET_WEAK'  '0.0'     '_CbI'  '1.0'
-4.0  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '1.0'
+0.15 T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '_gamma'
+0.2  T  'DIRICHLET_WEAK'  '4-20*x'  '_CbI'  '_gamma' ; x,y,t
+3.0  T  'DIRICHLET_WEAK'  '0.0'     '_CbI'  '_gamma'
+3.05 T  'DIRICHLET_WEAK'  '20-20*y' '_CbI'  '_gamma' ; x,y,t
+4.0  T  'DIRICHLET_WEAK'  '1.0'     '_CbI'  '_gamma'

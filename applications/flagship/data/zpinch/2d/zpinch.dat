@@ -7,9 +7,9 @@
 ################################################################################
 
 simportdatafiles(3) =
-  'data/zpinch/2d/default.dat'
-  'data/solverdefault.dat'
-  'data/zpinch/solverdefault.dat'
+  '../../zpinch/2d/default.dat'
+  '../../solverdefault.dat'
+  '../../zpinch/solverdefault.dat'
 
 ################################################################################
 
@@ -25,7 +25,7 @@ subapplication(2) =
   Transport
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/zpinch.indat
+indatfile = ../../zpinch/2d/zpinch.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname(2) =
@@ -82,10 +82,10 @@ ilimitersynchronisation = 3
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_60x240.prm
+prmfile = %{sgriddirectory}/2d/zpinch_60x240.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_60x240.tri
+trifile = %{sgriddirectory}/2d/zpinch_60x240.tri
 
 # type of finite element space(s)
 celement(2) =

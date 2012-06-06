@@ -7,8 +7,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/fct_book/2d/default.dat'
-  'data/solverdefault.dat'
+  '%{sdatadirectory}/fct_book/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -19,7 +19,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/fct_book/2d/radial.indat
+indatfile = %{sdatadirectory}/fct_book/2d/radial.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -151,10 +151,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_unstructured_trias.prm
+prmfile = %{sgriddirectory}/2d/square_01x01_unstructured_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_unstructured_trias.tri
+trifile = %{sgriddirectory}/2d/square_01x01_unstructured_trias.tri
 
 # type of finite element space(s)
 celement = EL_P1_2D

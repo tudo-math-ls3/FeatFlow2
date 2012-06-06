@@ -11,8 +11,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/hydro/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../hydro/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -23,7 +23,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/hydro/2d/ramp5.indat
+indatfile = %{sdatadirectory}/hydro/2d/ramp5.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -144,10 +144,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/ramp_5deg_inlet_quads.prm
+prmfile = %{sgriddirectory}/2d/ramp_5deg_inlet_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/ramp_5deg_inlet_quads.tri
+trifile = %{sgriddirectory}/2d/ramp_5deg_inlet_quads.tri
 
 # type of finite element space(s)
 celement = EL_Q1_2D

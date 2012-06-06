@@ -11,8 +11,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/hydro/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../hydro/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -23,7 +23,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/hydro/2d/gammchannel.indat
+indatfile = %{sdatadirectory}/hydro/2d/gammchannel.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -144,10 +144,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/gammchannel_trias.prm
+prmfile = %{sgriddirectory}/2d/gammchannel_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/gammchannel_trias.tri
+trifile = %{sgriddirectory}/2d/gammchannel_trias.tri
 
 # type of finite element space(s)
 celement = EL_P1_2D

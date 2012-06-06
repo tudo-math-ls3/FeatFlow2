@@ -7,8 +7,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/hydro/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../hydro/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -19,7 +19,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/hydro/2d/forward.indat
+indatfile = %{sdatadirectory}/hydro/2d/forward.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -120,10 +120,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/forward_step.prm
+prmfile = %{sgriddirectory}/2d/forward_step.prm
 
 # file which contains the triangulation
-trifile = grids/2d/forward_step.tri
+trifile = %{sgriddirectory}/2d/forward_step.tri
 
 # type of finite element space(s)
 celement = EL_Q1_2D

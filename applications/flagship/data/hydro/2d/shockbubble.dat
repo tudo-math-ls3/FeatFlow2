@@ -7,8 +7,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/hydro/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../hydro/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -19,7 +19,7 @@ application = hydro
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/hydro/2d/shockbubble.indat
+indatfile = %{sdatadirectory}/hydro/2d/shockbubble.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -120,10 +120,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_shockbubble_quads.prm
+prmfile = %{sgriddirectory}/2d/rect_shockbubble_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_shockbubble_quads.tri
+trifile = %{sgriddirectory}/2d/rect_shockbubble_quads.tri
 
 # type of finite element space(s)
 celement(2) =

@@ -1,7 +1,5 @@
 # -*- mode: sh -*-
-#
-# TODO MATTHIAS_MOELLER: tests solving some variant of Euler equation
-#
+##
 # Description of the file format:
 # This file is supposed to be a simple ASCII text file. Settings are
 # defined per line via
@@ -62,14 +60,94 @@ include 'defaults.inc'
 appl = flagship
 class = FLAGSHIP
 
-
-
+#============================================================
+# test for the transport model
+#============================================================
 
 # Test 1
-testid   = FLAGSHIP_Z-PINCH_001
-descr    = TODO_MATTHIAS_MOELLER: solving whatever equations under whatever conditions worth mentioning here
-datfile  = data/area51_flagship/mhd/2d/z-pinch.dat
-# call program several times, each time with a different maximum multigrid level,
-# e.g. to calculate some error-reduction rates.
-mglevels = 1,2
+testid   = FLAGSHIP_TRANSPORT_001
+descr    = Solving steady transport problem with goal-oriented grid adaptation
+datfile  = data/apps_flagship/transport/2d/donut.dat
+mglevels = 1
 
+# Test 2
+testid   = FLAGSHIP_TRANSPORT_002
+descr    = Solving transient transport problem with Galerkin discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 0
+
+# Test 3
+testid   = FLAGSHIP_TRANSPORT_003
+descr    = Solving transient transport problem with Upwind discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 1
+
+# Test 4
+testid   = FLAGSHIP_TRANSPORT_004
+descr    = Solving transient transport problem with semi-explicit FEM-FCT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 10
+
+# Test 5
+testid   = FLAGSHIP_TRANSPORT_005
+descr    = Solving transient transport problem with semi-implicit FEM-FCT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 11
+
+# Test 6
+testid   = FLAGSHIP_TRANSPORT_006
+descr    = Solving transient transport problem with iterative FEM-FCT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 12
+
+# Test 7
+testid   = FLAGSHIP_TRANSPORT_007
+descr    = Solving transient transport problem with linearised FEM-FCT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 20
+
+# Test 8
+testid   = FLAGSHIP_TRANSPORT_008
+descr    = Solving transient transport problem with FEM-TVD discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 30
+
+# Test 9
+testid   = FLAGSHIP_TRANSPORT_009
+descr    = Solving transient transport problem with FEM-GP discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 31
+
+# Test 10
+testid   = FLAGSHIP_TRANSPORT_010
+descr    = Solving transient transport problem with nonlinear upwind-biased FEM-LPT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 41
+
+# Test 11
+testid   = FLAGSHIP_TRANSPORT_011
+descr    = Solving transient transport problem with linearised upwind-biased FEM-LPT discretisation
+datfile  = data/apps_flagship/transport/2d/leveque.dat
+mglevels = 7
+ISTABILISATION = 51
+
+#============================================================
+# test for the hydrodynamic model
+#============================================================
+
+#============================================================
+# test for the magnetohydrodynamic model
+#============================================================
+
+#============================================================
+# test for the simpified Z-pinch implosion model
+#============================================================

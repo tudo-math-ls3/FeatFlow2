@@ -11,8 +11,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/mhd/1d/default.dat'
-  'data/solverdefault.dat'
+  '../../mhd/1d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -23,7 +23,7 @@ application = mhd
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/mhd/1d/shocktube.indat
+indatfile = %{sdatadirectory}/mhd/1d/shocktube.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -139,7 +139,7 @@ ssolutionfailsafevariable(3) =
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit800.tri
+trifile = %{sgriddirectory}/1d/unit800.tri
 
 # type of finite element space(s)
 celement = EL_P1_1D

@@ -8,8 +8,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../transport/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -20,7 +20,7 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/implosion.indat
+indatfile = %{sdatadirectory}/transport/2d/implosion.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -130,12 +130,12 @@ stargetfuncname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/zpinch_60x240.prm
-#prmfile = grids/2d/zpinch_3x120_rz.prm
+prmfile = %{sgriddirectory}/2d/zpinch_60x240.prm
+#prmfile = %{sgriddirectory}/2d/zpinch_3x120_rz.prm
 
 # file which contains the triangulation
-trifile = grids/2d/zpinch_60x240.tri
-#trifile = grids/2d/zpinch_3x120_rz.tri
+trifile = %{sgriddirectory}/2d/zpinch_60x240.tri
+#trifile = %{sgriddirectory}/2d/zpinch_3x120_rz.tri
 
 # type of finite element space(s)
 celement(2) =

@@ -10,8 +10,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../transport/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -22,7 +22,7 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/sinusoidal.indat
+indatfile = %{sdatadirectory}/transport/2d/sinusoidal.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond2_primal
@@ -138,10 +138,10 @@ sexacttargetfuncname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = %{sgriddirectory}/2d/square_01x01_quads.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = %{sgriddirectory}/2d/square_01x01_quads.tri
 
 # type of finite element space(s)
 celement = EL_Q1_2D

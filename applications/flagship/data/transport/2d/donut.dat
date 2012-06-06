@@ -14,8 +14,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/2d/default.dat'
-  'data/solverdefault.dat'
+  '../../transport/2d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -26,7 +26,7 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/donut.indat
+indatfile = %{sdatadirectory}/transport/2d/donut.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -141,10 +141,10 @@ sexacttargetfuncname = @exactTargetFunc
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/rect_2x1.prm
+prmfile = %{sgriddirectory}/2d/rect_2x1.prm
 
 # file which contains the triangulation
-trifile = grids/2d/rect_2x1.tri
+trifile = %{sgriddirectory}/2d/rect_2x1.tri
 
 # type of finite element space(s)
 celement(2) =

@@ -46,7 +46,7 @@ program flagship
 
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
-  character(LEN=SYS_STRLEN) :: slogdir, slogfile
+  character(LEN=SYS_STRLEN) :: slogfile, serrorfile, sbenchlogfile
   character(LEN=SYS_STRLEN) :: application
   character(LEN=SYS_STRLEN) :: sparameterfile, sperfconfigfile
   character(LEN=10) :: stime
@@ -69,19 +69,8 @@ program flagship
   sys_haltmode = SYS_HALT_STOP
 #endif
 
-  ! Initialise the output system
-  ! Use $LOGDIR/$LOGFILE if set, otherwise hardcoded setting based on current time
-  call date_and_time(sdate, stime)
-  call getenv('LOGDIR',cbuffer); slogdir = adjustl(cbuffer)
-  call getenv('LOGFILE',cbuffer); slogfile = adjustl(cbuffer)
-  if (trim(slogdir) .eq. '') then
-    call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
-  else
-    if (trim(slogfile) .eq. '') then
-      slogfile = 'flagship_' // sdate // '_' // stime(1:10) // '.log'
-    end if
-    call output_init(trim(slogdir) // '/' // trim(slogfile))
-  end if
+  ! Initialise the output system - temporary until we read in the output settings
+  call output_init()
 
   ! Initialise storage subsystem
   call storage_init(500, 100)
@@ -97,7 +86,7 @@ program flagship
   call output_lbrk()
   call output_separator(OU_SEP_STAR)
   call output_line('  FlAGSHiP: Flux-corrected Aerodynamics by Galerkin')
-  call output_line('            Schemes with High Performance (2004-2011)')
+  call output_line('            Schemes with High Performance (2004-2012)')
   call output_lbrk()
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
@@ -110,6 +99,7 @@ program flagship
   call output_line('  Hosttype:        '//trim(hosttype))
   call getenv('USER',cbuffer); username = adjustl(cbuffer)
   call output_line('  Username:        '//trim(username))
+  call date_and_time(sdate, stime)
   call output_line('  Date:            '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4))
   call output_line('  Time:            '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
 
@@ -137,8 +127,22 @@ program flagship
   call parlst_info(rparlist)
   call output_separator(OU_SEP_MINUS)
 
+  call parlst_getvalue_string (rparlist,'',&
+      'slogfile', slogfile, '')
+  call parlst_getvalue_string (rparlist,'',&
+      'serrorfile', serrorfile, '')
+  call parlst_getvalue_string (rparlist,'',&
+      'sbenchlogfile', sbenchlogfile, '')
+  call parlst_getvalue_string(rparlist, '',&
+      'sperfconfigfile', sperfconfigfile)
+  
+  ! Release output stuff
+  call output_done()
+  
+  ! Initialise log file for output.
+  call output_init (slogfile, serrorfile, sbenchlogfile)
+
   ! Initialise global performace configurations
-  call parlst_getvalue_string(rparlist, '', 'sperfconfigfile', sperfconfigfile)
   call flagship_initPerfConfig(sperfconfigfile)
 
   ! Switch to application module

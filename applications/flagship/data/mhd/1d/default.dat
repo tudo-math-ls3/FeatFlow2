@@ -6,7 +6,32 @@
 #                                                                              #
 ################################################################################
 
-sperfconfigfile = "../../perfconfig/default.pcfg"
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data
+
+# Directory with grid files
+sgriddirectory = %{sappdirectory}/grids
+
+# Directory for log files
+slogdirectory = %{sappdirectory}/log
+
+# Log file for messages. ='': No log file output.
+slogfile = %{slogdirectory}/output.log
+
+# Log file for error messages; usually coincides with slogfile to print
+# errors into the same log file as standard messages.
+# ='': Use the same log file as slogfile
+serrorfile =
+
+# Log file for messages used in regression test benchmarks.
+# ='': No benchmark output (standard)
+sbenchlogfile =
+
+# Performance configurations
+sperfconfigfile = %{sdatadirectory}/perfconfig/default.pcfg
 
 ################################################################################
 [Mhd]

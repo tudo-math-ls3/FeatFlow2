@@ -8,8 +8,8 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/1d/default.dat'
-  'data/solverdefault.dat'
+  '../../transport/1d/default.dat'
+  '../../solverdefault.dat'
 
 ################################################################################
 
@@ -20,7 +20,7 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/1d/bucklev.indat
+indatfile = %{sdatadirectory}/transport/1d/bucklev.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = bdrcond_primal
@@ -128,7 +128,7 @@ stargetfuncname =
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/rect2_2.tri
+trifile = %{sgriddirectory}/1d/rect2_2.tri
 
 # type of finite element space(s)
 celement = EL_P1_1D
