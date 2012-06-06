@@ -109,8 +109,11 @@ module newtoniteration
     ! Underlying KKT system hierarchy that defines the shape of the solutions.
     type(t_kktsystemHierarchy), pointer :: p_rkktsystemHierarchy => null()
     
+    ! Hierarchy of solutions (nonlinearities) for the nonlinear iteration
+    type(t_kktsystemHierarchy), pointer :: p_rsolutionHierarchy => null()
+        
     ! Hierarchy of directional derivatives. Calculated during the Newton iteration.
-    type(t_kktsystemDirDerivHierarchy), pointer :: p_rkktsysDirDerivHierarchy => null()
+    type(t_kktsystemDirDerivHierarchy), pointer :: p_rdirDerivHierarchy => null()
     
     ! Descent direction
     type(t_controlSpace), pointer :: p_rdescentDir => null()
@@ -129,15 +132,9 @@ module newtoniteration
   ! Structural initialisation
   public :: newtonit_initStructure
   
-  ! Final initialisation
-  public :: newtonit_initData
-  
   ! Apply a Newton iteration in the control space
   public :: newtonit_solve
   
-  ! Cleanup of data
-  public :: newtonit_doneData
-
   ! Cleanup of structures
   public :: newtonit_doneStructure
 
@@ -338,7 +335,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_solve (rsolver,rkktsystemHierarchy)
+  subroutine newtonit_solve (rsolver,rsolution)
   
 !<description>
   ! Applies a Newton iteration to solve the space-time system.
@@ -349,22 +346,23 @@ contains
   ! The output parameters are changed according to the iteration.
   type(t_spacetimeNewton), intent(inout) :: rsolver
 
-  ! Structure defining a hierarchy of solutions of the KKT system.
-  ! The solution on the maximum level is taken as initial
-  ! values. On exit, the structure contains improved solutions
-  ! on the maximum level. The content of the lower levels is
-  ! undefined.
-  type(t_kktsystemHierarchy), intent(inout), target :: rkktsystemHierarchy
+  ! Structure defining the solutions of the KKT system.
+  type(t_kktsystem), intent(inout), target :: rsolution
 !</inputoutput>
 
 !</subroutine>
    
     ! local variables
     type(t_controlSpace), pointer :: p_rdescentDir
-    type(t_kktsystem), pointer :: p_rkktsystem
+    type(t_kktsystem), pointer :: p_rsolution
+    type(t_kktsystemDirDeriv), pointer :: p_rsolutionDirDeriv
     
-    ! Get a pointer to the solution on the maximum level
-    p_rkktsystem => rkktsystemHierarchy%p_RkktSystems(rkktsystemHierarchy%nlevels)
+    ! Initialise data for the nonlinear iteration
+    call newtonit_initData (rsolver,rsolution)
+
+    ! Get a pointer to the solution and directional derivative on the maximum level
+    call kkth_getKKTsystem (rsolver%p_rsolutionHierarchy,0,p_rsolution)
+    call kkth_getKKTsystemDirDeriv (rsolver%p_rdirDerivHierarchy,0,p_rsolutionDirDeriv)
     
     ! Temporary vector(s)
     p_rdescentDir => rsolver%p_rdescentDir
@@ -391,7 +389,7 @@ contains
       ! -------------------------------------------------------------
 
       ! Compute the basic (unpreconditioned) search direction d_n.
-      call newtonit_getResidual (rsolver,p_rkktsystem,p_rdescentDir,&
+      call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
           rsolver%rnewtonParams%dresFinal)
 
       if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
@@ -423,8 +421,10 @@ contains
       !
       !    J''(u_n) g_n  =  d_n
       !
+      ! The control on the maximum level of p_rdirDerivHierarchy
+      ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.
       call newtonlin_precond (rsolver%rlinsolParam,&
-          rsolver%p_rkktsysDirDerivHierarchy,p_rdescentDir)
+          rsolver%p_rdirDerivHierarchy,p_rdescentDir)
       
       ! -------------------------------------------------------------
       ! Update of the solution
@@ -435,7 +435,8 @@ contains
       !    u_n+1  =  u_n  +  g_n
       !
       ! or to any configured step-length control rule.
-      call newtonit_updateControl (rsolver,p_rkktsystem,p_rdescentDir)
+      call newtonit_updateControl (&
+          rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
       
       ! -------------------------------------------------------------
       ! Proceed with the next iteration
@@ -445,6 +446,9 @@ contains
           rsolver%rnewtonParams%nnonlinearIterations + 1
     
     end do
+    
+    ! Release data
+    call newtonit_doneData (rsolver)
     
   end subroutine
 
@@ -472,7 +476,7 @@ contains
 
 !</subroutine>
 
-    ! Remember the structure of the solutions
+    ! Remember the structure of the solutions.
     rsolver%p_rkktsystemHierarchy => rkktsystemHierarchy
    
   end subroutine
@@ -482,11 +486,16 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initData (rsolver)
+  subroutine newtonit_initData (rsolver,rsolution)
   
 !<description>
   ! Final preparation of the Newton solver.
 !</description>
+
+!<input>
+  ! Structure defining the solutions of the KKT system.
+  type(t_kktsystem), intent(in), target :: rsolution
+!</input>
 
 !<inputoutput>
   ! Structure to be initialised.
@@ -501,10 +510,22 @@ contains
     ! Create a vector holding the descent direction (highest level)
     call kkth_initControl (rsolver%p_rdescentDir,rsolver%p_rkktsystemHierarchy,0)
     
-    ! Allocate memory for the directional derivative to be computed
-    ! during the Newton algorithm.
-    allocate(rsolver%p_rkktsysDirDerivHierarchy)
-   
+    ! Create temporary memory for the nonlinearity and the search direction.
+    allocate(rsolver%p_rsolutionHierarchy)
+
+    call kkth_initHierarchy (rsolver%p_rsolutionHierarchy,&
+        rsolver%p_rkktsystemHierarchy%p_roperatorAsmHier,&
+        rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierPrimal,&
+        rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierDual,&
+        rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierControl,.true.,rsolution)
+
+    ! create tempoprary memory for the search direction connected with
+    ! the above solution hierarchy.
+    allocate(rsolver%p_rdirDerivHierarchy)
+    
+    call kkth_initHierarchyDirDeriv (&
+        rsolver%p_rdirDerivHierarchy,rsolver%p_rsolutionHierarchy)
+
   end subroutine
 
   ! ***************************************************************************
@@ -528,7 +549,11 @@ contains
     call kktsp_doneControlVector (rsolver%p_rdescentDir)
     deallocate(rsolver%p_rdescentDir)
     
-    deallocate(rsolver%p_rkktsysDirDerivHierarchy)
+    call kkth_doneHierarchyDirDeriv (rsolver%p_rdirDerivHierarchy)
+    deallocate(rsolver%p_rdirDerivHierarchy)
+
+    call kkth_doneHierarchy (rsolver%p_rsolutionHierarchy)
+    deallocate(rsolver%p_rsolutionHierarchy)
    
   end subroutine
 

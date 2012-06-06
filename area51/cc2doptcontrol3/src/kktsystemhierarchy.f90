@@ -48,11 +48,17 @@ module kktsystemhierarchy
     ! A space-time hierarchy based on the control space
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierControl => null()
 
+    ! Hierarchy of space-time operator assembly structures for the discretisation
+    type(t_spacetimeOpAsmHierarchy), pointer :: p_roperatorAsmHier => null()
+
     ! Number of levels in the hierarchy
     integer :: nlevels = 0
 
     ! Array of KKT system (solutions) for all the levels
     type(t_kktsystem), dimension(:), pointer :: p_RkktSystems => null()
+    
+    ! Alternative solution on the maximum level or NULL if there is none.
+    type(t_kktsystem), pointer :: p_rkktSystemMaxLevel => null()
   
   end type
 
@@ -65,14 +71,9 @@ module kktsystemhierarchy
   ! A hierarchy of directional derivatives of a KKT system
   type t_kktsystemDirDerivHierarchy
   
-    ! A space-time hierarchy based on the primal space
-    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierPrimal => null()
-    
-    ! A space-time hierarchy based on the dual space
-    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierDual => null()
-
-    ! A space-time hierarchy based on the control space
-    type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierControl => null()
+    ! A connected KKT system hierarchy specifying the evaluation
+    ! point of the derivative.
+    type(t_kktsystemHierarchy), pointer :: p_rkktsystemHierarchy => null()
 
     ! Number of levels in the hierarchy
     integer :: nlevels = 0
@@ -108,6 +109,21 @@ module kktsystemhierarchy
 
   ! Cleans up a hierarchy of KKT systems.
   public :: kkth_doneHierarchy
+  
+  ! Get the KKT system at a level
+  public :: kkth_getKKTsystem
+
+  ! Initialises a KKT system derivative structure for level ilevel of the hierarchy
+  public :: kkth_initKKTSystemDirDeriv
+
+  ! Initialises a hierarchy of KKT system directional derivatives
+  public :: kkth_initHierarchyDirDeriv
+
+  ! Cleans up a hierarchy of KKT systems directional derivatives
+  public :: kkth_doneHierarchyDirDeriv
+  
+  ! Get the KKT system directional derivative at a level
+  public :: kkth_getKKTsystemDirDeriv
   
 contains
 
@@ -296,7 +312,8 @@ contains
 !<subroutine>
 
   subroutine kkth_initHierarchy (rkktsystemHierarchy,roperatorAsmHier,&
-      rspaceTimeHierPrimal,rspaceTimeHierDual,rspaceTimeHierControl,ballocate)
+      rspaceTimeHierPrimal,rspaceTimeHierDual,rspaceTimeHierControl,ballocate,&
+      rkktSystemMaxLevel)
   
 !<description>
   ! Initialises a hierarchy of KKT systems.
@@ -317,6 +334,11 @@ contains
   
   ! Whether or not to allocate memory for the solutions
   logical, intent(in) :: ballocate
+  
+  ! OPTIONAL: A KKT system solution on the maximum level.
+  ! If specified, this solution is used on the maximum level, and
+  ! no memory is allocated in the hierarchy for the maximum level.
+  type(t_kktSystem), intent(in), optional, target :: rkktSystemMaxLevel
 !</input>
 
 !<output>
@@ -327,23 +349,31 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: i
+    integer :: i,nlevelallocate
 
     ! Remember the structures
     rkktsystemHierarchy%p_rspaceTimeHierPrimal => rspaceTimeHierPrimal
     rkktsystemHierarchy%p_rspaceTimeHierDual => rspaceTimeHierDual
     rkktsystemHierarchy%p_rspaceTimeHierControl => rspaceTimeHierControl
+    rkktsystemHierarchy%p_roperatorAsmHier => roperatorAsmHier
     
     ! Numer of levels in the hierarchy?
     rkktsystemHierarchy%nlevels = rspaceTimeHierPrimal%nlevels
     
+    ! Alternative solution on the max. level?
+    nlevelallocate = rkktsystemHierarchy%nlevels
+    if (present(rkktSystemMaxLevel)) then
+      rkktsystemHierarchy%p_rkktSystemMaxLevel => rkktSystemMaxLevel
+      nlevelallocate = nlevelallocate - 1
+    end if
+
     nullify(rkktsystemHierarchy%p_RkktSystems)
     
     if (ballocate) then
     
       ! Create the KKT system solutions
       allocate(rkktsystemHierarchy%p_RkktSystems(rkktsystemHierarchy%nlevels))
-      do i=1,rkktsystemHierarchy%nlevels
+      do i=1,nlevelallocate
         ! Initialise the KKT system on level i
         call kkth_initKKTSystem (&
             rkktsystemHierarchy%p_RkktSystems(i),rkktsystemHierarchy,i,&
@@ -378,10 +408,12 @@ contains
     nullify(rkktsystemHierarchy%p_rspaceTimeHierPrimal)
     nullify(rkktsystemHierarchy%p_rspaceTimeHierDual)
     nullify(rkktsystemHierarchy%p_rspaceTimeHierControl)
+    nullify(rkktsystemHierarchy%p_roperatorAsmHier)
+    nullify(rkktsystemHierarchy%p_rkktSystemMaxLevel)
     
     if (associated(rkktsystemHierarchy%p_RkktSystems)) then
       ! Clean up the solutions on every level
-      do i=rkktsystemHierarchy%nlevels,1,-1
+      do i=size(rkktsystemHierarchy%p_RkktSystems),1,-1
         call kkt_doneKKTsystem (rkktsystemHierarchy%p_RkktSystems(i))
       end do
 
@@ -389,6 +421,201 @@ contains
     end if
     
     rkktsystemHierarchy%nlevels = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkth_getKKTsystem (rkktsystemHierarchy,ilevel,p_rkktSystem)
+  
+!<description>
+  ! Returns a pointer to the KKT system on level ilevel.
+!</description>
+
+!<input>
+  ! Hierarchy of KKT system solutions.
+  type(t_kktsystemHierarchy), intent(inout) :: rkktsystemHierarchy
+  
+  ! Level to which a pointer should be set up.
+  ! If the value is <= 0, the KKT system at level NLMAX+ilevel is returned.
+  integer, intent(in) :: ilevel
+!</input>
+
+!<inputoutput>
+  ! Pointer to the KKT system on level ilevel
+  type(t_kktsystem), pointer :: p_rkktSystem
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilev
+    
+    ilev = ilevel
+    if (ilev .eq. 0) ilev = rkktsystemHierarchy%nlevels+ilev
+    
+    ! Get the pointer
+    if ((ilev .eq. rkktsystemHierarchy%nlevels) .and. &
+        associated(rkktsystemHierarchy%p_rkktSystemMaxLevel)) then
+      ! Take the alternative solution on the maximum level
+      p_rkktSystem => rkktsystemHierarchy%p_rkktSystemMaxLevel
+    else
+      p_rkktSystem => rkktsystemHierarchy%p_RkktSystems(ilev)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkth_initKKTSystemDirDeriv (&
+      rkktsystemDirDeriv,rkktsystemDirDerivHier,ilevel)
+  
+!<description>
+  ! Initialises a KKT system derivative for level ilevel of the hierarchy
+!</description>
+
+!<input>
+  ! Hierarchy structure for the directional derivative.
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsystemDirDerivHier
+
+  ! Level, the KKT system derivative should be created corresponding to.
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  integer, intent(in) :: ilevel
+!</input>
+
+!<output>
+  ! KKT sytem derivative structure to be created
+  type(t_kktsystemDirDeriv), intent(out) :: rkktsystemDirDeriv
+!</output>
+
+!</subroutine>
+    
+    ! local variables
+    integer :: ilev
+    type(t_kktSystem), pointer :: p_rkktsystem
+    
+    ilev = ilevel
+    if (ilevel .le. 0) ilev = rkktsystemDirDerivHier%nlevels-ilevel
+
+    ! Get the KKT system solution on that level
+    call kkth_getKKTsystem (&
+        rkktsystemDirDerivHier%p_rkktsystemHierarchy,ilevel,p_rkktsystem)
+
+    ! Initialise the KKT system on level i
+    call kkt_initKKTsystemDirDeriv (rkktsystemDirDeriv,p_rkktsystem)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkth_initHierarchyDirDeriv (rkktsystemDirDerivHier,rkktsystemHierarchy)
+  
+!<description>
+  ! Initialises a hierarchy of KKT system directional derivatives
+!</description>
+
+!<input>
+  ! Evaluation point of the derivative
+  type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+!</input>
+
+!<output>
+  ! Structure for the directional derivative in the point rkktsystemHierarchy.
+  type(t_kktsystemDirDerivHierarchy), intent(out) :: rkktsystemDirDerivHier
+!</output>
+
+!</subroutine>
+    
+    ! local variables
+    integer :: i
+    
+    rkktsystemDirDerivHier%p_rkktsystemHierarchy => rkktsystemHierarchy
+    rkktsystemDirDerivHier%nlevels = rkktsystemHierarchy%nlevels
+    
+    ! Allocate memory for the solutions
+    allocate(rkktsystemDirDerivHier%p_RkktSysDirDeriv(rkktsystemDirDerivHier%nlevels))
+    do i=1,rkktsystemDirDerivHier%nlevels
+      ! Initialise the derivative on level i
+      call kkth_initKKTSystemDirDeriv (&
+          rkktsystemDirDerivHier%p_RkktSysDirDeriv(i),rkktsystemDirDerivHier,i)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkth_doneHierarchyDirDeriv (rkktsystemDirDerivHier)
+  
+!<description>
+  ! Cleans up a hierarchy of KKT systems.
+!</description>
+
+!<inputoutput>
+  ! Hierarchy structure for the directional derivative.
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsystemDirDerivHier
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    integer :: i
+
+    ! Release memory
+    if (associated(rkktsystemDirDerivHier%p_RkktSysDirDeriv)) then
+      ! Clean up the solutions on every level
+      do i=size(rkktsystemDirDerivHier%p_RkktSysDirDeriv),1,-1
+        call kkt_doneKKTsystemDirDeriv (rkktsystemDirDerivHier%p_RkktSysDirDeriv(i))
+      end do
+
+      deallocate(rkktsystemDirDerivHier%p_RkktSysDirDeriv)
+    end if
+    
+    ! Final cleanup
+    nullify(rkktsystemDirDerivHier%p_rkktsystemHierarchy)
+    rkktsystemDirDerivHier%nlevels = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkth_getKKTsystemDirDeriv (rkktsystemDirDerivHier,ilevel,p_rkktSystemDirDeriv)
+  
+!<description>
+  ! Returns a pointer to the KKT system on level ilevel.
+!</description>
+
+!<input>
+  ! Hierarchy structure for the directional derivative.
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsystemDirDerivHier
+  
+  ! Level to which a pointer should be set up.
+  ! If the value is <= 0, the KKT system at level NLMAX+ilevel is returned.
+  integer, intent(in) :: ilevel
+!</input>
+
+!<inputoutput>
+  ! Pointer to the KKT system on level ilevel
+  type(t_kktsystemDirDeriv), pointer :: p_rkktSystemDirDeriv
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilev
+    
+    ilev = ilevel
+    if (ilev .eq. 0) ilev = rkktsystemDirDerivHier%nlevels+ilev
+    
+    ! Get the pointer
+    p_rkktSystemDirDeriv => rkktsystemDirDerivHier%p_RkktSysDirDeriv(ilev)
 
   end subroutine
 

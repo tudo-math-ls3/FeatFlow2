@@ -194,6 +194,7 @@ contains
   ! Structure defining the linearised KKT system.
   ! The linearised control in this structure is used as
   ! initial and target vector.
+  ! The control on the maximum level receives the result.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
   
   ! Right-hand side of the linearised control equation

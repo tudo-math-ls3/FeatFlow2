@@ -69,6 +69,7 @@ module main_program
   use structuresmain
   
   use structuresoptflow
+  use kktsystem
   use kktsystemhierarchy
   use initoptflow
   use newtoniteration
@@ -276,7 +277,10 @@ contains
     type(t_optcPostprocessing) :: rpostproc
     
     ! Structure encapsuling a hierarchy of solutions
-    type(t_kktsystemHierarchy) :: rsolution
+    type(t_kktsystemHierarchy) :: rkktsystemHierarchy
+    
+    ! Structure holding the solution on the maximum level
+    type(t_kktSystem) :: rsolution
     
     ! Some timers
     type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc,rstartvectime
@@ -314,19 +318,22 @@ contains
     call init_initOptFlow (rparlist,rsettings,p_rsettingsSolver,rsettings%routput%ioutputInit)
     
     ! Create a solution
-    call kkth_initHierarchy (rsolution,&
+    call kkth_initHierarchy (rkktsystemHierarchy,&
         p_rsettingsSolver%roperatorAsmHier,&
         p_rsettingsSolver%rspaceTimeHierPrimal,&
         p_rsettingsSolver%rspaceTimeHierDual,&
-        p_rsettingsSolver%rspaceTimeHierControl,.true.)
+        p_rsettingsSolver%rspaceTimeHierControl,.false.)
+        
+    ! Allocate a solution
+    call kkth_initKKTSystem (rsolution,rkktsystemHierarchy,&
+        rkktsystemHierarchy%nlevels,p_rsettingsSolver%roperatorAsmHier)
     
     if (rsettings%routput%ioutputInit .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising the descent algorithm loop.")
     end if
     call newtonit_init (rsolver,p_rsettingsSolver,rsettings%ssectionSpaceTimeSolver,rparlist)
-    call newtonit_initStructure (rsolver,rsolution)
-    call newtonit_initData (rsolver)
+    call newtonit_initStructure (rsolver,rkktsystemHierarchy)
     
 !    ! Create a temp vector
 !    call sptivec_initVector (rtemp,&
@@ -366,12 +373,12 @@ contains
 !    call stnlsinit_printSolverStatistics (p_rnlstsolver)
 !    
 !    ! Release all data
-    call newtonit_doneData (rsolver)
     call newtonit_doneStructure (rsolver)
     call newtonit_done (rsolver)
     
     ! Release the solution
-    call kkth_doneHierarchy (rsolution)
+    call kkth_doneHierarchy (rkktSystemHierarchy)
+    call kkt_doneKKTsystem (rsolution)
 
     ! Release solver structures
     call init_doneOptFlow (p_rsettingsSolver)
