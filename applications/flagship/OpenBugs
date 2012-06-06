@@ -1,9 +1,0 @@
-*) Roe's approximate Riemann solver without dimensional splitting
-   gives rise to a small boundary layer in the velocity field
-   tangential to the wall even if the low-order method is employed per
-   se without flux correction. This does not happen if dimensional
-   splitting is used in the low-order method.
-
-*) How to treat source terms within the AFC framework?
-
-*) How to treat periodic boundary conditions in a conservative fashion?
