@@ -102,7 +102,7 @@ contains
 
 !<subroutine>
   
-  subroutine fget1LevelDiscretisationNavSt2D(rtriangulation,rdiscr,rboundary,rcollection)
+  subroutine fget1LevelDiscretisationNavSt2D(ilevel,rtriangulation,rdiscr,rboundary,rcollection)
 
 !<description>
   ! Callback routine wrapper for spdsc_get1LevelDiscrNavSt2D. Allows to create
@@ -112,6 +112,7 @@ contains
   !   rcollection%IquickAccess(2) = nequations (=3:primal space. =6: primal+dual space)
 !</description>
 
+  integer, intent(in) :: ilevel
   type(t_triangulation), intent(in) :: rtriangulation
   type(t_blockDiscretisation), intent(out) :: rdiscr
   type(t_collection), intent(inout), optional :: rcollection
