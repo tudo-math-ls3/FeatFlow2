@@ -400,3 +400,80 @@ d) The benchmark can be run at night for non-default build IDs by
 
     "runregressiontest_feat2 --checkout --compare-feat2-checkouts -t [testcase-file] --id=pc64-opteron-linux-gcc-goto"
 
+
+Preparing an application for the use with the regression system
+---------------------------------------------------------------
+An application has to be prepared to be able to run with the regression
+test system. The rule is as follows:
+
+ * All data which should be automatically checked shall be written
+   into the file 
+
+         "$LOGDIR/$RESULTFILE" ( = "$LOGDIR/benchmarkresultfile" )
+
+ * Timings and date/time data shall not be written to the result-file.
+ 
+As indicated above, if called for multiple levels, the benchmark system
+automatically concatenates the results of all levels into a file
+
+         "$LOGDIR/$RESULTFILE.all-level"
+
+and compare this file to the reference.
+
+Setting up a Featflow2 application for the use with the benchmark system
+involves a modification in the output rules of the genoutput.f90 module:
+
+
+* Possibility 1: Log the complete application output
+
+ This should be used with care since often, timings and/or date/time information
+ also belongs to the output. However, it allows to log also kernel output.
+ Two steps have to be done in the application:
+ 
+ 1.) Switch on the benchmark output file with a proper call to "output_init".
+ 2.) Redirect all output to the benchmark log file by changing cbenchLogPolicy.
+
+ In practice, this looks as follows. Assume that in a data file, there 
+ is a variable
+   
+   ...
+   sbenchlog = "$LOGDIR/$RESULTFILE"
+   ...
+   
+ The routine "output_init" has to be called with this log file specified
+ as benchmark log file, e.g.
+   
+   call parlst_getvalue_string_direct (...,"sbenchlog",sbenchlog,bdequote=.true.)
+   call output_init ("","",sbenchlog)
+   cbenchLogPolicy = 2
+   
+
+* Possibility 2: Selective output to the benchmark log file
+
+ This is similar to the above way, but changes the output policy for every
+ "output_line" command. In practice, this looks as follows .Assume again that 
+ in a data file, there is a variable
+   
+   ...
+   sbenchlog = "$LOGDIR/$RESULTFILE"
+   ...
+   
+ The routine "output_init" has to be called with this log file specified
+ as benchmark log file, e.g.
+   
+   call parlst_getvalue_string_direct (...,"sbenchlog",sbenchlog,bdequote=.true.)
+   call output_init ("","",sbenchlog)
+
+ In the call to "output_line", the benchmark log policy has to be specified
+ in the output-mode parameter.
+ 
+   call output_line("A message only to the benchmark log.", &
+       OU_CLASS_MSG, OU_MODE_STD + OU_MODE_BENCHLOG)
+
+ Only those messages with OU_MODE_BENCHLOG set are written to the benchmark
+ log file. Therefore, the application programmer has just to add this
+ constant to the output mode in all output commands which should be written
+ to the benchmark log.
+ 
+ Remark: Spefifying OU_MODE_BENCHLOG without a benchmark log file set by
+ "output_init" does not harm. There is just no file written to the hard disc.
