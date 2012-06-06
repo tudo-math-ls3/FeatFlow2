@@ -4250,6 +4250,10 @@ contains
       case (EL_Q2TB)
         ndofs = 2*iregionNMT + 2*iregionNEL
 
+      ! 3D Q2 element
+      case (EL_Q2_3D)
+        ndofs = iregionNVT + iregionNMT + iregionNVT + iregionNEL
+
       ! 3D Q1~ element
       case (EL_Q1T_3D)
         ndofs = iregionNAT
@@ -4257,6 +4261,10 @@ contains
       ! 3D Q2~ element
       case (EL_Q2T_3D)
         ndofs = 2*iregionNAT + iregionNEL
+
+      ! 3D MSL2 element
+      case (EL_MSL2_3D)
+        ndofs = iregionNVT + iregionNAT
 
       end select
 
@@ -4335,8 +4343,8 @@ contains
             end if
           end do
 
-        ! 3D Q1/Q2 element
-        case (EL_Q1_3D,EL_Q2_3D)
+        ! 3D Q1/Q2/MSL2 element
+        case (EL_Q1_3D,EL_Q2_3D,EL_MSL2_3D)
           do j = 1, 8
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
@@ -4685,6 +4693,15 @@ contains
           do j=1,6
             if ((p_IfacesAtElem(j,iel)) .eq. iat) then
               idof = IdofGlob(j+20)
+              exit
+            end if
+          end do
+
+        ! 3D MSL2 element
+        case (EL_MSL2_3D)
+          do j=1,6
+            if ((p_IfacesAtElem(j,iel)) .eq. iat) then
+              idof = IdofGlob(j+8)
               exit
             end if
           end do

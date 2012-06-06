@@ -587,6 +587,12 @@ module element
   ! ID of discontinous parametric linear hexahedron FE, P1, nonparametric
   integer(I32), parameter, public :: EL_QP1NP_3D  = EL_QP1_3D + EL_NONPARAMETRIC
 
+  ! ID of nonconforming quadratic brick FE (not implemented!)
+  integer(I32), parameter, public :: EL_MSL2_3D = EL_3D + 101
+
+  ! ID of nonconforming quadratic brick FE, nonparametric version
+  integer(I32), parameter, public :: EL_MSL2NP_3D = EL_MSL2_3D + EL_NONPARAMETRIC
+
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
@@ -934,8 +940,10 @@ contains
       elem_igetID = EL_EM30_NEW_3D
     else if (selem .eq. "EL_Q2T_3D" .or. selem .eq. "EL_E050_3D") then
       elem_igetID = EL_E050_3D
-    else if (selem .eq. "EL_EM50_3D") then
+    else if (selem .eq. "EL_EM50_3D" .or. selem .eq. "EL_EN50_3D") then
       elem_igetID = EL_EM50_3D
+    else if (selem .eq. "EL_MSL2NP_3D") then
+      elem_igetID = EL_MSL2NP_3D
 
     ! -= 3D Pyramid Elements =-
     else if (selem .eq. "EL_Y0_3D") then
@@ -1135,6 +1143,8 @@ contains
       sname = 'EL_E050_3D'
     case (EL_EN50_3D)       ! non-parametric variant of EL_E050_3D
       sname = 'EL_EN50_3D'
+    case (EL_MSL2NP_3D)
+      sname = 'EL_MSL2NP_3D'
 
     ! -= 3D Pyramid Elements =-
     case (EL_Y0_3D)
@@ -1384,6 +1394,10 @@ contains
       ! local DOFs for Ex50
       ndofAtFaces = 18
       ndofAtElement = 1
+    case (EL_MSL2_3D)
+      ! local DOFs for MSL2
+      ndofAtVertices = 8
+      ndofAtFaces = 6
 
     ! -= 3D Pyramid Elements =-
     case (EL_Y0_3D)
@@ -1795,6 +1809,9 @@ contains
     case (EL_Q2T_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
+    case (EL_MSL2_3D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 4
     case default
       ! We do not know
       elem_getMaxDerivative = DER_MAXNDER
@@ -1996,7 +2013,7 @@ contains
       ishp = BGEOM_SHAPE_TETRA
 
     case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
-          EL_Q1T_3D, EL_Q2T_3D)
+          EL_Q1T_3D, EL_Q2T_3D, EL_MSL2_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
 
@@ -2238,6 +2255,8 @@ contains
       case (EL_EM50_3D)
         bwrapSim2 = .true.
       case (EL_E050_3D)
+        bwrapSim2 = .true.
+      case (EL_MSL2NP_3D)
         bwrapSim2 = .true.
 
       case default
@@ -3083,6 +3102,9 @@ contains
 
     case (EL_EN50_3D)
       call elem_eval_EN50_3D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_MSL2NP_3D)
+      call elem_eval_MSL2NP_3D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D pyramid elements

@@ -388,6 +388,9 @@ contains
     case (EL_Q2T_3D)
       ! DOF`s in the face midpoints
       NDFG_uniform3D = 3*rtriangulation%NAT + rtriangulation%NEL
+    case (EL_MSL2_3D)
+      ! DOF`s in the vertices and faces
+      NDFG_uniform3D = rtriangulation%NVT + rtriangulation%NAT
     end select
 
     end function
@@ -838,6 +841,13 @@ contains
           ! DOF`s in the face midpoints
           call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
           call dof_locGlobUniMult_Q2T_3D(p_rtriangulation%NAT,p_2darray, IelIdx, IdofGlob)
+          return
+        case (EL_MSL2_3D)
+          ! DOF`s in the vertices and faces
+          call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+          call storage_getbase_int2D (p_rtriangulation%h_IfacesAtElement,p_2darray2)
+          call dof_locGlobUniMult_MSL2_3D(p_rtriangulation%NVT, p_rtriangulation%NAT, &
+              p_2darray, p_2darray2, IelIdx, IdofGlob)
           return
         end select
 
@@ -2661,6 +2671,61 @@ contains
       IdofGlob(4,i) = 6*IelIdx(i)-2
       IdofGlob(5,i) = 6*IelIdx(i)-1
       IdofGlob(6,i) = 6*IelIdx(i)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_MSL2_3D(NVT,NAT,IverticesAtElement, &
+                           IfacesAtElement,IelIdx, IdofGlob)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be MSL2.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! An array with the number of faces adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+  ! Number of corner vertices in the triangulation
+  integer, intent(in) :: NVT
+
+  ! Number of faces in the triangulation
+  integer, intent(in) :: NAT
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      IdofGlob(1:8,i) = IverticesAtElement(1:8,IelIdx(i))
+      IdofGlob(9:14,i) = NVT + IfacesAtElement(1:6,IelIdx(i))
     end do
 
   end subroutine

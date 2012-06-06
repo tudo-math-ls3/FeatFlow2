@@ -49,6 +49,7 @@ module element_hexa3d
   public :: elem_eval_EN30_3D
   public :: elem_eval_E050_3D
   public :: elem_eval_EN50_3D
+  public :: elem_eval_MSL2NP_3D
 
 contains
 
@@ -6185,6 +6186,415 @@ contains
               + dy*(Da(i,6) + dy*(Da(i,15) + dy*Da(i,18))) &
               + 2.0_DP*dz*(Da(i,10) + dx*Da(i,16) + dy*Da(i,12) &
               + 1.5_DP*dz*(dx*Da(i,19) - dy*Da(i,18)))
+
+            ! Calculate 'real' derivatives
+            Dbas(i,DER_DERIV3D_X,ipt,iel) = &
+              Ds(1,1)*derx + Ds(2,1)*dery + Ds(3,1)*derz
+            Dbas(i,DER_DERIV3D_Y,ipt,iel) = &
+              Ds(1,2)*derx + Ds(2,2)*dery + Ds(3,2)*derz
+            Dbas(i,DER_DERIV3D_Z,ipt,iel) = &
+              Ds(1,3)*derx + Ds(2,3)*dery + Ds(3,3)*derz
+
+          end do ! i
+
+        end do ! ipt
+
+      end if ! derivatives evaluation
+
+    end do ! iel
+    !$omp end parallel do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_MSL2NP_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The MSL2_3D element is specified by fourteen polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x^2, y^2, z^2, xy, xz, yz, xyz, x*(x^2 - 3/5*(y^2 + z^2)),
+  !   y*(y^2 - 3/5*(x^2 + z^2)), z*(z^2 - 3/5*(x^2 + y^2)) }
+  !
+  ! see:
+  ! Z. Meng, D. Sheen, Z. Luo:
+  ! "Three-dimensional quadratic nonconforming brick element";
+  ! pre-print
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,14:
+  ! {
+  !   For all j = 1,...,8:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  !   For all j = 1,...,6:
+  !   {
+  !     Int_[-1,1]^2 (|DFj(x,y)|*Pi(Fj(x,y))) d(x,y) = kronecker(i+8,j) * |fj|
+  !     <==>
+  !     Int_fj Pi(x,y) d(x,y) = kronecker(i+8,j) * |fj|
+  !   }
+  ! }
+  !
+  ! With:
+  ! vj being the j-th local vertex of the hexahedron
+  ! fj being the j-th local face of the hexahedron
+  ! |fj| being the area of the face fj
+  ! Fj: [-1,1]^2 -> fj being the parametrisation of the face fj
+  ! |DFj(x,y)| being the determinant of the Jacobi-Matrix of Fj in the point (x,y)
+
+  ! Parameter: Number of local basis functions
+  integer, parameter :: NBAS = 14
+
+  ! Parameter: Number of cubature points for 1D edge integration
+  integer, parameter :: NCUB1D = 3
+
+  ! Parameter: Number of cubature points for 2D quad integration
+  integer, parameter :: NCUB2D = NCUB1D**2
+
+  ! 1D edge cubature rule point coordinates and weights
+  real(DP), dimension(NCUB1D) :: DcubPts1D
+  real(DP), dimension(NCUB1D) :: DcubOmega1D
+
+  ! 2D quad cubature rule point coordinates and weights
+  real(DP), dimension(NDIM2D, NCUB2D) :: DcubPts2D
+  real(DP), dimension(NCUB2D) :: DcubOmega2D
+
+  ! Corner vertice coordinates
+  real(DP), dimension(NDIM3D, 8) :: Dvert
+
+  ! Local mapped 2D cubature point coordinates and integration weights
+  real(DP), dimension(NDIM3D, NCUB2D, 6) :: DfacePoints
+  real(DP), dimension(NCUB2D, 6) :: DfaceWeights
+  real(DP), dimension(6) :: DfaceArea
+
+  ! Temporary variables for face vertice mapping
+  real(DP), dimension(4,3) :: Dft
+
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM3D,NDIM3D) :: Ds, Dat
+  real(DP), dimension(NDIM3D) :: Dr
+
+  ! other local variables
+  integer :: i,j,l,iel, ipt
+  real(DP), dimension(NBAS,NBAS) :: Da
+  real(DP) :: dx,dy,dz,dt,derx,dery,derz,dx1,dy1,dz1
+  logical :: bsuccess
+
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Step 0: Set up 1D and 2D cubature rules
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! Set up a 3-point Gauss rule for 1D
+    ! Remark: Although we do not actually need the 1D formula for integration,
+    ! it is used a few lines below to set up the 2D and 3D formulas...
+    DcubPts1D(1) = -sqrt(3.0_DP / 5.0_DP)
+    DcubPts1D(2) = 0.0_DP
+    DcubPts1D(3) = sqrt(3.0_DP / 5.0_DP)
+    DcubOmega1D(1) = 5.0_DP / 9.0_DP
+    DcubOmega1D(2) = 8.0_DP / 9.0_DP
+    DcubOmega1D(3) = 5.0_DP / 9.0_DP
+
+!    ! !!! DEBUG: 5-point Gauss rule !!!
+!    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
+!    DcubPts1D(1) = -sqrt(5.0_DP + dt) / 3.0_DP
+!    DcubPts1D(2) = -sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(3) = 0.0_DP
+!    DcubPts1D(4) =  sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(5) =  sqrt(5.0_DP + dt) / 3.0_DP
+!    dt = 13.0_DP*sqrt(70.0_DP)
+!    DcubOmega1D(1) = (322.0_DP - dt) / 900.0_DP
+!    DcubOmega1D(2) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(3) = 128.0_DP / 225.0_DP
+!    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
+
+    ! Set up a 3x3-point Gauss rule for 2D
+    l = 1
+    do i = 1, NCUB1D
+      do j = 1, NCUB1D
+        DcubPts2D(1,l) = DcubPts1D(i)
+        DcubPts2D(2,l) = DcubPts1D(j)
+        DcubOmega2D(l) = DcubOmega1D(i)*DcubOmega1D(j)
+        l = l+1
+      end do
+    end do
+
+    ! Loop over all elements
+    !$omp parallel do default(shared)&
+    !$omp private(Da,Dat,DfacePoints,DfaceWeights,Dr,Ds,Dvert,bsuccess,&
+    !$omp         derx,dery,derz,dt,dx,dx1,dy,dy1,dz,dz1,i,ipt,j)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+    do iel = 1, reval%nelements
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Fetch vertice coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Fetch the eight corner vertices for that element
+      Dvert(1:3,1:8) = reval%p_Dcoords(1:3,1:8,iel)
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      Dr(:) = 0.125_DP * (Dvert(:,1) + Dvert(:,2) + Dvert(:,3) + Dvert(:,4) &
+                         +Dvert(:,5) + Dvert(:,6) + Dvert(:,7) + Dvert(:,8))
+
+      ! Set up affine trafo
+      Dat(:,1) = 0.25_DP * (Dvert(:,2)+Dvert(:,3)+Dvert(:,7)+Dvert(:,6))-Dr(:)
+      Dat(:,2) = 0.25_DP * (Dvert(:,3)+Dvert(:,4)+Dvert(:,8)+Dvert(:,7))-Dr(:)
+      Dat(:,3) = 0.25_DP * (Dvert(:,5)+Dvert(:,6)+Dvert(:,7)+Dvert(:,8))-Dr(:)
+
+      ! And invert it
+      call mprim_invert3x3MatrixDirectDble(Dat,Ds,bsuccess)
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Map 2D cubature points onto the real faces
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Map the 2D cubature points onto the real faces and calculate the
+      ! integration weighting factors in this step.
+      do j = 1, 6
+
+        ! Calculate trafo for this face
+        call elh3d_calcFaceTrafo_Q1(Dft,j,Dvert)
+
+        ! Loop over all cubature points
+        do i = 1, NCUB2D
+
+          ! Get the cubature point coordinates
+          dx = DcubPts2D(1,i)
+          dy = DcubPts2D(2,i)
+
+          ! Transform the point
+          DfacePoints(1,i,j) = Dft(1,1)+Dft(2,1)*dx+Dft(3,1)*dy+Dft(4,1)*dx*dy
+          DfacePoints(2,i,j) = Dft(1,2)+Dft(2,2)*dx+Dft(3,2)*dy+Dft(4,2)*dx*dy
+          DfacePoints(3,i,j) = Dft(1,3)+Dft(2,3)*dx+Dft(3,3)*dy+Dft(4,3)*dx*dy
+
+          ! Calculate jacobi-determinant of mapping
+          ! TODO: Explain WTF is happening here...
+          dt = sqrt(((Dft(2,2) + Dft(4,2)*dy)*(Dft(3,3) + Dft(4,3)*dx) &
+                    -(Dft(2,3) + Dft(4,3)*dy)*(Dft(3,2) + Dft(4,2)*dx))**2 &
+                  + ((Dft(2,3) + Dft(4,3)*dy)*(Dft(3,1) + Dft(4,1)*dx) &
+                    -(Dft(2,1) + Dft(4,1)*dy)*(Dft(3,3) + Dft(4,3)*dx))**2 &
+                  + ((Dft(2,1) + Dft(4,1)*dy)*(Dft(3,2) + Dft(4,2)*dx) &
+                    -(Dft(2,2) + Dft(4,2)*dy)*(Dft(3,1) + Dft(4,1)*dx))**2)
+
+          ! Calculate integration weight
+          DfaceWeights(i,j) = dt * DcubOmega2D(i)
+
+        end do ! i
+
+      end do ! j
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Calculate face areas
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Calculate the inverse of the face areas - we will need them for
+      ! scaling later...
+      do j = 1, 6
+        dt = 0.0_DP
+        do i = 1, NCUB2D
+          dt = dt + DfaceWeights(i,j)
+        end do
+        DfaceArea(j) = 1.0_DP / dt
+      end do
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 5: Build coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Clear coefficient matrix
+      Da = 0.0_DP
+
+      ! Loop over all vertices of the hexahedron
+      do j = 1, 8
+
+        dx1 = Dvert(1,j) - Dr(1)
+        dy1 = Dvert(2,j) - Dr(2)
+        dz1 = Dvert(3,j) - Dr(3)
+
+        ! Apply inverse affine trafo to get (x,y,z)
+        dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+        dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+        dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+
+        ! Function values in the vertices
+        ! -------------------------------
+        Da( 1,j) = 1.0_DP
+        Da( 2,j) = dx
+        Da( 3,j) = dy
+        Da( 4,j) = dz
+        Da( 5,j) = dx**2
+        Da( 6,j) = dy**2
+        Da( 7,j) = dz**2
+        Da( 8,j) = dx*dy
+        Da( 9,j) = dx*dz
+        Da(10,j) = dy*dz
+        Da(11,j) = dx*dy*dz
+        Da(12,j) = dx*(dx**2 - 0.6_DP*(dy**2 + dz**2))
+        Da(13,j) = dy*(dy**2 - 0.6_DP*(dx**2 + dz**2))
+        Da(14,j) = dz*(dz**2 - 0.6_DP*(dx**2 + dy**2))
+
+      end do
+
+      ! Loop over all faces of the hexahedron
+      do j = 1, 6
+
+        ! Loop over all cubature points on the current face
+        do i = 1, NCUB2D
+
+          dx1 = DfacePoints(1,i,j) - Dr(1)
+          dy1 = DfacePoints(2,i,j) - Dr(2)
+          dz1 = DfacePoints(3,i,j) - Dr(3)
+
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+
+          ! Integral-Mean over the faces
+          ! ----------------------------
+          dt = DfaceWeights(i,j) * DfaceArea(j)
+
+          Da( 1,j+8) = Da( 1,j+8) + dt
+          Da( 2,j+8) = Da( 2,j+8) + dt*dx
+          Da( 3,j+8) = Da( 3,j+8) + dt*dy
+          Da( 4,j+8) = Da( 4,j+8) + dt*dz
+          Da( 5,j+8) = Da( 5,j+8) + dt*dx**2
+          Da( 6,j+8) = Da( 6,j+8) + dt*dy**2
+          Da( 7,j+8) = Da( 7,j+8) + dt*dz**2
+          Da( 8,j+8) = Da( 8,j+8) + dt*dx*dy
+          Da( 9,j+8) = Da( 9,j+8) + dt*dx*dz
+          Da(10,j+8) = Da(10,j+8) + dt*dy*dz
+          Da(11,j+8) = Da(11,j+8) + dt*dx*dy*dz
+          Da(12,j+8) = Da(12,j+8) + dt*dx*(dx**2 - 0.6_DP*(dy**2 + dz**2))
+          Da(13,j+8) = Da(13,j+8) + dt*dy*(dy**2 - 0.6_DP*(dx**2 + dz**2))
+          Da(14,j+8) = Da(14,j+8) + dt*dz*(dz**2 - 0.6_DP*(dx**2 + dy**2))
+
+        end do ! i
+
+      end do ! j
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 6: Invert coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Call the 'direct' inversion routine for 6x6 systems
+      call mprim_invertMatrixPivotDble(Da, NBAS,bsuccess)
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 8: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      if(Bder(DER_FUNC3D)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          dx1 = reval%p_DpointsReal(1,ipt,iel) - Dr(1)
+          dy1 = reval%p_DpointsReal(2,ipt,iel) - Dr(2)
+          dz1 = reval%p_DpointsReal(3,ipt,iel) - Dr(3)
+
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+
+          ! Evaluate basis functions
+          do i = 1, NBAS
+
+            Dbas(i,DER_FUNC3D,ipt,iel) = Da(i,1) + dx*dy*dz*Da(i,11) &
+              + dx*(Da(i,2) + dx*Da(i,5) + dy*Da(i,8) &
+                    + (dx**2 - 0.6_DP*(dy**2 + dz**2))*Da(i,12)) &
+              + dy*(Da(i,3) + dy*Da(i,6) + dz*Da(i,10) &
+                    + (dy**2 - 0.6_DP*(dx**2 + dz**2))*Da(i,13)) &
+              + dz*(Da(i,4) + dz*Da(i,7) + dx*Da(i,9) &
+                    + (dz**2 - 0.6_DP*(dx**2 + dy**2))*Da(i,14))
+
+          end do ! i
+
+        end do ! ipt
+
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 9: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+
+          dx1 = reval%p_DpointsReal(1,ipt,iel) - Dr(1)
+          dy1 = reval%p_DpointsReal(2,ipt,iel) - Dr(2)
+          dz1 = reval%p_DpointsReal(3,ipt,iel) - Dr(3)
+
+          ! Apply inverse affine trafo to get (x,y,z)
+          dx = Ds(1,1)*dx1 + Ds(1,2)*dy1 + Ds(1,3)*dz1
+          dy = Ds(2,1)*dx1 + Ds(2,2)*dy1 + Ds(2,3)*dz1
+          dz = Ds(3,1)*dx1 + Ds(3,2)*dy1 + Ds(3,3)*dz1
+
+          ! Evaluate derivatives
+          do i = 1, NBAS
+
+            ! Calculate 'reference' derivatives
+            derx = Da(i,2) + 2.0_DP*dx*Da(i,5) + dy*Da(i,8) + dz*Da(i, 9) + dy*dz*Da(i,11) &
+                 + (3.0_DP*dx**2 - 0.6_DP*(dy**2 + dz**2))*Da(i,12) &
+                 - 1.2_DP*dx*(dy*Da(i,13) + dz*Da(i,14))
+            dery = Da(i,3) + 2.0_DP*dy*Da(i,6) + dx*Da(i,8) + dz*Da(i,10) + dx*dz*Da(i,11) &
+                 + (3.0_DP*dy**2 - 0.6_DP*(dx**2 + dz**2))*Da(i,13) &
+                 - 1.2_DP*dy*(dx*Da(i,12) + dz*Da(i,14))
+            derz = Da(i,4) + 2.0_DP*dz*Da(i,7) + dx*Da(i,9) + dy*Da(i,10) + dx*dy*Da(i,11) &
+                 + (3.0_DP*dz**2 - 0.6_DP*(dx**2 + dy**2))*Da(i,14) &
+                 - 1.2_DP*dz*(dx*Da(i,12) + dy*Da(i,13))
 
             ! Calculate 'real' derivatives
             Dbas(i,DER_DERIV3D_X,ipt,iel) = &
