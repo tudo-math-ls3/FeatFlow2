@@ -86,8 +86,11 @@ module newtoniterationlinear
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
     
-    ! Temporary memory for calculations
-    type(t_controlSpace), pointer :: p_rtempVector => null()
+    ! Underlying KKT system hierarchy that defines the shape of the solutions.
+    type(t_kktsystemHierarchy), pointer :: p_rkktsystemHierarchy => null()
+
+    ! Temporary memory on all levels for calculations
+    type(t_controlSpace), dimension(:), pointer :: p_RtempVectors => null()
 
   end type
   
@@ -179,7 +182,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rrhs)
+  subroutine newtonlin_richardson (rlinsolParam,rkktsystemDirDeriv,rrhs,rtempVector)
   
 !<description>
   ! Applies a Richardson iteration in the control space
@@ -199,6 +202,9 @@ contains
   
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
+
+  ! Temporary control vector
+  type(t_controlSpace), intent(inout) :: rtempVector
 !</inputoutput>
 
 !</subroutine>
@@ -214,7 +220,7 @@ contains
 
       ! Compute the residual and its norm.
       call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
-          rlinsolParam%p_rtempVector,rlinsolParam%rprecParameters%dresFinal)
+          rtempVector,rlinsolParam%rprecParameters%dresFinal)
 
       if (rlinsolParam%rprecParameters%niterations .eq. 1) then
         ! Remember the initial residual
@@ -242,7 +248,7 @@ contains
 
       ! Add the residual (damped) to the current control.
       ! This updates the current control.
-      call kktsp_controlLinearComb (rlinsolParam%p_rtempVector,&
+      call kktsp_controlLinearComb (rtempVector,&
           rlinsolParam%rprecParameters%domega,&
           rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
     
@@ -287,11 +293,12 @@ contains
 
 !</subroutine>
 
+    integer :: nlevels
     type(t_kktsystemDirDeriv), pointer :: p_rkktsysDirDeriv
     
     ! The calculation is done on the topmost level
-    p_rkktsysDirDeriv => &
-        rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(rkktsysDirDerivHierarchy%nlevels)
+    nlevels = rkktsysDirDerivHierarchy%nlevels
+    p_rkktsysDirDeriv => rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(nlevels)
 
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
@@ -317,12 +324,13 @@ contains
     ! which starts with zero.
     
     call kktsp_clearPrimal (p_rkktsysDirDeriv%p_rprimalSolLin)
-    call kktsp_clearDual (p_rkktsysDirDeriv%p_rdualLinSol)
+    call kktsp_clearDual (p_rkktsysDirDeriv%p_rdualSolLin)
     call kktsp_clearControl (p_rkktsysDirDeriv%p_rcontrolLin)
     
     ! Call the Richardson iteration to calculate an update
     ! for the control.
-    call newtonlin_richardson (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir)
+    call newtonlin_richardson (rlinsolParam,p_rkktsysDirDeriv,&
+        rnewtonDir,rlinsolParam%p_rtempVectors(nlevels))
     
     ! Overwrite the rnewtonDir with the update.
     call kktsp_controlLinearComb (&
@@ -373,17 +381,27 @@ contains
     rlinsolParam%p_rsolverHierPrimalLin => rsolverHierPrimalLin
     rlinsolParam%p_rsolverHierDualLin => rsolverHierDualLin
    
+    ! Get the corresponding parameters from the parameter list.
+    call newtonlin_initBasicParams (rlinsolParam%rprecParameters,ssection,rparlist)
+
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine newtonlin_initStructure (rlinsolParam)
+  subroutine newtonlin_initStructure (rlinsolParam,rkktsystemHierarchy)
   
 !<description>
   ! Structural initialisation of the preconditioner
 !</description>
+
+!<input>
+  ! Defines the basic hierarchy of the solutions of the KKT system.
+  ! This can be a 'template' structure, i.e., memory for the solutions
+  ! in rkktsystemHierarchy does not have to be allocated.
+  type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+!</input>
 
 !<inputoutput>
   ! Structure to be initialised.
@@ -391,6 +409,20 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: i,nlevels
+
+    ! Remember the structure of the solutions.
+    rlinsolParam%p_rkktsystemHierarchy => rkktsystemHierarchy
+    
+    ! Prepare temporary vectors.
+    nlevels = rlinsolParam%p_rkktsystemHierarchy%nlevels
+    allocate(rlinsolParam%p_RtempVectors(nlevels))
+    
+    do i=1,nlevels
+      call kkth_initControl (&
+          rlinsolParam%p_RtempVectors(i),rkktsystemHierarchy,i)
+    end do
    
   end subroutine
 
@@ -449,6 +481,14 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: i
+
+    ! Release temp vectors
+    do i=rlinsolParam%p_rkktsystemHierarchy%nlevels,1,-1
+      call kktsp_doneControlVector (rlinsolParam%p_RtempVectors(i))
+    end do
+    deallocate(rlinsolParam%p_RtempVectors)
    
   end subroutine
 

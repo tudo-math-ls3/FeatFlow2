@@ -237,8 +237,12 @@ contains
     ! Uses the same linear solver as the backward solver.#
     allocate(rsolver%p_rsolverHierDualLin)
     caLL spaceslh_init (rsolver%p_rsolverHierDualLin,rsettingsSolver,&
-        OPTP_PRIMALLIN,rsolver%p_rlinsolHierDual,rsettingsSolver%roptcBDCSpaceHierarchy)
+        OPTP_DUALLIN,rsolver%p_rlinsolHierDual,rsettingsSolver%roptcBDCSpaceHierarchy)
 
+    ! Initialise the linear subsolver
+    call newtonlin_init (rsolver%rlinsolParam,rsettingsSolver,&
+        rsolver%p_rsolverHierPrimalLin,rsolver%p_rsolverHierDualLin,rparamList,ssolverLin)
+        
   end subroutine
 
   ! ***************************************************************************
@@ -478,6 +482,9 @@ contains
 
     ! Remember the structure of the solutions.
     rsolver%p_rkktsystemHierarchy => rkktsystemHierarchy
+    
+    ! Initialise the structures of the linear subsolver.
+    call newtonlin_initStructure (rsolver%rlinsolParam,rkktsystemHierarchy)
    
   end subroutine
 
@@ -574,6 +581,9 @@ contains
 
 !</subroutine>
    
+    ! Release structures in the subsolver
+    call newtonlin_doneStructure (rsolver%rlinsolParam)
+   
     ! Detach the solution structure
     nullify(rsolver%p_rkktsystemHierarchy)
    
@@ -595,6 +605,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! Release the linear subsolver.
+    call newtonlin_done (rsolver%rlinsolParam)
 
     ! Release the linear solvers in space.
     call spaceslh_done (rsolver%p_rsolverHierDualLin)

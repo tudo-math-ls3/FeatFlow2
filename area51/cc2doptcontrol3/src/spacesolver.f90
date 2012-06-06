@@ -460,6 +460,7 @@ contains
     deallocate(rsolver%p_Rmatrices)
     
     ! Deallocate temporary data
+    call lsysbl_releaseVector (rsolver%p_rd)
     deallocate (rsolver%p_rd)
 
   end subroutine
@@ -493,7 +494,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_solve (rsolver,idofTime,isollevelSpace,&
-      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualLinSol,rcontrolLin)
+      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
@@ -527,7 +528,7 @@ contains
   ! Current solution of the linearised dual equation.
   ! The space level of the solution is specified by isollevelSpace.
   ! The time level must match rsolver%itimelevel.
-  type(t_dualSpace), intent(inout), optional, target :: rdualLinSol
+  type(t_dualSpace), intent(inout), optional, target :: rdualSolLin
 
   ! Current solution of the linearised control equation
   ! The space level of the solution is specified by isollevelSpace.
@@ -736,7 +737,7 @@ contains
       call smva_getDef_dualLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,&
-          rprimalSol,rdualSol,rprimalSolLin,rdualLinSol,&
+          rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,&
           rsolver%coptype .eq. OPTP_DUALLIN,rsolver%rtempData)
       
       ! Remember the initial residual
@@ -768,9 +769,9 @@ contains
       !
       !    u_new  =  u_old  +  g_n
 
-      call sptivec_getVectorFromPool(rdualLinSol%p_rvectorAccess,idofTime,p_rx)
+      call sptivec_getVectorFromPool(rdualSolLin%p_rvectorAccess,idofTime,p_rx)
       call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
-      call sptivec_commitVecInPool(rdualLinSol%p_rvectorAccess,idofTime)
+      call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
 
     end select
 

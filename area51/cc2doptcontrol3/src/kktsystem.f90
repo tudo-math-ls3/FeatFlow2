@@ -98,7 +98,7 @@ module kktsystem
     ! Solution of the linearised dual equation of the KKT system.
     ! Specifies the directional derivative of the dual equation
     ! into the direction specified by p_rdualDirection.
-    type(t_dualSpace), pointer :: p_rdualLinSol => null()
+    type(t_dualSpace), pointer :: p_rdualSolLin => null()
 
     ! Solution of the linearised control equation of the KKT system.
     ! Specifies the directional derivative of the control equation
@@ -273,15 +273,15 @@ contains
         rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
         rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
 
-    allocate (rkktsystemDirDeriv%p_rdualLinSol)
-    call kktsp_initDualVector (rkktsystemDirDeriv%p_rdualLinSol,&
-        rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
-        rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
+    allocate (rkktsystemDirDeriv%p_rdualSolLin)
+    call kktsp_initDualVector (rkktsystemDirDeriv%p_rdualSolLin,&
+        rkktsystem%p_rdualSol%p_rvector%p_rspaceDiscr,&
+        rkktsystem%p_rdualSol%p_rvector%p_rtimeDiscr)
 
     allocate (rkktsystemDirDeriv%p_rcontrolLin)
     call kktsp_initControlVector (rkktsystemDirDeriv%p_rcontrolLin,&
-        rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr,&
-        rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr)
+        rkktsystem%p_rcontrol%p_rvector%p_rspaceDiscr,&
+        rkktsystem%p_rcontrol%p_rvector%p_rtimeDiscr)
    
   end subroutine
 
@@ -298,7 +298,7 @@ contains
 
 !<inputoutput>
   ! Structure defining the directional derivative.
-  type(t_kktsystemDirDeriv), intent(out), target :: rkktsystemDirDeriv
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
 !</inputoutput>
 
 !</subroutine>
@@ -310,8 +310,8 @@ contains
     call kktsp_donePrimalVector (rkktsystemDirDeriv%p_rprimalSolLin)
     deallocate (rkktsystemDirDeriv%p_rprimalSolLin)
 
-    call kktsp_doneDualVector (rkktsystemDirDeriv%p_rdualLinSol)
-    deallocate (rkktsystemDirDeriv%p_rdualLinSol)
+    call kktsp_doneDualVector (rkktsystemDirDeriv%p_rdualSolLin)
+    deallocate (rkktsystemDirDeriv%p_rdualSolLin)
 
     call kktsp_doneControlVector (rkktsystemDirDeriv%p_rcontrolLin)
     deallocate (rkktsystemDirDeriv%p_rcontrolLin)
@@ -668,16 +668,48 @@ contains
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
-  type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables
+    type(t_kktSystem), pointer :: p_rkktSystem
+    integer :: ierror, idoftime
+    
+    p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
    
-    ! ... to be done
-    call sys_halt()
+    ! Initialise basic solver structures
+    call spaceslh_initStructure (rspaceSolver, &
+        p_rkktsystem%ispacelevel, &
+        p_rkktsystem%itimelevel, &
+        p_rkktsystem%p_roperatorAsmHier,ierror)
+
+    if (ierror .ne. 0) then
+      call output_line("Error initialising the solver structures.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
+      call sys_halt()
+    end if
+    
+    ! -----------------------
+    ! Loop over all timesteps
+    ! -----------------------
+    do idofTime = 1,rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime
+    
+      ! Apply the solver to update the solution in timestep idofTime.
+      call spaceslh_solve (rspaceSolver,idofTime,&
+          p_rkktsystem%ispacelevel,&
+          p_rkktsystem%p_rprimalSol,&
+          rcontrol=p_rkktsystem%p_rcontrol,&
+          rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
+          rcontrolLin=rkktsystemDirDeriv%p_rcontrolLin)
+      
+    end do ! step
+   
+    call spaceslh_doneStructure (rspaceSolver)
 
   end subroutine
 
@@ -703,8 +735,40 @@ contains
 
 !</subroutine>
    
-    ! ... to be done
-    call sys_halt()
+    ! local variables
+    type(t_kktSystem), pointer :: p_rkktSystem
+    integer :: ierror, idoftime
+    
+    p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
+   
+    ! Initialise basic solver structures
+    call spaceslh_initStructure (rspaceSolver, &
+        p_rkktsystem%ispacelevel, &
+        p_rkktsystem%itimelevel, &
+        p_rkktsystem%p_roperatorAsmHier,ierror)
+
+    if (ierror .ne. 0) then
+      call output_line("Error initialising the solver structures.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
+      call sys_halt()
+    end if
+    
+    ! ----------------------------------
+    ! Loop over all timesteps, backwards
+    ! ----------------------------------
+    do idofTime = rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime,1,-1
+    
+      ! Apply the solver to update the solution in timestep idofTime.
+      call spaceslh_solve (rspaceSolver,idofTime,&
+          p_rkktsystem%ispacelevel,&
+          p_rkktsystem%p_rprimalSol,&
+          rdualSol=p_rkktsystem%p_rdualSol,&
+          rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
+          rdualSolLin=rkktsystemDirDeriv%p_rdualSolLin)
+      
+    end do ! step
+   
+    call spaceslh_doneStructure (rspaceSolver)
 
   end subroutine
 
@@ -738,7 +802,7 @@ contains
     integer :: icomp,istep
     real(DP) :: dtheta
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace
-    type(t_spaceTimeVector), pointer :: p_rdualLinSol
+    type(t_spaceTimeVector), pointer :: p_rdualSolLin
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -757,10 +821,10 @@ contains
     !
     ! Which timestep scheme do we have?
     
-    p_rdualLinSol => rkktsystemDirDeriv%p_rdualLinSol%p_rvector
+    p_rdualSolLin => rkktsystemDirDeriv%p_rdualSolLin%p_rvector
     
     ! Timestepping technique?
-    select case (p_rdualLinSol%p_rtimeDiscr%ctype)
+    select case (p_rdualSolLin%p_rtimeDiscr%ctype)
     
     ! ***********************************************************
     ! Standard Theta one-step scheme.
@@ -768,11 +832,11 @@ contains
     case (TDISCR_ONESTEPTHETA)
     
       ! Theta-scheme identifier
-      dtheta = p_rdualLinSol%p_rtimeDiscr%dtheta
+      dtheta = p_rdualSolLin%p_rtimeDiscr%dtheta
       
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
-      select case (p_rdualLinSol%p_rtimeDiscr%itag)
+      select case (p_rdualSolLin%p_rtimeDiscr%itag)
       
       ! ***********************************************************
       ! itag=0: old/standard 1-step scheme.
@@ -789,11 +853,11 @@ contains
       case (1)
       
         ! Loop over all timesteps.
-        do istep = 1,p_rdualLinSol%p_rtimeDiscr%nintervals+1
+        do istep = 1,p_rdualSolLin%p_rtimeDiscr%nintervals+1
         
           ! Fetch the dual and control vectors.
           call sptivec_getVectorFromPool (&
-              rkktsystemDirDeriv%p_rdualLinSol%p_rvectorAccess,istep,p_rdualSpace)
+              rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep,p_rdualSpace)
 
           call sptivec_getVectorFromPool (&
               rcontrolLin%p_rvectorAccess,istep,p_rcontrolSpace)
@@ -824,7 +888,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
 
-                if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
                   call sys_halt()

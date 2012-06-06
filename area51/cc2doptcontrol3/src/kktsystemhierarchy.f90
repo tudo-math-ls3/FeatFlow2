@@ -372,7 +372,7 @@ contains
     if (ballocate) then
     
       ! Create the KKT system solutions
-      allocate(rkktsystemHierarchy%p_RkktSystems(rkktsystemHierarchy%nlevels))
+      allocate(rkktsystemHierarchy%p_RkktSystems(nlevelallocate))
       do i=1,nlevelallocate
         ! Initialise the KKT system on level i
         call kkth_initKKTSystem (&

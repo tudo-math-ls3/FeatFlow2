@@ -1328,7 +1328,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualLinSol,bfull,rtempData)
+      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised dual equation
@@ -1356,8 +1356,8 @@ contains
   ! Space-time vector that describes the solution of the linearised forward equation.
   type(t_primalSpace), intent(inout) :: rprimalSolLin
 
-  ! Structure that defines the vector rdualLinSol.
-  type(t_dualSpace), intent(inout) :: rdualLinSol
+  ! Structure that defines the vector rdualSolLin.
+  type(t_dualSpace), intent(inout) :: rdualSolLin
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
@@ -1468,7 +1468,7 @@ contains
 
             ! -----------------------------------------
             ! Realise the defect
-            call sptivec_getVectorFromPool (rdualLinSol%p_rvectorAccess,idofTime-1,p_rvector)
+            call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
           end if
@@ -1539,7 +1539,7 @@ contains
           ! semilinear parts of the operator
           ! -----------------------------------------
 
-          call sptivec_getVectorFromPool (rdualLinSol%p_rvectorAccess,idofTime,p_rvector)
+          call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvector)
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
           ! ***********************************************
@@ -3082,8 +3082,8 @@ contains
           !
           ! Vector 1+2 = dual velocity.
           call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),1)
 
           ! Vector 3+4 = linearised primal velocity. We need the 1st
           ! derivative as well.
@@ -3229,8 +3229,8 @@ contains
           !
           ! Vector 1+2 = dual velocity.
           call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),1)
 
           ! Vector 3+4 = linearised primal velocity.
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
