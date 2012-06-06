@@ -162,10 +162,11 @@ contains
 
   ! ***************************************************************************
 
-  subroutine main_getDiscr(rtriangulation,rdiscr,rboundary,rcollection)
+  subroutine main_getDiscr(ilevel,rtriangulation,rdiscr,rboundary,rcollection)
   
   ! Returns a discretisation structure
   
+  integer, intent(in) :: ilevel
   type(t_triangulation), intent(in) :: rtriangulation
   type(t_blockDiscretisation), intent(out) :: rdiscr
   type(t_collection), intent(inout), optional :: rcollection
