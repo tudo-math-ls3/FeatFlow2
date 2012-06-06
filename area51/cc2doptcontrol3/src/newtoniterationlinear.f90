@@ -160,10 +160,18 @@ contains
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
 
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+      call output_line ("  Linear space-time Residual: Solving the primal equation")
+    end if
+
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierPrimalLin)
     
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+      call output_line ("  Linear space-time Residual: Solving the dual equation")
+    end if
+
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierDualLin)
