@@ -27,41 +27,110 @@
 #define HYDRO_NDIM 2
 #include "hydro.h"
 
-// Define kernel for most edges
-#define CUDADMA_SINGLE
+// Define CUDA kernel which does not make use of the CUDADMA library
+// and is applied to the remaining edges which are not processed in groups
+// #define BASELINE_KERNEL hydro_calcFlux2d_shmem
+#define BASELINE_KERNEL hydro_calcFlux2d_baseline
 
-// Define kernel for remaining edges
-#define BASELINE_KERNEL hydro_calcFlux2d_shmem
+// Defines for baseline implementation
+#define BASELINE_THREADS_PER_CTA  32*2
+#define BASELINE_NEDGE_PER_THREAD 1
 
 // Defines for shared memory implementation
 #define SHMEM_DATA_TRANSPOSE   true
 #define SHMEM_DATA_IDX3        IDX3T
-#define SHMEM_NEDGE_PER_THREAD 1
+#define SHMEM_NEDGE_PER_THREAD BASELINE_NEDGE_PER_THREAD
 
-// Defines for cudaDMA implementation
-#define CUDADMA_DATA_TRANSPOSE false
-#define CUDADMA_DATA_IDX3      IDX3
+// Define CUDA kernel which makes use of the CUDADMA library to achive
+// higher throughput between global and shared memory on the device
+// #define CUDADMA_PREFETCH_SINGLE
 
-// Defines for cudaDMA single buffer implementation
-#ifdef CUDADMA_SINGLE
-#define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_single
-#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*4
-#define CUDADMA_THREADS_PER_LD          32*1
+// Defines for cudaDMA implementation without warp specialisation
+#ifdef CUDADMA_NOSPEC
+#define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_nospec
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*2
+#define CUDADMA_THREADS_PER_LD          0
 #define CUDADMA_NEDGE_PER_THREAD        1
 #define CUDADMA_DMA_LDS_IND             0
 #define CUDADMA_DMA_LDS_SRC             0
-#define CUDADMA_DMA_LDS_DEST            4
+#define CUDADMA_DMA_LDS_DEST            0
+#define CUDADMA_DMA_LDS_COEFF           0
+#define CUDADMA_DMA_LDS                 0
+#endif
+
+// Defines for cudaDMA single buffer implementation with prefetching of indices
+#ifdef CUDADMA_PREFETCH_SINGLE
+#define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_prefetch_single
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*4
+#define CUDADMA_THREADS_PER_LD          32*1
+#define CUDADMA_NEDGE_PER_THREAD        1*1
+#define CUDADMA_DMA_LDS_IND             0
+#define CUDADMA_DMA_LDS_SRC             1
+#define CUDADMA_DMA_LDS_DEST            1
+#define CUDADMA_DMA_LDS_COEFF           1
+#define CUDADMA_DMA_LDS                 (CUDADMA_DMA_LDS_IND + \
+                                         CUDADMA_DMA_LDS_SRC + \
+                                         CUDADMA_DMA_LDS_DEST +\
+					 CUDADMA_DMA_LDS_COEFF)
+#endif
+
+// Defines for cudaDMA double buffer implementation with prefetching of indices
+#ifdef CUDADMA_PREFETCH_DOUBLE
+#define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_prefetch_double
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*4
+#define CUDADMA_THREADS_PER_LD          32*1
+#define CUDADMA_NEDGE_PER_THREAD        4*1
+#define CUDADMA_DMA_LDS_IND             0
+#define CUDADMA_DMA_LDS_SRC             1
+#define CUDADMA_DMA_LDS_DEST            1
+#define CUDADMA_DMA_LDS_COEFF           1
+#define CUDADMA_DMA_LDS                 (CUDADMA_DMA_LDS_IND + \
+                                         CUDADMA_DMA_LDS_SRC + \
+                                         CUDADMA_DMA_LDS_DEST +\
+					 CUDADMA_DMA_LDS_COEFF)
+#endif
+
+// Defines for cudaDMA double buffer implementation
+#ifdef CUDADMA_DOUBLE
+#define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_double
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*2
+#define CUDADMA_THREADS_PER_LD          32*1
+#define CUDADMA_NEDGE_PER_THREAD        6*1
+#define CUDADMA_DMA_LDS_IND             1
+#define CUDADMA_DMA_LDS_SRC             1
+#define CUDADMA_DMA_LDS_DEST            1
+#define CUDADMA_DMA_LDS_COEFF           0
+#define CUDADMA_DMA_LDS                 (3*CUDADMA_DMA_LDS_IND + \
+                                         2*CUDADMA_DMA_LDS_SRC + \
+                                         2*CUDADMA_DMA_LDS_DEST)
 #endif
 
 // Defines for cudaDMA manual buffer implementation
 #ifdef CUDADMA_MANUAL
 #define CUDADMA_KERNEL                  hydro_calcFlux2d_cudaDMA_manual
-#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*4
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 32*2
 #define CUDADMA_THREADS_PER_LD          32*1
-#define CUDADMA_NEDGE_PER_THREAD        6
+#define CUDADMA_NEDGE_PER_THREAD        6*1
 #define CUDADMA_DMA_LDS_IND             1
-#define CUDADMA_DMA_LDS_SRC             4
-#define CUDADMA_DMA_LDS_DEST            4
+#define CUDADMA_DMA_LDS_SRC             1
+#define CUDADMA_DMA_LDS_DEST            1
+#define CUDADMA_DMA_LDS_COEFF           1
+#define CUDADMA_DMA_LDS                 (CUDADMA_DMA_LDS_IND + \
+                                         CUDADMA_DMA_LDS_SRC + \
+                                         CUDADMA_DMA_LDS_DEST +\
+					 CUDADMA_DMA_LDS_COEFF)
+#endif
+
+// Defines for empty cudaDMA implementation
+#ifndef CUDADMA_KERNEL
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 0
+#define CUDADMA_THREADS_PER_LD          0
+#define CUDADMA_NEDGE_PER_THREAD        0
+#define CUDADMA_DMA_LDS_IND             0
+#define CUDADMA_DMA_LDS_SRC             0
+#define CUDADMA_DMA_LDS_DEST            0
+#define CUDADMA_DMA_LDS_COEFF           0
+#define CUDADMA_DMA_LDS                 0
 #endif
 
 using namespace std;
@@ -2885,7 +2954,8 @@ if (btransposeDest) {
 
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
-   * artificial dissipation if required) (old cudaDMA implementation).
+   * artificial dissipation if required) (cudaDMA implementation
+   * without warp specialisation).
    ****************************************************************************/
 
 #define TOTAL_THREADS_PER_CTA  compute_threads_per_cta+dma_threads_per_ld* \
@@ -2900,7 +2970,7 @@ if (btransposeDest) {
 	    int compute_threads_per_cta,
 	    int dma_threads_per_ld>
   __launch_bounds__(TOTAL_THREADS_PER_CTA)
-  __global__ void hydro_calcFlux2d_cudaDMA_single(Tc *CoeffsAtEdge,
+  __global__ void hydro_calcFlux2d_cudaDMA_nospec(Tc *CoeffsAtEdge,
 						  Ti *IedgeList,
 						  TdSrc *vecSrc,
 						  TdDest *vecDest,
@@ -2914,10 +2984,208 @@ if (btransposeDest) {
   {
     // Shared memory
     __shared__ Ti s_IedgeList[2*compute_threads_per_cta];
-    __shared__ TdSrc s_VecSrc[NVAR2D*2*compute_threads_per_cta];
-    __shared__ TdSrc s_VecDest[NVAR2D*2*compute_threads_per_cta];
-    //    __shared__ Tc s_CoeffsAtEdge[HYDRO_NDIM*2*compute_threads_per_cta];
+    __shared__ TdSrc s_DataAtEdge[NVAR2D*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[HYDRO_NDIM*2*compute_threads_per_cta];
     
+    //--------------------------------------------------------------------------
+
+#if EDGELIST_DEVICE == SOA
+    // List of edges is stored as structure of arrays, that is, we
+    // have 6 integer subarrays of length nedge which store:
+    //
+    // 0-subarray: first end point i, 
+    // 1-subarray: second end point j,
+    // 2-subarray: matrix entry ij,
+    // 3-subarray: matrix entry ji,
+    // 4-subarray: matrix entry ii,
+    // 5-subarray: matrix entry jj.
+    //
+    // For the flux assembly, only the two endpoints (i,j) are
+    // required. Therefore, only subarrays 0 and 1 are transfered.
+
+    // Sequential cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMASequential<false, 2*sizeof(Ti),
+                      2*compute_threads_per_cta*sizeof(Ti),
+                      TOTAL_THREADS_PER_CTA>dma_ind;
+#else
+    // List of edges is stored as array of structures, that is, we
+    // have nedge integer subarrays of length 6 which store:
+    //
+    // (i,j,ij,jj,ii,jj) for each edge iedge
+    //
+    // For the flux assembly, only the two entpoins (i,j) are
+    // required. Therefore, only the first two entries of each edge
+    // are transfered using strided DMA.
+
+    // Strided cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMAStrided<false, 2*sizeof(Ti), 2*sizeof(Ti), 
+                   TOTAL_THREADS_PER_CTA,
+		   compute_threads_per_cta>dma_ind(6*sizeof(Ti));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Indirect cudaDMA thread to transfer nodal data from vecSrc into
+    // shared memory s_DataAtEdge, we need to distinguish between vecSrc
+    // stored in interleaved format and vecSrc stored in block format
+    cudaDMAIndirect<true, false,
+      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+               (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+      TOTAL_THREADS_PER_CTA, 2*compute_threads_per_cta>dma_vec;
+    
+    //--------------------------------------------------------------------------
+
+#if COEFFSATEDGE_DEVICE == SOA
+    // Coefficients at edges are stored as structure of arrays, that
+    // is, we have 2*ncoeff subarrays of length nedge which store:
+    //
+    // 0-subarray: ij-coefficients for x-direction, 
+    // 1-subarray: ji-coefficients for x-direction, 
+    // 2-subarray: ij-coefficients for y-direction,
+    // 3-subarray: ji-coefficients for y-direction,
+    // ...
+    // n-subarray: further coefficients not required here
+
+    // Strided cudaDMA thread to transfer precomputed coefficients
+    // CoeffsAtEdge into shared memory s_CoeffsAtEdge
+    cudaDMAStrided<false, sizeof(Tc),
+                   compute_threads_per_cta*sizeof(Tc),
+                   TOTAL_THREADS_PER_CTA,
+                   2*HYDRO_NDIM>dma_coeff(nedge*sizeof(Tc));
+#else
+    // Coefficients at edges are stored as array of structure, that
+    // is, we have nedge real-valued subarray of length 2*ncoeff
+    cudaDMAStrided<false, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+                   TOTAL_THREADS_PER_CTA,
+                   2*compute_threads_per_cta>dma_coeff(ncoeff*sizeof(Tc));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Loop over all edge-groups to be processed by this block
+    for (int ipt=0; ipt<nedge_per_thread; ++ipt) {
+
+      if (nedge_per_thread>1)
+	__syncthreads();
+
+      //------------------------------------------------------------------------
+      // Load the indices with all threads - no warp specialisation
+      //------------------------------------------------------------------------
+      dma_ind.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+				       compute_threads_per_cta+nedge_offset)*
+      				      (EDGELIST_DEVICE == SOA ? 2 : 6)], s_IedgeList);
+      __syncthreads();
+
+      dma_vec.execute_dma(s_IedgeList, vecSrc-NVAR2D, s_DataAtEdge);
+      dma_coeff.execute_dma(&CoeffsAtEdge[ ((ipt*gridDim.x+blockIdx.x)*
+					    compute_threads_per_cta+nedge_offset)*
+					   (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+			    s_CoeffsAtEdge);
+      __syncthreads();
+      
+      //--------------------------------------------------------------------------
+      
+      // Compute velocities
+      TdDest ui = XVELOCITY3(s_DataAtEdge,
+			     IDX3,1,(int)threadIdx.x+1,
+			     NVAR2D,2,compute_threads_per_cta);
+      TdDest vi = YVELOCITY3(s_DataAtEdge,
+			     IDX3,1,(int)threadIdx.x+1,
+			     NVAR2D,2,compute_threads_per_cta);
+      
+      TdDest uj = XVELOCITY3(s_DataAtEdge,
+			     IDX3,2,(int)threadIdx.x+1,
+			     NVAR2D,2,compute_threads_per_cta);
+      TdDest vj = YVELOCITY3(s_DataAtEdge,
+			     IDX3,2,(int)threadIdx.x+1,
+			     NVAR2D,2,compute_threads_per_cta);
+      
+      // Compute pressures
+      TdDest pi = PRESSURE3(s_DataAtEdge,
+			    IDX3,1,(int)threadIdx.x+1,
+			    NVAR2D,2,compute_threads_per_cta);
+      TdDest pj = PRESSURE3(s_DataAtEdge,
+			    IDX3,2,(int)threadIdx.x+1,
+			    NVAR2D,2,compute_threads_per_cta);
+
+      // Local variables
+      TdDest FluxAtEdge[2*NVAR2D];
+      
+      // Compute the artificial viscosities
+      InviscidFluxDissipation<idissipationtype>::
+	calcEdgeData<1,compute_threads_per_cta,false,false>
+	(&FluxAtEdge[NVAR2D],s_CoeffsAtEdge,s_DataAtEdge,ui,uj,vi,vj,pi,pj,
+	 1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
+      Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+      
+      // Compute inviscid fluxes
+      InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	(FluxAtEdge,s_CoeffsAtEdge,s_DataAtEdge,ui,uj,vi,vj,pi,pj,scale,
+	 1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,2);
+      
+      dma_vec.execute_dma(s_IedgeList, vecDest-NVAR2D, s_DataAtEdge);
+      __syncthreads();
+      
+      // Get positions of edge endpoints (idx starts at zero)
+      Ti i = IDX2(s_IedgeList,1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      
+#pragma unroll
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	  IDX3(s_DataAtEdge, ivar, 1, (int)threadIdx.x+1,
+	       NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+      
+      // Get positions of edge endpoints (idx starts at zero)
+      Ti j = IDX2(s_IedgeList,2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      
+#pragma unroll
+      for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	  IDX3(s_DataAtEdge, ivar, 2, (int)threadIdx.x+1,
+	       NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+    }
+  };
+
+#undef TOTAL_THREADS_PER_CTA
+
+ /*****************************************************************************
+   * This CUDA kernel calculates the inviscid fluxes and applies
+   * artificial dissipation if required) (cudaDMA implementation with
+   * manual single buffering strategy with prefetching of indices).
+   ****************************************************************************/
+
+#define TOTAL_THREADS_PER_CTA compute_threads_per_cta+dma_threads_per_ld* \
+  (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST+CUDADMA_DMA_LDS_COEFF)
+
+  template <typename Tc,
+	    typename TdSrc,
+	    typename TdDest,
+	    typename Ti,
+	    int isystemformat,
+	    int idissipationtype,
+	    int compute_threads_per_cta,
+	    int dma_threads_per_ld>
+  __launch_bounds__(TOTAL_THREADS_PER_CTA)
+  __global__ void hydro_calcFlux2d_cudaDMA_prefetch_single(Tc *CoeffsAtEdge,
+							   Ti *IedgeList,
+							   TdSrc *vecSrc,
+							   TdDest *vecDest,
+							   TdDest scale,
+							   Ti neq,
+							   Ti nedge,
+							   Ti ncoeff,
+							   Ti nedge_last,
+							   Ti nedge_per_thread=1,
+							   Ti nedge_offset=0)
+  {
+    // Shared memory
+    __shared__ Ti s_IedgeList[1][2*compute_threads_per_cta];
+    __shared__ TdSrc s_VecSrc[1][NVAR2D*2*compute_threads_per_cta];
+    __shared__ TdDest s_VecDest[1][NVAR2D*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[1][HYDRO_NDIM*2*compute_threads_per_cta];
+
     //--------------------------------------------------------------------------
 
 #if EDGELIST_DEVICE == SOA
@@ -2961,21 +3229,859 @@ if (btransposeDest) {
     // Indirect cudaDMA thread to transfer nodal data from vecSrc into
     // shared memory s_VecSrc, we need to distinguish between vecSrc
     // stored in interleaved format and vecSrc stored in block format
-    cudaDMAIndirect<true, false,
-      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-               (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-      TOTAL_THREADS_PER_CTA, 2*compute_threads_per_cta>
-      dma_vecSrc;
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecSrc0(0, compute_threads_per_cta, compute_threads_per_cta);
 
     // Indirect cudaDMA thread to transfer nodal data from vecDest into
     // shared memory s_VecDest, we need to distinguish between vecDest
-    // stored in interleaved format and vecDest stored in block format
+    // stored in interleaved format and vecSrc stored in block format
     cudaDMAIndirect<true, true,
-      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
-               (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
-      CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
-      dma_vecDest(0, compute_threads_per_cta, compute_threads_per_cta);
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecDest0(1, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
+
+    //--------------------------------------------------------------------------
+
+#if COEFFSATEDGE_DEVICE == SOA
+    // Coefficients at edges are stored as structure of arrays, that
+    // is, we have 2*ncoeff subarrays of length nedge which store:
+    //
+    // 0-subarray: ij-coefficients for x-direction, 
+    // 1-subarray: ji-coefficients for x-direction, 
+    // 2-subarray: ij-coefficients for y-direction,
+    // 3-subarray: ji-coefficients for y-direction,
+    // ...
+    // n-subarray: further coefficients not required here
+
+    // Strided cudaDMA thread to transfer precomputed coefficients
+    // CoeffsAtEdge into shared memory s_CoeffsAtEdge
+    cudaDMAStrided<true, sizeof(Tc),
+                   compute_threads_per_cta*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*HYDRO_NDIM>
+      dma_coeff0(2, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 nedge*sizeof(Tc));
+#else
+    // Coefficients at edges are stored as array of structure, that
+    // is, we have nedge real-valued subarray of length 2*ncoeff
+    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*compute_threads_per_cta>
+      dma_coeff0(2, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+0*CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 ncoeff*sizeof(Tc));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Loop over all edge-groups to be processed by this block
+    for (int ipt=0; ipt<nedge_per_thread; ++ipt) {
+
+      //------------------------------------------------------------------------
+      // Load the indices with all threads - no warp specialisation
+      //------------------------------------------------------------------------
+      if (nedge_per_thread>1)
+	ptx_cudaDMA_barrier_blocking(5, TOTAL_THREADS_PER_CTA);
+
+      dma_ind.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+				       compute_threads_per_cta+nedge_offset)*
+				      (EDGELIST_DEVICE == SOA ? 2 : 6)],
+			  s_IedgeList[0]);
+
+      ptx_cudaDMA_barrier_blocking(5, TOTAL_THREADS_PER_CTA);
+      
+      //------------------------------------------------------------------------
+      // Warp specialisation
+      //------------------------------------------------------------------------
+      if (threadIdx.x<compute_threads_per_cta) {
+      
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+	
+	// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+	
+#define IBUF 0
+#define DBUF 0
+#define IOFF 0
+	
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
+	// Compute velocities
+	TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	
+	TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	TdDest pi = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,1,(int)threadIdx.x+1,
+			      NVAR2D,2,compute_threads_per_cta);
+	TdDest pj = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,2,(int)threadIdx.x+1,
+			      NVAR2D,2,compute_threads_per_cta);
+	
+	// Local variables
+	TdDest FluxAtEdge[2*NVAR2D];
+	
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	Ti i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	Ti j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+
+#undef IBUF
+#undef DBUF
+#undef IOFF
+      }
+
+      //------------------------------------------------------------------------
+      // DMA transfer warps
+      //------------------------------------------------------------------------
+
+      else if(dma_vecSrc0.owns_this_thread()) {
+	dma_vecSrc0.execute_dma(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[0]);
+      }
+      
+      else if(dma_vecDest0.owns_this_thread()) {
+      	dma_vecDest0.execute_dma(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[0]);
+      }
+
+      else if(dma_coeff0.owns_this_thread()) {
+	dma_coeff0.execute_dma(&CoeffsAtEdge[((ipt*gridDim.x+blockIdx.x)*
+					      compute_threads_per_cta +
+					      nedge_offset)*
+					     (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[0]);
+      }
+    }
+  };
+
+#undef TOTAL_THREADS_PER_CTA
+
+  /*****************************************************************************
+   * This CUDA kernel calculates the inviscid fluxes and applies
+   * artificial dissipation if required) (cudaDMA implementation with
+   * manual double buffering strategy with prefetching of indices).
+   ****************************************************************************/
+
+#define TOTAL_THREADS_PER_CTA compute_threads_per_cta+dma_threads_per_ld* \
+  (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST+CUDADMA_DMA_LDS_COEFF)
+
+  template <typename Tc,
+	    typename TdSrc,
+	    typename TdDest,
+	    typename Ti,
+	    int isystemformat,
+	    int idissipationtype,
+	    int compute_threads_per_cta,
+	    int dma_threads_per_ld>
+  __launch_bounds__(TOTAL_THREADS_PER_CTA)
+  __global__ void hydro_calcFlux2d_cudaDMA_prefetch_double(Tc *CoeffsAtEdge,
+							   Ti *IedgeList,
+							   TdSrc *vecSrc,
+							   TdDest *vecDest,
+							   TdDest scale,
+							   Ti neq,
+							   Ti nedge,
+							   Ti ncoeff,
+							   Ti nedge_last,
+							   Ti nedge_per_thread=1,
+							   Ti nedge_offset=0)
+  {
+    // Shared memory
+    __shared__ Ti s_IedgeList[4][2*compute_threads_per_cta];
+    __shared__ TdSrc s_VecSrc[2][NVAR2D*2*compute_threads_per_cta];
+    __shared__ TdDest s_VecDest[2][NVAR2D*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[2][HYDRO_NDIM*2*compute_threads_per_cta];
+
+    //--------------------------------------------------------------------------
+
+#if EDGELIST_DEVICE == SOA
+    // List of edges is stored as structure of arrays, that is, we
+    // have 6 integer subarrays of length nedge which store:
+    //
+    // 0-subarray: first end point i, 
+    // 1-subarray: second end point j,
+    // 2-subarray: matrix entry ij,
+    // 3-subarray: matrix entry ji,
+    // 4-subarray: matrix entry ii,
+    // 5-subarray: matrix entry jj.
+    //
+    // For the flux assembly, only the two endpoints (i,j) are
+    // required. Therefore, only subarrays 0 and 1 are transfered.
+
+    // Sequential cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMASequential<false, 2*sizeof(Ti),
+                      4*2*compute_threads_per_cta*sizeof(Ti),
+                      TOTAL_THREADS_PER_CTA>dma_ind;
+#else
+    // List of edges is stored as array of structures, that is, we
+    // have nedge integer subarrays of length 6 which store:
+    //
+    // (i,j,ij,jj,ii,jj) for each edge iedge
+    //
+    // For the flux assembly, only the two entpoins (i,j) are
+    // required. Therefore, only the first two entries of each edge
+    // are transfered using strided DMA.
+
+    // Strided cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMAStrided<false, 2*sizeof(Ti), 2*sizeof(Ti), 
+                   TOTAL_THREADS_PER_CTA,
+		   4*compute_threads_per_cta>dma_ind(6*sizeof(Ti));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Indirect cudaDMA thread to transfer nodal data from vecSrc into
+    // shared memory s_VecSrc, we need to distinguish between vecSrc
+    // stored in interleaved format and vecSrc stored in block format
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecSrc0(0, compute_threads_per_cta, compute_threads_per_cta);
+
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecSrc1(1, compute_threads_per_cta, compute_threads_per_cta);
+
+    // Indirect cudaDMA thread to transfer nodal data from vecDest into
+    // shared memory s_VecDest, we need to distinguish between vecDest
+    // stored in interleaved format and vecSrc stored in block format
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecDest0(2, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
+
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecDest1(3, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
+
+    //--------------------------------------------------------------------------
+
+#if COEFFSATEDGE_DEVICE == SOA
+    // Coefficients at edges are stored as structure of arrays, that
+    // is, we have 2*ncoeff subarrays of length nedge which store:
+    //
+    // 0-subarray: ij-coefficients for x-direction, 
+    // 1-subarray: ji-coefficients for x-direction, 
+    // 2-subarray: ij-coefficients for y-direction,
+    // 3-subarray: ji-coefficients for y-direction,
+    // ...
+    // n-subarray: further coefficients not required here
+
+    // Strided cudaDMA thread to transfer precomputed coefficients
+    // CoeffsAtEdge into shared memory s_CoeffsAtEdge
+    cudaDMAStrided<true, sizeof(Tc),
+                   compute_threads_per_cta*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*HYDRO_NDIM>
+      dma_coeff0(4, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 nedge*sizeof(Tc));
+
+    cudaDMAStrided<true, sizeof(Tc),
+                   compute_threads_per_cta*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*HYDRO_NDIM>
+      dma_coeff1(5, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 nedge*sizeof(Tc));
+#else
+    // Coefficients at edges are stored as array of structure, that
+    // is, we have nedge real-valued subarray of length 2*ncoeff
+    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*compute_threads_per_cta>
+      dma_coeff0(4, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 ncoeff*sizeof(Tc));
+  
+    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*compute_threads_per_cta>
+      dma_coeff1(5, compute_threads_per_cta, compute_threads_per_cta+
+		 (CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+		 ncoeff*sizeof(Tc));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Loop over all edge-groups to be processed by this block
+    for (int ipt=0; ipt<nedge_per_thread; ipt+=4) {
+
+      //------------------------------------------------------------------------
+      // Load the indices with all threads - no warp specialisation
+      //------------------------------------------------------------------------
+      ptx_cudaDMA_barrier_blocking(11, TOTAL_THREADS_PER_CTA);
+      dma_ind.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+				       4*compute_threads_per_cta+nedge_offset)*
+				      (EDGELIST_DEVICE == SOA ? 2 : 6)],
+			  s_IedgeList[0]);
+      ptx_cudaDMA_barrier_blocking(11, TOTAL_THREADS_PER_CTA);
+      
+      //------------------------------------------------------------------------
+      // Warp specialisation
+      //------------------------------------------------------------------------
+      if (threadIdx.x<compute_threads_per_cta) {
+      
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+	dma_coeff1.start_async_dma();
+	
+	// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+	
+	// Start DMA transfer of indirect data
+	dma_vecSrc1.start_async_dma();
+	dma_vecDest1.start_async_dma();
+	
+#define IBUF 0
+#define DBUF 0
+#define IOFF 0
+	
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
+	// Compute velocities
+	TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	
+	TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
+			       NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	TdDest pi = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,1,(int)threadIdx.x+1,
+			      NVAR2D,2,compute_threads_per_cta);
+	TdDest pj = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,2,(int)threadIdx.x+1,
+			      NVAR2D,2,compute_threads_per_cta);
+	
+	// Local variables
+	TdDest FluxAtEdge[2*NVAR2D];
+	
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	Ti i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	Ti j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+
+#define IBUF 1
+#define DBUF 1
+#define IOFF 1
+
+	// Wait for source vector to be ready
+	dma_vecSrc1.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+		
+	// Wait for coefficients to be ready
+	dma_coeff1.wait_for_dma_finish();
+
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	
+	// Start DMA transfer of coefficients
+	dma_coeff1.start_async_dma();
+
+	// Wait for destination vector to be ready
+	dma_vecDest1.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc1.start_async_dma();
+	dma_vecDest1.start_async_dma();
+
+#define IBUF 2
+#define DBUF 0
+#define IOFF 2
+
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+		
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,s_CoeffsAtEdge[0],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+#define IBUF 3
+#define DBUF 1
+#define IOFF 3
+
+	// Wait for source vector to be ready
+	dma_vecSrc1.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+		
+	// Wait for coefficients to be ready
+	dma_coeff1.wait_for_dma_finish();
+
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,s_CoeffsAtEdge[1],s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,(int)threadIdx.x+1,compute_threads_per_cta,HYDRO_NDIM);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest1.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+      }
+
+      //------------------------------------------------------------------------
+      // DMA transfer warps
+      //------------------------------------------------------------------------
+
+      else if(dma_vecSrc0.owns_this_thread()) {
+	dma_vecSrc0.execute_dma(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[0]);
+	dma_vecSrc1.execute_dma(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[1]);
+	dma_vecSrc0.execute_dma(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[0]);
+	dma_vecSrc1.execute_dma(s_IedgeList[3], vecSrc-NVAR2D, s_VecSrc[1]);
+      }
+      
+      else if(dma_vecDest0.owns_this_thread()) {
+	dma_vecDest0.execute_dma(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[0]);
+	dma_vecDest1.execute_dma(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[1]);
+	dma_vecDest0.execute_dma(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[0]);
+	dma_vecDest1.execute_dma(s_IedgeList[3], vecDest-NVAR2D, s_VecDest[1]);
+      }
+
+      else if(dma_coeff0.owns_this_thread()) {
+	dma_coeff0.execute_dma(&CoeffsAtEdge[((ipt*gridDim.x+blockIdx.x)*
+					      4*compute_threads_per_cta +
+					      0*compute_threads_per_cta +
+					      nedge_offset)*
+					     (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[0]);
+	dma_coeff1.execute_dma(&CoeffsAtEdge[((ipt*gridDim.x+blockIdx.x)*
+					      4*compute_threads_per_cta +
+					      1*compute_threads_per_cta +
+					      nedge_offset)*
+					     (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[1]);
+	dma_coeff0.execute_dma(&CoeffsAtEdge[((ipt*gridDim.x+blockIdx.x)*
+					      4*compute_threads_per_cta +
+					      2*compute_threads_per_cta +
+					      nedge_offset)*
+					     (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[0]);
+	dma_coeff1.execute_dma(&CoeffsAtEdge[((ipt*gridDim.x+blockIdx.x)*
+					      4*compute_threads_per_cta +
+					      3*compute_threads_per_cta +
+					      nedge_offset)*
+					     (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[1]);
+      }
+    }
+  };
+
+#undef TOTAL_THREADS_PER_CTA
+
+  /*****************************************************************************
+   * This CUDA kernel calculates the inviscid fluxes and applies
+   * artificial dissipation if required) (cudaDMA implementation with
+   * double buffering strategy).
+   ****************************************************************************/
+
+#define TOTAL_THREADS_PER_CTA compute_threads_per_cta+dma_threads_per_ld* \
+  (3*CUDADMA_DMA_LDS_IND+2*CUDADMA_DMA_LDS_SRC+2*CUDADMA_DMA_LDS_DEST)
+
+  template <typename Tc,
+	    typename TdSrc,
+	    typename TdDest,
+	    typename Ti,
+	    int isystemformat,
+	    int idissipationtype,
+	    int compute_threads_per_cta,
+	    int dma_threads_per_ld>
+  __launch_bounds__(TOTAL_THREADS_PER_CTA)
+  __global__ void hydro_calcFlux2d_cudaDMA_double(Tc *CoeffsAtEdge,
+						  Ti *IedgeList,
+						  TdSrc *vecSrc,
+						  TdDest *vecDest,
+						  TdDest scale,
+						  Ti neq,
+						  Ti nedge,
+						  Ti ncoeff,
+						  Ti nedge_last,
+						  Ti nedge_per_thread=1,
+						  Ti nedge_offset=0)
+  {
+    // Shared memory
+    __shared__ Ti s_IedgeList[3][2*compute_threads_per_cta];
+    __shared__ TdSrc s_VecSrc[2][NVAR2D*2*compute_threads_per_cta];
+    __shared__ TdDest s_VecDest[2][NVAR2D*2*compute_threads_per_cta];
     
+    //--------------------------------------------------------------------------
+
+#if EDGELIST_DEVICE == SOA
+    // List of edges is stored as structure of arrays, that is, we
+    // have 6 integer subarrays of length nedge which store:
+    //
+    // 0-subarray: first end point i, 
+    // 1-subarray: second end point j,
+    // 2-subarray: matrix entry ij,
+    // 3-subarray: matrix entry ji,
+    // 4-subarray: matrix entry ii,
+    // 5-subarray: matrix entry jj.
+    //
+    // For the flux assembly, only the two endpoints (i,j) are
+    // required. Therefore, only subarrays 0 and 1 are transfered.
+
+    // Sequential cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMASequential<true, 2*sizeof(Ti),
+                      2*compute_threads_per_cta*sizeof(Ti),
+                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+    dma_ind0(0, compute_threads_per_cta, compute_threads_per_cta);
+
+    cudaDMASequential<true, 2*sizeof(Ti),
+                      2*compute_threads_per_cta*sizeof(Ti),
+                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+    dma_ind1(1, compute_threads_per_cta,
+	     compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
+
+    cudaDMASequential<true, 2*sizeof(Ti),
+                      2*compute_threads_per_cta*sizeof(Ti),
+                      CUDADMA_DMA_LDS_IND*dma_threads_per_ld>
+    dma_ind2(2, compute_threads_per_cta,
+	     compute_threads_per_cta+2*CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
+#else
+    // List of edges is stored as array of structures, that is, we
+    // have nedge integer subarrays of length 6 which store:
+    //
+    // (i,j,ij,jj,ii,jj) for each edge iedge
+    //
+    // For the flux assembly, only the two entpoins (i,j) are
+    // required. Therefore, only the first two entries of each edge
+    // are transfered using strided DMA.
+
+    // Strided cudaDMA thread to transfer edge list from integer
+    // array IedgeList into shared memory s_IedgeList
+    cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
+                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+                   compute_threads_per_cta>
+    dma_ind0(0, compute_threads_per_cta,
+	     compute_threads_per_cta,
+	     6*sizeof(Ti));
+
+    cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
+                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+                   compute_threads_per_cta>
+    dma_ind1(1, compute_threads_per_cta,
+	     compute_threads_per_cta+CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+	     6*sizeof(Ti));
+
+    cudaDMAStrided<true, 2*sizeof(Ti), 2*sizeof(Ti), 
+                   CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+                   compute_threads_per_cta>
+    dma_ind2(2, compute_threads_per_cta,
+	     compute_threads_per_cta+2*CUDADMA_DMA_LDS_IND*dma_threads_per_ld,
+	     6*sizeof(Ti));
+#endif
+
+    //--------------------------------------------------------------------------
+
+    // Indirect cudaDMA thread to transfer nodal data from vecSrc into
+    // shared memory s_VecSrc, we need to distinguish between vecSrc
+    // stored in interleaved format and vecSrc stored in block format
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecSrc0(3, compute_threads_per_cta,
+		compute_threads_per_cta+3*CUDADMA_DMA_LDS_IND*dma_threads_per_ld);
+
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_SRC*dma_threads_per_ld, 2*compute_threads_per_cta>
+      dma_vecSrc1(4, compute_threads_per_cta, compute_threads_per_cta+
+		  (3*CUDADMA_DMA_LDS_IND+1*CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
+
+    // Indirect cudaDMA thread to transfer nodal data from vecDest into
+    // shared memory s_VecDest, we need to distinguish between vecDest
+    // stored in interleaved format and vecSrc stored in block format
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecDest0(5, compute_threads_per_cta, compute_threads_per_cta+
+		 (3*CUDADMA_DMA_LDS_IND+2*CUDADMA_DMA_LDS_SRC)*dma_threads_per_ld);
+
+    cudaDMAIndirect<true, true,
+                    MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc)),
+                             (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(TdSrc),
+                    CUDADMA_DMA_LDS_DEST*dma_threads_per_ld, 2*compute_threads_per_cta>
+    dma_vecDest1(6, compute_threads_per_cta, compute_threads_per_cta+
+		 (3*CUDADMA_DMA_LDS_IND+2*CUDADMA_DMA_LDS_SRC
+		 +1*CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld);
+
     //--------------------------------------------------------------------------
 
 #if COEFFSATEDGE_DEVICE == SOA
@@ -3004,53 +4110,64 @@ if (btransposeDest) {
 #endif
 
     //--------------------------------------------------------------------------
-
-    // Loop over all edge-groups to be processed by this block
-    for (int ipt=0; ipt<nedge_per_thread; ++ipt) {
-
-      //------------------------------------------------------------------------
-      // Load the indices with all threads - no warp specialisation
-      //------------------------------------------------------------------------
-      dma_ind.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
-				       compute_threads_per_cta+nedge_offset)*
-      				      (EDGELIST_DEVICE == SOA ? 2 : 6)], s_IedgeList);
-      __syncthreads();
-
-      dma_vecSrc.execute_dma(s_IedgeList, vecSrc-NVAR2D, s_VecSrc);
-      __syncthreads();
-
-      //--------------------------------------------------------------------------
+    // Warp specialisation
+    //--------------------------------------------------------------------------
+    if (threadIdx.x<compute_threads_per_cta) {
       
-      // Warp specialisation
-      if (threadIdx.x<compute_threads_per_cta) {
+      // Start DMA transfer of indices
+      dma_ind0.start_async_dma();
+      dma_ind1.start_async_dma();
+      dma_ind2.start_async_dma();
+      
+      // Wait for indices to be ready
+      dma_ind0.wait_for_dma_finish();
+    
+      // Start DMA transfer of indirect data
+      dma_vecSrc0.start_async_dma();
+      dma_vecDest0.start_async_dma();
+      
+      // Wait for indices to be ready
+      dma_ind1.wait_for_dma_finish();
+
+      // Start DMA transfer of indirect data
+      dma_vecSrc1.start_async_dma();
+      dma_vecDest1.start_async_dma();
+
+      // Loop over all edge-groups to be processed by this block
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
 	
-	dma_vecDest.start_async_dma();
-		
+#define IBUF 0
+#define DBUF 0
+#define IOFF 0
+
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
 	// Compute velocities
-	TdDest ui = XVELOCITY3(s_VecSrc,
-			       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+	TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
-	TdDest vi = YVELOCITY3(s_VecSrc,
-			       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+	TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,1,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	
-	TdDest uj = XVELOCITY3(s_VecSrc,
-			       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+	TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
-	TdDest vj = YVELOCITY3(s_VecSrc,
-			       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+	TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
+			       IDX3,2,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
-	TdDest pi = PRESSURE3(s_VecSrc,
-			      CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+	TdDest pi = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,1,(int)threadIdx.x+1,
 			      NVAR2D,2,compute_threads_per_cta);
-	TdDest pj = PRESSURE3(s_VecSrc,
-			      CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+	TdDest pj = PRESSURE3(s_VecSrc[DBUF],
+			      IDX3,2,(int)threadIdx.x+1,
 			      NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
-	Ti idx = (ipt*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	Ti idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	       + nedge_offset + threadIdx.x;
 	
 	// Local variables
@@ -3058,52 +4175,567 @@ if (btransposeDest) {
 	
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
-	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc,ui,uj,vi,vj,pi,pj,
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
-      // Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
-	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc,ui,uj,vi,vj,pi,pj,scale,
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
-	dma_vecDest.wait_for_dma_finish();
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
 	
 	// Get positions of edge endpoints (idx starts at zero)
-	Ti i = IDX2(s_IedgeList,1,(int)threadIdx.x+1,2,compute_threads_per_cta);
-	
+	Ti i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+      
 #pragma unroll
-	for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
 	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
-	    IDX3(s_VecDest, ivar, 1, (int)threadIdx.x+1,
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
 		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
 	
 	// Get positions of edge endpoints (idx starts at zero)
-	Ti j = IDX2(s_IedgeList,2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	Ti j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
 	
 #pragma unroll
-	for (int ivar=1; ivar<=NVAR2D; ++ivar)
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
 	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
-	    IDX3(s_VecDest, ivar, 2, (int)threadIdx.x+1,
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
 		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
-      }
 
-      else if(dma_vecDest.owns_this_thread()) {
-	dma_vecDest.execute_dma(s_IedgeList, vecDest-NVAR2D, s_VecDest);
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind0.start_async_dma();
+
+	// Wait for indices to be ready
+	dma_ind2.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+
+#define IBUF 1
+#define DBUF 1
+#define IOFF 1
+
+	// Wait for source vector to be ready
+	dma_vecSrc1.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	
+	// Global edge ID
+	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	  + nedge_offset + threadIdx.x;
+	
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest1.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind1.start_async_dma();
+	
+	// Wait for indices to be ready
+	dma_ind0.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc1.start_async_dma();
+	dma_vecDest1.start_async_dma();
+
+#define IBUF 2
+#define DBUF 0
+#define IOFF 2
+
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	
+	// Global edge ID
+	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	  + nedge_offset + threadIdx.x;
+	
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind2.start_async_dma();
+	
+	// Wait for indices to be ready
+	dma_ind1.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+
+#define IBUF 0
+#define DBUF 1
+#define IOFF 3
+
+	// Wait for source vector to be ready
+	dma_vecSrc1.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	
+	// Global edge ID
+	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	  + nedge_offset + threadIdx.x;
+	
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest1.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind0.start_async_dma();
+	
+	// Wait for indices to be ready
+	dma_ind2.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc1.start_async_dma();
+	dma_vecDest1.start_async_dma();
+
+#define IBUF 1
+#define DBUF 0
+#define IOFF 4
+
+	// Wait for source vector to be ready
+	dma_vecSrc0.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	
+	// Global edge ID
+	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	  + nedge_offset + threadIdx.x;
+	
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest0.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind1.start_async_dma();
+	
+	// Wait for indices to be ready
+	dma_ind0.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc0.start_async_dma();
+	dma_vecDest0.start_async_dma();
+
+#define IBUF 2
+#define DBUF 1
+#define IOFF 5
+
+	// Wait for source vector to be ready
+	dma_vecSrc1.wait_for_dma_finish();
+
+	// Compute velocities
+	ui = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vi = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,1,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	uj = XVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	vj = YVELOCITY3(s_VecSrc[DBUF],
+			IDX3,2,(int)threadIdx.x+1,
+			NVAR2D,2,compute_threads_per_cta);
+	
+	// Compute pressures
+	pi = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,1,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	pj = PRESSURE3(s_VecSrc[DBUF],
+		       IDX3,2,(int)threadIdx.x+1,
+		       NVAR2D,2,compute_threads_per_cta);
+	
+	// Global edge ID
+	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
+	  + nedge_offset + threadIdx.x;
+	
+	// Compute the artificial viscosities
+	InviscidFluxDissipation<idissipationtype>::
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
+	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
+	
+	// Compute inviscid fluxes
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
+	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
+	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
+	
+	// Wait for destination vector to be ready
+	dma_vecDest1.wait_for_dma_finish();
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	i = IDX2(s_IedgeList[IBUF],1,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,i,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 1, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,1,NVAR2D,2);
+	
+	// Get positions of edge endpoints (idx starts at zero)
+	j = IDX2(s_IedgeList[IBUF],2,(int)threadIdx.x+1,2,compute_threads_per_cta);
+	
+#pragma unroll
+        for (int ivar=1; ivar<=NVAR2D; ++ivar)
+	  IDX2_REVERSE(vecDest,ivar,j,NVAR2D,neq) =
+	    IDX3(s_VecDest[DBUF], ivar, 2, (int)threadIdx.x+1,
+		 NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
+	
+#undef IBUF
+#undef DBUF
+#undef IOFF
+
+	// Start DMA transfer of indices
+	dma_ind2.start_async_dma();
+	
+	// Wait for indices to be ready
+	dma_ind1.wait_for_dma_finish();
+
+	// Start DMA transfer of indirect data
+	dma_vecSrc1.start_async_dma();
+	dma_vecDest1.start_async_dma();
+      }
+    }
+    
+    //--------------------------------------------------------------------------
+    // DMA transfer warps
+    //--------------------------------------------------------------------------
+    else if(dma_ind0.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread+1; ipt+=3) {
+	dma_ind0.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+					  compute_threads_per_cta+nedge_offset)*
+					 (EDGELIST_DEVICE == SOA ? 2 : 6)],
+			     s_IedgeList[0]);
+	}
+    }
+
+    else if(dma_ind1.owns_this_thread()) {
+      for (int ipt=1; ipt<nedge_per_thread+2; ipt+=3) {
+	dma_ind1.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+					  compute_threads_per_cta+nedge_offset)*
+					 (EDGELIST_DEVICE == SOA ? 2 : 6)],
+			     s_IedgeList[1]);
+	}
+    }
+
+    else if(dma_ind2.owns_this_thread()) {
+      for (int ipt=2; ipt<nedge_per_thread+3; ipt+=3) {
+	dma_ind2.execute_dma(&IedgeList[ ((ipt*gridDim.x+blockIdx.x)*
+					  compute_threads_per_cta+nedge_offset)*
+					 (EDGELIST_DEVICE == SOA ? 2 : 6)],
+			     s_IedgeList[2]);
+      }
+    }   
+    
+    else if(dma_vecSrc0.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+	
+	dma_vecSrc0.wait_for_dma_start();
+	dma_vecSrc0.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[0]);
+	dma_vecSrc0.finish_async_dma();
+	
+      	dma_vecSrc0.wait_for_dma_start();
+      	dma_vecSrc0.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[0]);
+      	dma_vecSrc0.finish_async_dma();
+
+      	dma_vecSrc0.wait_for_dma_start();
+      	dma_vecSrc0.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[0]);
+      	dma_vecSrc0.finish_async_dma();
+      }
+    }
+
+    else if(dma_vecSrc1.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+	
+      	dma_vecSrc1.wait_for_dma_start();
+      	dma_vecSrc1.execute_dma_no_sync(s_IedgeList[1], vecSrc-NVAR2D, s_VecSrc[1]);
+      	dma_vecSrc1.finish_async_dma();
+
+      	dma_vecSrc1.wait_for_dma_start();
+      	dma_vecSrc1.execute_dma_no_sync(s_IedgeList[0], vecSrc-NVAR2D, s_VecSrc[1]);
+      	dma_vecSrc1.finish_async_dma();
+
+      	dma_vecSrc1.wait_for_dma_start();
+      	dma_vecSrc1.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[1]);
+      	dma_vecSrc1.finish_async_dma();
+      }
+    }
+
+    else if(dma_vecDest0.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+	
+	dma_vecDest0.wait_for_dma_start();
+	dma_vecDest0.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[0]);
+	dma_vecDest0.finish_async_dma();
+
+      	dma_vecDest0.wait_for_dma_start();
+      	dma_vecDest0.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[0]);
+      	dma_vecDest0.finish_async_dma();
+
+      	dma_vecDest0.wait_for_dma_start();
+      	dma_vecDest0.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[0]);
+      	dma_vecDest0.finish_async_dma();
+      }
+    }
+
+    else if(dma_vecDest1.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=6) {
+
+      	dma_vecDest1.wait_for_dma_start();
+      	dma_vecDest1.execute_dma_no_sync(s_IedgeList[1], vecDest-NVAR2D, s_VecDest[1]);
+      	dma_vecDest1.finish_async_dma();
+
+      	dma_vecDest1.wait_for_dma_start();
+      	dma_vecDest1.execute_dma_no_sync(s_IedgeList[0], vecDest-NVAR2D, s_VecDest[1]);
+      	dma_vecDest1.finish_async_dma();
+
+      	dma_vecDest1.wait_for_dma_start();
+      	dma_vecDest1.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[1]);
+      	dma_vecDest1.finish_async_dma();
       }
     }
   };
-
+  
 #undef TOTAL_THREADS_PER_CTA
 
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
-   * artificial dissipation if required) (new cudaDMA implementation).
+   * artificial dissipation if required) (cudaDMA implementation with
+   * manual buffering strategy).
    ****************************************************************************/
 
 #define TOTAL_THREADS_PER_CTA compute_threads_per_cta+dma_threads_per_ld* \
-  (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)
+  (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST+CUDADMA_DMA_LDS_COEFF)
 
   template <typename Tc,
 	    typename TdSrc,
@@ -3130,6 +4762,7 @@ if (btransposeDest) {
     __shared__ Ti s_IedgeList[3][2*compute_threads_per_cta];
     __shared__ TdSrc s_VecSrc[2][NVAR2D*2*compute_threads_per_cta];
     __shared__ TdDest s_VecDest[2][NVAR2D*2*compute_threads_per_cta];
+    __shared__ Tc s_CoeffsAtEdge[2][HYDRO_NDIM*2*compute_threads_per_cta];
     
     //--------------------------------------------------------------------------
 
@@ -3242,21 +4875,42 @@ if (btransposeDest) {
 
     // Strided cudaDMA thread to transfer precomputed coefficients
     // CoeffsAtEdge into shared memory s_CoeffsAtEdge
-    // cudaDMAStrided<false, sizeof(Tc),
+    cudaDMAStrided<true, sizeof(Tc),
+                   compute_threads_per_cta*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*HYDRO_NDIM>
+    dma_coeff0(7, compute_threads_per_cta, compute_threads_per_cta+
+    	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+    	       nedge*sizeof(Tc));
+
+    // cudaDMAStrided<true, sizeof(Tc),
     //                compute_threads_per_cta*sizeof(Tc),
-    //                TOTAL_THREADS_PER_CTA,
-    //                2*HYDRO_NDIM>dma_coeff(nedge*sizeof(Tc));
+    //                CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+    //                2*HYDRO_NDIM>
+    // dma_coeff1(8, compute_threads_per_cta, compute_threads_per_cta+
+    // 	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+    // 	       nedge*sizeof(Tc));
 #else
     // Coefficients at edges are stored as array of structure, that
     // is, we have nedge real-valued subarray of length 2*ncoeff
-    // cudaDMAStrided<false, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
-    //                TOTAL_THREADS_PER_CTA,
-    //                2*compute_threads_per_cta>dma_coeff(ncoeff*sizeof(Tc));
+    cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+                   CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+                   2*compute_threads_per_cta>
+    dma_coeff0(7, compute_threads_per_cta, compute_threads_per_cta+
+    	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+    	       ncoeff*sizeof(Tc));
+  
+    // cudaDMAStrided<true, sizeof(Tc), HYDRO_NDIM*sizeof(Tc),
+    //                CUDADMA_DMA_LDS_COEFF*dma_threads_per_ld,
+    //                2*compute_threads_per_cta>
+    // dma_coeff1(8, compute_threads_per_cta, compute_threads_per_cta+
+    // 	       (CUDADMA_DMA_LDS_IND+CUDADMA_DMA_LDS_SRC+CUDADMA_DMA_LDS_DEST)*dma_threads_per_ld,
+    // 	       ncoeff*sizeof(Tc));
 #endif
 
     //--------------------------------------------------------------------------
-
     // Warp specialisation
+    //--------------------------------------------------------------------------
     if (threadIdx.x<compute_threads_per_cta) {
       
       // Start DMA transfer of indices
@@ -3264,13 +4918,17 @@ if (btransposeDest) {
       dma_ind1.start_async_dma();
       dma_ind2.start_async_dma();
       
+      // Start DMA transfer of coefficients
+      dma_coeff0.start_async_dma();
+      //      dma_coeff1.start_async_dma();
+
       // Wait for indices to be ready
       dma_ind0.wait_for_dma_finish();
     
       // Start DMA transfer of indirect data
       dma_vecSrc0.start_async_dma();
       dma_vecDest0.start_async_dma();
-      
+    
       // Wait for indices to be ready
       dma_ind1.wait_for_dma_finish();
       
@@ -3290,25 +4948,25 @@ if (btransposeDest) {
 
 	// Compute velocities
 	TdDest ui = XVELOCITY3(s_VecSrc[DBUF],
-			       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			       IDX3,1,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	TdDest vi = YVELOCITY3(s_VecSrc[DBUF],
-			       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			       IDX3,1,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	
 	TdDest uj = XVELOCITY3(s_VecSrc[DBUF],
-			       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			       IDX3,2,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	TdDest vj = YVELOCITY3(s_VecSrc[DBUF],
-			       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			       IDX3,2,(int)threadIdx.x+1,
 			       NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	TdDest pi = PRESSURE3(s_VecSrc[DBUF],
-			      CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			      IDX3,1,(int)threadIdx.x+1,
 			      NVAR2D,2,compute_threads_per_cta);
 	TdDest pj = PRESSURE3(s_VecSrc[DBUF],
-			      CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			      IDX3,2,(int)threadIdx.x+1,
 			      NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
@@ -3318,18 +4976,24 @@ if (btransposeDest) {
 	// Local variables
 	TdDest FluxAtEdge[2*NVAR2D];
 	
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest0.wait_for_dma_finish();
 	
@@ -3374,43 +5038,49 @@ if (btransposeDest) {
 
 	// Compute velocities
 	ui = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vi = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	uj = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vj = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	pi = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+		       IDX3,1,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	pj = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+		       IDX3,2,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
 	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	  + nedge_offset + threadIdx.x;
 	
+	// Wait for coefficients to be ready
+	//	dma_coeff1.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	//	dma_coeff1.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest1.wait_for_dma_finish();
 	
@@ -3455,43 +5125,49 @@ if (btransposeDest) {
 
 	// Compute velocities
 	ui = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vi = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	uj = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vj = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	pi = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+		       IDX3,1,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	pj = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+		       IDX3,2,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
 	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	  + nedge_offset + threadIdx.x;
 	
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest0.wait_for_dma_finish();
 	
@@ -3536,43 +5212,49 @@ if (btransposeDest) {
 
 	// Compute velocities
 	ui = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vi = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	uj = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vj = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	pi = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+		       IDX3,1,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	pj = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+		       IDX3,2,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
 	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	  + nedge_offset + threadIdx.x;
 	
+	// Wait for coefficients to be ready
+	//	dma_coeff1.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	//	dma_coeff1.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest1.wait_for_dma_finish();
 	
@@ -3617,43 +5299,49 @@ if (btransposeDest) {
 
 	// Compute velocities
 	ui = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vi = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	uj = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vj = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	pi = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+		       IDX3,1,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	pj = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+		       IDX3,2,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
 	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	  + nedge_offset + threadIdx.x;
 	
+	// Wait for coefficients to be ready
+	dma_coeff0.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	dma_coeff0.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest0.wait_for_dma_finish();
 	
@@ -3698,43 +5386,49 @@ if (btransposeDest) {
 
 	// Compute velocities
 	ui = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vi = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+			IDX3,1,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	uj = XVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	vj = YVELOCITY3(s_VecSrc[DBUF],
-			CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+			IDX3,2,(int)threadIdx.x+1,
 			NVAR2D,2,compute_threads_per_cta);
 	
 	// Compute pressures
 	pi = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,1,(int)threadIdx.x+1,
+		       IDX3,1,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	pj = PRESSURE3(s_VecSrc[DBUF],
-		       CUDADMA_DATA_IDX3,2,(int)threadIdx.x+1,
+		       IDX3,2,(int)threadIdx.x+1,
 		       NVAR2D,2,compute_threads_per_cta);
 	
 	// Global edge ID
 	idx = ((ipt+IOFF)*gridDim.x+blockIdx.x)*compute_threads_per_cta
 	  + nedge_offset + threadIdx.x;
 	
+	// Wait for coefficients to be ready
+	//	dma_coeff1.wait_for_dma_finish();
+
 	// Compute the artificial viscosities
 	InviscidFluxDissipation<idissipationtype>::
-	  calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE>
+	  calcEdgeData<1,compute_threads_per_cta,false,false>
 	  (&FluxAtEdge[NVAR2D],CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	Flux::combineEdgeData<true>(FluxAtEdge,&FluxAtEdge[NVAR2D],scale);
 	
 	// Compute inviscid fluxes
-	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,CUDADMA_DATA_TRANSPOSE,false>
+	InviscidFlux::calcEdgeData<1,compute_threads_per_cta,false,false,false>
 	  (FluxAtEdge,CoeffsAtEdge,s_VecSrc[DBUF],ui,uj,vi,vj,pi,pj,scale,
 	   1,(int)threadIdx.x+1,idx+1,nedge,ncoeff);
 	
+	// Start DMA transfer of coefficients
+	//	dma_coeff1.start_async_dma();
+
 	// Wait for destination vector to be ready
 	dma_vecDest1.wait_for_dma_finish();
 	
@@ -3772,7 +5466,10 @@ if (btransposeDest) {
 
       }
     }
-      
+    
+    //--------------------------------------------------------------------------
+    // DMA transfer warps
+    //--------------------------------------------------------------------------
     else if(dma_ind0.owns_this_thread()) {
       for (int ipt=0; ipt<nedge_per_thread; ipt+=3) {
 
@@ -3821,7 +5518,6 @@ if (btransposeDest) {
 	dma_vecSrc1.wait_for_dma_start();
 	dma_vecSrc1.execute_dma_no_sync(s_IedgeList[2], vecSrc-NVAR2D, s_VecSrc[1]);
 	dma_vecSrc1.finish_async_dma();
-
       }
     }
 
@@ -3851,7 +5547,22 @@ if (btransposeDest) {
 	dma_vecDest1.wait_for_dma_start();
 	dma_vecDest1.execute_dma_no_sync(s_IedgeList[2], vecDest-NVAR2D, s_VecDest[1]);
 	dma_vecDest1.finish_async_dma();
-
+      }
+    }
+    
+    else if(dma_coeff0.owns_this_thread()) {
+      for (int ipt=0; ipt<nedge_per_thread; ipt+=2) {
+	
+      	dma_coeff0.execute_dma(&CoeffsAtEdge[ ((ipt*gridDim.x+blockIdx.x)*
+      					       compute_threads_per_cta+nedge_offset)*
+      					      (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      			       s_CoeffsAtEdge[0]);
+	
+      	// dma_coeff1.execute_dma(&CoeffsAtEdge[ (((ipt+1)*gridDim.x+blockIdx.x)*
+      	// 				       compute_threads_per_cta+nedge_offset)*
+      	// 				      (COEFFSATEDGE_DEVICE == SOA ? 1 : 2*ncoeff)],
+      	// 		       s_CoeffsAtEdge[1]);
+	
       }
     }
   };
@@ -3888,13 +5599,11 @@ if (btransposeDest) {
     // compute thread process the minimal number of edges
     const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
     const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
-    const int dma_lds                  = CUDADMA_DMA_LDS_IND+
-                                         CUDADMA_DMA_LDS_SRC+
-                                         CUDADMA_DMA_LDS_DEST;
+    const int dma_lds                  = CUDADMA_DMA_LDS;
     const int nedge_per_thread_cudaDMA = CUDADMA_NEDGE_PER_THREAD;
 
-    const int threads_per_cta_baseline  = 32*2;
-    const int nedge_per_thread_baseline = 1;
+    const int threads_per_cta_baseline  = BASELINE_THREADS_PER_CTA;
+    const int nedge_per_thread_baseline = BASELINE_NEDGE_PER_THREAD;
     
     int blocks, threads, nedge_cudaDMA, nedge_baseline;
     prepare_cudaDMA(devProp, nedgeset,
@@ -3919,26 +5628,19 @@ if (btransposeDest) {
 	 << " nblocks=" << nblocks
 	 << " neq=" << neq
 	 << " nedgeset=" << nedgeset << endl;
-    cout << " CudaDMA:"
-	 << " #blocks=" << grid_cudaDMA.x << ","
-	 << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	 << " #threads per block=" << block_cudaDMA.x 
-	 << "," << block_cudaDMA.y << "," << block_cudaDMA.z << endl;
-    cout << " Baseline:"
-	 << " #blocks=" << grid_baseline.x << "," 
-	 << grid_baseline.y << "," << grid_baseline.z 
-	 << " #threads per block=" << block_baseline.x 
-	 << "," << block_baseline.y << "," << block_baseline.z << endl;
+    cout << "Memory NEDGE: " << NVAR2D*nedgeset*sizeof(TdSrc)/1000000.0f
+	 << " MB" << " NEDGE=" << nedgeset << endl;
 
     cudaEvent_t start;
     cudaEvent_t stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    cudaEventRecord(start,stream);
     
     if (nblocks == 1) {
-#ifdef CUDADMA_KERNEL
-      if (grid_cudaDMA.x>0)
+#ifdef CUDADMA_KERNEL    
+      if (grid_cudaDMA.x>0) {
+	cudaEventRecord(start,stream);
+
       	// CudaDMA implementation
 	CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
@@ -3950,12 +5652,31 @@ if (btransposeDest) {
       						       nedge_cudaDMA+iedgeset-1, 
       						       nedge_per_thread_cudaDMA,
       						       iedgeset-1);
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
+	cudaEventRecord(stop,stream);
+	cudaEventSynchronize(stop);
+	
+	float elapsedTime;
+	cudaEventElapsedTime(&elapsedTime, start, stop);
+	
+	cout << " CudaDMA:"
+	     << " #blocks=" << grid_cudaDMA.x << ","
+	     << grid_cudaDMA.y << "," << grid_cudaDMA.z 
+	     << " #threads per block=" << block_cudaDMA.x 
+	     << "," << block_cudaDMA.y << "," << block_cudaDMA.z << endl;
+	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
+	cout << "Bandwidth:    " << (2*nedge_cudaDMA*sizeof(Ti)+            // get i,j
+				     2*NVAR2D*nedge_cudaDMA*sizeof(TdSrc)+  // gather solution
+				     4*NVAR2D*nedge_cudaDMA*sizeof(TdDest)+ // gather and scatter vector
+				     2*HYDRO_NDIM*nedge_cudaDMA*sizeof(Tc)) // gather coefficients
+	  /1000000000.0f/elapsedTime*1000.0f
+	     << " GB/s" << endl;
+      }
 #endif
 
 #ifdef BASELINE_KERNEL
-      if (grid_baseline.x>0)
+      if (grid_baseline.x>0) {
+	cudaEventRecord(start,stream);
+	
 	// Baseline implementation
 	BASELINE_KERNEL
 	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
@@ -3967,10 +5688,31 @@ if (btransposeDest) {
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
+	cudaEventRecord(stop,stream);
+	cudaEventSynchronize(stop);
+	
+	float elapsedTime;
+	cudaEventElapsedTime(&elapsedTime, start, stop);
+	
+	cout << " Baseline:"
+	     << " #blocks=" << grid_baseline.x << "," 
+	     << grid_baseline.y << "," << grid_baseline.z 
+	     << " #threads per block=" << block_baseline.x 
+	     << "," << block_baseline.y << "," << block_baseline.z << endl;
+	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
+	cout << "Bandwidth:    " << (2*nedge_baseline*sizeof(Ti)+            // get i,j
+				     2*NVAR2D*nedge_baseline*sizeof(TdSrc)+  // gather solution
+				     4*NVAR2D*nedge_baseline*sizeof(TdDest)+ // gather and scatter vector
+				     2*HYDRO_NDIM*nedge_baseline*sizeof(Tc)) // gather coefficients
+	  /1000000000.0f/elapsedTime*1000.0f
+	     << " GB/s" << endl;
+      }
 #endif
     } else {
 #ifdef CUDADMA_KERNEL
-      if (grid_cudaDMA.x>0)
+      if (grid_cudaDMA.x>0) {
+	cudaEventRecord(start,stream);
+	
       	// CudaDMA implementation
       	CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
@@ -3984,10 +5726,29 @@ if (btransposeDest) {
       						       iedgeset-1);
       cudaEventRecord(stop,stream);
       cudaEventSynchronize(stop);
+      
+      float elapsedTime;
+      cudaEventElapsedTime(&elapsedTime, start, stop);
+      
+      cout << " CudaDMA:"
+	   << " #blocks=" << grid_cudaDMA.x << ","
+	   << grid_cudaDMA.y << "," << grid_cudaDMA.z 
+	   << " #threads per block=" << block_cudaDMA.x 
+	   << "," << block_cudaDMA.y << "," << block_cudaDMA.z << endl;
+      cout << "Elapsed time: " << elapsedTime << " ms" << endl;
+      cout << "Bandwidth:    " << (2*nedge_cudaDMA*sizeof(Ti)+            // get i,j
+				   2*NVAR2D*nedge_cudaDMA*sizeof(TdSrc)+  // gather solution
+				   4*NVAR2D*nedge_cudaDMA*sizeof(TdDest)+ // gather and scatter vector
+				   2*HYDRO_NDIM*nedge_cudaDMA*sizeof(Tc)) // gather coefficients
+	/1000000000.0f/elapsedTime*1000.0f
+	   << " GB/s" << endl;
+      }
 #endif
 
 #ifdef BASELINE_KERNEL
-      if (grid_baseline.x>0)
+      if (grid_baseline.x>0) {
+	cudaEventRecord(start,stream);
+	
       	// Baseline implementation
 	BASELINE_KERNEL
 	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
@@ -3999,23 +5760,27 @@ if (btransposeDest) {
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
+	cudaEventRecord(stop,stream);
+	cudaEventSynchronize(stop);
+
+	float elapsedTime;
+	cudaEventElapsedTime(&elapsedTime, start, stop);
+	
+	cout << " Baseline:"
+	     << " #blocks=" << grid_baseline.x << "," 
+	     << grid_baseline.y << "," << grid_baseline.z 
+	     << " #threads per block=" << block_baseline.x 
+	     << "," << block_baseline.y << "," << block_baseline.z << endl;
+	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
+	cout << "Bandwidth:    " << (2*nedge_baseline*sizeof(Ti)+            // get i,j
+				     2*NVAR2D*nedge_baseline*sizeof(TdSrc)+  // gather solution
+				     4*NVAR2D*nedge_baseline*sizeof(TdDest)+ // gather and scatter vector
+				     2*HYDRO_NDIM*nedge_baseline*sizeof(Tc)) // gather coefficients
+	  /1000000000.0f/elapsedTime*1000.0f
+	     << " GB/s" << endl;
+      }
 #endif
     }
-    
-    // cudaEventRecord(stop,stream);
-    // cudaEventSynchronize(stop);
-
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    cout << "Memory NEDGE: " << NVAR2D*nedgeset*sizeof(TdSrc)/1000000.0f
-	 << " MB" << " NEDGE=" << nedgeset << endl;
-    cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-    cout << "Bandwidth:    " << (2*nedgeset*sizeof(Ti)+            // get i,j
-				 2*NVAR2D*nedgeset*sizeof(TdSrc)+  // gather solution
-				 4*NVAR2D*nedgeset*sizeof(TdDest)+ // gather and scatter vector
-				 2*HYDRO_NDIM*nedgeset*sizeof(Tc)) // gather coefficients
-      /1000000000.0f/elapsedTime*1000.0f
-	 << " GB/s" << endl;
     
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
