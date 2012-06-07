@@ -23,6 +23,8 @@ module structuresdiscretisation
   use paramlist
   use spatialdiscretisation
   
+  use constantsdiscretisation
+  
   implicit none
   
   private
@@ -111,7 +113,7 @@ module structuresdiscretisation
     ! Type of problem.
     ! =0: Navier-Stokes 2D.
     ! =1: Stokes 2D.
-    integer :: cequation = 0
+    integer :: cequation = CCEQ_NAVIERSTOKES2D
     
     ! Type of subproblem of the main problem. Depending on iequationType.
     ! If iequationType=0 or =1:
@@ -306,7 +308,7 @@ contains
 
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rparlist,ssection,&
-        'iequation',rphysics%cequation,0)
+        'iequation',rphysics%cequation,CCEQ_NAVIERSTOKES2D)
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
     call parlst_getvalue_int (rparlist,ssection,&

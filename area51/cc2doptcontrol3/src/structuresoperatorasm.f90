@@ -173,9 +173,6 @@ module structuresoperatorasm
     ! Hierarchy of space assembly structures
     type(t_staticSpaceAsmHierarchy), pointer :: p_rstaticSpaceAsmHier => null()
   
-    ! Boundary condition hierarchy for all space levels, primal and dual space
-    type(t_optcBDCSpaceHierarchy), pointer :: p_roptcBDCSpaceHierarchy => null()
-
   end type
 
 !</typeblock>

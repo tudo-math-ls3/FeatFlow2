@@ -311,7 +311,7 @@ contains
     end if
     
     select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       call init_initOptControlTargetFunc2D (rparlist,rsettings%ssectionOptControl,&
           rsettingsSolver%rphysics,rsettingsSolver%rsettingsSpaceDiscr,&
@@ -326,7 +326,7 @@ contains
     end if
     
     select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       call init_initOptControlConstraints (rparlist,rsettings%ssectionOptControl,&
           rsettingsSolver%rsettingsSpaceDiscr,&
@@ -343,7 +343,7 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "sinitialCondition",sstr,bdequote=.true.)
     select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
@@ -365,7 +365,7 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsPrimal",sstr,bdequote=.true.)
     select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsPrimal,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
@@ -382,7 +382,7 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsDual",sstr,bdequote=.true.)
     select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsDual,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&

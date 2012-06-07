@@ -180,7 +180,6 @@ contains
 
 !</subroutine>
 
-    integer :: cequation
     character(LEN=SYS_STRLEN) :: ssolverNonlin,ssolverLin
     character(LEN=SYS_STRLEN) :: ssolverSpaceForward,ssolverSpaceBackward
     character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin,ssolverSpaceBackwardLin
@@ -211,14 +210,6 @@ contains
     call parlst_getvalue_string (rparamList, ssection, &
         "ssectionLinSolverSpaceBackwardLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
 
-    ! Type of equation?
-    cequation = LSS_EQN_GENERAL
-    select case (rsettingsSolver%rphysics%cequation)
-    case (0,1)
-      ! Stokes / Navier-Stokes
-      cequation = LSS_EQN_STNAVST2D
-    end select
-    
     ! Create linear solvers in space for linera subproblems in the
     ! primal/dual space.
 
@@ -232,22 +223,26 @@ contains
     ! Forward equation on all levels
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimal,&
         rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,cequation,rsettingsSolver%p_rparlist,ssolverSpaceForward,rsettingsSolver%rdebugFlags)
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForward,rsettingsSolver%rdebugFlags)
 
     ! Backward equation on all levels
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDual,&
         rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,cequation,rsettingsSolver%p_rparlist,ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
 
     ! Linearised forward equation on all levels
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin,&
         rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,cequation,rsettingsSolver%p_rparlist,ssolverSpaceForward,rsettingsSolver%rdebugFlags)
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForward,rsettingsSolver%rdebugFlags)
 
     ! Linearised backward equation on all levels
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDualLin,&
         rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,cequation,rsettingsSolver%p_rparlist,ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
     
     ! Create the corresponding solver hierarchies.
     allocate(rsolver%p_rsolverHierPrimal)
@@ -256,13 +251,12 @@ contains
     allocate(rsolver%p_rsolverHierDualLin)
 
     ! Forward equation. Created on all levels but only used on the highest one.
-    caLL spaceslh_init (rsolver%p_rsolverHierPrimal,rsettingsSolver,&
-        OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,rsettingsSolver%roptcBDCSpaceHierarchy,&
-        ssolverNonlin,rparamList)
+    caLL spaceslh_init (rsolver%p_rsolverHierPrimal,&
+        OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,ssolverNonlin,rparamList)
 
     ! Backward equation, only linear. Created on all levels but only used on the highest one.
-    caLL spaceslh_init (rsolver%p_rsolverHierDual,rsettingsSolver,&
-        OPTP_DUAL,rsolver%p_rlinsolHierDual,rsettingsSolver%roptcBDCSpaceHierarchy)
+    caLL spaceslh_init (rsolver%p_rsolverHierDual,&
+        OPTP_DUAL,rsolver%p_rlinsolHierDual)
 
     ! The definition of the lineraised forward/backward equation depends upon
     ! whether we use the full Newton approach or not.
@@ -274,15 +268,13 @@ contains
     case (1)
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,rsettingsSolver,&
-          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin,&
-          rsettingsSolver%roptcBDCSpaceHierarchy)
+      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
+          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.#
-      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,rsettingsSolver,&
-          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin,&
-          rsettingsSolver%roptcBDCSpaceHierarchy)
+      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
+          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin)
     
     ! ----------------------------
     ! Full Newton, adaptive Newton
@@ -290,15 +282,13 @@ contains
     case (2,3)
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,rsettingsSolver,&
-          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin,&
-          rsettingsSolver%roptcBDCSpaceHierarchy)
+      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
+          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,rsettingsSolver,&
-          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin,&
-          rsettingsSolver%roptcBDCSpaceHierarchy)
+      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
+          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin)
           
     case default
       call output_line ("Invalid nonlinear iteration",&

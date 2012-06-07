@@ -199,12 +199,12 @@ module structuresboundaryconditions
     ! Discrete (Dirichlet-) boundary conditions, primal or dual space
     type(t_discreteBC) :: rdiscreteBC
 
-    ! Bonudary regions with do-nothing Neumann boundary conditions.
+    ! Boundary regions with do-nothing Neumann boundary conditions.
     type(t_boundaryRegionList) :: rneumannBoundary
   
-    ! Bonudary regions with Dirichlet control boundary
+    ! Boundary regions with Dirichlet control boundary
     type(t_boundaryRegionList) :: rdirichletControlBoundary
-  
+    
   end type
   
 !</typeblock>
@@ -215,7 +215,7 @@ module structuresboundaryconditions
 
   ! A hierarchy of discrete boundary condition structures in space.
   ! For every level of a hierarchy of FEM spaces, this structure contains
-  ! a t_optcBDCSpace encapsuling the corresponding bonudary conditions in space.
+  ! a t_optcBDCSpace encapsuling the corresponding Boundary conditions in space.
   type t_optcBDCSpaceHierarchy
   
     ! Minimum level
@@ -254,6 +254,10 @@ module structuresboundaryconditions
   ! sbc_assembleBDconditions.
   public :: sbc_releaseBoundaryList 
 
+  ! Obtains a pointer to the discrete boundary condition structure
+  ! on level ilevel.
+  public :: sbch_getDiscreteBC
+  
 contains
 
   ! ***************************************************************************
@@ -286,7 +290,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Bonudary condition structure to be initialised
+  ! Boundary condition structure to be initialised
   type(t_optcBDC), intent(out) :: roptcBDC
 !</inputoutput>
 
@@ -645,6 +649,37 @@ contains
     
     ! Nothing inside anymore.
     rregionList%nregions = 0
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbch_getDiscreteBC (roptcBDCSpaceHierarchy,ilevel,p_rdiscreteBC)
+  
+!<description>
+  ! Obtains a pointer to the discrete boundary condition structure
+  ! on level ilevel.
+!</desctiption>
+
+!<input>
+  ! Boundary condition hierarchy
+  type(t_optcBDCSpaceHierarchy), intent(in), target :: roptcBDCSpaceHierarchy
+  
+  ! Level
+  integer, intent(in) :: ilevel
+!</input>
+
+!<inputoutput>
+  ! Pointer to the discrete boundary conditions
+  type(t_discreteBC), pointer :: p_rdiscreteBC
+!</inputoutput>
+
+!</subroutine>
+
+    p_rdiscreteBC => &
+        roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilevel)%rdiscretebc
 
   end subroutine
   

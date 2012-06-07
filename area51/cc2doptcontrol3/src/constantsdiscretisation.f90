@@ -34,6 +34,16 @@ module constantsdiscretisation
 
 !</constantblock>
 
+!<constantblock description = "Supported equations">
+  
+  ! Navier-Stokes equations, 2D
+  integer, parameter, public :: CCEQ_NAVIERSTOKES2D = 0
+
+  ! Stokes equations, 2D
+  integer, parameter, public :: CCEQ_STOKES2D = 1
+  
+!</constantblock>
+
 !<constantblock description="Identifiers for the IUPWIND stabilisation parameter.">
 
   ! Streamline diffusion; configured by dupsam

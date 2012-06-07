@@ -84,6 +84,7 @@ module user_callback
   use linearsystemscalar
   use linearsystemblock
   
+  use constantsdiscretisation
   use structuresboundaryconditions
   use structuresgeneral
   use structuresoptflow
@@ -348,7 +349,7 @@ contains
     allocate(DvaluesAct(npointsPerElement,nelements))
     
     select case (cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       
       select case (icomponent)
@@ -502,7 +503,7 @@ contains
     end if
     
     select case (cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       
       select case (icomponent)
@@ -808,7 +809,7 @@ contains
     end if
     
     select case (cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Stokes, Navier-Stokes, 2D
       
       select case (icomponent)
@@ -1869,7 +1870,7 @@ contains
           rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
       select case (cequation)
-      case (0,1)
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         select case (iid)
         case (1)
           select case (icomponent)

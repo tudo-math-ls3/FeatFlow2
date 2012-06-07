@@ -31,6 +31,8 @@ module spacelinearsolver
   use fespacehierarchy
   
   use structuresgeneral
+  use constantsdiscretisation
+  use structuresboundaryconditions
   
   implicit none
 
@@ -43,16 +45,6 @@ module spacelinearsolver
 
   ! 2D Stokes / Navier-Stokes equations
   integer, parameter :: LSS_EQN_STNAVST2D = 1
-
-!</constantblock>
-
-!<constantblock description = "A set of flags configuring the solver in lss_initStructure.">
-
-  ! Filter for Dirichlet boundary conditions.
-  integer(I32), parameter :: LSS_SLFLAGS_FILTERDBC = 2**0
-
-  ! Filter the pressure to have integral mean value = 0.
-  integer(I32), parameter :: LSS_SLFLAGS_FILTERPINT0 = 2**1
 
 !</constantblock>
 
@@ -296,7 +288,7 @@ contains
       ! ---------------------------------------------------
       ! General equation
       ! ---------------------------------------------------
-      case (LSS_EQN_GENERAL)
+      case (-1)
         
         call output_line ("General equation not supported by multigrid.", &
             OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
@@ -305,7 +297,7 @@ contains
       ! ---------------------------------------------------
       ! 2D Stokes / Navier-Stokes
       ! ---------------------------------------------------
-      case (LSS_EQN_STNAVST2D)
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
         ! ---------------------------------------------------
         ! Coarse grid correction fine-tuning
@@ -741,7 +733,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_initData (rlsshierarchy,ilevel,cflags,ierror)
+  subroutine lssh_initData (rlsshierarchy,roptcBDCSpaceHierarchy,ilevel,ierror)
 
 !<description>
   ! Initialises calculation data for the solver at level ilevel.
@@ -751,9 +743,8 @@ contains
   ! Level of the hierarchy
   integer, intent(in) :: ilevel
 
-  ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
-  ! the solver performs filtering.
-  integer(I32), intent(in) :: cflags
+  ! Boundary condition hierarchy with precomputed boundary conditions.
+  type(t_optcBDCSpaceHierarchy), intent(in), target :: roptcBDCSpaceHierarchy
 !</input>
   
 !<inputoutput>
@@ -773,9 +764,13 @@ contains
     ! lcoal variables
     integer :: ifilter
     type(t_linsolSpace), pointer :: p_rlinsolSpace
+    type(t_optcBDCSpace), pointer :: p_roptcBDCSpace
     
     ! Get the solver structure of that level
     p_rlinsolSpace => rlssHierarchy%p_RlinearSolvers(ilevel)
+    
+    ! Get the corresponding boundary condition structure
+    p_roptcBDCSpace => roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilevel)
     
     ! Initialise the filter chain according to cflags.
     ! This is partially equation dependent.
@@ -783,14 +778,12 @@ contains
     ifilter = 0
     p_rlinsolSpace%RfilterChain(:)%ifilterType = FILTER_DONOTHING
     
-    ! Boundary condition filter
-    if (iand(cflags,LSS_SLFLAGS_FILTERDBC) .ne. 0) then
-      ifilter = ifilter + 1
-      p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_DISCBCDEFREAL
-    end if
+    ! Filter for Dirichlet boundary conditions
+    ifilter = ifilter + 1
+    p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_DISCBCDEFREAL
     
     select case (rlsshierarchy%cequation)
-    case (LSS_EQN_STNAVST2D)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
       ! Pressure filter for iterative solvers
       select case (p_rlinsolSpace%isolverType)
@@ -811,7 +804,9 @@ contains
           ! -----------------------------------------------
           ! Integral-mean-value-zero filter for pressure
           ! -----------------------------------------------
-          if (iand(cflags,LSS_SLFLAGS_FILTERPINT0) .ne. 0) then
+          if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
+          
+            ! Active if there is no Neumann boundary
           
             select case (p_rlinsolSpace%icoarseGridSolverType)
             
@@ -843,10 +838,14 @@ contains
           ! -----------------------------------------------
           ! Integral-mean-value-zero filter for pressure
           ! -----------------------------------------------
-          if (iand(cflags,LSS_SLFLAGS_FILTERPINT0) .ne. 0) then
+          if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
+          
+            ! Active if there is no Neumann boundary
+
             ifilter = ifilter + 1
             p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
             p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 3
+ 
           end if
         
         end select ! ilevel

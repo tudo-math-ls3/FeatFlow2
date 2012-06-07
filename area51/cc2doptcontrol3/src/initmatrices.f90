@@ -53,6 +53,7 @@ module initmatrices
   use fespacehierarchybase
   use fespacehierarchy
   
+  use constantsdiscretisation
   use structuresdiscretisation
   use assemblytemplates
   
@@ -466,7 +467,8 @@ contains
     ! ---------------------------------------------------------------
     ! Stokes/Navier Stokes.
     ! ---------------------------------------------------------------
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
       ! Create an empty matrix
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
           rstaticAsmTemplates%rmatrixEOJPrimalVel,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
@@ -713,7 +715,7 @@ contains
     ! *************************************************************
     ! Stokes/Navier Stokes.
     ! *************************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Create a block matrix
       call lsysbl_createMatBlockByDiscr (rblockDiscr,rmassMatrix)
       

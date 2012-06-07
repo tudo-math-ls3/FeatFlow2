@@ -55,6 +55,7 @@ module spatialbc
   
   use structuresgeneral
   use structuresboundaryconditions
+  use structuresoperatorasm
   
   use timediscretisation
 
@@ -70,24 +71,29 @@ module spatialbc
 
   public :: sbc_assembleBDconditions
   public :: sbc_releaseBoundaryList
-  public :: sbc_implementDirichletBC
+  !public :: sbc_implementDirichletBC
   
+  ! Resets the structure for discrete boundary conditions.
+  public :: sbc_resetBCstructure
+
   ! Initialises a boundary condition hierarchy corresponding to a
   ! FE space hierarchy.
-  public :: sbc_initBDCHierarchy
+  public :: sbch_initBDCHierarchy
   
   ! Cleans up a boundary condition hierarchy.
-  public :: sbc_doneBDCHierarchy
+  public :: sbch_doneBDCHierarchy
 
+  ! Resets the hierarchy discrete boundary conditions.
+  public  :: sbch_resetBCstructure
+  
 contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine sbc_assembleBDconditions (roptcBDC,dtime,&
-      cspace,rglobalData,casmFlags,rtimediscr,rspaceDiscr,&
-      rdiscreteBC,rneumannBoundary,rdirichletControlBoundary,&
+  subroutine sbc_assembleBDconditions (roptcBDC,dtime,cequation,&
+      copType,rglobalData,casmFlags,rtimediscr,rspaceDiscr,roptcBDCSpace,&
       rvectorDirichletBCCRHS)
 
 !<description>
@@ -105,10 +111,13 @@ contains
   ! Current simulation time where to assemble the boundary conditions.
   real(dp), intent(in) :: dtime
 
-  ! Space for which to assemble the boundary conditions.
-  ! CCSPACE_PRIMAL: BC for the primal space.
-  ! CCSPACE_DUAL: BC for the dual space.
-  integer, intent(in) :: cspace
+  ! Underlying equation. One of the CEQ_xxxx constants.
+  integer, intent(in) :: cequation
+
+  ! Type of equation to be solved here. This can be 
+  ! OPTP_PRIMAL, OPTP_DUAL, OPTP_PRIMALLIN or OPTP_DUALLIN,
+  ! depending on which equation to solve.
+  integer :: copType
   
   ! Global data, passed to callback routines
   type(t_globalData), intent(inout) :: rglobalData
@@ -120,34 +129,22 @@ contains
   ! A discretisation structure defining the underlying time discretisation.
   type(t_timeDiscretisation), intent(in) :: rtimeDiscr
   
-  ! OPTIONAL: A discretisation structure defining the space discretisation
+  ! A discretisation structure defining the space discretisation
   ! of the current level.
-  ! Can be omitted if only Neumann bonudary is to be created.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscr
-  
-  ! OPTIONAL: A t_discreteBC structure that receives a discretised version
-  ! of the boundary boundary conditions. The structure should
-  ! be empty; new BC's are simply added to the structure.
-  ! Can be omitted if only Neumann boundary is to be created.
-  type(t_discreteBC), intent(inout), optional :: rdiscreteBC
-  
+!</input>
+
+!<inputoutput>
   ! OPTIONAL: A right-hand-side vector. If SBC_DIRICHLETBCC is specified,
   ! this RHS vector is modified according to the boundary conditions
   ! specified for the Dirichlet boundary control.
   type(t_vectorBlock), intent(inout), optional :: rvectorDirichletBCCRHS
 
-!</input>
-
-!<output>
-  ! OPTIONAL: Returns a structure defining the Neumann boundary segments.
-  ! Must be released by the caller using sbc_releaseBoundaryList!
-  type(t_boundaryRegionList), intent(out), optional :: rneumannBoundary
-
-  ! OPTIONAL: Returns a structure defining a list of boundary segments
-  ! where boundary control is to be applied.
-  ! Must be released by the caller using sbc_releaseBoundaryList!
-  type(t_boundaryRegionList), intent(out), optional :: rdirichletControlBoundary
-!</output>
+  ! Boundary condition structure that receives a definition of the boundary
+  ! conditions. The assembled boundary conditions are appended to the
+  ! elements in this structure.
+  type(t_optcBDCSpace), intent(inout) :: roptcBDCSpace
+!</inputoutput>
 
 !</subroutine>
 
@@ -167,7 +164,7 @@ contains
     type(t_boundaryRegion), target :: rboundaryRegion
 
     ! A pointer to the section with the expressions and the boundary conditions
-    type(t_parlstSection), pointer :: p_rsection,p_rbdcond
+    type(t_parlstSection), pointer :: p_rsection,p_rbdcond,p_rbdcondPrimal
 
     ! Fetch some parameters
     p_rboundary => rspaceDiscr%p_rboundary
@@ -180,12 +177,24 @@ contains
         roptcBDC%ssectionBdExpr, p_rsection)
         
     ! Get the section defining the primal or dual boundary conditions
-    if (cspace .eq. CCSPACE_PRIMAL) then
+    if ((copType .eq. OPTP_PRIMAL) .or. &
+        (copType .eq. OPTP_PRIMALLIN) .or. &
+        (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
+        
+      ! Primal boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
           roptcBDC%ssectionBdCondPrim, p_rbdcond)
+          
     else
+    
+      ! Dual boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDual, p_rbdcond)
+          roptcBDC%ssectionBdCondDual, p_rbdcondPrimal)
+          
+      ! Primal boundary conditions
+      call parlst_querysection(roptcBDC%p_rparList, &
+          roptcBDC%ssectionBdCondPrim, p_rbdcond)
+          
     end if
         
     ! Initialise the user-defined assembly
@@ -202,11 +211,14 @@ contains
       dpar1 = 0.0_DP
       
       i = parlst_queryvalue (p_rbdcond, sstr)
+
       if (i .ne. 0) then
+      
         ! Parameter exists. Get the values in there.
         do isegment = 1,parlst_querysubstrings (p_rbdcond, sstr)
           
           call parlst_getvalue_string (p_rbdcond, i, sstr, isubstring=isegment)
+          
           ! Read the segment parameters
           read(sstr,*) dpar2,iintervalEnds,ibctyp
           
@@ -220,33 +232,53 @@ contains
               boundary_dgetMaxParVal(p_rboundary, ibdComponent)
             rboundaryRegion%iproperties = iintervalEnds
             
-            ! Now, which type of BC is to be created?
-            select case (ibctyp)
+            ! Type of equation?
+            select case (cequation)
             
-            case (0)
-              if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-                if (present(rneumannBoundary)) then
-                  ! Add the bondary region to the Neumann boundary regions
-                  ! if there is a structure present.
-                  call sbc_addBoundaryRegion(&
-                      rboundaryRegion,rneumannBoundary)
-                end if
-              end if
+            ! ----------------------
+            ! Stokes / Navier-Stokes
+            ! ----------------------
+            case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
             
-            case (1)
-
-              if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-
-                ! Simple Dirichlet boundary.
-                ! Get the definition of the boundary condition.
-                ! Read the line again, get the expressions for X- and Y-velocity
-                read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              ! Now, which type of BC is to be created?
+              select case (ibctyp)
               
-                if ((cspace .eq. CCSPACE_DUAL) .and. (ibctyp .eq. -1)) then
+              ! --------------------------------------------------
+              ! Automatic boundary conditions. Dual equation only.
+              ! --------------------------------------------------
+              case (-1)
+                if ((copType .ne. OPTP_DUAL) .and. &
+                    (copType .ne. OPTP_DUALLIN) .and. &
+                    (copType .ne. OPTP_DUALLIN_SIMPLE)) then
+                  call output_line (&
+                      "Automatic boundary conditions only allowed for the dual equation.", &
+                      OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                  call sys_halt()
+                end if
+                
+                ! The rule is:
+                !  * Primal Neumann = Dual Neumann,
+                !  * Primal Dirichlet = Dual Dirichlet-0
+
+                ! Get the boundary conditions of the primal equation
+                call parlst_getvalue_string (p_rbdcondPrimal, i, sstr, isubstring=isegment)
+                
+                ! Read the segment parameters
+                read(sstr,*) dpar2,iintervalEnds,ibctyp
+                
+                select case (ibctyp)
+                
+                ! --------------------------------------------------
+                ! Neumann boundary conditions
+                ! --------------------------------------------------
+                case (0)
+                  ! Nothing to do
                   
-                  ! Automatic dual boundary conditions. Zero boundary conditions
-                  ! where there are Dirichlet boundary conditions in the primal
-                  ! equation.
+                ! --------------------------------------------------
+                ! Dirichlet boundary conditions
+                ! --------------------------------------------------
+                case (1)
+                  ! Impose Dirichlet-0 boundary conditions in the dual equation
                 
                   rcollection%IquickAccess(2) = BDC_VALDOUBLE
                   rcollection%IquickAccess(3) = 0
@@ -258,7 +290,7 @@ contains
                   rcollection%p_rnextCollection => ruserCollection
                   rcollection%IquickAccess(6:) = &
                       transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                     size(rcollection%IquickAccess(6:)))
+                                    size(rcollection%IquickAccess(6:)))
 
                   ! X-velocity
                   rcollection%IquickAccess(1) = 1
@@ -268,7 +300,8 @@ contains
                   
                   ! Assemble the BC's.
                   call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
+                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                      roptcBDCSpace%rdiscreteBC,&
                       cc_getDirBCNavSt2D,rcollection)
                       
                   call user_doneCollectForVecAssembly (rglobalData,rusercollection)
@@ -281,13 +314,42 @@ contains
                   
                   ! Assemble the BC's.
                   call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
+                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                      roptcBDCSpace%rdiscreteBC,&
                       cc_getDirBCNavSt2D,rcollection)
                       
                   call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                  
+                case default
+                  call output_line ("Cannot set up automatic boundary conditions", &
+                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                  call sys_halt()
+                  
+                end select
                 
-                else
-                    
+              ! --------------------------------------------------
+              ! Neumann boundary conditions
+              ! --------------------------------------------------
+              case (0)
+                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                  ! Add the bondary region to the Neumann boundary regions
+                  ! if there is a structure present.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                end if
+              
+              ! --------------------------------------------------
+              ! Dirichlet boundary conditions
+              ! --------------------------------------------------
+              case (1)
+
+                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+
+                  ! Simple Dirichlet boundary.
+                  ! Get the definition of the boundary condition.
+                  ! Read the line again, get the expressions for X- and Y-velocity
+                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                
                   ! For any string <> '', create the appropriate Dirichlet boundary
                   ! condition and add it to the list of boundary conditions.
                   !
@@ -326,14 +388,15 @@ contains
                     rcollection%p_rnextCollection => ruserCollection
                     rcollection%IquickAccess(6:) = &
                         transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                       size(rcollection%IquickAccess(6:)))
+                                      size(rcollection%IquickAccess(6:)))
                     
                     call user_initCollectForVecAssembly (&
                         rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
                     
                     ! Assemble the BC's.
                     call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
+                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                        roptcBDCSpace%rdiscreteBC,&
                         cc_getDirBCNavSt2D,rcollection)
                         
                     call user_doneCollectForVecAssembly (rglobalData,rusercollection)
@@ -360,40 +423,47 @@ contains
                     rcollection%p_rnextCollection => ruserCollection
                     rcollection%IquickAccess(6:) = &
                         transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                       size(rcollection%IquickAccess(6:)))
+                                      size(rcollection%IquickAccess(6:)))
                     
                     call user_initCollectForVecAssembly (&
                         rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
                     
                     ! Assemble the BC's.
                     call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,rdiscreteBC,&
+                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                        roptcBDCSpace%rdiscreteBC,&
                         cc_getDirBCNavSt2D,rcollection)
                         
                     call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                     
                   end if
-                  
+
                 end if
 
-              end if
+              case default
+                call output_line ('Unknown boundary condition!', &
+                    OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                call sys_halt()
+              end select ! ibctyp
 
             case default
-              call output_line ('Unknown boundary condition!', &
+              
+              call output_line ("Unknown equation", &
                   OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
               call sys_halt()
-            end select
+              
+            end select ! equation
             
             ! Move on to the next parameter value
             dpar1 = dpar2
             
           end if
                                             
-        end do
+        end do ! isegment
       
       end if
       
-    end do
+    end do ! ibdComponent
 
     call collct_done (rusercollection)
 
@@ -1883,117 +1953,143 @@ contains
   
   end subroutine
 
+!  ! ***************************************************************************
+!  
+!!<subroutine>
+!
+!  subroutine sbc_implementDirichletBC (roptcBDC,dtime,cspace,&
+!      rtimeDiscr,rspaceDiscr,rglobalData,&
+!      rx,rb,rd,rdiscretebc)
+!
+!!<description>
+!  ! Implements the boundary conditions at time dtime, for a solution
+!  ! vector rx, a rhs vector rb and/or a defect vector rb.
+!!</description>
+!
+!!<input>
+!  ! Boundary conditions in the problem.
+!  type(t_optcBDC), intent(inout) :: roptcBDC
+!
+!  ! Time where the BC's should be implemented.
+!  real(DP), intent(IN) :: dtime
+!
+!  ! Type of solution space. CCSPACE_PRIMAL or CCSPACE_DUAL.
+!  integer, intent(in) :: cspace
+!
+!  ! Time discretisation, dtime refers to.
+!  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
+!
+!  ! Space discretisation
+!  type(t_blockDiscretisation), intent(in) :: rspaceDiscr
+!
+!  ! Global settings for callback routines.
+!  type(t_globalData), intent(inout), target :: rglobalData
+!!</input>
+!
+!!<inputoutput>
+!  ! OPTIONAL: Solution vector
+!  type(t_vectorBlock), intent(inout), optional :: rx
+!
+!  ! OPTIONAL: RHS vector
+!  type(t_vectorBlock), intent(inout), optional :: rb
+!
+!  ! OPTIONAL: Defect vector
+!  type(t_vectorBlock), intent(inout), optional :: rd
+!
+!  ! OPTIONAL: Boundary condition structure which receives the boudary
+!  ! conditions. If present, it must have been initialised
+!  ! by the caller. If present, it will be attached to the vectors.
+!  type(t_discreteBC), intent(inout), optional :: rdiscreteBC
+!!</inputoutput>
+!
+!!</subroutine>
+!
+!    ! Boundary condition structure which receives the boudary
+!    ! conditions. 
+!    type(t_discreteBC) :: rdiscreteBClocal
+!
+!    ! DEBUG!!!
+!    real(DP), dimension(:), pointer :: p_Ddata
+!  
+!    ! DEBUG!!!
+!    call lsysbl_getbase_double (rd,p_Ddata)
+!
+!    if (.not. present(rdiscreteBC)) then
+!      ! Initialise the boundary conditions
+!      call bcasm_initDiscreteBC(rdiscreteBClocal)
+!
+!      ! Assemble the BC's.
+!      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
+!          rglobalData,SBC_DIRICHLETBC,&
+!          rtimeDiscr,rspaceDiscr,rdiscreteBClocal)
+!
+!      ! Implement the boundary conditions into the vector(s).
+!      if (present(rx)) then
+!        call vecfil_discreteBCsol (rx,rdiscreteBClocal)
+!      end if
+!      
+!      if (present(rb)) then
+!        call vecfil_discreteBCrhs (rb,rdiscreteBClocal)
+!      end if
+!      
+!      if (present(rd)) then
+!        call vecfil_discreteBCdef (rd,rdiscreteBClocal)
+!      end if
+!
+!      ! Release the BCs again.
+!      call bcasm_releaseDiscreteBC(rdiscreteBClocal)
+!
+!    else
+!
+!      ! Assemble the BC's.
+!      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
+!          rglobalData,SBC_DIRICHLETBC,&
+!          rtimeDiscr,rspaceDiscr,rdiscreteBC)
+!
+!      ! Implement the boundary conditions into the vector(s).
+!      ! Attach the structure.
+!      if (present(rx)) then
+!        call vecfil_discreteBCsol (rx,rdiscreteBC)
+!        call lsysbl_assignDiscreteBC (rx,rdiscreteBC)
+!      end if
+!      
+!      if (present(rb)) then
+!        call vecfil_discreteBCrhs (rb,rdiscreteBC)
+!        call lsysbl_assignDiscreteBC (rb,rdiscreteBC)
+!      end if
+!      
+!      if (present(rd)) then
+!        call vecfil_discreteBCdef (rd,rdiscreteBC)
+!        call lsysbl_assignDiscreteBC (rd,rdiscreteBC)
+!      end if
+!
+!    end if
+!    
+!  end subroutine
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
-  subroutine sbc_implementDirichletBC (roptcBDC,dtime,cspace,&
-      rtimeDiscr,rspaceDiscr,rglobalData,&
-      rx,rb,rd,rdiscretebc)
-
+  subroutine sbc_resetBCstructure (roptcBDCSpace)
+  
 !<description>
-  ! Implements the boundary conditions at time dtime, for a solution
-  ! vector rx, a rhs vector rb and/or a defect vector rb.
+  ! Resets the structure for discrete boundary conditions.
 !</description>
 
-!<input>
-  ! Boundary conditions in the problem.
-  type(t_optcBDC), intent(inout) :: roptcBDC
-
-  ! Time where the BC's should be implemented.
-  real(DP), intent(IN) :: dtime
-
-  ! Type of solution space. CCSPACE_PRIMAL or CCSPACE_DUAL.
-  integer, intent(in) :: cspace
-
-  ! Time discretisation, dtime refers to.
-  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
-
-  ! Space discretisation
-  type(t_blockDiscretisation), intent(in) :: rspaceDiscr
-
-  ! Global settings for callback routines.
-  type(t_globalData), intent(inout), target :: rglobalData
-!</input>
-
 !<inputoutput>
-  ! OPTIONAL: Solution vector
-  type(t_vectorBlock), intent(inout), optional :: rx
-
-  ! OPTIONAL: RHS vector
-  type(t_vectorBlock), intent(inout), optional :: rb
-
-  ! OPTIONAL: Defect vector
-  type(t_vectorBlock), intent(inout), optional :: rd
-
-  ! OPTIONAL: Boundary condition structure which receives the boudary
-  ! conditions. If present, it must have been initialised
-  ! by the caller. If present, it will be attached to the vectors.
-  type(t_discreteBC), intent(inout), optional :: rdiscreteBC
+  ! Boundary condition structure to reset.
+  type(t_optcBDCSpace), intent(inout) :: roptcBDCSpace
 !</inputoutput>
 
 !</subroutine>
 
-    ! Boundary condition structure which receives the boudary
-    ! conditions. 
-    type(t_discreteBC) :: rdiscreteBClocal
-
-    ! DEBUG!!!
-    real(DP), dimension(:), pointer :: p_Ddata
-  
-    ! DEBUG!!!
-    call lsysbl_getbase_double (rd,p_Ddata)
-
-    if (.not. present(rdiscreteBC)) then
-      ! Initialise the boundary conditions
-      call bcasm_initDiscreteBC(rdiscreteBClocal)
-
-      ! Assemble the BC's.
-      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
-          rglobalData,SBC_DIRICHLETBC,&
-          rtimeDiscr,rspaceDiscr,rdiscreteBClocal)
-
-      ! Implement the boundary conditions into the vector(s).
-      if (present(rx)) then
-        call vecfil_discreteBCsol (rx,rdiscreteBClocal)
-      end if
-      
-      if (present(rb)) then
-        call vecfil_discreteBCrhs (rb,rdiscreteBClocal)
-      end if
-      
-      if (present(rd)) then
-        call vecfil_discreteBCdef (rd,rdiscreteBClocal)
-      end if
-
-      ! Release the BCs again.
-      call bcasm_releaseDiscreteBC(rdiscreteBClocal)
-
-    else
-
-      ! Assemble the BC's.
-      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
-          rglobalData,SBC_DIRICHLETBC,&
-          rtimeDiscr,rspaceDiscr,rdiscreteBC)
-
-      ! Implement the boundary conditions into the vector(s).
-      ! Attach the structure.
-      if (present(rx)) then
-        call vecfil_discreteBCsol (rx,rdiscreteBC)
-        call lsysbl_assignDiscreteBC (rx,rdiscreteBC)
-      end if
-      
-      if (present(rb)) then
-        call vecfil_discreteBCrhs (rb,rdiscreteBC)
-        call lsysbl_assignDiscreteBC (rb,rdiscreteBC)
-      end if
-      
-      if (present(rd)) then
-        call vecfil_discreteBCdef (rd,rdiscreteBC)
-        call lsysbl_assignDiscreteBC (rd,rdiscreteBC)
-      end if
-
-    end if
+    ! Reset the discrete boundary conditions
+    call bcasm_clearDiscreteBC(roptcBDCSpace%rdiscreteBC)
+    
+    ! Release boundary region lists
+    call sbc_releaseBoundaryList (roptcBDCSpace%rneumannBoundary)
+    call sbc_releaseBoundaryList (roptcBDCSpace%rdirichletControlBoundary)
     
   end subroutine
 
@@ -2001,7 +2097,7 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_initBDCHierarchy (roptcBDCHierarchy,rfeSpaceHierarchy,nlmin,nlmax)
+  subroutine sbch_initBDCHierarchy (roptcBDCHierarchy,nlmin,nlmax)
   
 !<description>
   ! Initialises a boundary condition hierarchy corresponding to a
@@ -2009,14 +2105,10 @@ contains
 !</desctiption>
 
 !<input>
-  ! Underlying hierarchy of FE spaces.
-  type(t_feHierarchy), target :: rfeSpaceHierarchy
-
-  ! Minimum level in the hierarchy rfeSpaceHierarchy.
-  ! Standard = 1. =0: nlmin=nlmax
+  ! Minimum level in the hierarchy.
   integer, intent(in) :: nlmin
 
-  ! Maximum level in the hierarchy. <=0: use level MAX+nlmax
+  ! Maximum level in the hierarchy.
   integer, intent(in) :: nlmax
 !</input>
 
@@ -2033,14 +2125,6 @@ contains
     roptcBDCHierarchy%nlmin = nlmin
     roptcBDCHierarchy%nlmax = nlmax
     
-    if (roptcBDCHierarchy%nlmax .le. 0) then
-      roptcBDCHierarchy%nlmax = rfeSpaceHierarchy%nlevels + roptcBDCHierarchy%nlmax
-    end if
-
-    if (roptcBDCHierarchy%nlmin .le. 0) then
-      roptcBDCHierarchy%nlmin = rfeSpaceHierarchy%nlevels + roptcBDCHierarchy%nlmin
-    end if
-    
     allocate(roptcBDCHierarchy%p_RoptcBDCspace(roptcBDCHierarchy%nlmin:roptcBDCHierarchy%nlmax))
 
     ! Initialise the boundary condition structures.
@@ -2054,14 +2138,14 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_doneBDCHierarchy (roptcBDCHierarchy)
+  subroutine sbch_doneBDCHierarchy (roptcBDCHierarchy)
   
 !<description>
   ! Cleans up a boundary condition hierarchy.
 !</desctiption>
 
 !<inputoutput>
-  ! Boundary condition hierarchy to initialise.
+  ! Boundary condition hierarchy to clean up.
   type(t_optcBDCSpaceHierarchy), intent(inout) :: roptcBDCHierarchy
 !</inputoutput>
 
@@ -2077,6 +2161,31 @@ contains
     ! Release the memory
     deallocate(roptcBDCHierarchy%p_RoptcBDCspace)
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbch_resetBCstructure (roptcBDCHierarchy)
+  
+!<description>
+  ! Resets the hierarchy discrete boundary conditions.
+!</description>
+
+!<inputoutput>
+  ! Boundary condition hierarchy to clean up.
+  type(t_optcBDCSpaceHierarchy), intent(inout) :: roptcBDCHierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    
+    do i=roptcBDCHierarchy%nlmin,roptcBDCHierarchy%nlmax
+      call sbc_resetBCstructure (roptcBDCHierarchy%p_RoptcBDCspace(i))
+    end do
+    
   end subroutine
 
 end module

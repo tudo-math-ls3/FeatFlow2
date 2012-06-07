@@ -31,6 +31,7 @@ module kktsystemspaces
   use spacetimevectors
   use analyticsolution
   
+  use constantsdiscretisation
   use structuresdiscretisation
   use structuresoptcontrol
   use structuresgeneral
@@ -257,7 +258,7 @@ contains
     ! -------------------------------------------------------------
     ! Stokes/Navier Stokes.
     ! -------------------------------------------------------------
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       ! -----------------------------------------------------------
       ! Distributed control

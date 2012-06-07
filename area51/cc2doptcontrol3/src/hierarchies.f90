@@ -667,8 +667,11 @@ contains
     type(t_spaceDiscrParams) :: rdiscrParams
     
     select case (rphysics%cequation)
-    case (0,1)
-      ! Stokes, Navier-Stokes, 2D
+
+    ! -------------------------
+    ! Stokes, Navier-Stokes, 2D
+    ! -------------------------
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
       ! Read the parameters that define the underlying discretisation.
       ! We use fgetDist1LvDiscr to create the basic spaces.

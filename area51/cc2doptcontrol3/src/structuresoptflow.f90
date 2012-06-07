@@ -121,9 +121,6 @@ module structuresoptflow
     ! Projection hierarchy for the interlevel projection in the control space.
     type(t_interlevelProjectionHier) :: rprjHierSpaceControl
     
-    ! Boundary condition hierarchy for all space levels, primal and dual space
-    type(t_optcBDCSpaceHierarchy) :: roptcBDCSpaceHierarchy
-    
     !<!-- ------------------------- -->
     !<!-- HIERARCHIES IN TIME       -->
     !<!-- ------------------------- -->

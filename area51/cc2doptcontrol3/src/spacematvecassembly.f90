@@ -21,6 +21,8 @@ module spacematvecassembly
   use timediscretisation
   use linearsystemscalar
   use linearsystemblock
+  use vectorfilters
+  use matrixfilters
   use multilevelprojection
   
   use scalarpde
@@ -36,11 +38,16 @@ module spacematvecassembly
   use spacetimevectors
   use analyticsolution
   
+  use constantsdiscretisation
   use structuresdiscretisation
   use structuresoptcontrol
   use structuresgeneral
+  use structuresboundaryconditions
   use structuresoptflow
   use structuresoperatorasm
+  
+  use spatialbc
+  
   use assemblytemplates
   use fespacehierarchybase
   use fespacehierarchy
@@ -124,6 +131,9 @@ public :: t_assemblyTempDataSpace
   ! Releases the hierarchy of operator assembly structures.
   public :: smva_releaseOpAsmHier
 
+  ! Assembles Dirichlet and Neumann boundary conditions on level ilevel.
+  public :: smva_initDirichletNeumannBC
+  
 contains
 
   ! ***************************************************************************
@@ -171,7 +181,7 @@ contains
     ! *************************************************************
     ! Stokes/Navier Stokes.
     ! *************************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       ! ---------------------------------------------------
       ! 2x2 block for the velocity
@@ -549,7 +559,7 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -657,7 +667,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primal (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,rtempData)
+      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -681,9 +691,12 @@ contains
 
   ! Structure that defines the current control.
   type(t_controlSpace), intent(inout) :: rcontrol
-
+  
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+  
+  ! Structure defining the boundary conditions.
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -754,7 +767,7 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -869,6 +882,12 @@ contains
 
         end select ! Equation
       
+        ! ---------------------------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions into the defect
+        ! ---------------------------------------------------------------
+        
+        call vecfil_discreteBCdef (rdest,roptcBDCSpace%rdiscreteBC)
+
       end select ! Timestep sub-scheme
       
     end select ! Timestep scheme
@@ -880,7 +899,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dual (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,rtempData)
+      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear dual equation
@@ -907,6 +926,9 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+
+  ! Structure defining the boundary conditions.
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -977,8 +999,8 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
-
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
           ! ***********************************************
           ! NEXT TIMESTEP
           ! ***********************************************
@@ -1091,6 +1113,12 @@ contains
           
         end select ! Equation
       
+        ! ---------------------------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions into the defect
+        ! ---------------------------------------------------------------
+        
+        call vecfil_discreteBCdef (rdest,roptcBDCSpace%rdiscreteBC)
+
       end select ! Timestep sub-scheme
       
     end select ! Timestep scheme
@@ -1102,7 +1130,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,rtempData)
+      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,&
+      roptcBDCSpace,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised primaö equation
@@ -1139,6 +1168,9 @@ contains
   ! TRUE activates the full linearised operator (Newton).
   ! FALSE activates a partially linearised operator without the Newton part.
   logical, intent(in) :: bfull
+
+  ! Structure defining the boundary conditions.
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -1209,7 +1241,7 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -1317,6 +1349,12 @@ contains
 
         end select ! Equation
       
+        ! ---------------------------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions into the defect
+        ! ---------------------------------------------------------------
+        
+        call vecfil_discreteBCdef (rdest,roptcBDCSpace%rdiscreteBC)
+
       end select ! Timestep sub-scheme
       
     end select ! Timestep scheme
@@ -1328,7 +1366,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,rtempData)
+      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,&
+      roptcBDCSpace,rtempData)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised dual equation
@@ -1365,6 +1404,9 @@ contains
   ! TRUE activates the full linearised operator (Newton).
   ! FALSE activates a partially linearised operator without the Newton part.
   logical, intent(in) :: bfull
+
+  ! Structure defining the boundary conditions.
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -1435,7 +1477,7 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! NEXT TIMESTEP
@@ -1559,6 +1601,12 @@ contains
           
         end select ! Equation
       
+        ! ---------------------------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions into the defect
+        ! ---------------------------------------------------------------
+        
+        call vecfil_discreteBCdef (rdest,roptcBDCSpace%rdiscreteBC)
+
       end select ! Timestep sub-scheme
       
     end select ! Timestep scheme
@@ -1601,7 +1649,7 @@ contains
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
@@ -1652,7 +1700,7 @@ contains
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
@@ -1703,7 +1751,8 @@ contains
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB1,dweight,&
           rmatrix%RmatrixBlock(1,3),1.0_DP,rmatrix%RmatrixBlock(1,3),&
@@ -1754,7 +1803,8 @@ contains
     ! ***********************************************************
     ! Stokes/Navier Stokes.
     ! ***********************************************************
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD1,dweight,&
           rmatrix%RmatrixBlock(3,1),1.0_DP,rmatrix%RmatrixBlock(3,1),&
@@ -1883,7 +1933,7 @@ contains
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (0)
+    case (CCEQ_NAVIERSTOKES2D)
     
       ! ------------------------------------------
       ! Prepare the evaluation of the nonlinearity
@@ -2015,7 +2065,7 @@ contains
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (0)
+    case (CCEQ_NAVIERSTOKES2D)
     
       ! ------------------------------------------
       ! Prepare the evaluation of the nonlinearity
@@ -2147,7 +2197,7 @@ contains
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
-    case (0)
+    case (CCEQ_NAVIERSTOKES2D)
     
       ! ------------------------------------------
       ! Prepare the evaluation of the nonlinearity
@@ -2289,7 +2339,7 @@ contains
     ! -------------------------------------------------------------
     ! Navier Stokes.
     ! -------------------------------------------------------------
-    case (0)
+    case (CCEQ_NAVIERSTOKES2D)
       
       ! Primal or dual equation?
       select case (copType)
@@ -2598,7 +2648,7 @@ contains
         ! ***********************************************************
         ! Stokes/Navier Stokes
         ! ***********************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ---------------------------------------------------------
           ! The one-and-only RHS
@@ -2754,7 +2804,7 @@ contains
         ! ***********************************************************
         ! Stokes/Navier Stokes
         ! ***********************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart
@@ -2905,7 +2955,7 @@ contains
         ! ***********************************************************
         ! Stokes/Navier Stokes
         ! ***********************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart + (1.0_DP-dtheta) * dtstep
@@ -3069,7 +3119,7 @@ contains
         ! ***********************************************************
         ! Stokes/Navier Stokes
         ! ***********************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart
@@ -3223,7 +3273,7 @@ contains
         ! ***********************************************************
         ! Navier Stokes
         ! ***********************************************************
-        case (0)
+        case (CCEQ_NAVIERSTOKES2D)
         
           ! Prepare the evaluation.
           !
@@ -3332,11 +3382,11 @@ contains
     
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
-    case (0,1)
     
-      ! -------------------------------------------------------------
-      ! Stokes/Navier Stokes.
-      ! -------------------------------------------------------------
+    ! -------------------------------------------------------------
+    ! Stokes/Navier Stokes.
+    ! -------------------------------------------------------------
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
       ! Primal or dual equation?
       select case (copType)
@@ -3511,12 +3561,12 @@ contains
     
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
-    case (0,1)
+
+    ! -------------------------------------------------------------
+    ! Stokes/Navier Stokes.
+    ! -------------------------------------------------------------
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
-      ! -------------------------------------------------------------
-      ! Stokes/Navier Stokes.
-      ! -------------------------------------------------------------
-      
       ! Primal or dual equation?
       select case (copType)
 
@@ -4293,8 +4343,8 @@ contains
 !<subroutine>
 
   subroutine smva_assembleMatrix_primal (rmatrix,ispacelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,bfull,rtempdata,&
-      ipreviousSpaceLv)
+      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,bfull,&
+      roptcBDCSpace,rtempdata,ipreviousSpaceLv)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -4334,6 +4384,9 @@ contains
   ! this can be set to the previously assembled space level.
   ! The routine will re-use data from this level for the new one.
   integer, intent(in) :: ipreviousSpaceLv
+
+  ! Boundary condition structure
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -4403,7 +4456,7 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -4451,6 +4504,12 @@ contains
               rtempdata,ipreviousSpaceLv)
 
         end select ! Equation
+
+        ! -----------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions
+        ! -----------------------------------------------
+        
+        call matfil_discreteBC (rmatrix,roptcBDCSpace%rdiscreteBC)
       
       end select ! Timestep sub-scheme
       
@@ -4463,8 +4522,8 @@ contains
 !<subroutine>
 
   subroutine smva_assembleMatrix_dual (rmatrix,ispacelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,rtempdata,&
-      ipreviousSpaceLv)
+      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,&
+      roptcBDCSpace,rtempdata,ipreviousSpaceLv)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -4500,6 +4559,9 @@ contains
   ! this can be set to the previously assembled space level.
   ! The routine will re-use data from this level for the new one.
   integer, intent(in) :: ipreviousSpaceLv
+
+  ! Boundary condition structure
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
 !</input>
 
 !<inputoutput>
@@ -4565,8 +4627,8 @@ contains
         ! *************************************************************
         ! Stokes/Navier Stokes.
         ! *************************************************************
-        case (0,1)
-
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
           ! ===============================================
           ! Prepare the linear parts of the matrix.
           ! ===============================================
@@ -4616,6 +4678,12 @@ contains
               rtempdata,ipreviousSpaceLv)
 
         end select ! Equation
+      
+        ! -----------------------------------------------
+        ! Implement Dirichlet/Neumann boundary conditions
+        ! -----------------------------------------------
+        
+        call matfil_discreteBC (rmatrix,roptcBDCSpace%rdiscreteBC)
       
       end select ! Timestep sub-scheme
       
@@ -4686,7 +4754,6 @@ contains
     roperatorAsmHier%p_rprjHierSpaceControl => rsettings%rprjHierSpaceControl
 
     roperatorAsmHier%p_rstaticSpaceAsmHier => rsettings%rspaceAsmHierarchy
-    roperatorAsmHier%p_roptcBDCSpaceHierarchy => rsettings%roptcBDCSpaceHierarchy
 
   end subroutine
 
@@ -4711,6 +4778,187 @@ contains
 
     ! Overwrite with default settings
     roperatorAsmHier = rtemplate
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_initDirichletNeumannBC (roptcBDCSpace,roptcBDC,copType,&
+      roperatorAsmHier,ispacelevel,itimelevel,idoftime,rglobalData)
+  
+!<description>
+  ! Assembles Dirichlet and Neumann boundary conditions on level 
+  ! ispacelevel/itimelevel.
+!</description>
+
+!<input>
+  ! Boundary condition structure
+  type(t_optcBDC), intent(inout) :: roptcBDC
+
+  ! Type of equation to be solved here. This can be 
+  ! OPTP_PRIMAL, OPTP_DUAL, OPTP_PRIMALLIN or OPTP_DUALLIN,
+  ! depending on which equation to solve.
+  integer :: copType
+
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+  
+  ! Space level.
+  integer, intent(in) :: ispacelevel
+
+  ! Time level.
+  integer, intent(in) :: itimelevel
+
+  ! Timestep
+  integer, intent(in) :: idoftime
+  
+  ! Global data, passed to callback routines
+  type(t_globalData), intent(inout) :: rglobalData
+!</input>
+
+!<inputoutput>
+  ! Boundary condition structure that receives the bondary conditions.
+  type(t_optcBDCSpace), intent(inout) :: roptcBDCSpace
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+        
+    p_ranalyticData => roperatorAsm%p_ranalyticData
+
+    select case (copType)
+    
+    ! ***********************************************************
+    ! Primal space
+    ! ***********************************************************
+    case (OPTP_PRIMAL)
+
+      ! Timestepping technique?
+      select case (roperatorAsm%p_rtimeDiscrPrimal%ctype)
+      
+      ! ***********************************************************
+      ! Standard Theta one-step scheme.
+      ! ***********************************************************
+      case (TDISCR_ONESTEPTHETA)
+      
+        ! Theta-scheme identifier
+        dtheta = roperatorAsm%p_rtimeDiscrPrimal%dtheta
+
+        ! Characteristics of the current timestep.
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+            dtimeend,dtstep,dtimestart)
+
+        ! itag=0: old 1-step scheme.
+        ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+        select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
+        
+        ! ***********************************************************
+        ! itag=0: old/standard 1-step scheme.
+        ! ***********************************************************
+        case (0)
+
+          call output_line("Old 1-step-scheme not implemented",&
+              OU_CLASS_ERROR,OU_MODE_STD,"sbch_initDirichletNeumannBC")
+          call sys_halt()
+
+        ! ***********************************************************
+        ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+        ! ***********************************************************
+        case (1)
+
+          ! Which equation do we have?    
+          select case (p_ranalyticData%p_rphysics%cequation)
+
+          ! *************************************************************
+          ! Stokes/Navier Stokes.
+          ! *************************************************************
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
+            ! Assemble
+            call sbc_assembleBDconditions (roptcBDC,dtimeend,&
+                p_ranalyticData%p_rphysics%cequation,copType,&
+                rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
+                roperatorAsm%p_rtimeDiscrPrimal,roperatorAsm%p_rspaceDiscrPrimal,&
+                roptcBDCSpace)
+
+          end select ! Equation
+        
+        end select ! Timestep sub-scheme
+        
+      end select ! Timestep scheme
+
+    ! ***********************************************************
+    ! Dual space
+    ! ***********************************************************
+    case (OPTP_DUAL)
+
+      ! Timestepping technique?
+      select case (roperatorAsm%p_rtimeDiscrDual%ctype)
+      
+      ! ***********************************************************
+      ! Standard Theta one-step scheme.
+      ! ***********************************************************
+      case (TDISCR_ONESTEPTHETA)
+      
+        ! Theta-scheme identifier
+        dtheta = roperatorAsm%p_rtimeDiscrPrimal%dtheta
+
+        ! Characteristics of the current timestep.
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+            dtimeend,dtstep,dtimestart)
+
+        ! itag=0: old 1-step scheme.
+        ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+        select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
+        
+        ! ***********************************************************
+        ! itag=0: old/standard 1-step scheme.
+        ! ***********************************************************
+        case (0)
+
+          call output_line("Old 1-step-scheme not implemented",&
+              OU_CLASS_ERROR,OU_MODE_STD,"sbch_initDirichletNeumannBC")
+          call sys_halt()
+
+        ! ***********************************************************
+        ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+        ! ***********************************************************
+        case (1)
+
+          ! Which equation do we have?    
+          select case (p_ranalyticData%p_rphysics%cequation)
+
+          ! *************************************************************
+          ! Stokes/Navier Stokes.
+          ! *************************************************************
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
+            ! Assemble
+            call sbc_assembleBDconditions (roptcBDC,dtimestart,&
+                p_ranalyticData%p_rphysics%cequation,copType,&
+                rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
+                roperatorAsm%p_rtimeDiscrDual,roperatorAsm%p_rspaceDiscrDual,&
+                roptcBDCSpace)
+
+          end select ! Equation
+        
+        end select ! Timestep sub-scheme
+        
+      end select ! Timestep scheme
+    
+    end select ! Space
     
   end subroutine
 

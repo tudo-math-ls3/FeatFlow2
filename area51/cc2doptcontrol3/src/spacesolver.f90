@@ -23,6 +23,7 @@ module spacesolver
   use linearalgebra
   use linearsystemscalar
   use linearsystemblock
+  use vectorfilters
   
   use scalarpde
   use linearformevaluation
@@ -108,11 +109,6 @@ module spacesolver
     ! depending on which equation to solve.
     integer :: copType = 0
 
-    ! Parameters of the OptFlow solver.
-    ! The global space-time hierarchy in this structure defines
-    ! the hierarchy, this solver is build upon.
-    type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
-
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
@@ -161,8 +157,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_init (rsolver,rsettingsSolver,copType,&
-      rlssHierarchy,roptcBDCSpaceHierarchy,ssection,rparamList)
+  subroutine spaceslh_init (rsolver,copType,rlssHierarchy,ssection,rparamList)
   
 !<description>
   ! Initialises the solver parameters according to a parameter list.
@@ -170,9 +165,6 @@ contains
 !</description>
   
 !<input>
-  ! Parameters of the OptFlow solver
-  type(t_settings_optflow), intent(in), target :: rsettingsSolver
-  
   ! Type of equation to be solved here. This can be 
   ! OPTP_PRIMAL, OPTP_DUAL, OPTP_PRIMALLIN or OPTP_DUALLIN,
   ! depending on which equation to solve.
@@ -182,9 +174,6 @@ contains
   ! auxiliary linear subproblems. The solver on level ispacelevel
   ! will be used to solve linear subproblems.
   type(t_linsolHierarchySpace), target :: rlssHierarchy
-
-  ! Boundary condition hierarchy for all space levels, primal and dual space
-  type(t_optcBDCSpaceHierarchy), target :: roptcBDCSpaceHierarchy
 
   ! OPTIONAL: Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
@@ -204,9 +193,7 @@ contains
 !</subroutine>
 
     ! Remember the solver settings for later use
-    rsolver%p_rsettingsSolver => rsettingsSolver
     rsolver%p_rlssHierarchy => rlssHierarchy
-    rsolver%p_roptcBDCSpaceHierarchy => roptcBDCSpaceHierarchy
     rsolver%copType = copType
 
     if (present(ssection) .and. present(rparamList)) then
@@ -259,6 +246,7 @@ contains
     integer :: ilev
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_spacetimeOperatorAsm) :: roperatorAsm
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     if (rsolver%p_rlssHierarchy%nlmin .gt. ispaceLevel) then
       call output_line ("Invalid space level.", &
@@ -271,6 +259,12 @@ contains
     rsolver%itimelevel = itimelevel
     rsolver%p_roperatorAsmHier => roperatorAsmHier
 
+    ! Prepare boundary condition structures
+    allocate(rsolver%p_roptcBDCSpaceHierarchy)
+    
+    call sbch_initBDCHierarchy (rsolver%p_roptcBDCSpaceHierarchy,&
+        rsolver%p_rlssHierarchy%nlmin,rsolver%ispaceLevel)
+    
     ! Allocate temporary vectors / matrices for all space levels.
     allocate(rsolver%p_Rmatrices(rsolver%ispaceLevel))
     
@@ -303,6 +297,10 @@ contains
           roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
           p_rdiscretisation,roperatorAsm%p_rasmTemplates)
           
+      ! Bind discrete boundary conditions to the matrix
+      call sbch_getDiscreteBC (rsolver%p_roptcBDCSpaceHierarchy,ilev,p_rdiscreteBC)
+      call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
+          
       ! Provide the matrix to the linear solver
       call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
       
@@ -312,6 +310,9 @@ contains
 
         allocate (rsolver%p_rd)
         call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd)
+        
+        ! Bind the boundary conditions to that vector
+        call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
             
         select case (rsolver%copType)
         case (OPTP_PRIMAL,OPTP_PRIMALLIN)
@@ -337,6 +338,49 @@ contains
     
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_initData_bdc (rsolver, idofTime)
+  
+!<description>
+  ! Initialises the boundary condition structures for time DOF idofTime
+!</description>
+
+!<input>
+  ! Number of the DOF in time.
+  integer, intent(in) :: idofTime
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev
+    
+    ! Clean up the boundary conditions.
+    call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+    
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the boundary conditions.
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+    
+      ! Assemble Dirichlet/Neumann boundary conditions
+      call smva_initDirichletNeumannBC (&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%p_roperatorAsmHier%ranalyticData%p_roptcBDC,&
+          rsolver%copType,&
+          rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
+          rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData)
+    
+    end do
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -378,10 +422,10 @@ contains
 
     ! local variables
     integer :: ilev,iprevlv
+    logical :: bfull
     
-    ! A combination of LSS_SLFLAGS_xxxx constants defining the way,
-    ! the solver performs filtering.
-    integer(I32) :: cflags
+    ! Full Newton?
+    bfull = rsolver%rnewtonParams%ctypeIteration .eq. 2
     
     ! iprevlv contains the last assembled level.
     iprevlv = 0
@@ -390,10 +434,12 @@ contains
     ! and set up the system matrices.
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
+      ! Assemble the matrix
       call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
           rsolver%p_roperatorAsmHier,&
-          rprimalSol,isollevelSpace,rsolver%itimelevel,&
-          rsolver%rnewtonParams%ctypeIteration .eq. 2,rsolver%rtempData,iprevlv)
+          rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%rtempData,iprevlv)
           
       iprevlv = ilev
     
@@ -401,7 +447,77 @@ contains
 
     ! Initialise the structures of the associated linear subsolver
     call lssh_initData (&
-        rsolver%p_rlsshierarchy,rsolver%ispacelevel,cflags,ierror)
+        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+        rsolver%ispacelevel,ierror)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_initData_dual (rsolver, ierror, idofTime, &
+      rprimalSol, isollevelSpace)
+  
+!<description>
+  ! Final preparation of the Newton solver. Dual space.
+!</description>
+
+!<input>
+  ! Number of the DOF in time which should be calculated into rdest.
+  integer, intent(in) :: idofTime
+
+  ! Current solution of the primal equation. Defines the nonlinearity.
+  ! The space level of the solution is specified by isollevelSpace.
+  ! The time level must match rsolver%itimelevel.
+  type(t_primalSpace), intent(inout), target :: rprimalSol
+  
+  ! Space level corresponding to rprimalSol.
+  integer, intent(in) :: isollevelSpace
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+!</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev,iprevlv
+    logical :: bfull
+    
+    ! Full Newton?
+    bfull = rsolver%rnewtonParams%ctypeIteration .eq. 2
+    
+    ! iprevlv contains the last assembled level.
+    iprevlv = 0
+
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the system matrices.
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+    
+      ! Assemble the matrix
+      call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%rtempData,iprevlv)
+          
+      iprevlv = ilev
+    
+    end do
+
+    ! Initialise the structures of the associated linear subsolver
+    call lssh_initData (&
+        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+        rsolver%ispacelevel,ierror)
 
   end subroutine
 
@@ -425,6 +541,9 @@ contains
     ! Clean up the structures of the associated linear subsolver
     call lssh_doneData (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
 
+    ! Clean up boundary conditions
+    call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+
   end subroutine
 
   ! ***************************************************************************
@@ -445,7 +564,11 @@ contains
 !</subroutine>
 
     integer :: ilev
-   
+
+    ! Clean up boundary conditions   
+    call sbch_doneBDCHierarchy (rsolver%p_roptcBDCSpaceHierarchy)
+    deallocate(rsolver%p_roptcBDCSpaceHierarchy)
+
     ! Clean up the structures of the associated linear subsolver
     call lssh_doneStructure (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
    
@@ -562,14 +685,20 @@ contains
       do while (.true.)
       
         ! -------------------------------------------------------------
+        ! Initialise boundary conditions
+        ! -------------------------------------------------------------
+        call spaceslh_initData_bdc (rsolver, idofTime)      
+      
+        ! -------------------------------------------------------------
         ! Get the nonlinear defect
         ! -------------------------------------------------------------
         ! Compute the basic (unpreconditioned) search direction in rd.
         call smva_getDef_primal (p_rd,&
             rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-            rsolver%p_roperatorAsmHier,&
-            rprimalSol,rcontrol,rsolver%rtempData)
-
+            rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+            rsolver%rtempData)
+            
         if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
           ! Remember the initial residual
           rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -601,7 +730,7 @@ contains
         ! Preconditioning with the Newton matrix
         ! -------------------------------------------------------------
 
-        ! Assemble the matrices on all levels.
+        ! Assemble the matrices/boundary conditions on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
             rprimalSol,rsolver%ispacelevel)
         
@@ -622,6 +751,10 @@ contains
         ! or to any configured step-length control rule.
         call sptivec_getVectorFromPool(rprimalSol%p_rvectorAccess,idofTime,p_rx)
         call lsysbl_vectorLinearComb (p_rd,p_rx,rsolver%rnewtonParams%domega,1.0_DP)
+
+        ! Filter for the boundary conditions
+        call vecfil_discreteBCsol (p_rx)
+
         call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
         
         ! -------------------------------------------------------------
@@ -640,11 +773,19 @@ contains
       ! We apply one defect correction, so to pass a defect to the 
       ! linear solver.
 
+      ! -------------------------------------------------------------
+      ! Initialise boundary conditions
+      ! -------------------------------------------------------------
+      call spaceslh_initData_bdc (rsolver, idofTime)      
+
+      ! -------------------------------------------------------------
       ! Create a defect
+      ! -------------------------------------------------------------
       call smva_getDef_dual (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,&
-          rprimalSol,rdualSol,rsolver%rtempData)
+          rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+          rsolver%rtempData)
       
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -657,7 +798,15 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
+      ! Assemble the matrices/boundary conditions on all levels.
+      ! -------------------------------------------------------------
+      call spaceslh_initData_dual (rsolver, ierror, idofTime, &
+          rprimalSol,rsolver%ispacelevel)
+
+      ! -------------------------------------------------------------
       ! Call the linear solver, it does the job for us.
+      ! -------------------------------------------------------------
       call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
       
       ! Get the final residual
@@ -671,12 +820,19 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
       ! Update the control according to the defect:
       !
       !    u_new  =  u_old  +  g_n
+      ! -------------------------------------------------------------
 
       call sptivec_getVectorFromPool(rdualSol%p_rvectorAccess,idofTime,p_rx)
       call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+      ! Filter for the boundary conditions.
+      ! Use the defect filter as we are here in the defect space.
+      call vecfil_discreteBCsol (p_rx)
+
       call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
     
     ! ---------------------------------------------------------------
@@ -686,12 +842,20 @@ contains
       ! We apply one defect correction, so to pass a defect to the 
       ! linear solver.
 
+      ! -------------------------------------------------------------
+      ! Initialise boundary conditions
+      ! -------------------------------------------------------------
+      call spaceslh_initData_bdc (rsolver, idofTime)      
+
+      ! -------------------------------------------------------------
       ! Create a defect
+      ! -------------------------------------------------------------
       call smva_getDef_primalLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,&
-          rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,&
-          rsolver%coptype .eq. OPTP_PRIMALLIN,rsolver%rtempData)
+          rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,&
+          rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+          rsolver%rtempData)
       
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -704,7 +868,15 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
+      ! Assemble the matrices/boundary conditions on all levels.
+      ! -------------------------------------------------------------
+      call spaceslh_initData_dual (rsolver, ierror, idofTime, &
+          rprimalSol,rsolver%ispacelevel)
+
+      ! -------------------------------------------------------------
       ! Call the linear solver, it does the job for us.
+      ! -------------------------------------------------------------
       call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
       
       ! Get the final residual
@@ -718,12 +890,18 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
       ! Update the control according to the defect
       !
       !    u_new  =  u_old  +  g_n
+      ! -------------------------------------------------------------
 
       call sptivec_getVectorFromPool(rprimalSolLin%p_rvectorAccess,idofTime,p_rx)
       call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+      ! Filter for the boundary conditions
+      call vecfil_discreteBCdef (p_rx)
+
       call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
 
     ! ---------------------------------------------------------------
@@ -733,12 +911,20 @@ contains
       ! We apply one defect correction, so to pass a defect to the 
       ! linear solver.
 
+      ! -------------------------------------------------------------
+      ! Initialise boundary conditions
+      ! -------------------------------------------------------------
+      call spaceslh_initData_bdc (rsolver, idofTime)      
+
+      ! -------------------------------------------------------------
       ! Create a defect
+      ! -------------------------------------------------------------
       call smva_getDef_dualLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,&
-          rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,&
-          rsolver%coptype .eq. OPTP_DUALLIN,rsolver%rtempData)
+          rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,&
+          rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+          rsolver%rtempData)
       
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -751,7 +937,15 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
+      ! Assemble the matrices/boundary conditions on all levels.
+      ! -------------------------------------------------------------
+      call spaceslh_initData_dual (rsolver, ierror, idofTime, &
+          rprimalSol,rsolver%ispacelevel)
+
+      ! -------------------------------------------------------------
       ! Call the linear solver, it does the job for us.
+      ! -------------------------------------------------------------
       call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
       
       ! Get the final residual
@@ -765,12 +959,19 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! -------------------------------------------------------------
       ! Update the control according to the defect
       !
       !    u_new  =  u_old  +  g_n
+      ! -------------------------------------------------------------
 
       call sptivec_getVectorFromPool(rdualSolLin%p_rvectorAccess,idofTime,p_rx)
       call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+      ! Filter for the boundary conditions.
+      ! Use the defect filter as we are here in the defect space.
+      call vecfil_discreteBCdef (p_rx)
+      
       call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
 
     end select
