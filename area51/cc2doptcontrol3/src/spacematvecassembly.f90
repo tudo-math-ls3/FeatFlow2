@@ -804,20 +804,9 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             end if
             
-            ! -----------------------------------------
-            ! Laplace -- if the viscosity is constant
-            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-              call smva_getLaplaceMatrix (&
-                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
-            else
-              call output_line("Nonconstant viscosity not supported.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
-              call sys_halt()
-            end if
-
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
@@ -1041,20 +1030,9 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             end if
             
-            ! -----------------------------------------
-            ! Laplace -- if the viscosity is constant
-            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-              call smva_getLaplaceMatrix (&
-                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
-            else
-              call output_line("Nonconstant viscosity not supported.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
-              call sys_halt()
-            end if
-
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime+1,p_rvector)
@@ -1277,20 +1255,9 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             end if
             
-            ! -----------------------------------------
-            ! Laplace -- if the viscosity is constant
-            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-              call smva_getLaplaceMatrix (&
-                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
-            else
-              call output_line("Nonconstant viscosity not supported.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
-              call sys_halt()
-            end if
-
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime-1,p_rvector)
@@ -1513,20 +1480,9 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             end if
             
-            ! -----------------------------------------
-            ! Laplace -- if the viscosity is constant
-            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-              call smva_getLaplaceMatrix (&
-                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
-            else
-              call output_line("Nonconstant viscosity not supported.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
-              call sys_halt()
-            end if
-
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime+1,p_rvector)
@@ -1671,14 +1627,14 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
-          rmatrix%RmatrixBlock(1,1),1.0_DP,rmatrix%RmatrixBlock(1,1),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,&
+          rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,dweight,&
-          rmatrix%RmatrixBlock(2,2),1.0_DP,rmatrix%RmatrixBlock(2,2),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,&
+          rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
     end select
     
   end subroutine
@@ -1722,14 +1678,14 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
-          rmatrix%RmatrixBlock(1,1),1.0_DP,rmatrix%RmatrixBlock(1,1),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
+          rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,dweight,&
-          rmatrix%RmatrixBlock(2,2),1.0_DP,rmatrix%RmatrixBlock(2,2),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
+          rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
     end select
     
   end subroutine
@@ -1773,14 +1729,14 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB1,dweight,&
-          rmatrix%RmatrixBlock(1,3),1.0_DP,rmatrix%RmatrixBlock(1,3),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB1,&
+          rmatrix%RmatrixBlock(1,3),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,3))
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB2,dweight,&
-          rmatrix%RmatrixBlock(2,3),1.0_DP,rmatrix%RmatrixBlock(2,3),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixB2,&
+          rmatrix%RmatrixBlock(2,3),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,3))
           
     end select
     
@@ -1825,14 +1781,14 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD1,dweight,&
-          rmatrix%RmatrixBlock(3,1),1.0_DP,rmatrix%RmatrixBlock(3,1),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD1,&
+          rmatrix%RmatrixBlock(3,1),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(3,1))
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD2,dweight,&
-          rmatrix%RmatrixBlock(3,2),1.0_DP,rmatrix%RmatrixBlock(3,2),&
-          .false.,.false.,.true.,.true.)
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD2,&
+          rmatrix%RmatrixBlock(3,2),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(3,2))
     end select
     
   end subroutine
@@ -4622,7 +4578,7 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,rmatrix,dtstep)
+          call smva_getMassMatrix (roperatorAsm,rmatrix,1.0_DP/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
@@ -4796,7 +4752,7 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,rmatrix,dtstep)
+          call smva_getMassMatrix (roperatorAsm,rmatrix,1.0_DP/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
