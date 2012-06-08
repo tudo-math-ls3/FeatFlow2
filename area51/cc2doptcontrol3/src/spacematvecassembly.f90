@@ -545,6 +545,13 @@ contains
       call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
+      ! dtstep=0 not allowed here. If it is zero, take the length
+      ! from the 1st timestep.
+      if (dtstep .eq. 0.0_DP) then
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,1,&
+            dtstep=dtstep)
+      end if
+
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
       select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
@@ -585,7 +592,7 @@ contains
         
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP-dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
@@ -617,7 +624,7 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,p_rmatrix,dtstep)
+          call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
@@ -788,6 +795,12 @@ contains
           ! ***********************************************
           if (idofTime .gt. 1) then
 
+            if (dtstep .eq. 0.0_DP) then
+              call output_line("Zero timestep length.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
+              call sys_halt()
+            end if
+
             ! ===============================================
             ! RHS assembly
             ! ===============================================
@@ -803,20 +816,30 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
-            end if
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+          
+          else
+          
+            ! Get the timestep length from the 1st timestep
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,1,&
+                dtstep=dtstep)
             
           end if
 
           ! ***********************************************
           ! CURRENT TIMESTEP
           ! ***********************************************
+
+          if (dtstep .eq. 0.0_DP) then
+            call output_line("Zero timestep length.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primal")
+            call sys_halt()
+          end if
 
           ! ===============================================
           ! RHS assembly
@@ -980,7 +1003,7 @@ contains
       dtheta = roperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,idofTime,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
@@ -1014,6 +1037,12 @@ contains
           ! ***********************************************
           if (idofTime .lt. rprimalSol%p_rvector%NEQtime) then
 
+            if (dtstep .eq. 0.0_DP) then
+              call output_line("Zero timestep length.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
+              call sys_halt()
+            end if
+
             ! ===============================================
             ! RHS assembly
             ! ===============================================
@@ -1029,19 +1058,30 @@ contains
 
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
-            end if
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
             
             ! -----------------------------------------
             ! Realise the defect
             call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+            
+          else
+          
+            ! Get the timestep length from the last timestep
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,&
+                rprimalSol%p_rvector%NEQtime-1,dtstep=dtstep)
+            
           end if
             
           ! ***********************************************
           ! CURRENT TIMESTEP
           ! ***********************************************
+
+          if (dtstep .eq. 0.0_DP) then
+            call output_line("Zero timestep length.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dual")
+            call sys_halt()
+          end if
 
           ! ===============================================
           ! RHS assembly
@@ -1245,6 +1285,12 @@ contains
           ! ***********************************************
           if (idofTime .gt. 1) then
 
+            if (dtstep .eq. 0.0_DP) then
+              call output_line("Zero timestep length.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
+              call sys_halt()
+            end if
+
             ! ===============================================
             ! Prepare the linear parts of the matrix.
             ! ===============================================
@@ -1263,11 +1309,23 @@ contains
             call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
+          else
+          
+            ! Get the timestep length from the 1st timestep
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,1,&
+                dtstep=dtstep)
+            
           end if
 
           ! ***********************************************
           ! CURRENT TIMESTEP
           ! ***********************************************
+
+          if (dtstep .eq. 0.0_DP) then
+            call output_line("Zero timestep length.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_primalLin")
+            call sys_halt()
+          end if
 
           ! ===============================================
           ! RHS assembly
@@ -1436,7 +1494,7 @@ contains
       dtheta = roperatorAsm%p_rtimeDiscrDual%dtheta
 
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,idofTime,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
@@ -1470,6 +1528,12 @@ contains
           ! ***********************************************
           if (idofTime .lt. rprimalSol%p_rvector%NEQtime) then
 
+            if (dtstep .eq. 0.0_DP) then
+              call output_line("Zero timestep length.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
+              call sys_halt()
+            end if
+
             ! ===============================================
             ! Prepare the linear parts of the matrix.
             ! ===============================================
@@ -1488,11 +1552,23 @@ contains
             call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
+          else
+          
+            ! Get the timestep length from the last timestep
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,&
+                rprimalSol%p_rvector%NEQtime-1,dtstep=dtstep)
+            
           end if
             
           ! ***********************************************
           ! CURRENT TIMESTEP
           ! ***********************************************
+
+          if (dtstep .eq. 0.0_DP) then
+            call output_line("Zero timestep length.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
+            call sys_halt()
+          end if
 
           ! ===============================================
           ! RHS assembly
@@ -4546,6 +4622,12 @@ contains
       call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
           dtimeend,dtstep,dtimestart)
 
+      ! 0th timestep has to timestep length; take it from the 1st timestep
+      if (dtstep .eq. 0.0_DP) then
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,1,&
+            dtstep=dtstep)
+      end if
+
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
       select case (roperatorAsm%p_rtimeDiscrPrimal%itag)
@@ -4716,6 +4798,12 @@ contains
       ! Characteristics of the current timestep.
       call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,idofTime-1,&
           dtimeend,dtstep,dtimestart)
+          
+      ! Last timestep has no timestep length; take it from the last but first.
+      if (dtstep .eq. 0.0_DP) then
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,&
+            roperatorAsm%p_rtimeDiscrDual%nintervals,dtstep=dtstep)
+      end if
 
       ! itag=0: old 1-step scheme.
       ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
