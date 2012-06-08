@@ -612,7 +612,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControlRes (rkktsystem,rresidual,dres)
+  subroutine kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm)
   
 !<description>
   ! Calculates the residual of the control equation
@@ -623,6 +623,9 @@ contains
   ! The control, primal and dual variable in this structure are used to
   ! calculate the residual.
   type(t_kktsystem), intent(inout), target :: rkktsystem
+  
+  ! type of norm. A LINALG_NORMxxxx constant.
+  integer, intent(in) :: iresnorm
 !</input>
 
 !<inputoutput>
@@ -659,7 +662,7 @@ contains
     call kktsp_controlLinearComb (rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP)
     
     ! Calculate the norm of the residual
-    dres = sptivec_vectorNorm (rresidual%p_rvector,LINALG_NORML2)
+    dres = sptivec_vectorNorm (rresidual%p_rvector,iresnorm)
    
   end subroutine
 
@@ -938,7 +941,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres)
+  subroutine kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
   
 !<description>
   ! Calculates the residual of the control equation of the linearised
@@ -954,6 +957,9 @@ contains
   ! The right-hand side "d" of the control equation in the linearised
   ! KKT system "J''(u) g = d".
   type(t_controlSpace), intent(inout) :: rrhs
+
+  ! type of norm. A LINALG_NORMxxxx constant.
+  integer, intent(in) :: iresnorm
 !</input>
 
 !<inputoutput>
@@ -994,7 +1000,7 @@ contains
     call kktsp_controlLinearComb (&
         rrhs,1.0_DP,&
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
-        rresidual,1.0_DP,dres)
+        rresidual,1.0_DP,dres,iresnorm)
 
   end subroutine
 

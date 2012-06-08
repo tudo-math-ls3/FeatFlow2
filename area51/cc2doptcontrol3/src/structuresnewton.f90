@@ -14,6 +14,7 @@ module structuresnewton
   use fsystem
   use genoutput
   use paramlist
+  use linearalgebra
 
   implicit none
   
@@ -174,6 +175,11 @@ module structuresnewton
     ! Damping parameter for the Newton iteration
     real(DP) :: domega = 1.0_DP
   
+    ! How to check residuals.
+    ! =0: Check in Euclidian norm (like in old CC).
+    ! =2: L2-norm
+    integer :: iresNorm = LINALG_NORML2
+
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->
@@ -306,6 +312,11 @@ module structuresnewton
     ! Damping parameter for the Newton iteration
     real(DP) :: domega = 1.0_DP
   
+    ! How to check residuals.
+    ! =0: Check in Euclidian norm (like in old CC).
+    ! =2: L2-norm
+    integer :: iresNorm = LINALG_NORML2
+  
     ! <!-- ---------- -->
     ! <!-- STATISTICS -->
     ! <!-- ---------- -->
@@ -435,8 +446,11 @@ contains
     call parlst_getvalue_int (p_rsection, "nmaxIterations", &
         rsolver%nmaxIterations, rsolver%nmaxIterations)
 
-    call parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+    call parlst_getvalue_int (p_rsection, "ioutputLevel", &
         rsolver%ioutputLevel, rsolver%ioutputLevel)
+
+    call parlst_getvalue_int (p_rsection, "iresnorm", &
+        rsolver%iresnorm, rsolver%iresnorm)
 
     ! Get information about the iteration.
       
@@ -640,7 +654,6 @@ contains
 
     ! local variables
     type(t_parlstSection), pointer :: p_rsection
-    character(len=SYS_STRLEN) :: sstring,snewton
 
     call parlst_querysection(rparamList, ssection, p_rsection)
 
@@ -673,8 +686,11 @@ contains
     call parlst_getvalue_int (p_rsection, "nmaxIterations", &
         rsolver%nmaxIterations, rsolver%nmaxIterations)
 
-    call parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+    call parlst_getvalue_int (p_rsection, "ioutputLevel", &
         rsolver%ioutputLevel, rsolver%ioutputLevel)
+
+    call parlst_getvalue_int (p_rsection, "iresnorm", &
+        rsolver%iresnorm, rsolver%iresnorm)
 
   end subroutine
 

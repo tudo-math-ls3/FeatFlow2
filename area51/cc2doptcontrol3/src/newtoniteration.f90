@@ -308,7 +308,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_getResidual (rsolver,rkktsystem,rresidual,dres)
+  subroutine newtonit_getResidual (rsolver,rkktsystem,rresidual,dres,iresnorm)
   
 !<description>
   ! Calculates the basic (unprecondiotioned) search direction of the 
@@ -327,6 +327,9 @@ contains
   ! On output, this structure receives a representation of the search
   ! direction / residual in the Newton iteration.
   type(t_controlSpace), intent(inout) :: rresidual
+
+  ! Type of norm. A LINALG_NORMxxxx constant.
+  integer, intent(in) :: iresnorm
 !</inputoutput>
 
 !<output>
@@ -359,7 +362,7 @@ contains
     ! -------------------------------------------------------------
 
     ! The search direction is just the residual in the control equation.
-    call kkt_calcControlRes (rkktsystem,rresidual,dres)
+    call kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm)
 
   end subroutine
 
@@ -465,7 +468,7 @@ contains
 
       ! Compute the basic (unpreconditioned) search direction d_n.
       call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
-          rsolver%rnewtonParams%dresFinal)
+          rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm)
 
       if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
         ! Remember the initial residual

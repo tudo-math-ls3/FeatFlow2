@@ -564,7 +564,7 @@ contains
 
 !<subroutine>
 
-  subroutine kktsp_controlLinearComb (rx,cx,ry,cy,rz,cz,dres)
+  subroutine kktsp_controlLinearComb (rx,cx,ry,cy,rz,cz,dres,iresnorm)
   
 !<description>
   ! Performs a linear combination
@@ -584,6 +584,10 @@ contains
   
   ! OPTIONAL: Multiplication factor
   real(DP), intent(in), optional :: cz
+
+  ! type of norm. A LINALG_NORMxxxx constant.
+  ! Must be specified if dres is specified.
+  integer, intent(in), optional :: iresnorm
 !</input>
 
 !<inputoutput>
@@ -627,7 +631,7 @@ contains
 
       ! Calculate the L2-norm
       if (present(dres)) then
-        dres = sptivec_vectorNorm (p_rdest%p_rvector,LINALG_NORML2)
+        dres = sptivec_vectorNorm (p_rdest%p_rvector,iresnorm)
       end if
 
     end if
@@ -653,6 +657,7 @@ contains
 
     if (associated (rx%p_rvector)) then
       call sptivec_clearVector (rx%p_rvector)
+      call sptivec_invalidateVecInPool (rx%p_rvectorAccess)
     end if
 
   end subroutine
@@ -676,6 +681,7 @@ contains
 
     if (associated (rx%p_rvector)) then
       call sptivec_clearVector (rx%p_rvector)
+      call sptivec_invalidateVecInPool (rx%p_rvectorAccess)
     end if
 
   end subroutine
@@ -700,6 +706,7 @@ contains
     if (associated (rx%p_rvector)) then
       ! Clear the discrete control
       call sptivec_clearVector (rx%p_rvector)
+      call sptivec_invalidateVecInPool (rx%p_rvectorAccess)
     end if
 
   end subroutine

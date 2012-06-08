@@ -128,7 +128,8 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,rresidual,dres)
+  subroutine newtonlin_getResidual (&
+      rlinsolParam,rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
   
 !<description>
   ! Calculates the residual in the linearised control equation.
@@ -147,6 +148,9 @@ contains
   ! On output, this structure receives a representation of the search
   ! direction / residual in the Newton iteration
   type(t_controlSpace), intent(inout) :: rresidual
+
+  ! type of norm. A LINALG_NORMxxxx constant.
+  integer, intent(in) :: iresnorm
 !</inputoutput>
 
 !<output>
@@ -182,7 +186,7 @@ contains
 
     ! Take the solution of the linearised primal/dual system and
     ! calculate the residual in the control space.
-    call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres)
+    call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
 
   end subroutine
 
@@ -228,7 +232,8 @@ contains
 
       ! Compute the residual and its norm.
       call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
-          rtempVector,rlinsolParam%rprecParameters%dresFinal)
+          rtempVector,rlinsolParam%rprecParameters%dresFinal,&
+          rlinsolParam%rprecParameters%iresnorm)
 
       if (rlinsolParam%rprecParameters%niterations .eq. 0) then
         ! Remember the initial residual
