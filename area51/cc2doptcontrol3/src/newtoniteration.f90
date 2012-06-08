@@ -467,7 +467,7 @@ contains
       call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
           rsolver%rnewtonParams%dresFinal)
 
-      if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
+      if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
         ! Remember the initial residual
         rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
       end if

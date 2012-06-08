@@ -519,22 +519,22 @@ contains
 
     newtonit_checkConvergence = .false.
     
+    ! Check the residual.
     if (rsolver%nnonlinearIterations .ge. rsolver%nminIterations) then
-      ! Check the residual.
-      !
       ! Absolute residual
       if (rsolver%dresFinal .le. rsolver%depsAbs) then
         rsolver%iresult = 0
         newtonit_checkConvergence = .true.
         return
       end if
-      
+
       ! Relative residual
       if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
         rsolver%iresult = 0
         newtonit_checkConvergence = .true.
         return
       end if
+      
     end if
 
   end function
@@ -702,22 +702,22 @@ contains
 
     newtonlin_checkConvergence = .false.
     
+    ! Check the residual.
     if (rsolver%niterations .ge. rsolver%nminIterations) then
-      ! Check the residual.
-      !
       ! Absolute residual
       if (rsolver%dresFinal .le. rsolver%depsAbs) then
         rsolver%iresult = 0
         newtonlin_checkConvergence = .true.
         return
       end if
-      
+
       ! Relative residual
       if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
         rsolver%iresult = 0
         newtonlin_checkConvergence = .true.
         return
       end if
+      
     end if
 
   end function

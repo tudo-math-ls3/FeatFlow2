@@ -335,31 +335,12 @@ contains
           rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
     end select
 
-    ! Initialise the initial condition and RHS.
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising initial condition.")
-    end if
-    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
-        "sinitialCondition",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysics%cequation)
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      ! Stokes, Navier-Stokes, 2D
-      call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
-          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
-    end select
-    if (isuccess .eq. 1) then
-      call output_line ('Functions created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
-      call sys_halt()
-    end if
-
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising RHS.")
     end if
+    
+    ! Initialise the RHS.
     
     ! Primal RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
@@ -423,6 +404,33 @@ contains
     ! From that point on, we can call assembly routines that use callback
     ! routines.
     call user_initGlobalData (rsettingsSolver,rsettingsSolver%rglobalData)
+
+    ! Initialise the initial condition.
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising initial condition.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "sinitialCondition",sstr,bdequote=.true.)
+    select case (rsettingsSolver%rphysics%cequation)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+      ! Stokes, Navier-Stokes, 2D
+      call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
+          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
+          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
+    end select
+    if (isuccess .eq. 1) then
+      call output_line ('Functions created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call sys_halt()
+    end if
+    
+    ! Invoke a routine to discretise the initial condition.
+    call smva_createDiscreteInitCond (rsettingsSolver%rdiscreteInitCond,&
+        rsettingsSolver%rinitialCondition,&
+        rsettingsSolver%rfeHierarchyPrimal%nlevels,rsettingsSolver%rtimeHierarchy%nlevels,&
+        rsettingsSolver%roperatorAsmHier,ioutputlevel)
 
 !    ! Now we calculate all assembly template data.
 !    !

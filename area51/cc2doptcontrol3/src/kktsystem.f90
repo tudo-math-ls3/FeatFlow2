@@ -378,6 +378,14 @@ contains
     end if
     
     ! -----------------------
+    ! Initial condition
+    ! -----------------------
+    ! Take the initial condition from the structure with the discrete
+    ! initial condition
+    call smva_implementInitCond (rkktsystem%p_rprimalSol,&
+        rkktSystem%p_roperatorAsmHier%p_rdiscreteInitCond)
+
+    ! -----------------------
     ! Loop over all timesteps
     ! -----------------------
     do idofTime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime

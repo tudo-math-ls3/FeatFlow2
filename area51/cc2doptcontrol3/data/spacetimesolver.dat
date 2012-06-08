@@ -48,10 +48,14 @@ nmaxIterations     = 10
 depsRel            = 1E-8
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if both, absolute error < depsAbs and 
+# The linear solver stops if either absolute error < depsAbs or
 # rel. error < depsRel
 
-depsAbs            = 1E-0
+depsAbs            = 1E-14
+
+# Maximum relative residual before the iteration is treated as 'divergent'
+
+ddivRel = 1E20
 
 # General damping parameter when adding the preconditioned defect
 # to the solution in the nonlinear space-time iteration
@@ -63,42 +67,32 @@ domega             = 1.0
 ioutputLevel       = 2
 
 # Section configuring the adaptive/inexact Newton
-ssectionAdaptiveNewton = TIME-ADAPTIVENEWTON
+ssectionAdaptiveNewton = SPACETIME-ADAPTIVENEWTON
+
+# Section configuring the solver for the linear space-time problems
+ssectionLinSolverSpace = SPACETIME-LINSOLVER
 
 # Section defining the nonlinear solver in space
 ssectionNonlinSolverSpace = CC-NONLINEARSOLVER
 
-# Section defining the linear solver in space
-ssectionLinSolverSpace = CC-LINEARSOLVER
+# Section defining the linear solver in space for the forward iteration
+ssectionLinSolverSpaceForward = CC-LINEARSOLVER
+
+# Section defining the linear solver in space for the backward iteration
+ssectionLinSolverSpaceBackward = CC-LINEARSOLVER
+
+# Section defining the linear solver in space for the linearised forward iteration
+ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVER
+
+# Section defining the linear solver in space for the linearised forward iteration
+ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVER
 
 # Name of the section defining the step length control
 # ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
 
-# Name of the section defining a single-grid solver. This is used if
-# cpreconditioner=1.
-# ssectionSingleGridSolver = TIME-SINGLEGRIDSOLVER
-
-# Name of the section defining the preconditioner of the single grid solver.
-# ssectionSinglePreconditioner = TIME-SINGLEGRIDPRECOND
-
-# Name of the section defining the multigrid iteration.
-# ssectionMultigrid = TIME-MULTIGRID
-
-# Name of the section containing the space-time smoother
-# ssectionSmoother = TIME-SMOOTHER
-
-# Name of the section containing the preconditioner of the space-time smoother
-# ssectionSmootherPrecond = TIME-SMOOTHERPRECOND
-
-# Name of the section defining a coarse grid solver. 
-# ssectionCgrSolver = TIME-SINGLEGRIDSOLVER
-
-# Name of the section defining the preconditioner of the single grid solver.
-# ssectionCgrPreconditioner = TIME-SINGLEGRIDPRECOND
-
-#####################
-[TIME-ADAPTIVENEWTON]
-#####################
+##########################
+[SPACETIME-ADAPTIVENEWTON]
+##########################
 
 # Minimum number of defect correction iterations before starting Newton.
 # Standard=0=use Newton / inexact Newton immediately.
@@ -142,6 +136,47 @@ dinexactNewtonExponent = 2.0
 
 
 # ========================================================================
+# Parameters configuring the linear space-time solver
+
+#####################
+[SPACETIME-LINSOLVER]
+#####################
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+      
+nmaxIterations     = 10
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 1E-8
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if either absolute error < depsAbs or
+# rel. error < depsRel
+
+depsAbs            = 1E-14
+
+# Maximum relative residual before the iteration is treated as 'divergent'
+
+ddivRel = 1E20
+
+# General damping parameter when adding the preconditioned defect
+# to the solution in the nonlinear space-time iteration
+
+domega             = 1.0
+
+# Output level of the solver
+
+ioutputLevel       = 2
+
+
+
+# ========================================================================
 # Parameters configuring the nonlinear solver in space
 
 ####################
@@ -179,7 +214,7 @@ ctypeIteration = 2
 
 # Minimum number of steps
 
-nminIterations     = 1
+nminIterations     = 0
 
 # Maximum number of steps
       
@@ -191,10 +226,10 @@ nmaxIterations     = 10
 depsRel            = 1E-8
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if both, absolute error < depsAbs and 
+# The linear solver stops if either absolute error < depsAbs or
 # rel. error < depsRel
 
-depsAbs            = 1E-0
+depsAbs            = 1E-14
 
 # General damping parameter when adding the preconditioned defect
 # to the solution in the nonlinear space-time iteration

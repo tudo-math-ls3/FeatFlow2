@@ -169,6 +169,9 @@ module structuresoptflow
 
     ! The boundary conditions, analytic definition
     type(t_optcBDC) :: roptcBDC
+    
+    ! Discrete initial condition on the maximum space level
+    type(t_discreteInitCond) :: rdiscreteInitCond
 
     !<!-- ------------------------------- -->
     !<!-- APPLICATION SPECIFIC PARAMETERS -->

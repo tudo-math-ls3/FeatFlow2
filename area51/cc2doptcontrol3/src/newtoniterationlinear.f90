@@ -230,7 +230,7 @@ contains
       call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
           rtempVector,rlinsolParam%rprecParameters%dresFinal)
 
-      if (rlinsolParam%rprecParameters%niterations .eq. 1) then
+      if (rlinsolParam%rprecParameters%niterations .eq. 0) then
         ! Remember the initial residual
         rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
       end if

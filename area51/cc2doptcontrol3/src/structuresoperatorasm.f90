@@ -14,6 +14,8 @@ module structuresoperatorasm
   use fsystem
   
   use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use multilevelprojection
   use timediscretisation
   
@@ -59,11 +61,31 @@ module structuresoperatorasm
   ! nonlinear part in the RHS.
   integer, parameter, public :: OPTP_DUALLIN_RHS = 6
 
+  ! Right-hand side for the L2-projection of the initial condition
+  integer, parameter, public :: OPTP_INITCONDL2PRJ = 7
+
 !</constantblock>
 
 !</constants>
 
 !<types>
+
+!<typeblock>
+
+  ! This type realises the discrete initial condition.
+  type t_discreteInitCond
+  
+    ! Approximate solution
+    type(t_vectorBlock) :: rsolution
+    
+    ! Corresponding right-hand side
+    type(t_vectorBlock) :: rrhs
+  
+  end type
+
+!</typeblock>
+
+  public :: t_discreteInitCond
 
 !<typeblock>
 
@@ -83,6 +105,9 @@ module structuresoperatorasm
     ! Optimal-control parameters
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
     
+    ! Reference to the analytic solution defining the initial condition.
+    type(t_anSolution), pointer :: p_rinitialCondition => null()
+
     ! Reference to the analytic solution defining the RHS of the primal equation
     type(t_anSolution), pointer :: p_rrhsPrimal => null()
 
@@ -142,6 +167,9 @@ module structuresoperatorasm
 
     ! Analytic data necessary to set up operators.
     type(t_spacetimeOpAsmAnalyticData) :: ranalyticData
+    
+    ! Discrete initial condition, on the maximum space level
+    type(t_discreteInitCond), pointer :: p_rdiscreteInitCond => null()
     
     ! A hierarchy of time levels, primal space
     type(t_timescaleHierarchy), pointer :: p_rtimeHierarchyPrimal => null()

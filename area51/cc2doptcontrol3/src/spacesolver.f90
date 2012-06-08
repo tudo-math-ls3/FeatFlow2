@@ -698,8 +698,10 @@ contains
             rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
             rsolver%rtempData)
+        
+        rsolver%rnewtonParams%dresFinal = lsysbl_vectorNorm(p_rd,LINALG_NORML2)
             
-        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 1) then
+        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
           ! Remember the initial residual
           rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
         end if
@@ -787,6 +789,8 @@ contains
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData)
       
+      rsolver%rnewtonParams%dresFinal = lsysbl_vectorNorm(p_rd,LINALG_NORML2)
+      
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
 
@@ -856,6 +860,8 @@ contains
           rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData)
+          
+      rsolver%rnewtonParams%dresFinal = lsysbl_vectorNorm(p_rd,LINALG_NORML2)
       
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -925,6 +931,8 @@ contains
           rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData)
+          
+      rsolver%rnewtonParams%dresFinal = lsysbl_vectorNorm(p_rd,LINALG_NORML2)
       
       ! Remember the initial residual
       rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal

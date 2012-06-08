@@ -17,6 +17,7 @@ module spacematvecassembly
   use fsystem
   use genoutput
   
+  use linearalgebra
   use spatialdiscretisation
   use timediscretisation
   use linearsystemscalar
@@ -133,6 +134,15 @@ public :: t_assemblyTempDataSpace
 
   ! Assembles Dirichlet and Neumann boundary conditions on level ilevel.
   public :: smva_initDirichletNeumannBC
+  
+  ! Discretises the initial condition
+  public :: smva_createDiscreteInitCond
+
+  ! Releases a discretre initial condition
+  public :: smva_releaseDiscreteInitCond
+  
+  ! Implement the initial condition
+  public :: smva_implementInitCond
   
 contains
 
@@ -716,6 +726,10 @@ contains
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
     
+    ! DEBUG
+    real(DP), dimension(:), pointer :: p_Ddest
+    call lsysbl_getbase_double (rdest,p_Ddest)
+    
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
         roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
@@ -820,7 +834,12 @@ contains
           ! ===============================================
           
           ! Get the RHS vector.
-          call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
+          if (associated(roperatorAsmHier%p_rdiscreteInitCond)) then
+            call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest,&
+                roperatorAsmHier%p_rdiscreteInitCond)
+          else
+            call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
+          end if
           
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -2553,7 +2572,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getRhs_Primal (rspaceTimeOperatorAsm,idofTime,rcontrol,dweight,rrhs)
+  subroutine smva_getRhs_Primal (rspaceTimeOperatorAsm,idofTime,rcontrol,&
+      dweight,rrhs,rdiscreteInitCond)
 
 !<description>
   ! Calculates the RHS of the primal equation, based on a 'current'
@@ -2572,6 +2592,10 @@ contains
 
   ! Space-time vector which contains the control.
   type(t_controlSpace), intent(inout) :: rcontrol
+  
+  ! OPTIONAL: Discrete initial condition.
+  ! If not present, a zero vector is returned for the initial condition.
+  type(t_discreteInitCond), intent(in), optional :: rdiscreteInitCond
 !</input>
 
 !<inputoutput>
@@ -2592,6 +2616,23 @@ contains
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
+    
+    if (idofTime .eq. 1) then
+    
+      ! Special case. In the 1st timestep, take the precalculated
+      ! RHS that realises the initial condition.
+      if (present(rdiscreteInitCond)) then
+        call lsysbl_vectorLinearComb (rdiscreteInitCond%rrhs,&
+            rrhs,dweight,0.0_DP)
+      else
+        ! No RHS in the 1st timestep if the initial condition
+        ! does not exist. This can be, e.g., during the initialisation phase.
+        call lsysbl_clearVector (rrhs)
+      end if
+      
+      return
+
+    end if
 
     p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
     
@@ -4332,6 +4373,123 @@ contains
         
         end if ! observation area type
 
+      ! ***********************************************************
+      ! Navier-Stokes. Initial condition of the L2 projection
+      ! of the initial condition.
+      ! ***********************************************************
+      case (OPTP_INITCONDL2PRJ)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        p_rvectorData2 => RvectorData(2)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        p_DlocalVector2 => RvectorData(2)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+      
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS in the
+        ! cubature points
+        ! ------------------------------------------------
+
+        ! Get memory for the user-defined right-hand side f.
+        p_Drhs1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+        p_Drhs2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+
+        ! The right-hand side is given as an analytical function
+        ! or as a discrete function on an arbitrary mesh, discretised
+        ! with an arbitrary finite element. We therefore cannot
+        ! automatically precalculate the values in the cubature
+        ! points, but have to do it right here.
+        !
+        ! Evaluate the analytic function in the cubature points. 1st component
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot evaluate function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Evaluate the analytic function in the cubature points. 2nd component.
+        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot target function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Ok, we have the right-and side now.
+
+        ! ------------------------------------------------
+        ! Calculate the RHS for the L2 projection
+        ! ------------------------------------------------
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData1%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              
+              ! Get the RHS
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+              drhs2 = p_Drhs2(icubp,iel,DER_FUNC)
+
+              ! Calculate the entries in the RHS.
+              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  drhs1 * dbasI 
+
+              p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  drhs2 * dbasI 
+                  
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+
       end select
       
     end select    
@@ -4734,6 +4892,9 @@ contains
     roperatorAsmHier%ranalyticData%p_rrhsDual => &
         rsettings%rrhsDual
         
+    roperatorAsmHier%ranalyticData%p_rinitialCondition => &
+        rsettings%rinitialCondition
+        
     roperatorAsmHier%ranalyticData%p_rglobalData => &
         rsettings%rglobalData
         
@@ -4754,6 +4915,9 @@ contains
     roperatorAsmHier%p_rprjHierSpaceControl => rsettings%rprjHierSpaceControl
 
     roperatorAsmHier%p_rstaticSpaceAsmHier => rsettings%rspaceAsmHierarchy
+    
+    ! Other discrete data
+    roperatorAsmHier%p_rdiscreteInitCond => rsettings%rdiscreteInitCond
 
   end subroutine
 
@@ -4829,8 +4993,6 @@ contains
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
@@ -4962,4 +5124,345 @@ contains
     
   end subroutine
 
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_simpleL2Projection (rsolution,rrhs,rmassMatrix,ioutputlevel)
+  
+!<description>
+  ! Creates a simple L2 projection of rrhs to rsolution using the mass matrix
+  ! rmassMatrix.
+!</description>
+
+!<input>
+  ! RHS of the L2 projection
+  type(t_vectorScalar), intent(in) :: rrhs
+  
+  ! Mass matrix
+  type(t_matrixScalar), intent(in) :: rmassMatrix
+  
+  ! Output level of the projection
+  integer, intent(in) :: ioutputlevel
+!</input>
+
+!<output>
+  ! Discrete initial conditions to create
+  type(t_vectorScalar), intent(inout) :: rsolution
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ite, nmaxiterations
+    real(DP) :: dres,dresInit
+    type(t_vectorScalar) :: rd
+    type(t_matrixScalar) :: rlumpmass
+    
+    ! Create a temp vector
+    call lsyssc_createVector (rrhs%p_rspatialDiscr,rd)
+    
+    ! Lump the mass matrix
+    call lsyssc_duplicateMatrix (rmassmatrix,rlumpmass,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_lumpMatrixScalar (rlumpmass,LSYSSC_LUMP_STD,.true.)
+    
+    ! Appl,y a simple defect correction loop.
+    nmaxiterations = 100
+    ite = 0
+    
+    do 
+      ! Get the defect
+      call lsyssc_copyVector (rrhs,rd)
+      call lsyssc_scalarMatVec (rmassMatrix,rsolution,rd,-1.0_DP,1.0_DP)
+      
+      ! Get the residual
+      dres = lsyssc_vectorNorm (rd,LINALG_NORML2)
+      
+      ! Initial residual
+      if (ite .eq. 0) dresInit = dres
+      
+      if (ioutputlevel .ge. 2) then
+        call output_line ("L2-projection: Step "// &
+            trim(sys_siL(ite,10)) // ", ||res|| = "// &
+            trim(sys_sdEL(dres,10)))
+      end if
+      
+      if (ite .ge. nmaxiterations) exit
+      if (dres .lt. 1E-12_DP*dresInit) exit
+      if (dres .lt. 1E-13_DP) exit
+      
+      ! Preconditioning with the lumped mass matrix
+      call lsyssc_invertedDiagMatVec (rlumpmass,rd,1.0_DP,rd)
+      
+      ! Sum up the correction
+      call lsyssc_vectorLinearComb(rd,rsolution,0.9_DP,1.0_DP)
+      
+      ite = ite + 1
+    end do
+    
+    ! Release the temp vector
+    call lsyssc_releaseVector (rd)
+    
+    call lsyssc_releaseMatrix (rlumpmass)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_createDiscreteInitCond (rdiscreteInitCond,rinitialCondition,&
+      ispacelevel,itimelevel,roperatorAsmHier,ioutputlevel)
+  
+!<description>
+  ! Creates a discrete analogon of the initial condition.
+!</description>
+
+!<input>
+  ! Analytic solution defining the initial condition.
+  type(t_anSolution), intent(inout) :: rinitialCondition
+
+  ! Space-level corresponding to the rdest
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level corresponding to the rdest
+  integer, intent(in) :: itimelevel
+  
+  ! Hierarchy of space-time operators.
+  type(t_spacetimeOpAsmHierarchy), intent(inout), target :: roperatorAsmHier
+
+  ! Output level
+  integer, intent(in) :: ioutputlevel
+!</input>
+
+!<output>
+  ! Discrete initial conditions to create
+  type(t_discreteInitCond), intent(out) :: rdiscreteInitCond
+!</output>
+
+!</subroutine>
+
+    ! local variables    
+    type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
+    type(t_collection) :: rcollection
+    type(t_collection), target :: ruserCollection
+    type(t_fev2Vectors) :: rvectorEval
+    real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_spacetimeOperatorAsm), target :: rspaceTimeOperatorAsm
+    type(t_assemblyTempDataSpace) :: rtempData
+    type(t_primalSpace) :: rprimalSol
+    type(t_vectorBlock), pointer :: p_rvector
+    
+    ! Get discretisation information of teh current level
+    call stoh_getOpAsm_slvtlv (&
+        rspaceTimeOperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+
+    ! -----------------------------------------------------
+    ! Step 1: Apply an L2 projection to the discrete space.
+    ! -----------------------------------------------------
+    
+    p_ranalyticData => rspaceTimeOperatorAsm%p_ranalyticData
+    
+    ! Prepare a local and a user-defined collection
+    call collct_init (rcollection)
+    call collct_init (ruserCollection)
+    rcollection%p_rnextCollection => ruserCollection
+    
+    ! Prepare a pointer to our operator for callback routines.
+    ! It is passed via rcollection.
+    rp_rspaceTimeOperatorAsm%p_rspaceTimeOperatorAsm => rspaceTimeOperatorAsm
+    rcollection%IquickAccess(8:) = transfer(rp_rspaceTimeOperatorAsm,rcollection%IquickAccess(8:))
+    rcollection%DquickAccess(1) = 1.0_DP
+    
+    ! Notify the callback routine what to assemble.
+    rcollection%IquickAccess(1) = OPTP_INITCONDL2PRJ
+    
+    ! Create a RHS and a solution vector
+    call lsysbl_createVectorBlock (&
+        rspaceTimeOperatorAsm%p_rspaceDiscrPrimal,rdiscreteInitCond%rrhs,.true.)
+
+    call lsysbl_createVectorBlock (&
+        rspaceTimeOperatorAsm%p_rspaceDiscrPrimal,rdiscreteInitCond%rsolution,.true.)
+
+    ! Timestepping technique?
+    select case (rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrPrimal%dtheta
+      
+      ! Characteristics of the current timestep.
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,0,&
+          dtimeend,dtstep,dtimestart)
+
+      ! Which equation do we have?
+      select case (p_ranalyticData%p_rphysics%cequation)
+
+      ! ***********************************************************
+      ! Stokes/Navier Stokes
+      ! ***********************************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
+        ! ---------------------------------------------------------
+        ! Create the RHS of the L2 projection
+        ! ---------------------------------------------------------
+
+        ! Prepare the user-defined collection for the assembly
+        call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+            p_ranalyticData%p_rrhsPrimal%iid,0,dtimestart,rusercollection)
+        
+        ! Prepare the evaluation of the primal RHS.
+        call ansol_prepareEval (rinitialCondition,rcollection,"RHS",dtimestart)
+
+        ! Prepare the evaluation.
+        !
+        ! Vector 1+2 = Temp-vectors for the solution.
+        call fev2_addDummyVectorToEvalList(rvectorEval)
+        call fev2_addDummyVectorToEvalList(rvectorEval)
+        
+        ! Build the vector
+        call bma_buildVector (rdiscreteInitCond%rrhs,BMA_CALC_STANDARD,&
+            smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+            rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+        
+        ! Cleanup
+        call fev2_releaseVectorList(rvectorEval)
+        call ansol_doneEvalCollection (rcollection,"RHS")
+        call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+
+        ! ---------------------------------------------------------
+        ! For every component, calculate the L2 projection
+        ! ---------------------------------------------------------
+        
+        if (ioutputLevel .ge. 2) then
+          call output_line ("Invoking L2-projection")
+        end if
+        call smva_simpleL2Projection (&
+            rdiscreteInitCond%rsolution%RvectorBlock(1),&
+            rdiscreteInitCond%rrhs%RvectorBlock(1),&
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,ioutputlevel)
+
+        if (ioutputLevel .ge. 2) then
+          call output_line ("Invoking L2-projection")
+        end if
+        call smva_simpleL2Projection (&
+            rdiscreteInitCond%rsolution%RvectorBlock(2),&
+            rdiscreteInitCond%rrhs%RvectorBlock(2),&
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,ioutputlevel)
+
+        if (ioutputLevel .ge. 2) then
+          call output_line ("Invoking L2-projection")
+        end if
+        call smva_simpleL2Projection (&
+            rdiscreteInitCond%rsolution%RvectorBlock(3),&
+            rdiscreteInitCond%rrhs%RvectorBlock(3),&
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPressure,ioutputlevel)
+
+      end select ! Equation
+
+    end select ! Timestep scheme
+    
+    ! Release the collections
+    call collct_done (ruserCollection)
+    call collct_init (rcollection)
+
+    ! -----------------------------------------------------
+    ! Step 2: Apply the operator to the solution to obtain
+    !         the corresponding right-hand side.
+    ! -----------------------------------------------------
+
+    ! Clear the RHS, it is now overwritten...
+    call lsysbl_clearVector (rdiscreteInitCond%rrhs)
+
+    ! Allocate temprary memory for the assembly
+    call smva_allocTempData (rtempData,&
+        rspaceTimeOperatorAsm%p_ranalyticData%p_rphysics,&
+        rspaceTimeOperatorAsm%p_ranalyticData%p_rsettingsOptControl,&
+        rspaceTimeOperatorAsm%p_ranalyticData%p_rsettingsSpaceDiscr,&
+        ispacelevel,roperatorAsmHier)
+    
+    ! Initialise a space-time vector only for the initial condition
+    call kktsp_initPrimalVector (rprimalSol,&
+        rspaceTimeOperatorAsm%p_rspaceDiscrPrimal,&
+        rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,1,1)
+        
+    ! Put the solution to the initial timestep.
+    call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,1,p_rvector)
+    call lsysbl_copyVector (rdiscreteInitCond%rsolution,p_rvector)
+    call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,1)
+     
+    ! Apply the operator to get the RHS
+    call smva_apply_primal (rdiscreteInitCond%rrhs,ispacelevel,itimelevel,1,&
+        roperatorAsmHier,rprimalSol,rtempData)
+    
+    ! Release temp data
+    call kktsp_donePrimalVector (rprimalSol)
+    call smva_releaseTempData (rtempData)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_releaseDiscreteInitCond (rdiscreteInitCond)
+  
+!<description>
+  ! Releases the discrete initial conditions.
+!</description>
+
+!<inputoutput>
+  ! Discrete initial conditions to release
+  type(t_discreteInitCond), intent(inout) :: rdiscreteInitCond
+!</inputoutput>
+
+!</subroutine>
+
+    call lsysbl_releaseVector (rdiscreteInitCond%rsolution)
+    call lsysbl_releaseVector (rdiscreteInitCond%rrhs)
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_implementInitCond (rprimalSol,rdiscreteInitCond)
+  
+!<description>
+  ! Implements the initial condition.
+!</description>
+
+!<input>
+  ! Discrete initial conditions
+  type(t_discreteInitCond), intent(in) :: rdiscreteInitCond
+!</input>
+
+!<output>
+  ! Solution vector where to implement the initial condition
+  type(t_primalSpace), intent(inout) :: rprimalSol
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    
+    ! Read the initial solution vector
+    call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,1,p_rvector)
+    
+    ! Replace by the initial condition
+    call lsysbl_copyVector (rdiscreteInitCond%rsolution,p_rvector)
+    
+    ! Commit
+    call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,1)
+
+  end subroutine
+  
 end module

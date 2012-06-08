@@ -4,9 +4,9 @@
 # The following parameters configure tha underlying physics in the primal
 # equation.
 
-##################
-[CC-physics]
-##################
+############
+[CC-PHYSICS]
+############
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
@@ -96,7 +96,7 @@ dUpsam2            = 0.0
 
 # Defines whether or not the EOJ stabilisation is applied to the boundary.
 # =0: Stabilisation is not applied to the boundary.
-# =1: Stabilisation is applied to all bonudary edges (default).
+# =1: Stabilisation is applied to all Boundary edges (default).
 
 ceojStabilOnBoundary = 1
 

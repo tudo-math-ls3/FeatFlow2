@@ -281,7 +281,8 @@ contains
 
 !<subroutine>
 
-  subroutine kktsp_initPrimalVector (rvector,rspaceDiscr,rtimeDiscr)
+  subroutine kktsp_initPrimalVector (&
+      rvector,rspaceDiscr,rtimeDiscr,istartidx,iendidx)
   
 !<description>
   ! Creates a primal vector.
@@ -293,6 +294,14 @@ contains
   
   ! Time discretisation
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+
+  ! OPTIONAL: First subvector. If not specified, this defaults to 1.
+  ! If specified, the vectors 1..istartidx are not created.
+  integer, intent(in), optional :: istartidx
+
+  ! OPTIONAL: Last subvector. If not specified, this defaults to #NEQ in time.
+  ! If specified, the vectors iendidx+1..#NEQ in time are not created.
+  integer, intent(in), optional :: iendidx
 !</input>
 
 !<output>
