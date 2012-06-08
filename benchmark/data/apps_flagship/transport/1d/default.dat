@@ -16,7 +16,7 @@ sdatadirectory = %{sappdirectory}/data/apps_flagship
 sgriddirectory = %{sappdirectory}/data/apps_flagship/grids
 
 # Directory for log files
-slogdirectory = %{sappdirectory}/log
+slogdirectory = $LOGDIR
 
 # Log file for messages. ='': No log file output.
 slogfile = %{slogdirectory}/output.log
@@ -28,7 +28,7 @@ serrorfile =
 
 # Log file for messages used in regression test benchmarks.
 # ='': No benchmark output (standard)
-sbenchlogfile =
+sbenchlogfile = $LOGDIR/$RESULTFILE
 
 # Performance configurations
 sperfconfigfile = %{sdatadirectory}/perfconfig/default.pcfg
