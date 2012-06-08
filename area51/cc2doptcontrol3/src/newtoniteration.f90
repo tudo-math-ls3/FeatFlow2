@@ -472,6 +472,13 @@ contains
         rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
       end if
 
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line ("Space-time Newton: Iteration "// &
+            trim(sys_siL(rsolver%rnewtonParams%nnonlinearIterations,10))// &
+            ", ||res(u)|| = "// &
+            trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,10)))
+      end if
+
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------

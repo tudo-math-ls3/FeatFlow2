@@ -235,6 +235,13 @@ contains
         rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
       end if
 
+      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+        call output_line ("  Space-time Richardson: Iteration "// &
+            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10))// &
+            ", ||res(u)|| = "// &
+            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,10)))
+      end if
+
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------

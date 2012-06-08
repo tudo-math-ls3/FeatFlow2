@@ -104,7 +104,7 @@ ioutputLevel       = 0 # -1
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
 
-iresNorm = 0
+iresNorm = 2
 
 # ------General multigrid parameters, coarse grid correction--------------
 #
@@ -198,7 +198,7 @@ nmaxIterations     = 100
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8
+depsRel            = 1E-4
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -234,7 +234,7 @@ ioutputLevel       = 0 # -1
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
 
-iresNorm = 0
+iresNorm = 2
 
 # ------General multigrid parameters, coarse grid correction--------------
 #

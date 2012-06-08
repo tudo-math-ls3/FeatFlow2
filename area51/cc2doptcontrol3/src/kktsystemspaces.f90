@@ -509,6 +509,9 @@ contains
     ! Currently, we can do this by space-time vector linear combinations.
     if (associated(rx%p_rvector)) then
       call sptivec_vectorLinearComb (rx%p_rvector,ry%p_rvector,cx,cy,rdest%p_rvector)
+      
+      ! Invalidate the buffer
+      call sptivec_invalidateVecInPool (rdest%p_rvectorAccess)
     end if
 
   end subroutine
@@ -550,6 +553,9 @@ contains
     ! Currently, we can do this by space-time vector linear combinations.
     if (associated(rx%p_rvector)) then
       call sptivec_vectorLinearComb (rx%p_rvector,ry%p_rvector,cx,cy,rdest%p_rvector)
+
+      ! Invalidate the buffer
+      call sptivec_invalidateVecInPool (rdest%p_rvectorAccess)
     end if
 
   end subroutine
@@ -615,6 +621,9 @@ contains
         
         p_rdest => rz
       end if
+
+      ! Invalidate the buffer
+      call sptivec_invalidateVecInPool (p_rdest%p_rvectorAccess)
 
       ! Calculate the L2-norm
       if (present(dres)) then

@@ -2728,7 +2728,7 @@ contains
           ! ---------------------------------------------------------
 
           ! Evaluation point of the RHS in time
-          dtime = dtimestart + (1.0_DP-dtheta) * dtstep
+          dtime = dtimestart + dtheta * dtstep
           
           ! Prepare the user-defined collection for the assembly
           call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
@@ -3031,7 +3031,7 @@ contains
         case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Evaluation point of the RHS in time
-          dtime = dtimestart + (1.0_DP-dtheta) * dtstep
+          dtime = dtimestart + dtheta * dtstep
           
           ! Prepare the user-defined collection for the assembly
           call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
@@ -3879,8 +3879,8 @@ contains
                   dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
                   
                   ! Get the values of lambda'
-                  duLin1 = p_Du1(icubp,iel,DER_FUNC)
-                  duLin2 = p_Du2(icubp,iel,DER_FUNC)
+                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+                  duLin2 = p_DuLin2(icubp,iel,DER_FUNC)
 
                   ! Calculate the entries in the RHS.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &

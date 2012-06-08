@@ -2226,6 +2226,7 @@ contains
 !<description>
   ! Declares the data of vector iindex in raccessPool as invalid and forces
   ! this vector to be reloaded the next time it is requested.
+  ! If iindex is not present, the data of all vectors is declared as invalid.
 !</desctiprion>
 
 !<inputoutput>
@@ -2233,26 +2234,36 @@ contains
   type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
   
   ! Index of the vector to be flushed.
-  integer, intent(in) :: iindex
+  ! If not present, all vectors are flushed.
+  integer, intent(in), optional :: iindex
 !</inputoutput>
 
 !</subroutine>
 
     integer :: i
-  
-    if (iindex .le. 0) then
-      call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
-      call sys_halt()
-    end if
-
-    ! Take a look if we have that vector; if yes, remove it from the list
-    ! of fetched vectors.
-    do i=1,size(raccessPool%p_IvectorIndex)
-      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+    
+    if (.not. present(iindex)) then
+      ! Flush all vectors.
+      do i=1,size(raccessPool%p_IvectorIndex)
         raccessPool%p_IvectorIndex(i) = 0
+      end do
+      
+    else
+  
+      if (iindex .lt. 0) then
+        call output_line ("Invalid index!",&
+            OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+        call sys_halt()
       end if
-    end do
+
+      ! Take a look if we have that vector; if yes, remove it from the list
+      ! of fetched vectors.
+      do i=1,size(raccessPool%p_IvectorIndex)
+        if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+          raccessPool%p_IvectorIndex(i) = 0
+        end if
+      end do
+    end if
     
   end subroutine
 

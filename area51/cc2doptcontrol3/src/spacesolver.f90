@@ -665,9 +665,13 @@ contains
     type(t_vectorBlock), pointer :: p_rd, p_rx
     integer :: ierror
     type(t_linsolNode), pointer :: p_rsolverNode
+    real(DP), dimension(:), pointer :: p_Dd
    
     ! At first, get a temp vector we can use for creating defects,
     p_rd => rsolver%p_rd
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (p_rd,p_Dd)
 
     ! Which type of operator is to be solved?
     select case (rsolver%coptype)
