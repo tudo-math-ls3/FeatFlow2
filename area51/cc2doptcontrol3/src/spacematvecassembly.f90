@@ -5049,7 +5049,7 @@ contains
     ! ***********************************************************
     ! Primal space
     ! ***********************************************************
-    case (OPTP_PRIMAL)
+    case (OPTP_PRIMAL,OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
 
       ! Timestepping technique?
       select case (roperatorAsm%p_rtimeDiscrPrimal%ctype)
@@ -5108,7 +5108,7 @@ contains
     ! ***********************************************************
     ! Dual space
     ! ***********************************************************
-    case (OPTP_DUAL)
+    case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
 
       ! Timestepping technique?
       select case (roperatorAsm%p_rtimeDiscrDual%ctype)
@@ -5163,7 +5163,14 @@ contains
         end select ! Timestep sub-scheme
         
       end select ! Timestep scheme
-    
+
+
+    case default
+        
+      call output_line("Invalid space",&
+          OU_CLASS_ERROR,OU_MODE_STD,"smva_initDirichletNeumannBC")
+      call sys_halt()
+
     end select ! Space
     
   end subroutine

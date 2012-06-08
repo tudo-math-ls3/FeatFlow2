@@ -804,7 +804,6 @@ contains
 
 !<inputoutput>
   ! OPTIONAL: If specified, this receives the control.
-  ! If not specified, the control in rkktsystem is overwritten.
   type(t_controlSpace), intent(inout) :: rcontrolLin
 !</inputoutput>
 
@@ -976,13 +975,13 @@ contains
 
     ! The (linearised) control equation reads:
     !
-    !    J''(u) g  =  g - (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )  =  d
+    !    J''(u) g  =  g - (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )  =  rhs
     !
     ! The residual of the control equation is (for the distributed 
     ! control case)
     !
-    !   res = d - J''(u) g
-    !       = d - g - 1/alpha P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    !   res = rhs - J''(u) g
+    !       = rhs - g + (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
     !
     ! The result is written to rresidual, thus, rresidual receives a
     ! fully qualified description of the residual in the control space.
@@ -990,13 +989,13 @@ contains
     ! First, add the RHS to the residual.
     ! This is done by creating an appropriate structure.
     !
-    ! a) rresidual = -1/alpha P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    ! a) rresidual = (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
     ! We expect rkktsystemDirDeriv to represent the value "J''(u) g".
     ! To calculate the residual, we need a representation of this value
     ! in the control space.
     call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rresidual)
 
-    ! b) rresidual = rresidual + d - g
+    ! b) rresidual = rresidual + rhs - g
     call kktsp_controlLinearComb (&
         rrhs,1.0_DP,&
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
