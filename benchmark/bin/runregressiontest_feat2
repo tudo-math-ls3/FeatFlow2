@@ -1495,30 +1495,45 @@ fb_banner() {
 
 #   Function: starts global time measurement
 fb_startTimer() {
-    hour=`date +'%H'`
-    minute=`date +'%M'`
-    second=`date +'%S'`
-
-    starttime=`expr $second + 60 \* $minute + 3600 \* $hour`
+    starttime=`date -u '+%Y %m %d %H %M %S'`  # Format due to awk's mktime() input requirements
 }
 
 
 #   Function: stops global time measurement and calculate global runtime
 fb_stopTimer() {
-    hour=`date +'%H'`
-    minute=`date +'%M'`
-    second=`date +'%S'`
+    stoptime=`date -u '+%Y %m %d %H %M %S'`  # Format due to awk's mktime() input requirements
 
-    stoptime=`expr $second + 60 \* $minute + 3600 \* $hour`
-
-    time=`expr $stoptime - $starttime`
-    hour=`expr $time / 3600`
-    time=`expr $time - $hour \* 3600`
-    minute=`expr $time / 60`
-    time=`expr $time - $minute \* 60`
-    second=$time
-
-    printf "Totaltime: %02d:%02d:%02d\n\n" $hour $minute $second 1>> $GLOBALLOG
+    awk 'BEGIN {
+         # convert input to epoch
+         start = mktime(ARGV[1]);
+         end   = mktime(ARGV[2]);
+         # difference in seconds
+         diff  = end - start;
+         # Problem 1:
+         # strftime("%j", diff) returns number of days since January, 1st.
+         # So, if the run time is more than a day it will return 2 instead of 1.
+         # Simply subtracting 1 does not do the trick as then
+         #     strftime("%j:%T", diff);
+         # would return "01:-1:55:39" for input start="2012 06 05 12 11 56",
+         # end="2012 06 06 12 07 35". So, do it manually for now.
+         days = 0;
+         if (diff > 86400) {
+             days = int(diff / 86400);
+             diff -= 86400 * days;
+         }
+         hour = int(diff / 3600);
+         diff -= 3600 * hour;
+         min = int(diff / 60);
+         sec = diff - 60 * min;
+         if (sec < 0) { sec += 60; min -= 1; }
+         if (min < 0) { min += 60; hour -= 1; }
+         if (hour < 0) { hour += 24; days -= 1; }
+         if (days > 0) {
+             printf "Total time: %02d:%02d:%02d:%02d\n", days, hour, min, sec;
+         } else {
+             printf "Total time: %02d:%02d:%02d\n", hour, min, sec;
+         }
+    }' "$starttime" "$stoptime" 1>> $GLOBALLOG
 }
 
 
