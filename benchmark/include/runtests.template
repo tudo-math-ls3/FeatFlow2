@@ -756,9 +756,8 @@ fb_runAndEvalBenchmarkTest() {
 
     echo
 
-    startdate=`date | awk '{print $4}'`
-
-    echo "START : "${startdate}
+    startdate=`date -u '+%Y %m %d %H %M %S'`  # Format due to awk's mktime() input requirements
+    echo "START : "`date`
     echo
 
     # #########################
@@ -1346,10 +1345,41 @@ WARNING! For this application / test class there are no instructions
 
     echo
 
-    enddate=`date | awk '{print $4}'`
-    echo "FINISH  : "${enddate}
+    enddate=`date -u '+%Y %m %d %H %M %S'`  # Format due to awk's mktime() input requirements
+    echo "FINISH  : "`date`
 
-    echo $startdate $enddate  | awk '{ split($1, startTimeComp, ":"); split($2, endTimeComp, ":"); diff = 3600 * (endTimeComp[1] - startTimeComp[1]) + 60 * (endTimeComp[2] - startTimeComp[2]) + (endTimeComp[3] - startTimeComp[3]); hour = int(diff / 3600); diff = diff - 3600 * hour; min = int(diff / 60); diff = diff - 60 * min; printf "RUNTIME : %02d:%02d:%02d\n", hour, min, diff; }'
+    # run time?
+    awk 'BEGIN {
+         # convert input to epoch
+         start = mktime(ARGV[1]);
+         end   = mktime(ARGV[2]);
+         # difference in seconds
+         diff  = end - start;
+         # Problem 1:
+         # strftime("%j", diff) returns number of days since January, 1st.
+         # So, if the run time is more than a day it will return 2 instead of 1.
+         # Simply subtracting 1 does not do the trick as then
+         #     strftime("%j:%T", diff);
+         # would return "01:-1:55:39" for input start="2012 06 05 12 11 56",
+         # end="2012 06 06 12 07 35". So, do it manually for now.
+         days = 0;
+         if (diff > 86400) {
+             days = int(diff / 86400);
+             diff -= 86400 * days;
+         }
+         hour = int(diff / 3600);
+         diff -= 3600 * hour;
+         min = int(diff / 60);
+         sec = diff - 60 * min;
+         if (sec < 0) { sec += 60; min -= 1; }
+         if (min < 0) { min += 60; hour -= 1; }
+         if (hour < 0) { hour += 24; days -= 1; }
+         if (days > 0) {
+             printf "RUNTIME : %02d:%02d:%02d:%02d\n", days, hour, min, sec;
+         } else {
+             printf "RUNTIME : %02d:%02d:%02d\n", hour, min, sec;
+         }
+    }' "$startdate" "$enddate"
 
     # shut down MPI universe
     eval ${MPISTOP} ${outputredirect}
