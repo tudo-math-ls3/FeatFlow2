@@ -52,6 +52,7 @@ FILE_F77_INFO     = env_f77_compiler
 FILE_F90_INFO     = env_f90_compiler
 FILE_CC_INFO      = env_c_compiler
 FILE_CXX_INFO     = env_cxx_compiler
+FILE_CUDA_INFO    = env_cuda_compiler
 COMPILER_SETTINGS = env_compiler_settings
 
 # Directory where Makefile template files are stored
@@ -2737,7 +2738,8 @@ HAS_CUDA12 := $(shell echo $(HAS_CUDA12) | tr '[a-z]' '[A-Z]')
 HAS_CUDA13 := $(shell echo $(HAS_CUDA13) | tr '[a-z]' '[A-Z]')
 HAS_CUDA20 := $(shell echo $(HAS_CUDA20) | tr '[a-z]' '[A-Z]')
 HAS_CUDA21 := $(shell echo $(HAS_CUDA21) | tr '[a-z]' '[A-Z]')
-ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)))
+HAS_CUDA30 := $(shell echo $(HAS_CUDA30) | tr '[a-z]' '[A-Z]')
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
 include $(TEMPLATESDIR)/nvcc-generic.mk
 endif
 
@@ -2850,7 +2852,7 @@ endif
 	fi
         # If cuda switch -DHAS_CUDAxx does occur in compiler flags,
         # show CUDA compiler
-ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)))
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
 	@if test -z "$(findstring exit 1, $(CUDA))"; then \
 	    echo '  CUDA compiler      :' $(PRECUDA) $(shell (which 2>/dev/null $(CUDA) || \
 		echo "\*\*\* $(CUDA) not found ! \*\*\*")); \
@@ -2874,7 +2876,9 @@ endif
 	@echo '  CFLAGSF90    =' $(CFLAGSF90)
 	@echo '  CFLAGSC      =' $(CFLAGSC)
 	@echo '  CFLAGSCXX    =' $(CFLAGSCXX)
+ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
 	@echo '  CFLAGSCUDA   =' $(CFLAGSCUDA)
+endif
 	@echo '  LDFLAGS      =' $(LDFLAGS)
 	@echo '  APPONLYFLAGS =' $(APPONLYFLAGS)
 	@echo '  MODEXTENSION =' $(MODEXTENSION)

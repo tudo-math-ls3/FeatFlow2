@@ -288,6 +288,7 @@ use constant SRCLIST_GENERATED => " " .
                                   "\$(FILE_F90_INFO).version \$(FILE_F90_INFO).ls " .
                                   "\$(FILE_CC_INFO).version  \$(FILE_CC_INFO).ls " .
                                   "\$(FILE_CXX_INFO).version \$(FILE_CXX_INFO).ls " .
+                                  "\$(FILE_CUDA_INFO).version \$(FILE_CUDA_INFO).ls " .
                                   "\$(COMPILER_SETTINGS)";
 
 # List of files that should not be included in a Makefile ALTHOUGH
@@ -1421,7 +1422,7 @@ sub create_feastAppMakefile {
 	map { $coprocs{$_} = $_; } @{ $entry };
 
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30') {
+			'cuda20', 'cuda21', 'cuda30', 'cuda35') {
 	    print MAKEFILE_HDL
 		"HAS_" . uc($entry) . "          = ";
 	    print MAKEFILE_HDL "YES\n" if (defined($coprocs{$entry}));
@@ -2995,11 +2996,11 @@ sub create_feastAppMakefile {
         ".PHONY:    check-settings-objdir\n" .
         "check-settings-objdir: DIR = \$(OBJDIR)\n" .
         "check-settings-objdir: \$(OBJDIR)\n" .
-        "\t# Checking whether compiler or compiler command line settings\n" .
-        "\t# used to build the application have changed since last time\n" .
-        "\t# 'make' was run for this build ID.\n" .
+        "        # Checking whether compiler or compiler command line settings\n" .
+        "        # used to build the application have changed since last time\n" .
+        "        # 'make' was run for this build ID.\n" .
         "        # What exactly is done here?\n" .
-        "        # In total, 9 files are created in the current object directory.\n" .
+        "        # In total, 11 files are created in the current object directory.\n" .
         "        # 2 per compiler, 1 for the compiler command line settings. These\n" .
         "        # settings are compared to previously stored ones.\n" .
         "        # For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
@@ -3026,6 +3027,7 @@ sub create_feastAppMakefile {
         "        # CFLAGSC       = [...]\n" .
         "        # CFLAGSCOPROC  = [...]\n" .
         "        # CFLAGSCXX     = [...]\n" .
+        "        # CFLAGSCUDA    = [...]\n" .
         "        # APPONLYFLAGS  = [...]\n" .
         "        # INC           = [...]\n" .
         "        # The output is similar to the corresponding lines of 'make id' output.\n" .
@@ -3054,6 +3056,10 @@ sub create_feastAppMakefile {
         "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"CUDA\"; COMPILER=\"\$(PRECUDA) \$(CUDA)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CUDAVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
         "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
@@ -3069,6 +3075,8 @@ sub create_feastAppMakefile {
         "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo \$\${additionalflags}; \\\n" .
         "\t     echo 'INC           =' \$(INC); ) | \\\n" .
@@ -3112,9 +3120,9 @@ sub create_feastAppMakefile {
         "check-settings-objdir_lib: DIR = \$(OBJDIR_LIB)\n" .
         "check-settings-objdir_lib: \$(OBJDIR_LIB)\n" .
         "ifneq (\$(OBJDIR_LIB), \$(OBJDIR))\n" .
-        "\t# Checking whether compiler or compiler command line settings\n" .
-        "\t# used to build the libraries have changed since last time\n" .
-        "\t# 'make' was run for this build ID.\n" .
+        "        # Checking whether compiler or compiler command line settings\n" .
+        "        # used to build the libraries have changed since last time\n" .
+        "        # 'make' was run for this build ID.\n" .
         "        # What exactly is done here? See comment in target check-settings-objdir.\n" .
         "\t\@+\\\n" .
         "\tadditionalflags=\"\"; \\\n" .
@@ -3131,6 +3139,9 @@ sub create_feastAppMakefile {
         "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(PRECXX) \$(CXX)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
+        "\tCOMPILERNAME=\"CUDA\"; COMPILER=\"\$(PRECUDA) \$(CUDA)\"; \\\n" .
+        "\tCOMPILERVERSION=\"\$(CUDAVERSION)\"; \\\n" .
+        "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
         "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
@@ -3146,6 +3157,8 @@ sub create_feastAppMakefile {
         "\t     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "\t     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo \$\${additionalflags}; \\\n" .
         "\t     echo 'INC           =' \$(INC); ) | \\\n" .
@@ -3279,7 +3292,7 @@ sub create_feastAppMakefile {
         "endif\n\n" .
 
         "# What exactly is done here?\n" .
-        "# In total, 9 files are created in the current object directory.\n" .
+        "# In total, 11 files are created in the current object directory.\n" .
         "# 2 per compiler, 1 for the compiler command line settings.\n" .
         "# For every compiler the output of 'ls -lLd <absolute_path_to_compiler>'\n" .
         "# is stored in one file. To a separate file, the output of '<compiler>\n" .
@@ -3305,6 +3318,7 @@ sub create_feastAppMakefile {
         "# CFLAGSC       = [...]\n" .
         "# CFLAGSCOPROC  = [...]\n" .
         "# CFLAGSCXX     = [...]\n" .
+        "# CFLAGSCUDA    = [...]\n" .
         "# APPONLYFLAGS  = [...]\n" .
         "# INC           = [...]\n" .
         "# The output is similar to the corresponding lines of 'make id' output.\n" .
@@ -3376,6 +3390,17 @@ sub create_feastAppMakefile {
         "\trm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
         "\texit 1; \\\n" .
         "    fi; \\\n" .
+        "    if test -n \"\$(CUDA)\"; then \\\n" .
+        "\t\$(CUDAVERSION) > \"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \\\n" .
+        "\tcompilerpath=\`which 2>/dev/null \$(CUDA)\`; \\\n" .
+        "\tif test -f \"\$\${compilerpath}\" -o -L \"\$\${compilerpath}\"; then \\\n" .
+        "\t    ls -lLd \$\${compilerpath} > \"\$(DIR)/\$(FILE_CUDA_INFO).ls\"; \\\n" .
+        "\telse \\\n" .
+        "\t    echo; echo \"Error: CUDA compiler not found.\"; echo; \\\n" .
+        "\t    rm -f \$(OBJDIR_LOCKFILE) \$(OBJDIR_LIB_LOCKFILE); \\\n" .
+        "\t    exit 1; \\\n" .
+        "\tfi; \\\n" .
+        "    fi; \\\n" .
         "    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
@@ -3389,6 +3414,8 @@ sub create_feastAppMakefile {
         "     echo 'CFLAGSCOPROC  =' \$(CFLAGSCOPROC) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "     echo 'CFLAGSCXX     =' \$(CFLAGSCXX) | \\\n" .
+        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
+        "     echo 'CFLAGSCUDA    =' \$(CFLAGSCUDA) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "     echo \$\${additionalflags}; \\\n" .
         "     echo 'INC           =' \$(INC); ) > \$(DIR)/\$(COMPILER_SETTINGS); \\\n" .
