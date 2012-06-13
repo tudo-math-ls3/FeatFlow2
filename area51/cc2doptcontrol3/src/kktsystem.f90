@@ -659,10 +659,9 @@ contains
     call kkt_dualToControl (rkktsystem,rresidual)
     
     ! Add -u:   rresidual = rresidual - u
-    call kktsp_controlLinearComb (rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP)
-    
-    ! Calculate the norm of the residual
-    dres = sptivec_vectorNorm (rresidual%p_rvector,iresnorm)
+    ! Calculate the norm of the residual.
+    call kktsp_controlLinearComb (&
+        rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP,dres=dres,iresnorm=iresnorm)
    
   end subroutine
 

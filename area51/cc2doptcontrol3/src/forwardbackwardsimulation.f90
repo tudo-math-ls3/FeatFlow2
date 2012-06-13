@@ -1450,7 +1450,34 @@ contains
           rpreconditioner%bneedVirtTransposedDonCoarse = .true.
 
         case (5)
-          ! BiCGStab with full VANKA preconditioning.
+          ! Defect correction with general full VANKA preconditioning.
+          !
+          ! Create VANKA and initialise it with the parameters from the DAT file.
+          select case (cspace)
+          case (CCSPACE_PRIMAL, CCSPACE_DUAL)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+          case (CCSPACE_PRIMALDUAL)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+          end select
+          
+          call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
+            'spreconditionerSection', sstring, "", bdequote=.true.)
+          read (sstring,*) spreconditionerSection
+          call linsolinit_initParams (p_rpreconditioner,rparamList,&
+              spreconditionerSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rpreconditioner,rparamList,&
+              spreconditionerSection,p_rpreconditioner%calgorithm)
+          
+          ! Create the defect correction solver, attach VANKA as preconditioner.
+          call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+              rpreconditioner%RfilterChain)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparamList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparamList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+        case (5)
+          ! BiCGStab with general full VANKA preconditioning.
           !
           ! Create VANKA and initialise it with the parameters from the DAT file.
           select case (cspace)
@@ -1476,7 +1503,7 @@ contains
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparamList,&
               scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
 
-        case (6)
+        case (7)
           ! BiCGStab with diagonal VANKA preconditioning, new implementation
           ! for general elements
           !

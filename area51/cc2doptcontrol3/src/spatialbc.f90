@@ -150,8 +150,8 @@ contains
 
     ! local variables
     
-    integer :: ibdComponent, isegment, i, iintervalEnds
-    character(LEN=PARLST_LENLINEBUF) :: sstr,sexpr,svalue,sbdex1,sbdex2
+    integer :: ibdComponent, isegment, i, iprimal, iintervalEnds
+    character(LEN=PARLST_LENLINEBUF) :: sstr,sexpr,svalue,sbdex1,sbdex2,sbdcomp
     real(DP) :: dpar1, dpar2
     integer :: ctype, ivalue, iid, ibctyp
     real(DP) :: dvalue
@@ -189,11 +189,11 @@ contains
     
       ! Dual boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDual, p_rbdcondPrimal)
+          roptcBDC%ssectionBdCondDual, p_rbdcond)
           
       ! Primal boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcond)
+          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
           
     end if
         
@@ -205,17 +205,24 @@ contains
 
       ! Parse the parameter 'bdComponentX'
       write (sexpr,'(I10)') ibdComponent
-      sstr = 'bdComponent' // adjustl(sexpr)
+      sbdcomp = 'bdComponent' // adjustl(sexpr)
       
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, sstr)
+      i = parlst_queryvalue (p_rbdcond, sbdcomp)
 
       if (i .ne. 0) then
       
+        ! get the corresponding index in the "primal" dection
+        if ((copType .ne. OPTP_PRIMAL) .and. &
+            (copType .ne. OPTP_PRIMALLIN) .and. &
+            (copType .ne. OPTP_PRIMALLIN_SIMPLE)) then
+          iprimal = parlst_queryvalue (p_rbdcondPrimal, sbdcomp)
+        end if
+      
         ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, sstr)
+        do isegment = 1,parlst_querysubstrings (p_rbdcond, sbdcomp)
           
           call parlst_getvalue_string (p_rbdcond, i, sstr, isubstring=isegment)
           
@@ -261,7 +268,8 @@ contains
                 !  * Primal Dirichlet = Dual Dirichlet-0
 
                 ! Get the boundary conditions of the primal equation
-                call parlst_getvalue_string (p_rbdcondPrimal, i, sstr, isubstring=isegment)
+                call parlst_getvalue_string (&
+                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
                 
                 ! Read the segment parameters
                 read(sstr,*) dpar2,iintervalEnds,ibctyp
@@ -284,8 +292,8 @@ contains
                   rcollection%IquickAccess(3) = 0
                   rcollection%IquickAccess(4) = 0
                   rcollection%IquickAccess(5) = 0
-                  rcollection%DquickAccess(1) = 0.0_DP
                   rcollection%DquickAccess(1) = dtime
+                  rcollection%DquickAccess(2) = 0.0_DP
                   rcollection%SquickAccess(1) = ""
                   rcollection%p_rnextCollection => ruserCollection
                   rcollection%IquickAccess(6:) = &
@@ -381,9 +389,9 @@ contains
                     rcollection%IquickAccess(3) = iid
                     rcollection%IquickAccess(4) = ivalue
                     rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(4) = 1
-                    rcollection%DquickAccess(1) = dvalue
+                    if (bneedsParams) rcollection%IquickAccess(5) = 1
                     rcollection%DquickAccess(1) = dtime
+                    rcollection%DquickAccess(2) = dvalue
                     rcollection%SquickAccess(1) = svalue
                     rcollection%p_rnextCollection => ruserCollection
                     rcollection%IquickAccess(6:) = &
@@ -416,9 +424,9 @@ contains
                     rcollection%IquickAccess(3) = iid
                     rcollection%IquickAccess(4) = ivalue
                     rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(4) = 1
-                    rcollection%DquickAccess(1) = dvalue
+                    if (bneedsParams) rcollection%IquickAccess(5) = 1
                     rcollection%DquickAccess(1) = dtime
+                    rcollection%DquickAccess(2) = dvalue
                     rcollection%SquickAccess(1) = svalue
                     rcollection%p_rnextCollection => ruserCollection
                     rcollection%IquickAccess(6:) = &
@@ -1852,7 +1860,7 @@ contains
     ivalue       = rcollection%Iquickaccess(4)
     bneedsParams = rcollection%Iquickaccess(5) .ne. 0
     r_t_p_optcBDC   = transfer(rcollection%IquickAccess(6:),r_t_p_optcBDC)
-    dvalue       = rcollection%Dquickaccess(1)
+    dvalue       = rcollection%Dquickaccess(2)
     
     if (bneedsParams) then
       ! Calculate the parameter array

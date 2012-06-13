@@ -470,6 +470,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+    ! Release the discrete initial condition
+    call smva_releaseDiscreteInitCond(rsettings%rdiscreteInitCond)
+
     ! Release all data from the global data structure.
     call user_doneGlobalData (rsettings%rglobalData)
 

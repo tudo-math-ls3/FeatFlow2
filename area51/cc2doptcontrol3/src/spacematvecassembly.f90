@@ -592,7 +592,8 @@ contains
         
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             
             ! -----------------------------------------
             ! Laplace -- if the viscosity is constant
@@ -607,6 +608,8 @@ contains
 
             ! -----------------------------------------
             ! Realise the defect
+            ! Boundary conditions do not need to be implemented here,
+            ! they are fore sure in the solution dure to teh forward iteration.
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           end if
@@ -624,7 +627,8 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+          call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+              roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
@@ -734,7 +738,7 @@ contains
     type(t_matrixBlock), pointer :: p_rmatrix
     
     ! DEBUG
-    real(DP), dimension(:), pointer :: p_Ddest
+    real(DP), dimension(:), pointer :: p_Ddest, p_Dx
     call lsysbl_getbase_double (rdest,p_Ddest)
     
     ! Get the corresponding operator assembly structure
@@ -816,10 +820,13 @@ contains
           
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             
             ! -----------------------------------------
             ! Realise the defect
+            ! Boundary conditions do not need to be implemented here,
+            ! they are fore sure in the solution dure to teh forward iteration.
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
@@ -863,7 +870,8 @@ contains
           ! -----------------------------------------
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           end if
           
           ! -----------------------------------------
@@ -909,6 +917,11 @@ contains
           ! -----------------------------------------
 
           call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+          
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rvector,p_Dx)
+          
+          call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
 
         end select ! Equation
@@ -978,6 +991,10 @@ contains
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddest,p_Dx
+    call lsysbl_getbase_double (rdest,p_Ddest)
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
@@ -1058,10 +1075,13 @@ contains
 
             ! -----------------------------------------
             ! Mass matrix for timestepping
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             
             ! -----------------------------------------
             ! Realise the defect
+            ! Boundary conditions do not need to be implemented here,
+            ! they are fore sure in the solution dure to teh forward iteration.
             call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
@@ -1100,7 +1120,8 @@ contains
           ! -----------------------------------------
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           end if
           
           ! -----------------------------------------
@@ -1146,6 +1167,12 @@ contains
           ! -----------------------------------------
 
           call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector)
+          
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rvector,p_Dx)
+          
+          call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
+          
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
         end select ! Equation
@@ -1227,6 +1254,10 @@ contains
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
     
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddest
+    call lsysbl_getbase_double (rdest,p_Ddest)
+    
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
         roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
@@ -1301,11 +1332,14 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                  -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             end if
             
             ! -----------------------------------------
             ! Realise the defect
+            ! Boundary conditions do not need to be implemented here,
+            ! they are fore sure in the solution dure to teh forward iteration.
             call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
@@ -1343,7 +1377,8 @@ contains
           ! -----------------------------------------
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           end if
           
           ! -----------------------------------------
@@ -1389,6 +1424,10 @@ contains
           ! -----------------------------------------
 
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector)
+          
+          ! Impose boundary conditions of the defect space.
+          call vecfil_discreteBCdef (p_rvector,roptcBDCSpace%rdiscreteBC)
+
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
 
         end select ! Equation
@@ -1470,6 +1509,10 @@ contains
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_matrixBlock), pointer :: p_rmatrix
     
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddest
+    call lsysbl_getbase_double (rdest,p_Ddest)
+    
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
         roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
@@ -1544,11 +1587,14 @@ contains
             ! -----------------------------------------
             ! Mass matrix for timestepping
             if (dtstep .ne. 0.0_DP) then
-              call smva_getMassMatrix (roperatorAsm,p_rmatrix,-1.0_DP/dtstep)
+              call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                  -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             end if
             
             ! -----------------------------------------
-            ! Realise the defect
+            ! Realise the defect.
+            ! Boundary conditions do not need to be implemented here,
+            ! they are fore sure in the solution dure to teh forward iteration.
             call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
@@ -1587,7 +1633,8 @@ contains
           ! -----------------------------------------
           ! Mass matrix for timestepping
           if (dtstep .ne. 0.0_DP) then
-            call smva_getMassMatrix (roperatorAsm,p_rmatrix,1.0_DP/dtstep)
+            call smva_getMassMatrix (roperatorAsm,p_rmatrix,&
+                roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           end if
           
           ! -----------------------------------------
@@ -1633,6 +1680,10 @@ contains
           ! -----------------------------------------
 
           call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvector)
+          
+          ! Impose boundary conditions of the defect space.
+          call vecfil_discreteBCdef (p_rvector,roptcBDCSpace%rdiscreteBC)
+          
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
           ! ***********************************************
@@ -3038,36 +3089,41 @@ contains
               0,0,dtime,rusercollection)
 
           ! Prepare the evaluation.
-          !
-          ! Add the dual velocity if we have distributed control. Otherwise add dummy
-          ! vectors which take no time in being computed.
-          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-            ! Position 1+2 = control
-            call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
-
-            ! Position 3+4 = update for the control
-            call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
-            call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),0)
-
-          else
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-            call fev2_addDummyVectorToEvalList(rvectorEval)
-          end if
-
-          ! Build the vector
-          call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
-              smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
-          ! Cleanup
-          call fev2_releaseVectorList(rvectorEval)
-          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+          ! There is no control in the 0th timestep since this is the initial
+          ! condition.
+          if (idoftime .gt. 1) then
+            ! Add the dual velocity if we have distributed control. Otherwise add dummy
+            ! vectors which take no time in being computed.
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+              ! Position 1+2 = control
+              call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
+
+              ! Position 3+4 = update for the control
+              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),0)
+
+            else
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+            end if
+
+            ! Build the vector
+            call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+                smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+                rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+            
+            ! Cleanup
+            call fev2_releaseVectorList(rvectorEval)
+            call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+            
+          end if
           
         end select ! Equation
       
@@ -3596,7 +3652,7 @@ contains
     real(DP) :: dbasI
     real(DP) :: dylin1, dylin2
     real(DP) :: dy1,dy2,dz1,dz2,du1,du2,dulin1,dulin2,drhs1,drhs2
-    real(DP) :: dx,dy,dweight
+    real(DP) :: dx,dy,dweight,dweight2
     real(DP) :: dumin1,dumax1,dumin2,dumax2
     real(DP) :: dalpha
     integer :: iel, icubp, idofe, ierror, iid
@@ -3773,6 +3829,9 @@ contains
         ! distributed control?
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
         if (dalpha .ge. 0.0_DP) then
 
           ! Get the control.
@@ -3799,11 +3858,11 @@ contains
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     du1 * dbasI 
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     du2 * dbasI 
                     
               end do ! jdofe
@@ -3838,6 +3897,9 @@ contains
         ! distributed control?
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
         if (dalpha .gt. 0.0_DP) then
 
           ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
@@ -3884,11 +3946,11 @@ contains
 
                   ! Calculate the entries in the RHS.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       dulin1 * dbasI 
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       dulin2 * dbasI 
                       
                 end do ! jdofe
@@ -3907,6 +3969,9 @@ contains
             dumin2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin2
             dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
             dumax2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
+
+            dweight2 = dweight * &
+                p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
 
             ! Loop over the elements in the current set.
             do iel = 1,nelements
@@ -3937,7 +4002,7 @@ contains
 
                     ! Calculate the entries in the RHS.
                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                        dweight * p_DcubWeight(icubp,iel) * &
+                        dweight2 * p_DcubWeight(icubp,iel) * &
                         duLin1 * dbasI
 
                   end do ! idofe
@@ -3955,7 +4020,7 @@ contains
       
                     ! Calculate the entries in the RHS.
                     p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                        dweight * p_DcubWeight(icubp,iel) * &
+                        dweight2 * p_DcubWeight(icubp,iel) * &
                         duLin2 * dbasI 
   
                   end do ! jdofe
@@ -4174,6 +4239,9 @@ contains
         p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
         p_Dy2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
 
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%ddualPrimalCoupling
+         
         if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
@@ -4208,11 +4276,11 @@ contains
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     (dy1 - dz1) * dbasI 
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     (dy2 - dz2) * dbasI 
                     
               end do ! jdofe
@@ -4259,11 +4327,11 @@ contains
                   dz2 = p_Dz2(icubp,iel,DER_FUNC)
                   
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       ( dy1 - dz1 ) * dbasI 
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       ( dy2 - dz2 ) * dbasI 
                       
                 end do ! jdofe
@@ -4312,6 +4380,9 @@ contains
         
         p_DbasTest => RvectorData(1)%p_DbasTest
         
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%ddualPrimalCoupling
+
         if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
           
           ! ---------------------------------------------------------
@@ -4339,11 +4410,11 @@ contains
                 ! (1st derivatives) by the cubature weight and sum up
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     ( dylin1 * dbasI ) ! (y',phi)
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
                     ( dylin2 * dbasI ) ! (y',phi)
                     
               end do ! jdofe
@@ -4388,11 +4459,11 @@ contains
                   ! (1st derivatives) by the cubature weight and sum up
                   ! into the local vectors.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       ( dylin1 * dbasI ) ! (y',phi)
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
                       ( dylin2 * dbasI ) ! (y',phi)
                       
                 end do ! jdofe
@@ -4660,7 +4731,8 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,rmatrix,1.0_DP/dtstep)
+          call smva_getMassMatrix (roperatorAsm,rmatrix,&
+              roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant
@@ -4840,7 +4912,8 @@ contains
           
           ! -----------------------------------------
           ! Mass matrix for timestepping
-          call smva_getMassMatrix (roperatorAsm,rmatrix,1.0_DP/dtstep)
+          call smva_getMassMatrix (roperatorAsm,rmatrix,&
+              roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
           
           ! -----------------------------------------
           ! Laplace -- if the viscosity is constant

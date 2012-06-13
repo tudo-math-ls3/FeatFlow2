@@ -414,6 +414,50 @@ contains
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
 
+        case (5)
+          ! Defect correction with general VANKA preconditioning.
+          !
+          ! Create VANKA and initialise it with the parameters from the DAT file.
+          call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+          
+          call parlst_getvalue_string (rparList, scoarseGridSolverSection, &
+            "spreconditionerSection", sstring, "", bdequote=.true.)
+          read (sstring,*) spreconditionerSection
+          call linsolinit_initParams (p_rpreconditioner,rparList,&
+              spreconditionerSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rpreconditioner,rparList,&
+              spreconditionerSection,p_rpreconditioner%calgorithm)
+          
+          ! Create the defect correction solver, attach VANKA as preconditioner.
+          call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+              rsolver%RfilterChain)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+        case (6)
+          ! BiCGStab with general VANKA preconditioning.
+          !
+          ! Create VANKA and initialise it with the parameters from the DAT file.
+          call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+          
+          call parlst_getvalue_string (rparList, scoarseGridSolverSection, &
+            "spreconditionerSection", sstring, "", bdequote=.true.)
+          read (sstring,*) spreconditionerSection
+          call linsolinit_initParams (p_rpreconditioner,rparList,&
+              spreconditionerSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rpreconditioner,rparList,&
+              spreconditionerSection,p_rpreconditioner%calgorithm)
+          
+          ! Create the defect correction solver, attach VANKA as preconditioner.
+          call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+              rsolver%RfilterChain)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
         case default
         
           call output_line ("Unknown coarse grid solver.", &
