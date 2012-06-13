@@ -595,6 +595,45 @@ contains
 
             end if ! alpha
           
+          ! -------------------------------------------------------------
+          ! Heat equation
+          ! -------------------------------------------------------------
+          case (CCEQ_HEAT2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+              
+                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+
+                ! The first two components of the control read
+                !
+                !    u = -1/alpha lambda
+                !
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
+
+              end select ! constraints
+
+            end if ! alpha
+
           end select ! equation
           
           ! Save the new control
@@ -922,6 +961,45 @@ contains
 
             end if ! alpha
           
+          ! -------------------------------------------------------------
+          ! Heat equation
+          ! -------------------------------------------------------------
+          case (CCEQ_HEAT2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+              ! Do we have constraints?
+              select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+              ! ----------------------------------------------------------
+              ! No constraints
+              ! ----------------------------------------------------------
+              case (0)
+
+                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                  call output_line("Alpha=0 not possible without contraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  call sys_halt()
+                end if
+              
+                ! The first two components of the linearised control read
+                !
+                !    u~ = -1/alpha lambda~
+                !
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
+                    -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
+
+              end select ! constraints
+
+            end if ! alpha
+
           end select ! equation
           
           ! Save the new linearised control

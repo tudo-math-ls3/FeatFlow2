@@ -113,7 +113,7 @@ contains
 
     ! Just set pointers.
     rstaticAsmTemplates%p_rtriangulation => rtriangulation
-    rstaticAsmTemplates%p_rdiscrVelocity => rdiscrVelocity
+    rstaticAsmTemplates%p_rdiscr => rdiscrVelocity
     rstaticAsmTemplates%p_rdiscrPressure => rdiscrPressure
     
   end subroutine
@@ -185,7 +185,7 @@ contains
     
     ! Create the matrix structure
     call bilf_createMatrixStructure (&
-        rstaticAsmTemplates%p_rdiscrVelocity,LSYSSC_MATRIX9,&
+        rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
         rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
     ! In case the element-based routine is used to create the matrices,
@@ -194,7 +194,7 @@ contains
     ! can still be constructed with a smaller stencil.
     if (cmatBuildType .ne. BILF_MATC_ELEMENTBASED) then
       call bilf_createMatrixStructure (&
-          rstaticAsmTemplates%p_rdiscrVelocity,LSYSSC_MATRIX9,&
+          rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
           rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,cconstrType=BILF_MATC_ELEMENTBASED)
     else
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
@@ -212,7 +212,7 @@ contains
     call bilf_createMatrixStructure (&
         rstaticAsmTemplates%p_rdiscrPressure,LSYSSC_MATRIX9,&
         rstaticAsmTemplates%rmatrixTemplateGradient,&
-        rstaticAsmTemplates%p_rdiscrVelocity)
+        rstaticAsmTemplates%p_rdiscr)
               
     ! Transpose the B-structure to get the matrix template for the
     ! divergence matrices.
@@ -231,7 +231,8 @@ contains
         rstaticAsmTemplates%rmatrixLaplace,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     ! Allocate memory for the entries; don't initialise the memory.
-    call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (&
+        rstaticAsmTemplates%rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! Both have the structure of the template gradient matrix.
@@ -292,7 +293,7 @@ contains
 !</subroutine>
 
     ! If there is an existing mass matrix, release it.
-    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassVelocity)
+    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMass)
     call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressure)
 
     ! Release Stokes, B1, B2,... matrices
@@ -395,12 +396,12 @@ contains
     ! Stokes matrix
     
     call spdiscr_createDefCubStructure(&
-        rstaticAsmTemplates%rmatrixLaplace%p_rspatialDiscrTrial,rcubatureInfo,&
-        rsettingsSpaceDiscr%icubStokes)
+        rstaticAsmTemplates%rmatrixLaplace%p_rspatialDiscrTrial,&
+        rcubatureInfo,rsettingsSpaceDiscr%icubStokes)
     
     ! Assemble the Stokes operator:
-    call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixLaplace,.true.,&
-        1.0_DP,rcubatureInfo)
+    call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixLaplace,&
+        .true.,1.0_DP,rcubatureInfo)
         
     call spdiscr_releaseCubStructure(rcubatureInfo)
 
@@ -433,22 +434,22 @@ contains
     ! -----------------------------------------------------------------------
 
     ! If there is an existing mass matrix, release it.
-    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassVelocity)
+    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMass)
     call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressure)
 
     ! Generate mass matrix. The matrix has basically the same structure as
     ! our template FEM matrix, so we can take that.
     call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-        rstaticAsmTemplates%rmatrixMassVelocity,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        rstaticAsmTemplates%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure,&
         rstaticAsmTemplates%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
     ! Call the standard matrix setup routine to build the matrix.
     call spdiscr_createDefCubStructure(&
-        rstaticAsmTemplates%rmatrixMassVelocity%p_rspatialDiscrTrial,rcubatureInfo,&
+        rstaticAsmTemplates%rmatrixMass%p_rspatialDiscrTrial,rcubatureInfo,&
         rsettingsSpaceDiscr%icubMass)
 
-    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassVelocity,&
+    call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMass,&
         DER_FUNC,DER_FUNC,rcubatureInfo=rcubatureInfo)
 
     call spdiscr_releaseCubStructure(rcubatureInfo)
@@ -908,18 +909,18 @@ contains
     call lsysbl_createMatBlockByDiscr (rblockDiscr,rmassMatrix)
     
     ! Plug in the mass matrices
-    call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassVelocity,rmassMatrix%RmatrixBlock(1,1),&
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(1,1),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassVelocity,rmassMatrix%RmatrixBlock(2,2),&
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(2,2),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPressure,rmassMatrix%RmatrixBlock(3,3),&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     
     ! Probably also for the dual space.
     if (cspace .eq. CCSPACE_PRIMALDUAL) then
-      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassVelocity,rmassMatrix%RmatrixBlock(4,4),&
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(4,4),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassVelocity,rmassMatrix%RmatrixBlock(5,5),&
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixMass,rmassMatrix%RmatrixBlock(5,5),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       call lsyssc_duplicateMatrix (rasmTempl%rmatrixMassPressure,rmassMatrix%RmatrixBlock(6,6),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)

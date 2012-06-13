@@ -180,7 +180,7 @@ contains
 
     ! Create the corresponding discretisation.
     call spdsc_getDist1LevelDiscr (rboundary,rtriangulation,&
-        rspaceDiscr,rsettingsDiscr%ielementType)
+        rspaceDiscr,rphysics,rsettingsDiscr%ielementType)
 
   end subroutine
 
@@ -268,6 +268,24 @@ contains
         ! This is distributed control in the velocity space.
         ! The discretisation matches the discretisation of the primal velocity.
         call spdiscr_deriveBlockDiscr (rspaceDiscrPrimal, rspaceDiscr, 1, 2)
+      
+        return
+        
+      end if
+    
+    ! -------------------------------------------------------------
+    ! Heat equation
+    ! -------------------------------------------------------------
+    case (CCEQ_HEAT2D)
+    
+      ! -----------------------------------------------------------
+      ! Distributed control
+      ! -----------------------------------------------------------
+      if (roptControl%dalphaC .ge. 0.0_DP) then
+        
+        ! This is distributed control in the velocity space.
+        ! The discretisation matches the discretisation of the primal velocity.
+        call spdiscr_deriveBlockDiscr (rspaceDiscrPrimal, rspaceDiscr, 1, 1)
       
         return
         

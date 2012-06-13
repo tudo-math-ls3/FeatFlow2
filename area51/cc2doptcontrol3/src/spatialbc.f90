@@ -340,8 +340,7 @@ contains
               ! --------------------------------------------------
               case (0)
                 if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-                  ! Add the bondary region to the Neumann boundary regions
-                  ! if there is a structure present.
+                  ! Add the bondary region to the Neumann boundary regions.
                   call sbc_addBoundaryRegion(&
                       rboundaryRegion,roptcBDCSpace%rneumannBoundary)
                 end if
@@ -352,6 +351,10 @@ contains
               case (1)
 
                 if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
                   ! Simple Dirichlet boundary.
                   ! Get the definition of the boundary condition.
@@ -370,8 +373,8 @@ contains
                   !  IquickAccess(6:...) = The binary content of r_t_p_optcBDC.
                   !
                   ! The DquickAccess array is set up as follows:
-                  !  DquickAccess(1) = dvalue
-                  !  DquickAccess(2) = dtime
+                  !  DquickAccess(1) = dtime
+                  !  DquickAccess(2) = dvalue
                   !
                   ! The SquickAccess array is set up as follows:
                   !  SquickAccess(1) = Name of the expression
@@ -449,15 +452,182 @@ contains
                 end if
 
               case default
-                call output_line ('Unknown boundary condition!', &
-                    OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                call output_line ("Unknown boundary condition!", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                call sys_halt()
+              end select ! ibctyp
+
+            ! ----------------------
+            ! Heat equation
+            ! ----------------------
+            case (CCEQ_HEAT2D)
+            
+              ! Now, which type of BC is to be created?
+              select case (ibctyp)
+              
+              ! --------------------------------------------------
+              ! Automatic boundary conditions. Dual equation only.
+              ! --------------------------------------------------
+              case (-1)
+                if ((copType .ne. OPTP_DUAL) .and. &
+                    (copType .ne. OPTP_DUALLIN) .and. &
+                    (copType .ne. OPTP_DUALLIN_SIMPLE)) then
+                  call output_line (&
+                      "Automatic boundary conditions only allowed for the dual equation.", &
+                      OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                  call sys_halt()
+                end if
+                
+                ! The rule is:
+                !  * Primal Neumann = Dual Neumann,
+                !  * Primal Dirichlet = Dual Dirichlet-0
+
+                ! Get the boundary conditions of the primal equation
+                call parlst_getvalue_string (&
+                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
+                
+                ! Read the segment parameters
+                read(sstr,*) dpar2,iintervalEnds,ibctyp
+                
+                select case (ibctyp)
+                
+                ! --------------------------------------------------
+                ! Neumann boundary conditions
+                ! --------------------------------------------------
+                case (0)
+                  ! Nothing to do
+                  
+                ! --------------------------------------------------
+                ! Dirichlet boundary conditions
+                ! --------------------------------------------------
+                case (1)
+                  ! Impose Dirichlet-0 boundary conditions in the dual equation
+                
+                  rcollection%IquickAccess(2) = BDC_VALDOUBLE
+                  rcollection%IquickAccess(3) = 0
+                  rcollection%IquickAccess(4) = 0
+                  rcollection%IquickAccess(5) = 0
+                  rcollection%DquickAccess(1) = dtime
+                  rcollection%DquickAccess(2) = 0.0_DP
+                  rcollection%SquickAccess(1) = ""
+                  rcollection%p_rnextCollection => ruserCollection
+                  rcollection%IquickAccess(6:) = &
+                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
+                                    size(rcollection%IquickAccess(6:)))
+
+                  ! Solution
+                  rcollection%IquickAccess(1) = 1
+                  
+                  call user_initCollectForVecAssembly (&
+                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                  
+                  ! Assemble the BC's.
+                  call bcasm_newDirichletBConRealBD (&
+                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                      roptcBDCSpace%rdiscreteBC,&
+                      cc_getDirBCNavSt2D,rcollection)
+                      
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+
+                case default
+                  call output_line ("Cannot set up automatic boundary conditions", &
+                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                  call sys_halt()
+                  
+                end select
+                
+              ! --------------------------------------------------
+              ! Neumann boundary conditions
+              ! --------------------------------------------------
+              case (0)
+                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                  ! Add the bondary region to the Neumann boundary regions
+                  ! if there is a structure present.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                end if
+              
+              ! --------------------------------------------------
+              ! Dirichlet boundary conditions
+              ! --------------------------------------------------
+              case (1)
+
+                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
+
+                  ! Simple Dirichlet boundary.
+                  ! Get the definition of the boundary condition.
+                  ! Read the line again, get the expressions for the data field
+                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
+                
+                  ! For any string <> '', create the appropriate Dirichlet boundary
+                  ! condition and add it to the list of boundary conditions.
+                  !
+                  ! The IquickAccess array is set up as follows:
+                  !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
+                  !  IquickAccess(2) = expression type
+                  !  IquickAccess(3) = iid
+                  !  IquickAccess(4) = ivalue
+                  !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
+                  !  IquickAccess(6:...) = The binary content of r_t_p_optcBDC.
+                  !
+                  ! The DquickAccess array is set up as follows:
+                  !  DquickAccess(1) = dtime
+                  !  DquickAccess(2) = dvalue
+                  !
+                  ! The SquickAccess array is set up as follows:
+                  !  SquickAccess(1) = Name of the expression
+                  
+                  if (sbdex1 .ne. '') then
+                    
+                    ! X-velocity
+                    !
+                    ! Get the expression information
+                    call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                        
+                    rcollection%IquickAccess(1) = 1
+                    rcollection%IquickAccess(2) = ctype
+                    rcollection%IquickAccess(3) = iid
+                    rcollection%IquickAccess(4) = ivalue
+                    rcollection%IquickAccess(5) = 0
+                    if (bneedsParams) rcollection%IquickAccess(5) = 1
+                    rcollection%DquickAccess(1) = dtime
+                    rcollection%DquickAccess(2) = dvalue
+                    rcollection%SquickAccess(1) = svalue
+                    rcollection%p_rnextCollection => ruserCollection
+                    rcollection%IquickAccess(6:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
+                                      size(rcollection%IquickAccess(6:)))
+                    
+                    call user_initCollectForVecAssembly (&
+                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                    
+                    ! Assemble the BC's.
+                    call bcasm_newDirichletBConRealBD (&
+                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                        roptcBDCSpace%rdiscreteBC,&
+                        cc_getDirBCNavSt2D,rcollection)
+                        
+                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                    
+                  end if
+                      
+                end if
+
+              case default
+                call output_line ("Unknown boundary condition!", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
                 call sys_halt()
               end select ! ibctyp
 
             case default
               
               call output_line ("Unknown equation", &
-                  OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                  OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
               call sys_halt()
               
             end select ! equation
@@ -2097,6 +2267,7 @@ contains
     
     ! Release boundary region lists
     call sbc_releaseBoundaryList (roptcBDCSpace%rneumannBoundary)
+    call sbc_releaseBoundaryList (roptcBDCSpace%rdirichletBoundary)
     call sbc_releaseBoundaryList (roptcBDCSpace%rdirichletControlBoundary)
     
   end subroutine

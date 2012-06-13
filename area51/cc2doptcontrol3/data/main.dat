@@ -55,11 +55,11 @@ ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
 
 # If the following constant is set from 1.0 to 0.0, the primal system is
 # decoupled from the dual system!
-# dprimalDualCoupling = 1.0
+dprimalDualCoupling = 1.0
 
 # If the following constant is set from 1.0 to 0.0, the dual system is
 # decoupled from the primal system!
-# ddualPrimalCoupling = 1.0
+ddualPrimalCoupling = 1.0
 
 # If the following parameter is set from 1.0 to 0.0, the terminal
 # condition between the primal and dual equation is decoupled, i.e.
@@ -68,4 +68,4 @@ ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
 
 # If the following parameter is set from 1.0 to 0.0, the time coupling
 # is disabled, resulting in a stationary simulation in every timestep.
-# dtimeCoupling = 1.0
+dtimeCoupling = 1.0

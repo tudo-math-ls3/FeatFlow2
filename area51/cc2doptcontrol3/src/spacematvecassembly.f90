@@ -246,6 +246,18 @@ contains
           rmatrix%RmatrixBlock(3,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
          
+    ! *************************************************************
+    ! Heat equation
+    ! *************************************************************
+    case (CCEQ_HEAT2D)
+    
+      ! ---------------------------------------------------
+      ! 1x1 block matrix, only the solution
+      call lsyssc_duplicateMatrix (&
+          rasmTemplates%rmatrixTemplateFEM,&
+          rmatrix%RmatrixBlock(1,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
     case default
       
       call output_line("Unknown equation",&
@@ -574,9 +586,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -790,9 +802,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -1045,9 +1057,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! ***********************************************
           ! NEXT TIMESTEP
@@ -1307,9 +1319,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -1562,9 +1574,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! NEXT TIMESTEP
@@ -1754,14 +1766,25 @@ contains
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
           rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
 
       call lsyssc_matrixLinearComb (&
-          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
           rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+
+    ! ***********************************************************
+    ! Heat equation
+    ! ***********************************************************
+    case (CCEQ_HEAT2D)
+    
+      call lsyssc_matrixLinearComb (&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
+          rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+
     end select
     
   end subroutine
@@ -1813,6 +1836,17 @@ contains
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
           rmatrix%RmatrixBlock(2,2),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(2,2))
+
+    ! ***********************************************************
+    ! Heat equation
+    ! ***********************************************************
+    case (CCEQ_HEAT2D)
+    
+      call lsyssc_matrixLinearComb (&
+          rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
+          rmatrix%RmatrixBlock(1,1),dweight,1.0_DP,&
+          .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(1,1))
+
     end select
     
   end subroutine
@@ -1916,6 +1950,7 @@ contains
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixD2,&
           rmatrix%RmatrixBlock(3,2),dweight,1.0_DP,&
           .false.,.false.,.true.,.true.,rmatrix%RmatrixBlock(3,2))
+
     end select
     
   end subroutine
@@ -2068,7 +2103,7 @@ contains
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -2204,7 +2239,7 @@ contains
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -2329,7 +2364,7 @@ contains
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
           smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
-          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMassVelocity)
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
           
       ! Cleanup
       call fev2_releaseVectorList(rvectorEval)
@@ -2817,6 +2852,51 @@ contains
           call ansol_doneEvalCollection (rcollection,"RHS")
           call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
 
+        ! ***********************************************************
+        ! Heat equation
+        ! ***********************************************************
+        case (CCEQ_HEAT2D)
+      
+          ! ---------------------------------------------------------
+          ! The one-and-only RHS
+          ! ---------------------------------------------------------
+
+          ! Evaluation point of the RHS in time
+          dtime = dtimestart + dtheta * dtstep
+          
+          ! Prepare the user-defined collection for the assembly
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              p_ranalyticData%p_rrhsPrimal%iid,0,dtime,rusercollection)
+          
+          ! Prepare the evaluation of the primal RHS.
+          call ansol_prepareEval (p_ranalyticData%p_rrhsPrimal,rcollection,"RHS",dtime)
+
+          ! Prepare the evaluation.
+          !
+          ! Vector 1 = Temp-vectors for the RHS.
+          call fev2_addDummyVectorToEvalList(rvectorEval)
+          
+          ! Vector 2 = dual solution -- for the calculation of distributed control
+          ! in the solution space.
+          ! Only add this if we have distributed control. Otherwise add dummy
+          ! vectors which take no time in being computed.
+          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
+            call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+          else
+            call fev2_addDummyVectorToEvalList(rvectorEval)
+          end if
+          
+          ! Build the vector
+          call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+              smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+          
+          ! Cleanup
+          call fev2_releaseVectorList(rvectorEval)
+          call ansol_doneEvalCollection (rcollection,"RHS")
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+
         end select ! Equation
 
       end select ! Timestep sub-scheme
@@ -2964,6 +3044,43 @@ contains
           call ansol_doneEvalCollection (rcollection,"RHS")
           call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
+        ! ***********************************************************
+        ! Heat equation
+        ! ***********************************************************
+        case (CCEQ_HEAT2D)
+        
+          ! Evaluation point of the RHS in time
+          dtime = dtimestart
+          
+          ! Prepare the user-defined collection for the assembly
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              p_ranalyticData%p_rrhsDual%iid,0,dtime,rusercollection)
+
+          ! Prepare the evaluation of the primal RHS.
+          call ansol_prepareEval (p_ranalyticData%p_rrhsDual,rcollection,"RHS",dtime)
+          call ansol_prepareEval (p_ranalyticData%p_rsettingsOptControl%rtargetFunction,&
+              rcollection,"TARGET",dtime)
+          
+          ! Prepare the evaluation.
+          !
+          ! Vector 1 = Temp-vectors for the RHS.
+          call fev2_addDummyVectorToEvalList(rvectorEval)
+
+          ! Vector 2 = Primal solution
+          call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+
+          ! Build the vector
+          call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+              smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+          
+          ! Cleanup
+          call fev2_releaseVectorList(rvectorEval)
+          call ansol_doneEvalCollection (rcollection,"TARGET")
+          call ansol_doneEvalCollection (rcollection,"RHS")
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+
         end select ! Equation
         
       end select ! Timestep sub-scheme
@@ -3125,6 +3242,51 @@ contains
             
           end if
           
+        ! ***********************************************************
+        ! Heat equation
+        ! ***********************************************************
+        case (CCEQ_HEAT2D)
+        
+          ! Evaluation point of the RHS in time
+          dtime = dtimestart + dtheta * dtstep
+          
+          ! Prepare the user-defined collection for the assembly
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              0,0,dtime,rusercollection)
+
+          ! Prepare the evaluation.
+          
+          ! There is no control in the 0th timestep since this is the initial
+          ! condition.
+          if (idoftime .gt. 1) then
+            ! Add the dual velocity if we have distributed control. Otherwise add dummy
+            ! vectors which take no time in being computed.
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+              ! Position 1 = control
+              call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+
+              ! Position 2 = update for the control
+              call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
+              call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
+
+            else
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+
+              call fev2_addDummyVectorToEvalList(rvectorEval)
+            end if
+
+            ! Build the vector
+            call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+                smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+                rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+            
+            ! Cleanup
+            call fev2_releaseVectorList(rvectorEval)
+            call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+            
+          end if
+
         end select ! Equation
       
       end select ! Timestep sub-scheme
@@ -3269,6 +3431,38 @@ contains
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),1)
+          
+          ! Build the vector
+          call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+              smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+          
+          ! Cleanup
+          call fev2_releaseVectorList(rvectorEval)
+          call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+          
+        ! ***********************************************************
+        ! Heat equation
+        ! ***********************************************************
+        case (CCEQ_HEAT2D)
+        
+          ! Evaluation point of the RHS in time
+          dtime = dtimestart
+          
+          ! Prepare the user-defined collection for the assembly
+          call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+              0,0,dtime,rusercollection)
+
+          ! Prepare the evaluation.
+          !
+          ! Vector 1 = dual solution
+          call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),1)
+
+          ! Vector 2 = linearised primal solution. We need the 1st
+          ! derivative as well.
+          call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
           
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
@@ -3700,7 +3894,7 @@ contains
       select case (copType)
 
       ! ***********************************************************
-      ! Navier-Stokes. Forward equation.
+      ! Forward equation.
       ! ***********************************************************
       case (OPTP_PRIMAL)
       
@@ -3874,7 +4068,7 @@ contains
         end if
             
       ! ***********************************************************
-      ! Navier-Stokes. Linearised forward equation.
+      ! Linearised forward equation.
       ! ***********************************************************
       case (OPTP_PRIMALLIN)
       
@@ -4036,7 +4230,7 @@ contains
         end if
 
       ! ***********************************************************
-      ! Navier-Stokes. Backward equation.
+      ! Backward equation.
       ! ***********************************************************
       case (OPTP_DUAL)
       
@@ -4345,7 +4539,7 @@ contains
         end if
 
       ! ***********************************************************
-      ! Navier-Stokes. Linearised backward equation.
+      ! Linearised backward equation.
       ! ***********************************************************
       case (OPTP_DUALLIN)
       
@@ -4477,7 +4671,7 @@ contains
         end if ! observation area type
 
       ! ***********************************************************
-      ! Navier-Stokes. Initial condition of the L2 projection
+      ! Initial condition of the L2 projection
       ! of the initial condition.
       ! ***********************************************************
       case (OPTP_INITCONDL2PRJ)
@@ -4593,9 +4787,730 @@ contains
         
         end do ! iel
 
-      end select
+      end select ! Operator type
       
-    end select    
+    ! -------------------------------------------------------------
+    ! Heat equation
+    ! -------------------------------------------------------------
+    case (CCEQ_HEAT2D)
+    
+      ! Primal or dual equation?
+      select case (copType)
+
+      ! ***********************************************************
+      ! Forward equation.
+      ! ***********************************************************
+      case (OPTP_PRIMAL)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS in the
+        ! cubature points
+        ! ------------------------------------------------
+      
+        ! Get memory for the user-defined right-hand side f.
+        p_Drhs1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+
+        ! The right-hand side is given as an analytical function
+        ! or as a discrete function on an arbitrary mesh, discretised
+        ! with an arbitrary finite element. We therefore cannot
+        ! automatically precalculate the values in the cubature
+        ! points, but have to do it right here.
+        !
+        ! Evaluate the analytic function in the cubature points. 1st component
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot evaluate function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Ok, now we have the right-and side.
+
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS 
+        ! ------------------------------------------------
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData1%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              
+              ! Get the RHS
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+
+              ! Calculate the entries in the RHS.
+              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  drhs1 * dbasI 
+
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+
+        ! ------------------------------------------------
+        ! Calculate the problem-specific RHS
+        ! ------------------------------------------------
+
+        ! For the primal equation, the right-hand side reads
+        !
+        !    rhs = (user defined) + u
+        !
+        ! with u being the control. The control is already evaluated
+        ! in the cubature points, we can just take the values.
+        
+        ! Check the regularisation parameter ALPHA. Do we have
+        ! distributed control?
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
+        if (dalpha .ge. 0.0_DP) then
+
+          ! Get the control.
+          p_Du1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData1%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                
+                ! Get the values of the control.
+                du1 = p_Du1(icubp,iel,DER_FUNC)
+                
+                ! Calculate the entries in the RHS.
+                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    du1 * dbasI 
+
+              end do ! jdofe
+
+            end do ! icubp
+          
+          end do ! iel
+          
+        end if
+            
+      ! ***********************************************************
+      ! Linearised forward equation.
+      ! ***********************************************************
+      case (OPTP_PRIMALLIN)
+      
+        ! For the linearised primal equation, the right-hand side reads
+        !
+        !    rhs = (user defined) + u'
+        !
+        ! with u being the control. If we have constraints, the 
+        ! right-hand side reads
+        !
+        !    rhs = (user defined) + DP(u) u'
+        !
+        ! DP(.) is the Newton derivative of the projection P(.). 
+        ! In case of Box constraints, there is
+        !
+        !   DP(u) = identity  where u is in the bounds
+        !         = 0         where u violates the bounds
+        !
+        ! Check the regularisation parameter ALPHA. Do we have
+        ! distributed control?
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
+        if (dalpha .gt. 0.0_DP) then
+
+          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
+          p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+
+          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
+          p_DuLin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+
+          ! Get the data arrays of the subvector
+          p_rvectorData1 => RvectorData(1)
+          
+          p_DlocalVector1 => RvectorData(1)%p_Dentry
+          
+          p_DbasTest => RvectorData(1)%p_DbasTest
+
+          select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+            
+          ! ---------------------------------------------------------
+          ! No constraints
+          ! ---------------------------------------------------------
+          case (0)
+            
+            ! Loop over the elements in the current set.
+            do iel = 1,nelements
+
+              ! Loop over all cubature points on the current element
+              do icubp = 1,npointsPerElement
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rvectorData1%ndofTest
+                
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  
+                  ! Get the values of lambda'
+                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+
+                  ! Calculate the entries in the RHS.
+                  p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
+                      dulin1 * dbasI 
+
+                end do ! jdofe
+
+              end do ! icubp
+            
+            end do ! iel
+            
+          ! ---------------------------------------------------------
+          ! Constant box constraints
+          ! ---------------------------------------------------------
+          case (1)
+            
+            ! Get the box constraints
+            dumin1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+            dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+
+            dweight2 = dweight * &
+                p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
+            ! Loop over the elements in the current set.
+            do iel = 1,nelements
+
+              ! Loop over all cubature points on the current element
+              do icubp = 1,npointsPerElement
+
+                ! Get the control
+                du1 = p_Du1(icubp,iel,DER_FUNC)
+                
+                ! If the control violates the bounds, the Newton derivative
+                ! is zero, so only calculate something if the bounds
+                ! are not violated.
+
+                if ((du1 .gt. dumin1) .and. (du1 .lt. dumax1)) then
+                  
+                  ! Outer loop over the DOF's i=1..ndof on our current element,
+                  ! which corresponds to the (test) basis functions Phi_i:
+                  do idofe=1,p_rvectorData1%ndofTest
+                  
+                    ! Fetch the contributions of the (test) basis functions Phi_i
+                    ! into dbasI
+                    dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  
+                    ! Calculate the linearised control
+                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+
+                    ! Calculate the entries in the RHS.
+                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                        dweight2 * p_DcubWeight(icubp,iel) * &
+                        duLin1 * dbasI
+
+                  end do ! idofe
+                  
+                end if
+                  
+              end do ! icubp
+            
+            end do ! iel
+
+          end select ! constraints
+          
+        end if
+
+      ! ***********************************************************
+      ! Backward equation.
+      ! ***********************************************************
+      case (OPTP_DUAL)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+      
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS in the
+        ! cubature points
+        ! ------------------------------------------------
+
+        ! Get memory for the user-defined right-hand side f.
+        p_Drhs1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+
+        ! The right-hand side is given as an analytical function
+        ! or as a discrete function on an arbitrary mesh, discretised
+        ! with an arbitrary finite element. We therefore cannot
+        ! automatically precalculate the values in the cubature
+        ! points, but have to do it right here.
+        !
+        ! Evaluate the analytic function in the cubature points. 1st component
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot evaluate function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Ok, we have the right-and side now.
+
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS 
+        ! ------------------------------------------------
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData1%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              
+              ! Get the RHS
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+
+              ! Calculate the entries in the RHS.
+              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  drhs1 * dbasI 
+
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+
+        ! ------------------------------------------------
+        ! Calculate the target flow in the cubature points
+        ! ------------------------------------------------
+
+        ! For the dual equation, the right-hand side reads
+        !
+        !    rhs = (user defined) + (y - z)
+        !
+        ! so we have to calculate (y-z) and add/subtract it
+        ! from the RHS. In case the observation area is restricted,
+        ! the right-hand side reads
+        !
+        !    rhs = (user defined) +- Chi_Omega~ (y - z)
+        !
+        ! so it has to be forced to zero outside of the observation
+        ! area Omega~. Thus, the RHS is basically nonlinear.
+
+        ! Get memory for the target field z.
+        ! We can recycle the temp memory vectors from above (position 1+2)
+        p_Dz1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+        
+        ! Ok, we have the right-and side now.
+
+        ! The target field is given as an analytical function
+        ! or as a discrete function on an arbitrary mesh, discretised
+        ! with an arbitrary finite element. We therefore cannot
+        ! automatically precalculate the values in the cubature
+        ! points, but have to do it right here.
+        !
+        ! Evaluate the analytic function in the cubature points. 1st component.
+        call ansol_evaluate (rcollection,"TARGET",1,p_Dz1(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot evaluate function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Ok, we have the target now.
+
+        ! ------------------------------------------------
+        ! Calculate the problem-specific RHS
+        ! ------------------------------------------------
+      
+        ! Get the nonlinearity y.
+        p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%ddualPrimalCoupling
+         
+        if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
+          
+          ! ---------------------------------------------------------
+          ! Observation area is the complete domain
+          ! ---------------------------------------------------------
+          
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData1%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                
+                ! Get the values of the RHS.
+                drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+                
+                ! Get the values of lambda and ylin.
+                dy1 = p_Dy1(icubp,iel,DER_FUNC)
+
+                ! Get the target flow
+                dz1 = p_Dz1(icubp,iel,DER_FUNC)
+                
+                ! Calculate the entries in the RHS.
+                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    (dy1 - dz1) * dbasI 
+
+              end do ! jdofe
+
+            end do ! icubp
+          
+          end do ! iel
+          
+        else
+        
+          ! ---------------------------------------------------------
+          ! Observation area is a rectangle
+          ! ---------------------------------------------------------
+          p_DobservationArea => p_ranalyticData%p_rsettingsOptControl%p_DobservationArea
+        
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+            
+              ! Coordinates of the cubature point
+              dx = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
+              dy = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
+
+              ! Calculate the entries in the RHS inside of the observation area
+              if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
+                  (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
+                  
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rvectorData1%ndofTest
+                
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  
+                  ! Get the values of lambda and ylin.
+                  dy1 = p_Dy1(icubp,iel,DER_FUNC)
+
+                  ! Get the target flow
+                  dz1 = p_Dz1(icubp,iel,DER_FUNC)
+                  
+                  p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
+                      ( dy1 - dz1 ) * dbasI 
+
+                end do ! jdofe
+                
+              end if ! Observation area
+
+            end do ! icubp
+          
+          end do ! iel
+        
+        end if
+
+      ! ***********************************************************
+      ! Linearised backward equation.
+      ! ***********************************************************
+      case (OPTP_DUALLIN)
+      
+        ! From the right-hand side 
+        !
+        !    rhs = y-z
+        !
+        ! there follows the addutional term
+        !
+        !    rhs = y'
+        !
+        ! in case the observation area is the complete domain.
+        ! If the observation area is only a restricted domain Omega~,
+        ! the RHS of the dual equation was
+        !
+        !    rhs = Chi_Omega~ (y-z)
+        !
+        ! so the rhs of the linearised dual equation is
+        !
+        !    rhs = Chi_Omega~ y'
+
+        ! Get the nonlinearity
+        p_Dylin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+        
+        dweight2 = dweight * &
+            p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%ddualPrimalCoupling
+
+        if (.not. associated(p_ranalyticData%p_rsettingsOptControl%p_DobservationArea)) then
+          
+          ! ---------------------------------------------------------
+          ! Observation area is the complete domain
+          ! ---------------------------------------------------------
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData1%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                
+                dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local vectors.
+                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    ( dylin1 * dbasI ) ! (y',phi)
+
+              end do ! jdofe
+
+            end do ! icubp
+          
+          end do ! iel
+       
+        else
+        
+          ! ---------------------------------------------------------
+          ! Observation area is a rectangle
+          ! ---------------------------------------------------------
+          p_DobservationArea => p_ranalyticData%p_rsettingsOptControl%p_DobservationArea
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Coordinates of the cubature point
+              dx = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
+              dy = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
+
+              ! Calculate the entries in the RHS inside of the observation area
+              if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
+                  (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rvectorData1%ndofTest
+                
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  
+                  dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
+                  
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local vectors.
+                  p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                      dweight2 * p_DcubWeight(icubp,iel) * &
+                      ( dylin1 * dbasI ) ! (y',phi)
+
+                end do ! jdofe
+
+              end if ! observation area
+
+            end do ! icubp
+          
+          end do ! iel
+        
+        end if ! observation area type
+
+      ! ***********************************************************
+      ! Initial condition of the L2 projection
+      ! of the initial condition.
+      ! ***********************************************************
+      case (OPTP_INITCONDL2PRJ)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+      
+        ! ------------------------------------------------
+        ! Calculate the user-defined RHS in the
+        ! cubature points
+        ! ------------------------------------------------
+
+        ! Get memory for the user-defined right-hand side f.
+        p_Drhs1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+
+        ! The right-hand side is given as an analytical function
+        ! or as a discrete function on an arbitrary mesh, discretised
+        ! with an arbitrary finite element. We therefore cannot
+        ! automatically precalculate the values in the cubature
+        ! points, but have to do it right here.
+        !
+        ! Evaluate the analytic function in the cubature points. 1st component
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+            npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
+            rassemblyData%p_IelementList,ierror,iid)
+
+        if (ierror .eq. 1) then
+        
+          ! This is an error, something went wrong.
+          call output_line("Cannot evaluate function",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        else  if (ierror .eq. -1) then
+        
+          ! Oops, target function is a user-defined one.
+          ! Call the user-defined evaluation routine, providing iid
+          ! as function id.
+          
+          call output_line("User defined function not implemented.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+          call sys_halt()
+        
+        end if
+
+        ! Ok, we have the right-and side now.
+
+        ! ------------------------------------------------
+        ! Calculate the RHS for the L2 projection
+        ! ------------------------------------------------
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData1%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              
+              ! Get the RHS
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+
+              ! Calculate the entries in the RHS.
+              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  drhs1 * dbasI 
+
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+
+      end select ! Operator type
+
+    end select ! Equation
     
   end subroutine
   
@@ -4721,9 +5636,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -4899,9 +5814,9 @@ contains
         select case (p_ranalyticData%p_rphysics%cequation)
 
         ! *************************************************************
-        ! Stokes/Navier Stokes.
+        ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -5161,9 +6076,9 @@ contains
           select case (p_ranalyticData%p_rphysics%cequation)
 
           ! *************************************************************
-          ! Stokes/Navier Stokes.
+          ! Heat/Stokes/Navier Stokes.
           ! *************************************************************
-          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
             call sbc_assembleBDconditions (roptcBDC,dtimeend,&
@@ -5220,9 +6135,9 @@ contains
           select case (p_ranalyticData%p_rphysics%cequation)
 
           ! *************************************************************
-          ! Stokes/Navier Stokes.
+          ! Heat/Stokes/Navier Stokes.
           ! *************************************************************
-          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
             call sbc_assembleBDconditions (roptcBDC,dtimestart,&
@@ -5470,7 +6385,7 @@ contains
         call smva_simpleL2Projection (&
             rdiscreteInitCond%rsolution%RvectorBlock(1),&
             rdiscreteInitCond%rrhs%RvectorBlock(1),&
-            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,ioutputlevel)
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
 
         if (ioutputLevel .ge. 2) then
           call output_line ("Invoking L2-projection")
@@ -5478,7 +6393,7 @@ contains
         call smva_simpleL2Projection (&
             rdiscreteInitCond%rsolution%RvectorBlock(2),&
             rdiscreteInitCond%rrhs%RvectorBlock(2),&
-            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassVelocity,ioutputlevel)
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
 
         if (ioutputLevel .ge. 2) then
           call output_line ("Invoking L2-projection")
@@ -5487,6 +6402,49 @@ contains
             rdiscreteInitCond%rsolution%RvectorBlock(3),&
             rdiscreteInitCond%rrhs%RvectorBlock(3),&
             rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMassPressure,ioutputlevel)
+
+      ! ***********************************************************
+      ! Heat equation
+      ! ***********************************************************
+      case (CCEQ_HEAT2D)
+    
+        ! ---------------------------------------------------------
+        ! Create the RHS of the L2 projection
+        ! ---------------------------------------------------------
+
+        ! Prepare the user-defined collection for the assembly
+        call user_initCollectForVecAssembly (p_ranalyticData%p_rglobalData,&
+            p_ranalyticData%p_rrhsPrimal%iid,0,dtimestart,rusercollection)
+        
+        ! Prepare the evaluation of the primal RHS.
+        call ansol_prepareEval (rinitialCondition,rcollection,"RHS",dtimestart)
+
+        ! Prepare the evaluation.
+        !
+        ! Vector 1 = Temp-vectors for the solution.
+        call fev2_addDummyVectorToEvalList(rvectorEval)
+        
+        ! Build the vector
+        call bma_buildVector (rdiscreteInitCond%rrhs,BMA_CALC_STANDARD,&
+            smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
+            rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+        
+        ! Cleanup
+        call fev2_releaseVectorList(rvectorEval)
+        call ansol_doneEvalCollection (rcollection,"RHS")
+        call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+
+        ! ---------------------------------------------------------
+        ! For every component, calculate the L2 projection
+        ! ---------------------------------------------------------
+        
+        if (ioutputLevel .ge. 2) then
+          call output_line ("Invoking L2-projection")
+        end if
+        call smva_simpleL2Projection (&
+            rdiscreteInitCond%rsolution%RvectorBlock(1),&
+            rdiscreteInitCond%rrhs%RvectorBlock(1),&
+            rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,ioutputlevel)
 
       end select ! Equation
 

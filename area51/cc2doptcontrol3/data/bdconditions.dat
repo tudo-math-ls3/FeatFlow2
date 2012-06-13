@@ -51,7 +51,7 @@
 
 bdExpressions(6) =
   'pi'             0    3.14159265358979
-  'Umax'           0    0.2
+  'Umax'           0    1.0
   'Dirichlet0'    -1    '0.0'
   'ParProfile'     2    0.3
   'ParProfileNeg'  2    -1.5

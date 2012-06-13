@@ -537,6 +537,93 @@ contains
           end select
       
         end do
+
+      ! ---------------------------------------------------
+      ! Heat equation
+      ! ---------------------------------------------------
+      case (CCEQ_HEAT2D)
+
+        ! ---------------------------------------------------
+        ! Coarse grid solver
+        ! ---------------------------------------------------
+        ! Ok, now we have to initialise all levels. First, we create a coarse
+        ! grid solver and configure it.
+        call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+        
+        select case (icoarseGridSolverType)
+        case (0)
+          ! UMFPACK coarse grid solver. Easy.
+          call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
+          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix2.txt"
+          
+        case default
+        
+          call output_line ("Unknown coarse grid solver.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
+          call sys_halt()
+            
+        end select
+        
+        ! Save the reference to the coarse grid solver.
+        rsolver%p_rcoarseGridSolver => p_rlevelInfo%p_rcoarseGridSolver
+        
+        ! ---------------------------------------------------
+        ! Smoother
+        ! ---------------------------------------------------
+        ! Now after the coarse grid solver is done, we turn to the smoothers
+        ! on all levels. Their initialisation is similar to the coarse grid
+        ! solver. Note that we use the same smoother on all levels, for
+        ! presmoothing as well as for postsmoothing.
+        
+        do ilev = 2,nlevels
+
+          ! Initialise the smoothers.
+          select case (ismootherType)
+          
+          case (0:10)
+
+            nullify(p_rsmoother)
+          
+            ! This is some kind of VANKA smoother. Initialise the correct one.
+            select case (ismootherType)
+            case (0)
+              call linsol_initJacobi (p_rsmoother)
+            case (1)
+              call linsol_initSOR (p_rsmoother)
+            end select
+            
+            ! Initialise the parameters -- if there are any.
+            call linsolinit_initParams (p_rsmoother,rparList,&
+                ssmootherSection,LINSOL_ALG_UNDEFINED)
+            call linsolinit_initParams (p_rsmoother,rparList,&
+                ssmootherSection,p_rsmoother%calgorithm)
+            
+            ! Convert to a smoother with a defined number of smoothing steps.
+            call parlst_getvalue_int (rparList, ssmootherSection, &
+                      "nsmoothingSteps", nsm, 4)
+            call linsol_convertToSmoother (p_rsmoother,nsm)
+            
+            ! Put the smoother into the level info structure as presmoother
+            ! and postsmoother
+            call linsol_getMultigrid2Level (p_rsolverNode,ilev,p_rlevelInfo)
+            p_rlevelInfo%p_rpresmoother => p_rsmoother
+            p_rlevelInfo%p_rpostsmoother => p_rsmoother
+            
+            ! Set up the interlevel projection structure for the projection from/to
+            ! the lower level.
+            call linsol_initProjMultigrid2Level(p_rlevelInfo,&
+                rprjHierarchy%p_Rprojection(ilev))
+            
+          case default
+          
+            call output_line ("Unknown smoother.", &
+                OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
+            call sys_halt()
+            
+          end select
+      
+        end do
       
       end select
 
@@ -827,6 +914,10 @@ contains
     p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_DISCBCDEFREAL
     
     select case (rlsshierarchy%cequation)
+
+    ! ---------------------------------------------------
+    ! 2D Stokes / Navier-Stokes
+    ! ---------------------------------------------------
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
       ! Pressure filter for iterative solvers
@@ -889,6 +980,78 @@ contains
             ifilter = ifilter + 1
             p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
             p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 3
+ 
+          end if
+        
+        end select ! ilevel
+        
+      end select ! Outer solver
+      
+    ! ---------------------------------------------------
+    ! Heat equation
+    ! ---------------------------------------------------
+    case (CCEQ_HEAT2D)
+
+      ! Pressure filter for iterative solvers
+      select case (p_rlinsolSpace%isolverType)
+      
+      ! ---------------------------------------------------
+      ! Multigrid
+      ! ---------------------------------------------------
+      case (1)
+        
+        ! Smoother or coarse grid solver?
+        select case (ilevel)
+        
+        ! -------------------------------------------------
+        ! Coarse grid solver
+        ! -------------------------------------------------
+        case (1)
+
+          ! -----------------------------------------------
+          ! Integral-mean-value-zero filter for solution
+          ! -----------------------------------------------
+          if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+          
+            ! Active if there is no Dirichlet boundary
+          
+            select case (p_rlinsolSpace%icoarseGridSolverType)
+            
+            ! -----------------------------------
+            ! UMFPACK
+            ! -----------------------------------
+            case (0)
+              call output_line (&
+                  "UMFPACK coarse grid solver does not support filtering!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initStructure")
+              call sys_halt()
+
+            ! -----------------------------------
+            ! Iterative solver
+            ! -----------------------------------
+            case default
+              ifilter = ifilter + 1
+              p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
+              p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 1
+            end select
+            
+          end if
+        
+        ! -------------------------------------------------
+        ! Smoother
+        ! -------------------------------------------------
+        case (2:)
+
+          ! -----------------------------------------------
+          ! Integral-mean-value-zero filter for the solution
+          ! -----------------------------------------------
+          if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+          
+            ! Active if there is no Dirichlet boundary
+
+            ifilter = ifilter + 1
+            p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
+            p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 1
  
           end if
         

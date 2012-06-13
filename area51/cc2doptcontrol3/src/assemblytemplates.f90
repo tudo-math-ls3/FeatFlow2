@@ -52,7 +52,7 @@ module assemblytemplates
     type(t_triangulation), pointer :: p_rtriangulation => null()
 
     ! A scalar discretisation structure for the velocity space.
-    type(t_spatialDiscretisation), pointer :: p_rdiscrVelocity => null()
+    type(t_spatialDiscretisation), pointer :: p_rdiscr => null()
 
     ! A scalar discretisation structure for the pressure space.
     type(t_spatialDiscretisation), pointer :: p_rdiscrPressure => null()
@@ -60,17 +60,17 @@ module assemblytemplates
     ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the velocity FEM space.
     ! May use a different cubature rule that the velocity discretisation
-    type(t_spatialDiscretisation), pointer :: p_rdiscrMassVelocity => null()
+    type(t_spatialDiscretisation), pointer :: p_rdiscrMass => null()
 
     ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation), pointer :: p_rdiscrMassPressure => null()
     
     ! Cubature information structure for Mass-type matrices in the velocity space.
-    type(t_scalarCubatureInfo) :: rcubatureInfoMassVelocity
+    type(t_scalarCubatureInfo) :: rcubatureInfoMass
 
     ! Cubature information structure for Laplace-type matrices.
-    type(t_scalarCubatureInfo) :: rcubatureInfoStokes
+    type(t_scalarCubatureInfo) :: rcubatureInfo
 
     ! Cubature information structure for pressure/divergence matrices.
     type(t_scalarCubatureInfo) :: rcubatureInfoDiv
@@ -79,7 +79,7 @@ module assemblytemplates
     type(t_scalarCubatureInfo) :: rcubatureInfoMassPressure
 
     ! Cubature information structure for RHS vectors, momentum equation
-    type(t_scalarCubatureInfo) :: rcubatureInfoRHSmomentum
+    type(t_scalarCubatureInfo) :: rcubatureInfoRHS
 
     ! Cubature information structure for RHS vectors, continuity equation
     type(t_scalarCubatureInfo) :: rcubatureInfoRHScontinuity
@@ -127,19 +127,19 @@ module assemblytemplates
     ! Precalculated D2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD2T
 
-    ! Precalculated mass matrix for the velocity space.
-    type(t_matrixScalar) :: rmatrixMassVelocity
+    ! Precalculated mass matrix
+    type(t_matrixScalar) :: rmatrixMass
 
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
     
     ! Precalculated EOJ matrix in the primal velocity space.
     ! Calculated with nu=1.
-    type(t_matrixScalar) :: rmatrixEOJPrimalVel
+    type(t_matrixScalar) :: rmatrixEOJPrimal
 
     ! Precalculated EOJ matrix in the dual velocity space.
     ! Calculated with nu=1. May share the content with rmatrixEOJPrimal.
-    type(t_matrixScalar) :: rmatrixEOJDualVel
+    type(t_matrixScalar) :: rmatrixEOJDual
   end type
 
 !</typeblock>

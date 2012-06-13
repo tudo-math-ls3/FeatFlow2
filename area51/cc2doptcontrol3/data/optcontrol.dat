@@ -24,14 +24,14 @@ srhsPrimal = RIGHTHANDSIDE_PRIMAL
 srhsDual = RIGHTHANDSIDE_DUAL
 
 # Name of the section defining the physics
-ssectionPhysics = "CC-physics"
+ssectionPhysics = CC-PHYSICS
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
 # -1.0 = no distributed control
 # It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
 # In this case, a path following algorithm will be applied, i.e.,
 # the parameter is reduced with every nonlinear step.
-dalphaC = 0.01 # 1.0
+dalphaC = 0.1 # 1.0
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem
 # on the boundary (Dirichlet boundary control).

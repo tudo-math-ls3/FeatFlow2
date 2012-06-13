@@ -461,6 +461,20 @@ contains
           call vecfil_subvectorToL20 (rvector,3)
         end if
 
+      ! *************************************************************
+      ! Heat equation
+      ! *************************************************************
+      case (CCEQ_HEAT2D)
+
+        ! Pure Neumann problem?
+
+        ! -----------------------------------------------
+        ! Integral-mean-value-zero filter for the vector
+        ! -----------------------------------------------
+        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+          call vecfil_subvectorToL20 (rvector,3)
+        end if
+
       end select      
 
     ! ---------------------------------
@@ -470,14 +484,38 @@ contains
       ! Dirichlet/Neumann BC
       call vecfil_discreteBCrhs (rvector,p_roptcBDCspace%rdiscreteBC)
 
-      ! Pure Dirichlet problem?
+      ! Which equation do we have?    
+      select case (rsolver%p_roperatorAsmHier%ranalyticData%p_rphysics%cequation)
 
-      ! -----------------------------------------------
-      ! Integral-mean-value-zero filter for pressure
-      ! -----------------------------------------------
-      if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
-        call vecfil_subvectorToL20 (rvector,3)
-      end if
+      ! *************************************************************
+      ! Stokes/Navier Stokes.
+      ! *************************************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+
+        ! Pure Dirichlet problem?
+
+        ! -----------------------------------------------
+        ! Integral-mean-value-zero filter for pressure
+        ! -----------------------------------------------
+        if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
+          call vecfil_subvectorToL20 (rvector,3)
+        end if
+
+      ! *************************************************************
+      ! Heat equation
+      ! *************************************************************
+      case (CCEQ_HEAT2D)
+
+        ! Pure Neumann problem?
+
+        ! -----------------------------------------------
+        ! Integral-mean-value-zero filter for the vector
+        ! -----------------------------------------------
+        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+          call vecfil_subvectorToL20 (rvector,3)
+        end if
+
+      end select      
 
     ! ---------------------------------
     ! Defect vector
@@ -486,14 +524,38 @@ contains
       ! Dirichlet/Neumann BC
       call vecfil_discreteBCdef (rvector,p_roptcBDCspace%rdiscreteBC)
     
-      ! Pure Dirichlet problem?
+      ! Which equation do we have?    
+      select case (rsolver%p_roperatorAsmHier%ranalyticData%p_rphysics%cequation)
 
-      ! -----------------------------------------------
-      ! Integral-mean-value-zero filter for pressure
-      ! -----------------------------------------------
-      if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
-        call vecfil_subvectorToL20 (rvector,3)
-      end if
+      ! *************************************************************
+      ! Stokes/Navier Stokes.
+      ! *************************************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+
+        ! Pure Dirichlet problem?
+
+        ! -----------------------------------------------
+        ! Integral-mean-value-zero filter for pressure
+        ! -----------------------------------------------
+        if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
+          call vecfil_subvectorToL20 (rvector,3)
+        end if
+
+      ! *************************************************************
+      ! Heat equation
+      ! *************************************************************
+      case (CCEQ_HEAT2D)
+
+        ! Pure Neumann problem?
+
+        ! -----------------------------------------------
+        ! Integral-mean-value-zero filter for the vector
+        ! -----------------------------------------------
+        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+          call vecfil_subvectorToL20 (rvector,3)
+        end if
+
+      end select      
 
     end select
 

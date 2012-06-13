@@ -41,6 +41,9 @@ module constantsdiscretisation
 
   ! Stokes equations, 2D
   integer, parameter, public :: CCEQ_STOKES2D = 1
+
+  ! Heat equation, 2D
+  integer, parameter, public :: CCEQ_HEAT2D = 2
   
 !</constantblock>
 

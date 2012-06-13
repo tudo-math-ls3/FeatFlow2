@@ -27,6 +27,9 @@ module spacediscretisation
   use triangulation
   use spatialdiscretisation
   use collection
+  
+  use constantsdiscretisation
+  use structuresdiscretisation
 
   implicit none
   
@@ -41,7 +44,7 @@ contains
 !<subroutine>
 
   subroutine spdsc_getDist1LevelDiscr (rboundary,rtriangulation,&
-      rdiscretisation,ieltype)
+      rdiscretisation,rphysics,ieltype)
   
 !<description>
   ! Sets up the discretisation structures for the (primal) velocity and pressure
@@ -55,6 +58,9 @@ contains
   ! Underlying triangulation
   type(t_triangulation), intent(IN), target :: rtriangulation
   
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
+
   ! Element type.
   ! 0 = Q1~(E031) / Q1~(E031) / Q0
   ! 1 = Q1~(E030) / Q1~(E030) / Q0
@@ -73,118 +79,160 @@ contains
 
 !</subroutine>
 
-    select case (ieltype)
-    case (0)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                   rtriangulation, rboundary)
+    select case (rphysics%cequation)
+    
+    ! *************************************************************
+    ! Stokes/Navier Stokes.
+    ! *************************************************************
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
+      ! 2D, 3 equations
 
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_E031,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+      select case (ieltype)
+      case (0)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
 
-    case (1)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_E031,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
 
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_E030,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+      case (1)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
 
-    case (2)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_E030,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
 
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_EM31,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+      case (2)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
 
-    case (3)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_EM31,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
+
+      case (3)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
+        
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_EM30,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
+
+      case (4)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
+        
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_Q2,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_QP1NP, rdiscretisation%RspatialDiscr(3))
+                    
+      case (5)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
+        
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_EM30_UNPIVOTED,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
+
+      case (6)
+        call spdiscr_initBlockDiscr (rdiscretisation,3,&
+                                    rtriangulation, rboundary)
+
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_EM30_UNSCALED,rtriangulation, rboundary)
+                    
+        call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+            rdiscretisation%RspatialDiscr(2), .true.)
+    
+        call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
+            EL_Q0, rdiscretisation%RspatialDiscr(3))
+
+      case default
+        call output_line("Unknown discretisation: ieltype = "//trim(sys_siL(ieltype,10)),&
+            OU_CLASS_ERROR,OU_MODE_STD,"spdsc_get1LevelDiscrNavSt2D")
+        call sys_halt()
+      end select
+    
+    ! *************************************************************
+    ! Heat equation
+    ! *************************************************************
+    case (CCEQ_HEAT2D)
+    
+      select case (ieltype)
+      case (0)
+        
+        ! Q1
       
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+        call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                    rtriangulation, rboundary)
 
-    case (4)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_Q1,rtriangulation, rboundary)
+                    
+      case (1)
+        
+        ! Q2
       
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_Q2,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_QP1NP, rdiscretisation%RspatialDiscr(3))
-                  
-    case (5)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
-      
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30_UNPIVOTED,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+        call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                    rtriangulation, rboundary)
 
-    case (6)
-      ! Navier Stokes, 2D, 3 equations
-      call spdiscr_initBlockDiscr (rdiscretisation,3,&
-                                  rtriangulation, rboundary)
-
-      call spdiscr_initDiscr_simple ( &
-                  rdiscretisation%RspatialDiscr(1), &
-                  EL_EM30_UNSCALED,rtriangulation, rboundary)
-                  
-      call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
-          rdiscretisation%RspatialDiscr(2), .true.)
-  
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_Q0, rdiscretisation%RspatialDiscr(3))
+        call spdiscr_initDiscr_simple ( &
+                    rdiscretisation%RspatialDiscr(1), &
+                    EL_Q2,rtriangulation, rboundary)
+                    
+      case default
+        call output_line("Unknown discretisation: ieltype = "//trim(sys_siL(ieltype,10)),&
+            OU_CLASS_ERROR,OU_MODE_STD,"spdsc_get1LevelDiscrNavSt2D")
+        call sys_halt()
+      end select
 
     case default
-      call output_line('Unknown discretisation: ieltype = '//trim(sys_siL(ieltype,10)),&
-          OU_CLASS_ERROR,OU_MODE_STD,'spdsc_get1LevelDiscrNavSt2D')
+      call output_line("Unknown equation",&
+          OU_CLASS_ERROR,OU_MODE_STD,"spdsc_get1LevelDiscrNavSt2D")
       call sys_halt()
     end select
-    
+
   end subroutine
 
 end module

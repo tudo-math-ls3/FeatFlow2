@@ -30,7 +30,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # 4=BiCGStab with Diagonal VANKA preconditioning
 # 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 2
+ismootherType = 0
 
 # Name of the section in this file which configures the smoother.
 
@@ -42,8 +42,10 @@ ssmootherSection = 'CC-SMOOTHER'
 # =2: Defect correction with full VANKA preconditioning.
 # =3: BiCGStab with diagonal VANKA preconditioning
 # =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
 
-icoarseGridSolverType = 3
+icoarseGridSolverType = 5
 
 # Name of the section in this file which configures the coarse grid solver.
 
@@ -63,12 +65,12 @@ nminIterations     = 1
 
 # Maximum number of steps
 
-nmaxIterations     = 10
+nmaxIterations     = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2
+depsRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -160,7 +162,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER2'
 # 4=BiCGStab with Diagonal VANKA preconditioning
 # 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 2
+ismootherType = 0
 
 # Name of the section in this file which configures the smoother.
 
@@ -172,8 +174,10 @@ ssmootherSection = 'CC-SMOOTHER'
 # =2: Defect correction with full VANKA preconditioning.
 # =3: BiCGStab with diagonal VANKA preconditioning
 # =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
 
-icoarseGridSolverType = 3
+icoarseGridSolverType = 5
 
 # Name of the section in this file which configures the coarse grid solver.
 
@@ -198,7 +202,7 @@ nmaxIterations     = 100
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-4
+depsRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -309,7 +313,7 @@ nmaxIterations     = 1000
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-2
+depsRel            = 1E-15
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -339,7 +343,7 @@ ioutputLevel       = 0
 
 # Relaxation parameter
 
-domega             = 1.0
+domega             = 0.8
 
 # Section in this file that defines the parameters of the preconditioner
 

@@ -666,57 +666,48 @@ contains
     type(t_collection) :: rcollection
     type(t_spaceDiscrParams) :: rdiscrParams
     
-    select case (rphysics%cequation)
+    ! Read the parameters that define the underlying discretisation.
+    ! We use fgetDist1LvDiscr to create the basic spaces.
+    ! This routines expects the rcollection%IquickAccess array to be initialised
+    ! as follows:
+    !   rcollection%IquickAccess(1) = ieltype
 
-    ! -------------------------
-    ! Stokes, Navier-Stokes, 2D
-    ! -------------------------
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      
-      ! Read the parameters that define the underlying discretisation.
-      ! We use fgetDist1LvDiscr to create the basic spaces.
-      ! This routines expects the rcollection%IquickAccess array to be initialised
-      ! as follows:
-      !   rcollection%IquickAccess(1) = ieltype
+    ! Initialise the structure encapsuling the parameters of the discretisation.
+    ! The structure is placed in the collection
 
-      ! Initialise the structure encapsuling the parameters of the discretisation.
-      ! The structure is placed in the collection
-
-      rdiscrParams%p_rphysics => rphysics
-      rdiscrParams%p_roptControl => roptControl
-      rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscr
-      
-      ! Create the hierarchy for the primal space
-      rdiscrParams%cspace = CCSPACE_PRIMAL
-      rdiscrParams%p_rfeHierarchyPrimal => null()
-      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
-      
-      call fesph_createHierarchy (rfeHierarchyPrimal,&
-          rmeshHierarchy%nlevels,rmeshHierarchy,&
-          fgetDist1LvDiscr,rcollection,rboundary)
-
-      ! Create the hierarchy for the dual space
-
-      rdiscrParams%cspace = CCSPACE_DUAL
-      rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
-      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
-
-      call fesph_createHierarchy (rfeHierarchyDual,&
-          rmeshHierarchy%nlevels,rmeshHierarchy,&
-          fgetDist1LvDiscr,rcollection,rboundary)
-
-      ! Create the hierarchy for the control space
-
-      rdiscrParams%cspace = CCSPACE_CONTROL
-      rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
-      rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
-
-      call fesph_createHierarchy (rfeHierarchyControl,&
-          rmeshHierarchy%nlevels,rmeshHierarchy,&
-          fgetDist1LvDiscr,rcollection,rboundary)
-          
-    end select
+    rdiscrParams%p_rphysics => rphysics
+    rdiscrParams%p_roptControl => roptControl
+    rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscr
     
+    ! Create the hierarchy for the primal space
+    rdiscrParams%cspace = CCSPACE_PRIMAL
+    rdiscrParams%p_rfeHierarchyPrimal => null()
+    rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+    
+    call fesph_createHierarchy (rfeHierarchyPrimal,&
+        rmeshHierarchy%nlevels,rmeshHierarchy,&
+        fgetDist1LvDiscr,rcollection,rboundary)
+
+    ! Create the hierarchy for the dual space
+
+    rdiscrParams%cspace = CCSPACE_DUAL
+    rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
+    rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+
+    call fesph_createHierarchy (rfeHierarchyDual,&
+        rmeshHierarchy%nlevels,rmeshHierarchy,&
+        fgetDist1LvDiscr,rcollection,rboundary)
+
+    ! Create the hierarchy for the control space
+
+    rdiscrParams%cspace = CCSPACE_CONTROL
+    rdiscrParams%p_rfeHierarchyPrimal => rfeHierarchyPrimal
+    rcollection%DquickAccess(:) = transfer(rdiscrParams,rcollection%DquickAccess(:))
+
+    call fesph_createHierarchy (rfeHierarchyControl,&
+        rmeshHierarchy%nlevels,rmeshHierarchy,&
+        fgetDist1LvDiscr,rcollection,rboundary)
+          
     if (ioutputLevel .ge. 2) then
       ! Print statistics about the discretisation
       call output_lbrk ()

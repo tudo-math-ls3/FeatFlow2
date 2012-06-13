@@ -45,7 +45,7 @@ nmaxIterations     = 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8
+depsRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if either absolute error < depsAbs or
@@ -154,7 +154,7 @@ nmaxIterations     = 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8
+depsRel            = 1E-14
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if either absolute error < depsAbs or
@@ -169,7 +169,7 @@ ddivRel            = 1E20
 # General damping parameter when adding the preconditioned defect
 # to the solution in the nonlinear space-time iteration
 
-domega             = 0.05
+domega             = 1.0
 
 # Output level of the solver
 
@@ -224,7 +224,7 @@ nmaxIterations     = 10
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8
+depsRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if either absolute error < depsAbs or

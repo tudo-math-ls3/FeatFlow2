@@ -8,7 +8,7 @@
 [CC-PHYSICS]
 ############
 
-# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
+# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes, 2=Heat equation
 
 iequation = 0
 
@@ -123,19 +123,19 @@ iBoundary          = 2
 
 # cubature formula for Mass matrix
 
-scubMass           = G3X3
+scubMass           = G5X5
 
 # cubature formula for Stokes/Laplacian matrix
 
-scubStokes         = 
+scubStokes         = G5X5
 
 # cubature formula for Pressure matrices B
 
-scubB              = 
+scubB              = G5X5
 
 # cubature formula for RHS F
 
-scubF              = 
+scubF              = G5X5
 
 
 # ========================================================================

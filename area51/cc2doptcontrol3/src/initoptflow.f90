@@ -108,6 +108,16 @@ contains
     call struc_getDebugFlags (rparlist,rsettings%ssectionDebugFlags,&
         rsettingsSolver%rdebugFlags)
 
+    ! Initialise the physics parameter that describe the
+    ! physical equation
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising physics.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionPhysics",sstr,bdequote=.true.)
+    call struc_initPhysics (rparlist,rsettingsSolver%rphysics,sstr)
+
     ! Basic space discretisation settings
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -237,7 +247,8 @@ contains
     call inmat_initStaticAsmTemplHier (&
         rsettingsSolver%rspaceAsmHierarchy,&
         rsettingsSolver%rsettingsSpaceDiscr,&
-        rsettingsSolver%rfeHierarchyPrimal)
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rfeHierarchyDual,&
+        rsettingsSolver%rfeHierarchyControl,rsettingsSolver%rphysics)
         
     ! Set up operator assembly structures for the assembly of KKT stuff
     call smva_createOpAsmHier(rsettingsSolver%roperatorAsmHier,rsettingsSolver)
@@ -258,9 +269,8 @@ contains
     end if
     
     call inmat_calcStaticLevelAsmHier (&
-        rsettingsSolver%rspaceAsmHierarchy,&
-        rsettingsSolver%rsettingsSpaceDiscr,&
-        ioutputlevel .ge. 1)
+        rsettingsSolver%rspaceAsmHierarchy,rsettingsSolver%rsettingsSpaceDiscr,&
+        rsettingsSolver%rphysics,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
       call output_line ("]",cdateTimeLogPolicy = OU_DTP_NONE)
@@ -286,16 +296,6 @@ contains
     call struc_initBDC (rsettingsSolver%roptcBDC,rparlist,&
         rsettingsSolver%rphysics,sstr,sstr2,sstr3)
 
-    ! Initialise the physics parameter that describe the
-    ! physical equation
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising physics.")
-    end if
-    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
-        "ssectionPhysics",sstr,bdequote=.true.)
-    call struc_initPhysics (rparlist,rsettingsSolver%rphysics,sstr)
-
     ! Ok, now we can initialise the Optimal-Control settings, read in the
     ! target function etc.
     if (ioutputLevel .ge. 1) then
@@ -309,16 +309,13 @@ contains
       call output_lbrk()
       call output_line ("Initialising target function.")
     end if
-    
-    select case (rsettingsSolver%rphysics%cequation)
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      ! Stokes, Navier-Stokes, 2D
-      call init_initOptControlTargetFunc2D (rparlist,rsettings%ssectionOptControl,&
-          rsettingsSolver%rphysics,rsettingsSolver%rsettingsSpaceDiscr,&
-          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-          rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rtimeHierarchy,&
-          rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
-    end select
+
+    ! Initialise the target function.
+    call init_initOptControlTargetFunc2D (rparlist,rsettings%ssectionOptControl,&
+        rsettingsSolver%rphysics,rsettingsSolver%rsettingsSpaceDiscr,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rtimeHierarchy,&
+        rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
     
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -345,14 +342,12 @@ contains
     ! Primal RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsPrimal",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysics%cequation)
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      ! Stokes, Navier-Stokes, 2D
-      call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsPrimal,&
-          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
-    end select
+
+    call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsPrimal,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
+        rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
+
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
@@ -362,14 +357,12 @@ contains
     ! Dual RHS
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhsDual",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysics%cequation)
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      ! Stokes, Navier-Stokes, 2D
-      call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsDual,&
-          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
-    end select
+
+    call init_initFunction (rparlist,sstr,rsettingsSolver%rrhsDual,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
+        rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
+
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
@@ -412,14 +405,12 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "sinitialCondition",sstr,bdequote=.true.)
-    select case (rsettingsSolver%rphysics%cequation)
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      ! Stokes, Navier-Stokes, 2D
-      call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
-          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-          rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
-          rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
-    end select
+
+    call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchyPrimal,&
+        rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
+
     if (isuccess .eq. 1) then
       call output_line ('Functions created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')

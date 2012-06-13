@@ -201,6 +201,9 @@ module structuresboundaryconditions
 
     ! Boundary regions with do-nothing Neumann boundary conditions.
     type(t_boundaryRegionList) :: rneumannBoundary
+
+    ! Boundary regions with Dirichlet boundary conditions.
+    type(t_boundaryRegionList) :: rdirichletBoundary
   
     ! Boundary regions with Dirichlet control boundary
     type(t_boundaryRegionList) :: rdirichletControlBoundary
