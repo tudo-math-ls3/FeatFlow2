@@ -1609,7 +1609,7 @@ contains
     ! affine quadrilateral/hexahedral transformation, need to be handled
     ! specially here.
 
-    if (celement .eq. EL_QPW4P1_2D .or. celement .eq. EL_QPW4DCP1_2D) then
+    if ((celement .eq. EL_QPW4P1_2D) .or. (celement .eq. EL_QPW4DCP1_2D)) then
       elem_igetTrafoType = TRAFO_ID_PWLINSIMCUBE + TRAFO_DIM_2D
       return
     end if
@@ -1619,24 +1619,7 @@ contains
       return
     end if
 
-    select case(elem_igetShape(celement))
-    case (BGEOM_SHAPE_LINE)
-      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
-    case (BGEOM_SHAPE_TRIA)
-      elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
-    case (BGEOM_SHAPE_QUAD)
-      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
-    case (BGEOM_SHAPE_TETRA)
-      elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
-    case (BGEOM_SHAPE_HEXA)
-      elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
-    case (BGEOM_SHAPE_PYRA)
-      elem_igetTrafoType = TRAFO_ID_MLINPYRAMID + TRAFO_DIM_3D
-    case (BGEOM_SHAPE_PRISM)
-      elem_igetTrafoType = TRAFO_ID_MLINPRISM + TRAFO_DIM_3D
-    case default
-      elem_igetTrafoType = TRAFO_ID_UNKNOWN
-    end select
+    elem_igetTrafoType = trafo_getDefaultTrafo(elem_igetShape(celement))
 
   end function
 

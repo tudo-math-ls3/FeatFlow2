@@ -128,7 +128,26 @@
 !# 31.) spdiscr_initDiscr_free
 !#      -> Initialise a "free" scalar discretisation
 !#
+!# 32.) spdiscr_createDefTrafoStructure
+!#      -> Creates a default transformation structure based on a discretisation
 !#
+!# 33.) spdiscr_createDefTrafoByCubInfo
+!#      -> Creates a default transformation structure based on a 
+!#         cubature structure
+!#
+!# 34.) spdiscr_defaultTrafo
+!#      -> Auxiliary routine: Default initialisation of a transformation structure
+!#         based on a cubature or discretisation structure 
+!#
+!# 35.) spdiscr_releaseTrafoStructure
+!#      -> Releases a transformation structure
+!#
+!# 36.) spdiscr_getElementTrafoMapping
+!#      -> Obtains for every element the usesd transformation
+!#
+!# 37.) spdiscr_getStdTrafoInfo
+!#      -> Returns basic information of a transformation structure
+!# 
 !#   The cubature information structure \\
 !# -------------------------------------- \\
 !#
@@ -513,6 +532,57 @@ module spatialdiscretisation
 
 !<typeblock>
 
+  ! Contains information that configures the transformation from the reference
+  ! to the real element(s) in the assembly of matrices and vectors 
+  ! for a set of elements.
+  type t_scalarTrafoInfoBlock
+
+    ! Transformation to use.
+    integer(I32) :: ctrafoType = TRAFO_ID_UNKNOWN
+
+    ! Id of the element set, this assembly block refers to.
+    integer :: ielementDistr = 0
+    
+    ! Number of elements in this block.
+    ! =-1: structure not initialised.
+    integer :: NEL = -1
+
+    ! If h_IelementList != ST_NOHANDLE, this specifies a handle to a list of elements 
+    ! where to apply the above cubature rule. All elements shall be in the element set
+    ! ielementDistr!
+    ! If h_IelementList=ST_NOHANDLE, the element list for the above cubature rule 
+    ! is the complete list of elements in the element distribution ielementDistr.
+    integer :: h_IelementList = ST_NOHANDLE
+
+    ! Ownership flag. This flag is set to .true. by the routines in this module
+    ! if h_IelementList is internally created. Assures that
+    ! spdiscr_releaseCubStructure does not accidentally release memory
+    ! that was not allocated here.
+    logical :: blocalElementList = .false.
+
+  end type
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Contains information that configures the transformation from the
+  ! reference to the real element(s) in the assembly
+  ! of matrices and vectors.
+  type t_scalarTrafoInfo
+
+    ! Number of cubature information blocks in p_RinfoBlocks.
+    integer :: ninfoBlockCount = 0
+
+    ! A list of cubature information blocks.
+    type(t_scalarTrafoInfoBlock), dimension(:), pointer :: p_RinfoBlocks => null()
+
+  end type
+
+!</typeblock>
+
+!<typeblock>
+
   ! Contains information that configures the cubature in the assembly 
   ! of matrices and vectors for a set of elements.
   type t_scalarCubatureInfoBlock
@@ -522,6 +592,9 @@ module spatialdiscretisation
 
     ! Id of the element set, this assembly block refers to.
     integer :: ielementDistr = 0
+    
+    ! Id of the transformation block, this assembly block refers to.
+    integer :: itrafoBlock = 0
 
     ! Number of elements in this block.
     ! =-1: structure not initialised.
@@ -559,7 +632,6 @@ module spatialdiscretisation
   end type
 
 !</typeblock>
-
 
 !</types>
 
@@ -599,7 +671,16 @@ module spatialdiscretisation
   public :: spdiscr_getElementCubMapping
 
   public :: spdiscr_getStdDiscrInfo
-
+  
+  public :: t_scalarTrafoInfoBlock
+  public :: t_scalarTrafoInfo
+  public :: spdiscr_createDefTrafoStructure
+  public :: spdiscr_createDefTrafoByCubInfo
+  public :: spdiscr_defaultTrafo
+  public :: spdiscr_releaseTrafoStructure
+  public :: spdiscr_getElementTrafoMapping
+  public :: spdiscr_getStdTrafoInfo
+  
   interface spdiscr_initDiscr_simple
     module procedure spdiscr_initDiscr_simple_old
     module procedure spdiscr_initDiscr_simple_new
@@ -3475,7 +3556,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_createDefCubStructure (rdiscretisation, rcubatureInfo, &
-      ccubType)
+      ccubType, rtrafoInfo)
 
 !<description>
   ! Creates a default cubature information structure based on a discretisation.
@@ -3496,6 +3577,11 @@ contains
   ! =CUB_GEN_DEPR_LINFORM: Take ccubTypeLinForm from the discretisation stricture.
   ! =CUB_GEN_DEPR_EVAL: Take ccubTypeEval from the discretisation stricture
   integer(I32), intent(in), optional :: ccubType
+  
+  ! OPTIONAL: A transformation structure that defines the transformation
+  ! from the reference to the real element(s). If not specified, the default
+  ! transformation is used.
+  type(t_scalarTrafoInfo), intent(in), optional :: rtrafoInfo
 !</input>
 
 !<output>
@@ -3508,19 +3594,48 @@ contains
     integer :: i
     integer(I32) :: ccub
 
-    ! We take as many blocks as element sets.
-    rcubatureInfo%ninfoBlockCount = rdiscretisation%inumFESpaces
-    allocate(rcubatureInfo%p_RinfoBlocks(rcubatureInfo%ninfoBlockCount))
+    if (.not. present(rtrafoInfo)) then
+    
+      ! We take as many blocks as element sets.
+      rcubatureInfo%ninfoBlockCount = rdiscretisation%inumFESpaces
+      allocate(rcubatureInfo%p_RinfoBlocks(rcubatureInfo%ninfoBlockCount))
 
-    ! Loop through the element sets and insert the default cubature formula.
-    do i = 1,rcubatureInfo%ninfoBlockCount
-      rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = i
+      ! Loop through the element sets and insert the default cubature formula.
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = i
 
-      ! Handle all elements in the same way...
-      rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
+        ! Handle all elements in the same way...
+        rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
 
-      rcubatureInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
-    end do
+        rcubatureInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
+
+        ! Default transformation
+        rcubatureInfo%p_RinfoBlocks(i)%itrafoBlock = 0
+      end do
+      
+    else
+    
+      ! We take as many blocks as transformation sets
+      rcubatureInfo%ninfoBlockCount = rtrafoInfo%ninfoBlockCount
+      allocate(rcubatureInfo%p_RinfoBlocks(rcubatureInfo%ninfoBlockCount))
+
+      ! Loop through the element sets and insert the default cubature formula.
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        rcubatureInfo%p_RinfoBlocks(i)%ielementDistr = &
+            rtrafoInfo%p_RinfoBlocks(i)%ielementDistr
+
+        ! Handle all elements in the same way...
+        rcubatureInfo%p_RinfoBlocks(i)%h_IelementList = &
+            rtrafoInfo%p_RinfoBlocks(i)%h_IelementList
+
+        rcubatureInfo%p_RinfoBlocks(i)%NEL = rtrafoInfo%p_RinfoBlocks(i)%NEL
+
+        ! Id of the referring transformation block
+        rcubatureInfo%p_RinfoBlocks(i)%itrafoBlock = i
+
+      end do
+      
+    end if    
 
     ! Initialise the cubature formula
     ! Default: Automatic.
@@ -3622,7 +3737,7 @@ contains
 
 !</subroutine>
     ! local variables
-    integer :: i
+    integer :: i,ielementDistr
 
     ! Loop through the element sets and insert the default cubature formula.
     select case (cub_isExtended(ccubType))
@@ -3630,17 +3745,20 @@ contains
       ! Not generic. Check every cubature formula if it is valid
       ! for the current element. If yes, initialise.
       do i = 1,rcubatureInfo%ninfoBlockCount
+        ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
         call spdiscr_checkCubature (ccubType,&
-            rdiscretisation%RelementDistr(i)%celement)
+            rdiscretisation%RelementDistr(ielementDistr)%celement)
         rcubatureInfo%p_RinfoBlocks(i)%ccubature = ccubType
       end do
 
     case (1)
       ! Generic, resolve using the element shape.
       do i = 1,rcubatureInfo%ninfoBlockCount
+        ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
         rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
             cub_resolveGenericCubType(&
-              elem_igetShape(rdiscretisation%RelementDistr(i)%celement),ccubType)
+              elem_igetShape(rdiscretisation%RelementDistr(ielementDistr)%celement),&
+              ccubType)
       end do
 
     case (2)
@@ -3650,15 +3768,17 @@ contains
       case (CUB_GEN_AUTO)
         ! Standard cubature formula for that element set.
         do i = 1,rcubatureInfo%ninfoBlockCount
+          ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
           rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
-              spdiscr_getStdCubature(rdiscretisation%RelementDistr(i)%celement)
+              spdiscr_getStdCubature(rdiscretisation%RelementDistr(ielementDistr)%celement)
         end do
 
       case (CUB_GEN_AUTO_LUMPMASS)
         ! Stabdard cubature formula that lumps the mass matrix
         do i = 1,rcubatureInfo%ninfoBlockCount
+          ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
           rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
-              spdiscr_getLumpCubature(rdiscretisation%RelementDistr(i)%celement)
+              spdiscr_getLumpCubature(rdiscretisation%RelementDistr(ielementDistr)%celement)
         end do
 
       end select
@@ -3751,7 +3871,8 @@ contains
 !<subroutine>
 
   subroutine spdiscr_getStdDiscrInfo (icubatureBlock,rcubatureInfo,rdiscretisation,&
-      ielementDistr,celement,ccubature,NEL,p_IelementList)
+      ielementDistr,celement,ccubature,NEL,p_IelementList,&
+      rtrafoInfo,itrafoBlock,ctrafoType)
 
 !<description>
   ! Returns typically used information for an assembly block.
@@ -3765,8 +3886,13 @@ contains
   ! Underlying cubature information structure.
   type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
 
-  ! Associated discretisation structure.
-  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+  ! OPTIONAL: Associated discretisation structure.
+  type(t_spatialDiscretisation), intent(in), optional, target :: rdiscretisation
+
+  ! OPTIONAL: Transformation information structure that defines the mapping
+  ! from the reference to the real element(s). If not specified, the default
+  ! transformation is chosen.
+  type(t_scalarTrafoInfo), intent(in), optional :: rtrafoInfo
 !</input>
 
 !<output>
@@ -3785,16 +3911,26 @@ contains
   ! Pointer to the list of elements of that block.
   ! =null if NEL=0.
   integer, dimension(:), pointer, optional :: p_IelementList
+
+  ! Id of the underlying transformation block or =0
+  ! if no transformation block is associated and the default transformation
+  ! is to be used.
+  integer, intent(out), optional :: itrafoBlock
+
+  ! Transformation rule
+  integer(I32), intent(out), optional :: ctrafoType
 !</output>
 
 !</subroutine>
 
     ! local variables
-    integer :: ielementDistLocal
+    integer :: ielementDistLocal,itrafoBlk
+    integer(I32) :: ccub
     type(t_elementDistribution), pointer :: p_relementDistr
 
     ielementDistLocal = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ielementDistr
-    p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
+    itrafoBlk = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%itrafoBlock
+    ccub =  rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature
 
     ! Structure initialised?
     if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL .eq. -1) then
@@ -3808,16 +3944,44 @@ contains
       ielementDistr = ielementDistLocal
     end if
 
-    if (present(celement)) then
-      celement = p_relementDistr%celement
+    if (present(rdiscretisation)) then
+      p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
+
+      if (present(celement)) then
+        celement = p_relementDistr%celement
+      end if
+    else
+      nullify(p_relementDistr)
+      
+      ! No chance
+      if (present(celement)) then
+        celement = EL_UNDEFINED
+      end if
     end if
 
     if (present(ccubature)) then
-      ccubature =  rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature
+      ccubature =  ccub
     end if
 
     if (present(NEL)) then
       NEL = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL
+    end if
+
+    if (.not. present(rtrafoInfo)) then
+      itrafoBlock = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%itrafoBlock
+    end if
+
+    if (present(ctrafoType)) then
+      if (present(rtrafoInfo) .and. (itrafoBlk .ne. 0)) then
+        ! Transformation from the trafo structure
+        ctrafoType = rtrafoInfo%p_RinfoBlocks(itrafoBlk)%ctrafoType
+      else if (associated(p_relementDistr)) then
+        ! Default transformation of the element
+        ctrafoType = elem_igetTrafoType(p_relementDistr%celement)
+      else
+        ! Default transformation for that cubature formula
+        ctrafoType = trafo_getDefaultTrafo(cub_igetShape(ccub))
+      end if
     end if
 
     if (present(p_IelementList)) then
@@ -3828,6 +3992,335 @@ contains
         if (rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .ne. ST_NOHANDLE) then
           call storage_getbase_int(&
               rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList,&
+              p_IelementList)
+        else if (present(rtrafoInfo) .and. (itrafoBlk .ne. 0)) then
+          ! Element list from the transformation or the discretisation.
+          call storage_getbase_int(&
+              rtrafoInfo%p_RinfoBlocks(itrafoBlk)%h_IelementList,&
+              p_IelementList)
+        else
+          ! Element list from the discretisation
+          call storage_getbase_int(&
+              rdiscretisation%RelementDistr(ielementDistLocal)%h_IelementList,&
+              p_IelementList)
+        end if
+      end if
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_createDefTrafoStructure (rdiscretisation, rtrafoInfo)
+
+!<description>
+  ! Creates a default transformation information structure based on a discretisation.
+  ! All elements in an element set are assembled with their default transformation.
+!</description>
+
+!<input>
+  ! A discretisation structure, the cubature information structure should be
+  ! associated to.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+!</input>
+
+!<output>
+  ! Cubature information structure to be created.
+  type(t_scalarTrafoInfo), intent(out) :: rtrafoInfo
+!</output>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+
+    ! We take as many blocks as element sets.
+    rtrafoInfo%ninfoBlockCount = rdiscretisation%inumFESpaces
+    allocate(rtrafoInfo%p_RinfoBlocks(rtrafoInfo%ninfoBlockCount))
+
+    ! Loop through the element sets and insert the default cubature formula.
+    do i = 1,rtrafoInfo%ninfoBlockCount
+      rtrafoInfo%p_RinfoBlocks(i)%ielementDistr = i
+
+      ! Handle all elements in the same way...
+      rtrafoInfo%p_RinfoBlocks(i)%h_IelementList = ST_NOHANDLE
+
+      rtrafoInfo%p_RinfoBlocks(i)%NEL = rdiscretisation%RelementDistr(i)%NEL
+    end do
+
+    ! Initialise the cubature formula
+    call spdiscr_defaultTrafo (rtrafoInfo,rdiscretisation)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_createDefTrafoByCubInfo (rcubatureInfo, rtrafoInfo)
+
+!<description>
+  ! Creates a default transformation information structure based on a cubature
+  ! information structure. The transformation structure is structured
+  ! the same way as the cubature structure and receives teh default
+  ! transformation for the corresponding cells.
+!</description>
+
+!<input>
+  ! Cubature information structure
+  type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+!</input>
+
+!<output>
+  ! Transformation structure to be created.
+  type(t_scalarTrafoInfo), intent(out) :: rtrafoInfo
+!</output>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+
+    ! We take as many blocks as element sets.
+    rtrafoInfo%ninfoBlockCount = rcubatureInfo%ninfoBlockCount
+    allocate(rtrafoInfo%p_RinfoBlocks(rtrafoInfo%ninfoBlockCount))
+
+    ! Loop through the element sets and insert the default cubature formula.
+    do i = 1,rtrafoInfo%ninfoBlockCount
+      rtrafoInfo%p_RinfoBlocks(i)%ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
+
+      ! Handle all elements in the same way...
+      rtrafoInfo%p_RinfoBlocks(i)%h_IelementList = rcubatureInfo%p_RinfoBlocks(i)%h_IelementList
+
+      rtrafoInfo%p_RinfoBlocks(i)%NEL = rcubatureInfo%p_RinfoBlocks(i)%NEL
+    end do
+    
+    ! Default initialisation
+    call spdiscr_defaultTrafo (rtrafoInfo,rcubatureInfo=rcubatureInfo)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_defaultTrafo (rtrafoInfo,rdiscretisation,rcubatureInfo)
+
+!<description>
+  ! Initialises the transformation rule in rtrafoInfo by the default settings
+  ! based on a discretisation or a cubature information structure
+!</description>
+
+!<input>
+  ! OPTIONAL: A discretisation structure defining the default settings for
+  ! the transformation. If this is present, it overrides the settingts
+  ! of rcubatureInfo (if present as well).
+  type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+
+  ! OPTIONAL: Cubature information structure defining the default settings for
+  ! the transformation.
+  type(t_scalarCubatureInfo), intent(in), optional :: rcubatureInfo
+!</input>
+
+!<inputoutput>
+  ! Transformation information structure to be modified.
+  type(t_scalarTrafoInfo), intent(inout) :: rtrafoInfo
+!</inputoutput>
+
+!</subroutine>
+    ! local variables
+    integer :: i,ielementDistr
+    integer(I32) :: ccubature
+
+    if (present(rdiscretisation)) then
+
+      ! Resolve using the element routines.
+      do i = 1,rtrafoInfo%ninfoBlockCount
+        ielementDistr = rtrafoInfo%p_RinfoBlocks(i)%ielementDistr
+        rtrafoInfo%p_RinfoBlocks(i)%ctrafoType = &
+            elem_igetTrafoType(rdiscretisation%RelementDistr(ielementDistr)%celement)
+      end do
+
+    else if (present(rcubatureInfo)) then
+
+      ! Initialise the trafo formula using the default transformation
+      ! valid for that cubature formula
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        ccubature = rcubatureInfo%p_RinfoBlocks(i)%ccubature
+        rtrafoInfo%p_RinfoBlocks(i)%ctrafoType = trafo_getDefaultTrafo(cub_igetShape(ccubature))
+      end do
+
+    else
+
+      call output_line ("No default initialisation for transformation available!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_defaultTrafo")
+      call sys_halt()
+    
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_releaseTrafoStructure (rtrafoInfo)
+
+!<description>
+  ! Cleans up an transformation information structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_scalarTrafoInfo), intent(inout) :: rtrafoInfo
+!</inputoutput>
+
+!</subroutine>
+    ! local variables
+    integer :: i
+
+    ! Loop through the element sets and release memory
+    do i = 1,rtrafoInfo%ninfoBlockCount
+      ! Release memory if necessary -- and if the memory belongs to us
+      if ((rtrafoInfo%p_RinfoBlocks(i)%h_IelementList .ne. ST_NOHANDLE) .and.&
+          rtrafoInfo%p_RinfoBlocks(i)%blocalElementList) then
+        call storage_free(rtrafoInfo%p_RinfoBlocks(i)%h_IelementList)
+      end if
+    end do
+
+    deallocate(rtrafoInfo%p_RinfoBlocks)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getElementTrafoMapping (rtrafoInfo,rdiscretisation,ItrafoPerElement)
+
+!<description>
+  ! Determins an array which identifies for every element the corresponding
+  ! transformation formula.
+!</description>
+
+!<input>
+  ! Transformation information structure.
+  type(t_scalarTrafoInfo), intent(in) :: rtrafoInfo
+
+  ! Associated discretisation structure.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+!</input>
+
+!<output>
+  ! Transformation identifier list. For every element i, ItrafoPerElement(i)
+  ! identifies the transformation on that element.
+  integer(I32), dimension(:), intent(out) :: ItrafoPerElement
+!</output>
+
+!</subroutine>
+    ! local variables
+    integer :: i,j,NEL
+    integer, dimension(:), pointer :: p_IelementList
+    integer(I32) :: ctrafoType
+
+    ! Loop through the element sets and release memory
+    do i = 1,rtrafoInfo%ninfoBlockCount
+
+      ! For every element in the associated p_IelementList, identify
+      ! its transformation rule.
+      call spdiscr_getStdTrafoInfo(i,rtrafoInfo,rdiscretisation,&
+          ctrafoType=ctrafoType,NEL=NEL,p_IelementList=p_IelementList)
+
+      do j = 1,NEL
+        ItrafoPerElement(p_IelementList(j)) = ctrafoType
+      end do
+
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_getStdTrafoInfo (itrafoBlock,rtrafoInfo,rdiscretisation,&
+      ielementDistr,celement,ctrafoType,NEL,p_IelementList)
+
+!<description>
+  ! Returns typically used information for a transformation block.
+!</description>
+
+!<input>
+  ! Identifier of the information block in rtrafoInfo
+  ! where information should be acquired from.
+  integer, intent (in) :: itrafoBlock
+
+  ! Underlying transformation information structure.
+  type(t_scalarTrafoInfo), intent(in) :: rtrafoInfo
+
+  ! Associated discretisation structure.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+!</input>
+
+!<output>
+  ! Id of the underlying element distribution in the discretisation.
+  integer, intent(out), optional :: ielementDistr
+
+  ! Element identifier of that block
+  integer(I32), intent(out), optional :: celement
+
+  ! Transformation rule in that block
+  integer(I32), intent(out), optional :: ctrafoType
+
+  ! Number of elements in that block
+  integer, intent(out), optional :: NEL
+
+  ! Pointer to the list of elements of that block.
+  ! =null if NEL=0.
+  integer, dimension(:), pointer, optional :: p_IelementList
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ielementDistLocal
+    type(t_elementDistribution), pointer :: p_relementDistr
+
+    ielementDistLocal = rtrafoInfo%p_RinfoBlocks(itrafoBlock)%ielementDistr
+    p_relementDistr => rdiscretisation%RelementDistr(ielementDistLocal)
+
+    ! Structure initialised?
+    if (rtrafoInfo%p_RinfoBlocks(itrafoBlock)%NEL .eq. -1) then
+      call output_line ("rtrafoInfo structure not initialised!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"spdiscr_getStdTrafoInfo")
+      call sys_halt()
+    end if
+
+    ! Return all information specified in the parameters
+    if (present(ielementDistr)) then
+      ielementDistr = ielementDistLocal
+    end if
+
+    if (present(celement)) then
+      celement = p_relementDistr%celement
+    end if
+
+    if (present(ctrafoType)) then
+      ctrafoType =  rtrafoInfo%p_RinfoBlocks(itrafoBlock)%ctrafoType
+    end if
+
+    if (present(NEL)) then
+      NEL = rtrafoInfo%p_RinfoBlocks(itrafoBlock)%NEL
+    end if
+
+    if (present(p_IelementList)) then
+      nullify(p_IelementList)
+      if (rtrafoInfo%p_RinfoBlocks(itrafoBlock)%NEL .ne. 0) then
+        ! If the handle of the info block structure is not associated,
+        ! take all elements of the corresponding element distribution.
+        if (rtrafoInfo%p_RinfoBlocks(itrafoBlock)%h_IelementList .ne. ST_NOHANDLE) then
+          call storage_getbase_int(&
+              rtrafoInfo%p_RinfoBlocks(itrafoBlock)%h_IelementList,&
               p_IelementList)
         else
           call storage_getbase_int(&

@@ -121,6 +121,9 @@
 !# 28.) trafo_initPerfConfig
 !#       -> Initialises the global performance configuration
 !#
+!# 28.) trafo_getDefaultTrafo
+!#       -> Determins the default transformation for a given cell shape.
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -381,6 +384,7 @@ module transformation
   public :: trafo_calcBackTrafo_hexa
   public :: trafo_isLinearTrafo
   public :: trafo_initPerfConfig
+  public :: trafo_getDefaultTrafo
 
 contains
 
@@ -5383,4 +5387,47 @@ contains
 
   end function
 
+!************************************************************************
+
+!<function>
+
+  elemental integer (I32) function trafo_getDefaultTrafo (celementShape) result (ctrafoType)
+
+!<description>
+  ! For a given cell shape, this determins the default (lowest order)
+  ! transformation from the reference to the real element.
+!</description>
+
+!<result>
+  ! A Transofrmation ID.
+!</result>
+
+!<input>
+  ! Element shape; A BGEOM_SHAPE_xxxx constant
+  integer(I32), intent(in) :: celementShape
+!</input>
+
+!</function>
+
+    select case(celementShape)
+    case (BGEOM_SHAPE_LINE)
+      ctrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
+    case (BGEOM_SHAPE_TRIA)
+      ctrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
+    case (BGEOM_SHAPE_QUAD)
+      ctrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
+    case (BGEOM_SHAPE_TETRA)
+      ctrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_3D
+    case (BGEOM_SHAPE_HEXA)
+      ctrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_3D
+    case (BGEOM_SHAPE_PYRA)
+      ctrafoType = TRAFO_ID_MLINPYRAMID + TRAFO_DIM_3D
+    case (BGEOM_SHAPE_PRISM)
+      ctrafoType = TRAFO_ID_MLINPRISM + TRAFO_DIM_3D
+    case default
+      ctrafoType = TRAFO_ID_UNKNOWN
+    end select
+
+  end function
+  
 end module

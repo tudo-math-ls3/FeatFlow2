@@ -63,6 +63,9 @@
 !# 16.) fev2_prepareFemDataVecEval
 !#      -> Basic initialisation of a FEM data structure based on a
 !#         vector evaluation structure
+!#
+!# 17.) fev2_calcDofMapping
+!#      -> Calculates the DOF mapping 
 !# </purpose>
 !##############################################################################
 
@@ -77,6 +80,7 @@ module feevaluation2
   use elementpreprocessing
   use genoutput
   use scalarpde
+  use dofmapping
   use spatialdiscretisation
   use transformation
   use triangulation
@@ -240,6 +244,7 @@ module feevaluation2
   public :: fev2_prepareFemDataSMat
   public :: fev2_prepareFemDataSVec
   public :: fev2_createFemData
+  public :: fev2_calcDofMapping
   public :: fev2_releaseFemData
   public :: fev2_evaluateFemData
   
@@ -1042,6 +1047,48 @@ contains
       p_rfemData => RfemData(i)
       deallocate(p_rfemData%p_Idofs)
       deallocate(p_rfemData%p_Dbas)
+    
+    end do
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_calcDofMapping(RfemData,IelementList)
+
+!<description>
+  ! Calculates the DOF mapping, i.e., the global degrees of freedom
+  ! for all elements in the element list Ielement list.
+!</description>
+
+!<input>
+  ! Element list
+  integer, dimension(:), intent(in) :: IelementList
+!</input>
+
+!<inputoutput>
+  ! List all involved FEM spaces.
+  type(t_fev2FemData), dimension(:), intent(inout), target :: RfemData
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_fev2FemData), pointer :: p_rfemData
+    integer :: i
+
+    ! Loop through all FEM data blocks.
+    do i=1,size(RfemData)
+    
+      p_rfemData => RfemData(i)
+
+      ! Calculates the degrees of freedom on the elements
+      if (associated(p_rfemData%p_rdiscr)) then
+        call dof_locGlobMapping_mult(p_rfemData%p_rdiscr, &
+            IelementList, p_rfemData%p_Idofs)
+      end if
     
     end do
 

@@ -440,4 +440,105 @@ module blockmatassemblybase
 
 !</types>
 
+!<typeblock>
+
+  ! Encapsules all dynamic data which is calculated during the
+  ! integral assembly. Roughly speaking, this is the data
+  ! necessary for the assembly on a block of elements.
+  ! Every block of elements may be assembled in parallel
+  ! to other blocks.
+  type t_bmaIntegralAssemblyData
+
+    ! Element evaluation set encapsuling coordinates on of the cubature
+    ! points on the reference element, real elements, Jacobian determinants etc.
+    type(t_evalElementSet) :: revalElementSet
+
+    ! The number of elements in revalElementSet of all submatrices
+    ! whose cubature points on the reference element(s) have already 
+    ! been initialised.
+    integer :: ninitialisedElements = 0
+
+    ! Number of elements in p_IelementList
+    integer :: nelements = 0
+
+    ! Pointer to the list of elements currently in progress
+    integer, dimension(:), pointer :: p_IelementList => null()
+
+    ! For every element and every cubature point in the element set,
+    ! cubature weight to be used for calculating the matric entries.
+    ! Is calculated from the actual cubature weight and the
+    ! corresponding Jacobian determinant of the cubature point.
+    !    p_DcubWeight(npoints,nelements)
+    real(DP), dimension(:,:), pointer :: p_DcubWeight => null()
+
+    ! Data of all involved FEM spaces of subvectory which are
+    ! automatically evaluated.
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData => null()
+
+  end type
+
+!</typeblock>
+
+  public :: t_bmaIntegralAssemblyData
+
+!<typeblock>
+
+  ! A vector assembly structure that saves crucial data during the matrix assembly
+  ! with bma_buildVector.
+  type t_bmaIntegralAssembly
+
+    ! Currently active element distribution
+    integer :: ielementDistr = 0
+    
+    ! Maximum number of elements to handle simultaneously.
+    integer :: nelementsPerBlock = 0
+
+    ! Type of cubature formula to use.
+    ! This cubature formula is simultaneously used for all blocks
+    ! in the matrix.
+    integer(I32) :: ccubType = CUB_UNDEFINED
+
+    ! Type of transformation
+    integer(I32) :: ctrafoType = TRAFO_ID_UNKNOWN
+
+    ! Cubature weights
+    real(DP), dimension(:), pointer :: p_Domega => null()
+
+    ! An array that takes coordinates of the cubature formula on the reference element
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef => null()
+
+    ! Number of cubature points per element
+    integer :: ncubp = 0
+
+    ! Basic evaluation tag; use the same for all the element spaces
+    integer(I32) :: cevaluationTag = 0
+
+    ! Underlying triangulation
+    type(t_triangulation), pointer :: p_rtriangulation => null()
+
+    ! Underlying boundary definition
+    type(t_boundary), pointer :: p_rboundary => null()
+
+    ! Template structure for the dynamic data that changes
+    ! during the assembly of each element block.
+    ! During the assembly, this is used to generate the
+    ! actual dynamic data arrays that hold the values of the DOFs,...
+    type(t_bmaIntegralAssemblyData) :: rassemblyDataTemplate
+
+    ! Template structure for the dynamic evaluation of vectors.
+    ! During the assembly, the vectors in this structure are
+    ! automatically evaluated in the cubature points.
+    type(t_fev2Vectors) :: revalVectorsTemplate
+
+    ! Performance configuration. 
+    type(t_perfconfig), pointer :: p_rperfconfig => null()
+
+  end type
+
+!</typeblock>
+
+  public :: t_bmaIntegralAssembly
+
+!</types>
+
 end module

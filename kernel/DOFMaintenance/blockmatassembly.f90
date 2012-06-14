@@ -24,6 +24,9 @@
 !# 2.) bma_buildVector
 !#     -> Assembles a block vector
 !#
+!# 2.) bma_buildIntegral
+!#     -> Calculates the value of an integral
+!#
 !# Furthermore, there are a set of auxiliary routines which can be used
 !# to customize the matrix assembly:
 !#
@@ -49,8 +52,20 @@
 !# 6.) bma_doneVecAssembly
 !#     -> Clean up the vector assembly.
 !#
-!# Finally the following set of callback routines realise standard operators.
-!# They can directly be used with bma_buildMatrix:
+!# 7.) bma_initIntAssembly
+!#     -> Initialise the integral assembly
+!#
+!# 8.) bma_assembleSubmeshIntegral
+!#     -> Assemble a part of an integral based on a set of cells.
+!#        All cells must have the same element type, the same cubature formula
+!#        and the same transformation
+!#
+!# 9.) bma_doneIntAssembly
+!#     -> Clean up the integral assembly.
+!#
+!# The following set of callback routines realise standard operators.
+!# They can directly be used with bma_buildMatrix, bma_buildVector and 
+!# bma_buildIntegral:
 !#
 !# 1.) bma_fcalc_mass
 !#     -> Used with bma_buildMatrix, this calculates mass matrices in all
@@ -64,6 +79,30 @@
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        a standard convection operator in the first diagonal blocks
 !#        of a block matrix
+!#
+!# 4.) bma_fcalc_rhsOne
+!#     -> Calculates the RHS vector based on the function f=1.
+!#
+!# 5.) bma_fcalc_integralOne
+!#     -> Calculates the integral of the function v=1 (which results in the
+!#        size of the domain).
+!#
+!# 6.) bma_fcalc_integralFE
+!#     -> Calculates the integral of an arbitrary FEM function.
+!#
+!# 7.) bma_fcalc_bubbleL2error
+!#     -> Calculates the squared L2 error of a FEM function to a 
+!#        bubble function
+!#        
+!# 8.) bma_fcalc_bubbleH1error
+!#     -> Calculates the squared H1 error of a FEM function to a 
+!#        bubble function
+!#
+!# 7.) bma_fcalc_L2norm
+!#     -> Calculates the squared L2 norm of a FEM function
+!#        
+!# 8.) bma_fcalc_H1norm
+!#     -> Calculates the squared H1 (semi-)norm of a FEM function
 !# </purpose>
 !##############################################################################
 
@@ -75,7 +114,6 @@ module blockmatassembly
   use basicgeometry
   use boundaryaux
   use cubature
-  use dofmapping
   use element
   use elementpreprocessing
   use domainintegration
@@ -106,7 +144,15 @@ module blockmatassembly
   public :: bma_fcalc_mass
   public :: bma_fcalc_laplace
   public :: bma_fcalc_convection
+  
   public :: bma_fcalc_rhsOne
+  
+  public :: bma_fcalc_integralOne
+  public :: bma_fcalc_integralFE
+  public :: bma_fcalc_bubbleL2error
+  public :: bma_fcalc_bubbleH1error
+  public :: bma_fcalc_L2norm
+  public :: bma_fcalc_H1norm
 
   public :: bma_initMatAssembly
   public :: bma_doneMatAssembly
@@ -117,6 +163,11 @@ module blockmatassembly
   public :: bma_doneVecAssembly
   public :: bma_assembleSubmeshVector
   public :: bma_buildVector
+
+  public :: bma_initIntAssembly
+  public :: bma_doneIntAssembly
+  public :: bma_assembleSubmeshIntegral
+  public :: bma_buildIntegral
 
 contains
 
@@ -1263,6 +1314,8 @@ contains
   end subroutine
 
   !****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
 
 !<subroutine>
 
@@ -1277,7 +1330,7 @@ contains
 !<inputoutput>
     ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
     ! have to be filled with data.
-    type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: RvectorData
 !</inputoutput>
 
 !<input>
@@ -1357,6 +1410,613 @@ contains
     
   end subroutine
 
+  !****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_integralOne(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the integral of the function v=1.
+    ! The result is the size of the domain.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dval
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    dintvalue = 0.0_DP
+    
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! The value of the function v is just the 1.0-function here
+        dval = 1.0_DP
+        
+        ! Multiply the values by the cubature weight and sum up
+        ! into the integral value
+        dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval
+          
+      end do ! icubp
+    
+    end do ! iel
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_integralFE(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the integral of an arbitrary finite element function v.
+    ! If v has multiple components, the sum of the integrals of all
+    ! components is returned.
+    !
+    ! The FEM function(s) must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dval
+    integer :: iel, icubp, ivec
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    dintvalue = 0.0_DP
+
+    ! Loop through all provided FEM functions
+    do ivec = 1,revalVectors%ncount
+    
+      ! Skip interleaved vectors.
+      if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
+
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_Dfunc => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_FUNC2D)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the FEM function
+          dval = p_Dfunc(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the integral value
+          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval
+            
+        end do ! icubp
+      
+      end do ! iel
+      
+    end do ! ivec
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_L2norm(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the L2-norm of an arbitrary finite element function v.
+    ! If v has multiple components, the sum of the integrals of all
+    ! components is returned.
+    !
+    ! The FEM function(s) must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dval
+    integer :: iel, icubp, ivec
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    dintvalue = 0.0_DP
+
+    ! Loop through all provided FEM functions
+    do ivec = 1,revalVectors%ncount
+    
+      ! Skip interleaved vectors.
+      if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
+
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_Dfunc => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_FUNC)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the FEM function
+          dval = p_Dfunc(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the integral value
+          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
+            
+        end do ! icubp
+      
+      end do ! iel
+      
+    end do ! ivec
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_H1norm(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the H1 (semi-)norm of an arbitrary finite element function v.
+    ! If v has multiple components, the sum of the integrals of all
+    ! components is returned.
+    !
+    ! The FEM function(s) must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dderivX,dderivY,dderivZ
+    integer :: iel, icubp, ivec,ndim
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_DderivX,p_DderivY,p_DderivZ
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    dintvalue = 0.0_DP
+
+    ! Loop through all provided FEM functions
+    do ivec = 1,revalVectors%ncount
+    
+      ! Skip interleaved vectors.
+      if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
+
+      ! Dimension?
+      ndim = revalVectors%p_RvectorData(ivec)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim
+      select case (ndim)
+      
+      ! ----------------
+      ! 1D
+      ! ----------------
+      case (NDIM1D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV1D_X)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 2D
+      ! ----------------
+      case (NDIM2D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_X)
+        p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_Y)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            dderivY = p_DderivY(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                ( dderivX**2 + dderivY**2 )
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 3D
+      ! ----------------
+      case (NDIM3D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_X)
+        p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Y)
+        p_DderivZ => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Z)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            dderivY = p_DderivY(icubp,iel)
+            dderivZ = p_DderivZ(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                ( dderivX**2 + dderivY**2 + dderivZ**2 )
+              
+          end do ! icubp
+        
+        end do ! iel
+        
+      end select
+      
+    end do ! ivec
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_bubbleL2error(dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the (squared) L2 error of an arbitrary FEM function v
+    ! to the bubble function u=16x(1-x)y(1-y):
+    !
+    !  <tex>  || v - u ||^2_{L2}  </tex>
+    !
+    ! The FEM function must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dval1,dval2,dx,dy
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  
+    ! Calcel if no FEM function is given.
+    if (revalVectors%ncount .eq. 0) return
+
+    ! Skip interleaved vectors.
+    if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+
+    dintvalue = 0.0_DP
+    
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Get the value of the bubble function
+        dx = p_Dpoints(1,icubp,iel)
+        dy = p_Dpoints(2,icubp,iel)
+        
+        dval1 = 16.0_DP * dx * (1.0_DP-dx) * dy * (1.0_DP-dy)
+
+        ! Get the error of the FEM function to the bubble function
+        dval2 = p_Dfunc(icubp,iel)
+        
+        ! Multiply the values by the cubature weight and sum up
+        ! into the (squared) L2 error:
+        dintvalue = dintvalue + &
+            p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+          
+      end do ! icubp
+    
+    end do ! iel
+      
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_bubbleH1error(dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the (squared) H1 error of an arbitrary FEM function v
+    ! to the bubble function u=16x(1-x)y(1-y)
+    ! (based on the H1 semi-norm).
+    !
+    !  <tex>  | v - u |^2_{H1}  </tex>
+    !
+    ! The FEM function must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dderivX1,dderivY1,dderivX2,dderivY2,dx,dy
+    integer :: iel, icubp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_DderivX,p_DderivY
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  
+    ! Calcel if no FEM function is given.
+    if (revalVectors%ncount .eq. 0) return
+
+    ! Skip interleaved vectors.
+    if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_X)
+    p_DderivY => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_Y)
+
+    dintvalue = 0.0_DP
+    
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Get the derivatives of the bubble function in the cubature point
+        dx = p_Dpoints(1,icubp,iel)
+        dy = p_Dpoints(2,icubp,iel)
+        
+        dderivX1 = 16.0_DP*dy*(dy-1.0_DP)*(2.0_DP*dx-1.0_DP)
+        dderivY1 = 16.0_DP*dx*(dx-1.0_DP)*(2.0_DP*dy-1.0_DP)
+
+        ! Get the error of the FEM function derivatives of the bubble function
+        ! in the cubature point
+        dderivX2 = p_DderivX(icubp,iel)
+        dderivY2 = p_DderivY(icubp,iel)
+        
+        ! Multiply the values by the cubature weight and sum up
+        ! into the (squared) H1 error:
+        dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
+          
+      end do ! icubp
+    
+    end do ! iel
+      
+  end subroutine
+
+  !****************************************************************************
+  !****************************************************************************
+  ! Assembly of block matrices
+  !****************************************************************************
   !****************************************************************************
 
   !<subroutine>
@@ -2108,7 +2768,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_initMatAssembly(rmatrixAssembly,ccubType,cflags,&
+  subroutine bma_initMatAssembly(rmatrixAssembly,ccubType,ctrafoType,cflags,&
       rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,&
       revalVectors,rperfconfig)
 
@@ -2120,6 +2780,9 @@ contains
 !<input>
   ! Cubature formla to use
   integer(I32), intent(in) :: ccubType
+  
+  ! Transformation to use
+  integer(I32), intent(in) :: ctrafoType
 
   ! Option field. Combination of BMA_CALC_xxxx flags.
   ! Use BMA_CALC_STANDARD for standard options.
@@ -2188,13 +2851,10 @@ contains
         rmatrix,ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial,&
         revalVectors)
 
-    ! Get the transformation from the first FEM data structure.
-    rmatrixAssembly%ctrafoType = &
-        rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
-
-    ! Get the cubature formula on the reference element
+    ! Get the cubature formula/transformation on/from the reference element
     rmatrixAssembly%ccubType = ccubType
     rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
+    rmatrixAssembly%ctrafoType = ctrafoType
 
     ! Allocate two arrays for the points and the weights
     allocate(rmatrixAssembly%p_Domega(rmatrixAssembly%ncubp))
@@ -2298,23 +2958,14 @@ contains
 
     ! local variables
     integer :: i,j,k
-    type(t_fev2FemData), pointer :: p_rfemData
     type(t_bmaMatrixData), pointer :: p_rmatrixData
 
     ! Remember the element list
     rassemblyData%p_IelementList => IelementList
     rassemblyData%nelements = size(IelementList)
 
-    ! Now, loop through all FEM spaces to calculate the FEM basis functions
-    do i=1,size(rassemblyData%p_RfemData)
-
-      p_rfemData => rassemblyData%p_RfemData(i)
-
-      ! Calculates the degrees of freedom on the elements
-      call dof_locGlobMapping_mult(p_rfemData%p_rdiscr, &
-          IelementList, p_rfemData%p_Idofs)
-
-    end do
+    ! Calculate the DOF mapping for the FEM spaces.
+    call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
 
     ! Loop through the matrices. Whereever there is unshared data,
     ! compute the local matrix indices.
@@ -2689,7 +3340,7 @@ contains
   subroutine bma_buildMatrix (rmatrix,cflags,&
       fcalcLocalMatrices, rcollection, &
       RmaxDerivativeTest,RmaxDerivativeTrial,&
-      revalVectors,rcubatureInfo,rperfconfig)
+      revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
 
 !<description>
   ! This subroutine calculates the entries of a block matrix and
@@ -2760,6 +3411,11 @@ contains
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
+  ! OPTIONAL: A transformation structure that specifies the transformation
+  ! from the reference to the real element(s).
+  ! If not specified, default settings are used.
+  type(t_scalarTrafoInfo), intent(in), target, optional :: rtrafoInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -2778,8 +3434,10 @@ contains
     type(t_bmaMatrixAssembly) :: rmatrixAssembly
     integer :: ielementDistr,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
-    integer(I32) :: ccubType,celement
+    integer(I32) :: ccubType,celement,ctrafoType
     type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_scalarTrafoInfo), pointer :: p_rtrafoInfo
+    type(t_scalarTrafoInfo), target :: rtempTrafoInfo
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -2804,18 +3462,37 @@ contains
       p_rcubatureInfo => rcubatureInfo
     end if
 
+    ! Transformation structure?
+    if (present(rtrafoInfo)) then
+      p_rtrafoInfo => rtrafoInfo
+    else
+      ! Set up a default transformation structure.
+      ! Do we have a discretisation that allows us to set up the structure?
+      if (associated(p_rdiscr)) then
+        ! We found a discretisation. Set up the transformation
+        call spdiscr_createDefTrafoStructure (p_rdiscr, rtempTrafoInfo)
+      else
+        ! Fallback procedure: No discretisation found.
+        ! Create a standard transformation based on the cubature formula.
+        call spdiscr_createDefTrafoByCubInfo (rcubatureInfo, rtempTrafoInfo)
+      end if
+      
+      p_rtrafoInfo => rtempTrafoInfo
+    end if
+
     ! Loop over the cubature blocks to discretise
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList)
+          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+          p_rtrafoInfo,ctrafoType=ctrafoType)
 
       ! Check if element distribution is empty
       if (NEL .le. 0) cycle
 
       ! Initialise a matrix assembly structure for that element distribution
-      call bma_initMatAssembly(rmatrixAssembly,ccubType,cflags,&
+      call bma_initMatAssembly(rmatrixAssembly,ccubType,ctrafoType,cflags,&
           rmatrix,ielementDistr,&
           RmaxDerivativeTest,RmaxDerivativeTrial,revalVectors,rperfconfig)
 
@@ -2832,11 +3509,18 @@ contains
       call spdiscr_releaseCubStructure(rtempCubatureInfo)
     end if
 
+    ! Release the transformation structure if necessary.
+    if (.not. present(rtrafoInfo)) then
+      call spdiscr_releaseTrafoStructure (rtempTrafoInfo)
+    end if
+
   end subroutine
 
-  ! #################################################################
-
-!****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
+  ! Assembly of block vectors
+  !****************************************************************************
+  !****************************************************************************
 
 !<subroutine>
 
@@ -3174,7 +3858,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_initVecAssembly(rvectorAssembly,ccubType,cflags,&
+  subroutine bma_initVecAssembly(rvectorAssembly,ccubType,ctrafoType,cflags,&
       rvector,ielementDistr,RmaxDerivativeTest,&
       revalVectors,rperfconfig)
 
@@ -3186,6 +3870,9 @@ contains
 !<input>
   ! Cubature formla to use
   integer(I32), intent(in) :: ccubType
+
+  ! Transformation formla to use
+  integer(I32), intent(in) :: ctrafoType
 
   ! Option field. Combination of BMA_CALC_xxxx flags.
   ! Use BMA_CALC_STANDARD for standard options.
@@ -3253,13 +3940,10 @@ contains
         rvector,ielementDistr,RmaxDerivativeTest,&
         revalVectors)
 
-    ! Get the transformation from the first FEM data structure.
-    rvectorAssembly%ctrafoType = &
-        rvectorAssembly%rassemblyDataTemplate%p_RfemData(1)%ctrafoType
-
-    ! Get the cubature formula on the reference element
+    ! Get the cubature/transformation formula on/from the reference element
     rvectorAssembly%ccubType = ccubType
     rvectorAssembly%ncubp = cub_igetNumPts(ccubType)
+    rvectorAssembly%ctrafoType = ctrafoType
 
     ! Allocate two arrays for the points and the weights
     allocate(rvectorAssembly%p_Domega(rvectorAssembly%ncubp))
@@ -3362,23 +4046,14 @@ contains
 
     ! local variables
     integer :: i
-    type(t_fev2FemData), pointer :: p_rfemData
     type(t_bmaVectorData), pointer :: p_rvectorData
 
     ! Remember the element list
     rassemblyData%p_IelementList => IelementList
     rassemblyData%nelements = size(IelementList)
 
-    ! Now, loop through all FEM spaces to calculate the FEM basis functions
-    do i=1,size(rassemblyData%p_RfemData)
-
-      p_rfemData => rassemblyData%p_RfemData(i)
-
-      ! Calculates the degrees of freedom on the elements
-      call dof_locGlobMapping_mult(p_rfemData%p_rdiscr, &
-          IelementList, p_rfemData%p_Idofs)
-
-    end do
+    ! Calculate the DOF mapping for the FEM spaces.
+    call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
 
     ! Loop through the subvectors. Whereever there is unshared data,
     ! Clear the destination arrays.
@@ -3701,7 +4376,7 @@ contains
 
   subroutine bma_buildVector (rvector,cflags,&
       fcalcLocalVectors, rcollection, &
-      RmaxDerivativeTest,revalVectors,rcubatureInfo,rperfconfig)
+      RmaxDerivativeTest,revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
 
 !<description>
   ! This subroutine calculates the entries of a block vector and
@@ -3771,6 +4446,11 @@ contains
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
+  ! OPTIONAL: A transformation structure that specifies the transformation
+  ! from the reference to the real element(s).
+  ! If not specified, default settings are used.
+  type(t_scalarTrafoInfo), intent(in), target, optional :: rtrafoInfo
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -3789,8 +4469,10 @@ contains
     type(t_bmaVectorAssembly) :: rvectorAssembly
     integer :: ielementDistr,icubatureBlock,NEL
     integer, dimension(:), pointer :: p_IelementList
-    integer(I32) :: ccubType,celement
+    integer(I32) :: ccubType,celement,ctrafoType
     type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_scalarTrafoInfo), pointer :: p_rtrafoInfo
+    type(t_scalarTrafoInfo), target :: rtempTrafoInfo
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -3815,18 +4497,37 @@ contains
       p_rcubatureInfo => rcubatureInfo
     end if
 
+    ! Transformation structure?
+    if (present(rtrafoInfo)) then
+      p_rtrafoInfo => rtrafoInfo
+    else
+      ! Set up a default transformation structure.
+      ! Do we have a discretisation that allows us to set up the structure?
+      if (associated(p_rdiscr)) then
+        ! We found a discretisation. Set up the transformation
+        call spdiscr_createDefTrafoStructure (p_rdiscr, rtempTrafoInfo)
+      else
+        ! Fallback procedure: No discretisation found.
+        ! Create a standard transformation based on the cubature formula.
+        call spdiscr_createDefTrafoByCubInfo (rcubatureInfo, rtempTrafoInfo)
+      end if
+      
+      p_rtrafoInfo => rtempTrafoInfo
+    end if
+
     ! Loop over the cubature blocks to discretise
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get information about that block as well as an appropriate cubature formula
       call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList)
+          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+          p_rtrafoInfo,ctrafoType=ctrafoType)
 
       ! Check if element distribution is empty
       if (NEL .le. 0 ) cycle
 
       ! Initialise a vector assembly structure for that element distribution
-      call bma_initVecAssembly(rvectorAssembly,ccubType,cflags,&
+      call bma_initVecAssembly(rvectorAssembly,ccubType,ctrafoType,cflags,&
           rvector,ielementDistr,RmaxDerivativeTest,revalVectors,rperfconfig)
 
       ! Assemble the data for all elements in this element distribution
@@ -3840,6 +4541,848 @@ contains
     ! Release the assembly structure if necessary.
     if (.not. present(rcubatureInfo)) then
       call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+
+    ! Release the transformation structure if necessary.
+    if (.not. present(rtrafoInfo)) then
+      call spdiscr_releaseTrafoStructure (rtempTrafoInfo)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+  !****************************************************************************
+  ! Assembly of integrals with block techniques
+  !****************************************************************************
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_initIntAssemblyData(rassemblyData,revalVectors,ielementDistr)
+
+!<description>
+  ! Initialises the main parameters in the structure containing the
+  ! assembly data (cubature weights, etc.).
+  !
+  ! The returned rassemblyData structure can be used as template
+  ! for bma_createIntAssemblyData.
+!</description>
+
+!<input>
+  ! OPTIONAL: A set of FEM functions to be evaluated during the vector
+  ! assembly.
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
+
+  ! OPTIONAL: Current element distribution.
+  ! Must be specified if revalVectors is given.
+  integer, intent(in), optional :: ielementDistr
+!</input>
+
+!<output>
+  ! The integral assembly data structure to be initialised.
+  type(t_bmaIntegralAssemblyData), intent(out) :: rassemblyData
+!</output>
+
+!</subroutine>
+
+    ! Initialise the element set; can be simultaneously used for all
+    ! FEM spaces, it is element independent.
+    call elprep_init(rassemblyData%revalElementSet)
+
+    ! Element sets are not yet initialised.  
+    rassemblyData%ninitialisedElements = 0
+
+    ! Prepare FEM data for the vectors to be evaluated.
+    if (present(revalVectors)) then
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+          ielementDistr)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_doneIntAssemblyData(rassemblyData)
+
+!<description>
+  ! Releases allocated memory from the assembly data structure.
+!</description>
+
+!<inputoutput>
+  ! Assembly data structure to be cleaned up.
+  type(t_bmaIntegralAssemblyData), intent(inout) :: rassemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release the vector and FEM data array
+    deallocate(rassemblyData%p_RfemData)
+
+    ! Element sets are not yet initialised.  
+    rassemblyData%ninitialisedElements = 0
+
+  end subroutine
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_createIntAssemblyData(rvectorAssembly,&
+      rassemblyData,rassemblyDataTemplate,&
+      revalVectors,revalVectorsTemplate)
+
+!<description>
+  ! Based on a template structure, this creates an assembly data structure
+  ! for the vector assembly with all data arrays initialised and allocated.
+!</description>
+
+!<input>
+  ! Template assembly data structure. rassemblyData is created based
+  ! on the data in this structure.
+  type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyDataTemplate
+
+  ! An integral assembly structure.
+  type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+  ! Template vector data structure. rvectorData is created based
+  ! on the data in this structure.
+  type(t_fev2Vectors), intent(in) :: revalVectorsTemplate
+!</input>
+
+!<output>
+  ! The vector assembly data structure to be initialised.
+  type(t_bmaIntegralAssemblyData), intent(out) :: rassemblyData
+
+  ! Vector data structure to be initialised according to revalVectorsTemplate
+  type(t_fev2Vectors), intent(out) :: revalVectors
+!</output>
+
+!</subroutine>
+
+    ! At first, just copy the content from the vector template structure
+    rassemblyData = rassemblyDataTemplate
+
+    ! Now initialise the dynamic content.
+    !
+    ! Copy the FEM data and the vector data
+    allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
+
+    rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
+
+    ! Initialise the FEM evaluation structures.
+    call fev2_createFemData(rassemblyData%p_RfemData,&
+        rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock)
+
+    ! Initialise the vector evaluation structure.
+    !
+    ! Copy the content from the template.
+    revalVectors = revalVectorsTemplate
+
+    ! Re-create the vector array
+    if (revalVectors%ncount .eq. 0) then
+      nullify(revalVectors%p_RvectorData)
+    else
+      allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
+      revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
+
+      ! Prepare the evaluation of the FEM functions
+      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_releaseIntAssemblyData(rassemblyData,revalVectors)
+
+!<description>
+  ! Releases memory of an assembly structure created by bma_createIntAssemblyData.
+!</description>
+
+!<inputoutput>
+  ! The integral assembly data structure to be cleaned up
+  type(t_bmaIntegralAssemblyData), intent(inout) :: rassemblyData
+
+  ! Vector data structure to be cleaned up
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release vector evaluzation data
+    if (revalVectors%ncount .ne. 0) then
+      call fev2_doneVectorEval(revalVectors)
+      deallocate(revalVectors%p_RvectorData)
+    end if
+
+    ! Release FEM evaluation data
+    call fev2_releaseFemData(rassemblyData%p_RfemData)
+
+    ! Release the element set and the cubature weights
+    call elprep_releaseElementSet(rassemblyData%revalElementSet)
+
+    if (associated(rassemblyData%p_DcubWeight)) then
+      deallocate(rassemblyData%p_DcubWeight)
+    end if
+
+    ! Element sets are not initialised anymore
+    rassemblyData%ninitialisedElements = 0
+
+    ! Release memory
+    if (associated(rassemblyData%p_RfemData)) then
+      deallocate (rassemblyData%p_RfemData)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_initIntAssembly(rintegralAssembly,ccubType,ctrafoType,cflags,&
+      rtriangulation,rboundary,revalVectors,ielementDistr,rperfconfig)
+
+!<description>
+  ! Initialise a vector assembly structure for assembling a linear form
+  ! for a certain element distribution.
+!</description>
+
+!<input>
+  ! Cubature formla to use
+  integer(I32), intent(in) :: ccubType
+
+  ! Transformation formla to use
+  integer(I32), intent(in) :: ctrafoType
+
+  ! Option field. Combination of BMA_CALC_xxxx flags.
+  ! Use BMA_CALC_STANDARD for standard options.
+  integer(I32), intent(in) :: cflags
+  
+  ! Underlying triangulation
+  type(t_triangulation), target :: rtriangulation
+  
+  ! OPTIONAL: Underlying domain definition
+  type(t_boundary), target, optional :: rboundary
+
+  ! OPTIONAL: Set of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
+
+  ! OPTIONAL: Current element distribution.
+  ! Must be specified if revalVectors is given.
+  integer, intent(in), optional :: ielementDistr
+  
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+  ! A vector assembly structure.
+  type(t_bmaIntegralAssembly), intent(out) :: rintegralAssembly
+!</output>
+
+!</subroutine>
+
+    integer :: i
+    integer(I32) :: cshape
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    ! Remember the performance configuration for later use
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bma_perfconfig
+    end if
+
+    rintegralAssembly%p_rperfconfig => p_rperfconfig
+
+    ! Get basic data
+    if (present(rboundary)) then
+      rintegralAssembly%p_rboundary => rboundary
+    else
+      nullify(rintegralAssembly%p_rboundary)
+    end if
+    rintegralAssembly%p_rtriangulation => rtriangulation
+
+    ! Save the vector evaluation structure as template.
+    ! Make a copy of the stucture, that is simpler here.
+    if (present(revalVectors)) then
+      rintegralAssembly%revalVectorsTemplate = revalVectors
+    end if
+
+    ! Initialise the template structure which is used during the
+    ! actual vector assembly.
+    call bma_initIntAssemblyData(rintegralAssembly%rassemblyDataTemplate,&
+        revalVectors,ielementDistr)
+
+    ! Get the cubature/transformation formula on/from the reference element
+    rintegralAssembly%ccubType = ccubType
+    rintegralAssembly%ncubp = cub_igetNumPts(ccubType)
+    rintegralAssembly%ctrafoType = ctrafoType
+
+    ! Allocate two arrays for the points and the weights
+    allocate(rintegralAssembly%p_Domega(rintegralAssembly%ncubp))
+    allocate(rintegralAssembly%p_DcubPtsRef(&
+        trafo_igetReferenceDimension(rintegralAssembly%ctrafoType),&
+        rintegralAssembly%ncubp))
+
+    ! Get the cubature formula
+    call cub_getCubature(ccubType,&
+        rintegralAssembly%p_DcubPtsRef,rintegralAssembly%p_Domega)
+
+    ! Number of simultaneously processed elements
+    rintegralAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
+
+    ! Transformation type
+    rintegralAssembly%ctrafoType = ctrafoType
+
+    ! Get the evaluation tag by "OR"-ing all those from the FEM spaces
+    ! and the option fields.
+    rintegralAssembly%cevaluationTag = 0
+
+    if (iand(cflags,BMA_CALC_REALCOORDS) .ne. 0) then
+      ! Calculate real world coordinates of the cubature points
+      rintegralAssembly%cevaluationTag = &
+          ior(rintegralAssembly%cevaluationTag,EL_EVLTAG_REALPOINTS)
+    end if
+
+    if (associated(rintegralAssembly%rassemblyDataTemplate%p_RfemData)) then
+
+      ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
+      do i=1,size(rintegralAssembly%rassemblyDataTemplate%p_RfemData)
+        rintegralAssembly%cevaluationTag = ior(rintegralAssembly%cevaluationTag,&
+            elem_getEvaluationTag(&
+            rintegralAssembly%rassemblyDataTemplate%p_RfemData(i)%celement))
+      end do
+
+      ! Check that all elements have the same NVE. Otherwise,
+      ! something is wrong.
+      cshape = &
+          elem_igetShape(rintegralAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+
+      do i=2,size(rintegralAssembly%rassemblyDataTemplate%p_RfemData)
+        if (cshape .ne. &
+            elem_igetShape(rintegralAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
+          call output_line ("Element spaces incompatible!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_initVecAssembly")
+          call sys_halt()
+        end if
+      end do
+      
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_doneIntAssembly(rintegralAssembly)
+
+!<description>
+  ! Clean up an interal assembly structure.
+!</description>
+
+!<inputoutput>
+  ! Vector assembly structure to clean up
+  type(t_bmaIntegralAssembly), intent(inout) :: rintegralAssembly
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release all allocated memory.
+    call bma_doneIntAssemblyData(rintegralAssembly%rassemblyDataTemplate)
+
+    deallocate(rintegralAssembly%p_DcubPtsRef)
+    deallocate(rintegralAssembly%p_Domega)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_prepareAssemblyData(rassemblyData,IelementList)
+
+!<description>
+  ! Auxiliary subroutine. 
+  ! Initialises the data arrays.
+!</description>
+
+!<input>
+  ! List of elements where to evaluate the FEM basis functions.
+  integer, dimension(:), intent(in), target :: IelementList
+!</input>
+
+!<inputoutput>
+  ! Assembly data structure.
+  type(t_bmaIntegralAssemblyData), intent(inout), target :: rassemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! Remember the element list
+    rassemblyData%p_IelementList => IelementList
+    rassemblyData%nelements = size(IelementList)
+
+    ! Calculate the DOF mapping for the FEM spaces.
+    if (associated(rassemblyData%p_RfemData)) then
+      call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_evaluateFEMforInt(rassemblyData,rintegralAssembly)
+
+!<description>
+  ! Auxiliary subroutine. 
+  ! Evaluates the FEM basis functions in the cubature points.
+  ! Updates the element sets according to the coordinates of the
+  ! cubature points, Jacobian determinants, etc.
+!</description>
+
+!<input>
+  ! A vector assembly structure.
+  type(t_bmaIntegralAssembly), intent(in), target :: rintegralAssembly
+!</input>
+
+!<inputoutput>
+  ! Assembly data structure receiving the FEM data
+  type(t_bmaIntegralAssemblyData), intent(inout) :: rassemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j
+    integer(I32) :: cevaluationTag
+    real(DP), dimension(:,:), pointer :: p_Ddetj,p_DcubWeight
+    real(DP), dimension(:), pointer :: p_Domega
+
+    if (associated(rassemblyData%p_RfemData)) then
+    
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag.
+      cevaluationTag = rintegralAssembly%cevaluationTag
+
+      ! In the first loop, calculate the coordinates on the reference element.
+      ! In all later loops, use the precalculated information.
+      !
+      ! If the cubature points are already initialised, do not do it again.
+      ! We check this by taking a look to ninitialisedElements which
+      ! gives the current maximum of initialised elements.
+      if (rassemblyData%nelements .gt. &
+          rassemblyData%ninitialisedElements) then
+
+        ! (Re-)initialise!
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+
+        ! Remember the new number of initialised elements
+        rassemblyData%ninitialisedElements = rassemblyData%nelements
+
+        ! (Re-)allocate the cubature weights      
+        if (associated(rassemblyData%p_DcubWeight)) then
+          deallocate(rassemblyData%p_DcubWeight)
+        end if
+
+        allocate(rassemblyData%p_DcubWeight(&
+            rintegralAssembly%ncubp,rassemblyData%nelements))
+
+      else
+        ! No need.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+      end if
+
+      ! Calculate all information that is necessary to evaluate the finite element
+      ! on all cells of our subset. This includes the coordinates of the points
+      ! on the cells.
+      call elprep_prepareSetForEvaluation (rassemblyData%revalElementSet,&
+          cevaluationTag, rintegralAssembly%p_rtriangulation, &
+          rassemblyData%p_IelementList, rintegralAssembly%ctrafoType, &
+          rintegralAssembly%p_DcubPtsRef(:,1:rintegralAssembly%ncubp), &
+          rperfconfig=rintegralAssembly%p_rperfconfig)
+
+      ! Calculate the cubature weights. THese weights must be
+      ! multiplied to the values of the trial/test-functions
+      ! for cubature. They calculate from the actual cubature
+      ! weights and the corresponding Jacobian determinant.
+
+      p_Ddetj => rassemblyData%revalElementSet%p_Ddetj
+      p_Domega => rintegralAssembly%p_Domega
+      p_DcubWeight => rassemblyData%p_DcubWeight
+
+      do j=1,rassemblyData%nelements
+        do i=1,rintegralAssembly%ncubp
+
+          ! Take the absolut value of the determinant of the mapping.
+          ! In 2D, the determinant is always positive, whereas in 3D,
+          ! the determinant might be negative -- that is normal!
+
+          p_DcubWeight(i,j) = abs(p_Ddetj(i,j))*p_Domega(i)
+
+        end do
+      end do
+
+      ! Now, calculate the FEM basis functions in the cubature points
+      call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
+      
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_assembleSubmeshIntegral(dintvalue,rintegralAssembly, IelementList,&
+      fcalcLocalIntegral, rcollection)
+
+!<description>
+  ! Assembles the vector entries for a list of elements by integrating
+  ! over the domain.
+!</description>
+
+!<input>
+
+  ! List of elements where to assemble the bilinear form.
+  integer, dimension(:), intent(in), target :: IelementList
+
+  interface
+
+    subroutine fcalcLocalIntegral (dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+      use collection
+      use blockmatassemblybase
+
+      ! Calculates the value of the integral for a set of elements.
+      
+      ! Returns the value of the integral
+      real(DP), intent(out) :: dintvalue
+
+      ! Data necessary for the assembly. Contains determinants and
+      ! cubature weights for the cubature,...
+      type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+      ! Structure with all data about the assembly
+      type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+      ! Number of points per element
+      integer, intent(in) :: npointsPerElement
+
+      ! Number of elements
+      integer, intent(in) :: nelements
+
+      ! Values of FEM functions automatically evaluated in the
+      ! cubature points.
+      type(t_fev2Vectors), intent(in) :: revalVectors
+
+      ! User defined collection structure
+      type(t_collection), intent(inout), optional :: rcollection
+
+    end subroutine
+
+  end interface  
+
+!</input>
+
+!<inputoutput>
+
+  ! A vector assembly structure prepared with bma_initMatAssembly.
+  type(t_bmaIntegralAssembly), intent(inout), target :: rintegralAssembly
+
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information.
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+!</inputoutput>
+
+!<output>
+  ! Value of the integral
+  real(DP), intent(out) :: dintvalue
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ielStart,ielMax
+    real(DP) :: dinttemp
+    type(t_bmaIntegralAssemblyData) :: rassemblyData
+    type(t_fev2Vectors) :: revalVectors
+
+    ! Use the template structure to create a vector data array.
+    ! Allocate memory for the assembly.
+    ! NOTE: This can be done in parallel, the information in rassemblyData
+    ! is independent!
+    call bma_createIntAssemblyData(rintegralAssembly,&
+        rassemblyData,rintegralAssembly%rassemblyDataTemplate,&
+        revalVectors,rintegralAssembly%revalVectorsTemplate)
+
+    ! Loop blockwise through the element list
+    dintvalue = 0.0_DP
+    do ielStart = 1,size(IelementList),rintegralAssembly%nelementsPerBlock
+
+      ! End of the current block
+      ielMax = min(ielStart-1+rintegralAssembly%nelementsPerBlock,size(IelementList))
+
+      ! Final preparation of the assembly data
+      call bma_prepareAssemblyData(rassemblyData,IelementList(ielStart:ielMax))
+
+      ! Calculate the FEM basis functions in the cubature points
+      ! (for FEM functions being evaluated)
+      call bma_evaluateFEMforInt(rassemblyData,rintegralAssembly)
+
+      ! (Re-)allocate memory for the FEM evaluation if necessary.
+      call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
+
+      ! Evaluate the attached vectors in the cubature points.
+      if (associated(rassemblyData%p_RfemData)) then
+        call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
+      end if
+
+      ! Use the callback routine to calculate the local vector entries.
+      dinttemp = 0.0_DP
+      call fcalcLocalIntegral(dinttemp,rassemblyData,rintegralAssembly,&
+          rintegralAssembly%ncubp,ielMax-ielStart+1,revalVectors,rcollection)
+          
+      ! Sum up the integral
+      dintvalue = dintvalue + dinttemp
+
+    end do
+
+    ! Release memory
+    call bma_releaseIntAssemblyData(rassemblyData,revalVectors)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_buildIntegral (dintvalue,cflags,&
+      fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
+      revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+
+!<description>
+  ! This subroutine calculates the entries of a block vector and
+  ! adds them to rvector. The callback function fcalcLocalVectors
+  ! has to compute the local vector indices by cubature.
+!</description>
+
+!<input>
+
+  ! Option field. Combination of BMA_CALC_xxxx flags.
+  ! Use BMA_CALC_STANDARD for standard options.
+  integer(I32), intent(in) :: cflags
+
+  interface
+
+    subroutine fcalcLocalIntegral (dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+      use collection
+      use blockmatassemblybase
+
+      ! Calculates the value of the integral for a set of elements.
+      
+      ! Returns the value of the integral
+      real(DP), intent(out) :: dintvalue
+
+      ! Data necessary for the assembly. Contains determinants and
+      ! cubature weights for the cubature,...
+      type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+      ! Structure with all data about the assembly
+      type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+      ! Number of points per element
+      integer, intent(in) :: npointsPerElement
+
+      ! Number of elements
+      integer, intent(in) :: nelements
+
+      ! Values of FEM functions automatically evaluated in the
+      ! cubature points.
+      type(t_fev2Vectors), intent(in) :: revalVectors
+
+      ! User defined collection structure
+      type(t_collection), intent(inout), optional :: rcollection
+
+    end subroutine
+
+  end interface  
+
+  ! OPTIONAL: Underlying triangulation.
+  ! Cal be omitted if a vector is passed via revalVectors.
+  type(t_triangulation), target, optional :: rtriangulation
+  
+  ! OPTIONAL: Underlying domain definition
+  type(t_boundary), target, optional :: rboundary
+
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information.
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: Set of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
+  ! OPTIONAL: A transformation structure that specifies the transformation
+  ! from the reference to the real element(s).
+  ! If not specified, default settings are used.
+  type(t_scalarTrafoInfo), intent(in), target, optional :: rtrafoInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+  ! Calculated integral
+  real(DP), intent(out) :: dintvalue
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_scalarCubatureInfo), target :: rtempCubatureInfo
+    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    type(t_bmaIntegralAssembly) :: rintegralAssembly
+    integer :: ielementDistr,icubatureBlock,NEL
+    integer, dimension(:), pointer :: p_IelementList
+    integer(I32) :: ccubType,celement,ctrafoType
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_scalarTrafoInfo), pointer :: p_rtrafoInfo
+    type(t_scalarTrafoInfo), target :: rtempTrafoInfo
+    integer :: i
+    real(DP) :: dinttemp
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bma_perfconfig
+    end if
+    
+    ! Try to find a discretisation structure.
+    nullify(p_rdiscr)
+    
+    if (present(revalVectors)) then
+      do i=1,revalVectors%ncount
+        if (associated(revalVectors%p_RvectorData(1)%p_rvector)) then
+          p_rdiscr => revalVectors%p_RvectorData(1)%p_rvector%p_rspatialDiscr
+          exit
+        end if
+      end do
+    end if
+    
+    ! Mesh?
+    if (present(rtriangulation)) then
+      ! Given by the parameter
+      p_rtriangulation => rtriangulation
+    else if (associated(p_rdiscr)) then
+      ! Taken from the discretisation
+      p_rtriangulation => p_rdiscr%p_rtriangulation
+    end if
+    
+    if (.not. associated(p_rtriangulation)) then
+      call output_line ("Cannot determine underlying mesh.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_buildIntegral")
+      call sys_halt()
+    end if
+    
+    ! If we do not have it, create a cubature info structure that
+    ! defines how to do the assembly.
+    if (.not. present(rcubatureInfo)) then
+      if (associated(p_rdiscr)) then
+        call spdiscr_createDefCubStructure(p_rdiscr,&
+            rtempCubatureInfo,CUB_GEN_DEPR_BILFORM)
+      else
+        ! If there is no cubature and no discretisation given,
+        ! there is no chance to determine
+        call output_line ("No cubature rule and no discretisation given.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_buildIntegral")
+        call sys_halt()
+      end if
+      p_rcubatureInfo => rtempCubatureInfo
+    else
+      p_rcubatureInfo => rcubatureInfo
+    end if
+
+    ! Transformation structure?
+    if (present(rtrafoInfo)) then
+      p_rtrafoInfo => rtrafoInfo
+    else
+      ! Set up a default transformation structure.
+      ! Do we have a discretisation that allows us to set up the structure?
+      if (associated(p_rdiscr)) then
+        ! We found a discretisation. Set up the transformation
+        call spdiscr_createDefTrafoStructure (p_rdiscr, rtempTrafoInfo)
+      else
+        ! Fallback procedure: No discretisation found.
+        ! Create a standard transformation based on the cubature formula.
+        call spdiscr_createDefTrafoByCubInfo (rcubatureInfo, rtempTrafoInfo)
+      end if
+      
+      p_rtrafoInfo => rtempTrafoInfo
+    end if
+
+    ! Loop over the cubature blocks to calculate
+    dintvalue = 0.0_DP
+    do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
+
+      ! Get information about that block as well as an appropriate cubature formula
+      call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
+          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+          p_rtrafoInfo,ctrafoType=ctrafoType)
+
+      ! Check if element distribution is empty
+      if (NEL .le. 0 ) cycle
+
+      ! Initialise a vector assembly structure for that element distribution
+      call bma_initIntAssembly(rintegralAssembly,ccubType,ctrafoType,cflags,&
+          p_rtriangulation,rboundary,revalVectors,ielementDistr,rperfconfig)
+
+      ! Assemble the data for all elements in this element distribution
+      dinttemp = 0.0_DP
+      call bma_assembleSubmeshIntegral (dinttemp,rintegralAssembly, p_IelementList(1:NEL),&
+          fcalcLocalIntegral, rcollection)
+      
+      ! Sum up
+      dintvalue = dintvalue + dinttemp
+
+      ! Release the assembly structure.
+      call bma_doneIntAssembly(rintegralAssembly)
+    end do
+
+    ! Release the assembly structure if necessary.
+    if (.not. present(rcubatureInfo)) then
+      call spdiscr_releaseCubStructure(rtempCubatureInfo)
+    end if
+    
+    ! Release the transformation structure if necessary.
+    if (.not. present(rtrafoInfo)) then
+      call spdiscr_releaseTrafoStructure (rtempTrafoInfo)
     end if
 
   end subroutine
