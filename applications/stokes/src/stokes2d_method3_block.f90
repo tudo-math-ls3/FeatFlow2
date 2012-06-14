@@ -194,17 +194,17 @@ contains
             
             ! B-matrices
             p_DlocalMatrixA13(jdofe,idofe,iel) = p_DlocalMatrixA13(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * ( dbasJ*dbasIx )
+                p_DcubWeight(icubp,iel) * ( -dbasJ*dbasIx )
 
             p_DlocalMatrixA23(jdofe,idofe,iel) = p_DlocalMatrixA23(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * ( dbasJ*dbasIy )
+                p_DcubWeight(icubp,iel) * ( -dbasJ*dbasIy )
 
             ! B^T-matrices
             p_DlocalMatrixA31(idofe,jdofe,iel) = p_DlocalMatrixA31(idofe,jdofe,iel) + &
-                p_DcubWeight(icubp,iel) * ( dbasJ*dbasIx )
+                p_DcubWeight(icubp,iel) * ( -dbasJ*dbasIx )
 
             p_DlocalMatrixA32(idofe,jdofe,iel) = p_DlocalMatrixA32(idofe,jdofe,iel) + &
-                p_DcubWeight(icubp,iel) * ( dbasJ*dbasIy )
+                p_DcubWeight(icubp,iel) * ( -dbasJ*dbasIy )
                                           
           end do ! idofe
           
@@ -342,6 +342,324 @@ contains
     
   end subroutine
 
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine st2d3_fcalc_L2error(dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the (squared) L2 error.
+    ! The component to calculate the error for has to be provided
+    ! in rcollection%IquickAccess(1). The viscosity has to be stored
+    ! in rcollection%DquickAccess(1).
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dval1,dval2,dx,dy,dnu
+    integer :: iel, icubp, icomp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  
+    ! Calcel if no FEM function is given.
+    if (revalVectors%ncount .eq. 0) return
+
+    ! Skip interleaved vectors.
+    if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+    ! Get the component from the collection
+    icomp = rcollection%IquickAccess(1)
+
+    ! Get the viscosity parameter
+    dnu = rcollection%DquickAccess(1)
+
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_FUNC2D)
+
+    dintvalue = 0.0_DP
+    
+    ! Which component to calculate?
+    select case (icomp)
+    
+    ! ----------
+    ! X-velocity
+    ! ----------
+    case (1)
+    
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the bubble function
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          
+          dval1 = dy * (1.0_DP-dy)
+
+          ! Get the error of the FEM function to the bubble function
+          dval2 = p_Dfunc(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the (squared) L2 error:
+          dintvalue = dintvalue + &
+              p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+            
+        end do ! icubp
+      
+      end do ! iel
+      
+    ! ----------
+    ! Y-velocity
+    ! ----------
+    case (2)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the bubble function
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          
+          dval1 = 0.0_DP
+
+          ! Get the error of the FEM function to the bubble function
+          dval2 = p_Dfunc(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the (squared) L2 error:
+          dintvalue = dintvalue + &
+              p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+            
+        end do ! icubp
+      
+      end do ! iel
+
+    ! ----------
+    ! Pressure
+    ! ----------
+    case (3)
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the value of the bubble function
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          
+          dval1 = 2.0_DP * dnu * (1.0_DP-dx)
+
+          ! Get the error of the FEM function to the bubble function
+          dval2 = p_Dfunc(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the (squared) L2 error:
+          dintvalue = dintvalue + &
+              p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+            
+        end do ! icubp
+      
+      end do ! iel
+
+    end select
+      
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine st2d3_fcalc_H1error(dintvalue,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the (squared) H1 error.
+    ! The component to calculate the error for has to be provided
+    ! in rcollection%IquickAccess(1). The viscosity has to be stored
+    ! in rcollection%DquickAccess(1).
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dderivX1,dderivY1,dderivX2,dderivY2,dx,dy
+    integer :: iel, icubp, icomp
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_DderivX,p_DderivY
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  
+    ! Calcel if no FEM function is given.
+    if (revalVectors%ncount .eq. 0) return
+
+    ! Skip interleaved vectors.
+    if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+    ! Get the component from the collection
+    icomp = rcollection%IquickAccess(1)
+
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_DderivX => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_DERIV2D_X)
+    p_DderivY => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_DERIV2D_Y)
+
+    dintvalue = 0.0_DP
+
+    ! Which component to calculate?
+    select case (icomp)
+    
+    ! ----------
+    ! X-velocity
+    ! ----------
+    case (1)
+        
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the derivatives of the bubble function in the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          
+          dderivX1 = 0.0_DP
+          dderivY1 = 1.0_DP-2.0_DP*dy
+
+          ! Get the error of the FEM function derivatives of the bubble function
+          ! in the cubature point
+          dderivX2 = p_DderivX(icubp,iel)
+          dderivY2 = p_DderivY(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the (squared) H1 error:
+          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+              ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
+            
+        end do ! icubp
+      
+      end do ! iel
+    
+    ! ----------
+    ! Y-velocity
+    ! ----------
+    case (2)
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Get the derivatives of the bubble function in the cubature point
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+          
+          dderivX1 = 0.0_DP
+          dderivY1 = 0.0_DP
+
+          ! Get the error of the FEM function derivatives of the bubble function
+          ! in the cubature point
+          dderivX2 = p_DderivX(icubp,iel)
+          dderivY2 = p_DderivY(icubp,iel)
+          
+          ! Multiply the values by the cubature weight and sum up
+          ! into the (squared) H1 error:
+          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+              ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
+            
+        end do ! icubp
+      
+      end do ! iel
+    
+    
+    ! ----------
+    ! Pressure
+    ! ----------
+    case (3)
+
+      ! not used here.
+      
+    end select
+            
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -424,6 +742,13 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
+    ! Vector evaluation structure for the calculation of errors.
+    type(t_fev2Vectors) :: revalVectors
+
+    ! Error arrays for post-processing
+    real(DP), dimension(2) :: DerrorUL2, DerrorUH1
+    real(DP), dimension(1) :: DerrorPL2
+
     ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
@@ -896,6 +1221,55 @@ contains
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Projection and VTK export finished.
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Error calculation
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+    ! Store the viscosity parameter nu in the collection's quick access array
+    rcollection%DquickAccess(1) = dnu
+    
+    ! Set up revalVectors with the velocity/pressure vectors.
+    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(1),1)
+    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(2),1)
+    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(3),0)
+
+    ! Calculate errors of velocity and pressure against analytic solutions.
+    rcollection%IquickAccess(1) = 1  ! X-component, L2-error
+    call bma_buildIntegral(DerrorUL2(1),BMA_CALC_STANDARD,st2d3_fcalc_L2error,&
+        rcollection=rcollection,revalVectors=revalVectors,&
+        rcubatureInfo=rcubatureInfo)
+
+    rcollection%IquickAccess(1) = 2  ! Y-component, L2-error
+    call bma_buildIntegral(DerrorUL2(2),BMA_CALC_STANDARD,st2d3_fcalc_L2error,&
+        rcollection=rcollection,revalVectors=revalVectors,&
+        rcubatureInfo=rcubatureInfo)
+
+    rcollection%IquickAccess(1) = 3  ! Pressure, L2-error
+    call bma_buildIntegral(derrorPL2(1),BMA_CALC_STANDARD,st2d3_fcalc_L2error,&
+        rcollection=rcollection,revalVectors=revalVectors,&
+        rcubatureInfo=rcubatureInfo)
+
+    rcollection%IquickAccess(1) = 1  ! X-component, H1-error
+    call bma_buildIntegral(DerrorUH1(1),BMA_CALC_STANDARD,st2d3_fcalc_H1error,&
+        rcollection=rcollection,revalVectors=revalVectors,&
+        rcubatureInfo=rcubatureInfo)
+        
+    rcollection%IquickAccess(1) = 2  ! Y-component, H1-error
+    call bma_buildIntegral(DerrorUH1(2),BMA_CALC_STANDARD,st2d3_fcalc_H1error,&
+        rcollection=rcollection,revalVectors=revalVectors,&
+        rcubatureInfo=rcubatureInfo)
+
+    ! Print the errors.
+    call output_lbrk()
+    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(sqrt(DerrorUL2(1)), 10)) &
+                                // ' ' // trim(sys_sdEL(sqrt(DerrorUL2(2)), 10)))
+    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(sqrt(DerrorUH1(1)), 10)) &
+                                // ' ' // trim(sys_sdEL(sqrt(DerrorUH1(2)), 10)))
+    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(sqrt(derrorPL2(1)), 10)))
+    
+    ! Cleanup
+    call fev2_releaseVectorList(revalVectors)
+    
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
