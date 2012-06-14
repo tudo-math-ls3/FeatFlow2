@@ -136,6 +136,7 @@ contains
     if (iformatUCD .eq. 0) then
       call output_line('No valid output format is specified!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_outputSolution')
+      return
     end if
 
     ! Initialise the UCD exporter
