@@ -36,7 +36,7 @@ HEADER_FILES_TO_COPY="src/flagship.h
 # Specify list of application source files
 # (disable any ls alias setting)
 SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
-SRCEXTRA_APP="src/coloring.c "
+SRCEXTRA_APP="src/coloring.c src/timer.c"
 
 # Add coprocessor support (if available)
 # (disable any ls alias setting)
