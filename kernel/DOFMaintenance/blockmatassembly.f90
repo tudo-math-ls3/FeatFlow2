@@ -2937,9 +2937,10 @@ contains
       nullify(revalVectors%p_RvectorData)
     else
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
-      revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
+      revalVectors%p_RvectorData(1:revalVectorsTemplate%ncount) = &
+          revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
-      ! Initialise the vector evaluation.
+      ! Prepare the evaluation of the FEM functions
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
     end if
 
@@ -4042,7 +4043,8 @@ contains
       nullify(revalVectors%p_RvectorData)
     else
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
-      revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
+      revalVectors%p_RvectorData(1:revalVectorsTemplate%ncount) = &
+          revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
       ! Prepare the evaluation of the FEM functions
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
@@ -4947,7 +4949,8 @@ contains
       nullify(revalVectors%p_RvectorData)
     else
       allocate(revalVectors%p_RvectorData(revalVectorsTemplate%ncount))
-      revalVectors%p_RvectorData(:) = revalVectorsTemplate%p_RvectorData(:)
+      revalVectors%p_RvectorData(1:revalVectorsTemplate%ncount) = &
+          revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
       ! Prepare the evaluation of the FEM functions
       call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
