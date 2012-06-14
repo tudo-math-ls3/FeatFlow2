@@ -45,7 +45,7 @@
 inline
 static void prepare_baseline(const cudaDeviceProp *devProp,
 			     int nitems,
-			     int nitems_per_thread,
+			     int *nitems_per_thread,
 			     int threads_per_cta,
 			     int *blocks,
 			     int *threads,
@@ -56,14 +56,14 @@ static void prepare_baseline(const cudaDeviceProp *devProp,
     *threads = threads_per_cta;
     
     // Compute number of items per kernel
-    const int n_per_thread = MAX(nitems_per_thread,
-				 nitems/(threads_per_cta*devProp->maxGridSize[0])+1);
+    *nitems_per_thread = MAX((*nitems_per_thread),
+			     nitems/(threads_per_cta*devProp->maxGridSize[0])+1);
     
     // Compute number of items per kernel
-    *blocks =(nitems/nitems_per_thread+(*threads)-1)/(*threads);
+    *blocks =(nitems/(*nitems_per_thread)+(*threads)-1)/(*threads);
     
     // Compute total number of items processed
-    *nitems_processed = n_per_thread*threads_per_cta*(*blocks);
+    *nitems_processed = (*nitems_per_thread)*threads_per_cta*(*blocks);
   }
   else {
     *threads = 0;
@@ -75,7 +75,7 @@ static void prepare_baseline(const cudaDeviceProp *devProp,
 inline
 static void prepare_cudaDMA(const cudaDeviceProp *devProp,
 			    int nitems,
-			    int nitems_per_thread,
+			    int *nitems_per_thread,
 			    int compute_threads_per_cta,
 			    int dma_threads_per_ld,
 			    int dma_lds,
@@ -88,14 +88,14 @@ static void prepare_cudaDMA(const cudaDeviceProp *devProp,
     *threads = compute_threads_per_cta + dma_lds*dma_threads_per_ld;
     
     // Compute number of items per kernel
-    int n_per_thread = MAX(nitems_per_thread,
-			   nitems/(compute_threads_per_cta*devProp->maxGridSize[0])+1);
+    *nitems_per_thread = MAX((*nitems_per_thread),
+			     nitems/(compute_threads_per_cta*devProp->maxGridSize[0])+1);
     
     // Compute total number of threads
-    *blocks = (nitems/n_per_thread)/compute_threads_per_cta;
+    *blocks = (nitems/(*nitems_per_thread))/compute_threads_per_cta;
     
     // Compute total number of items processed
-    *nitems_processed = n_per_thread*compute_threads_per_cta*(*blocks);
+    *nitems_processed = *(nitems_per_thread)*compute_threads_per_cta*(*blocks);
   }
   else {
     *threads = 0;

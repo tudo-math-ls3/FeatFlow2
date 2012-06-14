@@ -17,8 +17,10 @@
 #include <iostream>
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
-#include "../../cudaDMA.h"
 #include "../../cudaGatherScatter.h"
+#ifdef HAS_INLINE_PTX
+#include "../../cudaDMA.h"
+#endif
 
 #define LANGUAGE LANGUAGE_C
 #include "../../flagship.h"
@@ -41,9 +43,11 @@
 #define SHMEM_DATA_IDX3        IDX3T
 #define SHMEM_NEDGE_PER_THREAD BASELINE_NEDGE_PER_THREAD
 
+#ifdef HAS_INLINE_PTX
 // Define CUDA kernel which makes use of the CUDADMA library to achive
 // higher throughput between global and shared memory on the device
 // #define CUDADMA_PREFETCH_SINGLE
+#endif
 
 // Defines for cudaDMA implementation without warp specialisation
 #ifdef CUDADMA_NOSPEC
@@ -1671,7 +1675,7 @@ namespace hydro2d_cuda
 	(Fx_ij,Fy_ij,DataAtEdge,ui,uj,vi,vj,pi,pj,1,1);
     }
 
-     /*
+    /*
      * Calculate the inviscid fluxes in all directions (not skew-symmetric)
      * and multiply them by the precomputed finite element coefficients
      */
@@ -2223,7 +2227,7 @@ namespace hydro2d_cuda
 					      -v_ij*Diff[2]
 					           +Diff[3])/RCONST(2.0)/c2_ij;
 	Td aux2 = (u_ij*Diff[0]
-		   -Diff[1])/RCONST(2.0)/c_ij;
+		       -Diff[1])/RCONST(2.0)/c_ij;
       
 	// Compute characteristic variables multiplied by the corresponding eigenvalue
 	Td w1 = l1 * (aux1 + aux2);
@@ -2232,8 +2236,7 @@ namespace hydro2d_cuda
 						   +v_ij*Diff[2]
 						        -Diff[3])/c2_ij);
 	Td w3 = l3 * (aux1 - aux2);
-	Td w4 = l4 * (v_ij*Diff[0]
-		      -Diff[2]);
+	Td w4 = l4 * (v_ij*Diff[0]-Diff[2]);
         
 	// Compute "R_ij * |Lbd_ij| * L_ij * dU"
 	if (btransposeDest) {
@@ -2280,8 +2283,7 @@ namespace hydro2d_cuda
 					   -u_ij*Diff[1]
 					   -v_ij*Diff[2]
 					        +Diff[3])/RCONST(2.0)/c2_ij;
-	aux2 = (v_ij*Diff[0]
-		-Diff[2])/RCONST(2.0)/c_ij;
+	aux2 = (v_ij*Diff[0]-Diff[2])/RCONST(2.0)/c_ij;
       
 	// Compute characteristic variables multiplied by the corresponding eigenvalue
 	w1 = l1 * (aux1 + aux2);
@@ -2290,8 +2292,7 @@ namespace hydro2d_cuda
 						+v_ij*Diff[2]
 						     -Diff[3])/c2_ij);
 	w3 = l3 * (aux1 - aux2);
-	w4 = l4 * (-u_ij*Diff[0]
-		   +Diff[1]);
+	w4 = l4 * (-u_ij*Diff[0]+Diff[1]);
       
 	// Compute "R_ij * |Lbd_ij| * L_ij * dU"
 	if (btransposeDest) {
@@ -2952,6 +2953,7 @@ if (btransposeDest) {
     }
   };
 
+#ifdef HAS_INLINE_PTX
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
    * artificial dissipation if required) (cudaDMA implementation
@@ -3147,9 +3149,10 @@ if (btransposeDest) {
 	       NVAR2D, 2, compute_threads_per_cta) + IDX2(FluxAtEdge,ivar,2,NVAR2D,2);
     }
   };
-
 #undef TOTAL_THREADS_PER_CTA
+#endif
 
+#ifdef HAS_INLINE_PTX
  /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
    * artificial dissipation if required) (cudaDMA implementation with
@@ -3403,9 +3406,10 @@ if (btransposeDest) {
       }
     }
   };
-
 #undef TOTAL_THREADS_PER_CTA
+#endif
 
+#ifdef HAS_INLINE_PTX
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
    * artificial dissipation if required) (cudaDMA implementation with
@@ -3939,9 +3943,10 @@ if (btransposeDest) {
       }
     }
   };
-
 #undef TOTAL_THREADS_PER_CTA
+#endif
 
+#ifdef HAS_INLINE_PTX
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
    * artificial dissipation if required) (cudaDMA implementation with
@@ -4725,9 +4730,10 @@ if (btransposeDest) {
       }
     }
   };
-  
 #undef TOTAL_THREADS_PER_CTA
+#endif
 
+#ifdef HAS_INLINE_PTX
   /*****************************************************************************
    * This CUDA kernel calculates the inviscid fluxes and applies
    * artificial dissipation if required) (cudaDMA implementation with
@@ -5566,8 +5572,8 @@ if (btransposeDest) {
       }
     }
   };
-  
 #undef TOTAL_THREADS_PER_CTA
+#endif
   
   /*****************************************************************************
    * Internal C++ functions which invoke the CUDA kernels
@@ -5600,21 +5606,21 @@ if (btransposeDest) {
     const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
     const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
     const int dma_lds                  = CUDADMA_DMA_LDS;
-    const int nedge_per_thread_cudaDMA = CUDADMA_NEDGE_PER_THREAD;
+    int nedge_per_thread_cudaDMA       = CUDADMA_NEDGE_PER_THREAD;
 
-    const int threads_per_cta_baseline  = BASELINE_THREADS_PER_CTA;
-    const int nedge_per_thread_baseline = BASELINE_NEDGE_PER_THREAD;
+    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+    int nedge_per_thread_baseline      = BASELINE_NEDGE_PER_THREAD;
     
     int blocks, threads, nedge_cudaDMA, nedge_baseline;
     prepare_cudaDMA(devProp, nedgeset,
-		    nedge_per_thread_cudaDMA,
+		    &nedge_per_thread_cudaDMA,
 		    compute_threads_per_cta, dma_threads_per_ld,
 		    dma_lds, &blocks, &threads, &nedge_cudaDMA);
     dim3 grid_cudaDMA(blocks, 1, 1);
     dim3 block_cudaDMA(threads, 1, 1);
 
     prepare_baseline(devProp, nedgeset-nedge_cudaDMA,
-		     nedge_per_thread_baseline, threads_per_cta_baseline,
+		     &nedge_per_thread_baseline, threads_per_cta_baseline,
 		     &blocks, &threads, &nedge_baseline);
     dim3 grid_baseline(blocks, 1, 1);
     dim3 block_baseline(threads, 1, 1);
@@ -5624,23 +5630,9 @@ if (btransposeDest) {
     Tc *CoeffsAtEdge = (Tc*)(*d_CoeffsAtEdge);
     Ti *IedgeList = (Ti*)(*d_IedgeList);
     
-    cout << "hydro_calcFlux2d_cuda" 
-	 << " nblocks=" << nblocks
-	 << " neq=" << neq
-	 << " nedgeset=" << nedgeset << endl;
-    cout << "Memory NEDGE: " << NVAR2D*nedgeset*sizeof(TdSrc)/1000000.0f
-	 << " MB" << " NEDGE=" << nedgeset << endl;
-
-    cudaEvent_t start;
-    cudaEvent_t stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    
     if (nblocks == 1) {
 #ifdef CUDADMA_KERNEL    
       if (grid_cudaDMA.x>0) {
-	cudaEventRecord(start,stream);
-
       	// CudaDMA implementation
 	CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
@@ -5652,31 +5644,11 @@ if (btransposeDest) {
       						       nedge_cudaDMA+iedgeset-1, 
       						       nedge_per_thread_cudaDMA,
       						       iedgeset-1);
-	cudaEventRecord(stop,stream);
-	cudaEventSynchronize(stop);
-	
-	float elapsedTime;
-	cudaEventElapsedTime(&elapsedTime, start, stop);
-	
-	cout << " CudaDMA:"
-	     << " #blocks=" << grid_cudaDMA.x << ","
-	     << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	     << " #threads per block=" << block_cudaDMA.x 
-	     << "," << block_cudaDMA.y << "," << block_cudaDMA.z << endl;
-	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-	cout << "Bandwidth:    " << (2*nedge_cudaDMA*sizeof(Ti)+            // get i,j
-				     2*NVAR2D*nedge_cudaDMA*sizeof(TdSrc)+  // gather solution
-				     4*NVAR2D*nedge_cudaDMA*sizeof(TdDest)+ // gather and scatter vector
-				     2*HYDRO_NDIM*nedge_cudaDMA*sizeof(Tc)) // gather coefficients
-	  /1000000000.0f/elapsedTime*1000.0f
-	     << " GB/s" << endl;
       }
 #endif
 
 #ifdef BASELINE_KERNEL
       if (grid_baseline.x>0) {
-	cudaEventRecord(start,stream);
-	
 	// Baseline implementation
 	BASELINE_KERNEL
 	  <Tc,TdSrc,TdDest,Ti,SYSTEM_SCALAR,idissipationtype,
@@ -5688,31 +5660,11 @@ if (btransposeDest) {
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-	cudaEventRecord(stop,stream);
-	cudaEventSynchronize(stop);
-	
-	float elapsedTime;
-	cudaEventElapsedTime(&elapsedTime, start, stop);
-	
-	cout << " Baseline:"
-	     << " #blocks=" << grid_baseline.x << "," 
-	     << grid_baseline.y << "," << grid_baseline.z 
-	     << " #threads per block=" << block_baseline.x 
-	     << "," << block_baseline.y << "," << block_baseline.z << endl;
-	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-	cout << "Bandwidth:    " << (2*nedge_baseline*sizeof(Ti)+            // get i,j
-				     2*NVAR2D*nedge_baseline*sizeof(TdSrc)+  // gather solution
-				     4*NVAR2D*nedge_baseline*sizeof(TdDest)+ // gather and scatter vector
-				     2*HYDRO_NDIM*nedge_baseline*sizeof(Tc)) // gather coefficients
-	  /1000000000.0f/elapsedTime*1000.0f
-	     << " GB/s" << endl;
       }
 #endif
     } else {
 #ifdef CUDADMA_KERNEL
       if (grid_cudaDMA.x>0) {
-	cudaEventRecord(start,stream);
-	
       	// CudaDMA implementation
       	CUDADMA_KERNEL
       	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
@@ -5724,31 +5676,11 @@ if (btransposeDest) {
       						       nedge_cudaDMA+iedgeset-1, 
       						       nedge_per_thread_cudaDMA,
       						       iedgeset-1);
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
-      
-      float elapsedTime;
-      cudaEventElapsedTime(&elapsedTime, start, stop);
-      
-      cout << " CudaDMA:"
-	   << " #blocks=" << grid_cudaDMA.x << ","
-	   << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	   << " #threads per block=" << block_cudaDMA.x 
-	   << "," << block_cudaDMA.y << "," << block_cudaDMA.z << endl;
-      cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-      cout << "Bandwidth:    " << (2*nedge_cudaDMA*sizeof(Ti)+            // get i,j
-				   2*NVAR2D*nedge_cudaDMA*sizeof(TdSrc)+  // gather solution
-				   4*NVAR2D*nedge_cudaDMA*sizeof(TdDest)+ // gather and scatter vector
-				   2*HYDRO_NDIM*nedge_cudaDMA*sizeof(Tc)) // gather coefficients
-	/1000000000.0f/elapsedTime*1000.0f
-	   << " GB/s" << endl;
       }
 #endif
 
 #ifdef BASELINE_KERNEL
       if (grid_baseline.x>0) {
-	cudaEventRecord(start,stream);
-	
       	// Baseline implementation
 	BASELINE_KERNEL
 	  <Tc,TdSrc,TdDest,Ti,SYSTEM_BLOCK,idissipationtype,
@@ -5760,32 +5692,11 @@ if (btransposeDest) {
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-	cudaEventRecord(stop,stream);
-	cudaEventSynchronize(stop);
-
-	float elapsedTime;
-	cudaEventElapsedTime(&elapsedTime, start, stop);
-	
-	cout << " Baseline:"
-	     << " #blocks=" << grid_baseline.x << "," 
-	     << grid_baseline.y << "," << grid_baseline.z 
-	     << " #threads per block=" << block_baseline.x 
-	     << "," << block_baseline.y << "," << block_baseline.z << endl;
-	cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-	cout << "Bandwidth:    " << (2*nedge_baseline*sizeof(Ti)+            // get i,j
-				     2*NVAR2D*nedge_baseline*sizeof(TdSrc)+  // gather solution
-				     4*NVAR2D*nedge_baseline*sizeof(TdDest)+ // gather and scatter vector
-				     2*HYDRO_NDIM*nedge_baseline*sizeof(Tc)) // gather coefficients
-	  /1000000000.0f/elapsedTime*1000.0f
-	     << " GB/s" << endl;
       }
 #endif
-    }
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    coproc_checkErrors("hydro_calcFlux2d_cuda");
+    }   
 
+    coproc_checkErrors("hydro_calcFlux2d_cuda");
     return 0;
   };
   

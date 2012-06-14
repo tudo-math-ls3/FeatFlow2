@@ -17,8 +17,10 @@
 #include <iostream>
 #include <coproc_core.h>
 #include <coproc_storage_cuda.h>
-#include "../../cudaDMA.h"
 #include "../../cudaGatherScatter.h"
+#ifdef HAS_INLINE_PTX
+#include "../../cudaDMA.h"
+#endif
 
 #define LANGUAGE LANGUAGE_C
 #include "../../flagship.h"
@@ -26,6 +28,24 @@
 
 #define HYDRO_NDIM 2
 #include "hydro.h"
+
+// Defines for baseline implementation
+#define BASELINE_THREADS_PER_CTA  32*2
+#define BASELINE_NEQ_PER_THREAD   1
+#define BASELINE_NEDGE_PER_THREAD 1
+
+// Defines for empty cudaDMA implementation
+#ifndef CUDADMA_KERNEL
+#define CUDADMA_COMPUTE_THREADS_PER_CTA 0
+#define CUDADMA_THREADS_PER_LD          0
+#define CUDADMA_NEQ_PER_THREAD          0
+#define CUDADMA_NEDGE_PER_THREAD        0
+#define CUDADMA_DMA_LDS_IND             0
+#define CUDADMA_DMA_LDS_SRC             0
+#define CUDADMA_DMA_LDS_DEST            0
+#define CUDADMA_DMA_LDS_COEFF           0
+#define CUDADMA_DMA_LDS                 0
+#endif
 
 using namespace std;
 
@@ -966,6 +986,7 @@ namespace hydro2d_cuda
 			     Ti nedge,
 			     Ti ncoeff)
     {
+
     }
   };
   
@@ -1118,7 +1139,9 @@ namespace hydro2d_cuda
 	    typename Tv,
 	    typename Tm,
 	    typename Ti,
-	    int isystemformat>
+	    int isystemformat,
+	    int threads_per_cta>
+  __launch_bounds__(threads_per_cta)
   __global__ void hydro_calcMatDiagMatD2d_baseline(Tc *CoeffsAtDiag,
 						   Ti *IdiagList,
 						   Tv *vec,
@@ -1165,34 +1188,6 @@ namespace hydro2d_cuda
       }
     }
   };
-
-  /*****************************************************************************
-   * This CUDA kernel calculates the diagonal entries of the
-   * block-diagonal global operator (cudaDMA implementation).
-   ****************************************************************************/
-
-  template <typename Tc,
-	    typename Tv,
-	    typename Tm,
-	    typename Ti,
-	    int isystemformat,
-	    int compute_threads_per_cta,
-	    int dma_threads_per_ld>
-  __global__ void hydro_calcMatDiagMatD2d_cudaDMA(Tc *CoeffsAtDiag,
-						  Ti *IdiagList,
-						  Tv *vec,
-						  Tm *mat,
-						  Tm scale,
-						  Ti neq,
-						  Ti na,
-						  Ti ncoeff,
-						  Ti neq_last,
-						  Ti neq_per_thread=1,
-						  Ti neq_offset=0)
-  {
-    // Not implemented yet
-    printf("Not implemented\n");
-  };
   
   /*****************************************************************************
    * This CUDA kernel calculates the diagonal entries of the
@@ -1203,7 +1198,9 @@ namespace hydro2d_cuda
 	    typename Tv,
 	    typename Tm,
 	    typename Ti,
-	    int isystemformat>
+	    int isystemformat,
+	    int threads_per_cta>
+  __launch_bounds__(threads_per_cta)
   __global__ void hydro_calcMatDiag2d_baseline(Tc *CoeffsAtDiag,
 					       Ti *IdiagList,
 					       Tv *vec,
@@ -1253,34 +1250,6 @@ namespace hydro2d_cuda
   };
 
   /*****************************************************************************
-   * This CUDA kernel calculates the diagonal entries of the
-   * full global operator (cudaDMA implementation).
-   ****************************************************************************/
-  
-  template <typename Tc,
-	    typename Tv,
-	    typename Tm,
-	    typename Ti,
-	    int isystemformat,
-	    int compute_threads_per_cta,
-	    int dma_threads_per_ld>
-  __global__ void hydro_calcMatDiag2d_cudaDMA(Tc *CoeffsAtDiag,
-					      Ti *IdiagList,
-					      Tv *vec,
-					      Tm *mat,
-					      Tm scale,
-					      Ti neq,
-					      Ti na,
-					      Ti ncoeff,
-					      Ti neq_last,
-					      Ti neq_per_thread=1,
-					      Ti neq_offset=0)
-  {
-    // Not implemented yet
-    printf("Not implemented\n");
-  };
-
-  /*****************************************************************************
    * This CUDA kernel calculates the off-diagonal entries of the
    * block-diagonal global operator and assembles the artificial
    * dissipation tensor if required (baseline implementation).
@@ -1292,7 +1261,9 @@ namespace hydro2d_cuda
 	    typename Ti,
 	    int isystemformat,
 	    int idissipation,
-	    bool blumping>
+	    bool blumping,
+	    int threads_per_cta>
+  __launch_bounds__(threads_per_cta)
   __global__ void hydro_calcMatrixMatD2d_baseline(Tc *CoeffsAtEdge,
 						  Ti *IedgeList,
 						  Tv *vec,
@@ -1318,18 +1289,18 @@ namespace hydro2d_cuda
 	Ti j = IDX2_EDGELIST(IedgeList,2,idx+1,6,nedge);
 	
 	// Local solution data at edge from local memory
-	Tv DataAtEdge[2*NVAR2D];
+	Tm DataAtEdge[2*NVAR2D];
 	
 	// Get solution values at edge endpoints
 	Vector<NVAR2D,isystemformat==SYSTEM_BLOCK>::
 	  gatherEdgeData<true>(DataAtEdge,vec,i,j,neq);
 	
 	// Compute velocities
-	Tv ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
-	Tv vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
+	Tm ui = XVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
+	Tm vi = YVELOCITY2(DataAtEdge,IDX2,1,NVAR2D,2);
 	
-	Tv uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
-	Tv vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
+	Tm uj = XVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
+	Tm vj = YVELOCITY2(DataAtEdge,IDX2,2,NVAR2D,2);
 	
 	if (idissipation == DISSIPATION_ZERO) {
 	  
@@ -1370,342 +1341,6 @@ namespace hydro2d_cuda
       }
     }
   };
-
-  /*****************************************************************************
-   * This CUDA kernel calculates the off-diagonal entries of the
-   * block-diagonal global operator and assembles the artificial
-   * dissipation tensor if required (cudaDMA implementation).
-   ****************************************************************************/
-
-  template <typename Tc,
-	    typename Tv,
-	    typename Tm,
-	    typename Ti,
-	    int isystemformat,
-	    int idissipation,
-	    bool blumping,
-	    int compute_threads_per_cta,
-	    int dma_threads_per_ld>
-  __global__ void hydro_calcMatrixMatD2d_cudaDMA(Tc *CoeffsAtEdge,
-						 Ti *IedgeList,
-						 Tv *vec,
-						 Tm *mat,
-						 Tm scale,
-						 Ti neq,
-						 Ti na,
-						 Ti nedge,
-						 Ti ncoeff,
-						 Ti nedge_last,
-						 Ti nedge_per_thread=1,
-						 Ti nedge_offset=0)
-  {
-    const int tid = threadIdx.x;
-    const int total_threads_per_cta = compute_threads_per_cta+4*dma_threads_per_ld;
-    
-    // Local variables
-    Tv ui,uj,vi,vj;
-
-    // Shared memory
-    __shared__ Ti s_IedgeList0[6*compute_threads_per_cta];
-    __shared__ Ti s_IedgeList1[6*compute_threads_per_cta];
-    __shared__ Tv s_DataAtEdge0[2*NVAR2D*compute_threads_per_cta];
-    __shared__ Tv s_DataAtEdge1[2*NVAR2D*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge0[2*HYDRO_NDIM*compute_threads_per_cta];
-    __shared__ Tc s_CoeffsAtEdge1[2*HYDRO_NDIM*compute_threads_per_cta];
-
-    //--------------------------------------------------------------------------
-
-#if EDGELIST_DEVICE == SOA
-    // List of edges is stored as structure of arrays, that is, we
-    // have 6 integer subarrays of length nedge which store:
-    //
-    // 0-subarray: first end point i, 
-    // 1-subarray: second end point j,
-    // 2-subarray: matrix entry ij,
-    // 3-subarray: matrix entry ji,
-    // 4-subarray: matrix entry ii,
-    // 5-subarray: matrix entry jj.
-
-    // Strided cudaDMA thread to transfer edge list from integer
-    // array IedgeList into shared memory s_IedgeList0 and s_IedgeList1
-    cudaDMAStrided<false, sizeof(Ti), compute_threads_per_cta*sizeof(Ti),
-      total_threads_per_cta, 6>dma_ind(nedge*sizeof(Ti));
-#else
-    // List of edges is stored as array of structures, that is, we
-    // have nedge integer subarrays of length 6 which store data
-    //
-    // (i,j,ij,jj,ii,jj)
-    
-    // We need two extra buffers in shared memory
-    __shared__ Ti s_Idx0[2*compute_threads_per_cta];
-    __shared__ Ti s_Idx1[2*compute_threads_per_cta];
-
-    // Sequential cudaDMA thread to transfer edge list from integer
-    // array IedgeList into shared memory s_IedgeList0 and s_IedgeList1
-    
-    cudaDMASequential<false, sizeof(Ti), 6*compute_threads_per_cta*sizeof(Ti),
-                      total_threads_per_cta>dma_ind;
-#endif
-
-    //--------------------------------------------------------------------------
-
-    // Indirect cudaDMA thread to transfer nodal data from vec into
-    // shared memory s_DataAtEdge0, we need to distinguish between vec
-    // stored in interleaved format and vec stored in block format
-    cudaDMAIndirect<true, true,
-      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(Tv)),
-               (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(Tv),
-      dma_threads_per_ld, compute_threads_per_cta*2>
-    dma_vec0(0, compute_threads_per_cta, compute_threads_per_cta);
-  
-    // Indirect cudaDMA thread to transfer nodal data from vec into
-    // shared memory s_DataAtEdge1, we need to distinguish between vec
-    // stored in interleaved format and vec stored in block format
-    cudaDMAIndirect<true, true,
-      MAXALIGN((isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(Tv)),
-               (isystemformat==SYSTEM_BLOCK ? 1 : NVAR2D)*sizeof(Tv),
-      dma_threads_per_ld, compute_threads_per_cta*2>
-    dma_vec1(1, compute_threads_per_cta, compute_threads_per_cta+dma_threads_per_ld);
-
-    //--------------------------------------------------------------------------
-
-#if COEFFSATEDGE_DEVICE == SOA
-    // Coefficients at edges are stored as structure of arrays, that
-    // is, we have ncoeff subarrays of length nedge which store:
-    //
-    // 0-subarray: coefficients for x-direction, 
-    // 1-subarray: coefficients for y-direction,
-    // n-subarray: further coefficients not required here
-
-    // Strided cudaDMA thread to transfer precomputed coefficients
-    // CoeffsAtEdge into shared memory s_CoeffsAtEdge0 and s_CoeffsAtEdge1
-    cudaDMAStrided<true, sizeof(Tc), compute_threads_per_cta*sizeof(Tc),
-                   dma_threads_per_ld, HYDRO_NDIM>
-      dma_coeff0(2, compute_threads_per_cta,
-		 compute_threads_per_cta+2*dma_threads_per_ld,
-		 nedge*sizeof(Tc));
-    cudaDMAStrided<true, sizeof(Tc), compute_threads_per_cta*sizeof(Tc),
-                   dma_threads_per_ld, HYDRO_NDIM>
-      dma_coeff1(3, compute_threads_per_cta,
-		 compute_threads_per_cta+3*dma_threads_per_ld,
-		 nedge*sizeof(Tc));
-#else
-    // Coefficients at edges are stored as array of structure, that
-    // is, we have nedge real-valued subarray of length ncoeff
-    cudaDMAStrided<true, sizeof(Tc), sizeof(Tc), dma_threads_per_ld, compute_threads_per_cta>
-      dma_coeff0(2, compute_threads_per_cta,
-		 compute_threads_per_cta+2*dma_threads_per_ld,
-		 ncoeff*sizeof(Tc), HYDRO_NDIM*sizeof(Tc));
-    cudaDMAStrided<true, sizeof(Tc), sizeof(Tc), dma_threads_per_ld, compute_threads_per_cta>
-      dma_coeff1(3, compute_threads_per_cta,
-		 compute_threads_per_cta+3*dma_threads_per_ld,
-		 ncoeff*sizeof(Tc), HYDRO_NDIM*sizeof(Tc));
-#endif
-
-    //--------------------------------------------------------------------------
-
-    // Loop over all edge-groups to be processed by this block
-    for (int ipt=0; ipt<nedge_per_thread; ipt+=2) {
-
-      //------------------------------------------------------------------------
-      // Load the indices with all threads - no warp specialisation
-      //------------------------------------------------------------------------
-      ptx_cudaDMA_barrier_blocking(9, total_threads_per_cta);
-      
-      // Buffer0
-      dma_ind.execute_dma(&IedgeList[ (((ipt+0)*gridDim.x+blockIdx.x)*
-				       compute_threads_per_cta+nedge_offset)*
-				      (EDGELIST_DEVICE == SOA ? 1 : 6)], s_IedgeList0);
-      // Buffer1
-      dma_ind.execute_dma(&IedgeList[ (((ipt+1)*gridDim.x+blockIdx.x)*
-				       compute_threads_per_cta+nedge_offset)*
-				      (EDGELIST_DEVICE == SOA ? 1 : 6)], s_IedgeList1);
-      ptx_cudaDMA_barrier_blocking(9, total_threads_per_cta);
-
-#if EDGELIST_DEVICE == SOA    
-#define s_Idx0 s_IedgeList0
-#define s_Idx1 s_IedgeList1
-#else
-      // We need to extract the start and end points of edges from
-      // s_IedgeListX into s_IdxX for use in indirect gather operation
-      if (tid < compute_threads_per_cta) {
-      	s_Idx0[tid] = s_IedgeList0[6*tid];
-      	s_Idx0[tid+compute_threads_per_cta] = s_IedgeList0[6*tid+1];
-      }
-      else if (tid < 2*compute_threads_per_cta) {
-      	s_Idx1[tid-compute_threads_per_cta] = s_IedgeList1[6*(tid-compute_threads_per_cta)];
-      	s_Idx1[tid] = s_IedgeList1[6*(tid-compute_threads_per_cta)+1];
-      }
-      ptx_cudaDMA_barrier_blocking(9, total_threads_per_cta);
-#endif
-
-      //------------------------------------------------------------------------
-      // Start warp specialisation
-      //------------------------------------------------------------------------
-      if (tid < compute_threads_per_cta) {
-	
-	// Get solution values at edge endpoints
-	dma_vec0.start_async_dma();
-	dma_vec1.start_async_dma();
-	
-	// Get precomputed coefficients at edges
-	dma_coeff0.start_async_dma();
-	dma_coeff1.start_async_dma();
-
-	//----------------------------------------------------------------------
-	// Buffer0, first pass
-	//----------------------------------------------------------------------
-
-	// Wait for solution values to be available
-	dma_vec0.wait_for_dma_finish();
-
-	// Compute velocities
-	if (isystemformat==SYSTEM_BLOCK) {
-	  ui = XVELOCITY3(s_DataAtEdge0,IDX3T,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  vi = YVELOCITY3(s_DataAtEdge0,IDX3T,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  
-	  uj = XVELOCITY3(s_DataAtEdge0,IDX3T,2,tid,NVAR2D,2,compute_threads_per_cta);
-	  vj = YVELOCITY3(s_DataAtEdge0,IDX3T,2,tid,NVAR2D,2,compute_threads_per_cta);
-	}
-	else {
-	  ui = XVELOCITY3(s_DataAtEdge0,IDX3,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  vi = YVELOCITY3(s_DataAtEdge0,IDX3,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  
-	  uj = XVELOCITY3(s_DataAtEdge0,IDX3,2,tid,NVAR2D,2,compute_threads_per_cta);
-	  vj = YVELOCITY3(s_DataAtEdge0,IDX3,2,tid,NVAR2D,2,compute_threads_per_cta);
-	}
-
-	// Wait for precomputed coefficients to be available
-	dma_coeff0.wait_for_dma_finish();
-	
-	if (idissipation == DISSIPATION_ZERO) {
-	  
-	  // Local matrix data at edge from local memory
-	  Tm MatrixAtEdge[2*NVAR2D];
-	  
-	  // Compute Galerkin coefficient $K_ij$ and $K_ji$
-	  InviscidFluxJacobiMatrix<SYSTEM_SEGREGATED>::
-	    calcEdgeData<false>(MatrixAtEdge,s_CoeffsAtEdge0,
-				scale,ui,uj,vi,vj,tid+1,compute_threads_per_cta,2);
-	  
-	  // Build matrix coefficients into global operator
-	  Matrix<NVAR2D,isystemformat==SYSTEM_BLOCK>::
-	    scatterEdgeData<true,false,blumping>(mat,MatrixAtEdge,
-	  					 s_IedgeList0,tid+1,compute_threads_per_cta,na);
-	  
-	} 
-	else {
-	  
-	  // Local matrix data at edge from local memory
-	  Tm MatrixAtEdge[3*NVAR2D];
-	  
-	  // Compute Galerkin coefficient $K_ij$ and $K_ji$
-	  InviscidFluxJacobiMatrix<SYSTEM_SEGREGATED>::
-	    calcEdgeData<true>(MatrixAtEdge,s_CoeffsAtEdge0,
-			       scale,ui,uj,vi,vj,tid+1,compute_threads_per_cta,2);
-	  
-	  // Compute contribution of artificial diffusion
-	  InviscidFluxDissipationMatrix<SYSTEM_SEGREGATED,idissipation>::
-	    calcEdgeData(MatrixAtEdge,s_CoeffsAtEdge0,s_DataAtEdge0,
-			 scale,ui,uj,vi,vj,tid+1,compute_threads_per_cta,2);
-	  
-	  // Build matrix coefficients into global operator
-	  Matrix<NVAR2D,isystemformat==SYSTEM_BLOCK>::
-	    scatterEdgeData<true,true,blumping>(mat,MatrixAtEdge,
-	  					s_IedgeList0,tid+1,compute_threads_per_cta,na);
-	}
-	
-	
-      	//----------------------------------------------------------------------
-	// Buffer1, first pass
-	//----------------------------------------------------------------------
-	
-	// Wait for solution values to be available
-	dma_vec1.wait_for_dma_finish();
-
-	// Compute velocities
-	if (isystemformat==SYSTEM_BLOCK) {
-	  ui = XVELOCITY3(s_DataAtEdge1,IDX3T,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  vi = YVELOCITY3(s_DataAtEdge1,IDX3T,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  
-	  uj = XVELOCITY3(s_DataAtEdge1,IDX3T,2,tid,NVAR2D,2,compute_threads_per_cta);
-	  vj = YVELOCITY3(s_DataAtEdge1,IDX3T,2,tid,NVAR2D,2,compute_threads_per_cta);
-	}
-	else {
-	  ui = XVELOCITY3(s_DataAtEdge1,IDX3,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  vi = YVELOCITY3(s_DataAtEdge1,IDX3,1,tid,NVAR2D,2,compute_threads_per_cta);
-	  
-	  uj = XVELOCITY3(s_DataAtEdge1,IDX3,2,tid,NVAR2D,2,compute_threads_per_cta);
-	  vj = YVELOCITY3(s_DataAtEdge1,IDX3,2,tid,NVAR2D,2,compute_threads_per_cta);
-	}
-
-	// Wait for precomputed coefficients to be available
-	dma_coeff1.wait_for_dma_finish();
-      }
-      
-      //------------------------------------------------------------------------
-      // DMA warps
-      //------------------------------------------------------------------------
-
-      else if(dma_vec0.owns_this_thread()) {
-      	// Indirect cudaDMA transfer of global vector into s_DataAtEdge0
-      	if (isystemformat==SYSTEM_BLOCK) {
-      	  // Transfer each block separately (index array is 1-based)
-      	  for (int ivar=0; ivar<NVAR2D; ++ivar)
-      	    dma_vec0.execute_dma(s_Idx0, &vec[ivar*neq]-1,
-      				 &s_DataAtEdge0[ivar*compute_threads_per_cta]);
-      	}
-      	else {
-      	  // Transfer all blocks simultaneously (index array is 1-based)
-      	  dma_vec0.execute_dma(s_Idx0, vec-NVAR2D, s_DataAtEdge0);
-      	}
-      }
-      
-      else if(dma_vec1.owns_this_thread()) {
-      	// Indirect cudaDMA transfer of global vector into s_DataAtEdge1
-      	if (isystemformat==SYSTEM_BLOCK) {
-      	  // Transfer each block separately (index array is 1-based)
-      	  for (int ivar=0; ivar<NVAR2D; ++ivar)
-      	    dma_vec1.execute_dma(s_Idx1, &vec[ivar*neq]-1,
-      				 &s_DataAtEdge1[ivar*compute_threads_per_cta]);
-      	}
-      	else {
-      	  // Transfer all blocks simultaneously (index array is 1-based)
-      	  dma_vec1.execute_dma(s_Idx1, vec-NVAR2D, s_DataAtEdge1);
-      	}
-      }
-
-      else if(dma_coeff0.owns_this_thread()) {
-#if COEFFSATEDGE_DEVICE == SOA
-	// Strided cudaDMA transfer of precomputed coefficients into s_CoeffsAtEdge0
-	dma_coeff0.execute_dma(&CoeffsAtEdge[ (((ipt+0)*gridDim.x+blockIdx.x)*
-					       compute_threads_per_cta+nedge_offset)],
-			       s_CoeffsAtEdge0);
-#else
-	// Strided cudaDMA transfer of precomputed coefficients into s_CoeffsAtEdge0
-	for (int idim=0; idim<HYDRO_NDIM; ++idim)
-	  dma_coeff0.execute_dma(&CoeffsAtEdge[ (((ipt+0)*gridDim.x+blockIdx.x)*
-						 compute_threads_per_cta+nedge_offset)+idim],
-				 &s_CoeffsAtEdge0[idim]);
-#endif
-      }
-
-      else if(dma_coeff1.owns_this_thread()) {
-#if COEFFSATEDGE_DEVICE == SOA
-	// Strided cudaDMA transfer of precomputed coefficients into s_CoeffsAtEdge1
-	dma_coeff1.execute_dma(&CoeffsAtEdge[ (((ipt+1)*gridDim.x+blockIdx.x)*
-					       compute_threads_per_cta+nedge_offset)],
-			       s_CoeffsAtEdge1);
-#else
-	// Strided cudaDMA transfer of precomputed coefficients into s_CoeffsAtEdge1
-	for (int idim=0; idim<HYDRO_NDIM; ++idim)
-	  dma_coeff1.execute_dma(&CoeffsAtEdge[ (((ipt+1)*gridDim.x+blockIdx.x)*
-						 compute_threads_per_cta+nedge_offset)+idim],
-				 &s_CoeffsAtEdge1[idim]);
-#endif
-      }
-    }
-  };
   
   /*****************************************************************************
    * This CUDA kernel calculates the off-diagonal entries of the full
@@ -1719,7 +1354,9 @@ namespace hydro2d_cuda
 	    typename Ti,
 	    int isystemformat,
 	    int idissipation,
-	    bool blumping>
+	    bool blumping,
+	    int threads_per_cta>
+  __launch_bounds__(threads_per_cta)
   __global__ void hydro_calcMatrix2d_baseline(Tc *CoeffsAtEdge,
 					      Ti *IedgeList,
 					      Tv *vec,
@@ -1801,39 +1438,6 @@ namespace hydro2d_cuda
 	}
     }
   };
-
-  /*****************************************************************************
-   * This CUDA kernel calculates the off-diagonal entries of the full
-   * global operator and assembles the artificial dissipation tensor
-   * if required (cudaDMA implementation).
-   ****************************************************************************/
-
-  template <typename Tc,
-	    typename Tv,
-	    typename Tm,
-	    typename Ti,
-	    int isystemformat,
-	    int idissipation,
-	    bool blumping,
-	    int compute_threads_per_cta,
-	    int dma_threads_per_ld>
-  __global__ void hydro_calcMatrix2d_cudaDMA(Tc *CoeffsAtEdge,
-					     Ti *IedgeList,
-					     Tv *vec,
-					     Tm *mat,
-					     Tm scale,
-					     Ti neq,
-					     Ti na,
-					     Ti nedge,
-					     Ti ncoeff,
-					     Ti nedge_last,
-					     Ti nedge_per_thread=1,
-					     Ti nedge_offset=0)
-    
-  {
-    // Not implemented yet
-    printf("Not implemented\n");
-  };
   
   /*****************************************************************************
    * Internal C++ functions which invoke the CUDA kernels
@@ -1859,24 +1463,26 @@ namespace hydro2d_cuda
     
     // Strategy: run the largest possible number of blocks with a
     // predefined number of compute/dma threads per block and let each
-    // compute thread process the minimal number of equations
-    const int compute_threads_per_cta  = 32*0;
-    const int dma_threads_per_ld       = 32*1;
-    const int dma_lds                  = 1;
-    const int neq_per_thread_cudaDMA   = 1;
+    // compute thread process the minimal number of edges
+    const int compute_threads_per_cta = CUDADMA_COMPUTE_THREADS_PER_CTA;
+    const int dma_threads_per_ld      = CUDADMA_THREADS_PER_LD;
+    const int dma_lds                 = CUDADMA_DMA_LDS;
+    int neq_per_thread_cudaDMA        = CUDADMA_NEQ_PER_THREAD;
 
-    const int threads_per_cta_baseline = 32*1;
-    const int neq_per_thread_baseline  = 1;
+    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+    int neq_per_thread_baseline        = BASELINE_NEQ_PER_THREAD;
     
     int blocks, threads, neq_cudaDMA, neq_baseline;
-    prepare_cudaDMA(devProp, neq, neq_per_thread_cudaDMA,
+    prepare_cudaDMA(devProp, neq,
+		    &neq_per_thread_cudaDMA,
 		    compute_threads_per_cta, dma_threads_per_ld,
 		    dma_lds, &blocks, &threads, &neq_cudaDMA);
     dim3 grid_cudaDMA(blocks, 1, 1);
     dim3 block_cudaDMA(threads, 1, 1);
 
-    prepare_baseline(devProp, neq-neq_cudaDMA, neq_per_thread_baseline,
-		     threads_per_cta_baseline, &blocks, &threads, &neq_baseline);
+    prepare_baseline(devProp, neq-neq_cudaDMA,
+		     &neq_per_thread_baseline, threads_per_cta_baseline,
+		     &blocks, &threads, &neq_baseline);
     dim3 grid_baseline(blocks, 1, 1);
     dim3 block_baseline(threads, 1, 1);
     
@@ -1884,33 +1490,12 @@ namespace hydro2d_cuda
     Tc *CoeffsAtDiag = (Tc*)(*d_CoeffsAtDiag);
     Ti *IdiagList = (Ti*)(*d_IdiagList);
         
-    cout << "hydro_calcMatDiagMatD2d_cuda" 
-	 << " nblocks=" << nblocks
-	 << " neq=" << neq
-	 << " CudaDMA:"
-	 << " #blocks=" << grid_cudaDMA.x << ","
-	 << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	 << " #threads per block=" << block_cudaDMA.x 
-	 << "," << block_cudaDMA.y << "," << block_cudaDMA.z 
-	 << " Baseline:"
-	 << " #blocks=" << grid_baseline.x << "," 
-	 << grid_baseline.y << "," << grid_baseline.z 
-	 << " #threads per block=" << block_baseline.x 
-	 << "," << block_baseline.y << "," << block_baseline.z 
-	 << endl;
-
-    cudaEvent_t start;
-    cudaEvent_t stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    
     if (nblocks == 1) {
       // Matrix is store in interleaved matrix so that all matrix data
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
     
-      cudaEventRecord(start,stream);
-      
+#ifdef CUDADMA_KERNEL
       if (grid_cudaDMA.x>0)
       	// CudaDMA implementation
       	hydro_calcMatDiagMatD2d_cudaDMA
@@ -1921,10 +1506,12 @@ namespace hydro2d_cuda
       						       neq, na, ncoeff,
 						       neq_cudaDMA,
 						       neq_per_thread_cudaDMA);
+#endif
+
       if (grid_baseline.x>0)
       	// Baseline implementation
       	hydro_calcMatDiagMatD2d_baseline
-      	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR>
+      	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,threads_per_cta_baseline>
       	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtDiag,
       							 IdiagList,
       							 vec, mat, scale,
@@ -1932,9 +1519,6 @@ namespace hydro2d_cuda
 							 neq, 
 							 neq_per_thread_baseline,
 							 neq_cudaDMA);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     } else {
       // Matrix is stored in block format, that is, the data of each
       // scalar submatrix resides in an individual device memory
@@ -1951,9 +1535,8 @@ namespace hydro2d_cuda
       			      stream);
       Tm *mat;
       cudaGetSymbolAddress(((void**)&mat), "constMemPool");
-      
-      cudaEventRecord(start,stream);
 
+#ifdef CUDADMA_KERNEL
       if (grid_cudaDMA.x>0)
 	// CudaDMA implementation
 	hydro_calcMatDiagMatD2d_cudaDMA
@@ -1964,10 +1547,12 @@ namespace hydro2d_cuda
 						       neq, na, ncoeff,
 						       neq_cudaDMA,
 						       neq_per_thread_cudaDMA);
+#endif
+
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatDiagMatD2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK>
+	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtDiag,
 							 IdiagList,
 							 vec, mat, scale,
@@ -1975,22 +1560,7 @@ namespace hydro2d_cuda
 							 neq,
 							 neq_per_thread_baseline,
 							 neq_cudaDMA);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     }
-
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    cout << "Memory NEQ:   " << NVAR2D*neq*sizeof(Tv)/1000000.0f
-	 << " MB" << " NEQ=" << neq << endl;
-    cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-    cout << "Bandwidth:    " << (4*NVAR2D*neq*sizeof(Tv)+
-				 2*neq*sizeof(Ti))/1000000000.0f/elapsedTime*1000.0f
-	 << " GB/s" << endl;
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
     
     coproc_checkErrors("hydro_calcMatDiagMatD2d_cuda");
     return 0;
@@ -2015,61 +1585,42 @@ namespace hydro2d_cuda
 			       cudaStream_t stream=0)
   {
     const cudaDeviceProp *devProp = coproc_getCurrentDeviceProp();
-
+    
     // Strategy: run the largest possible number of blocks with a
     // predefined number of compute/dma threads per block and let each
-    // compute thread process the minimal number of equations
-    const int compute_threads_per_cta  = 32*0;
-    const int dma_threads_per_ld       = 32*1;
-    const int dma_lds                  = 1;
-    const int neq_per_thread_cudaDMA   = 1;
+    // compute thread process the minimal number of edges
+    const int compute_threads_per_cta = CUDADMA_COMPUTE_THREADS_PER_CTA;
+    const int dma_threads_per_ld      = CUDADMA_THREADS_PER_LD;
+    const int dma_lds                 = CUDADMA_DMA_LDS;
+    int neq_per_thread_cudaDMA        = CUDADMA_NEQ_PER_THREAD;
 
-    const int threads_per_cta_baseline = 32*1;
-    const int neq_per_thread_baseline  = 1;
+    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+    int neq_per_thread_baseline        = BASELINE_NEQ_PER_THREAD;
     
     int blocks, threads, neq_cudaDMA, neq_baseline;
-    prepare_cudaDMA(devProp, neq, neq_per_thread_cudaDMA,
+    prepare_cudaDMA(devProp, neq,
+		    &neq_per_thread_cudaDMA,
 		    compute_threads_per_cta, dma_threads_per_ld,
 		    dma_lds, &blocks, &threads, &neq_cudaDMA);
     dim3 grid_cudaDMA(blocks, 1, 1);
     dim3 block_cudaDMA(threads, 1, 1);
 
-    prepare_baseline(devProp, neq-neq_cudaDMA, neq_per_thread_baseline,
-		     threads_per_cta_baseline, &blocks, &threads, &neq_baseline);
+    prepare_baseline(devProp, neq-neq_cudaDMA,
+		     &neq_per_thread_baseline, threads_per_cta_baseline,
+		     &blocks, &threads, &neq_baseline);
     dim3 grid_baseline(blocks, 1, 1);
     dim3 block_baseline(threads, 1, 1);
 
     Tv *vec = (Tv*)(*d_vec);
     Tc *CoeffsAtDiag = (Tc*)(*d_CoeffsAtDiag);
     Ti *IdiagList = (Ti*)(*d_IdiagList);
-  
-    cout << "hydro_calcMatDiag2d_cuda" 
-	 << " nblocks=" << nblocks
-	 << " neq=" << neq
-	 << " CudaDMA:"
-	 << " #blocks=" << grid_cudaDMA.x << ","
-	 << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	 << " #threads per block=" << block_cudaDMA.x 
-	 << "," << block_cudaDMA.y << "," << block_cudaDMA.z 
-	 << " Baseline:"
-	 << " #blocks=" << grid_baseline.x << "," 
-	 << grid_baseline.y << "," << grid_baseline.z 
-	 << " #threads per block=" << block_baseline.x 
-	 << "," << block_baseline.y << "," << block_baseline.z 
-	 << endl;
-
-    cudaEvent_t start;
-    cudaEvent_t stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-  
+    
     if (nblocks == 1) {
       // Matrix is store in interleaved matrix so that all matrix data
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
       
-      cudaEventRecord(start,stream);
-
+#ifdef CUDADMA_KERNEL
       if (grid_cudaDMA.x>0)
 	//CudaDMA implementation
 	hydro_calcMatDiag2d_cudaDMA
@@ -2080,10 +1631,12 @@ namespace hydro2d_cuda
 						       neq, na, ncoeff,
 						       neq_cudaDMA,
 						       neq_per_thread_cudaDMA);
+#endif
+
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatDiag2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR>
+	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtDiag,
 							 IdiagList,
 							 vec, mat, scale,
@@ -2091,12 +1644,7 @@ namespace hydro2d_cuda
 							 neq,
 							 neq_per_thread_baseline,
 							 neq_cudaDMA);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     } else {
-      cudaEventRecord(start,stream);
-      
       // Matrix is stored in block format, that is, the data of each
       // scalar submatrix resides in an individual device memory
       // block; thus we transfer the starting addresses of each memory
@@ -2109,6 +1657,7 @@ namespace hydro2d_cuda
       Tm *mat;
       cudaGetSymbolAddress(((void**)&mat), "constMemPool");
 
+#ifdef CUDADMA_KERNEL
       if (grid_cudaDMA.x>0)
 	// CudaDMA implementation
 	hydro_calcMatDiag2d_cudaDMA
@@ -2119,10 +1668,12 @@ namespace hydro2d_cuda
 						       neq, na, ncoeff,
 						       neq_cudaDMA,
 						       neq_per_thread_cudaDMA);
+#endif
+
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatDiag2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK>
+	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtDiag,
 							 IdiagList,
 							 vec, mat, scale,
@@ -2130,23 +1681,7 @@ namespace hydro2d_cuda
 							 neq,
 							 neq_per_thread_baseline,
 							 neq_cudaDMA);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     }
-        
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    cout << "Memory NEQ:   " << NVAR2D*NVAR2D*neq*sizeof(Tv)/1000000.0f
-	 << " MB" << " NEQ=" << neq << endl;
-    cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-    cout << "Bandwidth:    " << (NVAR2D*neq*sizeof(Tv)+
-				 3*NVAR2D*NVAR2D*neq*sizeof(Tv)+
-				 2*neq*sizeof(Ti))/1000000000.0f/elapsedTime*1000.0f
-	 << " GB/s" << endl;
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
     
     coproc_checkErrors("hydro_calcMatDiag2d_cuda");
     return 0;
@@ -2180,23 +1715,25 @@ namespace hydro2d_cuda
     // Strategy: run the largest possible number of blocks with a
     // predefined number of compute/dma threads per block and let each
     // compute thread process the minimal number of edges
-    const int compute_threads_per_cta  = 32*0;
-    const int dma_threads_per_ld       = 32*1;
-    const int dma_lds                  = 4;
-    const int nedge_per_thread_cudaDMA = 2;
+    const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
+    const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
+    const int dma_lds                  = CUDADMA_DMA_LDS;
+    int nedge_per_thread_cudaDMA       = CUDADMA_NEDGE_PER_THREAD;
 
-    const int threads_per_cta_baseline  = 32*1;
-    const int nedge_per_thread_baseline = 1;
+    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+    int nedge_per_thread_baseline      = BASELINE_NEDGE_PER_THREAD;
     
     int blocks, threads, nedge_cudaDMA, nedge_baseline;
-    prepare_cudaDMA(devProp, nedgeset, nedge_per_thread_cudaDMA,
+    prepare_cudaDMA(devProp, nedgeset,
+		    &nedge_per_thread_cudaDMA,
 		    compute_threads_per_cta, dma_threads_per_ld,
 		    dma_lds, &blocks, &threads, &nedge_cudaDMA);
     dim3 grid_cudaDMA(blocks, 1, 1);
     dim3 block_cudaDMA(threads, 1, 1);
 
-    prepare_baseline(devProp, nedgeset-nedge_cudaDMA, nedge_per_thread_baseline,
-		     threads_per_cta_baseline, &blocks, &threads, &nedge_baseline);
+    prepare_baseline(devProp, nedgeset-nedge_cudaDMA,
+		     &nedge_per_thread_baseline, threads_per_cta_baseline,
+		     &blocks, &threads, &nedge_baseline);
     dim3 grid_baseline(blocks, 1, 1);
     dim3 block_baseline(threads, 1, 1);
     
@@ -2204,49 +1741,30 @@ namespace hydro2d_cuda
     Tc *CoeffsAtEdge = (Tc*)(*d_CoeffsAtEdge);
     Ti *IedgeList = (Ti*)(*d_IedgeList);
 
-    cout << "hydro_calcMatrixMatD2d_cuda" 
-	 << " nblocks=" << nblocks
-	 << " nedgeset=" << nedgeset
-	 << " CudaDMA:"
-	 << " #blocks=" << grid_cudaDMA.x << ","
-	 << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	 << " #threads per block=" << block_cudaDMA.x 
-	 << "," << block_cudaDMA.y << "," << block_cudaDMA.z 
-	 << " Baseline:"
-	 << " #blocks=" << grid_baseline.x << "," 
-	 << grid_baseline.y << "," << grid_baseline.z 
-	 << " #threads per block=" << block_baseline.x 
-	 << "," << block_baseline.y << "," << block_baseline.z 
-	 << endl;
-
-    cudaEvent_t start;
-    cudaEvent_t stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-  
     if (nblocks == 1) {
       // Matrix is store in interleaved matrix so that all matrix data
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
+      
+#ifdef CUDADMA_KERNEL
+      if (grid_cudaDMA.x>0)
+      	// CudaDMA implementation
+      	hydro_calcMatrixMatD2d_cudaDMA
+      	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,
+      	   compute_threads_per_cta,dma_threads_per_ld>
+      	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
+      						       IedgeList,
+      						       vec, mat, scale,
+      						       neq, na, nedge, ncoeff,
+      						       nedge_cudaDMA+iedgeset-1, 
+      						       nedge_per_thread_cudaDMA,
+      						       iedgeset-1);
+#endif
 
-      cudaEventRecord(start,stream);
-
-      // if (grid_cudaDMA.x>0)
-      // 	// CudaDMA implementation
-      // 	hydro_calcMatrixMatD2d_cudaDMA
-      // 	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,
-      // 	   compute_threads_per_cta,dma_threads_per_ld>
-      // 	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
-      // 						       IedgeList,
-      // 						       vec, mat, scale,
-      // 						       neq, na, nedge, ncoeff,
-      // 						       nedge_cudaDMA+iedgeset-1, 
-      // 						       nedge_per_thread_cudaDMA,
-      // 						       iedgeset-1);
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatrixMatD2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping>
+	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 							 IedgeList,
 							 vec, mat, scale,
@@ -2254,44 +1772,42 @@ namespace hydro2d_cuda
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);  
     } else {
       // Matrix is stored in block format, that is, the data of each
       // scalar submatrix resides in an individual device memory
       // block; thus we transfer the starting addresses of each memory
       // block into constant device memory and pass a dummy argument
       __SIZET cmemPool[NVAR2D];
+
 #pragma unroll
       for (int i=0; i<NVAR2D; i++)
 	cmemPool[i] = d_mat[i*(NVAR2D+1)];
-      
-      cudaEventRecord(start,stream);
       
       cudaMemcpyToSymbolAsync("constMemPool", cmemPool,
 			      sizeof(__SIZET)*NVAR2D, 0,
 			      cudaMemcpyHostToDevice,
 			      stream);
-      
       Tm *mat;
       cudaGetSymbolAddress(((void**)&mat), "constMemPool");
 
-      // if (grid_cudaDMA.x>0)
-      // 	// CudaDMA implementation
-      // 	hydro_calcMatrixMatD2d_cudaDMA
-      // 	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,
-      // 	   compute_threads_per_cta,dma_threads_per_ld>
-      // 	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
-      // 						       IedgeList,
-      // 						       vec, mat, scale,
-      // 						       neq, na, nedge, ncoeff,
-      // 						       nedge_cudaDMA+iedgeset-1, 
-      // 						       nedge_per_thread_cudaDMA,
-      // 						       iedgeset-1);
+#ifdef CUDADMA_KERNEL
+      if (grid_cudaDMA.x>0)
+      	// CudaDMA implementation
+      	hydro_calcMatrixMatD2d_cudaDMA
+      	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,
+      	   compute_threads_per_cta,dma_threads_per_ld>
+      	  <<<grid_cudaDMA, block_cudaDMA, 0, stream>>>(CoeffsAtEdge,
+      						       IedgeList,
+      						       vec, mat, scale,
+      						       neq, na, nedge, ncoeff,
+      						       nedge_cudaDMA+iedgeset-1, 
+      						       nedge_per_thread_cudaDMA,
+      						       iedgeset-1);
+#endif
+
       if (grid_baseline.x>0)
 	hydro_calcMatrixMatD2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping>
+	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 							 IedgeList,
 							 vec, mat, scale,
@@ -2299,22 +1815,7 @@ namespace hydro2d_cuda
 							 nedgeset+iedgeset-1,
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     }
-
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    cout << "Memory NEDGE: " << NVAR2D*nedgeset*sizeof(Tv)/1000000.0f
-	 << " MB" << " NEDGE=" << nedgeset << endl;
-    cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-    cout << "Bandwidth:    " << (6*nedgeset*sizeof(Ti)+
-				 3*NVAR2D*nedgeset*sizeof(Tv))/1000000000.0f/elapsedTime*1000.0f
-	 << " GB/s" << endl;
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
     
     coproc_checkErrors("hydro_calcMatrixMatD2d_cuda");
     return 0;
@@ -2348,23 +1849,25 @@ namespace hydro2d_cuda
     // Strategy: run the largest possible number of blocks with a
     // predefined number of compute/dma threads per block and let each
     // compute thread process the minimal number of edges
-    const int compute_threads_per_cta  = 32*0;
-    const int dma_threads_per_ld       = 32*1;
-    const int dma_lds                  = 1;
-    const int nedge_per_thread_cudaDMA = 1;
+    const int compute_threads_per_cta  = CUDADMA_COMPUTE_THREADS_PER_CTA;
+    const int dma_threads_per_ld       = CUDADMA_THREADS_PER_LD;
+    const int dma_lds                  = CUDADMA_DMA_LDS;
+    int nedge_per_thread_cudaDMA       = CUDADMA_NEDGE_PER_THREAD;
 
-    const int threads_per_cta_baseline  = 32*1;
-    const int nedge_per_thread_baseline = 1;
+    const int threads_per_cta_baseline = BASELINE_THREADS_PER_CTA;
+    int nedge_per_thread_baseline      = BASELINE_NEDGE_PER_THREAD;
     
     int blocks, threads, nedge_cudaDMA, nedge_baseline;
-    prepare_cudaDMA(devProp, nedgeset, nedge_per_thread_cudaDMA,
+    prepare_cudaDMA(devProp, nedgeset,
+		    &nedge_per_thread_cudaDMA,
 		    compute_threads_per_cta, dma_threads_per_ld,
 		    dma_lds, &blocks, &threads, &nedge_cudaDMA);
     dim3 grid_cudaDMA(blocks, 1, 1);
     dim3 block_cudaDMA(threads, 1, 1);
 
-    prepare_baseline(devProp, nedgeset-nedge_cudaDMA, nedge_per_thread_baseline,
-		     threads_per_cta_baseline, &blocks, &threads, &nedge_baseline);
+    prepare_baseline(devProp, nedgeset-nedge_cudaDMA,
+		     &nedge_per_thread_baseline, threads_per_cta_baseline,
+		     &blocks, &threads, &nedge_baseline);
     dim3 grid_baseline(blocks, 1, 1);
     dim3 block_baseline(threads, 1, 1);
 
@@ -2372,33 +1875,12 @@ namespace hydro2d_cuda
     Tc *CoeffsAtEdge = (Tc*)(*d_CoeffsAtEdge);
     Ti *IedgeList = (Ti*)(*d_IedgeList);
 
-    cout << "hydro_calcMatrix2d_cuda" 
-	 << " nblocks=" << nblocks
-	 << " nedgeset=" << nedgeset
-	 << " CudaDMA:"
-	 << " #blocks=" << grid_cudaDMA.x << ","
-	 << grid_cudaDMA.y << "," << grid_cudaDMA.z 
-	 << " #threads per block=" << block_cudaDMA.x 
-	 << "," << block_cudaDMA.y << "," << block_cudaDMA.z 
-	 << " Baseline:"
-	 << " #blocks=" << grid_baseline.x << "," 
-	 << grid_baseline.y << "," << grid_baseline.z 
-	 << " #threads per block=" << block_baseline.x 
-	 << "," << block_baseline.y << "," << block_baseline.z 
-	 << endl;
-
-    cudaEvent_t start;
-    cudaEvent_t stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
     if (nblocks == 1) {
       // Matrix is store in interleaved matrix so that all matrix data
       // are stored contiguously in one single device memory block
       Tm *mat = (Tm*)(*d_mat);
 
-      cudaEventRecord(start,stream);
-
+#ifdef CUDADMA_KERNEL    
       if (grid_cudaDMA.x>0)
 	// CudaDMA implementation
 	hydro_calcMatrix2d_cudaDMA
@@ -2411,10 +1893,12 @@ namespace hydro2d_cuda
 						       nedge_cudaDMA+iedgeset-1, 
 						       nedge_per_thread_cudaDMA,
 						       iedgeset-1);
+#endif
+
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatrix2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping>
+	  <Tc,Tv,Tm,Ti,SYSTEM_SCALAR,idissipationtype,blumping,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 							 IedgeList,
 							 vec, mat, scale,
@@ -2422,12 +1906,7 @@ namespace hydro2d_cuda
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     } else {
-      cudaEventRecord(start,stream);
-      
       // Matrix is stored in block format, that is, the data of each
       // scalar submatrix resides in an individual device memory
       // block; thus we transfer the starting addresses of each memory
@@ -2440,6 +1919,7 @@ namespace hydro2d_cuda
       Tm *mat;
       cudaGetSymbolAddress(((void**)&mat), "constMemPool");
 
+#ifdef CUDADMA_KERNEL    
       if (grid_cudaDMA.x>0)
 	// CudaDMA implementation
 	hydro_calcMatrix2d_cudaDMA
@@ -2452,11 +1932,12 @@ namespace hydro2d_cuda
 						       nedge_cudaDMA+iedgeset-1, 
 						       nedge_per_thread_cudaDMA,
 						       iedgeset-1);
+#endif
       
       if (grid_baseline.x>0)
 	// Baseline implementation
 	hydro_calcMatrix2d_baseline
-	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping>
+	  <Tc,Tv,Tm,Ti,SYSTEM_BLOCK,idissipationtype,blumping,threads_per_cta_baseline>
 	  <<<grid_baseline, block_baseline, 0, stream>>>(CoeffsAtEdge,
 							 IedgeList,
 							 vec, mat, scale,
@@ -2464,23 +1945,7 @@ namespace hydro2d_cuda
 							 nedgeset+iedgeset-1, 
 							 nedge_per_thread_baseline,
 							 nedge_cudaDMA+iedgeset-1);
-      
-      cudaEventRecord(stop,stream);
-      cudaEventSynchronize(stop);
     }
-    
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-    cout << "Memory NEDGE: " << NVAR2D*NVAR2D*nedgeset*sizeof(Tv)/1000000.0f
-	 << " MB" << " NEDGE=" << nedgeset << endl;
-    cout << "Elapsed time: " << elapsedTime << " ms" << endl;
-    cout << "Bandwidth:    " << (6*nedgeset*sizeof(Ti)+
-				 2*NVAR2D*nedgeset*sizeof(Tv)+
-				 2*NVAR2D*NVAR2D*nedgeset*sizeof(Tv))/1000000000.0f/elapsedTime*1000.0f
-	 << " GB/s" << endl;
-    
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
     
     coproc_checkErrors("hydro_calcMatrix2d_cuda");
     return 0;
