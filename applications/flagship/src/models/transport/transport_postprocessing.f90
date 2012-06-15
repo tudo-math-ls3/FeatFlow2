@@ -219,25 +219,27 @@ contains
     end if
     
     ! Add primal solution vector
-    if (associated(p_DdataPrimal)) then
-      call ucd_addVariableVertexBased (rexport, 'u',&
-          UCD_VAR_STANDARD, p_DdataPrimal)
-      
-      ! Add pointvalues as tracer variable?
-      if (dofCoords .gt. 0)&
-          call ucd_addTracerVariable(rexport, 'u', p_DdataPrimal)
-    end if
-
+    if (associated(p_DdataPrimal))&
+        call ucd_addVariableVertexBased (rexport, 'u',&
+        UCD_VAR_STANDARD, p_DdataPrimal)
+    
     ! Add dual solution vector
-    if (associated(p_DdataDual)) then
-      call ucd_addVariableVertexBased (rexport, 'z',&
-          UCD_VAR_STANDARD, p_DdataDual)
+    if (associated(p_DdataDual))&
+        call ucd_addVariableVertexBased (rexport, 'z',&
+        UCD_VAR_STANDARD, p_DdataDual)
 
-      ! Add pointvalues as tracer variable?
-      if (dofCoords .gt. 0)&
-          call ucd_addTracerVariable(rexport, 'z', p_DdataDual)
+    ! Add primal solution vector as tracer variable
+    if (present(rsolutionPrimal) .and. (dofCoords .gt. 0)) then
+      call lsysbl_getbase_double(rsolutionPrimal, p_DdataPrimal)
+      call ucd_addTracerVariable(rexport, 'u', p_DdataPrimal)
     end if
-
+    
+    ! Add dual solution vector as tracer variable
+    if (present(rsolutionDual) .and. (dofCoords .gt. 0)) then
+      call lsysbl_getbase_double(rsolutionDual, p_DdataDual)
+      call ucd_addTracerVariable(rexport, 'z', p_DdataDual)
+    end if
+    
     ! Write UCD file
     call ucd_write(rexport)
     call ucd_release(rexport)
