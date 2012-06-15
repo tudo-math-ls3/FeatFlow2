@@ -3967,8 +3967,8 @@ contains
       NEL = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL
     end if
 
-    if (.not. present(rtrafoInfo)) then
-      itrafoBlock = rcubatureInfo%p_RinfoBlocks(icubatureBlock)%itrafoBlock
+    if (present(itrafoBlock)) then
+      itrafoBlock = itrafoBlk
     end if
 
     if (present(ctrafoType)) then
