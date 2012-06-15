@@ -188,6 +188,7 @@ contains
 !</subroutine>
 
     ! local variables
+    real(DP) :: ddisturbmesh
     integer :: discretisation,velocityfield,dofCoords
     integer :: massAFC,templateGFEM
     integer :: convectionAFC,convectionGFEM
@@ -204,7 +205,7 @@ contains
     integer :: coeffMatrix_CZ
     integer :: coeffMatrix_S
     integer :: iconvToTria
-    
+        
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'trifile', rproblemDescriptor%trifile)
@@ -220,6 +221,8 @@ contains
         ssectionName, 'dofCoords', dofCoords, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'velocityfield', velocityfield, 0)
+    call parlst_getvalue_double(rparlist,&
+        ssectionName, 'ddisturbmesh', ddisturbmesh, 0.0_DP)
 
     ! Get global positions of matrices
     call parlst_getvalue_int(rparlist,&
@@ -299,10 +302,13 @@ contains
     rproblemDescriptor%nvectorBlock    = max(0, velocityfield, dofCoords)
 
     ! Check if quadrilaterals should be converted to triangles
-    if (iconvToTria .ne. 0) then
-      rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                      + PROBDESC_MSPEC_CONVTRIANGLES
-    end if
+    if (iconvToTria .ne. 0)&
+        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
+                                        + PROBDESC_MSPEC_CONVTRIANGLES
+
+    ! Check if mesh should be disturbed stochastically
+    if (ddisturbmesh > 0.0_DP)&
+        rproblemDescriptor%ddisturbmesh = ddisturbmesh
 
   end subroutine transp_initProblemDescriptor
 

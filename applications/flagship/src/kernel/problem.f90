@@ -83,6 +83,7 @@ module problem
   use io
   use linearsystemblock
   use linearsystemscalar
+  use meshmodification
   use spatialdiscretisation
   use storage
   use triangulation
@@ -185,6 +186,9 @@ module problem
 
     ! Name of the boundary parametrisation file
     character(LEN=SYS_STRLEN) :: prmfile
+
+    ! Amount of stochastically mesh disturbance
+    real(DP) :: ddisturbMesh = 0.0_DP
 
   end type t_problemDescriptor
 
@@ -354,6 +358,11 @@ contains
     ! Refine coarse mesh to minimum problem level
     call tria_quickRefine2LevelOrdering(rproblemDescriptor%nlmin-1,&
         rproblemLevel%rtriangulation, rproblem%rboundary)
+
+    ! Disturb mesh stochastically if required
+    if (rproblemDescriptor%ddisturbmesh > 0.0_DP)&
+        call meshmod_disturbMesh(rproblemLevel%rtriangulation,&
+                                 rproblemDescriptor%ddisturbMesh)
 
     ! Create standard mesh from raw mesh
     call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&

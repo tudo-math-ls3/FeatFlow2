@@ -182,6 +182,7 @@ contains
 !</subroutine>
 
     ! local variables
+    real(DP) :: ddisturbmesh
     integer :: discretisation,dofCoords
     integer :: massAFC,templateGFEM
     integer :: inviscidAFC,inviscidGFEM
@@ -216,6 +217,8 @@ contains
         ssectionName, 'discretisation', discretisation, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'dofCoords', dofCoords, 0)
+    call parlst_getvalue_double(rparlist,&
+        ssectionName, 'ddisturbmesh', ddisturbmesh, 0.0_DP)
 
     ! Get global positions of matrices
     call parlst_getvalue_int(rparlist,&
@@ -306,10 +309,13 @@ contains
     rproblemDescriptor%nvectorBlock    = max(0, dofCoords)
 
     ! Check if quadrilaterals should be converted to triangles
-    if (iconvToTria .ne. 0) then
-      rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                      + PROBDESC_MSPEC_CONVTRIANGLES
-    end if
+    if (iconvToTria .ne. 0)&
+        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
+                                        + PROBDESC_MSPEC_CONVTRIANGLES
+
+    ! Check if mesh should be disturbed stochastically
+    if (ddisturbmesh > 0.0_DP)&
+        rproblemDescriptor%ddisturbmesh = ddisturbmesh
 
   end subroutine hydro_initProblemDescriptor
 
