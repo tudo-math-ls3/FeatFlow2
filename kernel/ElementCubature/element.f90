@@ -849,7 +849,8 @@ contains
       elem_igetID = EL_QPW4P2_2D
     else if (selem .eq. "EL_EM11" .or. selem .eq. "EL_EM11_2D") then
       elem_igetID = EL_EM11_2D
-    else if (selem .eq. "EL_Q2" .or. selem .eq. "EL_Q2_2D") then
+    else if (selem .eq. "EL_Q2" .or. selem .eq. "EL_Q2_2D" .or.&
+             selem .eq. "EL_E013" .or. selem .eq. "EL_E013_2D") then
       elem_igetID = EL_Q2_2D
     else if (selem .eq. "EL_Q2H_2D") then
       elem_igetID = EL_Q2H_2D
