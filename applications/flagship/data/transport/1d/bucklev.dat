@@ -131,6 +131,28 @@ stargetfuncname =
 trifile = %{sgriddirectory}/1d/rect2_2.tri
 
 # type of finite element space(s)
+#
+# EL_E001_2D   linear H1-conforming triangular FE, P1
+#
+# EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
+#              rotated bilinear non-conforming quadrilateral FE,
+#
+# EL_E020_2D   rotated linear nonconforming triangular FE,
+#              P1~, edge-midpoint based
+#
+# EL_E030_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, integral mean value based
+# EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based
+# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based, new implementation
+#
+# EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, edge-midpoint based
+# EL_EM31_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based
+# EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based, new interface implementations
 celement = EL_P1_1D
 
 # type of matrix format

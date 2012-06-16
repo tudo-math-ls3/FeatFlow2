@@ -56,7 +56,7 @@ iapproxtimederivativetype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -146,7 +146,31 @@ prmfile = %{sgriddirectory}/2d/rect_01x0.1_quads.prm
 trifile = %{sgriddirectory}/2d/rect_01x0.1_quads.tri
 
 # type of finite element space(s)
-celement = EL_Q1_2D
+#
+# EL_E001_2D   linear H1-conforming triangular FE, P1
+#
+# EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
+#              rotated bilinear non-conforming quadrilateral FE,
+#
+# EL_E020_2D   rotated linear nonconforming triangular FE,
+#              P1~, edge-midpoint based
+#
+# EL_E030_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, integral mean value based
+# EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based
+# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, integral mean value based, new implementation
+#
+# EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ parametric, edge-midpoint based
+# EL_EM31_2D   rotated bilinear non-conforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based
+# EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
+#              Q1~ non-parametric, edge-midpoint based, new interface implementations
+#celement = EL_Q1_2D
+celement = EL_E030
+#celement = EL_E031
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -197,7 +221,7 @@ errorestimator = ErrorEstimator
 # 31 = FEM-GP
 # 41 = nonlinear upwind-biased FEM-LPT
 # 51 = linearised upwind-biased FEM-LPT
-istabilisation = 20
+istabilisation = 1
 
 # perform prelimiting
 #  0 = no prelimiting
@@ -215,7 +239,7 @@ iprelimiting = 0
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 1
+iformatUCD = 0
 
 # type of UCD output
 # 0 = standard
@@ -253,7 +277,7 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 0
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -278,16 +302,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 6.25e-5 #0.231
 
 # initial time step size
-dinitialStep = 1e-3
+dinitialStep = 6.25e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-3
+dminStep = 0.5e-3
 
 # upper bound for the admissible time step
-dmaxStep = 1e-3
+dmaxStep = 0.5e-3
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -328,10 +352,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -447,7 +471,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -460,7 +484,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 50
+nmaxIterations = 10
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -636,7 +660,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
