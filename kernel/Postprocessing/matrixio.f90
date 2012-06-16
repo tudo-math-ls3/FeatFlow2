@@ -1139,14 +1139,6 @@ contains
       sformat = "(I10,1X,I10,1X,E15.8,"";..."")"
     end if
 
-    ! Let`s check if the matrix has structure
-    if (.not.lsyssc_hasMatrixStructure(rmatrix)) then
-      write(UNIT=iunit,FMT=50) smatrixName,&
-          rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
-      close(UNIT=iunit)
-      return
-    end if
-
     ! Let`s check if the matrix has content
     if (bdata .and. .not.lsyssc_hasMatrixContent(rmatrix)) then
       write(UNIT=iunit,FMT=50) smatrixName,&
