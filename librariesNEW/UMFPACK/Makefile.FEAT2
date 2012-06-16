@@ -548,11 +548,62 @@ $(UMFPACK_TARBALL):
 # Clean up targets
 #-------------------------------------------------------------------------------
 
-# Function to delete a single file at once
+# Functions to delete a single file / directory at once
+# (The reason why we need this and the magic why this works lies within
+#  the blank line after the remove command. This way the remove commands
+#  in a foreach-loop are triggered one after another - in separate
+#  sub-shells. Not in a single sub-shell command. As this may result
+#  on some machines in error messages of type:
+#  execvp: rm: Arg list too long)
 define remove_file
     rm -f $(file)
 
 endef
+
+
+# Recursively remove directories. For the first two directory levels
+# print an error message if removal failed. (The restriction to two
+# levels is rather arbitrary. It's the least number of directory levels
+# created by a FEAST Makefile. To show an error message unconditionally
+# is not desired as one would eventually always get an error message, at
+# least when trying to remove /)
+# The for loop is to deal with given directory wildcards like object/pc-*-*-*.
+define remove_directory
+    @rmdirFailures=""; \
+     for dir in $(dir); do \
+	depth=0; \
+	while test -d "$${dir}" -a "$${dir}" != '.' -a "$${dir}" != '/'; do \
+	    if rmdir "$${dir}" 2>/dev/null; then \
+		echo "rmdir $${dir}"; \
+		dir=`dirname $${dir}`; \
+	    else \
+		test $${depth} -lt 2 && rmdirFailures="$${rmdirFailures} $${dir}"; \
+		dir='.'; \
+	    fi; \
+	    depth=`expr $${depth} + 1`; \
+	done; \
+    done; \
+    for dir in $${rmdirFailures}; do \
+	if test -d "$${dir}"; then \
+	    $(print_directory_not_empty); \
+	fi; \
+    done
+
+endef
+
+# Function to be called if directory removal did not work unexpectedly.
+define print_directory_not_empty
+    (echo; \
+     echo '# ---------------------------------------------------------------------'; \
+     echo '# This Makefile previously created the directory '; \
+     echo '#'; \
+     echo "# $${dir}"; \
+     echo '#'; \
+     echo '# and was about to remove it. Since there are files in that directory'; \
+     echo '# that this Makefile did not create, it will not be removed.'; \
+     echo '# ---------------------------------------------------------------------')
+endef
+
 
 .PHONY:	clean
 clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/SuiteSparse_config.o $(OBJDIR)/libumfpack.a
