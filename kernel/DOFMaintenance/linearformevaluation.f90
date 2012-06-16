@@ -395,7 +395,7 @@ contains
                                       rperfconfig)
 
 !<description>
-  ! DEPRECATED: This routi4ne assembles the entries of a vector according to a linear form
+  ! DEPRECATED: This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors).
   !
   ! If bclear=TRUE, the vector is cleared before the assembly and any
