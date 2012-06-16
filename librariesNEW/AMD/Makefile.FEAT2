@@ -284,7 +284,7 @@ clean:
 purge:
         # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
-	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
+	-$(foreach file, $(OBJDIR)/SuiteSparse_config.o $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
 	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \

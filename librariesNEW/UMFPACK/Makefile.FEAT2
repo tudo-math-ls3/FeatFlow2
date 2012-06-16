@@ -555,7 +555,7 @@ define remove_file
 endef
 
 .PHONY:	clean
-clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
+clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/SuiteSparse_config.o $(OBJDIR)/libumfpack.a
 clean:
 #	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
         # Delete every file separately to prevent errors of kind: 
