@@ -1,6 +1,11 @@
 @echo off
 
-rem Download and extract all libraries
+rem Automatic Library downloader
+rem
+rem This script downloads and extracts all necessary library files
+rem from the internet. It calls the corresponding "getfiles_win.bat" scripts
+rem in the directories of the libraries. THese subscripts then download
+rem the library/-ies and extract them.
 
 call .\AMD\getfiles_win.cmd
 call .\BLAS\getfiles_win.cmd
