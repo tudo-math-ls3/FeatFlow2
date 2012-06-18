@@ -1824,6 +1824,29 @@ contains
 
   !****************************************************************************
 
+!<--
+! The L2-norm of a vector field "rvector" can be calculated, e.g., as follows:
+!
+!    ! Declare an evaluation structure for the subvectors
+!    type(t_fev2Vectors) :: revalVectors
+!    ...
+!    real(DP) :: dresult
+!
+!    ! Add the subvectors
+!    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(1),0)
+!    call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(2),0)
+!    ...
+!
+!    ! Evaluate the norm to "dresult"
+!    call bma_buildIntegral(dresult,BMA_CALC_STANDARD,bma_fcalc_L2norm,&
+!        revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Clean up
+!    call fev2_releaseVectorList(revalVectors)
+!-->
+
+  !****************************************************************************
+
 !<subroutine>
 
   subroutine bma_fcalc_L2norm(dintvalue,rassemblyData,rvectorAssembly,&
