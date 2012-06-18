@@ -4844,6 +4844,9 @@ contains
     integer(I32) :: celement
     logical :: bevaluate
 
+    nullify(p_Dvalues)
+    nullify(p_Dvalues2)
+
     ! There are some special cases that we can handle directly.
     ! If all FE spaces are primal spaces (P1,Q1,...), we can just
     ! calculate dumax using lsysbl_getVectorMagnitude.
