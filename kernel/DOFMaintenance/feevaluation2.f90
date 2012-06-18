@@ -1151,7 +1151,7 @@ contains
 
 !<input>
   ! Vector to be added to the list
-  type(t_vectorScalar), intent(inout), target :: rvector
+  type(t_vectorScalar), intent(in), target :: rvector
   
   ! Maximum derivative to be calculated.
   ! =0: calculate the function value only,
