@@ -445,6 +445,10 @@ contains
       ieltypeUV = EL_EN51_2D
       ieltypeP  = EL_DCQP2_2D
 
+    case (52)
+      ieltypeUV = EL_QPW4P2_2D
+      ieltypeP  = EL_QPW4DCP1_2D
+
     case default
       call output_line (&
           "Unknown discretisation: iElementType = "//sys_siL(ielementType,10), &
@@ -1662,10 +1666,10 @@ contains
       
       end if
                                 
+      call spdiscr_releaseCubStructure (rcubatureInfo)
+                            
     end if
 
-    call spdiscr_releaseCubStructure (rcubatureInfo)
-                            
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
     
