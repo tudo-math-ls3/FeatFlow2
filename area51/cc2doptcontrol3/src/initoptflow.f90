@@ -42,6 +42,7 @@ module initoptflow
   use structuresmain
   use structuresoptflow
   use structuresoptcontrol
+  use structurespostproc
   use hierarchies
   
   use spacematvecassembly
@@ -334,6 +335,16 @@ contains
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
+      call output_line ("Initialising postprocessing.")
+    end if
+
+    ! Initialise postprocessing settings
+    call struc_initPostprocParams (&
+        rparlist,rsettings%ssectionSpaceTimePostprocessing,&
+        rsettingsSolver%rphysics,rsettingsSolver%rpostproc)
+
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
       call output_line ("Initialising RHS.")
     end if
     
@@ -461,6 +472,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+    ! Release postprocessing data
+    call struc_donePostprocParams (rsettings%rpostproc)
+
     ! Release the discrete initial condition
     call smva_releaseDiscreteInitCond(rsettings%rdiscreteInitCond)
 
@@ -661,15 +675,14 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: sfunction
-    integer :: isuccess
     
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'cdistVelConstraints',roptcontrol%rconstraints%cdistVelConstraints,&
+        "cdistVelConstraints",roptcontrol%rconstraints%cdistVelConstraints,&
         roptcontrol%rconstraints%cdistVelConstraints)
 
     ! DEPRECATED: ccontrolConstraintsType = cconstraintsType
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'cdistVelConstType',roptcontrol%rconstraints%cdistVelConstType,&
+        "cdistVelConstType",roptcontrol%rconstraints%cdistVelConstType,&
         roptcontrol%rconstraints%cdistVelConstType)
 
 !    if (roptcontrol%rconstraints%cdistVelConstType .eq. 1) then
@@ -775,14 +788,13 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: sfunction
-    integer :: isuccess
     
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'cstateConstraints',roptcontrol%rconstraints%cstateConstraints,&
+        "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,&
         roptcontrol%rconstraints%cstateConstraints)
 
     call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'cstateConstraintsType',roptcontrol%rconstraints%cstateConstraintsType,0)
+        "cstateConstraintsType",roptcontrol%rconstraints%cstateConstraintsType,0)
 
 !    if (roptcontrol%rconstraints%ccontrolConstraintsType .eq. 1) then
 !      allocate (roptcontrol%rconstraints%p_rymin1)
@@ -1308,14 +1320,14 @@ contains
 !        "cwriteFinalSolution",rpostproc%cwriteFinalSolution,1)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
+!        "ssolutionFileName",rpostproc%ssolutionFileName,&
 !        "",bdequote=.true.)
 !
 !    call parlst_getvalue_int (rparlist,ssection,&
 !        "cwriteFinalControl",rpostproc%cwriteFinalControl,1)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        "sfinalControlFileName",rpostproc%sfinalControlFileName,&
+!        "sfilenameControl",rpostproc%sfilenameControl,&
 !        "",bdequote=.true.)
 !
 !    ! function value calculation

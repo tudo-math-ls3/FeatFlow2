@@ -269,6 +269,9 @@ module structuresoptcontrol
     
     ! $\gamma$ parameter of the nonstationary optimal control functional
     real(DP) :: dgammaC = 0.0_DP
+
+    ! $\delta$ parameter of the terminal condition
+    real(DP) :: ddeltaC = 0.0_DP
   
     ! Formulation of the Space-time problem.
     ! =0: usual formulation as specified in the DFG applicance

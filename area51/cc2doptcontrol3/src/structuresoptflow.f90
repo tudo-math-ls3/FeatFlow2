@@ -45,6 +45,7 @@ module structuresoptflow
   use structuresboundaryconditions
   use structuresoptcontrol
   use structuresoperatorasm
+  use structurespostproc
   
   implicit none
   
@@ -79,6 +80,9 @@ module structuresoptflow
     
     ! All debug flags used by the application
     type(t_optcDebugFlags) :: rdebugFlags
+    
+    ! Postprocessing settings
+    type(t_optcPostprocessing) :: rpostproc
 
     !<!-- --------------------------------- -->
     !<!-- MESH, DOMAIN, TIME-DISCRETISATION -->

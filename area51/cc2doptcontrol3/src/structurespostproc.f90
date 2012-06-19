@@ -62,40 +62,48 @@ module structurespostproc
     ! <!-- Input parameters -->
     
     ! Physics of the problem
-    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_physics), pointer :: p_rphysics => null()
   
     ! Type of output file to generate from solutions.
     ! 0=disabled
-    ! 1=GMV
-    ! 2=AVS
     ! 3=Paraview (VTK)
-    ! 4=Matlab
     integer :: ioutputUCD = 0
     
     ! Filename for UCD output.
-    ! A timestep index '.0001','.0002',... is appended to this.
+    ! The filename is extended according to the data written out and the 
+    ! timestep number.
     character(len=SYS_STRLEN) :: sfilenameUCD = "./gmv/u"
     
-    ! Output format for the final solution.
+    ! Output format for the primal solution.
     ! =0: don't write
     ! =1: write out, use formatted output (default).
     ! =2: write out, use unformatted output.
-    integer :: cwriteFinalSolution = 1
+    integer :: cwritePrimalSol = 0
 
-    ! Filename of a file sequence where the final solution is saved to.
+    ! Filename of a file sequence where the primal solution is saved to.
     ! ="": Disable.
-    character(len=SYS_STRLEN) :: sfinalSolutionFileName = ""
+    character(len=SYS_STRLEN) :: sfilenamePrimalSol = ""
 
-    ! Output format for the final control.
+    ! Output format for the dual solution.
     ! =0: don't write
     ! =1: write out, use formatted output (default).
     ! =2: write out, use unformatted output.
-    integer :: cwriteFinalControl = 1
+    integer :: cwriteDualSol = 0
 
-    ! Filename of a file sequence where the final control is saved to.
+    ! Filename of a file sequence where the dual solution is saved to.
     ! ="": Disable.
-    character(len=SYS_STRLEN) :: sfinalControlFileName = ""
+    character(len=SYS_STRLEN) :: sfilenameDualSol = ""
     
+    ! Output format for the control.
+    ! =0: don't write
+    ! =1: write out, use formatted output (default).
+    ! =2: write out, use unformatted output.
+    integer :: cwriteControl = 0
+
+    ! Filename of a file sequence where the primal solution is saved to.
+    ! ="": Disable.
+    character(len=SYS_STRLEN) :: sfilenameControl = ""
+
     ! Whether to calculate the values of the optimisation functional
     ! J(.) as well as ||y-y0|| etc. during the postprocessing of space-time vectors.
     integer :: icalcFunctionalValues = 0
@@ -150,44 +158,33 @@ module structurespostproc
 
     ! Filename for the flux
     character(len=SYS_STRLEN) :: sfilenameKineticEnergy = ""
-    ! <!-- the following parameters are automatically maintained during a simulation -->
     
-    ! Space that is available in rsolution. One of the CCSPACE_xxxx constants.
-    integer :: cspace = CCSPACE_PRIMAL
-    
-    ! Underlying space discretisation of the primal space
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscrPrimal
-
-    ! Underlying space discretisation
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
-
-    ! Underlying time discretisation
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    
-    ! Space discretisation based on P1/Q1/P0/Q0 for visualisation output.
-    type(t_blockDiscretisation) :: rspaceDiscrLinear
-
-    ! Boundary conditions to use.
-    type(t_optcBDC), pointer :: p_rboundaryConditions => null()
-    
-    ! Points coordinates where to evaluate point values. =NULL: Do not evaluate
-    ! point values.
-    real(DP), dimension(:,:), pointer :: p_DcoordsPointEval => null()
+    ! Points coordinates where to evaluate point values. Primal equation.
+    ! =NULL: Do not evaluate point values.
+    real(DP), dimension(:,:), pointer :: p_DcoordsPointEvalPrimal => null()
     
     ! Type of the point value to evaluate. Every entry corresponds to one
     ! point coordinate in p_DcoordsPointEval. The tuples are formed by
-    ! (type,der) with
-    !   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure,
-    !       =4: dual x-velocity, =5: dual y-velocity, =6: dual pressure,
+    ! (type,der) with, depending on the equation:
+    !
+    ! Stokes/Navier Stokes:
+    !   type=1: x-velocity,, 
+    !       =2: y-velocity, 
+    !       =3: pressure.
+    !
+    ! Heat equation
+    !   type=1: solution
+    !
+    ! And generally:
     !   der =0: function value, =1: x-derivative, =2: y-derivative
-    integer, dimension(:,:), pointer :: p_ItypePointEval => null()
+    integer, dimension(:,:), pointer :: p_ItypePointEvalPrimal => null()
     
     ! Whether or not to write the point values to a file.
     integer :: iwritePointValues = 0
     
     ! Filename for the point values if iwritePointValues <> 0.
-    character(len=SYS_STRLEN) :: sfilenamePointValues = ""
-        
+    character(len=SYS_STRLEN) :: sfilenamePointValuesPrimal = ""
+
   end type
 
 !</typeblock>
@@ -195,6 +192,9 @@ module structurespostproc
   public :: t_optcPostprocessing
 
 !</types>
+
+  public :: struc_initPostprocParams
+  public :: struc_donePostprocParams
 
 contains
 
@@ -242,17 +242,24 @@ contains
 
     ! Export of solution and control.
     call parlst_getvalue_int (rparlist,ssection,&
-        "cwriteFinalSolution",rpostproc%cwriteFinalSolution,1)
-
-    call parlst_getvalue_string (rparlist,ssection,&
-        "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
-        "",bdequote=.true.)
+        "cwritePrimalSol",rpostproc%cwritePrimalSol,1)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        "cwriteFinalControl",rpostproc%cwriteFinalControl,1)
+        "cwriteDualSol",rpostproc%cwriteDualSol,1)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteControl",rpostproc%cwriteControl,1)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        "sfinalControlFileName",rpostproc%sfinalControlFileName,&
+        "sfilenamePrimalSol",rpostproc%sfilenamePrimalSol,&
+        "",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameDualSol",rpostproc%sfilenameDualSol,&
+        "",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameControl",rpostproc%sfilenameControl,&
         "",bdequote=.true.)
 
     ! function value calculation
@@ -297,6 +304,7 @@ contains
         
     call parlst_getvalue_string (rparlist,ssection,&
         'dfluxline',sstr,"",bdequote=.true.)
+        
     if (sstr .ne. "") then
       ! Read the start/end coordinates
       read(sstr,*) rpostproc%Dfluxline(1),rpostproc%Dfluxline(2),&
@@ -327,18 +335,21 @@ contains
     
     ! Init the points to evaluate
     npoints = parlst_querysubstrings (rparlist, ssection, &
-        "CEVALUATEPOINTVALUES")
+        "CEVALUATEPOINTVALUESPRIMAL")
  
     if (npoints .gt. 0) then
-      allocate (rpostproc%p_DcoordsPointEval(NDIM2D,npoints))
-      allocate (rpostproc%p_ItypePointEval(NDIM2D,npoints))
+      allocate (rpostproc%p_DcoordsPointEvalPrimal(NDIM2D,npoints))
+      allocate (rpostproc%p_ItypePointEvalPrimal(NDIM2D,npoints))
     
       ! Read the points
       do i=1,npoints
         call parlst_getvalue_string (rparlist, ssection, &
-            "CEVALUATEPOINTVALUES", sparam, "", i)
-        read (sparam,*) rpostproc%p_DcoordsPointEval(1,i),rpostproc%p_DcoordsPointEval(2,i),&
-            rpostproc%p_ItypePointEval(1,i),rpostproc%p_ItypePointEval(2,i)
+            "CEVALUATEPOINTVALUESPRIMAL", sparam, "", i)
+        read (sparam,*) &
+            rpostproc%p_DcoordsPointEvalPrimal(1,i),&
+            rpostproc%p_DcoordsPointEvalPrimal(2,i),&
+            rpostproc%p_ItypePointEvalPrimal(1,i),&
+            rpostproc%p_ItypePointEvalPrimal(2,i)
       end do
     end if
 
@@ -346,7 +357,8 @@ contains
         "iwritePointValues",rpostproc%iwritePointValues,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfilenamePointValues',rpostproc%sfilenamePointValues,"",bdequote=.true.)
+        "sfilenamePointValuesPrimal",rpostproc%sfilenamePointValuesPrimal,&
+        "",bdequote=.true.)
 
   end subroutine
 
@@ -368,8 +380,12 @@ contains
 !</subroutine>
 
     ! Release allocated parameter arrays.
-    if (associated(rpostproc%p_DcoordsPointEval)) deallocate(rpostproc%p_DcoordsPointEval)
-    if (associated(rpostproc%p_ItypePointEval)) deallocate(rpostproc%p_ItypePointEval)
+    if (associated(rpostproc%p_DcoordsPointEvalPrimal)) &
+        deallocate(rpostproc%p_DcoordsPointEvalPrimal)
+    if (associated(rpostproc%p_ItypePointEvalPrimal)) &
+        deallocate(rpostproc%p_ItypePointEvalPrimal)
+    
+    nullify(rpostproc%p_rphysics)
 
   end subroutine
   

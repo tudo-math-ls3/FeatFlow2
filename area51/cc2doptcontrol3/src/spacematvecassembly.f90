@@ -2410,7 +2410,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<subroutine>
@@ -3666,7 +3666,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<subroutine>
@@ -3837,7 +3837,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<subroutine>
@@ -5610,7 +5610,7 @@ contains
 
       ! 0th timestep has to timestep length; take it from the 1st timestep
       if (dtstep .eq. 0.0_DP) then
-        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,1,&
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,1,&
             dtstep=dtstep)
       end if
 

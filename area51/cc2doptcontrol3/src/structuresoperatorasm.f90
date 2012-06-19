@@ -124,6 +124,17 @@ module structuresoperatorasm
 !</typeblock>
 
   public :: t_spacetimeOpAsmAnalyticData
+  
+!<typeblock>
+
+  ! Pointer to a t_spacetimeOpAsmAnalyticData structure
+  type p_t_spacetimeOpAsmAnalyticData
+    type (t_spacetimeOpAsmAnalyticData), pointer :: p_rdata => null()
+  end type
+
+!</typeblock>
+
+  public :: p_t_spacetimeOpAsmAnalyticData
 
 !<typeblock>
 

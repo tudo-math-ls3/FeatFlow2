@@ -74,6 +74,8 @@ module main_program
   use initoptflow
   use newtoniteration
   
+  use postprocessing
+  
   implicit none
 
 !<globals>
@@ -273,9 +275,6 @@ contains
     ! Structure for the Newton solver
     type(t_spacetimeNewton) :: rsolver
 
-    ! Postprocessing data.
-    type(t_optcPostprocessing) :: rpostproc
-    
     ! Structure encapsuling a hierarchy of solutions
     type(t_kktsystemHierarchy) :: rkktsystemHierarchy
     
@@ -356,10 +355,15 @@ contains
     
     call output_separator (OU_SEP_EQUAL)
 
-!    ! Pipe the solution through our postprocessing routines
-!    call output_line ("Postprocessing of the final solution...")
+    ! Pipe the solution through our postprocessing routines
+    call output_line ("Postprocessing of the final solution...")
 !    call stat_clearTimer (rtimePostProc)
 !    call stat_startTimer (rtimePostProc)
+    call optcpp_postprocessing (p_rsettingsSolver%rpostproc,&
+        p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
+        p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
+        rsolution%p_rprimalSol,rsolution%p_rdualSol,rsolution%p_rcontrol,&
+        p_rsettingsSolver)
 !    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,rrhsDiscrete,&
 !        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)
 !    call stat_stopTimer (rtimePostProc)
