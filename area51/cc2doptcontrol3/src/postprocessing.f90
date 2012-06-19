@@ -377,7 +377,7 @@ contains
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: sfile
+    character(len=SYS_STRLEN) :: sfile,ssuffix
     type(t_ucdExport) :: rexport
     integer :: icomp
     
@@ -394,38 +394,48 @@ contains
     
     ! Create a filename for the visualisation output
     if (present(itag)) then
-      sfile = trim(sfile)//"."//trim(sys_si0L(itag,10))//"."//trim(sys_si0L(ifileid,10))
+      ssuffix = "."//trim(sys_siL(itag,10))//"."//trim(sys_si0L(ifileid,5))
     else
-      sfile = trim(sfile)//"."//trim(sys_si0L(ifileid,10))
+      ssuffix = "."//trim(sys_si0L(ifileid,5))
     end if
-    
+
     ! Open the visualisation file or cancel
     select case (rpostproc%ioutputUCD)
     case (0)
       return
       
     case (1)
+      sfile = trim(sfile)//".gmv"//trim(ssuffix)
       call ucd_startGMV (rexport,&
-          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,sfile)
+          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,&
+          sfile)
 
     case (2)
+      sfile = trim(sfile)//".avs"//trim(ssuffix)
       call ucd_startAVS (rexport,&
-          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,sfile)
+          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,&
+          sfile)
           
     case (3)
+      sfile = trim(sfile)//".vtk"//trim(ssuffix)
       call ucd_startVTK (rexport,&
-          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,sfile)
+          UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES,rtriangulation,&
+          sfile)
 
     case (4)
+      sfile = trim(sfile)//".vtk"//trim(ssuffix)
       call ucd_startVTK (rexport,&
           UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES+&
-          UCD_FLAG_ONCEREFINED+UCD_FLAG_AUTOINTERPOLATE,rtriangulation,sfile)
+          UCD_FLAG_ONCEREFINED+UCD_FLAG_AUTOINTERPOLATE,rtriangulation,&
+          sfile)
           
     case default
       call output_line ("Invalid UCD output type.", &
           OU_CLASS_ERROR,OU_MODE_STD,"optcpp_singleVisualisation")
       call sys_halt()
     end select
+
+    call output_line ("Writing vis. file: "//trim(sfile))    
     
     ! Solution time
     call ucd_setSimulationTime(rexport,dtime)
@@ -582,23 +592,23 @@ contains
     select case (cspace)
     case (CCSPACE_PRIMAL)
       sfile = rpostproc%sfilenamePrimalSol
-      sname = "primalsol"//trim(sys_si0L(ifileid,5))
+      sname = "primalsol"
       cwrite = rpostproc%cwritePrimalSol
     case (CCSPACE_DUAL)
       sfile = rpostproc%sfilenameDualSol
-      sname = "dualsol"//trim(sys_si0L(ifileid,5))
+      sname = "dualsol"
       cwrite = rpostproc%cwriteDualSol
     case (CCSPACE_CONTROL)
       sfile = rpostproc%sfilenameControl
-      sname = "control"//trim(sys_si0L(ifileid,5))
+      sname = "control"
       cwrite = rpostproc%cwriteControl
     end select
     
     ! Create a filename for the visualisation output
     if (present(itag)) then
-      sfile = trim(sfile)//"."//trim(sys_si0L(itag,10))//"."//trim(sys_si0L(ifileid,10))
+      sfile = trim(sfile)//"."//trim(sys_siL(itag,10))//"."//trim(sys_si0L(ifileid,5))
     else
-      sfile = trim(sfile)//"."//trim(sys_si0L(ifileid,10))
+      sfile = trim(sfile)//"."//trim(sys_si0L(ifileid,5))
     end if
     
     ! Write the vector
@@ -607,10 +617,14 @@ contains
       return
       
     case (1)
+      call output_line ("Writing dump file: "//trim(sfile))
+
       call vecio_writeBlockVectorHR (rvector, sname, .true.,&
           0, sfile)
 
     case (2)
+      call output_line ("Writing dump file: "//trim(sfile))
+
       call vecio_writeBlockVectorHR (rvector, sname, .true.,&
           0, sfile, "(E20.10)")
           
@@ -679,7 +693,7 @@ contains
     ! Create a filename
     sfile = sfilename
     if (present(itag)) then
-      sfile = trim(sfile)//"."//trim(sys_si0L(itag,10))
+      sfile = trim(sfile)//"."//trim(sys_siL(itag,10))
     end if
     
     ifilehandle = 0
@@ -984,7 +998,7 @@ contains
 
             ! Header of the line
             stemp = &
-                trim(sys_si0L(isolutionid,10)) // " " // &
+                trim(sys_si0L(isolutionid,5)) // " " // &
                 trim(sys_sdEL(dtime,10)) 
 
             call optcpp_appendLineToDatafile (stemp,sheadline,&
@@ -1106,9 +1120,9 @@ contains
           if (rpostproc%iwriteBodyForces .ne. 0) then
           
             ! Write the result to a text file.
-            stemp = trim(sys_si0L(isolutionid,10)) // ' ' &
+            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
                 // trim(sys_sdEL(dtime,10)) // ' ' &
-                // trim(sys_si0L(rpostproc%ibodyForcesBdComponent,10)) // ' ' &
+                // trim(sys_si0L(rpostproc%ibodyForcesBdComponent,5)) // ' ' &
                 // trim(sys_sdEL(Dforces(1),10)) // ' '&
                 // trim(sys_sdEL(Dforces(2),10))
 
@@ -1133,7 +1147,7 @@ contains
           ! Write the result to a text file?
           if (rpostproc%iwriteflux .ne. 0) then
             ! Format: timestep current-time value
-            stemp = trim(sys_si0L(isolutionid,10)) // ' ' &
+            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
                 // trim(sys_sdEL(dtime,10)) // ' ' &
                 // trim(sys_sdEL(dflux,10))
 
@@ -1163,7 +1177,7 @@ contains
           
           ! Write the result to a text file?
           if (rpostproc%iwriteKineticEnergy .ne. 0) then
-            stemp = trim(sys_si0L(isolutionid,10)) // ' ' &
+            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
                 // trim(sys_sdEL(dtime,10)) // ' ' &
                 // trim(sys_sdEL(denergy,10)) // ' ' &
                 // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
@@ -1448,6 +1462,8 @@ contains
     call optcpp_spaceTimeFunctionals (rpostproc,&
         ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
         rprimalSol,rdualSol,rcontrol)
+        
+    call output_lbrk()
     
     ! ***************************************************************************
     ! Primal solution

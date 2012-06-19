@@ -875,7 +875,8 @@ contains
 
 !<subroutine>
 
-  subroutine init_initSpacePrjHierarchy (rprjHierarchy,rfehierarchy,rparlist,ssection)
+  subroutine init_initSpacePrjHierarchy (rprjHierarchy,rfehierarchy,&
+      rphysics,rparlist,ssection)
   
 !<description>
   ! Creates projection hierarchies for the interlevel projection in space.
@@ -884,6 +885,9 @@ contains
 !<input>
   ! Underlying FEM hierarchy.
   type(t_feHierarchy), intent(in) :: rfehierarchy
+  
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
   
   ! Parameter list with parameters about the projection.
   type(t_parlist), intent(in) :: rparlist
@@ -958,52 +962,61 @@ contains
       
       ! Now take a look which parameters appear in that section.
 
-      ! Prolongation/restriction order for velocity components
-      call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
+      select case (rphysics%cequation)
       
-      if (i1 .ne. -1) then
-        ! Initialise order of prolongation/restriction for velocity components
-        rprojection%RscalarProjection(:,1:NDIM2D)%iprolongationOrder  = i1
-        rprojection%RscalarProjection(:,1:NDIM2D)%irestrictionOrder   = i1
-        rprojection%RscalarProjection(:,1:NDIM2D)%iinterpolationOrder = i1
-      end if
+      ! ********************************************
+      ! Stokes / Navier-Stokes
+      ! ********************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+      
+        ! Prolongation/restriction order for velocity components
+        call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
+        
+        if (i1 .ne. -1) then
+          ! Initialise order of prolongation/restriction for velocity components
+          rprojection%RscalarProjection(:,1:NDIM2D)%iprolongationOrder  = i1
+          rprojection%RscalarProjection(:,1:NDIM2D)%irestrictionOrder   = i1
+          rprojection%RscalarProjection(:,1:NDIM2D)%iinterpolationOrder = i1
+        end if
 
-      ! Prolongation/restriction order for pressure
-      call parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
-      
-      if (i1 .ne. -1) then
-        ! Initialise order of prolongation/restriction for pressure components
-        rprojection%RscalarProjection(:,NDIM2D+1)%iprolongationOrder  = i1
-        rprojection%RscalarProjection(:,NDIM2D+1)%irestrictionOrder   = i1
-        rprojection%RscalarProjection(:,NDIM2D+1)%iinterpolationOrder = i1
-      end if
-      
-      ! Prolongation/restriction variant for velocity components
-      ! in case of Q1~ discretisation
-      call parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
-      
-      if (i1 .ne. -1) then
-        rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
-        rprojection%RscalarProjection(:,1:NDIM2D)%irestVariant  = i1
-      end if
-      
-      ! Aspect-ratio indicator in case of Q1~ discretisation
-      ! with extended prolongation/restriction
-      call parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
-      
-      if (i1 .ne. 1) then
-        rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
-        rprojection%RscalarProjection(:,1:NDIM2D)%irestARIndicatorEX3Y  = i1
-      end if
+        ! Prolongation/restriction order for pressure
+        call parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
+        
+        if (i1 .ne. -1) then
+          ! Initialise order of prolongation/restriction for pressure components
+          rprojection%RscalarProjection(:,NDIM2D+1)%iprolongationOrder  = i1
+          rprojection%RscalarProjection(:,NDIM2D+1)%irestrictionOrder   = i1
+          rprojection%RscalarProjection(:,NDIM2D+1)%iinterpolationOrder = i1
+        end if
+        
+        ! Prolongation/restriction variant for velocity components
+        ! in case of Q1~ discretisation
+        call parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
+        
+        if (i1 .ne. -1) then
+          rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
+          rprojection%RscalarProjection(:,1:NDIM2D)%irestVariant  = i1
+        end if
+        
+        ! Aspect-ratio indicator in case of Q1~ discretisation
+        ! with extended prolongation/restriction
+        call parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
+        
+        if (i1 .ne. 1) then
+          rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
+          rprojection%RscalarProjection(:,1:NDIM2D)%irestARIndicatorEX3Y  = i1
+        end if
 
-      ! Aspect-ratio bound for switching to constant prolongation/restriction
-      ! in case of Q1~ discretisation with extended prolongation/restriction
-      call parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
-      
-      if (d1 .ne. 20.0_DP) then
-        rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
-        rprojection%RscalarProjection(:,1:NDIM2D)%drestARboundEX3Y  = d1
-      end if
+        ! Aspect-ratio bound for switching to constant prolongation/restriction
+        ! in case of Q1~ discretisation with extended prolongation/restriction
+        call parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
+        
+        if (d1 .ne. 20.0_DP) then
+          rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
+          rprojection%RscalarProjection(:,1:NDIM2D)%drestARboundEX3Y  = d1
+        end if
+        
+      end select
 
     end subroutine
 

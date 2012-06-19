@@ -181,13 +181,16 @@ contains
       call output_line ("Initialising projection hierarchy.")
     end if
     call init_initSpacePrjHierarchy (rsettingsSolver%rprjHierSpacePrimal,&
-        rsettingsSolver%rfeHierarchyPrimal,rparlist,rsettings%ssectionProlRestSpacePrimal)
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rphysics,&
+        rparlist,rsettings%ssectionProlRestSpacePrimal)
     
     call init_initSpacePrjHierarchy (rsettingsSolver%rprjHierSpaceDual,&
-        rsettingsSolver%rfeHierarchyDual,rparlist,rsettings%ssectionProlRestSpaceDual)
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rphysics,&
+        rparlist,rsettings%ssectionProlRestSpaceDual)
     
     call init_initSpacePrjHierarchy (rsettingsSolver%rprjHierSpaceControl,&
-        rsettingsSolver%rfeHierarchyControl,rparlist,rsettings%ssectionProlRestSpaceControl)
+        rsettingsSolver%rfeHierarchyControl,rsettingsSolver%rphysics,&
+        rparlist,rsettings%ssectionProlRestSpaceControl)
 
     ! Initialise the underlying space-time hierarchies of the solver.
     if (ioutputLevel .ge. 1) then

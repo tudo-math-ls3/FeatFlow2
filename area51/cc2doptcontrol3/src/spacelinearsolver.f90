@@ -844,7 +844,7 @@ contains
     ! Pass the matrices to the solver.
     allocate(Rmatrices(1:ilevel))
     do i=1,ilevel
-      call lsysbl_duplicateMatrix (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rmatrix,&
+      call lsysbl_duplicateMatrix (rlsshierarchy%p_RlinearSolvers(i)%p_rmatrix,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     end do
     

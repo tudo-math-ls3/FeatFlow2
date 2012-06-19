@@ -130,13 +130,6 @@ contains
     ! Get the coordinates of the cubature points
     p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
     
-    ! Get the data array with the values of the FEM function
-    ! in the cubature points
-    p_Dy1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
-    p_Dy2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_FUNC2D)
-    p_Dz1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,DER_FUNC2D)
-    p_Dz2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,DER_FUNC2D)
-    
     ! Get the observation area; it is given in the collection
     p_DobservationArea => rcollection%DquickAccess(1:4)
     
@@ -155,6 +148,13 @@ contains
     ! *************************************************************
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_Dy1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+      p_Dy2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_FUNC2D)
+      p_Dz1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,DER_FUNC2D)
+      p_Dz2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,DER_FUNC2D)
+      
       ! Evaluate the target function
       call getTargetData (1,p_Dz1)
       call getTargetData (2,p_Dz2)
@@ -194,6 +194,11 @@ contains
     ! *************************************************************
     case (CCEQ_HEAT2D)
 
+      ! Get the data array with the values of the FEM function
+      ! in the cubature points
+      p_Dy1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+      p_Dz1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_FUNC2D)
+    
       ! Evaluate the target function
       call getTargetData (1,p_Dz1)
 
@@ -302,7 +307,7 @@ contains
     type(t_fev2Vectors) :: revalVectors
     type(t_vectorBlock), pointer :: p_rvector
     type(t_collection), target :: rcollection,rusercollection
-    integer :: nblocks
+    integer :: i,nblocks
     type(p_t_spacetimeOpAsmAnalyticData), target :: rp_ranalyticData
     
     dintvalue = 0.0_DP
@@ -315,12 +320,14 @@ contains
     call sptivec_getTimestepDataByTime (rprimalSol%p_rvector, dtime, p_rvector)
 
     ! Append y to the set of functions to be evaluated.
-    call fev2_addVectorToEvalList(revalVectors,p_rvector%RvectorBlock(1),0)
-    call fev2_addVectorToEvalList(revalVectors,p_rvector%RvectorBlock(2),0)
+    do i=1,p_rvector%nblocks
+      call fev2_addVectorToEvalList(revalVectors,p_rvector%RvectorBlock(i),0)
+    end do
     
     ! Add dummy vectors for z
-    call fev2_addDummyVectorToEvalList(revalVectors)
-    call fev2_addDummyVectorToEvalList(revalVectors)
+    do i=1,p_rvector%nblocks
+      call fev2_addDummyVectorToEvalList(revalVectors)
+    end do
     
     ! Prepare the target function
     call collct_init(rcollection)
