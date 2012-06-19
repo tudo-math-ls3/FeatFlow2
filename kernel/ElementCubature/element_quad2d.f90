@@ -2164,17 +2164,19 @@ contains
       Dbas(2,DER_FUNC) = dxj * (dxi2*dx - dxi1*dy)
       Dbas(3,DER_FUNC) = dxj * (deta1*dy - deta2*dx)
 
-      ! Using these definitions, we can also calculate the derivative directly.
-      !
-      ! X-derivative
-      Dbas(1,DER_DERIV_X) = 0.0_DP
-      Dbas(2,DER_DERIV_X) = dxj * dxi2
-      Dbas(3,DER_DERIV_X) = -dxj * dxi1
+      if (ubound(Dbas,2) .ge. DER_DERIV_Y) then
+        ! Using these definitions, we can also calculate the derivative directly.
+        !
+        ! X-derivative
+        Dbas(1,DER_DERIV_X) = 0.0_DP
+        Dbas(2,DER_DERIV_X) = dxj * dxi2
+        Dbas(3,DER_DERIV_X) = -dxj * dxi1
 
-      ! Y-derivative
-      Dbas(1,DER_DERIV_Y) = 0.0_DP
-      Dbas(2,DER_DERIV_Y) = -dxj * deta2
-      Dbas(3,DER_DERIV_Y) = dxj * deta1
+        ! Y-derivative
+        Dbas(1,DER_DERIV_Y) = 0.0_DP
+        Dbas(2,DER_DERIV_Y) = -dxj * deta2
+        Dbas(3,DER_DERIV_Y) = dxj * deta1
+      end if
 
     else
 
@@ -2318,15 +2320,17 @@ contains
       Dbas(2,DER_FUNC) = Db(2,2)*dx + Db(3,2)*dy ! + Db(1,2), but this is zero
       Dbas(3,DER_FUNC) = Db(2,3)*dx + Db(3,3)*dy ! + Db(1,3), but this is zero
 
-      ! X-derivative
-      Dbas(1,DER_DERIV_X) = 0.0_DP
-      Dbas(2,DER_DERIV_X) = Db(2,2)*deta1 + Db(3,2)*dxi1
-      Dbas(3,DER_DERIV_X) = Db(2,3)*deta1 + Db(3,3)*dxi1
+      if (ubound(Dbas,2) .ge. DER_DERIV_Y) then
+        ! X-derivative
+        Dbas(1,DER_DERIV_X) = 0.0_DP
+        Dbas(2,DER_DERIV_X) = Db(2,2)*deta1 + Db(3,2)*dxi1
+        Dbas(3,DER_DERIV_X) = Db(2,3)*deta1 + Db(3,3)*dxi1
 
-      ! Y-derivative
-      Dbas(1,DER_DERIV_Y) = 0.0_DP
-      Dbas(2,DER_DERIV_Y) = Db(2,2)*deta2 + Db(3,2)*dxi2
-      Dbas(3,DER_DERIV_Y) = Db(2,3)*deta2 + Db(3,3)*dxi2
+        ! Y-derivative
+        Dbas(1,DER_DERIV_Y) = 0.0_DP
+        Dbas(2,DER_DERIV_Y) = Db(2,2)*deta2 + Db(3,2)*dxi2
+        Dbas(3,DER_DERIV_Y) = Db(2,3)*deta2 + Db(3,3)*dxi2
+      end if
 
     end if
 
