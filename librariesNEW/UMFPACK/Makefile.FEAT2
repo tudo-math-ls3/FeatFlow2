@@ -14,7 +14,7 @@ default: $(OBJDIR)/libumfpack.a
 
 #FEAT2# include ../SuiteSparse_config/SuiteSparse_config.mk
 
-C = $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNTIMER \
+C = LC_ALL=C $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNTIMER \
     -IInclude -ISource -I../AMD/Include -I../SuiteSparse_config
 #FEAT2#    -I../Include -I../Source -I../../AMD/Include -I../../SuiteSparse_config
 

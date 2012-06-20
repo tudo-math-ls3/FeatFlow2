@@ -15,7 +15,7 @@ default: $(OBJDIR)/libamd.a
 #FEAT2# include ../SuiteSparse_config/SuiteSparse_config.mk
 
 #FEAT2# C = $(CC) $(CFLAGS) $(CONFIG) -I../Include -I../../SuiteSparse_config
-C = $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../SuiteSparse_config
+C = LC_ALL=C $(CC) $(CFLAGS) $(CONFIG) -IInclude -I../SuiteSparse_config
 
 #-------------------------------------------------------------------------------
 # source files
