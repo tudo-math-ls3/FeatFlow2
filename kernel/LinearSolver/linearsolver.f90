@@ -1594,6 +1594,7 @@ module linearsolver
     
     ! Name of the matrix in the matrix file when using imatrixDebugOutput<>0.
     ! If "" is used here, a matrix name is automatically chosen.
+    ! This string is also used as filename for the output file.
     character(LEN=SYS_NAMELEN) :: smatrixName = ""
   
     ! Accuracy string for text output of matrix entries
@@ -7078,7 +7079,7 @@ contains
       smatrixname = rsolverNode%p_rsubnodeUMFPACK4%smatrixName
 
       ! Create a matrix name if there is none.
-      if (smatrixname .ne. "") then
+      if (smatrixname .eq. "") then
         smatrixname = "matrix"//&
           trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
           ".txt"
