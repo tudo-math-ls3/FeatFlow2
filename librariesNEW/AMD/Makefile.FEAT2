@@ -197,7 +197,7 @@ SRC_AMD = Include/amd_internal.h Include/amd.h \
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
 LAST_FILE_FROM_AMD_TARBALL = ../AMD/Source/amd_valid.c
-$(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
+$(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
 # To catch the case where several applications simultaneously
 # try to build the UMFPACK library (e.g. parallel make of the
@@ -243,13 +243,13 @@ LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL = ../SuiteSparse_config/SuiteSparse_co
 #   Circular ../SuiteSparse_config/SuiteSparse_config.c <- ../SuiteSparse_config/SuiteSparse_config.c dependency dropped.
 $(filter-out $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL), $(SRC_SUITESPARSE_CONFIG)): $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
 
-$(SUITESPARSE_CONFIG):  NAME     = "SuiteSparse_config 4.0.0 sources"
-$(SUITESPARSE_CONFIG):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
-$(SUITESPARSE_CONFIG):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.0.0.tar.gz
-$(SUITESPARSE_CONFIG):  WAITTIME = 15
-$(SUITESPARSE_CONFIG):  RETRIES  = 24
-$(SUITESPARSE_CONFIG):  PATCHCMD = echo
-$(SUITESPARSE_CONFIG): | $(TARBALL)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  NAME     = "SuiteSparse_config 4.0.0 sources"
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  TARBALL  = $(SUITESPARSE_CONFIG_TARBALL)
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  LOCKFILE = ../LOCK.unpack.suitesparse_config-4.0.0.tar.gz
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  WAITTIME = 15
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL):  PATCHCMD = echo
+$(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL): | $(SUITESPARSE_CONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
