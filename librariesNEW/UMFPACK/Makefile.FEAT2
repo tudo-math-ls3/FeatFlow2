@@ -612,7 +612,7 @@ clean:
         # Delete every file separately to prevent errors of kind: 
         # execvp: rm: Arg list too long
 	-$(foreach file, $(FILES), $(remove_file))
-	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
+	$(foreach dir, $(OBJDIR), $(remove_directory))
 
 .PHONY:	purge
 purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
@@ -620,7 +620,7 @@ purge:
         # Delete every file separately to prevent errors of kind: 
         # execvp: rm: Arg list too long
 	-$(foreach file, $(FILES), $(remove_file))
-	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	$(foreach dir, $(OBJDIR), $(remove_directory))
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
 	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \
                 ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
