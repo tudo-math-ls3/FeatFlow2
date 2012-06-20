@@ -88,7 +88,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
 !<subroutine>
@@ -252,7 +252,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
 !<subroutine>
@@ -375,7 +375,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<output>
@@ -542,7 +542,7 @@ contains
     type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+    type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<output>
