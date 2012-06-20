@@ -37,9 +37,6 @@ ssectionOptControl = OPTIMALCONTROL
 # Section defining the nonlinear space-time solver
 ssectionSpaceTimeSolver = SPACETIME-SOLVER
 
-# Section defining the space-time preprocessing 
-ssectionSpaceTimePostprocessing = TIME-PREPROCESSING
-
 # Section defining the space-time postprocessing 
 ssectionSpaceTimePostprocessing = TIME-POSTPROCESSING
 
@@ -69,3 +66,6 @@ ddualPrimalCoupling = 1.0
 # If the following parameter is set from 1.0 to 0.0, the time coupling
 # is disabled, resulting in a stationary simulation in every timestep.
 dtimeCoupling = 1.0
+
+# Whether or not to write system matrices in spatial UMFPACK solvers.
+cwriteUmfpackMatrix = 0

@@ -34,6 +34,7 @@ module postprocessing
   use fsystem
   use genoutput
   use io
+  use paramlist
   
   use basicgeometry
   use spatialdiscretisation
@@ -100,6 +101,8 @@ module postprocessing
 !
 !!</constants>
 
+  public :: optcpp_initpostprocessing
+  public :: optcpp_donepostprocessing
   public :: optcpp_postprocessing
   
 contains
@@ -108,15 +111,25 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_initpostprocessing (rpostproc,rphysics)
+  subroutine optcpp_initpostprocessing (&
+      rpostproc,rparlist,ssection,rphysics,rsettingsSpaceDiscr)
   
 !<description>
-  ! Initialises the postprocessing
+  ! Initialises the postprocessing.
 !</description>
 
 !<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters can be found.
+  character(len=*), intent(in) :: ssection
+
   ! Physics of the problem
   type(t_settings_physics), intent(in), target :: rphysics
+  
+  ! Spatial discretisation settings
+  type(t_settings_spacediscr), intent(in), target :: rsettingsSpaceDiscr
 !</input>
   
 !<inputoutput>
@@ -127,7 +140,10 @@ contains
 !</subroutine>
 
     ! Fetch data
+    call struc_initPostprocParams (rparlist,ssection,rphysics,rpostproc)
+
     rpostproc%p_rphysics => rphysics
+    rpostproc%p_rsettingsDiscr => rsettingsSpaceDiscr
     
   end subroutine
   
@@ -149,6 +165,7 @@ contains
 !</subroutine>
 
     ! Clean up.
+    call struc_donePostprocParams (rpostproc)
 
   end subroutine
   
@@ -380,6 +397,8 @@ contains
     character(len=SYS_STRLEN) :: sfile,ssuffix
     type(t_ucdExport) :: rexport
     integer :: icomp
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+    integer :: nvt,nmt,nel
     
     ! Determine filename header.
     ! Current space? 
@@ -456,44 +475,120 @@ contains
       ! -------------------------------------------
       case (CCSPACE_PRIMAL)
       
-        ! Write the velocity field
-        call ucd_addVectorFieldByVertex (rexport, &
-            "velocity_p", UCD_VAR_STANDARD,Rvector%RvectorBlock(1:2))
-            
-        ! Write the pressure data
-        call ucd_addVectorByVertex (rexport, &
-            "pressure_p", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
+        
+        ! --------------------
+        ! Q2/QP1.
+        ! Manual output.
+        ! --------------------
+        case (4)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+          call lsyssc_getbase_double (Rvector%RvectorBlock(2),p_Ddata2)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVarVertBasedVec(rexport, "velocity_p", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), p_Ddata2(1:nvt), &
+              DdataMid_X=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataMid_Y=p_Ddata2(nvt+1:nvt+nmt), &
+              DdataElem_X=p_Ddata1(nvt+nmt+1:nvt+nmt+nel), &
+              DdataElem_Y=p_Ddata2(nvt+nmt+1:nvt+nmt+nel))
+
+          ! Write the pressure data
+          call ucd_addVectorByVertex (rexport, &
+              "pressure_p", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+        
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+      
+          ! Write the velocity field
+          call ucd_addVectorFieldByVertex (rexport, &
+              "velocity_p", UCD_VAR_STANDARD,Rvector%RvectorBlock(1:2))
+              
+          ! Write the pressure data
+          call ucd_addVectorByVertex (rexport, &
+              "pressure_p", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+              
+        end select
       
       ! -------------------------------------------
       ! Dual equation
       ! -------------------------------------------
       case (CCSPACE_DUAL)
 
-        ! Write the velocity field
-        call ucd_addVectorFieldByVertex (rexport, &
-            "velocity_d", UCD_VAR_STANDARD,Rvector%RvectorBlock(1:2))
-            
-        ! Write the pressure data
-        call ucd_addVectorByVertex (rexport, &
-            "pressure_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
+        
+        ! --------------------
+        ! Q2/QP1.
+        ! Manual output.
+        ! --------------------
+        case (4)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+          call lsyssc_getbase_double (Rvector%RvectorBlock(2),p_Ddata2)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVarVertBasedVec(rexport, "velocity_d", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), p_Ddata2(1:nvt), &
+              DdataMid_X=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataMid_Y=p_Ddata2(nvt+1:nvt+nmt), &
+              DdataElem_X=p_Ddata1(nvt+nmt+1:nvt+nmt+nel), &
+              DdataElem_Y=p_Ddata2(nvt+nmt+1:nvt+nmt+nel))
+
+          ! Write the pressure data
+          call ucd_addVectorByVertex (rexport, &
+              "pressure_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+          ! Write the velocity field
+          call ucd_addVectorFieldByVertex (rexport, &
+              "velocity_d", UCD_VAR_STANDARD,Rvector%RvectorBlock(1:2))
+              
+          ! Write the pressure data
+          call ucd_addVectorByVertex (rexport, &
+              "pressure_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+        
+        end select
       
       ! -------------------------------------------
       ! Control equation
       ! -------------------------------------------
       case (CCSPACE_CONTROL)
       
-        ! The shape of the control variable depends on what is controlled...
-        ! Initialise a component counter.
-        icomp = 1
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
         
-        ! -------------------------------------------------
-        ! Distributed control
-        ! -------------------------------------------------
-        if (roptcontrol%dalphaC .ge. 0.0_DP) then
-          call ucd_addVectorFieldByVertex (rexport, &
-              "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp:icomp+1))
-          icomp = icomp + 2
-        end if
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+          ! The shape of the control variable depends on what is controlled...
+          ! Initialise a component counter.
+          icomp = 1
+          
+          ! -------------------------------------------------
+          ! Distributed control
+          ! -------------------------------------------------
+          if (roptcontrol%dalphaC .ge. 0.0_DP) then
+            call ucd_addVectorFieldByVertex (rexport, &
+                "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp:icomp+1))
+            icomp = icomp + 2
+          end if
+        end select
       
       end select
 

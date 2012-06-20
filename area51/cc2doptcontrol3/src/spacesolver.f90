@@ -625,6 +625,8 @@ contains
     end do
 
     ! Initialise the structures of the associated linear subsolver
+    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+        "primal_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
         rsolver%ispacelevel,ierror)
@@ -694,6 +696,8 @@ contains
     end do
 
     ! Initialise the structures of the associated linear subsolver
+    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+        "primallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
         rsolver%ispacelevel,ierror)
@@ -759,6 +763,8 @@ contains
     end do
 
     ! Initialise the structures of the associated linear subsolver
+    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+        "dual_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
         rsolver%ispacelevel,ierror)
@@ -808,8 +814,33 @@ contains
 
     ! Implementation identical to spaceslh_initData_dual.
     ! bfull does not have to be respected.
-    call spaceslh_initData_dual (rsolver, ierror, idofTime, &
-        rprimalSol, isollevelSpace)
+
+    ! local variables
+    integer :: ilev,iprevlv
+    
+    ! iprevlv contains the last assembled level.
+    iprevlv = 0
+
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the system matrices.
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+    
+      ! Assemble the matrix
+      call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%rtempData,iprevlv)
+          
+      iprevlv = ilev
+    
+    end do
+
+    ! Initialise the structures of the associated linear subsolver
+    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+        "duallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+    call lssh_initData (&
+        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+        rsolver%ispacelevel,ierror)
 
   end subroutine
 

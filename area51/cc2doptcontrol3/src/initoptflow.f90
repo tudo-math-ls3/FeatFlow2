@@ -48,6 +48,7 @@ module initoptflow
   use spacematvecassembly
   use initmatrices
   use spacetimeinterlevelprojection
+  use postprocessing
   
   use user_callback
   
@@ -342,9 +343,9 @@ contains
     end if
 
     ! Initialise postprocessing settings
-    call struc_initPostprocParams (&
+    call optcpp_initpostprocessing (rsettingsSolver%rpostproc,&
         rparlist,rsettings%ssectionSpaceTimePostprocessing,&
-        rsettingsSolver%rphysics,rsettingsSolver%rpostproc)
+        rsettingsSolver%rphysics,rsettingsSolver%rsettingsSpaceDiscr)
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -476,7 +477,7 @@ contains
 
 !</subroutine>
     ! Release postprocessing data
-    call struc_donePostprocParams (rsettings%rpostproc)
+    call optcpp_donepostprocessing (rsettings%rpostproc)
 
     ! Release the discrete initial condition
     call smva_releaseDiscreteInitCond(rsettings%rdiscreteInitCond)

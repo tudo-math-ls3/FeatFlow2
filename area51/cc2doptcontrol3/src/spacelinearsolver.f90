@@ -265,7 +265,6 @@ contains
       ! This is the UMFPACK solver. Very easy to initialise. No parameters at all.
       ! This solver works for all types of equations.
       call linsol_initUMFPACK4 (p_rsolverNode)
-      !p_rsolverNode%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
     
     ! ---------------------------------------------------------------
     ! Multigrid solver
@@ -323,8 +322,9 @@ contains
         case (0)
           ! UMFPACK coarse grid solver. Easy.
           call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
-          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
-          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix2.txt"
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = &
+              rdebugFlags%cwriteUmfpackMatrix
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
           
         case (1)
           ! Defect correction with diagonal VANKA preconditioning.
@@ -554,8 +554,9 @@ contains
         case (0)
           ! UMFPACK coarse grid solver. Easy.
           call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
-          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
-          !p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix2.txt"
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = &
+              rdebugFlags%cwriteUmfpackMatrix
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
           
         case default
         
@@ -896,6 +897,7 @@ contains
     integer :: ifilter
     type(t_linsolSpace), pointer :: p_rlinsolSpace
     type(t_optcBDCSpace), pointer :: p_roptcBDCSpace
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
     ! Get the solver structure of that level
     p_rlinsolSpace => rlssHierarchy%p_RlinearSolvers(ilevel)
@@ -951,7 +953,7 @@ contains
             case (0)
               call output_line (&
                   "UMFPACK coarse grid solver does not support filtering!",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initStructure")
+                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
               call sys_halt()
 
             ! -----------------------------------
@@ -987,6 +989,24 @@ contains
         
       end select ! Outer solver
       
+      ! -----------------------------------
+      ! DEBUG Flags
+      ! -----------------------------------
+      select case (p_rlinsolSpace%icoarseGridSolverType)
+      
+      ! -----------------------------------
+      ! UMFPACK
+      ! -----------------------------------
+      case (0)
+      
+        ! Matrix name for debug output: Matrix to text file.
+        call linsol_getMultigrid2Level (&
+            rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+        p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+            "matrix"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+        
+      end select
+    
     ! ---------------------------------------------------
     ! Heat equation
     ! ---------------------------------------------------
@@ -1023,7 +1043,7 @@ contains
             case (0)
               call output_line (&
                   "UMFPACK coarse grid solver does not support filtering!",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initStructure")
+                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
               call sys_halt()
 
             ! -----------------------------------
@@ -1058,7 +1078,25 @@ contains
         end select ! ilevel
         
       end select ! Outer solver
+                
+      ! -----------------------------------
+      ! DEBUG Flags
+      ! -----------------------------------
+      select case (p_rlinsolSpace%icoarseGridSolverType)
       
+      ! -----------------------------------
+      ! UMFPACK
+      ! -----------------------------------
+      case (0)
+      
+        ! Matrix name for debug output: Matrix to text file.
+        call linsol_getMultigrid2Level (&
+            rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+        p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+            "matrix"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+        
+      end select
+    
     end select ! equation
 
     ! Initialise the solver node

@@ -2981,7 +2981,7 @@ contains
       dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
@@ -3383,7 +3383,7 @@ contains
       dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.

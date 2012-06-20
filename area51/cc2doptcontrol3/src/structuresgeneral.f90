@@ -103,6 +103,13 @@ module structuresgeneral
     ! Maximum error to be introduced to the RHS if crhsmodification=1/2.
     real(DP) :: drhsrandomMax = 1E-13
 
+    ! Whether or not to write system matrices in spatial UMFPACK solvers.
+    integer :: cwriteUmfpackMatrix = 0
+
+    ! String tag. May be modified by the solver for
+    ! unique identifications of files in special situations.
+    character(len=SYS_STRLEN) :: sstringTag = ""
+
   end type
 
 !</typeblock>
@@ -134,6 +141,7 @@ module structuresgeneral
 
     ! Pointer to the target function.
     type(t_anSolution), pointer :: p_rtargetFunction => null()
+    
   end type
 
 !</typeblock>
@@ -192,6 +200,9 @@ contains
 
     call parlst_getvalue_double (rparlist,ssection,&
         'drhsrandomMax',rdebugFlags%drhsrandomMax,0.0_DP)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        'cwriteUmfpackMatrix',rdebugFlags%cwriteUmfpackMatrix,0)
 
   end subroutine
 

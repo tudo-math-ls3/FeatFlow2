@@ -63,6 +63,9 @@ module structurespostproc
     
     ! Physics of the problem
     type(t_settings_physics), pointer :: p_rphysics => null()
+    
+    ! Discretisation settings
+    type(t_settings_spacediscr), pointer :: p_rsettingsDiscr => null()
   
     ! Type of output file to generate from solutions.
     ! 0=disabled

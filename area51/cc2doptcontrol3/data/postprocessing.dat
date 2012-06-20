@@ -3,94 +3,6 @@
 # ------------------------------------------------------------------------
 
 #####################
-[POSTPROC_FORWARDSIM]
-#####################
-
-# Standard postprocessing during a forward simulation.
-
-# Type of output file to generate from solutions.
-# 0=disabled
-# 1=GMV
-# 2=AVS
-# 3=Paraview (VTK)
-# 4=Paraview (VTK), one level refined
-
-ioutputUCD = 3
-
-# Filename for UCD output.
-# In a nonstationary simulation, a number '.0001','.0002',... is appended
-# to this.
-
-sfilenameUCD = './gmv/u.vtk'
-
-# Write solution vector to a sequence of files.
-# =0: don't write
-# =1: write out, use formatted output.
-# =2: write out, use unformatted output.
-
-cwriteSolution = 0
-
-# Name/path of file for writing solution
-
-swriteSolutionFilename = ''
-
-####################
-[TIME-PREPROCESSING]
-####################
-
-# How to generate the start vector of the iteration.
-# =0: All timesteps are initialised with zero 
-#     (except the 1st one, which is taken as the initial solution).
-# =1: The start vector is created by propagating the initial solution
-#     to all timesteps (stationary sequence).
-# =2: The start vector is created by evaluating the section sstartVector.
-# =3: The start vector is created by a forward simulation starting from
-#     the initial condition. The dual solution is initialised to zero.
-# =4: The start vector is created by a forward simulation starting from
-#     the initial condition. The dual solution is initialised by a backward
-#     simulation.
-# =5: The start vector is created by evaluating the section sstartVector.
-#     The dual solution is initialised by a backward simulation.
-# =6: The start vector is created by a forward simulation starting from
-#     the initial condition. 
-#     The dual solution is initialised by a backward simulation.
-#     After the backward iteration, another forward iteration is applied
-#     to incorporate the first guess of the dual solution
-# =7: The start vector is created by evaluating the section sstartVector.
-#     The dual solution is initialised by a backward simulation.
-#     After the backward iteration, another forward iteration is applied
-#     to incorporate the first guess of the dual solution
-
-ctypeStartVector = 5
-
-# Multiplication weight for the dual solution during backward iteration.
-# After each backward iteration, the dual solution is multiplied/damped
-# with this factor
-
-dsimDualSolWeight = 0.5
-
-# Multiplication factor for the start vector (excluding the initial condition).
-# May be used to scale the start vector after creation.
-# Standard = 1.0
-
-dstartVectorWeight = 1.0
-
-# Name of the section that defines the initial iterate if ctypeStartVector=2.
-
-sstartVector = INITIALITERATE
-
-# Name of the section defining the boundary conditions of the start vector
-# if ctypeStartVector=2.
-
-sstartVectorBoundaryConditions = BDCONDITIONS
-
-# Section with postprocessing settings during a forward 
-# simulation if ctypeStartVector=2.
-
-sstartVectorPostprocessing = POSTPROC_FORWARDSIM
-
-
-#####################
 [TIME-POSTPROCESSING]
 #####################
 
@@ -105,31 +17,43 @@ ioutputUCD = 3
 # Filename prefix for visualisation output.
 # ='': Disable visualisation output
 
-sfilenameUCD = ''
+sfilenameUCD = 'gmv/u'
 
-# Output format for the final solution.
+# Output format for the primal solution.
 # =0: don't write
 # =1: write out, use formatted output (default).
 # =2: write out, use unformatted output.
 
-cwriteFinalSolution = 1
+cwritePrimalSol = 0
 
-# Filename prefix for output of the solution vector. If this is '',
-# the solution vector is not written out.
+# Output format for the dual solution.
+# =0: don't write
+# =1: write out, use formatted output (default).
+# =2: write out, use unformatted output.
 
-sfinalSolutionFileName = ''
+cwriteDualSol = 0
 
 # Output format for the final control.
 # =0: don't write
 # =1: write out, use formatted output (default).
 # =2: write out, use unformatted output.
 
-cwriteFinalControl = 1
+cwriteControl = 1
+
+# Filename prefix for output of the primal solution vector. If this is '',
+# the solution vector is not written out.
+
+sfilenamePrimalSol = ''
+
+# Filename prefix for output of the dual solution vector. If this is '',
+# the solution vector is not written out.
+
+sfilenameDualSol = ''
 
 # Filename prefix for output of the control vector. If this is '',
 # the control vector is not written out.
 
-sfinalControlFileName = './ns/control'
+sfilenameControl = './ns/control'
 
 # ------------------------------------------------------------------------
 # Error analysis
@@ -224,19 +148,21 @@ sfilenameKineticEnergy = 'ns/kineticenergy'
 #   "x y type der"
 # with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
 # der=derivative quantifier. Here:
-#   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure,
-#       =4: dual x-velocity, =5: dual y-velocity, =6: dual pressure,
 #   der =0: function value, =1: x-derivative, =2: y-derivative
+# Stokes/Navier Stokes
+#   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure
+# Heat equation
+#   type=1: primal solution
 #
 # Example: Don't evaluate anything:
-#   cevaluatePointValues(0) =
+#   cevaluatePointValuesPrimal(0) =
 #
 # Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
-#   cevaluatePointValues(2) =
+#   cevaluatePointValuesPrimal(2) =
 #     0.15 0.2 3 0
 #     0.25 0.2 3 0
 
-cevaluatePointValues(0) =
+cevaluatePointValuesPrimal(0) =
 
 # Whether to write the point values to a file
 
@@ -244,5 +170,5 @@ iwritePointValues = 0
 
 # Filename for the point values
 
-sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+sfilenamePointValuesPrimal = '%{ssolutiondirectory}/pointvalues_primal'
 
