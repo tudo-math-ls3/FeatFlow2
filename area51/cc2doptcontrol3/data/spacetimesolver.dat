@@ -34,6 +34,14 @@ ctypeIteration = 2
 
 # cpostprocessIterates = 0
 
+# Defines a policy how to generate the initial condition of a timestep.
+# =0: Always take zero
+# =1: Propagate the solution of the previous/next timestep to the
+#     current one. (Default)
+# =2: Take the solution of the last space-time iteration
+
+cspatialInitCondPolicy = 0
+
 # Minimum number of steps
 
 nminIterations     = 1
@@ -175,6 +183,13 @@ domega             = 1.0
 
 ioutputLevel       = 2
 
+# Defines a policy how to generate the initial condition of a timestep.
+# =0: Always take zero
+# =1: Propagate the solution of the previous/next timestep to the
+#     current one. (Default)
+# =2: Take the solution of the last space-time iteration
+
+cspatialInitCondPolicy = 0
 
 
 # ========================================================================
