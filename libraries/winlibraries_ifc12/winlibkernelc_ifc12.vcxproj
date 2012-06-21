@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\kernel\Postprocessing\gmvwritef.c" />
+    <ClCompile Include="..\..\kernel\System\high_res_clock.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{85EFE19E-B191-4B72-A4F4-9551947C6DDF}</ProjectGuid>

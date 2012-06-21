@@ -18,5 +18,8 @@
     <ClCompile Include="..\..\kernel\Postprocessing\gmvwritef.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\kernel\System\high_res_clock.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -293,6 +293,10 @@
 				RelativePath="..\..\..\kernel\Postprocessing\gmvwritef.c"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\kernel\System\high_res_clock.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
