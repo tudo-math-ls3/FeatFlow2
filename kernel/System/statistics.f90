@@ -187,12 +187,21 @@ module statistics
     ! parallel code
     real(DP) :: dstartCPU = 0.0_DP
 
+#ifdef _WIN32
+
+    ! Start time of windows high-resolution clock
+    integer(I64) :: istartHRC = 0_I64
+
+#else
+
     ! Short-term timer: Start real time (wall clock)
     real(DP) :: dstartReal = 0.0_DP
 
     ! Value of sysclock counter during last call to stat_startTimer
     !  (to avoid floating point cancellation effects
     integer :: istartCount = 0
+
+#endif
 
     !<!-- Long-term timer -->
 
@@ -305,9 +314,13 @@ contains
 
     rtimer%delapsedCPU    = 0.0_DP
     rtimer%delapsedReal   = 0.0_DP
+#ifdef _WIN32
+    rtimer%istartHRC      = 0_I64
+#else
     rtimer%istartCount    = 0
-    rtimer%dstartCPU      = 0.0_DP
     rtimer%dstartReal     = 0.0_DP
+#endif
+    rtimer%dstartCPU      = 0.0_DP
     rtimer%istartCPUdate  = 0.0_DP
     rtimer%istartCPUtime  = 0.0_DP
     rtimer%ctype = STAT_TIMERNOTRUNNING
@@ -354,12 +367,17 @@ contains
     ! Start the short-term time measurement?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
+#ifdef _WIN32
+      call hrc_stamp(rtimer%istartHRC)
+#else
       call system_clock(icount, irate, icmax)
       rtimer%dstartReal  = real(icount, DP) / real(irate, DP)
       rtimer%istartCount = icount
+#endif
 
       call cpu_time(dtime)
       rtimer%dstartCPU = real(dtime, DP)
+
 
     end if
 
@@ -406,7 +424,7 @@ contains
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentCpu, dcurrentReal, dtmp, delapsed
     real(SP) :: dtime
-    integer, dimension(8) :: itimeLong
+    integer, dimension(8) :: itimeLong, itimeHRC
 
     if (rtimer%ctype .eq. STAT_TIMERNOTRUNNING) then
       call output_line ('Timer not running!', &
@@ -419,6 +437,13 @@ contains
     ! Is that a short-term timer?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
+#ifdef _WIN32
+      ! stamp the HRC
+      call hrc_stamp(itimeHRC)
+
+      ! calculate elapsed time
+      call hrc_diff(delapsed, rtimer%istartHRC , itimeHRC)
+#else
       ! Ask the system clock
       call system_clock(icount, irate, icmax)
       dCurrentReal = real(icount, DP) / real(irate, DP)
@@ -432,6 +457,7 @@ contains
 
       ! Save the wall clock time. This may be modified below...
       delapsed = max(dtmp, 0.0_DP)
+#endif
 
       ! Get the CPU time.
       call cpu_time(dtime)
@@ -481,9 +507,13 @@ contains
     rtimer%delapsedReal = rtimer%delapsedReal + delapsed
 
     ! Switch off the timer.
-    rtimer%dstartReal = 0.0_DP
     rtimer%dstartCPU = 0.0_DP
+#ifdef _WIN32
+    rtimer%istartHRC = 0_I64
+#else
+    rtimer%dstartReal = 0.0_DP
     rtimer%istartCount = 0
+#endif
     rtimer%istartCPUdate = 0
     rtimer%istartCPUtime = 0
     rtimer%ctype = STAT_TIMERNOTRUNNING
@@ -517,7 +547,7 @@ contains
 
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentReal, dtmp
-    integer, dimension(8) :: itimeLong
+    integer, dimension(8) :: itimeLong, itimeHRC
 
     if (rtimer%ctype .eq. STAT_TIMERNOTRUNNING) then
       call output_line ('Timer not running!', &
@@ -529,6 +559,14 @@ contains
 
     ! Is that a short-term timer?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
+
+#ifdef _WIN32
+      ! stamp the HRC
+      call hrc_stamp(itimeHRC)
+
+      ! calculate elapsed time
+      call hrc_diff(delapsedTime, rtimer%istartHRC , itimeHRC)
+#else
 
       ! Ask the system clock
       call system_clock(icount, irate, icmax)
@@ -543,6 +581,8 @@ contains
 
       ! Save the wall clock time. This may be modified below...
       delapsedTime = max(dtmp, 0.0_DP)
+#endif
+
     end if
 
     ! Is that a long-term timer?
@@ -638,7 +678,11 @@ contains
     rtimer2%delapsedCPU  = rtimer1%delapsedCPU  + rtimer2%delapsedCPU
     rtimer2%delapsedReal = rtimer1%delapsedReal + rtimer2%delapsedReal
     rtimer2%dstartCPU    = 0.0_DP
+#ifdef _WIN32
+    rtimer2%istartHRC    = 0_I64
+#else
     rtimer2%dstartReal   = 0.0_DP
+#endif
     rtimer2%istartCPUdate = 0
     rtimer2%istartCPUtime = 0
     rtimer2%ctype = STAT_TIMERNOTRUNNING
@@ -669,7 +713,11 @@ contains
     rtimer2%delapsedCPU  = rtimer2%delapsedCPU  - rtimer1%delapsedCPU
     rtimer2%delapsedReal = rtimer2%delapsedReal - rtimer1%delapsedReal
     rtimer2%dstartCPU    = 0.0_DP
+#ifdef _WIN32
+    rtimer2%istartHRC    = 0_I64
+#else
     rtimer2%dstartReal   = 0.0_DP
+#endif
     rtimer2%istartCPUdate = 0
     rtimer2%istartCPUtime = 0
     rtimer2%ctype = STAT_TIMERNOTRUNNING
@@ -700,7 +748,11 @@ contains
     rtimerResult%delapsedCPU  = rtimer%delapsedCPU
     rtimerResult%delapsedReal = rtimer%delapsedReal
     rtimerResult%dstartCPU    = rtimer%dstartCPU
+#ifdef _WIN32
+    rtimerResult%istartHRC    = rtimer%istartHRC
+#else
     rtimerResult%dstartReal   = rtimer%dstartReal
+#endif
     rtimerResult%istartCPUdate = rtimer%istartCPUdate
     rtimerResult%istartCPUtime = rtimer%istartCPUtime
     rtimerResult%ctype = rtimer%ctype
