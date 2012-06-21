@@ -70,8 +70,8 @@ void hrc_diff2(double* _elapsed, int* _time1_l, int* _time1_h, int* _time2_l, in
   long long time1, time2, freq;
 
   /* recombine low and high order ints to long long */
-  time1 = ((*(long long*)_time1_h) << 32) | *((unsigned int*)_time1_l);
-  time2 = ((*(long long*)_time2_h) << 32) | *((unsigned int*)_time2_l);
+  time1 = (((long long)*((unsigned int*)_time1_h)) << 32) | *((unsigned int*)_time1_l);
+  time2 = (((long long)*((unsigned int*)_time2_h)) << 32) | *((unsigned int*)_time2_l);
 
   /* query clock frequency and calculate elapsed time */
   if(QueryPerformanceFrequency(&freq) != 0)
